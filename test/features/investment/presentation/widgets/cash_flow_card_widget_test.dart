@@ -218,5 +218,81 @@ void main() {
       final Icon icon = tester.widget(iconFinder);
       expect(icon.size, 11);
     });
+
+    // A13 / INV-16: the bold amount is in the flow's own currency, and the
+    // converted base-currency value is printed beside it.
+    Future<void> pumpUsdReturn(WidgetTester tester) async {
+      when(
+        () => mockConversionService.getRate(
+          from: 'USD',
+          to: 'INR',
+          date: any(named: 'date'),
+        ),
+      ).thenAnswer((_) async => 88.0);
+      final prefs = await SharedPreferences.getInstance();
+      final usdReturn = CashFlowEntity(
+        id: 'usd_return',
+        investmentId: 'inv_1',
+        type: CashFlowType.returnFlow,
+        amount: 1100,
+        currency: 'USD',
+        date: DateTime(2026, 10, 1),
+        createdAt: DateTime(2026, 10, 1),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currencyCodeProvider.overrideWith((ref) => 'INR'),
+            currencyConversionServiceProvider.overrideWith(
+              (ref) => mockConversionService,
+            ),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: CashFlowCardWidget(
+                cashFlow: usdReturn,
+                isDark: false,
+                currencyFormat: NumberFormat.currency(
+                  locale: 'en_IN',
+                  symbol: '₹',
+                  decimalDigits: 0,
+                ),
+                onTap: () {},
+                onEdit: () {},
+                onConfirmDelete: () async => false,
+                onDeleted: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      r'prints a USD flow as $1,100 with the converted ₹ value beside it',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        await pumpUsdReturn(tester);
+
+        expect(find.text(r'+$1,100'), findsOneWidget);
+        expect(find.text('+₹1,100'), findsNothing);
+        expect(find.textContaining('₹96,800'), findsOneWidget);
+        expect(find.bySemanticsLabel(RegExp(r'\+\$1,100')), findsOneWidget);
+        expect(find.bySemanticsLabel(RegExp('₹96,800')), findsOneWidget);
+        semantics.dispose();
+      },
+    );
+
+    testWidgets('privacy mode hides both the native and converted amounts', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({'privacy_mode_enabled': true});
+      await pumpUsdReturn(tester);
+
+      expect(find.textContaining('1,100'), findsNothing);
+      expect(find.textContaining('96,800'), findsNothing);
+    });
   });
 }

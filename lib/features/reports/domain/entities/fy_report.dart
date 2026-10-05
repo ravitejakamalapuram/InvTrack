@@ -36,8 +36,9 @@ class FYReport {
   /// Net cashflow for the FY (income + returns - invested - fees)
   final double netCashFlow;
 
-  /// XIRR for the entire FY period
-  final double xirr;
+  /// XIRR for the entire FY period, or null when undefined (shown as "—",
+  /// never 0%)
+  final double? xirr;
 
   /// Monthly breakdown of cashflows
   final List<MonthlyFYData> monthlyBreakdown;
@@ -163,7 +164,9 @@ class MonthlyFYData {
 class InvestmentWithReturns {
   final InvestmentEntity investment;
   final double absoluteReturns;
-  final double xirr;
+
+  /// XIRR as a decimal, or null when undefined (never ranked as 0%).
+  final double? xirr;
   final double percentageGain;
 
   const InvestmentWithReturns({

@@ -52,7 +52,8 @@ class LegacyCurrencyBackfillService {
 
   /// Every collection whose mapper falls back to the base currency when a
   /// document has no `currency` (investment, cash-flow, goal and
-  /// expected-cash-flow mappers, active and archived).
+  /// expected-cash-flow mappers, active and archived, and the FIRE
+  /// settings, whose amounts are read in the base currency until stamped).
   static const List<String> collections = [
     'investments',
     'cashflows',
@@ -61,6 +62,7 @@ class LegacyCurrencyBackfillService {
     'goals',
     'archivedGoals',
     'expectedCashFlows',
+    'fireSettings',
   ];
 
   /// Firestore's limit on writes in one batch or transaction.
@@ -112,9 +114,16 @@ class LegacyCurrencyBackfillService {
     await _prefs.setString(_confirmedKey, currency);
   }
 
+  Future<bool>? _checking;
+
   /// Whether any record still has no currency, read from the server. Writes
   /// nothing. Records completion when there are none. Throws offline.
-  Future<bool> hasUnstampedRecords() async {
+  /// Callers that ask while a check is running share its result, so the
+  /// start-up questions read the server once.
+  Future<bool> hasUnstampedRecords() =>
+      _checking ??= _scanForUnstamped().whenComplete(() => _checking = null);
+
+  Future<bool> _scanForUnstamped() async {
     final userDoc = _firestore.collection('users').doc(_userId);
     for (final name in collections) {
       final snapshot = await userDoc

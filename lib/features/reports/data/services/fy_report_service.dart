@@ -209,13 +209,13 @@ class FYReportService {
     return breakdown;
   }
 
-  /// Calculate XIRR for the FY period
-  double _calculateFYXIRR(
+  /// Calculate XIRR for the FY period, or null when it is undefined
+  double? _calculateFYXIRR(
     List<CashFlowEntity> fyCashFlows,
     List<InvestmentEntity> allInvestments,
     DateTime fyEnd,
   ) {
-    if (fyCashFlows.isEmpty) return 0;
+    if (fyCashFlows.isEmpty) return null;
 
     // Calculate XIRR using XirrSolver
     return FinancialCalculator.calculateXirrFromCashFlows(fyCashFlows);
@@ -290,13 +290,16 @@ class FYReportService {
         );
       }
 
+      // An undefined XIRR is not ranked: it is not 0%.
+      final xirr = p.xirr;
+      if (xirr == null) continue;
       if (topByXIRR.length < 5) {
         topByXIRR.add(p);
-        topByXIRR.sort((a, b) => b.xirr.compareTo(a.xirr));
-      } else if (p.xirr > topByXIRR.last.xirr) {
+        topByXIRR.sort((a, b) => b.xirr!.compareTo(a.xirr!));
+      } else if (xirr > topByXIRR.last.xirr!) {
         topByXIRR.removeLast();
         topByXIRR.add(p);
-        topByXIRR.sort((a, b) => b.xirr.compareTo(a.xirr));
+        topByXIRR.sort((a, b) => b.xirr!.compareTo(a.xirr!));
       }
     }
 

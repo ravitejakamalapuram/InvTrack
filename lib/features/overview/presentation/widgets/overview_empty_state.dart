@@ -6,10 +6,18 @@ import 'package:flutter/services.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/number_format_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/domain/models/investment_template.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_template_ui.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+
+/// The demo's P2P example, the same as the 'Try Sample Data' P2P sample
+/// (its test pins this XIRR): ₹1,00,000 lent at an advertised 12% a year,
+/// with a 1% platform fee and one defaulted ₹5,000 loan, earns an XIRR of
+/// 6.345%.
+const double _demoAdvertisedRate = 12.0;
+const double _demoRealXirr = 6.3;
 
 /// Enhanced empty state shown when there are no investments.
 /// Designed to drive user activation with:
@@ -63,13 +71,14 @@ class _OverviewEmptyStateState extends State<OverviewEmptyState>
       ),
     );
 
-    // XIRR animates from advertised rate (7%) to real rate (6.2%)
-    _xirrAnimation = Tween<double>(begin: 7.0, end: 6.2).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.4, 0.8, curve: Curves.easeInOut),
-      ),
-    );
+    // XIRR animates from the advertised rate to the real one.
+    _xirrAnimation =
+        Tween<double>(begin: _demoAdvertisedRate, end: _demoRealXirr).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.4, 0.8, curve: Curves.easeInOut),
+          ),
+        );
 
     // Start animation after widget builds
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -157,6 +166,9 @@ class _XIRRDemoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final advertised = formatPercent(_demoAdvertisedRate);
+    final real = formatPercent(_demoRealXirr);
     return GlassCard(
       child: Column(
         children: [
@@ -180,7 +192,7 @@ class _XIRRDemoCard extends StatelessWidget {
 
           // Title
           Text(
-            'See Your Real Returns',
+            l10n.xirrDemoTitle,
             style: AppTypography.h2.copyWith(
               color: isDark ? Colors.white : AppColors.neutral900Light,
             ),
@@ -189,7 +201,9 @@ class _XIRRDemoCard extends StatelessWidget {
 
           // Subtitle
           Text(
-            'Banks say 7%. What did you really earn?',
+            l10n.xirrDemoSubtitle(
+              formatPercent(_demoAdvertisedRate, decimals: 0),
+            ),
             textAlign: TextAlign.center,
             style: AppTypography.body.copyWith(
               color: isDark
@@ -199,62 +213,71 @@ class _XIRRDemoCard extends StatelessWidget {
           ),
           SizedBox(height: AppSpacing.lg),
 
-          // Animated XIRR comparison
-          AnimatedBuilder(
-            animation: controller,
-            builder: (context, _) {
-              final animatedXirr = xirrAnimation.value;
-              final isComplete = controller.value > 0.8;
+          // Animated XIRR comparison, read out once with its final figures.
+          Semantics(
+            label: l10n.xirrDemoSemantics(advertised, real),
+            excludeSemantics: true,
+            child: AnimatedBuilder(
+              animation: controller,
+              builder: (context, _) {
+                final animatedXirr = xirrAnimation.value;
+                final isComplete = controller.value > 0.8;
 
-              return Container(
-                padding: EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: (isDark ? Colors.white : Colors.black).withValues(
-                    alpha: 0.05,
+                return Container(
+                  padding: EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: (isDark ? Colors.white : Colors.black).withValues(
+                      alpha: 0.05,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    // Advertised Rate
-                    _RateColumn(
-                      label: 'Advertised',
-                      rate: '7.0%',
-                      icon: Icons.campaign_rounded,
-                      color: isDark
-                          ? AppColors.neutral400Dark
-                          : AppColors.neutral500Light,
-                      isDark: isDark,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Advertised Rate
+                      _RateColumn(
+                        label: l10n.xirrDemoAdvertised,
+                        rate: advertised,
+                        icon: Icons.campaign_rounded,
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral500Light,
+                        isDark: isDark,
+                      ),
 
-                    // Arrow
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      color: isDark
-                          ? AppColors.neutral500Dark
-                          : AppColors.neutral400Light,
-                    ),
+                      // Arrow
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        color: isDark
+                            ? AppColors.neutral500Dark
+                            : AppColors.neutral400Light,
+                      ),
 
-                    // Real XIRR Rate (animated)
-                    _RateColumn(
-                      label: 'Your XIRR',
-                      rate: '${animatedXirr.toStringAsFixed(1)}%',
-                      icon: Icons.trending_down_rounded,
-                      color: isComplete ? AppColors.warningLight : primaryColor,
-                      isDark: isDark,
-                      highlight: isComplete,
-                    ),
-                  ],
-                ),
-              );
-            },
+                      // Real XIRR Rate (animated)
+                      _RateColumn(
+                        label: l10n.xirrDemoYourXirr,
+                        rate: formatPercent(animatedXirr),
+                        icon: Icons.trending_down_rounded,
+                        color: isComplete
+                            ? AppColors.warningLight
+                            : primaryColor,
+                        isDark: isDark,
+                        highlight: isComplete,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
           SizedBox(height: AppSpacing.sm),
 
           // Explanation
           Text(
-            'Lock-ins and compounding affect your true return.',
+            l10n.xirrDemoCaption(
+              formatPercent(_demoAdvertisedRate, decimals: 0),
+              real,
+            ),
             textAlign: TextAlign.center,
             style: AppTypography.small.copyWith(
               color: isDark
@@ -676,6 +699,58 @@ class OverviewErrorCard extends StatelessWidget {
           Text(
             l10n.pleaseTryAgainLater,
             style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shown in place of the Overview when the portfolio fails to load.
+///
+/// It deliberately offers no add, import or sample-data actions: the account
+/// may well have data, and sample data would be written into it.
+class OverviewLoadErrorState extends StatelessWidget {
+  /// Called when the user taps Retry.
+  final VoidCallback onRetry;
+
+  const OverviewLoadErrorState({super.key, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return GlassCard(
+      child: Column(
+        children: [
+          const Icon(
+            Icons.cloud_off_rounded,
+            size: 48,
+            color: AppColors.errorLight,
+          ),
+          SizedBox(height: AppSpacing.sm),
+          Semantics(
+            liveRegion: true,
+            header: true,
+            child: Text(
+              l10n.overviewLoadErrorTitle,
+              style: AppTypography.h4,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          SizedBox(height: AppSpacing.xs),
+          Text(
+            l10n.overviewLoadErrorMessage,
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: AppSpacing.md),
+          FilledButton.icon(
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              onRetry();
+            },
+            icon: const Icon(Icons.refresh),
+            label: Text(l10n.retry),
           ),
         ],
       ),

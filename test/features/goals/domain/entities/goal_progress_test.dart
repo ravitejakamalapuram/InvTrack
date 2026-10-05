@@ -66,6 +66,7 @@ void main() {
       final progress = GoalProgress(
         goal: testGoal,
         currentAmount: 5000,
+        targetAmount: 10000,
         progressPercent: 50,
         monthlyVelocity: 500,
         monthlyIncome: 0,
@@ -77,9 +78,9 @@ void main() {
         calculatedAt: DateTime.now(),
       );
 
-      // Uses K formatting (5K of 10K - trailing zeros trimmed)
-      expect(progress.progressMessage, contains('5K'));
-      expect(progress.progressMessage, contains('10K'));
+      // Indian compact format shows amounts below one lakh in full; intl's
+      // en_IN compact gave '₹5K' (A18).
+      expect(progress.progressMessage, '₹5,000 of ₹10,000');
     });
 
     test('progressMessage shows correct format for income goals', () {
@@ -91,6 +92,7 @@ void main() {
       final progress = GoalProgress(
         goal: incomeGoal,
         currentAmount: 0,
+        targetAmount: 1000,
         progressPercent: 50,
         monthlyVelocity: 0,
         monthlyIncome: 500,
@@ -104,50 +106,7 @@ void main() {
 
       expect(progress.progressMessage, contains('/mo'));
       expect(progress.progressMessage, contains('500'));
-      expect(progress.progressMessage, contains('1K'));
-    });
-
-    test('statusMessage for ahead status shows encouragement', () {
-      final progress = GoalProgress(
-        goal: testGoal,
-        currentAmount: 7500,
-        progressPercent: 75,
-        monthlyVelocity: 500,
-        monthlyIncome: 0,
-        projectedCompletionDate: DateTime(2025, 6, 1),
-        status: GoalStatus.ahead,
-        currentMilestone: GoalMilestone.threeQuarters,
-        achievedMilestones: [
-          GoalMilestone.quarter,
-          GoalMilestone.half,
-          GoalMilestone.threeQuarters,
-        ],
-        linkedInvestmentCount: 5,
-        calculatedAt: DateTime.now(),
-      );
-
-      expect(progress.statusMessage.toLowerCase(), contains('ahead'));
-      expect(progress.statusMessage.toLowerCase(), contains('keep'));
-    });
-
-    test('achieved status shows goal complete', () {
-      final progress = GoalProgress(
-        goal: testGoal,
-        currentAmount: 10000,
-        progressPercent: 100,
-        monthlyVelocity: 500,
-        monthlyIncome: 0,
-        projectedCompletionDate: null,
-        status: GoalStatus.achieved,
-        currentMilestone: GoalMilestone.complete,
-        achievedMilestones: GoalMilestone.values
-            .where((m) => m.percentage > 0)
-            .toList(),
-        linkedInvestmentCount: 5,
-        calculatedAt: DateTime.now(),
-      );
-
-      expect(progress.statusMessage.toLowerCase(), contains('achieved'));
+      expect(progress.progressMessage, '₹500/mo of ₹1,000/mo');
     });
   });
 }

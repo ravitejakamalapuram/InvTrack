@@ -183,7 +183,8 @@ final filteredInvestmentsProvider = Provider.autoDispose<AsyncValue<List<Investm
       }
 
       // Pre-compute stats for sorting using ref.watch to react to stats loading
-      // This ensures the list re-sorts when stats become available
+      // This ensures the list re-sorts when stats become available. All
+      // amounts are in the base currency, the same values the cards show.
       final statsCache = <String, InvestmentStats?>{};
 
       // Check if current sort criteria actually needs XIRR
@@ -191,40 +192,29 @@ final filteredInvestmentsProvider = Provider.autoDispose<AsyncValue<List<Investm
           listState.sort == InvestmentSort.xirrAsc ||
           listState.sort == InvestmentSort.xirrDesc;
 
-      // OPTIMIZATION: Get basic stats map directly for active investments
-      // This avoids N ref.watches inside the loop
-      final basicStatsMapAsync =
-          !requiresXirr && listState.filter != InvestmentFilter.archived
-          ? ref.watch(activeInvestmentBasicStatsMapProvider)
-          : null;
-      final basicStatsMap = basicStatsMapAsync?.value;
-
-      for (final inv in filtered) {
-        // PERFORMANCE OPTIMIZATION:
-        // Use basic stats provider (no XIRR) unless explicitly sorting by XIRR.
-        // Also correctly handle archived vs active investments.
-        final AsyncValue<InvestmentStats> statsAsync;
-
-        if (inv.isArchived) {
-          statsAsync = requiresXirr
-              ? ref.watch(archivedInvestmentStatsProvider(inv.id))
-              : ref.watch(archivedInvestmentBasicStatsProvider(inv.id));
-          statsCache[inv.id] = statsAsync.value;
-        } else {
-          if (requiresXirr) {
-            statsAsync = ref.watch(multiCurrencyInvestmentStatsProvider(inv.id));
-            statsCache[inv.id] = statsAsync.value;
-          } else {
-            // Use map lookup if available for O(1) access without creating listeners
-            if (basicStatsMap != null) {
-              final stats = basicStatsMap[inv.id] ?? InvestmentStats.empty();
-              statsCache[inv.id] = stats;
-            } else {
-              // Fallback (should rarely be reached for active investments)
-              statsAsync = ref.watch(investmentBasicStatsProvider(inv.id));
-              statsCache[inv.id] = statsAsync.value;
-            }
-          }
+      if (filtered.isEmpty) {
+        // Nothing to sort: no stats needed.
+      } else if (listState.filter == InvestmentFilter.archived) {
+        for (final inv in filtered) {
+          statsCache[inv.id] = ref
+              .watch(multiCurrencyArchivedInvestmentStatsProvider(inv.id))
+              .value;
+        }
+      } else {
+        // OPTIMIZATION: Get the basic stats map directly for active
+        // investments. This avoids N ref.watches inside the loop.
+        final basicStatsMap = ref
+            .watch(activeInvestmentBasicStatsMapProvider)
+            .value;
+        final xirrMap = requiresXirr
+            ? ref.watch(activeInvestmentXirrResultMapProvider).value
+            : null;
+        for (final inv in filtered) {
+          final stats = basicStatsMap?[inv.id];
+          final xirr = xirrMap?[inv.id];
+          statsCache[inv.id] = stats != null && xirr != null && xirr.isDefined
+              ? stats.copyWith(xirr: xirr.value, xirrMethod: xirr.method)
+              : stats;
         }
       }
 
@@ -287,9 +277,9 @@ int _compareInvestments(
         statsB?.absoluteReturn ?? 0,
       );
     case InvestmentSort.xirrDesc:
-      comparison = (statsB?.xirr ?? 0).compareTo(statsA?.xirr ?? 0);
+      comparison = _compareXirr(statsA?.xirr, statsB?.xirr, descending: true);
     case InvestmentSort.xirrAsc:
-      comparison = (statsA?.xirr ?? 0).compareTo(statsB?.xirr ?? 0);
+      comparison = _compareXirr(statsA?.xirr, statsB?.xirr, descending: false);
     case InvestmentSort.netPositionDesc:
       comparison = (statsB?.netCashFlow ?? 0).compareTo(
         statsA?.netCashFlow ?? 0,
@@ -323,6 +313,17 @@ int _compareInvestments(
     comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
   }
   return comparison;
+}
+
+/// Orders investments by XIRR. An undefined XIRR (null: no current value,
+/// too few flows or no solution) sorts last in both directions; it is never
+/// ranked as 0%.
+int _compareXirr(double? a, double? b, {required bool descending}) {
+  if (a == null || b == null) {
+    if (a == b) return 0;
+    return a == null ? 1 : -1;
+  }
+  return descending ? b.compareTo(a) : a.compareTo(b);
 }
 
 /// Provider for investment count by status (for filter tabs)

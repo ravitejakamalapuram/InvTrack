@@ -322,134 +322,6 @@ final class MultiCurrencyReturnedAmountFamily extends $Family
   String toString() => r'multiCurrencyReturnedAmountProvider';
 }
 
-/// Provider for multi-currency XIRR calculation
-///
-/// Converts all cash flows to user's base currency using historical rates
-/// before calculating XIRR
-///
-/// **Parameters:**
-/// - [investmentId]: Investment ID
-///
-/// **Returns:**
-/// - XIRR as decimal (e.g., 0.15 = 15% annual return)
-/// - 0.0 if user is not authenticated (converter is null)
-
-@ProviderFor(multiCurrencyXirr)
-const multiCurrencyXirrProvider = MultiCurrencyXirrFamily._();
-
-/// Provider for multi-currency XIRR calculation
-///
-/// Converts all cash flows to user's base currency using historical rates
-/// before calculating XIRR
-///
-/// **Parameters:**
-/// - [investmentId]: Investment ID
-///
-/// **Returns:**
-/// - XIRR as decimal (e.g., 0.15 = 15% annual return)
-/// - 0.0 if user is not authenticated (converter is null)
-
-final class MultiCurrencyXirrProvider
-    extends $FunctionalProvider<AsyncValue<double>, double, FutureOr<double>>
-    with $FutureModifier<double>, $FutureProvider<double> {
-  /// Provider for multi-currency XIRR calculation
-  ///
-  /// Converts all cash flows to user's base currency using historical rates
-  /// before calculating XIRR
-  ///
-  /// **Parameters:**
-  /// - [investmentId]: Investment ID
-  ///
-  /// **Returns:**
-  /// - XIRR as decimal (e.g., 0.15 = 15% annual return)
-  /// - 0.0 if user is not authenticated (converter is null)
-  const MultiCurrencyXirrProvider._({
-    required MultiCurrencyXirrFamily super.from,
-    required String super.argument,
-  }) : super(
-         retry: null,
-         name: r'multiCurrencyXirrProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
-
-  @override
-  String debugGetCreateSourceHash() => _$multiCurrencyXirrHash();
-
-  @override
-  String toString() {
-    return r'multiCurrencyXirrProvider'
-        ''
-        '($argument)';
-  }
-
-  @$internal
-  @override
-  $FutureProviderElement<double> $createElement($ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<double> create(Ref ref) {
-    final argument = this.argument as String;
-    return multiCurrencyXirr(ref, argument);
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is MultiCurrencyXirrProvider && other.argument == argument;
-  }
-
-  @override
-  int get hashCode {
-    return argument.hashCode;
-  }
-}
-
-String _$multiCurrencyXirrHash() => r'e7476df588bbf30b3a489add3cb4a8e5fdfd5736';
-
-/// Provider for multi-currency XIRR calculation
-///
-/// Converts all cash flows to user's base currency using historical rates
-/// before calculating XIRR
-///
-/// **Parameters:**
-/// - [investmentId]: Investment ID
-///
-/// **Returns:**
-/// - XIRR as decimal (e.g., 0.15 = 15% annual return)
-/// - 0.0 if user is not authenticated (converter is null)
-
-final class MultiCurrencyXirrFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<double>, String> {
-  const MultiCurrencyXirrFamily._()
-    : super(
-        retry: null,
-        name: r'multiCurrencyXirrProvider',
-        dependencies: null,
-        $allTransitiveDependencies: null,
-        isAutoDispose: true,
-      );
-
-  /// Provider for multi-currency XIRR calculation
-  ///
-  /// Converts all cash flows to user's base currency using historical rates
-  /// before calculating XIRR
-  ///
-  /// **Parameters:**
-  /// - [investmentId]: Investment ID
-  ///
-  /// **Returns:**
-  /// - XIRR as decimal (e.g., 0.15 = 15% annual return)
-  /// - 0.0 if user is not authenticated (converter is null)
-
-  MultiCurrencyXirrProvider call(String investmentId) =>
-      MultiCurrencyXirrProvider._(argument: investmentId, from: this);
-
-  @override
-  String toString() => r'multiCurrencyXirrProvider';
-}
-
 /// Provider for multi-currency portfolio value
 ///
 /// Calculates total portfolio value by summing net cash flow
@@ -520,37 +392,35 @@ final class MultiCurrencyPortfolioValueProvider
 String _$multiCurrencyPortfolioValueHash() =>
     r'e4aed10163dcfbd0921e8ceb3b6d2a011ce7cea9';
 
-/// Provider for multi-currency investment stats
+/// Stats for one active investment, in the user's base currency.
 ///
-/// Calculates investment statistics with proper currency conversion.
-/// All cash flows are converted to user's base currency before aggregation.
-///
-/// Uses optimized batch conversion with deduplication for performance.
+/// Read from the same converted snapshot as the list cards, the sort and the
+/// Overview ([convertedCashFlowsSnapshotProvider]), so the detail screen
+/// always shows the same net and XIRR as the card.
 ///
 /// **Parameters:**
 /// - [investmentId]: Investment ID
 ///
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
-/// - InvestmentStats.empty() if user is not authenticated (converter is null)
+/// - InvestmentStats.empty() when the investment has no active cash flows
 
 @ProviderFor(multiCurrencyInvestmentStats)
 const multiCurrencyInvestmentStatsProvider =
     MultiCurrencyInvestmentStatsFamily._();
 
-/// Provider for multi-currency investment stats
+/// Stats for one active investment, in the user's base currency.
 ///
-/// Calculates investment statistics with proper currency conversion.
-/// All cash flows are converted to user's base currency before aggregation.
-///
-/// Uses optimized batch conversion with deduplication for performance.
+/// Read from the same converted snapshot as the list cards, the sort and the
+/// Overview ([convertedCashFlowsSnapshotProvider]), so the detail screen
+/// always shows the same net and XIRR as the card.
 ///
 /// **Parameters:**
 /// - [investmentId]: Investment ID
 ///
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
-/// - InvestmentStats.empty() if user is not authenticated (converter is null)
+/// - InvestmentStats.empty() when the investment has no active cash flows
 
 final class MultiCurrencyInvestmentStatsProvider
     extends
@@ -560,19 +430,18 @@ final class MultiCurrencyInvestmentStatsProvider
           FutureOr<InvestmentStats>
         >
     with $FutureModifier<InvestmentStats>, $FutureProvider<InvestmentStats> {
-  /// Provider for multi-currency investment stats
+  /// Stats for one active investment, in the user's base currency.
   ///
-  /// Calculates investment statistics with proper currency conversion.
-  /// All cash flows are converted to user's base currency before aggregation.
-  ///
-  /// Uses optimized batch conversion with deduplication for performance.
+  /// Read from the same converted snapshot as the list cards, the sort and the
+  /// Overview ([convertedCashFlowsSnapshotProvider]), so the detail screen
+  /// always shows the same net and XIRR as the card.
   ///
   /// **Parameters:**
   /// - [investmentId]: Investment ID
   ///
   /// **Returns:**
   /// - InvestmentStats with amounts in user's base currency
-  /// - InvestmentStats.empty() if user is not authenticated (converter is null)
+  /// - InvestmentStats.empty() when the investment has no active cash flows
   const MultiCurrencyInvestmentStatsProvider._({
     required MultiCurrencyInvestmentStatsFamily super.from,
     required String super.argument,
@@ -619,21 +488,20 @@ final class MultiCurrencyInvestmentStatsProvider
 }
 
 String _$multiCurrencyInvestmentStatsHash() =>
-    r'7dd8f5f8ffced7dcfc1c2ba310b14d00a12b08ba';
+    r'a04d7f58432839534f73fc2e83e43cc642635bb8';
 
-/// Provider for multi-currency investment stats
+/// Stats for one active investment, in the user's base currency.
 ///
-/// Calculates investment statistics with proper currency conversion.
-/// All cash flows are converted to user's base currency before aggregation.
-///
-/// Uses optimized batch conversion with deduplication for performance.
+/// Read from the same converted snapshot as the list cards, the sort and the
+/// Overview ([convertedCashFlowsSnapshotProvider]), so the detail screen
+/// always shows the same net and XIRR as the card.
 ///
 /// **Parameters:**
 /// - [investmentId]: Investment ID
 ///
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
-/// - InvestmentStats.empty() if user is not authenticated (converter is null)
+/// - InvestmentStats.empty() when the investment has no active cash flows
 
 final class MultiCurrencyInvestmentStatsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<InvestmentStats>, String> {
@@ -646,19 +514,18 @@ final class MultiCurrencyInvestmentStatsFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Provider for multi-currency investment stats
+  /// Stats for one active investment, in the user's base currency.
   ///
-  /// Calculates investment statistics with proper currency conversion.
-  /// All cash flows are converted to user's base currency before aggregation.
-  ///
-  /// Uses optimized batch conversion with deduplication for performance.
+  /// Read from the same converted snapshot as the list cards, the sort and the
+  /// Overview ([convertedCashFlowsSnapshotProvider]), so the detail screen
+  /// always shows the same net and XIRR as the card.
   ///
   /// **Parameters:**
   /// - [investmentId]: Investment ID
   ///
   /// **Returns:**
   /// - InvestmentStats with amounts in user's base currency
-  /// - InvestmentStats.empty() if user is not authenticated (converter is null)
+  /// - InvestmentStats.empty() when the investment has no active cash flows
 
   MultiCurrencyInvestmentStatsProvider call(String investmentId) =>
       MultiCurrencyInvestmentStatsProvider._(

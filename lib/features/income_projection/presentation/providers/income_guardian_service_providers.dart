@@ -35,11 +35,12 @@ final incomeGuardianNotificationHandlerProvider = Provider<IncomeGuardianNotific
       await notificationService.initialize();
       return await notificationService.arePermissionsGranted();
     },
-    // Wrap formatCompactCurrency to match expected signature
-    formatCurrency: (amount, symbol, locale) => formatCompactCurrency(
+    // The handler passes the payment's ISO code: show its symbol and format
+    // the amount in that currency's own locale ('₹2.5 L', '\$1.5K').
+    formatCurrency: (amount, currencyCode, _) => formatCompactCurrency(
       amount,
-      symbol: symbol,
-      locale: locale,
+      symbol: getCurrencySymbol(currencyCode),
+      locale: getCurrencyLocale(currencyCode),
     ),
   );
 });

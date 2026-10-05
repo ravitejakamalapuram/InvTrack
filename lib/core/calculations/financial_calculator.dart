@@ -2,7 +2,6 @@
 ///
 /// This utility class provides common financial metrics used in investment tracking:
 /// - **XIRR**: Extended Internal Rate of Return (annualized return for irregular cash flows)
-/// - **CAGR**: Compound Annual Growth Rate (annualized return for single investment)
 /// - **MOIC**: Multiple on Invested Capital (total return multiple)
 /// - **Absolute Return**: Simple percentage return
 /// - **Net Cash Flow**: Total profit/loss
@@ -19,11 +18,7 @@
 ///   CashFlowEntity(date: DateTime(2024, 1, 1), amount: 11000, type: CashFlowType.currentValue),
 /// ];
 /// final xirr = FinancialCalculator.calculateXirrFromCashFlows(cashFlows);
-/// print('XIRR: ${(xirr * 100).toStringAsFixed(2)}%'); // ~15%
-///
-/// // Calculate CAGR for a simple investment
-/// final cagr = FinancialCalculator.calculateCAGR(10000, 12000, 2);
-/// print('CAGR: ${(cagr * 100).toStringAsFixed(2)}%'); // ~9.54%
+/// print(xirr == null ? '—' : 'XIRR: ${(xirr * 100).toStringAsFixed(2)}%');
 ///
 /// // Calculate MOIC
 /// final moic = FinancialCalculator.calculateMOIC(10000, 12000);
@@ -31,7 +26,8 @@
 /// ```
 library;
 
-import 'dart:math';
+import 'dart:math' as math;
+
 import 'package:inv_tracker/core/calculations/models/cash_flow_interface.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 
@@ -42,7 +38,7 @@ class FinancialCalculator {
   /// Calculates XIRR (Extended Internal Rate of Return) from a list of cash flows.
   ///
   /// XIRR is the annualized rate of return for investments with irregular cash flows.
-  /// It's more accurate than CAGR for real-world scenarios with multiple transactions.
+  /// It handles real-world scenarios with multiple transactions.
   ///
   /// ## Parameters
   ///
@@ -53,7 +49,9 @@ class FinancialCalculator {
   /// ## Returns
   ///
   /// - **double**: XIRR as decimal (e.g., 0.15 = 15% annual return)
-  /// - **0.0**: If cash flows are empty or invalid (all inflows or all outflows)
+  /// - **null**: When no XIRR exists (no flows, only inflows or only outflows,
+  ///   or no solution). Show "—" and leave it out of rankings and averages;
+  ///   never treat it as 0%.
   ///
   /// ## Example
   ///
@@ -77,15 +75,14 @@ class FinancialCalculator {
   /// ];
   ///
   /// final xirr = FinancialCalculator.calculateXirrFromCashFlows(cashFlows);
-  /// print('XIRR: ${(xirr * 100).toStringAsFixed(2)}%'); // ~15%
+  /// print('XIRR: ${(xirr! * 100).toStringAsFixed(2)}%'); // ~15%
   /// ```
   ///
   /// ## See Also
   ///
   /// - [XirrSolver.calculateXirr] for the underlying algorithm
-  /// - [calculateCAGR] for simple single-investment scenarios
-  static double calculateXirrFromCashFlows(List<ICashFlow> cashFlows) {
-    if (cashFlows.isEmpty) return 0.0;
+  static double? calculateXirrFromCashFlows(List<ICashFlow> cashFlows) {
+    if (cashFlows.isEmpty) return null;
 
     final dates = <DateTime>[];
     final amounts = <double>[];
@@ -95,68 +92,17 @@ class FinancialCalculator {
       amounts.add(cf.signedAmount);
     }
 
-    return XirrSolver.calculateXirr(dates, amounts) ?? 0.0;
+    return XirrSolver.calculateXirr(dates, amounts);
   }
 
   /// Like [calculateXirrFromCashFlows], but says whether the rate is exact,
-  /// approximate or undefined, so the UI can label it. Its value, or 0.0 when
-  /// undefined, is the number [calculateXirrFromCashFlows] returns.
+  /// approximate or undefined, so the UI can label it. Its value is the
+  /// number [calculateXirrFromCashFlows] returns.
   static XirrResult solveXirrFromCashFlows(List<ICashFlow> cashFlows) {
     return XirrSolver.solve(
       [for (final cf in cashFlows) cf.date],
       [for (final cf in cashFlows) cf.signedAmount],
     );
-  }
-
-  /// Calculates CAGR (Compound Annual Growth Rate).
-  ///
-  /// CAGR is the annualized rate of return for a single investment over a period of time.
-  /// It assumes all returns are reinvested and compounds annually.
-  ///
-  /// ## Formula
-  ///
-  /// ```
-  /// CAGR = (endValue / startValue)^(1/years) - 1
-  /// ```
-  ///
-  /// ## Parameters
-  ///
-  /// - [startValue]: Initial investment amount (must be > 0)
-  /// - [endValue]: Final value of investment
-  /// - [years]: Time period in years (must be > 0)
-  ///
-  /// ## Returns
-  ///
-  /// - **double**: CAGR as decimal (e.g., 0.0954 = 9.54% annual return)
-  /// - **0.0**: If startValue ≤ 0 or years ≤ 0 (invalid inputs)
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// // Investment: ₹10,000 → ₹12,000 over 2 years
-  /// final cagr = FinancialCalculator.calculateCAGR(10000, 12000, 2);
-  /// print('CAGR: ${(cagr * 100).toStringAsFixed(2)}%'); // 9.54%
-  ///
-  /// // Loss scenario: ₹10,000 → ₹8,000 over 1 year
-  /// final loss = FinancialCalculator.calculateCAGR(10000, 8000, 1);
-  /// print('CAGR: ${(loss * 100).toStringAsFixed(2)}%'); // -20.00%
-  /// ```
-  ///
-  /// ## When to Use
-  ///
-  /// - **Use CAGR**: For single lump-sum investments (e.g., FD, bonds)
-  /// - **Use XIRR**: For multiple transactions (e.g., SIP, dividends, partial withdrawals)
-  ///
-  /// ## See Also
-  ///
-  /// - [calculateXirrFromCashFlows] for investments with multiple transactions
-  static double calculateCAGR(
-    double startValue,
-    double endValue,
-    double years,
-  ) {
-    if (startValue <= 0 || years <= 0) return 0.0;
-    return pow(endValue / startValue, 1 / years) - 1;
   }
 
   /// Calculates MOIC (Multiple on Invested Capital).
@@ -205,10 +151,69 @@ class FinancialCalculator {
   /// ## See Also
   ///
   /// - [calculateAbsoluteReturn] for percentage-based return
-  /// - [calculateCAGR] for time-adjusted annualized return
+  /// - [calculatePaidInCapital] for the invested amount investment stats use
   static double calculateMOIC(double invested, double returned) {
     if (invested == 0) return 0.0;
     return returned / invested;
+  }
+
+  /// [amount] rounded to two decimals (the paisa), so sums of many small
+  /// amounts compare and display exactly: ten payouts of 10.10 make 101.00,
+  /// not 100.99999999999999, and a break-even position nets to 0. Never
+  /// returns -0.0, which would format as "-0".
+  static double roundMoney(double amount) {
+    final rounded = (amount * 100).roundToDouble() / 100;
+    return rounded == 0 ? 0.0 : rounded;
+  }
+
+  /// Paid-in capital: the most of the investor's own money that was in each
+  /// investment at any one time, summed over the investments in
+  /// [cashFlows], rounded to the paisa.
+  ///
+  /// For one investment it is the peak of the money still in it: outflows
+  /// (INVEST and FEE) add to it and inflows (RETURN and INCOME) take it out,
+  /// with the flows of one calendar day netted first. A maturing FD renewed
+  /// the same day (RETURN 10.75L and INVEST 10.75L) or a payout re-lent
+  /// later is not new capital, so it is counted once. Fees are part of it.
+  ///
+  /// The money in never goes below zero: an inflow beyond it (a payout
+  /// recorded before the investment, a chit-fund prize) is gain and does
+  /// not fund later outflows. A day that starts with nothing in counts its
+  /// outflows in full, since its inflows cannot have paid for them.
+  /// Investments are not netted against each other: money moved from one
+  /// investment into another counts in both.
+  ///
+  /// With nothing reinvested it equals [calculateTotalInvested].
+  static double calculatePaidInCapital(List<ICashFlow> cashFlows) {
+    // Per investment and day: (outflows, inflows).
+    final flowsByDay = <String, Map<int, (double, double)>>{};
+    for (final cf in cashFlows) {
+      final day = DateTime.utc(
+        cf.date.year,
+        cf.date.month,
+        cf.date.day,
+      ).millisecondsSinceEpoch;
+      final days = flowsByDay.putIfAbsent(cf.investmentId, () => {});
+      final (out, inflow) = days[day] ?? (0.0, 0.0);
+      days[day] = cf.signedAmount < 0
+          ? (out + cf.amount, inflow)
+          : (out, inflow + cf.signedAmount);
+    }
+
+    var total = 0.0;
+    for (final days in flowsByDay.values) {
+      var moneyIn = 0.0;
+      var peak = 0.0;
+      for (final day in days.keys.toList()..sort()) {
+        final (out, inflow) = days[day]!;
+        if (roundMoney(moneyIn) == 0 && out > peak) peak = out;
+        moneyIn = math.max(0.0, moneyIn + out - inflow);
+        if (moneyIn > peak) peak = moneyIn;
+      }
+      total += peak;
+    }
+    // Rounded once, like the money-out total it is compared with.
+    return roundMoney(total);
   }
 
   /// Calculates Net Cash Flow (Total Returned - Total Invested).
@@ -370,12 +375,10 @@ class FinancialCalculator {
   /// ## When to Use
   ///
   /// - **Use Absolute Return**: For quick comparisons without time consideration
-  /// - **Use CAGR**: For time-adjusted annualized return (single investment)
-  /// - **Use XIRR**: For time-adjusted annualized return (multiple transactions)
+  /// - **Use XIRR**: For time-adjusted annualized return
   ///
   /// ## See Also
   ///
-  /// - [calculateCAGR] for annualized return
   /// - [calculateMOIC] for multiple-based return
   /// - [calculateNetCashFlow] for absolute profit/loss amount
   static double calculateAbsoluteReturn(double invested, double returned) {

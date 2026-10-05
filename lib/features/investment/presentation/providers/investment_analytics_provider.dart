@@ -1,5 +1,6 @@
 /// Analytics and trend providers for investments.
-/// These provide derived data for charts and comparisons.
+/// These provide derived data for charts and comparisons, in the base
+/// currency: they read the converted snapshot, never raw cash-flow amounts.
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,7 +28,7 @@ class InvestmentWithStats {
 final recentlyClosedInvestmentsProvider =
     Provider<AsyncValue<List<InvestmentWithStats>>>((ref) {
       final investmentsAsync = ref.watch(activeInvestmentsProvider);
-      final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+      final cashFlowsAsync = ref.watch(convertedCashFlowsProvider);
 
       return investmentsAsync.when(
         data: (investments) {
@@ -90,7 +91,7 @@ final recentlyClosedInvestmentsProvider =
 /// Monthly cash flow trend (derived from streams - auto-updates)
 final monthlyCashFlowTrendProvider =
     Provider<AsyncValue<List<MonthlyCashFlowData>>>((ref) {
-      final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+      final cashFlowsAsync = ref.watch(convertedCashFlowsProvider);
 
       return cashFlowsAsync.when(
         data: (cashFlows) {
@@ -146,7 +147,7 @@ final monthlyCashFlowTrendProvider =
 final investmentTypeDistributionProvider =
     Provider<AsyncValue<List<TypeDistribution>>>((ref) {
       final investmentsAsync = ref.watch(activeInvestmentsProvider);
-      final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+      final cashFlowsAsync = ref.watch(convertedCashFlowsProvider);
 
       return investmentsAsync.when(
         data: (investments) {
@@ -198,51 +199,17 @@ final investmentTypeDistributionProvider =
       );
     });
 
-/// Year over Year comparison (derived from streams - auto-updates)
+/// Year over Year: the financial year to date against the same days of the
+/// previous financial year, in the base currency (derived from streams -
+/// auto-updates).
 final yoyComparisonProvider = Provider<AsyncValue<YoYComparison>>((ref) {
-  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+  final cashFlowsAsync = ref.watch(convertedCashFlowsProvider);
+  final today = ref.watch(valuationDateProvider);
 
   return cashFlowsAsync.when(
-    data: (cashFlows) {
-      final now = DateTime.now();
-      final thisYearStart = DateTime(now.year, 1, 1);
-      final lastYearStart = DateTime(now.year - 1, 1, 1);
-      final lastYearEnd = DateTime(now.year, 1, 1);
-
-      double thisYearInvested = 0, thisYearReturned = 0;
-      double lastYearInvested = 0, lastYearReturned = 0;
-
-      for (final cf in cashFlows) {
-        // This year
-        if (!cf.date.isBefore(thisYearStart)) {
-          if (cf.type.isOutflow) {
-            thisYearInvested += cf.amount;
-          } else {
-            thisYearReturned += cf.amount;
-          }
-        }
-        // Last year
-        else if (!cf.date.isBefore(lastYearStart) &&
-            cf.date.isBefore(lastYearEnd)) {
-          if (cf.type.isOutflow) {
-            lastYearInvested += cf.amount;
-          } else {
-            lastYearReturned += cf.amount;
-          }
-        }
-      }
-
-      return AsyncValue.data(
-        YoYComparison(
-          thisYearNet: thisYearReturned - thisYearInvested,
-          lastYearNet: lastYearReturned - lastYearInvested,
-          thisYearInvested: thisYearInvested,
-          lastYearInvested: lastYearInvested,
-          thisYearReturned: thisYearReturned,
-          lastYearReturned: lastYearReturned,
-        ),
-      );
-    },
+    data: (cashFlows) => AsyncValue.data(
+      YoYComparison.financialYearToDate(cashFlows, today: today),
+    ),
     loading: () => const AsyncValue.loading(),
     error: (e, st) => AsyncValue.error(e, st),
   );

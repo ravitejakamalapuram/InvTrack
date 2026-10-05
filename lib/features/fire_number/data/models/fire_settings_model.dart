@@ -5,7 +5,12 @@ import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_e
 class FireSettingsModel {
   /// Current schema version for FIRE settings.
   /// Increment this when making breaking changes to the data structure.
-  static const int currentSchemaVersion = 1;
+  ///
+  /// 2: `birthYear` replaces the age entered at setup (`currentAge`, still
+  /// written for older app versions), and amounts carry a `currency`.
+  /// Version 1 documents are read with the birth year derived from
+  /// `currentAge` and `createdAt`.
+  static const int currentSchemaVersion = 2;
 
   /// Convert FireSettingsEntity to Firestore document
   static Map<String, dynamic> toFirestore(FireSettingsEntity settings) {
@@ -13,6 +18,8 @@ class FireSettingsModel {
       'schemaVersion': currentSchemaVersion,
       'monthlyExpenses': settings.monthlyExpenses,
       'safeWithdrawalRate': settings.safeWithdrawalRate,
+      'birthYear': settings.birthYear,
+      // Older app versions read this as a required int.
       'currentAge': settings.currentAge,
       'targetFireAge': settings.targetFireAge,
       'lifeExpectancy': settings.lifeExpectancy,
@@ -24,6 +31,9 @@ class FireSettingsModel {
       'fireType': settings.fireType.name,
       'monthlyPassiveIncome': settings.monthlyPassiveIncome,
       'expectedPension': settings.expectedPension,
+      'otherAssets': settings.otherAssets,
+      'monthlySip': settings.monthlySip,
+      'currency': settings.currency,
       'isSetupComplete': settings.isSetupComplete,
       'createdAt': Timestamp.fromDate(settings.createdAt),
       'updatedAt': FieldValue.serverTimestamp(),
@@ -35,28 +45,11 @@ class FireSettingsModel {
     Map<String, dynamic> data,
     String id,
   ) {
-    return FireSettingsEntity(
+    return FireSettingsEntity.fromMap(
+      data,
       id: id,
-      monthlyExpenses: (data['monthlyExpenses'] as num).toDouble(),
-      safeWithdrawalRate:
-          (data['safeWithdrawalRate'] as num?)?.toDouble() ?? 4.0,
-      currentAge: data['currentAge'] as int,
-      targetFireAge: data['targetFireAge'] as int,
-      lifeExpectancy: data['lifeExpectancy'] as int? ?? 85,
-      inflationRate: (data['inflationRate'] as num?)?.toDouble() ?? 6.0,
-      preRetirementReturn:
-          (data['preRetirementReturn'] as num?)?.toDouble() ?? 12.0,
-      postRetirementReturn:
-          (data['postRetirementReturn'] as num?)?.toDouble() ?? 8.0,
-      healthcareBuffer: (data['healthcareBuffer'] as num?)?.toDouble() ?? 20.0,
-      emergencyMonths: (data['emergencyMonths'] as num?)?.toDouble() ?? 6,
-      fireType: FireType.fromString(data['fireType'] as String? ?? 'regular'),
-      monthlyPassiveIncome:
-          (data['monthlyPassiveIncome'] as num?)?.toDouble() ?? 0,
-      expectedPension: (data['expectedPension'] as num?)?.toDouble() ?? 0,
-      isSetupComplete: data['isSetupComplete'] as bool? ?? false,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: data['updatedAt'] != null
+      updatedAt: data['updatedAt'] is Timestamp
           ? (data['updatedAt'] as Timestamp).toDate()
           : DateTime.now(),
     );

@@ -279,7 +279,11 @@ class CashFlowCardWidget extends ConsumerWidget {
     return Consumer(
       builder: (context, ref, child) {
         final isPrivacyMode = ref.watch(privacyModeProvider);
-        final amountText = '${isOutflow ? '-' : '+'}${currencyFormat.formatSmart(cashFlow.amount)}';
+        // The stored amount is in the flow's own currency, so print it with
+        // that currency's symbol; the converted base value is shown beside it
+        // (see _buildExchangeRateInfo).
+        final amountText =
+            '${isOutflow ? '-' : '+'}${formatSmartCurrency(cashFlow.amount, symbol: getCurrencySymbol(cashFlow.currency), locale: getCurrencyLocale(cashFlow.currency))}';
 
         return isPrivacyMode
             ? MaskedAmountText(

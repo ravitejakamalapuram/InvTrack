@@ -49,7 +49,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
     _privacyPolicyTapRecognizer = TapGestureRecognizer()
       ..onTap = () => _openLegalScreen(
         AppLocalizations.of(context).privacyPolicy,
-        privacyPolicyContent,
+        privacyPolicyText(AppLocalizations.of(context)),
         linkUri: Uri.parse(hostedPrivacyPolicyUrl),
         linkLabel: AppLocalizations.of(context).viewFullPrivacyPolicy,
       );

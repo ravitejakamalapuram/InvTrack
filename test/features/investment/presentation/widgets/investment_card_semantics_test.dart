@@ -64,6 +64,7 @@ void main() {
           currencyFormatProvider.overrideWith(
             (ref) => NumberFormat.currency(symbol: '\$'),
           ),
+          currencyCodeProvider.overrideWith((ref) => 'USD'),
           privacyModeProvider.overrideWith(MockPrivacyModeNotifier.new),
         ],
         child: MaterialApp(
@@ -105,6 +106,64 @@ void main() {
     expect(label, contains('positive 12.5 percent'));
   });
 
+  testWidgets('InvestmentCard semantics speak a break-even 0% XIRR', (
+    tester,
+  ) async {
+    final investment = InvestmentEntity(
+      id: 'inv-0',
+      name: 'Break-even',
+      type: InvestmentType.p2pLending,
+      status: InvestmentStatus.closed,
+      createdAt: DateTime(2023, 1, 1),
+      updatedAt: DateTime(2024, 1, 1),
+    );
+    final stats = InvestmentStats(
+      totalInvested: 10000,
+      totalReturned: 10000,
+      netCashFlow: 0,
+      absoluteReturn: 0,
+      moic: 1,
+      xirr: 0,
+      cashFlowCount: 2,
+      firstCashFlowDate: DateTime(2023, 1, 1),
+      lastCashFlowDate: DateTime(2024, 1, 1),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          investmentBasicStatsProvider(
+            investment.id,
+          ).overrideWith((ref) => AsyncValue.data(stats)),
+          investmentXirrProvider(
+            investment.id,
+          ).overrideWith((ref) => Future.value(const XirrResult.exact(0))),
+          currencySymbolProvider.overrideWith((ref) => '\$'),
+          currencyFormatProvider.overrideWith(
+            (ref) => NumberFormat.currency(symbol: '\$'),
+          ),
+          privacyModeProvider.overrideWith(MockPrivacyModeNotifier.new),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: InvestmentCard(
+              investment: investment,
+              isSelectionMode: false,
+              isSelected: false,
+              onTap: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final label = tester.getSemantics(find.byType(GlassCard)).label;
+    expect(label, contains('positive 0.0 percent'));
+  });
+
   testWidgets('InvestmentCard semantics exclude XIRR when loading/error', (
     tester,
   ) async {
@@ -136,6 +195,7 @@ void main() {
           currencyFormatProvider.overrideWith(
             (ref) => NumberFormat.currency(symbol: '\$'),
           ),
+          currencyCodeProvider.overrideWith((ref) => 'USD'),
           privacyModeProvider.overrideWith(MockPrivacyModeNotifier.new),
         ],
         child: MaterialApp(

@@ -200,6 +200,34 @@ void main() {
     }
   });
 
+  // A15 (#760, CALC-11): Excel's XIRR counts whole calendar days and ignores
+  // the time of day, so these cases use local DateTime values on purpose,
+  // unlike the date-only UTC cases above.
+  group('XirrSolver Excel parity with local dates (CALC-11)', () {
+    test('an investment made at 21:30 and +8% on the same date a year later '
+        'gives 8.0000%', () {
+      // Flooring the milliseconds counts 364 days and gives 0.0802283701.
+      final xirr = XirrSolver.calculateXirr(
+        [DateTime(2025, 4, 1, 21, 30), DateTime(2026, 4, 1)],
+        [-100000.0, 108000.0],
+      );
+      expect(xirr, closeTo(0.08, _rateTolerance));
+    });
+
+    test('1 Mar to 31 Mar 2023 is 30 days across a DST change', () {
+      // Only guards the DST case on a machine whose zone changes clocks
+      // between the two dates, for example TZ=Europe/London (26 Mar 2023),
+      // where flooring the milliseconds counts 29 days and gives
+      // 0.1334169536.
+      final xirr = XirrSolver.calculateXirr(
+        [DateTime(2023, 3, 1), DateTime(2023, 3, 31)],
+        [-100.0, 101.0],
+      );
+      // 1.01^(365/30) - 1
+      expect(xirr, closeTo(0.1286952941593904, _rateTolerance));
+    });
+  });
+
   group('FinancialCalculator.calculateXirrFromCashFlows parity', () {
     CashFlowEntity cf(
       String id,

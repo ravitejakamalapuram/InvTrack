@@ -13,6 +13,9 @@ import 'package:inv_tracker/features/goals/presentation/screens/goals_screen.dar
 import 'package:inv_tracker/features/goals/presentation/screens/create_goal_screen.dart';
 import 'package:inv_tracker/features/goals/presentation/screens/goal_details_screen.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/notifications/notification_navigator.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_dashboard_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_setup_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_settings_screen.dart';
@@ -51,9 +54,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     debugLogDiagnostics: true,
     observers: [...?analyticsObserver != null ? [analyticsObserver] : null],
     redirect: (context, state) {
-      // If auth or onboarding state is loading, we don't redirect yet
-      if (authLoading || authFailed) return null;
-      if (onboardingComplete.isLoading) return null;
+      final isLocked = securityState.isLocked;
+      final isLockScreen = state.uri.toString() == '/lock';
+
+      // While auth or onboarding state is loading, only the lock applies:
+      // no portfolio frame may render before it.
+      if (authLoading || authFailed || onboardingComplete.isLoading) {
+        if (isLocked) return isLockScreen ? null : '/lock';
+        return isLockScreen ? '/' : null;
+      }
 
       final hasCompletedOnboarding = onboardingComplete.value ?? false;
       final isOnboardingRoute = state.uri.toString() == '/onboarding';
@@ -75,9 +84,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // Security Lock Check
-      final isLocked = securityState.isLocked;
-      final isLockScreen = state.uri.toString() == '/lock';
-
       if (isLoggedIn && isLocked && !isLockScreen) {
         return '/lock';
       }
@@ -124,6 +130,29 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/investments',
                 builder: (context, state) => const InvestmentListScreen(),
+                // Routes, not imperative pushes, so the lock redirect above
+                // applies to them (A07). They cover the whole screen.
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    parentNavigatorKey: rootNavigatorKey,
+                    // The caller passes the investment it already loaded.
+                    redirect: (context, state) =>
+                        state.extra is InvestmentEntity ? null : '/investments',
+                    builder: (context, state) => InvestmentDetailScreen(
+                      investment: state.extra! as InvestmentEntity,
+                    ),
+                  ),
+                  GoRoute(
+                    path: ':id/add-cash-flow',
+                    parentNavigatorKey: rootNavigatorKey,
+                    builder: (context, state) =>
+                        NotificationNavigator.addCashFlowScreen(
+                          state.pathParameters['id']!,
+                          state.uri.queryParameters,
+                        ),
+                  ),
+                ],
               ),
             ],
           ),

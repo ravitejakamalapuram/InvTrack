@@ -605,6 +605,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     return fields;
   }
 
+  /// The Recurring Deposit template was picked and the type is still Fixed
+  /// Deposit: project monthly installments, not a lump sum.
+  bool get _isRecurringDeposit =>
+      _selectedTemplate?.id == InvestmentTemplates.recurringDeposit.id &&
+      _selectedType == InvestmentType.fixedDeposit;
+
   /// Builds the live projection card showing estimated maturity value
   Widget _buildProjectionCard(bool isDark) {
     final config = InvestmentFormConfig.forType(_selectedType);
@@ -619,20 +625,23 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     final rate = double.tryParse(_expectedRateController.text.trim());
     final tenure = int.tryParse(_tenureController.text.trim());
 
-    // Need at least rate and tenure to show projection
-    if (rate == null || tenure == null || rate <= 0 || tenure <= 0) {
-      return const SizedBox.shrink();
-    }
-
     // Use a placeholder principal for the projection display
     // Since we don't have cashflows yet, use a standard amount for illustration
     const illustrativePrincipal = 100000.0; // 100K for illustration
 
+    // Needs a rate and a tenure: months, or else the days from start to
+    // maturity date (e.g. a 444-day FD).
     final projection = InvestmentProjector.getProjectionSummary(
       principal: illustrativePrincipal,
       annualRate: rate,
       tenureMonths: tenure,
+      tenureDays: InvestmentProjector.tenureDaysBetween(
+        _startDate,
+        _maturityDate,
+      ),
       compounding: _compoundingFrequency,
+      type: _selectedType,
+      recurring: _isRecurringDeposit,
     );
 
     if (projection == null) {

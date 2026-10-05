@@ -58,9 +58,12 @@ class PerformanceReportService {
       );
     }
 
-    // Sort by XIRR for top/bottom lists
-    final sortedByXIRR = List<InvestmentPerformance>.from(performances)
-      ..sort((a, b) => b.xirr.compareTo(a.xirr));
+    // Sort by XIRR for top/bottom lists. Investments with an undefined XIRR
+    // are not ranked, averaged or used for the median: they are not 0%.
+    final sortedByXIRR = [
+      for (final p in performances)
+        if (p.xirr != null) p,
+    ]..sort((a, b) => b.xirr!.compareTo(a.xirr!));
 
     final topPerformers = sortedByXIRR.take(5).toList();
     // Fix: Remove second .reversed - we want worst performers (lowest XIRR)
@@ -74,23 +77,25 @@ class PerformanceReportService {
     int profitableCount = 0;
 
     for (final p in performances) {
-      totalXIRR += p.xirr;
       if (p.isProfitable) {
         profitableCount++;
       }
     }
+    for (final p in sortedByXIRR) {
+      totalXIRR += p.xirr!;
+    }
 
-    final averageXIRR = performances.isEmpty
-        ? 0.0
-        : totalXIRR / performances.length;
+    final averageXIRR = sortedByXIRR.isEmpty
+        ? null
+        : totalXIRR / sortedByXIRR.length;
 
     // Optimization: Reuse existing sortedByXIRR array to find median instead of mapping to a new primitive array and sorting it again
     final medianXIRR = sortedByXIRR.isEmpty
-        ? 0.0
+        ? null
         : sortedByXIRR.length.isOdd
-        ? sortedByXIRR[sortedByXIRR.length ~/ 2].xirr
-        : (sortedByXIRR[sortedByXIRR.length ~/ 2 - 1].xirr +
-                  sortedByXIRR[sortedByXIRR.length ~/ 2].xirr) /
+        ? sortedByXIRR[sortedByXIRR.length ~/ 2].xirr!
+        : (sortedByXIRR[sortedByXIRR.length ~/ 2 - 1].xirr! +
+                  sortedByXIRR[sortedByXIRR.length ~/ 2].xirr!) /
               2;
 
     final lossCount = performances.length - profitableCount;
