@@ -427,6 +427,38 @@ void main() {
     expect(find.textContaining('still active'), findsNothing);
   });
 
+  testWidgets('an unexpected error shows a plain message, never the raw '
+      'exception text', (tester) async {
+    when(() => auth.reauthenticateWithGoogle()).thenAnswer((_) async {
+      reauthenticated = true;
+      return true;
+    });
+    when(
+      () => dataDeletion.deleteEverything(
+        deleteLocalFiles: any(named: 'deleteLocalFiles'),
+        prefs: any(named: 'prefs'),
+      ),
+    ).thenThrow(NetworkException.noConnection());
+    // Fails outside the deletion flow, in the screen's own handler.
+    when(
+      () => auth.signOut(),
+    ).thenThrow(StateError('internal detail: users/uid-1'));
+    final l10n = await pumpScreen(tester);
+
+    await confirmDeletion(tester, l10n);
+    // The scheduled notice is shown first; the error snackbar queues
+    // behind it.
+    await tester.pump(const Duration(seconds: 9));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(l10n.failedToDeleteAccount(l10n.pleaseTryAgainLater)),
+      findsOneWidget,
+    );
+    expect(find.textContaining('internal detail'), findsNothing);
+    expect(find.textContaining('StateError'), findsNothing);
+  });
+
   group('A93: export a backup first', () {
     Finder inDialog(Finder finder) =>
         find.descendant(of: find.byType(AlertDialog), matching: finder);

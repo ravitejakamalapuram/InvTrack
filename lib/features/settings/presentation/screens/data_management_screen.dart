@@ -585,7 +585,8 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
         scaffoldMessenger.showSnackBar(
           SnackBar(
             duration: const Duration(seconds: 8),
-            content: Text(l10n.error(e.toString())),
+            // Never show the raw exception: it can name internal state.
+            content: Text(l10n.failedToDeleteAccount(l10n.pleaseTryAgainLater)),
             backgroundColor: AppColors.errorLight,
           ),
         );
