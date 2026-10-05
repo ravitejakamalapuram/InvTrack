@@ -26,6 +26,8 @@
 /// ```
 library;
 
+import 'dart:math' as math;
+
 import 'package:inv_tracker/core/calculations/models/cash_flow_interface.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 
@@ -149,9 +151,69 @@ class FinancialCalculator {
   /// ## See Also
   ///
   /// - [calculateAbsoluteReturn] for percentage-based return
+  /// - [calculatePaidInCapital] for the invested amount investment stats use
   static double calculateMOIC(double invested, double returned) {
     if (invested == 0) return 0.0;
     return returned / invested;
+  }
+
+  /// [amount] rounded to two decimals (the paisa), so sums of many small
+  /// amounts compare and display exactly: ten payouts of 10.10 make 101.00,
+  /// not 100.99999999999999, and a break-even position nets to 0. Never
+  /// returns -0.0, which would format as "-0".
+  static double roundMoney(double amount) {
+    final rounded = (amount * 100).roundToDouble() / 100;
+    return rounded == 0 ? 0.0 : rounded;
+  }
+
+  /// Paid-in capital: the most of the investor's own money that was in each
+  /// investment at any one time, summed over the investments in
+  /// [cashFlows], rounded to the paisa.
+  ///
+  /// For one investment it is the peak of the money still in it: outflows
+  /// (INVEST and FEE) add to it and inflows (RETURN and INCOME) take it out,
+  /// with the flows of one calendar day netted first. A maturing FD renewed
+  /// the same day (RETURN 10.75L and INVEST 10.75L) or a payout re-lent
+  /// later is not new capital, so it is counted once. Fees are part of it.
+  ///
+  /// The money in never goes below zero: an inflow beyond it (a payout
+  /// recorded before the investment, a chit-fund prize) is gain and does
+  /// not fund later outflows. A day that starts with nothing in counts its
+  /// outflows in full, since its inflows cannot have paid for them.
+  /// Investments are not netted against each other: money moved from one
+  /// investment into another counts in both.
+  ///
+  /// With nothing reinvested it equals [calculateTotalInvested].
+  static double calculatePaidInCapital(List<ICashFlow> cashFlows) {
+    // Per investment and day: (outflows, inflows).
+    final flowsByDay = <String, Map<int, (double, double)>>{};
+    for (final cf in cashFlows) {
+      final day = DateTime.utc(
+        cf.date.year,
+        cf.date.month,
+        cf.date.day,
+      ).millisecondsSinceEpoch;
+      final days = flowsByDay.putIfAbsent(cf.investmentId, () => {});
+      final (out, inflow) = days[day] ?? (0.0, 0.0);
+      days[day] = cf.signedAmount < 0
+          ? (out + cf.amount, inflow)
+          : (out, inflow + cf.signedAmount);
+    }
+
+    var total = 0.0;
+    for (final days in flowsByDay.values) {
+      var moneyIn = 0.0;
+      var peak = 0.0;
+      for (final day in days.keys.toList()..sort()) {
+        final (out, inflow) = days[day]!;
+        if (roundMoney(moneyIn) == 0 && out > peak) peak = out;
+        moneyIn = math.max(0.0, moneyIn + out - inflow);
+        if (moneyIn > peak) peak = moneyIn;
+      }
+      total += peak;
+    }
+    // Rounded once, like the money-out total it is compared with.
+    return roundMoney(total);
   }
 
   /// Calculates Net Cash Flow (Total Returned - Total Invested).
