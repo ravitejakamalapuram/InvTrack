@@ -5,6 +5,7 @@
 @TestOn('vm')
 library;
 
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -81,6 +82,35 @@ void main() {
       isNot(matches(_currencyCount)),
     );
   });
+
+  // MKT-04: app-metadata.json held a stale copy of the listing (title
+  // 'inv_tracker', a short description cut off mid-word). The fastlane files
+  // are the only listing text; the metadata file must say so and must not
+  // carry a second copy that can drift.
+  test(
+    'app-metadata.json points at the fastlane listing and holds no copy',
+    () {
+      final metadata =
+          jsonDecode(File('app-metadata.json').readAsStringSync())
+              as Map<String, dynamic>;
+      final listings = (metadata['modules'] as List)
+          .cast<Map<String, dynamic>>()
+          .map((m) => m['playStoreListing'] as Map<String, dynamic>?)
+          .whereType<Map<String, dynamic>>()
+          .toList();
+      expect(listings, hasLength(1));
+      final listing = listings.single;
+      expect(listing['authoritative'], isFalse);
+      expect(listing['listingSource'], _listing);
+      expect(
+        Directory(listing['listingSource'] as String).existsSync(),
+        isTrue,
+      );
+      for (final key in ['title', 'shortDescription', 'fullDescription']) {
+        expect(listing.containsKey(key), isFalse, reason: key);
+      }
+    },
+  );
 
   group('full description', () {
     late String full;
