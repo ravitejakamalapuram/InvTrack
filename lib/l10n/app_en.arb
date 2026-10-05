@@ -5899,5 +5899,398 @@
     "placeholders": {
       "count": {"type": "int", "example": "3"}
     }
+  },
+
+  "fireInvestMore": "Invest {amount}/month more to stay on track.",
+  "@fireInvestMore": {
+    "description": "FIRE dashboard: how much more to invest each month, shown only when the user invests less than needed",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "fireNotEnoughHistoryHint": "Not enough history to estimate how much you invest each month. Add your monthly SIP in FIRE settings to see whether you are on track.",
+  "@fireNotEnoughHistoryHint": {
+    "description": "FIRE dashboard: shown when there are fewer than 3 months of cash flows and no declared SIP"
+  },
+  "fireNotReachable": "Not reachable",
+  "@fireNotReachable": {
+    "description": "FIRE dashboard: projected FIRE age when the FIRE number is never reached at the current investing rate"
+  },
+  "fireMonthlyInvesting": "Monthly investing",
+  "@fireMonthlyInvesting": {
+    "description": "FIRE dashboard: label for how much the user invests each month"
+  },
+  "fireSavingsSourceDeclared": "Your monthly SIP",
+  "@fireSavingsSourceDeclared": {
+    "description": "FIRE dashboard: monthly investing comes from the SIP the user entered"
+  },
+  "fireSavingsSourceHistory": "Net new money, last 12 months",
+  "@fireSavingsSourceHistory": {
+    "description": "FIRE dashboard: monthly investing estimated from the last 12 months of cash flows"
+  },
+  "fireSavingsNotEnoughHistory": "Not enough history",
+  "@fireSavingsNotEnoughHistory": {
+    "description": "FIRE dashboard: fewer than 3 months of cash flows to estimate monthly investing"
+  },
+  "fireCorpusTitle": "Your FIRE corpus",
+  "@fireCorpusTitle": {
+    "description": "FIRE dashboard: heading for how the current corpus is built"
+  },
+  "fireCorpusCurrentValues": "Open investments at current value",
+  "@fireCorpusCurrentValues": {
+    "description": "FIRE dashboard: corpus part from current values of open investments"
+  },
+  "fireCorpusPrincipalOnly": "Open investments without a current value (amount invested)",
+  "@fireCorpusPrincipalOnly": {
+    "description": "FIRE dashboard: corpus part from principal still invested in open investments that have no current value"
+  },
+  "fireCorpusExcluded": "Closed and archived investments are not counted.",
+  "@fireCorpusExcluded": {
+    "description": "FIRE dashboard: disclosure that closed and archived investments are left out of the corpus"
+  },
+  "fireOtherAssets": "Other assets",
+  "@fireOtherAssets": {
+    "description": "FIRE: savings held outside the app, added to the FIRE corpus"
+  },
+  "fireOtherAssetsHint": "Savings outside InvTrack, such as EPF or bank balances",
+  "@fireOtherAssetsHint": {
+    "description": "FIRE settings: explanation of other assets"
+  },
+  "fireMonthlySip": "Monthly SIP",
+  "@fireMonthlySip": {
+    "description": "FIRE settings: how much the user invests every month"
+  },
+  "fireMonthlySipEstimated": "Estimated from history",
+  "@fireMonthlySipEstimated": {
+    "description": "FIRE settings: no monthly SIP entered, so it is estimated from cash flows"
+  },
+  "fireMonthlySipHint": "Leave empty to estimate it from the last 12 months",
+  "@fireMonthlySipHint": {
+    "description": "FIRE settings: help text for the monthly SIP field"
+  },
+  "firePassiveIncome": "Monthly passive income",
+  "@firePassiveIncome": {
+    "description": "FIRE settings: rent, dividends and other income that lowers the FIRE number"
+  },
+  "firePension": "Expected monthly pension",
+  "@firePension": {
+    "description": "FIRE settings: pension that lowers the FIRE number"
+  },
+  "fireCoreCorpus": "Core corpus",
+  "@fireCoreCorpus": {
+    "description": "FIRE number breakdown: annual expenses divided by the withdrawal rate"
+  },
+  "fireHealthcareBuffer": "Healthcare buffer",
+  "@fireHealthcareBuffer": {
+    "description": "FIRE number breakdown and setting: extra percentage of the core corpus for healthcare"
+  },
+  "fireEmergencyFund": "Emergency fund",
+  "@fireEmergencyFund": {
+    "description": "FIRE number breakdown and setting: months of expenses kept as an emergency fund"
+  },
+  "fireMonthsCount": "{count} months",
+  "@fireMonthsCount": {
+    "description": "FIRE settings: number of months of expenses",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "fireNumberMultiple": "{multiple}× your annual expenses, in today''s money",
+  "@fireNumberMultiple": {
+    "description": "FIRE number subtitle: the real multiple of annual expenses",
+    "placeholders": {
+      "multiple": {
+        "type": "String"
+      }
+    }
+  },
+  "fireNumberExplanation": "The amount you need in today''s money: annual expenses at a {swr}% withdrawal rate, plus a {healthcare}% healthcare buffer and {months} months of expenses as an emergency fund, less any passive income and pension. Change these in FIRE settings.",
+  "@fireNumberExplanation": {
+    "description": "FIRE number tooltip explaining what it is made of",
+    "placeholders": {
+      "swr": {
+        "type": "String"
+      },
+      "healthcare": {
+        "type": "String"
+      },
+      "months": {
+        "type": "String"
+      }
+    }
+  },
+  "fireTargetAgePassed": "Target age passed",
+  "@fireTargetAgePassed": {
+    "description": "FIRE dashboard: the user's target FIRE age is not in the future any more"
+  },
+  "fireMoveTargetAgeHint": "Move your target age in FIRE settings to see a new plan.",
+  "@fireMoveTargetAgeHint": {
+    "description": "FIRE dashboard: shown when the target FIRE age has passed and FIRE is not reached yet"
+  },
+  "fireNotEnoughHistoryTitle": "Too early to tell",
+  "@fireNotEnoughHistoryTitle": {
+    "description": "FIRE dashboard: heading when monthly savings cannot be estimated yet, so the status is not known"
+  },
+  "fireNotEnoughHistoryMotivation": "Your projection appears after 3 months of history, or once you add your monthly SIP.",
+  "@fireNotEnoughHistoryMotivation": {
+    "description": "FIRE dashboard hero card: monthly savings cannot be estimated yet"
+  },
+  "fireErrorCurrentAge": "Your age must be between 18 and 100.",
+  "@fireErrorCurrentAge": {
+    "description": "FIRE settings: why a save was rejected"
+  },
+  "fireErrorTargetAgeAfterCurrent": "Your target FIRE age must be after your current age.",
+  "@fireErrorTargetAgeAfterCurrent": {
+    "description": "FIRE settings: why a save was rejected"
+  },
+  "fireErrorTargetAgeMax": "Your target FIRE age must be 100 or less.",
+  "@fireErrorTargetAgeMax": {
+    "description": "FIRE settings: why a save was rejected"
+  },
+  "fireErrorLifeExpectancyAfterTarget": "Life expectancy must be after your target FIRE age.",
+  "@fireErrorLifeExpectancyAfterTarget": {
+    "description": "FIRE settings: why a save was rejected"
+  },
+  "fireErrorLifeExpectancyMax": "Life expectancy must be 120 or less.",
+  "@fireErrorLifeExpectancyMax": {
+    "description": "FIRE settings: why a save was rejected"
+  },
+  "fireErrorExpensesPositive": "Monthly expenses must be more than zero.",
+  "@fireErrorExpensesPositive": {
+    "description": "FIRE settings: why a save was rejected"
+  },
+  "fireErrorWithdrawalRate": "The withdrawal rate must be between 0.1% and 10%.",
+  "@fireErrorWithdrawalRate": {
+    "description": "FIRE settings: why a save was rejected"
+  },
+  "fireErrorInflationRate": "Inflation must be between 0% and 20%.",
+  "@fireErrorInflationRate": {
+    "description": "FIRE settings: why a save was rejected"
+  },
+  "fireErrorPreRetirementReturn": "The return before FIRE must be between 0% and 30%.",
+  "@fireErrorPreRetirementReturn": {
+    "description": "FIRE settings: why a save was rejected"
+  },
+  "fireErrorPostRetirementReturn": "The return after FIRE must be between 0% and 20%.",
+  "@fireErrorPostRetirementReturn": {
+    "description": "FIRE settings: why a save was rejected"
+  },
+  "fireErrorHealthcareBuffer": "The healthcare buffer must be between 0% and 100%.",
+  "@fireErrorHealthcareBuffer": {
+    "description": "FIRE settings: why a save was rejected"
+  },
+  "fireErrorEmergencyMonths": "The emergency fund must be between 0 and 36 months.",
+  "@fireErrorEmergencyMonths": {
+    "description": "FIRE settings: why a save was rejected"
+  },
+  "fireErrorPassiveIncomeNegative": "Passive income cannot be negative.",
+  "@fireErrorPassiveIncomeNegative": {
+    "description": "FIRE settings: why a save was rejected"
+  },
+  "fireErrorPensionNegative": "The pension cannot be negative.",
+  "@fireErrorPensionNegative": {
+    "description": "FIRE settings: why a save was rejected"
+  },
+  "fireErrorOtherAssetsNegative": "Other assets cannot be negative.",
+  "@fireErrorOtherAssetsNegative": {
+    "description": "FIRE settings: why a save was rejected"
+  },
+  "fireErrorMonthlySipNegative": "The monthly SIP cannot be negative.",
+  "@fireErrorMonthlySipNegative": {
+    "description": "FIRE settings: why a save was rejected"
+  },
+  "fireLessOtherIncome": "Less passive income and pension",
+  "@fireLessOtherIncome": {
+    "description": "FIRE number breakdown: the corpus that passive income and pension replace, taken off the FIRE number"
+  },
+  "fireAmountsInCurrency": "Amounts are in {currency}",
+  "@fireAmountsInCurrency": {
+    "description": "FIRE settings: the currency the FIRE amounts are stored in",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "fireEnterValidAmount": "Enter a valid amount",
+  "@fireEnterValidAmount": {
+    "description": "FIRE: validation error for an amount that is not a number"
+  },
+  "goalRequiredPerMonth": "Required per month",
+  "@goalRequiredPerMonth": {
+    "description": "Goal details: what has to be added each month to reach the goal by its date"
+  },
+  "goalRequiredPerMonthAssumption": "Assumes {rate}% growth a year",
+  "@goalRequiredPerMonthAssumption": {
+    "description": "Goal details: the annual return the monthly amount and projection assume",
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "goalAlsoCountedIn": "{count, plural, =1{Also counted in 1 other goal} other{Also counted in {count} other goals}}",
+  "@goalAlsoCountedIn": {
+    "description": "Goal card and details: the goal's investments also count towards other goals",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goalLinkedInvestments": "Linked investments",
+  "@goalLinkedInvestments": {
+    "description": "Goal details: section listing the investments the goal tracks"
+  },
+  "goalNoLinkedInvestments": "No investments linked yet",
+  "@goalNoLinkedInvestments": {
+    "description": "Goal details: the goal tracks no investment"
+  },
+  "goalInvestmentArchivedNotCounted": "Archived · not counted",
+  "@goalInvestmentArchivedNotCounted": {
+    "description": "Goal details: label on an archived investment the goal does not count"
+  },
+  "goalInvestmentClosedNotCounted": "Closed · not counted",
+  "@goalInvestmentClosedNotCounted": {
+    "description": "Goal details: label on a closed investment the goal does not count"
+  },
+  "goalArchivedInvestmentsDisclosure": "Archived investments are not counted in goal progress.",
+  "@goalArchivedInvestmentsDisclosure": {
+    "description": "Goal details: why archived investments are listed but not counted"
+  },
+  "fireStatusNotStarted": "Not Started",
+  "@fireStatusNotStarted": {
+    "description": "FIRE status badge: nothing invested yet"
+  },
+  "fireStatusBehind": "Behind Schedule",
+  "@fireStatusBehind": {
+    "description": "FIRE status badge: the projection misses the target age"
+  },
+  "fireStatusOnTrack": "On Track",
+  "@fireStatusOnTrack": {
+    "description": "FIRE status badge: the projection meets the target age"
+  },
+  "fireStatusAhead": "Ahead of Schedule",
+  "@fireStatusAhead": {
+    "description": "FIRE status badge: the projection beats the target age"
+  },
+  "fireStatusAchieved": "FIRE Achieved!",
+  "@fireStatusAchieved": {
+    "description": "FIRE status badge: the FIRE number is reached"
+  },
+  "fireStatusCoasting": "Coasting",
+  "@fireStatusCoasting": {
+    "description": "FIRE status badge: the Coast FIRE number is reached"
+  },
+  "fireStatusNotEnoughHistory": "Not Enough History",
+  "@fireStatusNotEnoughHistory": {
+    "description": "FIRE status badge: monthly savings cannot be estimated yet, so the status is not known"
+  },
+  "fireStatusShortNotStarted": "Start investing",
+  "@fireStatusShortNotStarted": {
+    "description": "FIRE dashboard: short status under the projected date, nothing invested yet"
+  },
+  "fireStatusShortBehind": "Needs focus",
+  "@fireStatusShortBehind": {
+    "description": "FIRE dashboard: short status under the projected date, behind schedule"
+  },
+  "fireStatusShortOnTrack": "On track",
+  "@fireStatusShortOnTrack": {
+    "description": "FIRE dashboard: short status under the projected date, on track"
+  },
+  "fireStatusShortAhead": "Ahead",
+  "@fireStatusShortAhead": {
+    "description": "FIRE dashboard: short status under the projected date, ahead of schedule"
+  },
+  "fireStatusShortAchieved": "Achieved!",
+  "@fireStatusShortAchieved": {
+    "description": "FIRE dashboard: short status under the projected date, FIRE reached"
+  },
+  "fireStatusShortCoasting": "Coasting",
+  "@fireStatusShortCoasting": {
+    "description": "FIRE dashboard: short status under the projected date, Coast FIRE reached"
+  },
+  "fireStatusShortNotEnoughHistory": "Too early to tell",
+  "@fireStatusShortNotEnoughHistory": {
+    "description": "FIRE dashboard: short status under the projected date, monthly savings cannot be estimated yet"
+  },
+  "goalStatusNotStarted": "Not Started",
+  "@goalStatusNotStarted": {
+    "description": "Goal status label: nothing invested in the goal yet"
+  },
+  "goalStatusInProgress": "In Progress",
+  "@goalStatusInProgress": {
+    "description": "Goal status label: funded but not projected (an income goal, or under 3 months of history)"
+  },
+  "goalStatusOnTrack": "On Track",
+  "@goalStatusOnTrack": {
+    "description": "Goal status label: projected to reach the goal by its date"
+  },
+  "goalStatusAhead": "Ahead",
+  "@goalStatusAhead": {
+    "description": "Goal status label: projected to reach the goal before its date"
+  },
+  "goalStatusBehind": "Behind",
+  "@goalStatusBehind": {
+    "description": "Goal status label: projected to reach the goal after its date"
+  },
+  "goalStatusAchieved": "Achieved",
+  "@goalStatusAchieved": {
+    "description": "Goal status label: the goal is reached"
+  },
+  "goalStatusArchived": "Archived",
+  "@goalStatusArchived": {
+    "description": "Goal status label: the goal is archived"
+  },
+  "goalStatusMessageNotStarted": "Start investing to make progress",
+  "@goalStatusMessageNotStarted": {
+    "description": "Goal status message: nothing invested in the goal yet"
+  },
+  "goalStatusMessageIncomeNotProjected": "Income goals are not projected",
+  "@goalStatusMessageIncomeNotProjected": {
+    "description": "Goal status message: an income goal has no projected date"
+  },
+  "goalStatusMessageTooEarly": "Not enough history to project yet",
+  "@goalStatusMessageTooEarly": {
+    "description": "Goal status message: under 3 months of history, so no projected date"
+  },
+  "goalStatusMessageOnTrackBy": "On track for {date}",
+  "@goalStatusMessageOnTrackBy": {
+    "description": "Goal status message: on track, with the projected month",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Mar 2027",
+        "description": "Projected month and year, formatted for the user's locale"
+      }
+    }
+  },
+  "goalStatusMessageSteady": "Making steady progress",
+  "@goalStatusMessageSteady": {
+    "description": "Goal status message: on track, with no projected date"
+  },
+  "goalStatusMessageAhead": "Ahead of schedule! Keep it up!",
+  "@goalStatusMessageAhead": {
+    "description": "Goal status message: ahead of the goal's date"
+  },
+  "goalStatusMessageBehindDate": "Behind schedule - needs attention",
+  "@goalStatusMessageBehindDate": {
+    "description": "Goal status message: behind the goal's date"
+  },
+  "goalStatusMessageBehind": "Consider increasing contributions",
+  "@goalStatusMessageBehind": {
+    "description": "Goal status message: behind, for a goal without a date"
+  },
+  "goalStatusMessageAchieved": "Goal achieved!",
+  "@goalStatusMessageAchieved": {
+    "description": "Goal status message: the goal is reached"
+  },
+  "goalStatusMessageArchived": "Goal archived",
+  "@goalStatusMessageArchived": {
+    "description": "Goal status message: the goal is archived"
   }
 }

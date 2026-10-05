@@ -21,7 +21,7 @@ const _cardError = "Couldn't load your FIRE progress";
 final _settings = FireSettingsEntity(
   id: 'fire',
   monthlyExpenses: 50000,
-  currentAge: 30,
+  birthYear: DateTime.now().year - 30,
   targetFireAge: 45,
   isSetupComplete: true,
   createdAt: DateTime(2026, 1, 1),

@@ -32,10 +32,10 @@ class GoalProgressReport {
   /// Average progress across all goals
   final double averageProgress;
 
-  /// Total target amount across all goals
+  /// Total target of the corpus goals, in the base currency
   final double totalTargetAmount;
 
-  /// Total current amount across all goals
+  /// Total reached by the corpus goals, in the base currency
   final double totalCurrentAmount;
 
   /// Report generation timestamp
@@ -80,6 +80,23 @@ class GoalWithProgress {
     required this.progress,
     required this.status,
   });
+
+  /// Goal name, for report rows.
+  String get name => goal.name;
+
+  /// [formatted], an amount of this goal, as a report shows it: income
+  /// goals' amounts are per month.
+  String amountLabel(String formatted) =>
+      goal.isIncomeGoal ? '$formatted/mo' : formatted;
+
+  /// Progress under the one rounding rule for goal %.
+  int get progressPercentage => progress.displayPercent;
+
+  /// Target in the base currency.
+  double get targetAmount => progress.targetAmount;
+
+  /// Amount reached, in the base currency.
+  double get currentAmount => progress.currentAmount;
 
   /// Returns true if goal is on track
   bool get isOnTrack => status == GoalStatus.onTrack;
