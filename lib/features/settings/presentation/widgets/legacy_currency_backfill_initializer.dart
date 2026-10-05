@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
+import 'package:inv_tracker/core/security/wait_until_unlocked.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/settings/data/services/legacy_currency_backfill_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/currency_switch_provider.dart';
@@ -29,8 +30,9 @@ final legacyCurrencyPromptedUsersProvider = Provider<Set<String>>(
 /// and the repositories keep their read-time fallback. If the base currency
 /// or the signed-in user changes during the check or while the question is
 /// open, nothing is written or recorded. While a base-currency change is
-/// running (it asks this itself), the start-up question is not shown. A
-/// failure (for example offline) is retried on the next start.
+/// running (it asks this itself), the start-up question is not shown. It
+/// never opens over the lock screen; it waits until the app is unlocked
+/// (A113). A failure (for example offline) is retried on the next start.
 class LegacyCurrencyBackfillInitializer extends ConsumerStatefulWidget {
   const LegacyCurrencyBackfillInitializer({super.key, required this.child});
 
@@ -42,7 +44,8 @@ class LegacyCurrencyBackfillInitializer extends ConsumerStatefulWidget {
 }
 
 class _LegacyCurrencyBackfillInitializerState
-    extends ConsumerState<LegacyCurrencyBackfillInitializer> {
+    extends ConsumerState<LegacyCurrencyBackfillInitializer>
+    with WaitsForUnlock {
   String? _handledUserId;
 
   @override
@@ -91,6 +94,11 @@ class _LegacyCurrencyBackfillInitializerState
     // on a later start instead. The user may also have signed out (or another
     // user in) meanwhile; then this question is not theirs to answer.
     if (!pending || !_stillCurrent(service, currency)) return;
+    // Confirming writes to Firestore, so whoever holds a locked phone must
+    // not answer it. The user or the currency may change while it waits.
+    if (!await waitUntilUnlocked() || !_stillCurrent(service, currency)) {
+      return;
+    }
     // A base-currency change is running and asks this itself; a second
     // dialog stacked over it would make its promise untrue. Ask on a later
     // start instead.

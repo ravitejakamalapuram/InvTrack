@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/legacy_currency_backfill_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/currency_switch_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
@@ -91,6 +92,7 @@ void main() {
     }) => ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
+        securityProvider.overrideWith(_Unlocked.new),
         legacyCurrencyBackfillServiceProvider.overrideWithValue(service),
         if (switchRunning) currencySwitchProvider.overrideWith(_BusySwitch.new),
       ],
@@ -249,6 +251,7 @@ void main() {
         ProviderScope(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
+            securityProvider.overrideWith(_Unlocked.new),
             legacyCurrencyBackfillServiceProvider.overrideWithValue(service),
             currencyCodeProvider.overrideWith((ref) => ref.watch(testCurrency)),
           ],
@@ -309,6 +312,7 @@ void main() {
         ProviderScope(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
+            securityProvider.overrideWith(_Unlocked.new),
             legacyCurrencyBackfillServiceProvider.overrideWith(
               (ref) => ref.watch(holder),
             ),
@@ -362,6 +366,7 @@ void main() {
       return ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
+          securityProvider.overrideWith(_Unlocked.new),
           legacyCurrencyBackfillServiceProvider.overrideWith(
             (ref) => ref.watch(_ServiceHolder.provider),
           ),
@@ -457,6 +462,7 @@ void main() {
         ProviderScope(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
+            securityProvider.overrideWith(_Unlocked.new),
             legacyCurrencyBackfillServiceProvider.overrideWithValue(service()),
             currencySwitchProvider.overrideWith(_LateSwitch.new),
           ],
@@ -590,4 +596,11 @@ class _LateSwitch extends CurrencySwitch {
 
   void startChecking() =>
       state = const CurrencySwitchStatus.checkingRecords(targetCurrency: 'USD');
+}
+
+/// No PIN set. The question waits while the app is locked (A113), and the
+/// real notifier reads as locked here, with no secure storage in tests.
+class _Unlocked extends SecurityNotifier {
+  @override
+  SecurityState build() => const SecurityState();
 }
