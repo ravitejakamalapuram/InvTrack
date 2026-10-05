@@ -338,7 +338,10 @@ class NotificationService with NotificationPreferencesMixin {
       }
     } catch (e) {
       // Fallback to UTC if we can't get the local timezone. Use info log level to avoid polluting Crashlytics.
-      LoggerService.info('Failed to configure local timezone, using UTC fallback: $e');
+      LoggerService.info(
+        'Failed to configure local timezone, using UTC fallback',
+        metadata: {'errorType': e.runtimeType.toString()},
+      );
       // tz.local defaults to UTC, which is fine as a fallback
     }
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:inv_tracker/core/analytics/crash_report_sanitizer.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 
@@ -62,6 +63,13 @@ class LoggerService {
   static set crashlyticsServiceForTesting(CrashlyticsService? service) =>
       _crashlyticsService = service;
 
+  /// The one Crashlytics service that code without provider access reports
+  /// through, so every event goes the same way and tests can observe it.
+  static CrashlyticsService get crashlyticsService =>
+      _crashlyticsService ??= CrashlyticsService(
+        debugModeEnabled: CrashlyticsService.enableInDebugMode,
+      );
+
   /// Metadata keys that may be sent to Crashlytics.
   ///
   /// Only ids, counts, codes, type names and developer-chosen labels belong
@@ -107,14 +115,20 @@ class LoggerService {
   };
 
   /// Builds the Crashlytics `reason` from [message] and the allowlisted
-  /// entries of [metadata].
+  /// entries of [metadata]. A value is kept only if it is a number, a bool or
+  /// a short token (see [isSafeCrashValue]), so a name, email or path under an
+  /// allowed key is still dropped.
   @visibleForTesting
   static String crashlyticsReason(
     String message,
     Map<String, dynamic>? metadata,
   ) {
     final safe = metadata?.entries
-        .where((e) => crashlyticsMetadataAllowlist.contains(e.key))
+        .where(
+          (e) =>
+              crashlyticsMetadataAllowlist.contains(e.key) &&
+              isSafeCrashValue(e.value),
+        )
         .map((e) => '${e.key}=${e.value}')
         .join(', ');
     return safe == null || safe.isEmpty
@@ -216,18 +230,14 @@ class LoggerService {
         try {
           final reason = crashlyticsReason(message, metadata);
 
-          // Initialize Crashlytics service lazily to avoid provider errors
-          _crashlyticsService ??= CrashlyticsService(
-            debugModeEnabled: CrashlyticsService.enableInDebugMode,
-          );
           // Logged errors are handled, so they are never fatal: only real
           // crashes may count against the crash-free rate. A failed upload
           // must not escape as an uncaught error, which the zone handler
           // would then record as a crash.
           unawaited(
-            _crashlyticsService!
+            crashlyticsService
                 .recordError(
-                  error ?? Exception(message),
+                  error ?? LoggedMessage(message),
                   stackTrace,
                   reason: reason,
                   fatal: false,

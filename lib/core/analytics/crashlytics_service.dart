@@ -17,6 +17,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/crash_report_sanitizer.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
@@ -116,11 +117,8 @@ class CrashlyticsService {
     final shouldEnable = !kDebugMode || debugModeEnabled;
     await _crashlytics.setCrashlyticsCollectionEnabled(shouldEnable);
 
-    // Install global handlers only once (idempotent)
-    if (!_handlersInstalled) {
-      _installGlobalHandlers();
-      _handlersInstalled = true;
-    }
+    // Normally already installed by runGuarded in main; never twice.
+    installGlobalHandlers(this);
 
     LoggerService.info(
       'Crashlytics initialized',
@@ -134,15 +132,19 @@ class CrashlyticsService {
     );
   }
 
-  /// Install global error handlers (called only once)
+  /// Sends framework and platform errors to [service]'s handlers.
   ///
-  /// Captures existing handlers and chains them so we don't clobber other code.
-  void _installGlobalHandlers() {
+  /// Installs once per process: a second call does nothing, so one error is
+  /// never reported twice. Existing handlers are kept and called after ours.
+  static void installGlobalHandlers(CrashlyticsService service) {
+    if (_handlersInstalled) return;
+    _handlersInstalled = true;
+
     // 1. Capture and chain Flutter framework error handler
     _previousFlutterOnError = FlutterError.onError;
 
     FlutterError.onError = (errorDetails) {
-      handleFlutterError(errorDetails);
+      service.handleFlutterError(errorDetails);
 
       // Chain to previous handler if it exists
       _previousFlutterOnError?.call(errorDetails);
@@ -152,17 +154,35 @@ class CrashlyticsService {
     _previousPlatformOnError = PlatformDispatcher.instance.onError;
 
     PlatformDispatcher.instance.onError = (error, stack) {
-      handlePlatformError(error, stack);
+      service.handlePlatformError(error, stack);
 
       // Chain to previous handler if it exists, otherwise return true (handled)
       return _previousPlatformOnError?.call(error, stack) ?? true;
     };
   }
 
+  /// Puts back the handlers that were there before [installGlobalHandlers].
+  @visibleForTesting
+  static void resetGlobalHandlersForTesting() {
+    if (!_handlersInstalled) return;
+    FlutterError.onError = _previousFlutterOnError;
+    PlatformDispatcher.instance.onError = _previousPlatformOnError;
+    _previousFlutterOnError = null;
+    _previousPlatformOnError = null;
+    _handlersInstalled = false;
+  }
+
+  /// What a report carries in place of [error]: its type and code, never its
+  /// message. A log line's own text is developer-written, so it is kept.
+  static Object _redact(Object? error) =>
+      error is LoggedMessage ? error : RedactedError(error);
+
   /// Body of the global [FlutterError.onError] handler.
   ///
-  /// Records a framework crash exactly once, as fatal. Transient errors
-  /// (network, timeouts) are not recorded.
+  /// Records a framework error exactly once, as non-fatal: the framework
+  /// recovers by drawing an error widget, so the session goes on and must not
+  /// count against the crash-free rate. Transient errors (network, timeouts)
+  /// are not recorded.
   @visibleForTesting
   void handleFlutterError(FlutterErrorDetails errorDetails) {
     // Read via private getter so the handler respects runtime toggle changes
@@ -178,9 +198,14 @@ class CrashlyticsService {
       return;
     }
 
-    _recordSafely(() => _crashlytics.recordFlutterFatalError(errorDetails));
+    _recordSafely(
+      () => _crashlytics.recordFlutterError(
+        redactFlutterErrorDetails(errorDetails),
+        fatal: false,
+      ),
+    );
     LoggerService.debug(
-      'Framework crash reported to Crashlytics',
+      'Framework error reported to Crashlytics',
       metadata: {'source': source, 'library': errorDetails.library},
     );
   }
@@ -221,7 +246,7 @@ class CrashlyticsService {
 
     _recordSafely(
       () => _crashlytics.recordError(
-        error,
+        _redact(error),
         stack,
         reason: 'Uncaught error from $source',
         fatal: true,
@@ -339,7 +364,7 @@ class CrashlyticsService {
 
     // In release mode OR debug mode with override, send to Crashlytics
     await _crashlytics.recordError(
-      exception,
+      _redact(exception),
       stack,
       reason: reason,
       fatal: fatal,
@@ -368,7 +393,7 @@ class CrashlyticsService {
       FlutterError.presentError(details);
       return;
     }
-    await _crashlytics.recordFlutterError(details);
+    await _crashlytics.recordFlutterError(redactFlutterErrorDetails(details));
 
     // Only log success in debug mode to avoid noisy logs
     if (kDebugMode) {
