@@ -75,6 +75,41 @@ void main() {
     );
   });
 
+  testWidgets('returns that are too early to judge are worded from the ARB '
+      'file', (tester) async {
+    await _pump(
+      tester,
+      PortfolioHealthScore(
+        overallScore: 50,
+        returnsPerformance: ComponentScore(
+          name: 'Returns Performance',
+          score: 50,
+          weight: 0.30,
+          description: '',
+          suggestions: const [],
+          note: ComponentNote.tooEarlyToJudge,
+        ),
+        diversification: _component('Diversification', 0.25),
+        liquidity: _component('Liquidity', 0.20),
+        goalAlignment: _component('Goal Alignment', 0.15),
+        actionReadiness: _component('Action Readiness', 0.10),
+        calculatedAt: DateTime(2026, 10, 4),
+      ),
+    );
+
+    expect(
+      find.text('Too early to judge', skipOffstage: false),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Returns are judged once your investments are 90 days old',
+        skipOffstage: false,
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('no score says there is not enough data', (tester) async {
     await _pump(tester, null);
 

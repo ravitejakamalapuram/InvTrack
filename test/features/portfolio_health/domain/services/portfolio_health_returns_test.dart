@@ -223,10 +223,10 @@ void main() {
         )!;
 
         expect(score.returnsPerformance.score, 50.0);
-        expect(score.returnsPerformance.description, 'Too early to judge');
-        expect(score.returnsPerformance.suggestions, [
-          'Returns are judged once your investments are 90 days old',
-        ]);
+        // The screen words this from the ARB file; the domain only says why.
+        expect(score.returnsPerformance.note, ComponentNote.tooEarlyToJudge);
+        expect(score.returnsPerformance.description, isEmpty);
+        expect(score.returnsPerformance.suggestions, isEmpty);
         // 0.30 × 50 + 0.25 × 0 + 0.20 × 60 + 0.15 × 50 + 0.10 × 100 = 44.5.
         expect(score.overallScore, closeTo(44.5, 1e-6));
       });

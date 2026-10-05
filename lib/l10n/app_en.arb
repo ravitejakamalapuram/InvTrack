@@ -3149,6 +3149,22 @@
     "description": "Dashboard card text when there is not enough data for a portfolio health score (no investments, or only open holdings without a current value)"
   },
 
+  "healthReturnsTooEarly": "Too early to judge",
+  "@healthReturnsTooEarly": {
+    "description": "Portfolio Health details: the Returns Performance component's description when the portfolio has been held for too short a time to annualise its return"
+  },
+
+  "healthReturnsTooEarlySuggestion": "Returns are judged once your investments are {days} days old",
+  "@healthReturnsTooEarlySuggestion": {
+    "description": "Portfolio Health suggestion shown while returns are too early to judge",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "90"
+      }
+    }
+  },
+
   "healthScoreTrendWeeks": "Score Trend (Last {weeks} Weeks)",
   "@healthScoreTrendWeeks": {
     "description": "Health score trend chart title with weeks count",

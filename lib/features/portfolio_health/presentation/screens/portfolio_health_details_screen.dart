@@ -20,6 +20,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/widgets/health_score_trend_chart.dart';
@@ -301,23 +302,53 @@ class _PortfolioHealthDetailsScreenState
         ),
         const SizedBox(height: 16),
         _buildComponentCard(
+          l10n,
           isDark,
           score.returnsPerformance,
           Icons.trending_up,
         ),
         const SizedBox(height: 12),
-        _buildComponentCard(isDark, score.diversification, Icons.pie_chart),
+        _buildComponentCard(
+          l10n,
+          isDark,
+          score.diversification,
+          Icons.pie_chart,
+        ),
         const SizedBox(height: 12),
-        _buildComponentCard(isDark, score.liquidity, Icons.water_drop),
+        _buildComponentCard(l10n, isDark, score.liquidity, Icons.water_drop),
         const SizedBox(height: 12),
-        _buildComponentCard(isDark, score.goalAlignment, Icons.flag),
+        _buildComponentCard(l10n, isDark, score.goalAlignment, Icons.flag),
         const SizedBox(height: 12),
-        _buildComponentCard(isDark, score.actionReadiness, Icons.check_circle),
+        _buildComponentCard(
+          l10n,
+          isDark,
+          score.actionReadiness,
+          Icons.check_circle,
+        ),
       ],
     );
   }
 
+  /// [component]'s description, worded here when the domain gave a note.
+  static String _description(ComponentScore component, AppLocalizations l10n) =>
+      switch (component.note) {
+        ComponentNote.tooEarlyToJudge => l10n.healthReturnsTooEarly,
+        null => component.description,
+      };
+
+  /// [component]'s suggestions, worded here when the domain gave a note.
+  static List<String> _suggestions(
+    ComponentScore component,
+    AppLocalizations l10n,
+  ) => switch (component.note) {
+    ComponentNote.tooEarlyToJudge => [
+      l10n.healthReturnsTooEarlySuggestion(InvestmentStats.shortHoldingDays),
+    ],
+    null => component.suggestions,
+  };
+
   Widget _buildComponentCard(
+    AppLocalizations l10n,
     bool isDark,
     ComponentScore component,
     IconData icon,
@@ -345,7 +376,7 @@ class _PortfolioHealthDetailsScreenState
                       ),
                     ),
                     Text(
-                      component.description,
+                      _description(component, l10n),
                       style: AppTypography.caption.copyWith(
                         color: isDark
                             ? AppColors.textSecondaryDark
@@ -398,7 +429,9 @@ class _PortfolioHealthDetailsScreenState
     PortfolioHealthScore score,
   ) {
     final l10n = AppLocalizations.of(context);
-    final suggestions = score.topSuggestions;
+    final suggestions = score.topSuggestionsWith(
+      (component) => _suggestions(component, l10n),
+    );
 
     if (suggestions.isEmpty) {
       return const SizedBox.shrink();

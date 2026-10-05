@@ -29,25 +29,30 @@ void main() {
         ),
       ],
     );
-    container.listen(yoyComparisonProvider, (_, _) {});
+    // In testWidgets the pending-timer check runs before addTearDown
+    // callbacks, so dispose in finally: the minute timer stops even when an
+    // expectation fails.
+    try {
+      container.listen(yoyComparisonProvider, (_, _) {});
 
-    expect(container.read(valuationDateProvider), DateTime(2027, 3, 31));
-    final before = container.read(yoyComparisonProvider).requireValue;
-    expect(before.periodStart, DateTime(2026, 4, 1));
-    expect(before.periodEnd, DateTime(2027, 4, 1));
-    // Dated tomorrow: not counted yet.
-    expect(before.thisYearReturned, 0.0);
+      expect(container.read(valuationDateProvider), DateTime(2027, 3, 31));
+      final before = container.read(yoyComparisonProvider).requireValue;
+      expect(before.periodStart, DateTime(2026, 4, 1));
+      expect(before.periodEnd, DateTime(2027, 4, 1));
+      // Dated tomorrow: not counted yet.
+      expect(before.thisYearReturned, 0.0);
 
-    now = DateTime(2027, 4, 1, 0, 0, 30);
-    await tester.pump(const Duration(minutes: 1));
+      now = DateTime(2027, 4, 1, 0, 0, 30);
+      await tester.pump(const Duration(minutes: 1));
 
-    expect(container.read(valuationDateProvider), DateTime(2027, 4, 1));
-    final after = container.read(yoyComparisonProvider).requireValue;
-    expect(after.periodStart, DateTime(2027, 4, 1));
-    expect(after.periodEnd, DateTime(2027, 4, 2));
-    expect(after.thisYearReturned, closeTo(500.00, 0.005));
-
-    container.dispose();
+      expect(container.read(valuationDateProvider), DateTime(2027, 4, 1));
+      final after = container.read(yoyComparisonProvider).requireValue;
+      expect(after.periodStart, DateTime(2027, 4, 1));
+      expect(after.periodEnd, DateTime(2027, 4, 2));
+      expect(after.thisYearReturned, closeTo(500.00, 0.005));
+    } finally {
+      container.dispose();
+    }
   });
 
   testWidgets('dependents are not rebuilt while the day is the same', (
@@ -57,17 +62,20 @@ void main() {
     final container = ProviderContainer(
       overrides: [valuationClockProvider.overrideWithValue(() => now)],
     );
-    final dates = <DateTime>[];
-    container.listen(
-      valuationDateProvider,
-      (_, next) => dates.add(next),
-      fireImmediately: true,
-    );
+    try {
+      final dates = <DateTime>[];
+      container.listen(
+        valuationDateProvider,
+        (_, next) => dates.add(next),
+        fireImmediately: true,
+      );
 
-    now = DateTime(2026, 10, 4, 18);
-    await tester.pump(const Duration(minutes: 5));
+      now = DateTime(2026, 10, 4, 18);
+      await tester.pump(const Duration(minutes: 5));
 
-    expect(dates, [DateTime(2026, 10, 4)]);
-    container.dispose();
+      expect(dates, [DateTime(2026, 10, 4)]);
+    } finally {
+      container.dispose();
+    }
   });
 }

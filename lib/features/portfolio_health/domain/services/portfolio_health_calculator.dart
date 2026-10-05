@@ -161,16 +161,15 @@ class PortfolioHealthCalculator {
       portfolioXirr = -1;
     } else if (portfolio.isShortHolding) {
       // Annualising a few weeks of movement gives absurd rates; the
-      // Overview shows the absolute return instead (ReturnDisplay).
-      const days = InvestmentStats.shortHoldingDays;
+      // Overview shows the absolute return instead (ReturnDisplay). The
+      // screen words the note from the ARB file.
       return ComponentScore(
         name: 'Returns Performance',
         score: neutralScore,
         weight: 0.30,
-        description: 'Too early to judge',
-        suggestions: [
-          'Returns are judged once your investments are $days days old',
-        ],
+        description: '',
+        suggestions: const [],
+        note: ComponentNote.tooEarlyToJudge,
       );
     } else {
       final xirr = portfolio.xirr;

@@ -35,6 +35,14 @@ enum ScoreTier {
 }
 
 /// Individual component score of portfolio health
+/// Why a component's text is the screen's to word (from the ARB file)
+/// rather than [ComponentScore.description] and [ComponentScore.suggestions].
+enum ComponentNote {
+  /// Held for less than `InvestmentStats.shortHoldingDays`: returns are not
+  /// annualised yet.
+  tooEarlyToJudge,
+}
+
 class ComponentScore {
   final String name;
   final double score; // 0-100
@@ -42,12 +50,16 @@ class ComponentScore {
   final String description;
   final List<String> suggestions;
 
+  /// Set when the screen words this component itself; see [ComponentNote].
+  final ComponentNote? note;
+
   ComponentScore({
     required this.name,
     required this.score,
     required this.weight,
     required this.description,
     required this.suggestions,
+    this.note,
   })  : assert(score >= 0 && score <= 100, 'ComponentScore.score must be between 0 and 100'),
         assert(weight >= 0 && weight <= 1, 'ComponentScore.weight must be between 0 and 1') {
     // Runtime validation for isFinite (can't be in const assertion)
@@ -72,6 +84,7 @@ class ComponentScore {
     double? weight,
     String? description,
     List<String>? suggestions,
+    ComponentNote? note,
   }) {
     return ComponentScore(
       name: name ?? this.name,
@@ -79,6 +92,7 @@ class ComponentScore {
       weight: weight ?? this.weight,
       description: description ?? this.description,
       suggestions: suggestions ?? this.suggestions,
+      note: note ?? this.note,
     );
   }
 
@@ -96,7 +110,8 @@ class ComponentScore {
     return name == other.name &&
         score == other.score &&
         weight == other.weight &&
-        description == other.description;
+        description == other.description &&
+        note == other.note;
   }
 
   @override
@@ -106,6 +121,7 @@ class ComponentScore {
         weight,
         description,
         Object.hashAll(suggestions),
+        note,
       );
 }
 
@@ -157,11 +173,17 @@ class PortfolioHealthScore {
       ];
 
   /// Get top 3 improvement suggestions across all components
-  List<String> get topSuggestions {
+  List<String> get topSuggestions => topSuggestionsWith((c) => c.suggestions);
+
+  /// [topSuggestions], with each component's suggestions taken from
+  /// [suggestionsOf] (the screen words a [ComponentNote] from the ARB file).
+  List<String> topSuggestionsWith(
+    List<String> Function(ComponentScore component) suggestionsOf,
+  ) {
     // Collect all suggestions with their component scores
     final allSuggestions = <({double score, String suggestion})>[];
     for (final component in components) {
-      for (final suggestion in component.suggestions) {
+      for (final suggestion in suggestionsOf(component)) {
         allSuggestions.add((score: component.score, suggestion: suggestion));
       }
     }
