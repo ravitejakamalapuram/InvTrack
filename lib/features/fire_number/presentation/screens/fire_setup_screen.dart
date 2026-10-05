@@ -7,6 +7,7 @@ import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/amount_input.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
@@ -53,7 +54,22 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
     super.dispose();
   }
 
+  /// Sets the current age and moves the target age above it (PLAN-07).
+  void _setCurrentAge(int age) {
+    setState(() {
+      _currentAge = age.clamp(
+        FireAgeLimits.minCurrentAge,
+        FireAgeLimits.maxCurrentAge,
+      );
+      final range = FireAgeLimits.targetRange(_currentAge);
+      _targetFireAge = _targetFireAge.clamp(range.min, range.max);
+    });
+  }
+
   void _nextStep() {
+    // Only the visible step's fields are built, so check them before
+    // leaving it: a later check never sees them (UX-10).
+    if (!_formKey.currentState!.validate()) return;
     if (_currentStep < 3) {
       HapticFeedback.selectionClick();
       _pageController.nextPage(
@@ -78,25 +94,31 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
   }
 
   Future<void> _completeSetup() async {
-    if (!_formKey.currentState!.validate()) return;
+    // Validated on the expenses step; never replaced by a default.
+    final monthlyExpenses = parseAmountInput(
+      _monthlyExpensesController.text,
+      ref.read(currencyLocaleProvider),
+    );
+    if (monthlyExpenses == null || monthlyExpenses <= 0) return;
 
     setState(() => _isLoading = true);
     HapticFeedback.lightImpact();
 
     try {
+      final now = DateTime.now();
       final settings = FireSettingsEntity(
         id: const Uuid().v4(),
-        monthlyExpenses:
-            double.tryParse(_monthlyExpensesController.text) ?? 50000,
-        currentAge: _currentAge,
+        monthlyExpenses: monthlyExpenses,
+        birthYear: FireSettingsEntity.birthYearForAge(_currentAge, now),
+        currency: ref.read(currencyCodeProvider),
         targetFireAge: _targetFireAge,
         fireType: _selectedFireType,
         safeWithdrawalRate: _safeWithdrawalRate,
         inflationRate: _inflationRate,
         preRetirementReturn: _preRetirementReturn,
         isSetupComplete: true,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
       );
 
       await ref
@@ -198,6 +220,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
   }
 
   Widget _buildStep1AgeSetup(bool isDark, AppLocalizations l10n) {
+    final targetRange = FireAgeLimits.targetRange(_currentAge);
     return SingleChildScrollView(
       padding: AppSpacing.paddingLg,
       child: Column(
@@ -239,8 +262,8 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
-                      onPressed: _currentAge > 18
-                          ? () => setState(() => _currentAge--)
+                      onPressed: _currentAge > FireAgeLimits.minCurrentAge
+                          ? () => _setCurrentAge(_currentAge - 1)
                           : null,
                       icon: const Icon(Icons.remove_circle_outline),
                       tooltip: l10n.tooltipDecreaseAge,
@@ -254,8 +277,8 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
                       ),
                     ),
                     IconButton(
-                      onPressed: _currentAge < 70
-                          ? () => setState(() => _currentAge++)
+                      onPressed: _currentAge < FireAgeLimits.maxCurrentAge
+                          ? () => _setCurrentAge(_currentAge + 1)
                           : null,
                       icon: const Icon(Icons.add_circle_outline),
                       tooltip: l10n.tooltipIncreaseAge,
@@ -264,10 +287,11 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
                 ),
                 Slider(
                   value: _currentAge.toDouble(),
-                  min: 18,
-                  max: 70,
-                  divisions: 52,
-                  onChanged: (v) => setState(() => _currentAge = v.round()),
+                  min: FireAgeLimits.minCurrentAge.toDouble(),
+                  max: FireAgeLimits.maxCurrentAge.toDouble(),
+                  divisions:
+                      FireAgeLimits.maxCurrentAge - FireAgeLimits.minCurrentAge,
+                  onChanged: (v) => _setCurrentAge(v.round()),
                 ),
               ],
             ),
@@ -291,7 +315,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
-                      onPressed: _targetFireAge > _currentAge + 5
+                      onPressed: _targetFireAge > targetRange.min
                           ? () => setState(() => _targetFireAge--)
                           : null,
                       icon: const Icon(Icons.remove_circle_outline),
@@ -306,7 +330,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
                       ),
                     ),
                     IconButton(
-                      onPressed: _targetFireAge < 70
+                      onPressed: _targetFireAge < targetRange.max
                           ? () => setState(() => _targetFireAge++)
                           : null,
                       icon: const Icon(Icons.add_circle_outline),
@@ -316,9 +340,9 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
                 ),
                 Slider(
                   value: _targetFireAge.toDouble(),
-                  min: (_currentAge + 5).toDouble(),
-                  max: 70,
-                  divisions: (70 - _currentAge - 5).clamp(1, 52),
+                  min: targetRange.min.toDouble(),
+                  max: targetRange.max.toDouble(),
+                  divisions: targetRange.max - targetRange.min,
                   onChanged: (v) => setState(() => _targetFireAge = v.round()),
                 ),
                 Center(
@@ -370,10 +394,17 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
             label: 'Monthly Expenses',
             hint: 'e.g., 50000',
             prefixText: '$currencySymbol ',
-            keyboardType: TextInputType.number,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: amountInputFormatters,
             validator: (v) {
-              if (v == null || v.isEmpty) return 'Required';
-              if (double.tryParse(v) == null) return 'Enter a valid number';
+              if (v == null || v.trim().isEmpty) return 'Required';
+              final amount = parseAmountInput(
+                v,
+                ref.read(currencyLocaleProvider),
+              );
+              if (amount == null || amount <= 0) {
+                return l10n.fireEnterValidAmount;
+              }
               return null;
             },
           ),
@@ -406,7 +437,9 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
             ),
           ),
           SizedBox(height: AppSpacing.xl),
-          ...FireType.values.map((type) => _buildFireTypeOption(type, isDark)),
+          ...FireType.selectable.map(
+            (type) => _buildFireTypeOption(type, isDark),
+          ),
         ],
       ),
     );

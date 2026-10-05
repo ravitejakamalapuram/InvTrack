@@ -436,6 +436,7 @@ class PortfolioHealthCalculator {
     int behind = 0;
     int achieved = 0;
     int notStarted = 0;
+    int inProgress = 0;
 
     for (final progress in activeGoals) {
       switch (progress.status) {
@@ -454,12 +455,26 @@ class PortfolioHealthCalculator {
         case GoalStatus.notStarted:
           notStarted++;
           break;
+        // Not projected (income goals, or too little history): neither on
+        // track nor behind, so it does not count either way.
+        case GoalStatus.inProgress:
+          inProgress++;
+          break;
         case GoalStatus.archived:
           break;
       }
     }
 
-    final total = activeGoals.length;
+    final total = activeGoals.length - inProgress;
+    if (total == 0) {
+      return ComponentScore(
+        name: 'Goal Alignment',
+        score: neutralScore, // Nothing projected yet: no penalty, no free 100
+        weight: 0.15,
+        description: '$inProgress goals in progress',
+        suggestions: ['Progress shows once your goals can be projected'],
+      );
+    }
     final successRate = (achieved + ahead + onTrack) / total;
 
     // Score: % of goals on-track or better

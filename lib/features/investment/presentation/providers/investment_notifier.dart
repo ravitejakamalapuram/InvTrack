@@ -30,9 +30,8 @@ final investmentNotifierProvider =
     );
 
 class InvestmentNotifier extends Notifier<AsyncValue<void>> {
-  /// Track last progress percentage for each goal to detect milestone crossings
-  /// CodeRabbit fix: Prevents missing milestones when jumping past boundaries (e.g., 22% → 30%)
-  final Map<String, double> _lastGoalProgressPercent = {};
+  /// Goal milestones (%) checked after a cash flow.
+  static const _goalMilestones = [25.0, 50.0, 75.0, 100.0];
 
   @override
   AsyncValue<void> build() => const AsyncValue.data(null);
@@ -558,7 +557,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       }
 
       // Check for goal milestone achievements after any cash flow
-      await _checkGoalMilestonesAfterCashFlow();
+      await _checkGoalMilestonesAfterCashFlow(cashFlow.id);
 
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -980,7 +979,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   ///
   /// BUG FIX: Only check milestone if progress increased significantly (>0.5%)
   /// to avoid spamming notifications on every single cashflow addition.
-  Future<void> _checkGoalMilestonesAfterCashFlow() async {
+  /// [newCashFlowId] is the cash flow just saved; progress without it is
+  /// the progress before it.
+  Future<void> _checkGoalMilestonesAfterCashFlow(String newCashFlowId) async {
     try {
       // Fetch data directly from repository to ensure fresh data
       final goalRepository = ref.read(goalRepositoryProvider);
@@ -995,6 +996,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
       // Get all cash flows
       final cashFlows = await investmentRepository.getAllCashFlows();
+      final cashFlowsBefore = cashFlows
+          .where((c) => c.id != newCashFlowId)
+          .toList();
 
       final notificationService = ref.read(notificationServiceProvider);
 
@@ -1024,6 +1028,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         if (batchConverter == null) continue;
         final GoalProgress progress;
         final double targetInBase;
+        final double previousPercent;
         try {
           progress = await GoalProgressCalculator.calculateMultiCurrency(
             goal: goal,
@@ -1039,13 +1044,20 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             baseCurrency: baseCurrency,
             fallbackStrategy: ConversionFallbackStrategy.throwError,
           );
+          previousPercent =
+              (await GoalProgressCalculator.calculateMultiCurrency(
+                goal: goal,
+                allInvestments: investments,
+                allCashFlows: cashFlowsBefore,
+                batchConverter: batchConverter,
+                baseCurrency: baseCurrency,
+                fallbackStrategy: ConversionFallbackStrategy.throwError,
+              )).progressPercent;
         } on CurrencyConversionException {
           continue;
         }
 
-        // CodeRabbit fix: Track previous progress to detect milestone crossings
         final currentPercent = progress.progressPercent;
-        final previousPercent = _lastGoalProgressPercent[goal.id];
 
         // Check if we should notify about milestone achievements
         // This handles both boundary proximity AND crossed milestones
@@ -1053,9 +1065,6 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           currentPercent: currentPercent,
           previousPercent: previousPercent,
         );
-
-        // Update tracked progress for next time
-        _lastGoalProgressPercent[goal.id] = currentPercent;
 
         if (shouldCheckMilestone) {
           // Check for milestone achievements
@@ -1066,6 +1075,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             currentValue: progress.currentAmount,
             targetValue: targetInBase,
             currency: baseCurrency,
+            // Only a milestone this cash flow crossed is announced; ones
+            // the goal had passed before it are recorded silently.
+            announce: _crossedGoalMilestone(previousPercent, currentPercent),
           );
         }
 
@@ -1102,12 +1114,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     required double currentPercent,
     double? previousPercent,
   }) {
-    // Milestones to check: 25%, 50%, 75%, 100%
-    const milestones = [25.0, 50.0, 75.0, 100.0];
     const threshold = 2.0; // Check if within 2% of milestone
 
     // Check if we're close to any milestone OR crossed one
-    for (final milestone in milestones) {
+    for (final milestone in _goalMilestones) {
       // Near boundary check (original logic)
       final isNearBoundary =
           currentPercent >= milestone - threshold &&
@@ -1132,4 +1142,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
     return false; // Far from any milestone and didn't cross any, skip check
   }
+
+  /// Whether progress went from below a milestone to at or above it.
+  static bool _crossedGoalMilestone(double before, double after) =>
+      _goalMilestones.any((m) => before < m && after >= m);
 }
