@@ -44,6 +44,7 @@ class _RecordingNotificationService extends FakeNotificationService {
     required double currentValue,
     required double targetValue,
     String currency = 'INR',
+    bool firstCheck = false,
   }) async {
     goalMilestones.add({
       'percent': progressPercent,
@@ -243,7 +244,9 @@ void main() {
     );
 
     test('a USD goal against INR flows notifies 50%, not 100%', () async {
-      // $50,000 target; ₹20,75,000 returned = $25,000 at 83.
+      // $50,000 target; ₹20,75,000 still invested = $25,000 at 83. A goal
+      // counts what its open investments are worth today (A12), here the
+      // principal still invested as no value is entered.
       goals.seed(goals: [goal()]);
       repo.seed(
         investments: [investment('inv-3', 'INR')],
@@ -255,8 +258,8 @@ void main() {
           .read(investmentNotifierProvider.notifier)
           .addCashFlow(
             investmentId: 'inv-3',
-            type: CashFlowType.returnFlow,
-            amount: 2075000,
+            type: CashFlowType.invest,
+            amount: 75000,
             date: DateTime(2026, 1, 1),
             currency: 'INR',
           );
@@ -273,6 +276,9 @@ void main() {
       'an income goal shows its monthly target in the base currency',
       () async {
         // $1,000 a month = ₹83,000 for an INR user; ₹20,750 a month is 25%.
+        // Income counts over the last 12 months (A12), so a single payout of
+        // ₹2,49,000 today is ₹20,750 a month.
+        final now = DateTime.now();
         goals.seed(
           goals: [
             goal(
@@ -290,8 +296,8 @@ void main() {
             .addCashFlow(
               investmentId: 'inv-4',
               type: CashFlowType.income,
-              amount: 20750,
-              date: DateTime(2026, 1, 1),
+              amount: 249000,
+              date: DateTime(now.year, now.month, now.day),
               currency: 'INR',
             );
 
@@ -315,7 +321,7 @@ void main() {
           .read(investmentNotifierProvider.notifier)
           .addCashFlow(
             investmentId: 'inv-6',
-            type: CashFlowType.returnFlow,
+            type: CashFlowType.invest,
             amount: 830000,
             date: DateTime(2026, 1, 1),
             currency: 'INR',
@@ -326,7 +332,8 @@ void main() {
 
     test('a missing rate for one goal does not skip the other goals', () async {
       // goal-1 tracks everything, including an INR flow with no rate.
-      // goal-2 tracks only a USD investment: $10,000 of $20,000 is 50%.
+      // goal-2 tracks only a USD investment: $10,000 invested of $20,000
+      // is 50%.
       goals.seed(
         goals: [
           goal(),
@@ -350,7 +357,7 @@ void main() {
           .read(investmentNotifierProvider.notifier)
           .addCashFlow(
             investmentId: 'inv-8',
-            type: CashFlowType.returnFlow,
+            type: CashFlowType.invest,
             amount: 10000,
             date: DateTime(2026, 1, 1),
             currency: 'USD',
