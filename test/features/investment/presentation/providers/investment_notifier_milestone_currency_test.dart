@@ -51,6 +51,7 @@ class _RecordingNotificationService extends FakeNotificationService {
       'current': currentValue,
       'target': targetValue,
       'currency': currency,
+      'firstCheck': firstCheck,
     });
   }
 }
@@ -329,6 +330,69 @@ void main() {
 
       expect(notifications.goalMilestones, isEmpty);
     });
+
+    test('the first cash flow that crosses 25% announces it', () async {
+      // $10,000 of a $50,000 goal is 20%; $3,000 more makes 26%. It was
+      // recorded as already passed, because nothing was checked yet.
+      goals.seed(goals: [goal()]);
+      repo.seed(
+        investments: [investment('inv-7', 'USD')],
+        cashFlows: [flow('inv-7', CashFlowType.invest, 10000, 'USD')],
+      );
+      final container = containerFor('USD');
+
+      await container
+          .read(investmentNotifierProvider.notifier)
+          .addCashFlow(
+            investmentId: 'inv-7',
+            type: CashFlowType.invest,
+            amount: 3000,
+            date: DateTime(2026, 1, 1),
+            currency: 'USD',
+          );
+
+      expect(notifications.goalMilestones, hasLength(1));
+      final shown = notifications.goalMilestones.single;
+      expect(shown['percent'] as double, closeTo(26, 1e-6));
+      expect(shown['firstCheck'], isFalse);
+    });
+
+    test(
+      'a goal already past 25% that dips near it is not announced',
+      () async {
+        // 28% → 30% → 26%: 25% was passed before these cash flows, so it is
+        // recorded, not announced as new.
+        goals.seed(goals: [goal()]);
+        repo.seed(
+          investments: [investment('inv-8', 'USD')],
+          cashFlows: [flow('inv-8', CashFlowType.invest, 14000, 'USD')],
+        );
+        final container = containerFor('USD');
+        final notifier = container.read(investmentNotifierProvider.notifier);
+
+        await notifier.addCashFlow(
+          investmentId: 'inv-8',
+          type: CashFlowType.invest,
+          amount: 1000,
+          date: DateTime(2026, 1, 1),
+          currency: 'USD',
+        );
+        expect(notifications.goalMilestones, isEmpty);
+
+        await notifier.addCashFlow(
+          investmentId: 'inv-8',
+          type: CashFlowType.returnFlow,
+          amount: 2000,
+          date: DateTime(2026, 2, 1),
+          currency: 'USD',
+        );
+
+        expect(notifications.goalMilestones, hasLength(1));
+        final shown = notifications.goalMilestones.single;
+        expect(shown['percent'] as double, closeTo(26, 1e-6));
+        expect(shown['firstCheck'], isTrue);
+      },
+    );
 
     test('a missing rate for one goal does not skip the other goals', () async {
       // goal-1 tracks everything, including an INR flow with no rate.

@@ -30,9 +30,8 @@ final investmentNotifierProvider =
     );
 
 class InvestmentNotifier extends Notifier<AsyncValue<void>> {
-  /// Track last progress percentage for each goal to detect milestone crossings
-  /// CodeRabbit fix: Prevents missing milestones when jumping past boundaries (e.g., 22% → 30%)
-  final Map<String, double> _lastGoalProgressPercent = {};
+  /// Goal milestones (%) checked after a cash flow.
+  static const _goalMilestones = [25.0, 50.0, 75.0, 100.0];
 
   @override
   AsyncValue<void> build() => const AsyncValue.data(null);
@@ -559,6 +558,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         createdAt: DateTime.now(),
         currency: currency ?? ref.read(currencyCodeProvider),
       );
+      // Goal progress before this cash flow, so the check after it can tell
+      // a milestone it crosses from one the goal had already passed.
+      final goalPercentsBefore = await _goalProgressPercents();
       await ref.read(investmentRepositoryProvider).addCashFlow(cashFlow);
 
       // Track analytics event
@@ -575,7 +577,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       }
 
       // Check for goal milestone achievements after any cash flow
-      await _checkGoalMilestonesAfterCashFlow();
+      await _checkGoalMilestonesAfterCashFlow(goalPercentsBefore);
 
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -977,7 +979,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   ///
   /// BUG FIX: Only check milestone if progress increased significantly (>0.5%)
   /// to avoid spamming notifications on every single cashflow addition.
-  Future<void> _checkGoalMilestonesAfterCashFlow() async {
+  /// [percentsBefore] is each goal's progress % from before the cash flow.
+  Future<void> _checkGoalMilestonesAfterCashFlow(
+    Map<String, double> percentsBefore,
+  ) async {
     try {
       // Fetch data directly from repository to ensure fresh data
       final goalRepository = ref.read(goalRepositoryProvider);
@@ -1040,9 +1045,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           continue;
         }
 
-        // CodeRabbit fix: Track previous progress to detect milestone crossings
         final currentPercent = progress.progressPercent;
-        final previousPercent = _lastGoalProgressPercent[goal.id];
+        final previousPercent = percentsBefore[goal.id];
 
         // Check if we should notify about milestone achievements
         // This handles both boundary proximity AND crossed milestones
@@ -1050,9 +1054,6 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           currentPercent: currentPercent,
           previousPercent: previousPercent,
         );
-
-        // Update tracked progress for next time
-        _lastGoalProgressPercent[goal.id] = currentPercent;
 
         if (shouldCheckMilestone) {
           // Check for milestone achievements
@@ -1063,10 +1064,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             currentValue: progress.currentAmount,
             targetValue: targetInBase,
             currency: baseCurrency,
-            // Not checked yet this session: milestones passed before (for
-            // example under an older way of measuring goals) are recorded,
-            // not announced.
-            firstCheck: previousPercent == null,
+            // Only a milestone this cash flow crossed is announced; ones
+            // the goal had passed before it, or without a reading from
+            // before it, are recorded.
+            firstCheck: !_crossedGoalMilestone(previousPercent, currentPercent),
           );
         }
 
@@ -1103,12 +1104,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     required double currentPercent,
     double? previousPercent,
   }) {
-    // Milestones to check: 25%, 50%, 75%, 100%
-    const milestones = [25.0, 50.0, 75.0, 100.0];
     const threshold = 2.0; // Check if within 2% of milestone
 
     // Check if we're close to any milestone OR crossed one
-    for (final milestone in milestones) {
+    for (final milestone in _goalMilestones) {
       // Near boundary check (original logic)
       final isNearBoundary =
           currentPercent >= milestone - threshold &&
@@ -1132,5 +1131,47 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     }
 
     return false; // Far from any milestone and didn't cross any, skip check
+  }
+
+  /// Whether progress went from below a milestone to at or above it.
+  static bool _crossedGoalMilestone(double? before, double after) =>
+      before != null && _goalMilestones.any((m) => before < m && after >= m);
+
+  /// Each active goal's progress % in the base currency, by goal id. Goals
+  /// whose amounts cannot be converted are left out, and any failure gives
+  /// no readings, so it never stops the cash flow being saved.
+  Future<Map<String, double>> _goalProgressPercents() async {
+    try {
+      final goals = await ref
+          .read(goalRepositoryProvider)
+          .watchActiveGoals()
+          .first;
+      final batchConverter = ref.read(batchCurrencyConverterProvider);
+      if (goals.isEmpty || batchConverter == null) return const {};
+      final investmentRepository = ref.read(investmentRepositoryProvider);
+      final investments = await investmentRepository.getAllInvestments();
+      final cashFlows = await investmentRepository.getAllCashFlows();
+      final baseCurrency = ref.read(currencyCodeProvider);
+
+      final percents = <String, double>{};
+      for (final goal in goals) {
+        try {
+          final progress = await GoalProgressCalculator.calculateMultiCurrency(
+            goal: goal,
+            allInvestments: investments,
+            allCashFlows: cashFlows,
+            batchConverter: batchConverter,
+            baseCurrency: baseCurrency,
+            fallbackStrategy: ConversionFallbackStrategy.throwError,
+          );
+          percents[goal.id] = progress.progressPercent;
+        } on CurrencyConversionException {
+          continue;
+        }
+      }
+      return percents;
+    } catch (_) {
+      return const {};
+    }
   }
 }
