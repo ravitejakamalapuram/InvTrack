@@ -394,8 +394,11 @@ void main() {
 
     testWidgets('answered on another device: one read of the answer, no '
         'scan, no question', (tester) async {
+      // The current question; an answer to the A04 one alone asks again
+      // about the new kinds (usd_tag_repair_goals_widgets_test.dart).
       firestore.userFields = {
         UsdTagRepairService.resolvedField: DateTime.utc(2026, 10, 2),
+        UsdTagRepairService.extendedResolvedField: DateTime.utc(2026, 10, 5),
       };
       await tester.pumpWidget(app(repair: service()));
       await tester.pumpAndSettle();

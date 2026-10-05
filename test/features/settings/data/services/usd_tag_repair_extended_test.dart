@@ -163,6 +163,64 @@ void main() {
     });
   });
 
+  // A04 shipped in v3.73.5 and listed only investments all in US dollars.
+  // Users who answered it are asked once more, about the new kinds only.
+  group('after the A04 answer', () {
+    test('only the new kinds are listed: all US dollar investments were '
+        'already asked about', () async {
+      await prefs.setBool('usd_tag_repair_resolved_${firestore.uid}', true);
+
+      expect(service().isResolved, isFalse);
+      expect(service().answeredAllUsd, isTrue);
+      final found = await service().findCandidates('INR');
+
+      expect(found.map((c) => c.id), [
+        'partly:inv-mixed',
+        'empty:inv-empty',
+        'partly:inv-p2p',
+        'goal:g1',
+        'goal:g2',
+      ]);
+    });
+
+    test('an A04 answer on another device is remembered here, and is not '
+        'the answer to the new question', () async {
+      firestore.userFields = {
+        UsdTagRepairService.resolvedField: DateTime.utc(2026, 10, 4),
+      };
+
+      expect(await service().checkResolved(), isFalse);
+      expect(service().answeredAllUsd, isTrue);
+      expect(service().isResolved, isFalse);
+      expect(
+        (await service().findCandidates('INR')).map((c) => c.id),
+        isNot(contains('inv-merged')),
+      );
+    });
+
+    test('the new answer is recorded on this device and for the '
+        'account', () async {
+      await service().markResolved();
+
+      expect(service().isResolved, isTrue);
+      expect(service().answeredAllUsd, isTrue);
+      expect(
+        firestore.userFields!.keys,
+        containsAll([
+          UsdTagRepairService.resolvedField,
+          UsdTagRepairService.extendedResolvedField,
+        ]),
+      );
+    });
+
+    test('the new answer is removed with the account', () {
+      expect(
+        UsdTagRepairService.prefsKeysFor('uid-1'),
+        contains('usd_tag_repair_extended_resolved_uid-1'),
+      );
+    });
+  });
+
   group('repair', () {
     test('a ticked goal changes to the base currency and keeps its target '
         'to the paisa', () async {

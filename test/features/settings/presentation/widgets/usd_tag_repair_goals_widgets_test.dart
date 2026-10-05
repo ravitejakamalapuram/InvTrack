@@ -300,6 +300,42 @@ void main() {
       expect(find.text('Undo'), findsNothing);
     });
 
+    testWidgets('a user who answered the A04 question is asked once more, '
+        'about the new kinds only', (tester) async {
+      await prefs.setBool('usd_tag_repair_resolved_${firestore.uid}', true);
+      firestore
+        ..put('investments', 'inv-merged', {
+          'name': 'Merged FD',
+          'notes': 'Merged from: FD A, FD B',
+          'currency': 'USD',
+        })
+        ..put('cashflows', 'cf-m1', {
+          'investmentId': 'inv-merged',
+          'type': 'INVEST',
+          'amount': 500000.0,
+          'currency': 'USD',
+        });
+      await tester.pumpWidget(
+        app(const UsdTagRepairInitializer(child: SizedBox())),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('House'), findsOneWidget);
+      expect(find.text('Merged FD'), findsNothing);
+      await tester.tap(find.text('Keep in US dollars'));
+      await tester.pumpAndSettle();
+      expect(service().isResolved, isTrue);
+
+      final reads = firestore.readOptions.length;
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(
+        app(const UsdTagRepairInitializer(child: SizedBox())),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('House'), findsNothing);
+      expect(firestore.readOptions.length, reads);
+    });
+
     testWidgets('the Undo item in Data & Account names goals', (tester) async {
       firestore
         ..put('investments', 'inv-empty', {'name': 'New FD', 'currency': 'USD'})

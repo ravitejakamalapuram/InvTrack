@@ -553,6 +553,7 @@ void main() {
     expect(UsdTagRepairService.prefsKeysFor('uid-1'), [
       'usd_tag_repair_resolved_uid-1',
       'usd_tag_repair_backup_uid-1',
+      'usd_tag_repair_extended_resolved_uid-1',
     ]);
   });
 }

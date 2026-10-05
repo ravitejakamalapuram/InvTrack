@@ -159,19 +159,34 @@ class UsdTagRepairService {
   static List<String> prefsKeysFor(String userId) => [
     'usd_tag_repair_resolved_$userId',
     'usd_tag_repair_backup_$userId',
+    'usd_tag_repair_extended_resolved_$userId',
   ];
 
   String get _resolvedKey => 'usd_tag_repair_resolved_$_userId';
   String get _backupKey => 'usd_tag_repair_backup_$_userId';
+  String get _extendedResolvedKey =>
+      'usd_tag_repair_extended_resolved_$_userId';
 
-  /// Whether this device has recorded the answer (or that there was nothing
-  /// to fix). See [checkResolved] for the account-wide answer.
-  bool get isResolved => _prefs.getBool(_resolvedKey) ?? false;
+  /// Whether this device has recorded the answer to the current question
+  /// (or that there was nothing to fix). See [checkResolved] for the
+  /// account-wide answer.
+  bool get isResolved => _prefs.getBool(_extendedResolvedKey) ?? false;
 
-  /// Field on the `users/{uid}` document that records the answer for the
-  /// account, so a new install or another phone is not asked again. Removed
-  /// with that document on account deletion.
+  /// Whether this user answered the A04 question, which listed only
+  /// investments all in US dollars, on this device or (after
+  /// [checkResolved]) on another one. Those investments are then not listed
+  /// again.
+  bool get answeredAllUsd => _prefs.getBool(_resolvedKey) ?? false;
+
+  /// Field on the `users/{uid}` document that records the A04 answer for
+  /// the account. Removed with that document on account deletion.
   static const String resolvedField = 'usdTagRepairResolvedAt';
+
+  /// Field on the `users/{uid}` document that records the answer to the
+  /// current question (A109: goals, expected payments, empty and partly US
+  /// dollar investments too), so a new install or another phone is not
+  /// asked again. Removed with that document on account deletion.
+  static const String extendedResolvedField = 'usdTagRepairExtendedResolvedAt';
 
   DocumentReference<Map<String, dynamic>> get _userDoc =>
       _firestore.collection('users').doc(_userId);
@@ -184,8 +199,13 @@ class UsdTagRepairService {
     final snapshot = await _userDoc
         .get(const GetOptions(source: Source.server))
         .timeout(_readTimeout);
-    if (snapshot.data()?[resolvedField] == null) return false;
+    final data = snapshot.data();
+    if (data?[resolvedField] != null) {
+      await _prefs.setBool(_resolvedKey, true);
+    }
+    if (data?[extendedResolvedField] == null) return false;
     await _prefs.setBool(_resolvedKey, true);
+    await _prefs.setBool(_extendedResolvedKey, true);
     return true;
   }
 
@@ -194,10 +214,12 @@ class UsdTagRepairService {
   /// Firestore sends the account record when the connection is back.
   Future<void> markResolved() async {
     await _prefs.setBool(_resolvedKey, true);
+    await _prefs.setBool(_extendedResolvedKey, true);
     try {
       await _userDoc
           .set({
             resolvedField: FieldValue.serverTimestamp(),
+            extendedResolvedField: FieldValue.serverTimestamp(),
           }, SetOptions(merge: true))
           .timeout(_writeTimeout);
     } on TimeoutException {
@@ -246,11 +268,17 @@ class UsdTagRepairService {
     }
   }
 
-  /// Investments that look wrongly stored as US dollars, read from the
-  /// server. Writes nothing. Empty when [baseCurrency] is USD. Throws offline.
+  /// Investments and goals that look wrongly stored as US dollars, read
+  /// from the server. Writes nothing. Empty when [baseCurrency] is USD.
+  /// Throws offline. After the A04 answer ([answeredAllUsd]), investments
+  /// all in US dollars were already asked about and are left out.
   Future<List<UsdTagCandidate>> findCandidates(String baseCurrency) async {
     final scan = await _scan(baseCurrency);
-    return [for (final s in scan) s.candidate];
+    final skipAllUsd = answeredAllUsd;
+    return [
+      for (final s in scan)
+        if (!skipAllUsd || s.candidate.kind != UsdTagKind.allUsd) s.candidate,
+    ];
   }
 
   Future<List<_Scanned>> _scan(String baseCurrency) async {
