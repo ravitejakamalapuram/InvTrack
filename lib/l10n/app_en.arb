@@ -1551,6 +1551,62 @@
     "description": "Sample data description"
   },
 
+  "xirrDemoTitle": "See Your Real Returns",
+  "@xirrDemoTitle": {
+    "description": "Title of the advertised-vs-real XIRR demo on the empty overview"
+  },
+
+  "xirrDemoSubtitle": "P2P platforms advertise {rate}. What did you really earn?",
+  "@xirrDemoSubtitle": {
+    "description": "Subtitle of the XIRR demo: the rate a P2P lending platform advertises",
+    "placeholders": {
+      "rate": {
+        "type": "String",
+        "example": "12%"
+      }
+    }
+  },
+
+  "xirrDemoAdvertised": "Advertised",
+  "@xirrDemoAdvertised": {
+    "description": "XIRR demo label under the advertised rate"
+  },
+
+  "xirrDemoYourXirr": "Your XIRR",
+  "@xirrDemoYourXirr": {
+    "description": "XIRR demo label under the real return (XIRR)"
+  },
+
+  "xirrDemoCaption": "Platform fees and one defaulted loan cut {advertised} to {real} a year.",
+  "@xirrDemoCaption": {
+    "description": "XIRR demo caption explaining why the real P2P return is lower than advertised",
+    "placeholders": {
+      "advertised": {
+        "type": "String",
+        "example": "12%"
+      },
+      "real": {
+        "type": "String",
+        "example": "6.3%"
+      }
+    }
+  },
+
+  "xirrDemoSemantics": "Advertised {advertised}. Your XIRR after fees and one defaulted loan: {real}.",
+  "@xirrDemoSemantics": {
+    "description": "Screen-reader label for the XIRR demo comparison",
+    "placeholders": {
+      "advertised": {
+        "type": "String",
+        "example": "12.0%"
+      },
+      "real": {
+        "type": "String",
+        "example": "6.3%"
+      }
+    }
+  },
+
   "tryIt": "Try It",
   "@tryIt": {
     "description": "Try it button label"
@@ -3098,14 +3154,35 @@
     "description": "Portfolio health details screen title"
   },
 
-  "noPortfolioData": "No data available",
+  "noPortfolioData": "Not enough data yet",
   "@noPortfolioData": {
-    "description": "Message when portfolio health data is not available"
+    "description": "Title when there is not enough data for a portfolio health score (no investments, or only open holdings without a current value)"
   },
 
-  "addInvestmentsToSeeHealth": "Add investments to see your portfolio health score",
+  "addInvestmentsToSeeHealth": "Add your investments, with a current value for open ones, to see your health score.",
   "@addInvestmentsToSeeHealth": {
-    "description": "Empty state message for portfolio health"
+    "description": "Body under the title when there is not enough data for a portfolio health score"
+  },
+
+  "healthScoreNotEnoughData": "Not enough data yet. Add your investments, with a current value for open ones, to see your health score.",
+  "@healthScoreNotEnoughData": {
+    "description": "Dashboard card text when there is not enough data for a portfolio health score (no investments, or only open holdings without a current value)"
+  },
+
+  "healthReturnsTooEarly": "Too early to judge",
+  "@healthReturnsTooEarly": {
+    "description": "Portfolio Health details: the Returns Performance component's description when the portfolio has been held for too short a time to annualise its return"
+  },
+
+  "healthReturnsTooEarlySuggestion": "Returns are judged once your investments are {days} days old",
+  "@healthReturnsTooEarlySuggestion": {
+    "description": "Portfolio Health suggestion shown while returns are too early to judge",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "90"
+      }
+    }
   },
 
   "healthScoreTrendWeeks": "Score Trend (Last {weeks} Weeks)",
@@ -4326,6 +4403,79 @@
   "investedLabel": "Invested",
   "@investedLabel": {
     "description": "Invested label for charts"
+  },
+
+  "yoyTitle": "Year over Year",
+  "@yoyTitle": {
+    "description": "Title of the Overview card comparing this financial year to date with the same days of the previous financial year"
+  },
+
+  "yoyPeriodCaption": "Financial year to date ({start} – {end}) vs the same days last year",
+  "@yoyPeriodCaption": {
+    "description": "Caption of the Year over Year card: both periods run from 1 April to today's day and month",
+    "placeholders": {
+      "start": {
+        "type": "String",
+        "example": "Apr 1"
+      },
+      "end": {
+        "type": "String",
+        "example": "Oct 4"
+      }
+    }
+  },
+
+  "yoyReturnedLabel": "Returned",
+  "@yoyReturnedLabel": {
+    "description": "Row label on the Year over Year card: money back from exits, sales and maturities (RETURN cash flows) in the period"
+  },
+
+  "yoyIncomeLabel": "Income",
+  "@yoyIncomeLabel": {
+    "description": "Row label on the Year over Year card: interest, dividends and rent (INCOME cash flows) in the period"
+  },
+
+  "yoyNetLabel": "Net cash flow",
+  "@yoyNetLabel": {
+    "description": "Row label on the Year over Year card: returned plus income minus invested in the period"
+  },
+
+  "yoyIncomeChange": "Income {change} vs the same days last year",
+  "@yoyIncomeChange": {
+    "description": "Change in income (interest, dividends, rent) on the Year over Year card",
+    "placeholders": {
+      "change": {
+        "type": "String",
+        "example": "+20.0%"
+      }
+    }
+  },
+
+  "yoyRowSemantics": "{label}: {lastYear} {lastAmount}, {thisYear} {thisAmount}",
+  "@yoyRowSemantics": {
+    "description": "Screen reader label for one row of the Year over Year card: the row, then each financial year with its amount (or 'Hidden amount' in privacy mode)",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Invested"
+      },
+      "lastYear": {
+        "type": "String",
+        "example": "FY 2025-26"
+      },
+      "lastAmount": {
+        "type": "String",
+        "example": "6,00,000 rupees"
+      },
+      "thisYear": {
+        "type": "String",
+        "example": "FY 2026-27"
+      },
+      "thisAmount": {
+        "type": "String",
+        "example": "9,00,000 rupees"
+      }
+    }
   },
 
   "returnedLabel": "Returned",

@@ -91,7 +91,7 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            l10n.addInvestmentsToSeeHealth,
+            l10n.healthScoreNotEnoughData,
             style: AppTypography.body.copyWith(
               color: isDark
                   ? AppColors.textSecondaryDark
@@ -157,8 +157,8 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
         // Log analytics - dashboard card viewed (non-blocking)
         final analytics = AnalyticsService();
         analytics.logPortfolioHealthViewed(
-          scoreTier: getScoreTier(score.overallScore),
-          scoreRange: getScoreRange(score.overallScore),
+          scoreTier: getScoreTier(score.displayScore.toDouble()),
+          scoreRange: getScoreRange(score.displayScore.toDouble()),
         );
 
         // Navigate immediately without waiting for analytics
@@ -196,7 +196,7 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
           const SizedBox(height: 24),
           // Circular progress ring
           Center(
-            child: _HealthScoreRing(score: score.overallScore, color: color),
+            child: _HealthScoreRing(score: score.displayScore, color: color),
           ),
           const SizedBox(height: 16),
           // Score tier label and message
@@ -229,7 +229,8 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
 
 /// Circular progress ring showing health score
 class _HealthScoreRing extends StatelessWidget {
-  final double score; // 0-100
+  /// [PortfolioHealthScore.displayScore], 0-100.
+  final int score;
   final Color color;
 
   const _HealthScoreRing({
@@ -275,13 +276,13 @@ class _HealthScoreRing extends StatelessWidget {
           ),
           // Score text with accessibility
           Semantics(
-            label: AppLocalizations.of(context).healthScoreOutOf100(score.round()),
+            label: AppLocalizations.of(context).healthScoreOutOf100(score),
             readOnly: true,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  score.round().toString(),
+                  score.toString(),
                   style: TextStyle(
                     fontSize: 36,
                     fontWeight: FontWeight.bold,

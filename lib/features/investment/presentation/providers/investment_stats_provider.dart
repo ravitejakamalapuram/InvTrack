@@ -161,10 +161,32 @@ final convertedCashFlowsProvider = Provider<AsyncValue<List<CashFlowEntity>>>((
   ]);
 });
 
-/// Today, date-only: the date estimated current values are valued at.
+/// The clock [valuationDateProvider] reads. Tests override it.
+final valuationClockProvider = Provider<DateTime Function()>(
+  (ref) => DateTime.now,
+);
+
+/// Today, date-only: the date estimated current values are valued at, and
+/// the "today" of Year over Year and the health score.
+///
+/// It moves to the new day soon after local midnight, so an app left open
+/// overnight does not keep yesterday's date. The clock is checked once a
+/// minute rather than by one timer set for midnight, because timers do not
+/// run while the device sleeps; this catches up within a minute of waking.
+/// Dependents rebuild only when the date changes.
 final valuationDateProvider = Provider<DateTime>((ref) {
-  final now = DateTime.now();
-  return DateTime(now.year, now.month, now.day);
+  final clock = ref.watch(valuationClockProvider);
+  DateTime today() {
+    final now = clock();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  final date = today();
+  final timer = Timer.periodic(const Duration(minutes: 1), (_) {
+    if (today() != date) ref.invalidateSelf();
+  });
+  ref.onDispose(timer.cancel);
+  return date;
 });
 
 /// A converted snapshot with the current values of its active investments.

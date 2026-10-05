@@ -47,6 +47,12 @@ class HealthScoreAutoSaveService {
     _lastScore = score;
   }
 
+  /// Forget the current score when there is no longer enough data for one,
+  /// so a stale score is not saved again.
+  void clearScore() {
+    _lastScore = null;
+  }
+
   /// Check if score should be saved and save if needed
   Future<void> _checkAndSave() async {
     if (_lastScore == null) return;
@@ -71,11 +77,9 @@ class HealthScoreAutoSaveService {
       if (shouldSave) {
         await _repository.saveSnapshot(current);
         // Log score tier instead of exact score for privacy
-        final tier = current.overallScore >= 80 ? 'excellent'
-            : current.overallScore >= 60 ? 'good'
-            : current.overallScore >= 40 ? 'fair'
-            : 'poor';
-        LoggerService.debug('Health score snapshot saved: $tier tier');
+        LoggerService.debug(
+          'Health score snapshot saved: ${current.tier.name} tier',
+        );
       }
     } catch (e, stackTrace) {
       LoggerService.error(

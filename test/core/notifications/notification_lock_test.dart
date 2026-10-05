@@ -19,6 +19,7 @@ import 'package:inv_tracker/features/goals/presentation/providers/goals_provider
 import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/document_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
 import 'package:inv_tracker/features/onboarding/presentation/screens/onboarding_screen.dart';
@@ -110,6 +111,9 @@ void main() {
         // Overview watches archived investments too (A28). Without this the
         // stream reads Firestore, fails, and leaves a retry timer running.
         archivedInvestmentsProvider.overrideWith((ref) => Stream.value([])),
+        // Today's date checks the clock once a minute for midnight (A21);
+        // a fixed date leaves no timer running when the test ends.
+        valuationDateProvider.overrideWithValue(DateTime(2026, 10, 4)),
       ],
     );
     addTearDown(container.dispose);
