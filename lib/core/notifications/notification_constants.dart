@@ -144,6 +144,12 @@ class NotificationPrefsKeys {
   static String goalMilestoneShown(String goalId, int milestonePercent) =>
       'goal_milestone_shown_${goalId}_$milestonePercent';
 
+  /// Due date (yyyy-MM-dd) of the latest income reminder for an investment
+  /// that was shown or handed to the OS, so a reminder for a due day that
+  /// has already been delivered is not shown again.
+  static String incomeReminderDue(String investmentId) =>
+      'income_reminder_due_$investmentId';
+
   /// Track when idle alert was last shown for an investment
   static String idleAlertLastShown(String investmentId) =>
       'idle_alert_last_shown_$investmentId';
