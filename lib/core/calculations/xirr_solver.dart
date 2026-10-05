@@ -450,7 +450,8 @@ class XirrSolver {
   /// 1. Start with interval [-0.99, 5.0] (i.e., -99% to 500% return)
   /// 2. Check if f(low) and f(high) have opposite signs (root exists)
   /// 3. If not, expand range to [-0.99, 10.0] and try again
-  /// 4. If still not, move low up to high and double high, up to 1e6
+  /// 4. If still not and the flows made money (sum > 0), move low up to high
+  ///    and double high, up to 1e6
   /// 5. If still no root, return null
   /// 6. Otherwise, repeatedly bisect interval until convergence
   ///
@@ -475,7 +476,11 @@ class XirrSolver {
       double fHigh2 = _f(high, yearsFromStart, amounts);
       // Short, very profitable holdings have roots above 1000%: keep doubling
       // the upper end, bisecting only the newest segment, up to the bound.
-      while (fLow.sign == fHigh2.sign && high < _maxBisectionRate) {
+      // Only flows that made money (NPV at 0% is the plain sum) are searched:
+      // a net loss can have a far multiple-root above 1000%, which would show
+      // a losing investment as ">1000%".
+      final net = amounts.fold(0.0, (s, a) => s + a);
+      while (net > 0 && fLow.sign == fHigh2.sign && high < _maxBisectionRate) {
         low = high;
         fLow = fHigh2;
         high = min(high * 2, _maxBisectionRate);

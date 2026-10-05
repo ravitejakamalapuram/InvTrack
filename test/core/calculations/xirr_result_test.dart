@@ -65,6 +65,28 @@ void main() {
       expect(result.value, closeTo(54211840.577839525, 1e-6));
     });
 
+    test('a net loss never gets an exact rate above 1000%', () {
+      // An early payout followed by larger INVESTs: the flows lost 2,63,597
+      // in 113 days. NPV has a far root above 1000% (about 1039.82), but a
+      // money-losing investment must not show ">1000%". With no root in
+      // [-99%, 1000%] the labelled CAGR fallback answers with a loss.
+      final dates = [
+        DateTime(2024, 1, 1),
+        DateTime(2024, 1, 23),
+        DateTime(2024, 3, 6),
+        DateTime(2024, 4, 21),
+        DateTime(2024, 4, 23),
+      ];
+      final amounts = [-44359.0, 186256.0, -175070.0, -122816.0, -107608.0];
+
+      final result = XirrSolver.solve(dates, amounts);
+
+      expect(result.method, XirrMethod.approximate);
+      expect(result.value, isNegative);
+      // The same CAGR fallback the solver gave before A73: -94.2% approx.
+      expect(result.value, closeTo(-0.9420565724177042, 1e-6));
+    });
+
     test('a single INVEST flow is undefined, not 0%', () {
       final dates = [DateTime(2026, 1, 1)];
       final amounts = [-100000.0];
