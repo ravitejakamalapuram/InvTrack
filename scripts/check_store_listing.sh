@@ -25,9 +25,12 @@ export LC_ALL=C.UTF-8
 S="([[:space:]]|"$'\xc2\xa0'")+"
 
 # Claims that are false or unproven for this app. Data is stored in Cloud
-# Firestore, and no security or accessibility audit exists. Matched
-# case-insensitively, with straight or curly apostrophes.
+# Firestore, where the developer can read it, and no security or
+# accessibility audit exists. Matched case-insensitively, with straight or
+# curly apostrophes.
 BANNED_CLAIMS=(
+  "only${S}you${S}can${S}(read|see|access)"
+  "private${S}cloud"
   "do(es)?(n['’]?t|${S}not)${S}store"
   "never${S}(store|leave)"
   "stays${S}with${S}you"

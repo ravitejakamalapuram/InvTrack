@@ -16,10 +16,10 @@
 /// Different locales format numbers differently:
 ///
 /// ### Indian Locale (en_IN)
-/// - 1,000 → "1K"
-/// - 1,00,000 → "1L" (1 lakh)
-/// - 10,00,000 → "10L" (10 lakhs)
-/// - 1,00,00,000 → "1Cr" (1 crore)
+/// - 99,999 → "99,999" (shown in full below one lakh)
+/// - 1,00,000 → "1 L" (1 lakh)
+/// - 99,94,999 → "99.95 L"
+/// - 1,00,00,000 → "1 Cr" (1 crore)
 ///
 /// ### Western Locales (en_US, en_GB, de_DE)
 /// - 1,000 → "1K"
@@ -36,7 +36,7 @@
 ///
 /// // Compact formatting (for cards, lists)
 /// final compact = formatCompactCurrency(100000, symbol: symbol, locale: locale);
-/// print(compact); // ₹1L (Indian) or $100K (Western)
+/// print(compact); // ₹1 L (Indian) or $100K (Western)
 ///
 /// // Full formatting (for detail screens)
 /// final full = formatCurrency(100000, symbol, locale);
@@ -49,11 +49,11 @@
 ///   locale: locale,
 ///   compactThreshold: 100000,
 /// );
-/// print(smart); // ₹1L (Indian) or $100K (Western)
+/// print(smart); // ₹1 L (Indian) or $100K (Western)
 ///
 /// // Using extension methods
 /// final formatter = ref.watch(currencyFormatProvider);
-/// print(formatter.formatCompact(100000)); // ₹1L or $100K
+/// print(formatter.formatCompact(100000)); // ₹1 L or $100K
 /// ```
 ///
 /// ## Supported Currencies
@@ -85,6 +85,8 @@
 /// - [getCurrencyLocale] for currency locale mapping
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
@@ -97,7 +99,7 @@ final Map<String, NumberFormat> _formatters = {};
 
 /// Helper to get cached formatter
 NumberFormat _getCachedFormatter({
-  required String type, // 'currency', 'compact', 'decimal'
+  required String type, // 'currency', 'scaled', 'compact', 'decimal'
   String? locale,
   String? symbol,
   int? decimalDigits,
@@ -111,6 +113,13 @@ NumberFormat _getCachedFormatter({
           symbol: symbol,
           decimalDigits: decimalDigits,
         );
+      case 'scaled':
+        // Up to [decimalDigits] decimals, trailing zeros dropped.
+        return NumberFormat.currency(
+          locale: locale,
+          symbol: symbol,
+          decimalDigits: decimalDigits,
+        )..minimumFractionDigits = 0;
       case 'compact':
         return NumberFormat.compactCurrency(
           locale: locale,
@@ -175,7 +184,11 @@ const Map<String, String> _currencySymbols = {
   'EGP': 'E£',
 };
 
-/// Locale mapping for proper number formatting
+/// Locale mapping for proper number formatting.
+///
+/// Every locale here must print Latin digits: the UI is English, and the
+/// symbol is supplied separately. bn_BD and ar_EG print Bengali and
+/// Arabic-Indic digits, so BDT uses en_IN (same lakh grouping) and EGP en_US.
 const Map<String, String> _currencyLocales = {
   'USD': 'en_US',
   'EUR': 'de_DE',
@@ -207,7 +220,7 @@ const Map<String, String> _currencyLocales = {
   'IDR': 'id_ID',
   'PHP': 'fil_PH',
   'VND': 'vi_VN',
-  'BDT': 'bn_BD',
+  'BDT': 'en_IN',
   'PKR': 'ur_PK',
   'LKR': 'si_LK',
   'ILS': 'he_IL',
@@ -219,7 +232,7 @@ const Map<String, String> _currencyLocales = {
   'PEN': 'es_PE',
   'NGN': 'en_NG',
   'KES': 'sw_KE',
-  'EGP': 'ar_EG',
+  'EGP': 'en_US',
 };
 
 /// Get currency symbol from currency code.
@@ -504,8 +517,8 @@ String formatNumber(double amount, String locale, {int decimalDigits = 0}) {
 /// ```dart
 /// // Indian locale (threshold = 100000)
 /// formatSmartCurrency(50000, symbol: '₹', locale: 'en_IN'); // ₹50,000 (full)
-/// formatSmartCurrency(100000, symbol: '₹', locale: 'en_IN'); // ₹1L (compact)
-/// formatSmartCurrency(1000000, symbol: '₹', locale: 'en_IN'); // ₹10L (compact)
+/// formatSmartCurrency(100000, symbol: '₹', locale: 'en_IN'); // ₹1 L (compact)
+/// formatSmartCurrency(1000000, symbol: '₹', locale: 'en_IN'); // ₹10 L (compact)
 ///
 /// // US locale (threshold = 100000)
 /// formatSmartCurrency(50000, symbol: '\$', locale: 'en_US'); // \$50,000 (full)
@@ -532,14 +545,7 @@ String formatSmartCurrency(
   final absAmount = amount.abs();
 
   if (absAmount >= compactThreshold) {
-    // Use locale-aware compact formatting
-    final compactFormatter = _getCachedFormatter(
-      type: 'compact',
-      symbol: symbol,
-      locale: locale,
-      decimalDigits: 2,
-    );
-    return compactFormatter.format(amount);
+    return _formatCompact(amount, symbol, locale, 2);
   }
 
   return formatCurrency(amount, symbol, locale);
@@ -547,8 +553,9 @@ String formatSmartCurrency(
 
 /// Format amount for display in constrained spaces (cards, lists).
 ///
-/// **Always uses locale-aware compact format** for amounts >= 1000.
+/// **Always uses compact format** for amounts >= 1000 (>= 1 lakh in en_IN).
 /// This is the **recommended function** for cards, lists, and tight spaces.
+/// Up to 2 decimals are shown and trailing zeros are dropped.
 ///
 /// ## Parameters
 ///
@@ -563,17 +570,16 @@ String formatSmartCurrency(
 /// ## Example
 ///
 /// ```dart
-/// // Indian locale
-/// formatCompactCurrency(1000, symbol: '₹', locale: 'en_IN'); // ₹1K
-/// formatCompactCurrency(100000, symbol: '₹', locale: 'en_IN'); // ₹1L
-/// formatCompactCurrency(1000000, symbol: '₹', locale: 'en_IN'); // ₹10L
-/// formatCompactCurrency(10000000, symbol: '₹', locale: 'en_IN'); // ₹1Cr
+/// // Indian locale: lakh (L) and crore (Cr); below one lakh in full
+/// formatCompactCurrency(99999, symbol: '₹', locale: 'en_IN'); // ₹99,999
+/// formatCompactCurrency(9994999, symbol: '₹', locale: 'en_IN'); // ₹99.95 L
+/// formatCompactCurrency(9999999, symbol: '₹', locale: 'en_IN'); // ₹1 Cr
+/// formatCompactCurrency(1e10, symbol: '₹', locale: 'en_IN'); // ₹1,000 Cr
 ///
-/// // US locale
+/// // Other locales: K, M, B, T with the locale's separators
 /// formatCompactCurrency(1000, symbol: '\$', locale: 'en_US'); // \$1K
-/// formatCompactCurrency(100000, symbol: '\$', locale: 'en_US'); // \$100K
-/// formatCompactCurrency(1000000, symbol: '\$', locale: 'en_US'); // \$1M
-/// formatCompactCurrency(10000000, symbol: '\$', locale: 'en_US'); // \$10M
+/// formatCompactCurrency(1234567, symbol: '\$', locale: 'en_US'); // \$1.23M
+/// formatCompactCurrency(1234567, symbol: '€', locale: 'de_DE'); // 1,23M €
 /// ```
 ///
 /// ## When to Use
@@ -581,16 +587,6 @@ String formatSmartCurrency(
 /// - **Use formatCompactCurrency()**: For cards, lists, constrained spaces
 /// - **Use formatSmartCurrency()**: For adaptive formatting (compact for large amounts)
 /// - **Use formatCurrency()**: For detail screens, full precision
-///
-/// ## Migration from formatCompactIndian()
-///
-/// ```dart
-/// // ❌ OLD (always uses Indian notation)
-/// formatCompactIndian(100000, symbol: '₹');
-///
-/// // ✅ NEW (respects locale)
-/// formatCompactCurrency(100000, symbol: '₹', locale: 'en_IN');
-/// ```
 ///
 /// ## See Also
 ///
@@ -601,13 +597,106 @@ String formatCompactCurrency(
   required String symbol,
   String locale = 'en_US',
 }) {
-  final compactFormatter = _getCachedFormatter(
-    type: 'compact',
+  return _formatCompact(amount, symbol, locale, 2);
+}
+
+/// Formats [amount] in the currency [currencyCode] with its own symbol and
+/// number locale, e.g. 870000 INR → '₹8,70,000.00', 5000 USD → '\$5,000.00'.
+///
+/// For text built outside a widget (notifications); an unknown code is shown
+/// as the code itself rather than another currency's symbol.
+String formatCurrencyForCode(
+  double amount,
+  String currencyCode, {
+  int decimalDigits = 2,
+}) {
+  final symbol = _currencySymbols[currencyCode] ?? currencyCode;
+  return formatCurrency(
+    amount,
+    symbol,
+    getCurrencyLocale(currencyCode),
+    decimalDigits: decimalDigits,
+  );
+}
+
+/// A positive amount split into a scaled value and its compact unit.
+typedef CompactParts = ({double value, String unit});
+
+/// Splits [absAmount] (>= 0) into lakh ('L') or crore ('Cr') units, rounded
+/// to [maxDecimals]. Amounts that round below one lakh keep no unit and are
+/// rounded to whole units from 1,000 up. A value that rounds to 100 L is
+/// promoted to crore, so 9,999,999 gives 1 Cr, never 100 L or 0.99 Cr.
+CompactParts indianCompactParts(double absAmount, {int maxDecimals = 2}) {
+  if (absAmount < 1000) {
+    return (value: _roundTo(absAmount, maxDecimals), unit: '');
+  }
+  final whole = absAmount.roundToDouble();
+  if (whole < 1e5) return (value: whole, unit: '');
+  final lakhs = _roundTo(absAmount / 1e5, maxDecimals);
+  if (lakhs < 100) return (value: lakhs, unit: 'L');
+  return (value: _roundTo(absAmount / 1e7, maxDecimals), unit: 'Cr');
+}
+
+/// Western compact units, smallest first.
+const List<(double, String)> _westernUnits = [
+  (1e3, 'K'),
+  (1e6, 'M'),
+  (1e9, 'B'),
+  (1e12, 'T'),
+];
+
+/// Splits [absAmount] (>= 0) into K, M, B or T, rounded to [maxDecimals],
+/// promoting 1,000 of a unit to the next one (999,999.999 gives 1M).
+CompactParts _westernCompactParts(double absAmount, int maxDecimals) {
+  final rounded = _roundTo(absAmount, maxDecimals);
+  if (rounded < 1000) return (value: rounded, unit: '');
+  var i = 0;
+  var value = _roundTo(absAmount / _westernUnits[i].$1, maxDecimals);
+  while (value >= 1000 && i < _westernUnits.length - 1) {
+    i++;
+    value = _roundTo(absAmount / _westernUnits[i].$1, maxDecimals);
+  }
+  return (value: value, unit: _westernUnits[i].$2);
+}
+
+double _roundTo(double value, int decimals) {
+  final factor = math.pow(10, decimals);
+  return (value * factor).roundToDouble() / factor;
+}
+
+/// Matches the last digit of a formatted amount, where the unit goes.
+final RegExp _lastDigit = RegExp(r'\d(?!.*\d)');
+
+/// The one compact formatter for every currency.
+///
+/// en_IN uses lakh and crore with a space ('₹99.95 L', '₹1,000 Cr'); other
+/// locales use K/M/B/T ('\$1.23M', '1,23M €'). The number keeps the locale's
+/// own separators and symbol position, and the sign appears once.
+String _formatCompact(
+  double amount,
+  String symbol,
+  String? locale,
+  int maxDecimals,
+) {
+  final formatter = _getCachedFormatter(
+    type: 'scaled',
     symbol: symbol,
     locale: locale,
-    decimalDigits: 2,
+    decimalDigits: maxDecimals,
   );
-  return compactFormatter.format(amount);
+  if (!amount.isFinite) return formatter.format(amount);
+
+  final isIndian = locale == 'en_IN';
+  final parts = isIndian
+      ? indianCompactParts(amount.abs(), maxDecimals: maxDecimals)
+      : _westernCompactParts(amount.abs(), maxDecimals);
+  // A value that rounds to zero must not print as '-₹0'.
+  final signed = amount < 0 && parts.value != 0 ? -parts.value : parts.value;
+  final text = formatter.format(signed);
+  if (parts.unit.isEmpty) return text;
+
+  final unit = isIndian ? ' ${parts.unit}' : parts.unit;
+  return text.replaceFirstMapped(_lastDigit, (m) => '${m[0]}$unit');
 }
 
 /// Extension on NumberFormat for easy smart formatting
@@ -619,16 +708,7 @@ extension SmartCurrencyFormat on NumberFormat {
     final absAmount = amount.abs();
 
     if (absAmount >= compactThreshold) {
-      // Use locale-aware compact formatting
-      // Indian locale (en_IN) will show: 1L, 1Cr
-      // Western locales (en_US, en_GB, etc.) will show: 100K, 1M
-      final compactFormatter = _getCachedFormatter(
-        type: 'compact',
-        symbol: currencySymbol,
-        locale: locale,
-        decimalDigits: 2,
-      );
-      return compactFormatter.format(amount);
+      return _formatCompact(amount, currencySymbol, locale, 2);
     }
 
     return format(amount);
@@ -638,24 +718,12 @@ extension SmartCurrencyFormat on NumberFormat {
   /// Uses 2 decimals for better precision
   /// Respects locale for proper number formatting
   String formatCompact(double amount) {
-    final compactFormatter = _getCachedFormatter(
-      type: 'compact',
-      symbol: currencySymbol,
-      locale: locale,
-      decimalDigits: 2,
-    );
-    return compactFormatter.format(amount);
+    return _formatCompact(amount, currencySymbol, locale, 2);
   }
 
   /// Format compact with minimal decimals (for very tight spaces)
   /// Respects locale for proper number formatting
   String formatCompactShort(double amount) {
-    final compactFormatter = _getCachedFormatter(
-      type: 'compact',
-      symbol: currencySymbol,
-      locale: locale,
-      decimalDigits: 1,
-    );
-    return compactFormatter.format(amount);
+    return _formatCompact(amount, currencySymbol, locale, 1);
   }
 }

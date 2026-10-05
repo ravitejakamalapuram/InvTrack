@@ -67,6 +67,11 @@ void main() {
       'OWASP-compliant': 'OWASP-compliant security.',
       'MASVS-compliant': 'MASVS-compliant app.',
       'WCAG 2.1 AA-compliant': 'WCAG 2.1 AA-compliant screens',
+      // The operator can read data stored in Firebase (A69, C074).
+      'only you can read': 'Only you can read your records.',
+      'only you can see split across a line break':
+          'Only you\ncan see your data.',
+      'private cloud': 'Synced to your private cloud storage.',
     };
 
     claims.forEach((name, text) {

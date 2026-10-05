@@ -103,7 +103,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify progress message shows Indian notation (L for lakhs)
-      expect(find.textContaining('₹2.5L of ₹10L'), findsOneWidget);
+      expect(find.textContaining('₹2.5 L of ₹10 L'), findsOneWidget);
     });
 
     testWidgets(

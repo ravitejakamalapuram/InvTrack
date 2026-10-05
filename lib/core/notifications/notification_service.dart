@@ -103,7 +103,6 @@ library;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/handlers/alert_notification_handler.dart';
 import 'package:inv_tracker/core/notifications/handlers/goal_notification_handler.dart';
@@ -113,6 +112,7 @@ import 'package:inv_tracker/core/notifications/notification_constants.dart';
 import 'package:inv_tracker/core/notifications/notification_navigator.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 import 'package:inv_tracker/core/notifications/notification_preferences.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -677,21 +677,10 @@ class NotificationService with NotificationPreferencesMixin {
     await scheduleFYSummary();
   }
 
-  /// Format currency value for display
-  String _formatCurrency(double amount, String currency) {
-    final symbols = {
-      'USD': '\$',
-      'EUR': '€',
-      'GBP': '£',
-      'INR': '₹',
-      'JPY': '¥',
-    };
-    final symbol = symbols[currency] ?? currency;
-
-    // Use NumberFormat for locale-aware formatting
-    final formatter = NumberFormat.currency(symbol: symbol, decimalDigits: 2);
-    return formatter.format(amount);
-  }
+  /// Format currency value for display, in the currency's own symbol and
+  /// number locale (e.g. '₹8,70,000.00', '\$5,000.00').
+  String _formatCurrency(double amount, String currency) =>
+      formatCurrencyForCode(amount, currency);
 
   /// Show a test notification (for developer testing)
   Future<bool> showTestNotification() async {
