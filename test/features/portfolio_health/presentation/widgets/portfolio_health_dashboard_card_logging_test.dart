@@ -21,10 +21,26 @@ class _FailingHealth extends PortfolioHealth {
   }
 }
 
-Widget _app(ThemeMode mode, {bool enabled = true}) => ProviderScope(
+// An upstream failure is rethrown unchanged on every retry, so Riverpod's
+// automatic retries see the same Exception instance each time.
+final _sameError = Exception('upstream failed');
+
+class _SameErrorHealth extends PortfolioHealth {
+  @override
+  Future<PortfolioHealthScore?> build() async {
+    _loads++;
+    throw _sameError;
+  }
+}
+
+Widget _app(
+  ThemeMode mode, {
+  bool enabled = true,
+  PortfolioHealth Function() health = _FailingHealth.new,
+}) => ProviderScope(
   overrides: [
     isPortfolioHealthEnabledProvider.overrideWithValue(enabled),
-    portfolioHealthProvider.overrideWith(_FailingHealth.new),
+    portfolioHealthProvider.overrideWith(health),
   ],
   child: MaterialApp(
     theme: ThemeData.light(),
@@ -56,6 +72,23 @@ void main() {
       'PortfolioHealthDashboardCard error | Metadata: '
       'widget=PortfolioHealthDashboardCard',
     );
+  });
+
+  testWidgets('a persistent failure retried with the same error is recorded '
+      'once', (tester) async {
+    final records = recordCrashReports();
+    _loads = 0;
+
+    await tester.pumpWidget(
+      _app(ThemeMode.light, health: _SameErrorHealth.new),
+    );
+    // Let Riverpod run all of its automatic retries.
+    for (var i = 0; i < 40; i++) {
+      await tester.pump(const Duration(seconds: 2));
+    }
+
+    expect(_loads, greaterThan(1));
+    expect(records, hasLength(1));
   });
 
   testWidgets('a disabled card neither loads the score nor reports', (

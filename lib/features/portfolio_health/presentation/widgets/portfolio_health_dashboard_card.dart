@@ -32,6 +32,11 @@ class _PortfolioHealthDashboardCardState
     extends ConsumerState<PortfolioHealthDashboardCard> {
   ProviderSubscription<AsyncValue<PortfolioHealthScore?>>? _scoreErrors;
 
+  /// The last error sent to Crashlytics. Riverpod's automatic retries pass
+  /// through loading states that still carry the error, so comparing with
+  /// the previous state would skip a failure that repeats the same error.
+  Object? _reportedError;
+
   @override
   void initState() {
     super.initState();
@@ -51,10 +56,11 @@ class _PortfolioHealthDashboardCardState
   }
 
   void _reportError(
-    AsyncValue<PortfolioHealthScore?>? previous,
+    AsyncValue<PortfolioHealthScore?>? _,
     AsyncValue<PortfolioHealthScore?> next,
   ) {
-    if (next is! AsyncError || identical(next.error, previous?.error)) return;
+    if (next is! AsyncError || identical(next.error, _reportedError)) return;
+    _reportedError = next.error;
     LoggerService.error(
       'PortfolioHealthDashboardCard error',
       error: next.error,
