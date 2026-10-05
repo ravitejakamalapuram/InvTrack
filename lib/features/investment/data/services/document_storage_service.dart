@@ -93,17 +93,19 @@ class DocumentStorageService {
     return filePath;
   }
 
-  /// Read a document file as bytes
+  /// Read a document file as bytes. Null when the file is missing (the
+  /// caller reports that) or outside this user's documents directory.
   Future<Uint8List?> readDocument(String localPath) async {
+    // A missing file is not a security event. Checked first because the
+    // path check cannot resolve a file that does not exist.
+    if (!await File(localPath).exists()) return null;
     if (!await _isSafePath(localPath)) {
       // No path in the log: it holds the user id and the file name.
       LoggerService.warn('Security: Blocked access to unsafe path');
       return null;
     }
 
-    final file = File(localPath);
-    if (!await file.exists()) return null;
-    return file.readAsBytes();
+    return File(localPath).readAsBytes();
   }
 
   /// Check if a document file exists

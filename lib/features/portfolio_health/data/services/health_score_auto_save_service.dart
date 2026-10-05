@@ -6,7 +6,6 @@ library;
 
 import 'dart:async';
 
-import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/portfolio_health/data/repositories/health_score_repository.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
@@ -81,18 +80,12 @@ class HealthScoreAutoSaveService {
           'Health score snapshot saved: ${current.tier.name} tier',
         );
       }
-    } catch (e, stackTrace) {
-      LoggerService.error(
-        'Failed to auto-save health score snapshot',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      await CrashlyticsService(
-        debugModeEnabled: CrashlyticsService.enableInDebugMode,
-      ).recordError(
-        e,
-        stackTrace,
-        reason: 'HealthScoreAutoSave failure',
+    } catch (e) {
+      // Local log only: the repository already reported a real failure once,
+      // and an offline timeout is expected.
+      LoggerService.info(
+        'Health score auto-save skipped',
+        metadata: {'errorType': e.runtimeType.toString()},
       );
       // Don't rethrow - auto-save failures should not break the app
     } finally {
@@ -135,11 +128,11 @@ class HealthScoreAutoSaveService {
 
       await _repository.saveSnapshot(current);
       LoggerService.debug('Health score snapshot force-saved');
-    } catch (e, stackTrace) {
-      LoggerService.error(
-        'Failed to force-save health score snapshot',
-        error: e,
-        stackTrace: stackTrace,
+    } catch (e) {
+      // Local log only, as in _checkAndSave; the caller gets the error.
+      LoggerService.info(
+        'Health score force-save failed',
+        metadata: {'errorType': e.runtimeType.toString()},
       );
       rethrow; // Force-save failures should be visible
     } finally {

@@ -7,11 +7,15 @@
 // - Force save functionality
 // - Save conditions (score change >1pt OR >24h old)
 // - Concurrent save prevention
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:inv_tracker/features/portfolio_health/data/repositories/health_score_repository.dart';
 import 'package:inv_tracker/features/portfolio_health/data/services/health_score_auto_save_service.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
+
+import '../../../../mocks/crashlytics_recorder.dart';
 
 class MockHealthScoreRepository extends Mock implements HealthScoreRepository {}
 
@@ -134,6 +138,56 @@ void main() {
 
       // After dispose, forceSave should do nothing
       expect(() => service.forceSave(), returnsNormally);
+    });
+  });
+
+  // A127: a save that times out offline is expected (Firestore keeps the
+  // write and syncs later), so it is not a crash report. Real failures are
+  // recorded once, by the repository.
+  group('crash reports', () {
+    testWidgets('an offline timeout during auto-save records nothing', (
+      tester,
+    ) async {
+      final records = recordCrashReports();
+      when(
+        () => mockRepository.getLatestSnapshot(),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockRepository.saveSnapshot(any()),
+      ).thenThrow(TimeoutException('Health score save timed out'));
+      service.updateScore(createTestScore());
+
+      service.start();
+      await tester.pump(const Duration(minutes: 5));
+
+      verify(() => mockRepository.saveSnapshot(any())).called(1);
+      expect(records, isEmpty);
+      service.stop();
+    });
+
+    test('an offline timeout during force-save records nothing', () async {
+      final records = recordCrashReports();
+      when(
+        () => mockRepository.saveSnapshot(any()),
+      ).thenThrow(TimeoutException('Health score save timed out'));
+      service.updateScore(createTestScore());
+
+      await expectLater(service.forceSave(), throwsA(isA<TimeoutException>()));
+
+      expect(records, isEmpty);
+    });
+
+    test('a failed auto-save the repository already recorded is not '
+        'recorded again', () async {
+      final records = recordCrashReports();
+      when(
+        () => mockRepository.saveSnapshot(any()),
+      ).thenThrow(Exception('permission-denied'));
+      service.updateScore(createTestScore());
+
+      await expectLater(service.forceSave(), throwsA(isA<Exception>()));
+
+      expect(records, isEmpty);
     });
   });
 }

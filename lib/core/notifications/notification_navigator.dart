@@ -11,7 +11,6 @@ import 'dart:async';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
@@ -364,21 +363,14 @@ class NotificationNavigator {
       );
       return true;
     } catch (e, stack) {
+      // One record per failure. An unknown report type is a
+      // ValidationException, which LoggerService does not report.
       LoggerService.warn(
         'Failed to navigate to dynamic report',
-        metadata: {'error': e.toString(), 'reportType': reportTypeId},
+        error: e,
+        stackTrace: stack,
+        metadata: {'reportType': reportTypeId},
       );
-
-      // Report non-validation errors to Crashlytics
-      if (e is! ValidationException) {
-        await CrashlyticsService(
-          debugModeEnabled: CrashlyticsService.enableInDebugMode,
-        ).recordError(
-          e,
-          stack,
-          reason: 'notification_navigator._navigateToDynamicReport',
-        );
-      }
       return false;
     }
   }
