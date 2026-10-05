@@ -161,8 +161,18 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     if (!maturityRemindersEnabled) return;
 
     final now = _clock();
-    final sevenDaysBefore = maturityDate.subtract(const Duration(days: 7));
-    final oneDayBefore = maturityDate.subtract(const Duration(days: 1));
+    // Count back calendar days, not 24-hour periods: across a DST change,
+    // a local midnight minus 7 x 24 hours is 23:00 on the day before.
+    final sevenDaysBefore = DateTime(
+      maturityDate.year,
+      maturityDate.month,
+      maturityDate.day - 7,
+    );
+    final oneDayBefore = DateTime(
+      maturityDate.year,
+      maturityDate.month,
+      maturityDate.day - 1,
+    );
 
     // Calculate returns if both values are provided
     double? returnPercent;

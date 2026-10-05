@@ -67,7 +67,9 @@ void main() {
           ),
         ];
 
-        final buckets = TaxAndBasisCalculator.calculateMonthlyBuckets(cashFlows);
+        final buckets = TaxAndBasisCalculator.calculateMonthlyBuckets(
+          cashFlows,
+        );
 
         expect(buckets.length, 2);
 
@@ -78,7 +80,10 @@ void main() {
         expect(mayBucket.fees, 50.0);
         expect(mayBucket.income, 200.0);
         expect(mayBucket.returns, 0.0);
-        expect(mayBucket.net, -850.0); // (0 + 200) - (1000 + 50) = 200 - 1050 = -850
+        expect(
+          mayBucket.net,
+          -850.0,
+        ); // (0 + 200) - (1000 + 50) = 200 - 1050 = -850
 
         final juneKey = DateTime(2023, 6, 1);
         expect(buckets.containsKey(juneKey), isTrue);
@@ -133,7 +138,10 @@ void main() {
           ),
         ];
 
-        final (shortTerm, longTerm) = TaxAndBasisCalculator.calculateCapitalGains(
+        final (
+          shortTerm,
+          longTerm,
+        ) = TaxAndBasisCalculator.calculateCapitalGains(
           cashFlows: cashFlows,
           investmentStartDates: startDates,
           assumedGainPercentage: 0.15, // 15% gain
@@ -143,6 +151,32 @@ void main() {
         expect(shortTerm, 300.0);
         // long-term gains: 5000 * 0.15 = 750
         expect(longTerm, 750.0);
+      });
+
+      // A70 (#835): a holding period is counted in calendar days. Local
+      // midnights either side of a DST change are an hour short of a whole
+      // number of 24-hour days.
+      test('a return exactly 365 calendar days after the start is long-term '
+          'even when the values are an hour short of 365 x 24 hours', () {
+        final (
+          shortTerm,
+          longTerm,
+        ) = TaxAndBasisCalculator.calculateCapitalGains(
+          cashFlows: [
+            SimpleCashFlow(
+              investmentId: 'inv-1',
+              date: DateTime.utc(2026, 3, 9),
+              amount: 1000.0,
+              signedAmount: 1000.0,
+              currency: 'INR',
+              calculationType: CalculationCashFlowType.returnFlow,
+            ),
+          ],
+          investmentStartDates: {'inv-1': DateTime.utc(2025, 3, 9, 1)},
+        );
+
+        expect(shortTerm, 0.0);
+        expect(longTerm, 100.0);
       });
 
       test('returns zero gains if there are no return/exit transactions', () {
@@ -158,7 +192,10 @@ void main() {
           ),
         ];
 
-        final (shortTerm, longTerm) = TaxAndBasisCalculator.calculateCapitalGains(
+        final (
+          shortTerm,
+          longTerm,
+        ) = TaxAndBasisCalculator.calculateCapitalGains(
           cashFlows: cashFlows,
           investmentStartDates: startDates,
         );

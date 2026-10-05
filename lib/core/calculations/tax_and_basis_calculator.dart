@@ -88,7 +88,13 @@ class TaxAndBasisCalculator {
         final startDate = investmentStartDates[cf.investmentId];
         if (startDate == null) continue;
 
-        final holdingDays = cf.date.difference(startDate).inDays;
+        // Calendar days: elapsed time is an hour short across a DST change.
+        final holdingDays =
+            DateTime.utc(cf.date.year, cf.date.month, cf.date.day)
+                .difference(
+                  DateTime.utc(startDate.year, startDate.month, startDate.day),
+                )
+                .inDays;
         final gain = cf.amount * assumedGainPercentage;
 
         if (holdingDays < 365) {
