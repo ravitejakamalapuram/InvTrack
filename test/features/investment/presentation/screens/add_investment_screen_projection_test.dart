@@ -71,17 +71,18 @@ Future<void> _showInterestRow(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('RD template: Rs1L over 12 months @6.5% earns Rs3.57K', (
+  testWidgets('RD template: Rs1L over 12 months @6.5% earns Rs3,572', (
     tester,
   ) async {
     await _pumpForm(tester, template: InvestmentTemplates.recurringDeposit);
     await _showInterestRow(tester);
 
     // 12 installments of 8,333.33: interest 3,572.05, maturity 1,03,572.05.
-    // The lump-sum formula showed +6.66K on a 1.07L maturity.
-    expect(find.text('+₹6.66K'), findsNothing);
-    expect(find.text('+₹3.57K'), findsOneWidget);
-    expect(find.text('₹1.04L'), findsOneWidget);
+    // The lump-sum formula showed +₹6,660 on a ₹1.07 L maturity. Amounts
+    // below a lakh are shown in full (A18).
+    expect(find.text('+₹6,660'), findsNothing);
+    expect(find.text('+₹3,572'), findsOneWidget);
+    expect(find.text('₹1.04 L'), findsOneWidget);
   });
 
   testWidgets('Fixed Deposit with no compounding chosen compounds quarterly', (
@@ -102,8 +103,8 @@ void main() {
     await _showInterestRow(tester);
 
     // Rs1L @7% for 5 years: 1,41,477.82 quarterly (annual gave 1,40,255.17).
-    expect(find.text('+₹40.3K'), findsNothing);
-    expect(find.text('+₹41.5K'), findsOneWidget);
-    expect(find.text('₹1.41L'), findsOneWidget);
+    expect(find.text('+₹40,255'), findsNothing);
+    expect(find.text('+₹41,478'), findsOneWidget);
+    expect(find.text('₹1.41 L'), findsOneWidget);
   });
 }
