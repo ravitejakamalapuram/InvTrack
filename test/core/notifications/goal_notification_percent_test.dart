@@ -34,14 +34,14 @@ void main() {
   });
 
   // GAP3-07: milestones must never be announced backwards.
-  Future<void> check(double percent, {bool firstCheck = false}) =>
+  Future<void> check(double percent, {bool announce = true}) =>
       service.checkAndShowGoalMilestone(
         goalId: 'goal',
         goalName: 'House',
         progressPercent: percent,
         currentValue: percent * 10000,
         targetValue: 1000000,
-        firstCheck: firstCheck,
+        announce: announce,
       );
 
   test('after Goal Achieved, the lower milestones are not announced', () async {
@@ -57,7 +57,7 @@ void main() {
     // The milestones it had passed before it was first checked (here after
     // an update that measures goals differently) are recorded, not
     // announced.
-    await check(98, firstCheck: true);
+    await check(98, announce: false);
     await check(98.5);
     await check(99);
     await check(100);
@@ -67,10 +67,22 @@ void main() {
   });
 
   test('a milestone crossed after the first check is announced', () async {
-    await check(20, firstCheck: true);
+    await check(20, announce: false);
     await check(26);
 
     expect(plugin.shownNotifications, hasLength(1));
     expect(plugin.shownNotifications.single.title, contains('25%'));
+  });
+
+  test('a check that announces nothing records milestones silently', () async {
+    // 25% was announced before; a cash flow that crosses nothing must not
+    // announce 50% just because the goal is past it now.
+    await service.markGoalMilestoneShown('goal', 25);
+
+    await check(51, announce: false);
+    await check(52);
+
+    expect(plugin.shownNotifications, isEmpty);
+    expect(service.isGoalMilestoneShown('goal', 50), isTrue);
   });
 }

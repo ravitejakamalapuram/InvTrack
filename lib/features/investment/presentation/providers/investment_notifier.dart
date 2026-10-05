@@ -558,9 +558,6 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         createdAt: DateTime.now(),
         currency: currency ?? ref.read(currencyCodeProvider),
       );
-      // Goal progress before this cash flow, so the check after it can tell
-      // a milestone it crosses from one the goal had already passed.
-      final goalPercentsBefore = await _goalProgressPercents();
       await ref.read(investmentRepositoryProvider).addCashFlow(cashFlow);
 
       // Track analytics event
@@ -577,7 +574,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       }
 
       // Check for goal milestone achievements after any cash flow
-      await _checkGoalMilestonesAfterCashFlow(goalPercentsBefore);
+      await _checkGoalMilestonesAfterCashFlow(cashFlow.id);
 
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -979,10 +976,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   ///
   /// BUG FIX: Only check milestone if progress increased significantly (>0.5%)
   /// to avoid spamming notifications on every single cashflow addition.
-  /// [percentsBefore] is each goal's progress % from before the cash flow.
-  Future<void> _checkGoalMilestonesAfterCashFlow(
-    Map<String, double> percentsBefore,
-  ) async {
+  /// [newCashFlowId] is the cash flow just saved; progress without it is
+  /// the progress before it.
+  Future<void> _checkGoalMilestonesAfterCashFlow(String newCashFlowId) async {
     try {
       // Fetch data directly from repository to ensure fresh data
       final goalRepository = ref.read(goalRepositoryProvider);
@@ -997,6 +993,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
       // Get all cash flows
       final cashFlows = await investmentRepository.getAllCashFlows();
+      final cashFlowsBefore = cashFlows
+          .where((c) => c.id != newCashFlowId)
+          .toList();
 
       final notificationService = ref.read(notificationServiceProvider);
 
@@ -1026,6 +1025,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         if (batchConverter == null) continue;
         final GoalProgress progress;
         final double targetInBase;
+        final double previousPercent;
         try {
           progress = await GoalProgressCalculator.calculateMultiCurrency(
             goal: goal,
@@ -1041,12 +1041,20 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             baseCurrency: baseCurrency,
             fallbackStrategy: ConversionFallbackStrategy.throwError,
           );
+          previousPercent =
+              (await GoalProgressCalculator.calculateMultiCurrency(
+                goal: goal,
+                allInvestments: investments,
+                allCashFlows: cashFlowsBefore,
+                batchConverter: batchConverter,
+                baseCurrency: baseCurrency,
+                fallbackStrategy: ConversionFallbackStrategy.throwError,
+              )).progressPercent;
         } on CurrencyConversionException {
           continue;
         }
 
         final currentPercent = progress.progressPercent;
-        final previousPercent = percentsBefore[goal.id];
 
         // Check if we should notify about milestone achievements
         // This handles both boundary proximity AND crossed milestones
@@ -1065,9 +1073,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             targetValue: targetInBase,
             currency: baseCurrency,
             // Only a milestone this cash flow crossed is announced; ones
-            // the goal had passed before it, or without a reading from
-            // before it, are recorded.
-            firstCheck: !_crossedGoalMilestone(previousPercent, currentPercent),
+            // the goal had passed before it are recorded silently.
+            announce: _crossedGoalMilestone(previousPercent, currentPercent),
           );
         }
 
@@ -1134,44 +1141,6 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   }
 
   /// Whether progress went from below a milestone to at or above it.
-  static bool _crossedGoalMilestone(double? before, double after) =>
-      before != null && _goalMilestones.any((m) => before < m && after >= m);
-
-  /// Each active goal's progress % in the base currency, by goal id. Goals
-  /// whose amounts cannot be converted are left out, and any failure gives
-  /// no readings, so it never stops the cash flow being saved.
-  Future<Map<String, double>> _goalProgressPercents() async {
-    try {
-      final goals = await ref
-          .read(goalRepositoryProvider)
-          .watchActiveGoals()
-          .first;
-      final batchConverter = ref.read(batchCurrencyConverterProvider);
-      if (goals.isEmpty || batchConverter == null) return const {};
-      final investmentRepository = ref.read(investmentRepositoryProvider);
-      final investments = await investmentRepository.getAllInvestments();
-      final cashFlows = await investmentRepository.getAllCashFlows();
-      final baseCurrency = ref.read(currencyCodeProvider);
-
-      final percents = <String, double>{};
-      for (final goal in goals) {
-        try {
-          final progress = await GoalProgressCalculator.calculateMultiCurrency(
-            goal: goal,
-            allInvestments: investments,
-            allCashFlows: cashFlows,
-            batchConverter: batchConverter,
-            baseCurrency: baseCurrency,
-            fallbackStrategy: ConversionFallbackStrategy.throwError,
-          );
-          percents[goal.id] = progress.progressPercent;
-        } on CurrencyConversionException {
-          continue;
-        }
-      }
-      return percents;
-    } catch (_) {
-      return const {};
-    }
-  }
+  static bool _crossedGoalMilestone(double before, double after) =>
+      _goalMilestones.any((m) => before < m && after >= m);
 }

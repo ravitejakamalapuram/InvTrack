@@ -40,9 +40,9 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
   ///
   /// Announces only the highest milestone reached and records every lower
   /// one as shown, so milestones are never announced backwards (GAP3-07).
-  /// On the [firstCheck] of a goal with no milestone recorded yet, the
-  /// milestones it has already passed are recorded without a notification:
-  /// they were reached before, not now.
+  /// Without [announce] (the change being checked crossed no milestone),
+  /// every milestone reached is recorded without a notification: it was
+  /// reached before, not now.
   Future<void> checkAndShowGoalMilestone({
     required String goalId,
     required String goalName,
@@ -50,7 +50,7 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
     required double currentValue,
     required double targetValue,
     String currency = 'INR',
-    bool firstCheck = false,
+    bool announce = true,
   }) async {
     await ensureInitialized();
     if (!goalMilestonesEnabled) return;
@@ -64,15 +64,12 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
     final reachedMilestone = reached.last;
     if (isGoalMilestoneShown(goalId, reachedMilestone)) return;
 
-    final baseline =
-        firstCheck &&
-        !goalMilestones.any((m) => isGoalMilestoneShown(goalId, m));
-    if (!baseline && !await ensurePermissionsForShow()) return;
+    if (announce && !await ensurePermissionsForShow()) return;
 
     for (final milestone in reached) {
       await markGoalMilestoneShown(goalId, milestone);
     }
-    if (baseline) return;
+    if (!announce) return;
 
     final formattedCurrent = formatCurrency(currentValue, currency);
     final formattedTarget = formatCurrency(targetValue, currency);

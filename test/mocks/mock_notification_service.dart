@@ -85,7 +85,7 @@ class FakeNotificationService implements NotificationService {
     required double currentValue,
     required double targetValue,
     String currency = 'INR',
-    bool firstCheck = false,
+    bool announce = true,
   }) async {
     shownGoalMilestones.add(goalId);
   }

@@ -9,6 +9,8 @@ import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_notifier.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
 
 import '../../../../mocks/mock_analytics_service.dart';
 import '../../../../mocks/mock_currency_conversion_service.dart';
@@ -44,15 +46,38 @@ class _RecordingNotificationService extends FakeNotificationService {
     required double currentValue,
     required double targetValue,
     String currency = 'INR',
-    bool firstCheck = false,
+    bool announce = true,
   }) async {
     goalMilestones.add({
       'percent': progressPercent,
       'current': currentValue,
       'target': targetValue,
       'currency': currency,
-      'firstCheck': firstCheck,
+      'announce': announce,
     });
+  }
+}
+
+/// Logs the order in which the notifier saves and reads.
+class _LoggingInvestmentRepository extends FakeInvestmentRepository {
+  final calls = <String>[];
+
+  @override
+  Future<void> addCashFlow(CashFlowEntity cashFlow) {
+    calls.add('addCashFlow');
+    return super.addCashFlow(cashFlow);
+  }
+
+  @override
+  Future<List<InvestmentEntity>> getAllInvestments() {
+    calls.add('getAllInvestments');
+    return super.getAllInvestments();
+  }
+
+  @override
+  Future<List<CashFlowEntity>> getAllCashFlows() {
+    calls.add('getAllCashFlows');
+    return super.getAllCashFlows();
   }
 }
 
@@ -86,12 +111,12 @@ class _OfflineNoCacheConversionService extends MockCurrencyConversionService {
 /// them under '₹' whatever the base currency (GAP2-03). They must use the
 /// base currency and amounts converted to it (rate here: 1 USD = 83 INR).
 void main() {
-  late FakeInvestmentRepository repo;
+  late _LoggingInvestmentRepository repo;
   late FakeGoalRepository goals;
   late _RecordingNotificationService notifications;
 
   setUp(() {
-    repo = FakeInvestmentRepository();
+    repo = _LoggingInvestmentRepository();
     goals = FakeGoalRepository();
     notifications = _RecordingNotificationService();
   });
@@ -99,13 +124,16 @@ void main() {
   ProviderContainer containerFor(
     String baseCurrency, {
     CurrencyConversionService? conversion,
+    NotificationService? notificationService,
   }) {
     final container = ProviderContainer(
       overrides: [
         investmentRepositoryProvider.overrideWithValue(repo),
         goalRepositoryProvider.overrideWithValue(goals),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
-        notificationServiceProvider.overrideWithValue(notifications),
+        notificationServiceProvider.overrideWithValue(
+          notificationService ?? notifications,
+        ),
         currencyConversionServiceProvider.overrideWithValue(
           conversion ?? MockCurrencyConversionService(),
         ),
@@ -354,7 +382,7 @@ void main() {
       expect(notifications.goalMilestones, hasLength(1));
       final shown = notifications.goalMilestones.single;
       expect(shown['percent'] as double, closeTo(26, 1e-6));
-      expect(shown['firstCheck'], isFalse);
+      expect(shown['announce'], isTrue);
     });
 
     test(
@@ -390,7 +418,80 @@ void main() {
         expect(notifications.goalMilestones, hasLength(1));
         final shown = notifications.goalMilestones.single;
         expect(shown['percent'] as double, closeTo(26, 1e-6));
-        expect(shown['firstCheck'], isTrue);
+        expect(shown['announce'], isFalse);
+      },
+    );
+
+    test('the cash flow is saved before any goal progress is read', () async {
+      // Offline, reads and rate lookups can take seconds; the write must be
+      // queued first so it is not held up or lost.
+      goals.seed(goals: [goal()]);
+      repo.seed(
+        investments: [investment('inv-10', 'USD')],
+        cashFlows: [flow('inv-10', CashFlowType.invest, 10000, 'USD')],
+      );
+      final container = containerFor('USD');
+
+      await container
+          .read(investmentNotifierProvider.notifier)
+          .addCashFlow(
+            investmentId: 'inv-10',
+            type: CashFlowType.invest,
+            amount: 3000,
+            date: DateTime(2026, 1, 1),
+            currency: 'USD',
+          );
+
+      expect(repo.calls.first, 'addCashFlow');
+      // The milestone check still sees the progress before it (20% to 26%).
+      expect(notifications.goalMilestones, hasLength(1));
+    });
+
+    test(
+      'a cash flow that lowers progress near 50% announces nothing',
+      () async {
+        // 25% was announced earlier. The goal reached 52% by an edit the
+        // check does not see, then a $500 payout takes it to 51%. Nothing
+        // was crossed, so 50% is recorded and not announced.
+        tz_data.initializeTimeZones();
+        SharedPreferences.setMockInitialValues({});
+        final plugin = FakeFlutterLocalNotificationsPlugin();
+        final service = NotificationService(
+          plugin,
+          await SharedPreferences.getInstance(),
+        );
+        await service.markGoalMilestoneShown('goal-1', 25);
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        goals.seed(goals: [goal()]);
+        repo.seed(
+          investments: [investment('inv-11', 'USD')],
+          cashFlows: [
+            CashFlowEntity(
+              id: 'cf-inv-11',
+              investmentId: 'inv-11',
+              type: CashFlowType.invest,
+              amount: 26000,
+              date: today,
+              createdAt: today,
+              currency: 'USD',
+            ),
+          ],
+        );
+        final container = containerFor('USD', notificationService: service);
+
+        await container
+            .read(investmentNotifierProvider.notifier)
+            .addCashFlow(
+              investmentId: 'inv-11',
+              type: CashFlowType.returnFlow,
+              amount: 500,
+              date: today,
+              currency: 'USD',
+            );
+
+        expect(plugin.shownNotifications.map((n) => n.title), isEmpty);
+        expect(service.isGoalMilestoneShown('goal-1', 50), isTrue);
       },
     );
 
