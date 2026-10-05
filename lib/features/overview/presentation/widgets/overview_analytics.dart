@@ -8,11 +8,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/utils/number_format_utils.dart';
 import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Monthly cash flow trend chart.
 class MonthlyCashFlowTrend extends ConsumerWidget {
@@ -283,7 +286,11 @@ class TypeDistributionChart extends ConsumerWidget {
   }
 }
 
-/// Year over year comparison widget.
+/// Year over year comparison widget: the financial year to date against the
+/// same days of the previous financial year, with invested, returned, income
+/// and net shown separately. Amounts are in neutral colours, because
+/// investing more is not a decline; only the change in income is
+/// highlighted, since principal coming back is not growth.
 class YoYComparisonCard extends ConsumerWidget {
   final NumberFormat currencyFormat;
 
@@ -297,13 +304,31 @@ class YoYComparisonCard extends ConsumerWidget {
 
     return yoyAsync.when(
       data: (data) {
-        if (data.thisYearInvested == 0 && data.lastYearInvested == 0) {
-          return const SizedBox.shrink();
-        }
+        if (!data.hasActivity) return const SizedBox.shrink();
 
-        final now = DateTime.now();
-        final thisYear = now.year.toString();
-        final lastYear = (now.year - 1).toString();
+        final l10n = AppLocalizations.of(context);
+        final dayFormat = DateFormat.MMMd(l10n.localeName);
+        final secondary = isDark
+            ? AppColors.textSecondaryDark
+            : AppColors.textSecondaryLight;
+        final end = data.periodEnd;
+        final lastDay = DateTime(end.year, end.month, end.day - 1);
+        final lastYear = _fyLabel(l10n, data.previousPeriodStart);
+        final thisYear = _fyLabel(l10n, data.periodStart);
+        Widget amountRow(
+          String label,
+          double last,
+          double current, {
+          bool signed = false,
+        }) => _buildAmountRow(
+          l10n,
+          label,
+          (lastYear, last),
+          (thisYear, current),
+          secondary,
+          isPrivacyMode,
+          signed: signed,
+        );
 
         return GlassCard(
           child: Column(
@@ -317,41 +342,60 @@ class YoYComparisonCard extends ConsumerWidget {
                     size: 20,
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Year over Year',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildYoYColumn(
-                      lastYear,
-                      data.lastYearNet,
-                      isDark,
-                      isPrivacyMode,
-                    ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 60,
-                    color: isDark ? Colors.white24 : Colors.grey[300],
-                  ),
-                  Expanded(
-                    child: _buildYoYColumn(
-                      thisYear,
-                      data.thisYearNet,
-                      isDark,
-                      isPrivacyMode,
+                  Text(
+                    l10n.yoyTitle,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
                     ),
                   ),
                 ],
               ),
-              if (data.lastYearNet != 0) ...[
+              const SizedBox(height: 4),
+              Text(
+                l10n.yoyPeriodCaption(
+                  dayFormat.format(data.periodStart),
+                  dayFormat.format(lastDay),
+                ),
+                style: TextStyle(color: secondary, fontSize: 12),
+              ),
+              const SizedBox(height: 12),
+              // Each amount row is read with its own years.
+              ExcludeSemantics(
+                child: _buildRow(
+                  label: const SizedBox.shrink(),
+                  last: _header(lastYear, secondary),
+                  current: _header(thisYear, secondary),
+                ),
+              ),
+              const SizedBox(height: 8),
+              amountRow(
+                l10n.investedLabel,
+                data.lastYearInvested,
+                data.thisYearInvested,
+              ),
+              const SizedBox(height: 6),
+              amountRow(
+                l10n.yoyReturnedLabel,
+                data.lastYearCapitalReturned,
+                data.thisYearCapitalReturned,
+              ),
+              const SizedBox(height: 6),
+              amountRow(
+                l10n.yoyIncomeLabel,
+                data.lastYearIncome,
+                data.thisYearIncome,
+              ),
+              const SizedBox(height: 6),
+              amountRow(
+                l10n.yoyNetLabel,
+                data.lastYearNet,
+                data.thisYearNet,
+                signed: true,
+              ),
+              if (data.incomeChangePercent case final change?) ...[
                 const SizedBox(height: 12),
-                _buildChangeIndicator(data, isPrivacyMode),
+                _buildChangeIndicator(l10n, change, secondary, isPrivacyMode),
               ],
             ],
           ),
@@ -362,77 +406,136 @@ class YoYComparisonCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildYoYColumn(
-    String year,
-    double net,
-    bool isDark,
-    bool isPrivacyMode,
-  ) {
-    final isPositive = net >= 0;
-    final valueStyle = TextStyle(
-      color: isPositive ? AppColors.successLight : AppColors.errorLight,
-      fontWeight: FontWeight.bold,
-      fontSize: 18,
-    );
+  /// "FY 2026-27" for the financial year starting on [start].
+  String _fyLabel(AppLocalizations l10n, DateTime start) => l10n.fyLabel(
+    start.year.toString(),
+    ((start.year + 1) % 100).toString().padLeft(2, '0'),
+  );
 
-    return Column(
+  Widget _header(String text, Color color) {
+    return Text(
+      text,
+      textAlign: TextAlign.end,
+      style: TextStyle(color: color, fontSize: 12),
+    );
+  }
+
+  Widget _buildRow({
+    required Widget label,
+    required Widget last,
+    required Widget current,
+  }) {
+    return Row(
       children: [
-        Text(
-          year,
-          style: TextStyle(
-            color: isDark ? Colors.white54 : Colors.grey,
-            fontSize: 12,
-          ),
-        ),
-        const SizedBox(height: 4),
-        isPrivacyMode
-            ? MaskedAmountText(
-                text:
-                    '${isPositive ? '+' : '-'}${currencyFormat.formatCompact(net.abs())}',
-                style: valueStyle,
-              )
-            : CompactAmountText(
-                amount: net,
-                compactText: currencyFormat.formatCompact(net.abs()),
-                currencySymbol: currencyFormat.currencySymbol,
-                prefix: isPositive ? '+' : '-',
-                style: valueStyle,
-              ),
+        Expanded(flex: 3, child: label),
+        Expanded(flex: 2, child: last),
+        Expanded(flex: 2, child: current),
       ],
     );
   }
 
-  Widget _buildChangeIndicator(YoYComparison data, bool isPrivacyMode) {
+  /// One row of amounts, read by screen readers as "Invested: FY 2025-26
+  /// 6 lakh rupees, FY 2026-27 9 lakh rupees" (each amount "Hidden
+  /// amount" in privacy mode), since the cells alone carry no year.
+  Widget _buildAmountRow(
+    AppLocalizations l10n,
+    String label,
+    (String, double) last,
+    (String, double) current,
+    Color labelColor,
+    bool isPrivacyMode, {
+    bool signed = false,
+  }) {
+    String spoken(double amount) => isPrivacyMode
+        ? l10n.hiddenAmount
+        : AccessibilityUtils.formatCurrencyForScreenReader(
+            amount,
+            currencyFormat.currencySymbol,
+            locale: currencyFormat.locale,
+          ).trim();
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label: l10n.yoyRowSemantics(
+        label,
+        last.$1,
+        spoken(last.$2),
+        current.$1,
+        spoken(current.$2),
+      ),
+      child: _buildRow(
+        label: Text(label, style: TextStyle(color: labelColor, fontSize: 13)),
+        last: _buildAmount(last.$2, isPrivacyMode, signed: signed),
+        current: _buildAmount(current.$2, isPrivacyMode, signed: signed),
+      ),
+    );
+  }
+
+  Widget _buildAmount(
+    double amount,
+    bool isPrivacyMode, {
+    bool signed = false,
+  }) {
+    const style = TextStyle(fontWeight: FontWeight.w600, fontSize: 14);
+    final prefix = signed ? (amount >= 0 ? '+' : '-') : null;
+    final compact = currencyFormat.formatCompact(amount.abs());
+    return Align(
+      alignment: Alignment.centerRight,
+      child: isPrivacyMode
+          ? MaskedAmountText(
+              text: '${prefix ?? ''}$compact',
+              style: style,
+              textAlign: TextAlign.end,
+            )
+          : CompactAmountText(
+              amount: amount,
+              compactText: compact,
+              currencySymbol: currencyFormat.currencySymbol,
+              locale: currencyFormat.locale,
+              prefix: prefix,
+              style: style,
+              textAlign: TextAlign.end,
+            ),
+    );
+  }
+
+  /// The change in income. An increase is shown in green; a decrease in a
+  /// neutral colour, since a holding may simply have matured.
+  Widget _buildChangeIndicator(
+    AppLocalizations l10n,
+    double change,
+    Color neutral,
+    bool isPrivacyMode,
+  ) {
+    final isUp = change > 0;
+    final color = isUp ? AppColors.successLight : neutral;
+    final icon = isUp
+        ? Icons.trending_up
+        : change < 0
+        ? Icons.trending_down
+        : Icons.trending_flat;
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 200),
       opacity: isPrivacyMode ? 0.0 : 1.0,
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color:
-              (data.isImproved ? AppColors.successLight : AppColors.errorLight)
-                  .withValues(alpha: 0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              data.isImproved ? Icons.trending_up : Icons.trending_down,
-              color: data.isImproved
-                  ? AppColors.successLight
-                  : AppColors.errorLight,
-              size: 16,
-            ),
+            Icon(icon, color: color, size: 16),
             const SizedBox(width: 6),
-            Text(
-              '${data.netChange >= 0 ? '+' : ''}${data.netChange.toStringAsFixed(0)}% vs last year',
-              style: TextStyle(
-                color: data.isImproved
-                    ? AppColors.successLight
-                    : AppColors.errorLight,
-                fontWeight: FontWeight.w500,
-                fontSize: 12,
+            Flexible(
+              child: Text(
+                l10n.yoyIncomeChange(formatPercent(change, showSign: true)),
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                ),
               ),
             ),
           ],

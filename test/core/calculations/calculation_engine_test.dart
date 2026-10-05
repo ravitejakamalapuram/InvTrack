@@ -350,22 +350,53 @@ void main() {
           ),
         };
 
+        // The returns component solves one XIRR over the cash flows (A21),
+        // so each map comes with the flows it was calculated from.
+        List<CashFlowEntity> flows(String id, double invested, double returned,
+                String currency) =>
+            [
+              CashFlowEntity(
+                id: '$id-in',
+                investmentId: id,
+                date: DateTime(2025, 1, 1),
+                type: CashFlowType.invest,
+                amount: invested,
+                currency: currency,
+                createdAt: DateTime(2025, 1, 1),
+              ),
+              CashFlowEntity(
+                id: '$id-out',
+                investmentId: id,
+                date: DateTime(2026, 1, 1),
+                type: CashFlowType.returnFlow,
+                amount: returned,
+                currency: currency,
+                createdAt: DateTime(2026, 1, 1),
+              ),
+            ];
+
         // When baseCurrency is 'INR', USD stats should be converted to INR.
         // 100 USD becomes 8000 INR.
         // Portfolio will have equal weights: 8000 INR (Tech) and 8000 INR (FD).
         final score = conversionEngine.health.calculate(
           investments: investments,
           investmentStats: convertedStatsMap,
-          allCashFlows: const [],
+          allCashFlows: [
+            ...flows('inv-usd', 8000, 8800, 'INR'),
+            ...flows('inv-inr', 8000, 8800, 'INR'),
+          ],
           goalProgress: const [],
-        );
+        )!;
 
         final identityScore = identityEngine.health.calculate(
           investments: investments,
           investmentStats: statsMap,
-          allCashFlows: const [],
+          allCashFlows: [
+            ...flows('inv-usd', 100, 110, 'USD'),
+            ...flows('inv-inr', 8000, 8800, 'INR'),
+          ],
           goalProgress: const [],
-        );
+        )!;
 
         // Overall score should resolve successfully and both return/diversification must be positive
         expect(score.overallScore, greaterThan(0));

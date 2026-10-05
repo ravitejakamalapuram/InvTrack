@@ -34,8 +34,8 @@ enum ReturnDisplayKind {
 /// Presentation decision for a set of [InvestmentStats].
 class ReturnDisplay {
   /// Holdings shorter than this show their absolute return as the primary
-  /// figure, because annualising a few days of return gives absurd rates.
-  static const int shortHoldingDays = 90;
+  /// figure (the one rule in [InvestmentStats.shortHoldingDays]).
+  static const int shortHoldingDays = InvestmentStats.shortHoldingDays;
 
   /// Shown in place of a figure that cannot be calculated.
   static const String dash = '—';
@@ -89,20 +89,14 @@ class ReturnDisplay {
   }) {
     final value = xirr ?? stats.xirr;
     final method = xirrMethod ?? stats.xirrMethod;
-    final days = _holdingDays(stats);
+    final days = stats.holdingDays;
 
     final ReturnDisplayKind kind;
     if (openStats != null && openStats.hasData && _awaitsValue(openStats)) {
       kind = openStats.totalReturned == 0 && stats.totalReturned == 0
           ? ReturnDisplayKind.awaitingFirstPayout
           : ReturnDisplayKind.awaitingCurrentValue;
-    } else if (stats.totalInvested > 0 &&
-        // Without any inflow (or current value) there is no holding period
-        // to report a return over: a closed investment with a single INVEST
-        // flow would otherwise read "-100.0% in under a day".
-        stats.totalReturned + (stats.currentValue ?? 0) > 0 &&
-        days != null &&
-        days < shortHoldingDays) {
+    } else if (stats.isShortHolding) {
       kind = ReturnDisplayKind.shortHolding;
     } else if (method == XirrMethod.undefined ||
         value == null ||
@@ -228,19 +222,5 @@ class ReturnDisplay {
     // formatXirr returns null only for near-zero values here.
     final text = formatXirr(xirr, showSign: showSign) ?? formatPercent(0);
     return method == XirrMethod.approximate ? l10n.xirrApproximate(text) : text;
-  }
-
-  static int? _holdingDays(InvestmentStats stats) {
-    final first = stats.firstCashFlowDate;
-    var last = stats.lastCashFlowDate;
-    if (first == null || last == null) return null;
-    final valueDate = stats.currentValueDate;
-    if (valueDate != null && valueDate.isAfter(last)) last = valueDate;
-    // Date-only difference in UTC, so DST changes cannot shift it.
-    return DateTime.utc(
-      last.year,
-      last.month,
-      last.day,
-    ).difference(DateTime.utc(first.year, first.month, first.day)).inDays;
   }
 }
