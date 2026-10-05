@@ -27,21 +27,22 @@ import '../../../../mocks/mock_notification_service.dart';
 const _note = 'Tenure cleared too, so no maturity date is worked out from it.';
 
 /// A 12-month cumulative FD at 7% from 1 Jan 2025, maturing 1 Jan 2026.
-InvestmentEntity _fd({DateTime? maturityDate}) => InvestmentEntity(
-  id: 'inv-fd',
-  name: 'SBI FD',
-  type: InvestmentType.fixedDeposit,
-  status: InvestmentStatus.open,
-  notes: 'Old notes',
-  createdAt: DateTime(2025, 1, 1),
-  updatedAt: DateTime(2025, 1, 1),
-  maturityDate: maturityDate,
-  startDate: DateTime(2025, 1, 1),
-  tenureMonths: 12,
-  expectedRate: 7.0,
-  interestPayoutMode: InterestPayoutMode.cumulative,
-  currency: 'INR',
-);
+InvestmentEntity _fd({DateTime? maturityDate, bool withStartDate = true}) =>
+    InvestmentEntity(
+      id: 'inv-fd',
+      name: 'SBI FD',
+      type: InvestmentType.fixedDeposit,
+      status: InvestmentStatus.open,
+      notes: 'Old notes',
+      createdAt: DateTime(2025, 1, 1),
+      updatedAt: DateTime(2025, 1, 1),
+      maturityDate: maturityDate,
+      startDate: withStartDate ? DateTime(2025, 1, 1) : null,
+      tenureMonths: 12,
+      expectedRate: 7.0,
+      interestPayoutMode: InterestPayoutMode.cumulative,
+      currency: 'INR',
+    );
 
 final _invested = CashFlowEntity(
   id: 'cf-1',
@@ -227,6 +228,56 @@ void main() {
     expect(stored.maturityDate, isNull);
     expect(stored.tenureMonths, isNull);
     expect(notesShown, 1);
+  });
+
+  testWidgets('the note stays when a new date is picked after clearing', (
+    tester,
+  ) async {
+    var notesShown = -1;
+    final stored = await editAndSave(
+      tester,
+      _fd(maturityDate: DateTime(2026, 1, 1)),
+      (scrollable) async {
+        final clear = find.byTooltip('Clear maturity date');
+        await tester.scrollUntilVisible(clear, 200, scrollable: scrollable);
+        await tester.tap(clear);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('No maturity date set'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+        notesShown = find.text(_note).evaluate().length;
+      },
+    );
+
+    // The picked date is saved without a tenure, and the form said so.
+    expect(stored.maturityDate, isNotNull);
+    expect(stored.tenureMonths, isNull);
+    expect(notesShown, 1);
+  });
+
+  testWidgets('with no start date, clearing the date keeps the tenure', (
+    tester,
+  ) async {
+    var notesShown = -1;
+    final stored = await editAndSave(
+      tester,
+      _fd(maturityDate: DateTime(2026, 1, 1), withStartDate: false),
+      (scrollable) async {
+        final clear = find.byTooltip('Clear maturity date');
+        await tester.scrollUntilVisible(clear, 200, scrollable: scrollable);
+        await tester.tap(clear);
+        await tester.pumpAndSettle();
+        notesShown = find.text(_note).evaluate().length;
+      },
+    );
+
+    // Without a start date the tenure cannot work the date out again.
+    expect(stored.maturityDate, isNull);
+    expect(stored.tenureMonths, 12);
+    expect(stored.calculatedMaturityDate, isNull);
+    expect(notesShown, 0);
   });
 
   testWidgets('control: an edit that keeps the date keeps the tenure', (

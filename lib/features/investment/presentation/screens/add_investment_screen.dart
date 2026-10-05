@@ -1401,9 +1401,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
             );
           },
         ),
-        if (_tenureClearedWithMaturity &&
-            _maturityDate == null &&
-            _tenureController.text.isEmpty) ...[
+        // Shown while the tenure stays cleared, also after a new date is
+        // picked, because the save then drops the tenure.
+        if (_tenureClearedWithMaturity && _tenureController.text.isEmpty) ...[
           SizedBox(height: AppSpacing.xs),
           Semantics(
             liveRegion: true,
