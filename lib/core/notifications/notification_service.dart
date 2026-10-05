@@ -586,11 +586,27 @@ class NotificationService with NotificationPreferencesMixin {
 
   /// Cancel every pending income and maturity reminder, e.g. when the
   /// signed-in user no longer has any investments.
-  Future<void> cancelInvestmentReminders() => _cancelPendingWhere(
-    (id) =>
-        NotificationIds.isIncomeReminderId(id) ||
-        NotificationIds.isMaturityReminderId(id),
-  );
+  Future<void> cancelInvestmentReminders() async {
+    await _markIncomeRemindersUndelivered();
+    await _cancelPendingWhere(
+      (id) =>
+          NotificationIds.isIncomeReminderId(id) ||
+          NotificationIds.isMaturityReminderId(id),
+    );
+  }
+
+  /// Keep a due-day income reminder owed when its alarm is cancelled before
+  /// Android delivered it. A failure here must never stop the cancel.
+  Future<void> _markIncomeRemindersUndelivered() async {
+    try {
+      await _investmentHandler.markPendingIncomeRemindersUndelivered();
+    } catch (e) {
+      LoggerService.warn(
+        'Error marking income reminders undelivered',
+        error: e,
+      );
+    }
+  }
 
   /// Cancel every pending notification whose id matches [test].
   Future<void> _cancelPendingWhere(bool Function(int id) test) async {
@@ -651,6 +667,7 @@ class NotificationService with NotificationPreferencesMixin {
 
   /// Cancel all notifications
   Future<void> cancelAll() async {
+    await _markIncomeRemindersUndelivered();
     await _plugin.cancelAll();
   }
 

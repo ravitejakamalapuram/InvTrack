@@ -44,6 +44,11 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
   /// Standard MOIC milestones for investment notifications
   static const List<double> standardMilestones = [1.5, 2.0, 3.0, 5.0, 10.0];
 
+  /// A fire time this close to now counts as due. The plugin reads the clock
+  /// again before it accepts a date, so a 09:00 alarm handed over a moment
+  /// before 09:00 would be rejected as past.
+  static const Duration _dueLeeway = Duration(seconds: 30);
+
   // ============ Income Reminders ============
 
   /// Schedule income reminder notification for an investment.
@@ -91,9 +96,9 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       while (nextIncomeDate.isBefore(today)) {
         nextIncomeDate = dueAt(++periods);
       }
-      // Today is the due day and 09:00 has passed. Never hand the plugin a
-      // time that is not in the future.
-      if (!nextIncomeDate.isAfter(now)) {
+      // Today is the due day and 09:00 has passed (or is moments away).
+      // Never hand the plugin a time that is not safely in the future.
+      if (!nextIncomeDate.isAfter(now.add(_dueLeeway))) {
         showDueToday = await _isTodaysReminderOwed(id, investmentId, today);
         nextIncomeDate = dueAt(++periods);
       }
@@ -101,8 +106,9 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       nextIncomeDate = _addMonthsSafely(now, monthsBetweenPayments, hour: 9);
     }
 
-    // Replaces a late alarm for today, so it is not shown twice.
-    await _plugin.cancel(id: id);
+    // No cancel here: on Android it would also remove today's reminder from
+    // the notification shade. Scheduling the same id replaces a late alarm
+    // for today, so it is not shown twice.
 
     final androidDetails = AndroidNotificationDetails(
       NotificationChannels.incomeReminders,
@@ -191,6 +197,34 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
         NotificationPrefsKeys.incomeReminderDue(investmentId),
         DateFormat('yyyy-MM-dd').format(due),
       );
+
+  /// Mark every income alarm that is still pending as not delivered, before
+  /// it is cancelled in bulk (account change, no investments left).
+  ///
+  /// Its recorded due date is moved back a day, so if the same reminders
+  /// are scheduled again on that due day after 09:00, the reminder is shown
+  /// instead of being taken as delivered.
+  Future<void> markPendingIncomeRemindersUndelivered() async {
+    await ensureInitialized();
+    final pendingIds = {
+      for (final request in await _plugin.pendingNotificationRequests())
+        request.id,
+    };
+    final prefix = NotificationPrefsKeys.incomeReminderDue('');
+    for (final key in _prefs.getKeys()) {
+      if (!key.startsWith(prefix)) continue;
+      final investmentId = key.substring(prefix.length);
+      if (!pendingIds.contains(NotificationIds.incomeReminder(investmentId))) {
+        continue;
+      }
+      final due = DateTime.tryParse(_prefs.getString(key) ?? '');
+      if (due == null) continue;
+      await _recordReminderDue(
+        investmentId,
+        DateTime(due.year, due.month, due.day - 1),
+      );
+    }
+  }
 
   /// Cancel income reminder for a specific investment.
   Future<void> cancelIncomeReminder(String investmentId) async {

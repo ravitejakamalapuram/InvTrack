@@ -60,6 +60,23 @@ void main() {
     fakePlugin.scheduledNotifications.removeWhere((n) => n.id == reminderId);
   }
 
+  /// Android delivers the alarm and the reminder sits in the notification
+  /// shade (kept in the fake's shown list, which a cancel clears).
+  void deliverPendingReminderToShade() {
+    final alarm = fakePlugin.scheduledNotifications.singleWhere(
+      (n) => n.id == reminderId,
+    );
+    deliverPendingReminder();
+    fakePlugin.shownNotifications.add(
+      FakeNotification(
+        id: alarm.id,
+        title: alarm.title,
+        body: alarm.body,
+        payload: alarm.payload,
+      ),
+    );
+  }
+
   group('Income reminder on the due day (A91)', () {
     test(
       'opened at 10:30 on the due day before the 09:00 alarm arrived: '
@@ -205,6 +222,117 @@ void main() {
       await service.cancelIncomeReminder(investmentId);
 
       expect(prefs.containsKey(key), isFalse);
+    });
+
+    test('a reminder delivered at 09:05 stays in the shade when the app '
+        'opens at 10:30 and again at 15:00', () async {
+      fakeNow = DateTime(2026, 9, 20, 10);
+      await schedule();
+
+      fakeNow = DateTime(2026, 10, 3, 9, 5);
+      deliverPendingReminderToShade();
+
+      fakeNow = DateTime(2026, 10, 3, 10, 30);
+      await schedule();
+      fakeNow = DateTime(2026, 10, 3, 15);
+      await schedule();
+
+      expect(shownReminders(), hasLength(1));
+      expect(fakePlugin.cancelledNotificationIds, isNot(contains(reminderId)));
+      expect(pendingReminderDate(), DateTime(2026, 11, 3, 9));
+    });
+
+    test('the reminder shown at 10:30 stays in the shade through later '
+        'syncs that day (a cash-flow edit, another launch)', () async {
+      fakeNow = DateTime(2026, 9, 20, 10);
+      await schedule();
+
+      fakeNow = DateTime(2026, 10, 3, 10, 30);
+      await schedule();
+      expect(shownReminders(), hasLength(1));
+
+      fakeNow = DateTime(2026, 10, 3, 10, 45);
+      await schedule();
+      fakeNow = DateTime(2026, 10, 3, 18);
+      await schedule();
+
+      expect(shownReminders(), hasLength(1));
+      expect(fakePlugin.cancelledNotificationIds, isNot(contains(reminderId)));
+      expect(pendingReminderDate(), DateTime(2026, 11, 3, 9));
+    });
+
+    test('a clock read 5 ms before 09:00 never hands the plugin a time that '
+        'has passed by the time it checks', () async {
+      fakeNow = DateTime(2026, 9, 20, 10);
+      await schedule();
+
+      // The plugin checks 10 ms after the handler read the clock.
+      fakePlugin.now = () => fakeNow.add(const Duration(milliseconds: 10));
+      fakeNow = DateTime(2026, 10, 3, 8, 59, 59, 995);
+      await schedule();
+
+      expect(shownReminders(), hasLength(1));
+      expect(pendingReminderDate(), DateTime(2026, 11, 3, 9));
+    });
+
+    test('signing out and back in on the due day, before the 09:00 alarm '
+        'arrived, still shows the reminder', () async {
+      fakeNow = DateTime(2026, 9, 20, 10);
+      await schedule();
+
+      fakeNow = DateTime(2026, 10, 3, 10);
+      await service.cancelAll();
+
+      fakeNow = DateTime(2026, 10, 3, 12);
+      await schedule();
+
+      expect(shownReminders(), hasLength(1));
+      expect(pendingReminderDate(), DateTime(2026, 11, 3, 9));
+    });
+
+    test('signing out and back in after the reminder was delivered does not '
+        'show it again', () async {
+      fakeNow = DateTime(2026, 9, 20, 10);
+      await schedule();
+      fakeNow = DateTime(2026, 10, 3, 9, 5);
+      deliverPendingReminderToShade();
+
+      fakeNow = DateTime(2026, 10, 3, 10);
+      await service.cancelAll();
+
+      fakeNow = DateTime(2026, 10, 3, 12);
+      await schedule();
+
+      expect(shownReminders(), isEmpty);
+      expect(pendingReminderDate(), DateTime(2026, 11, 3, 9));
+    });
+
+    test('signing out before the due day and back in on it after 09:00 shows '
+        'the reminder', () async {
+      fakeNow = DateTime(2026, 9, 20, 10);
+      await schedule();
+      await service.cancelAll();
+
+      fakeNow = DateTime(2026, 10, 3, 12);
+      await schedule();
+
+      expect(shownReminders(), hasLength(1));
+      expect(pendingReminderDate(), DateTime(2026, 11, 3, 9));
+    });
+
+    test('reminders dropped because the investment list was briefly empty '
+        'are still shown on the due day', () async {
+      fakeNow = DateTime(2026, 9, 20, 10);
+      await schedule();
+
+      fakeNow = DateTime(2026, 10, 3, 10);
+      await service.cancelInvestmentReminders();
+
+      fakeNow = DateTime(2026, 10, 3, 12);
+      await schedule();
+
+      expect(shownReminders(), hasLength(1));
+      expect(pendingReminderDate(), DateTime(2026, 11, 3, 9));
     });
 
     test('the launch reschedule shows the due reminder too', () async {
