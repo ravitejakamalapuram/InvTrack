@@ -59,6 +59,53 @@ void main() {
     );
   });
 
+  // When the duplicates were removed, the context from each dropped copy's
+  // description was merged into the kept @-block, so translators still see
+  // every place the string is used.
+  test('kept @-blocks carry the context of the removed duplicates', () {
+    final arb =
+        jsonDecode(File('lib/l10n/app_en.arb').readAsStringSync())
+            as Map<String, dynamic>;
+    expect(
+      {
+        for (final key in const [
+          'daysAgo',
+          'weeklySummary',
+          'deleteAccount',
+          'investmentType',
+          'portfolioHealth',
+          'exportAsCsv',
+          'smartInsights',
+        ])
+          key: arb['@$key'],
+      },
+      equals({
+        'daysAgo': {
+          'description': 'Shows days in the past',
+          'placeholders': {
+            'days': {'type': 'int', 'example': '3'},
+          },
+        },
+        'weeklySummary': {
+          'description':
+              'Weekly summary: notification toggle title and report title',
+        },
+        'deleteAccount': {'description': 'Title of the delete-account dialog'},
+        'investmentType': {
+          'description': 'Label for the investment type selection',
+        },
+        'portfolioHealth': {
+          'description':
+              'Portfolio health: dashboard card title and report title',
+        },
+        'exportAsCsv': {'description': 'Export as CSV menu item title'},
+        'smartInsights': {
+          'description': 'Section title for automatically generated insights',
+        },
+      }),
+    );
+  });
+
   for (final file in arbFiles) {
     final name = file.uri.pathSegments.last;
 

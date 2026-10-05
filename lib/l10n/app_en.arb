@@ -3588,7 +3588,7 @@
 
   "weeklySummary": "Weekly Summary",
   "@weeklySummary": {
-    "description": "Weekly summary report title"
+    "description": "Weekly summary: notification toggle title and report title"
   },
 
   "thisWeek": "This Week",
@@ -3653,7 +3653,7 @@
 
   "portfolioHealth": "Portfolio Health",
   "@portfolioHealth": {
-    "description": "Portfolio health report title"
+    "description": "Portfolio health: dashboard card title and report title"
   },
 
   "quickReports": "Quick Reports",
@@ -4857,7 +4857,8 @@
     "description": "Shows days in the past",
     "placeholders": {
       "days": {
-        "type": "int"
+        "type": "int",
+        "example": "3"
       }
     }
   },
@@ -5135,7 +5136,7 @@
 
   "investmentType": "Investment Type",
   "@investmentType": {
-    "description": "Filter label for investment type"
+    "description": "Label for the investment type selection"
   },
 
   "category": "Category",
@@ -5335,7 +5336,7 @@
 
   "smartInsights": "Smart Insights",
   "@smartInsights": {
-    "description": "Section title for AI-generated insights"
+    "description": "Section title for automatically generated insights"
   },
 
   "needsAttention": "Needs Attention",
@@ -5451,7 +5452,7 @@
   },
   "exportAsCsv": "Export as CSV",
   "@exportAsCsv": {
-    "description": "Export as CSV option title"
+    "description": "Export as CSV menu item title"
   },
   "exportAsCsvSubtitle": "Spreadsheet format",
   "@exportAsCsvSubtitle": {
@@ -5483,7 +5484,7 @@
   },
   "deleteAccount": "Delete Account",
   "@deleteAccount": {
-    "description": "Delete account option title"
+    "description": "Title of the delete-account dialog"
   },
   "deleteAccountSubtitle": "Permanently delete all data",
   "@deleteAccountSubtitle": {
