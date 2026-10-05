@@ -15,6 +15,7 @@ import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculatio
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
+import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_corpus_card.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_milestone_card.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_progress_ring.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_stats_card.dart';
@@ -195,12 +196,10 @@ class FireDashboardScreen extends ConsumerWidget {
           SizedBox(height: AppSpacing.lg),
 
           // How the corpus is built (PLAN-01)
-          _buildCorpusCard(
-            context,
-            isDark,
-            calculation,
-            currencySymbol,
-            locale,
+          FireCorpusCard(
+            calculation: calculation,
+            currencySymbol: currencySymbol,
+            locale: locale,
           ),
           SizedBox(height: AppSpacing.lg),
 
@@ -868,77 +867,6 @@ class FireDashboardScreen extends ConsumerWidget {
       case MonthlySavingsSource.notEnoughHistory:
         return l10n.fireSavingsNotEnoughHistory;
     }
-  }
-
-  /// How the FIRE corpus is built: current values, principal of holdings
-  /// without one, and other assets. Closed and archived investments are
-  /// left out, and the card says so (money rule 9).
-  Widget _buildCorpusCard(
-    BuildContext context,
-    bool isDark,
-    FireCalculationResult calculation,
-    String currencySymbol,
-    String locale,
-  ) {
-    final l10n = AppLocalizations.of(context);
-    final inputs = calculation.inputs;
-    final labelStyle = AppTypography.body.copyWith(
-      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-    );
-    final valueStyle = AppTypography.bodyMedium.copyWith(
-      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-      fontWeight: FontWeight.w600,
-    );
-    Widget row(String label, double amount) => Padding(
-      padding: EdgeInsets.only(top: AppSpacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(child: Text(label, style: labelStyle)),
-          SizedBox(width: AppSpacing.sm),
-          MaskedAmountText(
-            text: formatCompactCurrency(
-              amount,
-              symbol: currencySymbol,
-              locale: locale,
-            ),
-            style: valueStyle,
-          ),
-        ],
-      ),
-    );
-
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.fireCorpusTitle,
-            style: AppTypography.h4.copyWith(
-              color: isDark
-                  ? AppColors.textPrimaryDark
-                  : AppColors.textPrimaryLight,
-            ),
-          ),
-          if (inputs != null) ...[
-            row(l10n.fireCorpusCurrentValues, inputs.investmentsValue),
-            if (inputs.principalWithoutValue > 0)
-              row(l10n.fireCorpusPrincipalOnly, inputs.principalWithoutValue),
-            if (inputs.otherAssets > 0)
-              row(l10n.fireOtherAssets, inputs.otherAssets),
-          ],
-          SizedBox(height: AppSpacing.sm),
-          Text(
-            l10n.fireCorpusExcluded,
-            style: AppTypography.small.copyWith(
-              color: isDark
-                  ? AppColors.neutral500Dark
-                  : AppColors.neutral400Light,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildErrorState(

@@ -362,4 +362,48 @@ void main() {
     expect(find.text('[status: not enough history]'), findsOneWidget);
     expect(find.text('Not Enough History'), findsNothing);
   });
+
+  testWidgets('the corpus card lists what the FIRE corpus is built from', (
+    tester,
+  ) async {
+    final settings = _settings();
+    final result = FireCalculationService().calculate(
+      settings: settings,
+      currentPortfolioValue: 1500000,
+      currentMonthlySavings: 20000,
+      asOf: _asOf,
+      inputs: const FireInputsSummary(
+        investmentsValue: 1000000,
+        principalWithoutValue: 200000,
+        otherAssets: 300000,
+        savingsSource: MonthlySavingsSource.history,
+      ),
+    );
+    await _pump(tester, settings, result);
+
+    String row(String label) => tester
+        .widget<Text>(
+          find
+              .descendant(
+                of: find.ancestor(
+                  of: find.text(label),
+                  matching: find.byType(Row),
+                ),
+                matching: find.byType(Text),
+              )
+              .last,
+        )
+        .data!;
+    expect(find.text('Your FIRE corpus'), findsOneWidget);
+    expect(row('Open investments at current value'), '₹10 L');
+    expect(
+      row('Open investments without a current value (amount invested)'),
+      '₹2 L',
+    );
+    expect(row('Other assets'), '₹3 L');
+    expect(
+      find.text('Closed and archived investments are not counted.'),
+      findsOneWidget,
+    );
+  });
 }
