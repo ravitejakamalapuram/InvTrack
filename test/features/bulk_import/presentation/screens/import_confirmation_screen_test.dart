@@ -1,16 +1,29 @@
+import 'dart:async';
+
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/widgets/gradient_button.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
+import 'package:inv_tracker/features/bulk_import/data/services/csv_template_service.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/import_confirmation_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mock_analytics_service.dart';
 
 class _CapturingInvestmentNotifier extends InvestmentNotifier {
+  _CapturingInvestmentNotifier({this.failure});
+
+  final Object? failure;
   List<InvestmentEntity> investments = [];
   List<CashFlowEntity> cashFlows = [];
 
@@ -22,11 +35,25 @@ class _CapturingInvestmentNotifier extends InvestmentNotifier {
     required List<InvestmentEntity> investments,
     required List<CashFlowEntity> cashFlows,
   }) async {
+    if (failure != null) throw failure!;
     this.investments = investments;
     this.cashFlows = cashFlows;
     return (investments: investments.length, cashFlows: cashFlows.length);
   }
 }
+
+class _Privacy extends PrivacyModeNotifier {
+  _Privacy(this.enabled);
+
+  final bool enabled;
+
+  @override
+  bool build() => enabled;
+}
+
+class _MockFirebaseCrashlytics extends Mock implements FirebaseCrashlytics {}
+
+final _l10n = lookupAppLocalizations(const Locale('en'));
 
 void main() {
   // A spreadsheet with no Currency column for the FD, plus one USD row.
@@ -62,12 +89,26 @@ void main() {
 
   late _CapturingInvestmentNotifier notifier;
 
-  Future<void> pumpScreen(WidgetTester tester) async {
-    notifier = _CapturingInvestmentNotifier();
+  Future<void> pumpScreen(
+    WidgetTester tester, {
+    ParsedCsvResult? result,
+    bool privacy = false,
+    Object? failure,
+    List<InvestmentEntity> existingInvestments = const [],
+    List<CashFlowEntity> existingCashFlows = const [],
+  }) async {
+    notifier = _CapturingInvestmentNotifier(failure: failure);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           currencyCodeProvider.overrideWithValue('INR'),
+          privacyModeProvider.overrideWith(() => _Privacy(privacy)),
+          allInvestmentsProvider.overrideWith(
+            (ref) => Stream.value(existingInvestments),
+          ),
+          allCashFlowsStreamProvider.overrideWith(
+            (ref) => Stream.value(existingCashFlows),
+          ),
           investmentNotifierProvider.overrideWith(() => notifier),
           analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
         ],
@@ -75,7 +116,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: ImportConfirmationScreen(
-            parseResult: parseResult,
+            parseResult: result ?? parseResult,
             fileName: 'portfolio.csv',
           ),
         ),
@@ -114,7 +155,7 @@ void main() {
   ) async {
     await pumpScreen(tester);
 
-    await tester.tap(find.text('Import All'));
+    await tester.tap(find.text(_l10n.importAllButton));
     await tester.pumpAndSettle();
 
     final byName = {for (final i in notifier.investments) i.name: i};
@@ -125,5 +166,296 @@ void main() {
       for (final cf in notifier.cashFlows) cf.amount: cf.currency,
     };
     expect(flowCurrencies, {100000.0: 'INR', 3500.0: 'INR', 1000.0: 'USD'});
+    expect(
+      find.text(
+        _l10n.importCreatedSummary(
+          _l10n.importInvestmentCount(2),
+          _l10n.importCashFlowCount(3),
+        ),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  // ============ A94: privacy mode and localised copy ============
+  group('privacy mode (A94)', () {
+    final p2p = ParsedCsvResult(
+      rows: [
+        ParsedCashFlowRow(
+          rowNumber: 2,
+          date: DateTime(2024, 1, 15),
+          investmentName: 'Bhive Investment',
+          type: CashFlowType.invest,
+          amount: 100000,
+          currency: 'INR',
+        ),
+        ParsedCashFlowRow(
+          rowNumber: 3,
+          date: DateTime(2025, 1, 15),
+          investmentName: 'Bhive Investment',
+          type: CashFlowType.returnFlow,
+          amount: 112500,
+          currency: 'INR',
+        ),
+      ],
+      errors: const [],
+      totalRows: 2,
+      validRows: 2,
+    );
+    String inr(double amount) => formatCompactCurrency(
+      amount,
+      symbol: '₹',
+      locale: getCurrencyLocale('INR'),
+    );
+    Finder labelled(String text) =>
+        find.bySemanticsLabel(RegExp(RegExp.escape(text)));
+
+    testWidgets('hides every amount, in text and in semantics', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpScreen(tester, result: p2p, privacy: true);
+      await tester.tap(find.text('Bhive Investment'));
+      await tester.pumpAndSettle();
+
+      for (final amount in [inr(100000), inr(112500)]) {
+        expect(find.textContaining(amount), findsNothing, reason: amount);
+        expect(labelled(amount), findsNothing, reason: amount);
+      }
+      // The Invested, Income and Returned totals plus the two rows are all
+      // masked; a row's semantics merge its texts, so match by substring.
+      expect(find.byType(MaskedAmountText), findsNWidgets(5));
+      expect(find.bySemanticsLabel(RegExp('Hidden amount')), findsWidgets);
+      semantics.dispose();
+    });
+
+    testWidgets('shows the amounts when privacy mode is off', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpScreen(tester, result: p2p);
+      await tester.tap(find.text('Bhive Investment'));
+      await tester.pumpAndSettle();
+
+      // Each appears as a total and as its row.
+      expect(find.text(inr(100000)), findsNWidgets(2));
+      expect(find.text(inr(112500)), findsNWidgets(2));
+      expect(labelled(inr(100000)), findsWidgets);
+      expect(find.text(_l10n.investedLabel), findsOneWidget);
+      expect(find.text(_l10n.importIncomeLabel), findsOneWidget);
+      expect(find.text(_l10n.returnedLabel), findsOneWidget);
+      expect(find.text(_l10n.importTypeChipInvest), findsOneWidget);
+      expect(find.text(_l10n.importTypeChipReturn), findsOneWidget);
+      semantics.dispose();
+    });
+  });
+
+  group('copy (A94)', () {
+    testWidgets('counts use singular and plural forms', (tester) async {
+      await pumpScreen(
+        tester,
+        result: ParsedCsvResult(
+          rows: [parseResult.rows.first],
+          errors: const ['Row 3: Invalid date: 31/31/2024'],
+          totalRows: 2,
+          validRows: 1,
+        ),
+      );
+
+      expect(find.text('1 investment • 1 cash flow'), findsOneWidget);
+      expect(find.text('1 cash flow • INR'), findsOneWidget);
+      expect(find.text('1 row skipped due to errors'), findsOneWidget);
+      expect(find.text(_l10n.importRowsSkipped(1)), findsOneWidget);
+    });
+
+    group('when saving fails', () {
+      late _MockFirebaseCrashlytics crashlytics;
+
+      setUpAll(() {
+        registerFallbackValue(StackTrace.empty);
+        registerFallbackValue(const <Object>[]);
+      });
+
+      setUp(() {
+        crashlytics = _MockFirebaseCrashlytics();
+        when(
+          () => crashlytics.recordError(
+            any(),
+            any(),
+            reason: any(named: 'reason'),
+            fatal: any(named: 'fatal'),
+            information: any(named: 'information'),
+          ),
+        ).thenAnswer((_) async {});
+        // Tests run with kDebugMode == true, so reporting needs the override.
+        CrashlyticsService.enableInDebugMode = true;
+        LoggerService.crashlyticsServiceForTesting = CrashlyticsService(
+          debugModeEnabled: true,
+          crashlytics: crashlytics,
+        );
+      });
+
+      tearDown(() {
+        CrashlyticsService.enableInDebugMode = false;
+        LoggerService.crashlyticsServiceForTesting = null;
+      });
+
+      testWidgets('shows a fixed message and reports no path or file name', (
+        tester,
+      ) async {
+        await pumpScreen(
+          tester,
+          failure: Exception('/storage/emulated/0/Download/my_fds.csv'),
+        );
+
+        await tester.tap(find.text(_l10n.importAllButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text(_l10n.importFailedTryAgain), findsOneWidget);
+        expect(find.textContaining('my_fds.csv'), findsNothing);
+        expect(find.textContaining('Exception'), findsNothing);
+
+        final captured = verify(
+          () => crashlytics.recordError(
+            captureAny(),
+            any(),
+            reason: captureAny(named: 'reason'),
+            fatal: any(named: 'fatal'),
+            information: any(named: 'information'),
+          ),
+        ).captured;
+        expect(captured, hasLength(2));
+        for (final value in captured) {
+          expect('$value', isNot(contains('my_fds.csv')));
+          expect('$value', isNot(contains('/storage')));
+        }
+      });
+    });
+  });
+
+  // ============ A25: likely duplicates ============
+  group('likely duplicates (A25)', () {
+    final template = SimpleCsvParser.parseString(
+      CsvTemplateService.generateTemplateContent(),
+      baseCurrency: 'INR',
+    );
+    final created = DateTime(2024, 1, 15, 9);
+    final bhive = InvestmentEntity(
+      id: 'bhive',
+      name: 'Bhive Investment',
+      type: InvestmentType.p2pLending,
+      status: InvestmentStatus.open,
+      createdAt: created,
+      updatedAt: created,
+      currency: 'INR',
+    );
+    final savedInvest = CashFlowEntity(
+      id: 'cf-1',
+      investmentId: 'bhive',
+      type: CashFlowType.invest,
+      amount: 100000,
+      currency: 'INR',
+      date: DateTime(2024, 1, 15),
+      createdAt: created,
+    );
+
+    Future<void> pumpTemplate(WidgetTester tester) => pumpScreen(
+      tester,
+      result: template,
+      existingInvestments: [bhive],
+      existingCashFlows: [savedInvest],
+    );
+
+    bool isSavedInvest(CashFlowEntity cf) =>
+        cf.type == CashFlowType.invest &&
+        cf.amount == 100000 &&
+        cf.date == DateTime(2024, 1, 15);
+
+    testWidgets('re-importing the template warns about the saved row', (
+      tester,
+    ) async {
+      await pumpTemplate(tester);
+
+      expect(find.text(_l10n.importLikelyDuplicates(1)), findsOneWidget);
+      expect(find.text(_l10n.importSkipDuplicates), findsOneWidget);
+
+      await tester.tap(find.text('Bhive Investment'));
+      await tester.pumpAndSettle();
+      expect(find.text(_l10n.importDuplicateLabel), findsOneWidget);
+    });
+
+    testWidgets('skips the duplicate by default', (tester) async {
+      await pumpTemplate(tester);
+
+      await tester.tap(find.text(_l10n.importAllButton));
+      await tester.pumpAndSettle();
+
+      expect(notifier.cashFlows, hasLength(template.rows.length - 1));
+      expect(
+        notifier.cashFlows.where(
+          (cf) =>
+              isSavedInvest(cf) &&
+              notifier.investments
+                      .firstWhere((i) => i.id == cf.investmentId)
+                      .name ==
+                  'Bhive Investment',
+        ),
+        isEmpty,
+      );
+    });
+
+    testWidgets('imports the duplicate when the user turns skipping off', (
+      tester,
+    ) async {
+      await pumpTemplate(tester);
+
+      await tester.tap(find.text(_l10n.importSkipDuplicates));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(_l10n.importAllButton));
+      await tester.pumpAndSettle();
+
+      expect(notifier.cashFlows, hasLength(template.rows.length));
+    });
+
+    testWidgets('import waits until existing data has loaded', (tester) async {
+      final pending = StreamController<List<CashFlowEntity>>();
+      addTearDown(pending.close);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currencyCodeProvider.overrideWithValue('INR'),
+            privacyModeProvider.overrideWith(() => _Privacy(false)),
+            allInvestmentsProvider.overrideWith((ref) => Stream.value([bhive])),
+            allCashFlowsStreamProvider.overrideWith((ref) => pending.stream),
+            investmentNotifierProvider.overrideWith(
+              _CapturingInvestmentNotifier.new,
+            ),
+            analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ImportConfirmationScreen(
+              parseResult: template,
+              fileName: 'portfolio.csv',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      GradientButton button() =>
+          tester.widget<GradientButton>(find.byType(GradientButton));
+      expect(button().onPressed, isNull);
+
+      pending.add([savedInvest]);
+      await tester.pumpAndSettle();
+
+      expect(button().onPressed, isNotNull);
+      expect(find.text(_l10n.importLikelyDuplicates(1)), findsOneWidget);
+    });
+
+    testWidgets('no warning when nothing matches', (tester) async {
+      await pumpScreen(tester, result: template);
+
+      expect(find.text(_l10n.importSkipDuplicates), findsNothing);
+      expect(find.text(_l10n.importDuplicateLabel), findsNothing);
+    });
   });
 }

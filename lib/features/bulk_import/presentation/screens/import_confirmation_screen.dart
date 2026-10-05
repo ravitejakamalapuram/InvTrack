@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -10,6 +11,8 @@ import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
+import 'package:inv_tracker/features/bulk_import/data/services/import_duplicate_detector.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -35,15 +38,27 @@ class _ImportConfirmationScreenState
   bool _isImporting = false;
   final _dateFormat = DateFormat('MMM d, yyyy');
 
+  /// Leave rows that match an existing cash flow out of the import.
+  bool _skipDuplicates = true;
+
+  /// Still waiting for the first load, so duplicates cannot be checked yet.
+  static bool _pending(AsyncValue<Object?> value) =>
+      !value.hasValue && !value.hasError;
+
   /// Group rows by investment name
-  Map<String, List<ParsedCashFlowRow>> get _groupedByInvestment {
+  Map<String, List<ParsedCashFlowRow>> _groupByInvestment(
+    Iterable<ParsedCashFlowRow> rows,
+  ) {
     final map = <String, List<ParsedCashFlowRow>>{};
-    for (final row in widget.parseResult.validRowsOnly) {
+    for (final row in rows) {
       final name = _normalizeInvestmentName(row.investmentName);
       map.putIfAbsent(name, () => []).add(row);
     }
     return map;
   }
+
+  Map<String, List<ParsedCashFlowRow>> get _groupedByInvestment =>
+      _groupByInvestment(widget.parseResult.validRowsOnly);
 
   String _normalizeInvestmentName(String name) {
     // Normalize for grouping but preserve original display name
@@ -70,13 +85,18 @@ class _ImportConfirmationScreenState
     locale: getCurrencyLocale(currency),
   );
 
-  Future<void> _importAll() async {
+  Future<void> _importAll(Set<int> duplicates) async {
     HapticFeedback.mediumImpact();
+    final l10n = AppLocalizations.of(context);
     setState(() => _isImporting = true);
 
     try {
       final notifier = ref.read(investmentNotifierProvider.notifier);
-      final grouped = _groupedByInvestment;
+      final grouped = _groupByInvestment(
+        widget.parseResult.validRowsOnly.where(
+          (row) => !_skipDuplicates || !duplicates.contains(row.rowNumber),
+        ),
+      );
       final baseCurrency = ref.read(currencyCodeProvider);
       const uuid = Uuid();
       final now = DateTime.now();
@@ -144,16 +164,29 @@ class _ImportConfirmationScreenState
       if (mounted) {
         AppFeedback.showSuccess(
           context,
-          'Created ${result.investments} investments with ${result.cashFlows} cash flows',
+          l10n.importCreatedSummary(
+            l10n.importInvestmentCount(result.investments),
+            l10n.importCashFlowCount(result.cashFlows),
+          ),
         );
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
-    } catch (e) {
+    } catch (e, st) {
+      // The error text can hold a file path or a name, so only its type is
+      // reported (CLAUDE.md rule 7), and the user sees a fixed message.
+      LoggerService.error(
+        'CSV import failed to save',
+        stackTrace: st,
+        metadata: {
+          'operation': 'csvImport',
+          'errorType': e.runtimeType.toString(),
+        },
+      );
       if (mounted) {
-        AppFeedback.showError(context, 'Import failed: $e');
+        AppFeedback.showError(context, l10n.importFailedTryAgain);
       }
     } finally {
-      setState(() => _isImporting = false);
+      if (mounted) setState(() => _isImporting = false);
     }
   }
 
@@ -163,6 +196,20 @@ class _ImportConfirmationScreenState
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final grouped = _groupedByInvestment;
     final baseCurrency = ref.watch(currencyCodeProvider);
+    final existingInvestments = ref.watch(allInvestmentsProvider);
+    final existingCashFlows = ref.watch(allCashFlowsStreamProvider);
+    // Importing before the user's data has loaded would skip the check.
+    final checkingDuplicates =
+        _pending(existingInvestments) || _pending(existingCashFlows);
+    final duplicates = findLikelyDuplicateRows(
+      widget.parseResult.validRowsOnly,
+      investments: existingInvestments.value ?? const [],
+      cashFlows: existingCashFlows.value ?? const [],
+      baseCurrency: baseCurrency,
+    );
+    final nothingToImport =
+        _skipDuplicates &&
+        duplicates.length == widget.parseResult.validRowsOnly.length;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.confirmImport), centerTitle: true),
@@ -178,14 +225,37 @@ class _ImportConfirmationScreenState
                 Text(l10n.readyToImport, style: AppTypography.h3),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  '${grouped.length} investments • ${widget.parseResult.validRows} cash flows',
+                  l10n.importCountsSummary(
+                    l10n.importInvestmentCount(grouped.length),
+                    l10n.importCashFlowCount(widget.parseResult.validRows),
+                  ),
                   style: AppTypography.body,
                 ),
                 if (widget.parseResult.hasErrors) ...[
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    '${widget.parseResult.errors.length} rows skipped due to errors',
+                    l10n.importRowsSkipped(widget.parseResult.errors.length),
                     style: TextStyle(color: Colors.orange[700], fontSize: 12),
+                  ),
+                ],
+                if (duplicates.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    l10n.importLikelyDuplicates(duplicates.length),
+                    style: TextStyle(color: Colors.orange[700], fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                  SwitchListTile(
+                    value: _skipDuplicates,
+                    onChanged: _isImporting
+                        ? null
+                        : (value) => setState(() => _skipDuplicates = value),
+                    title: Text(
+                      l10n.importSkipDuplicates,
+                      style: AppTypography.body,
+                    ),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
                   ),
                 ],
               ],
@@ -200,7 +270,13 @@ class _ImportConfirmationScreenState
               itemBuilder: (context, index) {
                 final name = grouped.keys.elementAt(index);
                 final rows = grouped[name]!;
-                return _buildInvestmentCard(name, rows, isDark, baseCurrency);
+                return _buildInvestmentCard(
+                  name,
+                  rows,
+                  isDark,
+                  baseCurrency,
+                  duplicates,
+                );
               },
             ),
           ),
@@ -210,10 +286,12 @@ class _ImportConfirmationScreenState
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: GradientButton(
-                onPressed: _isImporting ? null : _importAll,
-                isLoading: _isImporting,
+                onPressed: _isImporting || checkingDuplicates || nothingToImport
+                    ? null
+                    : () => _importAll(duplicates),
+                isLoading: _isImporting || checkingDuplicates,
                 icon: Icons.check_circle_rounded,
-                label: 'Import All',
+                label: l10n.importAllButton,
               ),
             ),
           ),
@@ -227,7 +305,9 @@ class _ImportConfirmationScreenState
     List<ParsedCashFlowRow> rows,
     bool isDark,
     String baseCurrency,
+    Set<int> duplicates,
   ) {
+    final l10n = AppLocalizations.of(context);
     final currency = _investmentCurrency(rows, baseCurrency);
     // Totals are only meaningful when every row is in the same currency
     final singleCurrency = rows.every(
@@ -256,7 +336,10 @@ class _ImportConfirmationScreenState
       child: ExpansionTile(
         title: Text(name, style: AppTypography.h4),
         subtitle: Text(
-          '${rows.length} cash flows • $currency',
+          l10n.importCardSubtitle(
+            l10n.importCashFlowCount(rows.length),
+            currency,
+          ),
           style: AppTypography.caption,
         ),
         children: [
@@ -266,18 +349,18 @@ class _ImportConfirmationScreenState
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildSummaryItem(
-                  'Invested',
-                  singleCurrency ? _formatIn(totalInvested, currency) : '—',
+                  l10n.investedLabel,
+                  singleCurrency ? _formatIn(totalInvested, currency) : null,
                   Colors.red,
                 ),
                 _buildSummaryItem(
-                  'Income',
-                  singleCurrency ? _formatIn(totalIncome, currency) : '—',
+                  l10n.importIncomeLabel,
+                  singleCurrency ? _formatIn(totalIncome, currency) : null,
                   Colors.green,
                 ),
                 _buildSummaryItem(
-                  'Returned',
-                  singleCurrency ? _formatIn(totalReturned, currency) : '—',
+                  l10n.returnedLabel,
+                  singleCurrency ? _formatIn(totalReturned, currency) : null,
                   Colors.blue,
                 ),
               ],
@@ -287,11 +370,21 @@ class _ImportConfirmationScreenState
           ...rows.map(
             (row) => ListTile(
               dense: true,
-              leading: _buildTypeChip(row.type),
+              leading: _buildTypeChip(row.type, l10n),
               title: Text(_dateFormat.format(row.date)),
-              subtitle: Text(_rowCurrency(row, baseCurrency)),
-              trailing: Text(
-                _formatIn(row.amount, _rowCurrency(row, baseCurrency)),
+              subtitle: Wrap(
+                spacing: AppSpacing.sm,
+                children: [
+                  Text(_rowCurrency(row, baseCurrency)),
+                  if (duplicates.contains(row.rowNumber))
+                    Text(
+                      l10n.importDuplicateLabel,
+                      style: TextStyle(color: Colors.orange[700]),
+                    ),
+                ],
+              ),
+              trailing: MaskedAmountText(
+                text: _formatIn(row.amount, _rowCurrency(row, baseCurrency)),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color:
@@ -308,37 +401,39 @@ class _ImportConfirmationScreenState
     );
   }
 
-  Widget _buildSummaryItem(String label, String formattedAmount, Color color) {
+  /// A total, hidden in privacy mode. Null when the rows are in more than
+  /// one currency, shown as "—".
+  Widget _buildSummaryItem(String label, String? formattedAmount, Color color) {
+    final style = TextStyle(fontWeight: FontWeight.bold, color: color);
     return Column(
       children: [
         Text(label, style: AppTypography.caption),
-        Text(
-          formattedAmount,
-          style: TextStyle(fontWeight: FontWeight.bold, color: color),
-        ),
+        formattedAmount == null
+            ? Text('—', style: style)
+            : MaskedAmountText(text: formattedAmount, style: style),
       ],
     );
   }
 
-  Widget _buildTypeChip(CashFlowType type) {
+  Widget _buildTypeChip(CashFlowType type, AppLocalizations l10n) {
     Color color;
     String label;
     switch (type) {
       case CashFlowType.invest:
         color = Colors.red;
-        label = 'INV';
+        label = l10n.importTypeChipInvest;
         break;
       case CashFlowType.income:
         color = Colors.green;
-        label = 'INC';
+        label = l10n.importTypeChipIncome;
         break;
       case CashFlowType.returnFlow:
         color = Colors.blue;
-        label = 'RET';
+        label = l10n.importTypeChipReturn;
         break;
       case CashFlowType.fee:
         color = Colors.orange;
-        label = 'FEE';
+        label = l10n.importTypeChipFee;
         break;
     }
     return Container(
