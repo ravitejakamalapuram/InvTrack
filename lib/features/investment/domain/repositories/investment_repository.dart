@@ -8,7 +8,10 @@ import 'package:inv_tracker/features/investment/domain/entities/transaction_enti
 abstract class InvestmentRepository {
   // ============ ACTIVE INVESTMENTS ============
 
-  /// Watch all active (non-archived) investments (reactive stream)
+  /// Watch all active (non-archived) investments (reactive stream).
+  ///
+  /// An empty list is emitted only once the server confirms it, so offline
+  /// with an empty cache the stream emits nothing.
   Stream<List<InvestmentEntity>> watchAllInvestments();
 
   /// Watch investments with pagination (optimized for large datasets)
@@ -68,8 +71,23 @@ abstract class InvestmentRepository {
 
   // ============ ARCHIVED INVESTMENTS ============
 
-  /// Watch all archived investments (reactive stream)
+  /// Watch all archived investments (reactive stream).
+  ///
+  /// Like [watchAllInvestments], an empty list waits for the server.
   Stream<List<InvestmentEntity>> watchArchivedInvestments();
+
+  /// Get all archived investments once.
+  ///
+  /// Unlike [watchArchivedInvestments], this does not wait for the server to
+  /// confirm an empty list, so it completes offline.
+  Future<List<InvestmentEntity>> getAllArchivedInvestments();
+
+  /// Whether the server holds at least one active or archived investment.
+  ///
+  /// Reads the server only, never the cache, so an unsynced empty cache
+  /// cannot pass for an empty account. Throws when the server cannot be
+  /// reached.
+  Future<bool> hasAnyInvestmentOnServer();
 
   /// Get archived investment by ID
   Future<InvestmentEntity?> getArchivedInvestmentById(String id);

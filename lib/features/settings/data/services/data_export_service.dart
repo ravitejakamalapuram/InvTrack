@@ -147,8 +147,7 @@ class DataExportService {
     // 1. Fetch all data
     final investments = await _investmentRepository.getAllInvestments();
     final archivedInvestments = await _investmentRepository
-        .watchArchivedInvestments()
-        .first;
+        .getAllArchivedInvestments();
 
     // Separate active and archived cashflows
     final activeCashFlows = <_CashFlowWithInvestment>[];

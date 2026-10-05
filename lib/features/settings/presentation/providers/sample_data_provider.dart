@@ -93,11 +93,35 @@ class SampleDataModeNotifier extends Notifier<SampleDataState> {
     );
   }
 
-  /// Activate sample data mode by creating sample investments
+  /// Activate sample data mode by creating sample investments.
+  ///
+  /// Only for an account the server confirms is empty: sample data must never
+  /// be mixed into a real portfolio, and an empty offline cache proves
+  /// nothing. Returns false and writes nothing when the server holds an
+  /// active or archived investment, or cannot be reached.
   Future<bool> activateSampleData() async {
     if (state.isActive || state.isLoading) return false;
 
     state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final hasInvestments = await ref
+          .read(investmentRepositoryProvider)
+          .hasAnyInvestmentOnServer();
+      if (hasInvestments) {
+        LoggerService.info('Sample data refused: account has investments');
+        state = state.copyWith(isLoading: false, error: 'account_not_empty');
+        return false;
+      }
+    } catch (e) {
+      // Offline or timed out: expected, so not reported as an error.
+      LoggerService.info(
+        'Sample data refused: server unreachable',
+        metadata: {'errorType': e.runtimeType.toString()},
+      );
+      state = state.copyWith(isLoading: false, error: 'server_unreachable');
+      return false;
+    }
 
     try {
       final service = ref.read(sampleDataServiceProvider);

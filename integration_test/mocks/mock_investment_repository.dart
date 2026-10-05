@@ -191,6 +191,17 @@ class FakeInvestmentRepository implements InvestmentRepository {
   }
 
   @override
+  Future<List<InvestmentEntity>> getAllArchivedInvestments() async {
+    return List.from(_archivedInvestments);
+  }
+
+  /// The in-memory lists stand in for the server.
+  @override
+  Future<bool> hasAnyInvestmentOnServer() async {
+    return _investments.isNotEmpty || _archivedInvestments.isNotEmpty;
+  }
+
+  @override
   Future<InvestmentEntity?> getArchivedInvestmentById(String id) async {
     return _archivedInvestments.cast<InvestmentEntity?>().firstWhere(
       (i) => i?.id == id,

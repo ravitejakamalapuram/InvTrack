@@ -20,6 +20,9 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   /// Timeout for write operations - allows offline writes to complete quickly
   static const Duration _writeTimeout = Duration(seconds: 3);
 
+  /// Timeout for a read that must come from the server.
+  static const Duration _serverReadTimeout = Duration(seconds: 10);
+
   FirestoreInvestmentRepository({
     required FirebaseFirestore firestore,
     required String userId,
@@ -64,9 +67,34 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   @override
   Stream<List<InvestmentEntity>> watchAllInvestments() {
-    return _investmentsRef
-        .orderBy('createdAt', descending: true)
-        .snapshots()
+    return _watchConfirmed(
+      _investmentsRef.orderBy('createdAt', descending: true),
+    );
+  }
+
+  /// Live investments of [query], holding back an empty list until the
+  /// server confirms it.
+  ///
+  /// On a fresh install with no network, Firestore answers from an empty
+  /// cache. That says nothing about the account; shown as "no investments",
+  /// it offered sample data to users whose portfolio is on the server (A121).
+  /// A cached snapshot with documents is still shown at once (offline-first).
+  /// Metadata changes are listened to so that an empty server answer arrives
+  /// after an empty cache answer; once a list is shown, snapshots whose
+  /// documents did not change are skipped.
+  Stream<List<InvestmentEntity>> _watchConfirmed(
+    Query<Map<String, dynamic>> query,
+  ) {
+    var shown = false;
+    return query
+        .snapshots(includeMetadataChanges: true)
+        .where((snapshot) {
+          final skip = shown
+              ? snapshot.docChanges.isEmpty
+              : snapshot.docs.isEmpty && snapshot.metadata.isFromCache;
+          if (!skip) shown = true;
+          return !skip;
+        })
         .map(
           (snapshot) => snapshot.docs
               .map((doc) => _investmentFromFirestore(doc.data(), doc.id))
@@ -303,14 +331,29 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   @override
   Stream<List<InvestmentEntity>> watchArchivedInvestments() {
-    return _archivedInvestmentsRef
+    return _watchConfirmed(
+      _archivedInvestmentsRef.orderBy('createdAt', descending: true),
+    );
+  }
+
+  @override
+  Future<List<InvestmentEntity>> getAllArchivedInvestments() async {
+    final snapshot = await _archivedInvestmentsRef
         .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => _investmentFromFirestore(doc.data(), doc.id))
-              .toList(),
-        );
+        .get();
+    return snapshot.docs
+        .map((doc) => _investmentFromFirestore(doc.data(), doc.id))
+        .toList();
+  }
+
+  @override
+  Future<bool> hasAnyInvestmentOnServer() async {
+    const serverOnly = GetOptions(source: Source.server);
+    final snapshots = await Future.wait([
+      _investmentsRef.limit(1).get(serverOnly),
+      _archivedInvestmentsRef.limit(1).get(serverOnly),
+    ]).timeout(_serverReadTimeout);
+    return snapshots.any((snapshot) => snapshot.docs.isNotEmpty);
   }
 
   @override
