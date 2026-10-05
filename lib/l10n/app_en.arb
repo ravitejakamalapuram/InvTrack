@@ -524,7 +524,7 @@
     "description": "Change PIN subtitle"
   },
 
-  "dataStoredLocallyMessage": "The app lock protects access to InvTrack on this device. Your data is synced to your private cloud storage (Google Firebase) and is protected by your account, plus an offline copy on this device so InvTrack keeps working without a connection.",
+  "dataStoredLocallyMessage": "The app lock protects access to InvTrack on this device. Your data is stored in InvTrack''s Google Firebase project under your account, with an offline copy on this device so InvTrack keeps working without a connection. In the app, only your signed-in account can see it. The developer can technically access stored data and does so only to handle your support or deletion requests, or when the law requires it.",
   "@dataStoredLocallyMessage": {
     "description": "Security info message"
   },
@@ -532,6 +532,26 @@
   "viewFullPrivacyPolicy": "View full privacy policy online",
   "@viewFullPrivacyPolicy": {
     "description": "Button on the Privacy Policy screen that opens the hosted policy in the browser"
+  },
+
+  "privacyPolicyBody": "**Privacy Policy**\n\nLast updated: {lastUpdated}\n\n1. **Introduction**\n   InvTracker (\"we\", \"our\", or \"us\") is committed to protecting your privacy. This Privacy Policy explains how your personal information is collected, used, and disclosed by InvTracker.\n\n2. **Data Collection**\n   Your data is stored in InvTrack''s Google Firebase (Cloud Firestore) project under your account, so it syncs across your devices and works offline. Google encrypts it in transit and at rest. In the app, only your signed-in account can see your records. The developer can technically access stored data and does so only to answer a support request from you, to process a deletion request, or when the law requires it. We do not sell your data, and we do not use it for advertising. If you choose to sign in with Google, we receive your name, email and a unique user ID to create your account; we do not access your Drive, Gmail or Sheets.\n\n   We also use Google Firebase Analytics, Crashlytics and Performance Monitoring to measure app usage and diagnose crashes and slowness. This diagnostic data is associated with your user ID and device identifiers, and it is always on (there is currently no opt-out). Amounts are reported only in ranges, not exact values. You can delete your account and data in Settings > Data & Account.\n\n3. **Data Usage**\n   Your data is used exclusively to provide you with investment tracking features. We do not sell, trade, or rent your personal identification information to others.\n\n4. **Security**\n   We use administrative, technical, and physical security measures to help protect your personal information. While we have taken reasonable steps to secure the personal information you provide to us, please be aware that despite our efforts, no security measures are perfect or impenetrable.\n\n5. **Contact Us**\n   If you have questions about this Privacy Policy, please contact us at {supportEmail}.\n\n   The full, current policy is available at {policyUrl}",
+  "@privacyPolicyBody": {
+    "description": "Full in-app Privacy Policy shown on the Privacy Policy screen (Markdown-style emphasis is shown as typed). Keep it in step with the hosted policy.",
+    "placeholders": {
+      "lastUpdated": {
+        "type": "String",
+        "example": "October 4, 2026",
+        "description": "Date the policy last changed, formatted for the user's locale"
+      },
+      "supportEmail": {
+        "type": "String",
+        "description": "The support email address (supportEmailAddress)"
+      },
+      "policyUrl": {
+        "type": "String",
+        "description": "The hosted privacy policy URL (hostedPrivacyPolicyUrl)"
+      }
+    }
   },
 
   "helpFaqTitle": "Help & FAQ",
