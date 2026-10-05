@@ -23,23 +23,36 @@ class _UsdTagRepairUndoTileState extends ConsumerState<UsdTagRepairUndoTile> {
     final service = ref.watch(usdTagRepairServiceProvider);
     if (service == null || !service.hasBackup) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context);
-    final count = service.backedUpInvestmentCount;
+    final goals = service.backedUpGoalCount;
+    final count = service.backedUpInvestmentCount + goals;
     return ListTile(
       leading: const Icon(Icons.undo),
       title: Text(l10n.usdTagRepairUndoTitle),
-      subtitle: Text(l10n.usdTagRepairUndoSubtitle(count)),
+      subtitle: Text(
+        goals > 0
+            ? l10n.usdTagRepairUndoSubtitleWithGoals(count)
+            : l10n.usdTagRepairUndoSubtitle(count),
+      ),
       enabled: !_busy,
-      onTap: () => _confirmUndo(service, count),
+      onTap: () => _confirmUndo(service, count, withGoals: goals > 0),
     );
   }
 
-  Future<void> _confirmUndo(UsdTagRepairService service, int count) async {
+  Future<void> _confirmUndo(
+    UsdTagRepairService service,
+    int count, {
+    required bool withGoals,
+  }) async {
     final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(l10n.usdTagRepairUndoTitle),
-        content: Text(l10n.usdTagRepairUndoMessage(count)),
+        content: Text(
+          withGoals
+              ? l10n.usdTagRepairUndoMessageWithGoals(count)
+              : l10n.usdTagRepairUndoMessage(count),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),

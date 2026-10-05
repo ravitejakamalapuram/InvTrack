@@ -532,8 +532,8 @@ void main() {
       expect(find.text(title), findsOneWidget);
       expect(find.text(message), findsOneWidget);
       // 7 collections for the currency check, read once for both questions,
-      // then 4 for the US dollar scan.
-      expect(firestore.readOptions, hasLength(11));
+      // then 7 for the US dollar scan (with goals and expected payments).
+      expect(firestore.readOptions, hasLength(14));
     });
 
     testWidgets('records without a currency already confirmed: nothing to '

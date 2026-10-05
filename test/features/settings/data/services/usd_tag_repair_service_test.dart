@@ -66,7 +66,7 @@ void main() {
         'amount': 200000.0,
         'currency': 'INR',
       })
-      // Mixed currencies: ambiguous, never flagged.
+      // Partly US dollars, the rest in the base currency (A109).
       ..put('investments', 'inv-mixed', {'name': 'Mixed', 'currency': 'USD'})
       ..put('cashflows', 'cf-x1', {
         'investmentId': 'inv-mixed',
@@ -80,7 +80,7 @@ void main() {
         'amount': 1100.0,
         'currency': 'INR',
       })
-      // No cash flows: nothing to inflate, never flagged.
+      // No cash flows yet: the next one would inherit US dollars (A109).
       ..put('investments', 'inv-empty', {'name': 'Empty', 'currency': 'USD'})
       // Archived investment imported before A03.
       ..put('archivedInvestments', 'arch-1', {
@@ -97,23 +97,28 @@ void main() {
 
   group('findCandidates', () {
     test('with base INR flags merged and imported all-USD investments, '
-        'active and archived, and nothing else', () async {
+        'active and archived, the empty and the partly US dollar one, and '
+        'nothing else', () async {
       final found = await service().findCandidates('INR');
 
       expect(
         [
           for (final c in found)
-            (c.investmentId, c.isMerged, c.isArchived, c.cashFlowCount),
+            (c.id, c.kind, c.isMerged, c.isArchived, c.cashFlowCount),
         ],
         [
-          ('inv-imported', false, false, 1),
-          ('inv-merged', true, false, 2),
-          ('arch-1', false, true, 1),
+          ('empty:inv-empty', UsdTagKind.noCashFlows, false, false, 0),
+          ('inv-imported', UsdTagKind.allUsd, false, false, 1),
+          ('inv-merged', UsdTagKind.allUsd, true, false, 2),
+          ('partly:inv-mixed', UsdTagKind.partlyUsd, false, false, 2),
+          ('arch-1', UsdTagKind.allUsd, false, true, 1),
         ],
       );
       expect(found.map((c) => c.name), [
+        'Empty',
         'Imported bond',
         'Merged FD',
+        'Mixed',
         'Old P2P',
       ]);
     });
@@ -137,10 +142,16 @@ void main() {
 
       final found = await service().findCandidates('INR');
 
-      expect(found.map((c) => c.investmentId), ['inv-merged', 'arch-1']);
+      expect(found.map((c) => c.id), [
+        'empty:inv-empty',
+        'inv-merged',
+        'partly:inv-mixed',
+        'arch-1',
+      ]);
       expect(await service().repair({'inv-imported'}, 'INR'), (
         documents: 0,
         investments: 0,
+        goals: 0,
       ));
       expect(currencyOf('cashflows', 'cf-i1'), 'USD');
     });
@@ -170,7 +181,7 @@ void main() {
         'the amounts', () async {
       final written = await service().repair({'inv-merged'}, 'INR');
 
-      expect(written, (documents: 3, investments: 1));
+      expect(written, (documents: 3, investments: 1, goals: 0));
       expect(currencyOf('investments', 'inv-merged'), 'INR');
       expect(currencyOf('cashflows', 'cf-m1'), 'INR');
       expect(currencyOf('cashflows', 'cf-m2'), 'INR');
@@ -188,7 +199,7 @@ void main() {
     test('repairs confirmed archived investments too', () async {
       final written = await service().repair({'arch-1'}, 'INR');
 
-      expect(written, (documents: 2, investments: 1));
+      expect(written, (documents: 2, investments: 1, goals: 0));
       expect(currencyOf('archivedInvestments', 'arch-1'), 'INR');
       expect(currencyOf('archivedCashflows', 'acf-1'), 'INR');
     });
@@ -205,7 +216,7 @@ void main() {
         'inv-imported',
       }, 'INR');
 
-      expect(second, (documents: 0, investments: 0));
+      expect(second, (documents: 0, investments: 0, goals: 0));
       expect(firestore.updatedDocs, commitsAfterFirst);
       expect(currencyOf('cashflows', 'cf-m1'), 'INR');
       expect(currencyOf('cashflows', 'cf-i1'), 'INR');
@@ -215,15 +226,17 @@ void main() {
       );
     });
 
-    test('never touches investments that are not all USD, even when '
-        'confirmed', () async {
+    // Only the ids the scan gives: a partly US dollar or empty investment is
+    // `partly:` or `empty:` and its id (usd_tag_repair_extended_test.dart).
+    test('never touches investments that are not all USD when confirmed as '
+        'all USD', () async {
       final written = await service().repair({
         'inv-inr',
         'inv-mixed',
         'inv-empty',
       }, 'INR');
 
-      expect(written, (documents: 0, investments: 0));
+      expect(written, (documents: 0, investments: 0, goals: 0));
       expect(currencyOf('investments', 'inv-inr'), 'INR');
       expect(currencyOf('cashflows', 'cf-x1'), 'USD');
       expect(currencyOf('cashflows', 'cf-x2'), 'INR');
@@ -238,7 +251,7 @@ void main() {
 
       final written = await service().repair({'inv-merged'}, 'INR');
 
-      expect(written, (documents: 0, investments: 0));
+      expect(written, (documents: 0, investments: 0, goals: 0));
       expect(currencyOf('investments', 'inv-merged'), 'USD');
       expect(currencyOf('cashflows', 'cf-m1'), 'USD');
       expect(currencyOf('cashflows', 'cf-m2'), 'EUR');
@@ -257,7 +270,7 @@ void main() {
         'inv-imported',
       }, 'INR');
 
-      expect(written, (documents: 2, investments: 1));
+      expect(written, (documents: 2, investments: 1, goals: 0));
       expect(currencyOf('investments', 'inv-merged'), 'USD');
       expect(currencyOf('cashflows', 'cf-m1'), 'USD');
       expect(currencyOf('investments', 'inv-imported'), 'INR');
@@ -334,7 +347,7 @@ void main() {
         chunkSize: 2,
       ).repair({'inv-merged', 'inv-imported'}, 'INR');
 
-      expect(written, (documents: 5, investments: 2));
+      expect(written, (documents: 5, investments: 2, goals: 0));
       // inv-imported (2 docs) fits one chunk; inv-merged (3 docs) is larger
       // than the chunk size and is split only because it must be.
       expect(firestore.commitSizes, [2, 2, 1]);
