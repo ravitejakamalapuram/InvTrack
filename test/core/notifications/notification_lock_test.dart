@@ -111,6 +111,8 @@ void main() {
         // Overview watches archived investments too (A28). Without this the
         // stream reads Firestore, fails, and leaves a retry timer running.
         archivedInvestmentsProvider.overrideWith((ref) => Stream.value([])),
+        // Likewise its new-account check (A121); this user has an investment.
+        hasNoInvestmentsProvider.overrideWith((ref) => Stream.value(false)),
         // Today's date checks the clock once a minute for midnight (A21);
         // a fixed date leaves no timer running when the test ends.
         valuationDateProvider.overrideWithValue(DateTime(2026, 10, 4)),
