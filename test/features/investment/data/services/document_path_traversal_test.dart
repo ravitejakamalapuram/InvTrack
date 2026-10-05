@@ -1,8 +1,14 @@
 import 'dart:io';
 
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
+import 'package:mocktail/mocktail.dart';
+
+class _MockFirebaseCrashlytics extends Mock implements FirebaseCrashlytics {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -105,5 +111,64 @@ void main() {
   test('getFileSize returns 0 for unsafe path', () async {
     final size = await service.getFileSize(sensitiveFile.path);
     expect(size, equals(0));
+  });
+
+  group('Crashlytics report for a missing document (SEC-09)', () {
+    late _MockFirebaseCrashlytics firebase;
+
+    setUpAll(() {
+      registerFallbackValue(StackTrace.empty);
+      registerFallbackValue(const <Object>[]);
+    });
+
+    setUp(() {
+      firebase = _MockFirebaseCrashlytics();
+      when(
+        () => firebase.recordError(
+          any(),
+          any(),
+          reason: any(named: 'reason'),
+          fatal: any(named: 'fatal'),
+          information: any(named: 'information'),
+        ),
+      ).thenAnswer((_) async {});
+      // Tests run with kDebugMode == true, so reporting needs the override.
+      CrashlyticsService.enableInDebugMode = true;
+      LoggerService.crashlyticsServiceForTesting = CrashlyticsService(
+        debugModeEnabled: true,
+        crashlytics: firebase,
+      );
+    });
+
+    tearDown(() {
+      CrashlyticsService.enableInDebugMode = false;
+      LoggerService.crashlyticsServiceForTesting = null;
+    });
+
+    test('sends neither the device path nor the user id', () async {
+      // Export reads every document by its stored path; a deleted file makes
+      // symlink resolution throw a FileSystemException that carries the path.
+      final missingPath = '${validFile.parent.path}/receipt-missing.pdf';
+
+      final bytes = await service.readDocument(missingPath);
+      expect(bytes, isNull);
+
+      final captured = verify(
+        () => firebase.recordError(
+          captureAny(),
+          any(),
+          reason: captureAny(named: 'reason'),
+          fatal: any(named: 'fatal'),
+          information: any(named: 'information'),
+        ),
+      ).captured;
+      expect(captured, isNotEmpty);
+      for (final value in captured) {
+        final text = value.toString();
+        expect(text, isNot(contains(missingPath)));
+        expect(text, isNot(contains('test_user')));
+        expect(text, isNot(contains('receipt-missing')));
+      }
+    });
   });
 }

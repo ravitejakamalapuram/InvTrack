@@ -1,11 +1,11 @@
 /// Decides how an investment's (or a portfolio's) return is presented.
 ///
-/// Open investments have no current or terminal value yet, so their cash
-/// flows alone make them look like a loss (−100% badge, −98% XIRR). Until
-/// valuations exist, those figures are replaced by a neutral status and a
-/// dash. Short holdings show their absolute return instead of a wildly
-/// annualised XIRR. Keep this the single place that makes these decisions so
-/// valuations can plug in here later.
+/// Open investments need a current value as their terminal inflow. Without
+/// one, their cash flows alone make them look like a loss (−100% badge, −98%
+/// XIRR), so those figures are replaced by a neutral status and a dash. With
+/// an estimated value the XIRR is labelled "Expected". Short holdings show
+/// their absolute return instead of a wildly annualised XIRR. Keep this the
+/// single place that makes these decisions.
 library;
 
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
@@ -34,23 +34,30 @@ enum ReturnDisplayKind {
 /// Presentation decision for a set of [InvestmentStats].
 class ReturnDisplay {
   /// Holdings shorter than this show their absolute return as the primary
-  /// figure, because annualising a few days of return gives absurd rates.
-  static const int shortHoldingDays = 90;
+  /// figure (the one rule in [InvestmentStats.shortHoldingDays]).
+  static const int shortHoldingDays = InvestmentStats.shortHoldingDays;
 
   /// Shown in place of a figure that cannot be calculated.
   static const String dash = '—';
 
   final ReturnDisplayKind kind;
 
-  /// XIRR as a decimal; only meaningful when [xirrMethod] is not undefined.
-  final double xirr;
+  /// XIRR as a decimal, or null when [xirrMethod] is undefined.
+  final double? xirr;
   final XirrMethod xirrMethod;
 
   /// Absolute return in percent (2.0 = +2%).
   final double absoluteReturn;
 
-  /// Days from the first to the last cash flow, or null without dates.
+  /// Days from the first cash flow to the last cash flow or current value,
+  /// or null without dates.
   final int? holdingDays;
+
+  /// Whether the figures use an estimated current value.
+  final bool isEstimate;
+
+  /// The rate (% p.a.) the estimated current value accrued at, if one.
+  final double? estimateRate;
 
   const ReturnDisplay._({
     required this.kind,
@@ -58,19 +65,19 @@ class ReturnDisplay {
     required this.xirrMethod,
     required this.absoluteReturn,
     required this.holdingDays,
+    this.isEstimate = false,
+    this.estimateRate,
   });
 
   /// Resolves the display for [stats].
   ///
   /// [openStats] are the stats of the open investments within [stats]: the
   /// same object for a single open investment, the open subset for a
-  /// portfolio, or null when nothing in [stats] is open. While those open
-  /// investments have returned less than was invested, they have no terminal
-  /// value and any return figure would be a fake loss.
-  ///
-  /// For a portfolio this checks the open subset as a whole, so one open
-  /// investment with a large payout can unmask the figure while others still
-  /// count as total losses. That is accepted until current values exist.
+  /// portfolio, or null when nothing in [stats] is open. Any return figure
+  /// would be a fake loss while one of them has no current value and has
+  /// returned less than was invested ([InvestmentStats.missingValueCount]).
+  /// Stats calculated without current values fall back to checking the open
+  /// subset as a whole.
   ///
   /// [xirr] and [xirrMethod] override the values in [stats], for callers that
   /// compute XIRR separately.
@@ -82,24 +89,18 @@ class ReturnDisplay {
   }) {
     final value = xirr ?? stats.xirr;
     final method = xirrMethod ?? stats.xirrMethod;
-    final days = _holdingDays(stats);
+    final days = stats.holdingDays;
 
     final ReturnDisplayKind kind;
-    if (openStats != null &&
-        openStats.hasData &&
-        openStats.totalReturned < openStats.totalInvested) {
+    if (openStats != null && openStats.hasData && _awaitsValue(openStats)) {
       kind = openStats.totalReturned == 0 && stats.totalReturned == 0
           ? ReturnDisplayKind.awaitingFirstPayout
           : ReturnDisplayKind.awaitingCurrentValue;
-    } else if (stats.totalInvested > 0 &&
-        // Without any inflow there is no holding period to report a return
-        // over: a closed investment with a single INVEST flow would otherwise
-        // read "-100.0% in under a day".
-        stats.totalReturned > 0 &&
-        days != null &&
-        days < shortHoldingDays) {
+    } else if (stats.isShortHolding) {
       kind = ReturnDisplayKind.shortHolding;
-    } else if (method == XirrMethod.undefined || !value.isFinite) {
+    } else if (method == XirrMethod.undefined ||
+        value == null ||
+        !value.isFinite) {
       kind = ReturnDisplayKind.undefined;
     } else {
       kind = ReturnDisplayKind.annualised;
@@ -111,7 +112,17 @@ class ReturnDisplay {
       xirrMethod: method,
       absoluteReturn: stats.absoluteReturn,
       holdingDays: days,
+      isEstimate: stats.currentValueIsEstimate,
+      estimateRate: stats.currentValueRate,
     );
+  }
+
+  /// Whether an open investment in [openStats] still lacks a terminal value.
+  static bool _awaitsValue(InvestmentStats openStats) {
+    if (openStats.needsCurrentValue) return true;
+    // Stats calculated without current values (or before they loaded).
+    return openStats.currentValue == null &&
+        openStats.totalReturned < openStats.totalInvested;
   }
 
   /// True when the investment is open and has no terminal value yet, so
@@ -135,11 +146,15 @@ class ReturnDisplay {
     }
   }
 
-  /// Label for [primaryText]: "Return" for short holdings, otherwise "XIRR".
-  String metricLabel(AppLocalizations l10n) =>
-      kind == ReturnDisplayKind.shortHolding
-      ? l10n.returnLabel
-      : l10n.xirrLabel;
+  /// Label for [primaryText]: "Return" for short holdings, "Expected XIRR"
+  /// while it uses an estimated current value, otherwise "XIRR".
+  String metricLabel(AppLocalizations l10n) {
+    if (kind == ReturnDisplayKind.shortHolding) return l10n.returnLabel;
+    if (kind == ReturnDisplayKind.annualised && isEstimate) {
+      return l10n.expectedXirrLabel;
+    }
+    return l10n.xirrLabel;
+  }
 
   /// The main return figure, e.g. "+12.4%", "+2.0% in 3 days" or "—".
   String primaryText(AppLocalizations l10n, {bool showSign = true}) {
@@ -154,7 +169,7 @@ class ReturnDisplay {
           holdingDays!,
         );
       case ReturnDisplayKind.annualised:
-        return formatXirrText(xirr, xirrMethod, l10n, showSign: showSign);
+        return formatXirrText(xirr!, xirrMethod, l10n, showSign: showSign);
     }
   }
 
@@ -165,12 +180,32 @@ class ReturnDisplay {
       case ReturnDisplayKind.awaitingCurrentValue:
         return l10n.returnNeedsValueHint;
       case ReturnDisplayKind.shortHolding:
-        if (xirrMethod == XirrMethod.undefined || !xirr.isFinite) return null;
-        return l10n.returnAnnualised(formatXirrText(xirr, xirrMethod, l10n));
+        final rate = xirr;
+        if (xirrMethod == XirrMethod.undefined ||
+            rate == null ||
+            !rate.isFinite) {
+          return null;
+        }
+        return l10n.returnAnnualised(formatXirrText(rate, xirrMethod, l10n));
       case ReturnDisplayKind.annualised:
+        if (!isEstimate) return null;
+        final rate = estimateRate;
+        return rate != null
+            ? l10n.expectedXirrBasisRate(formatRate(rate))
+            : l10n.expectedXirrBasisEstimates;
       case ReturnDisplayKind.undefined:
         return null;
     }
+  }
+
+  /// Formats an annual rate in percent without trailing zeros: 7 → "7%",
+  /// 7.25 → "7.25%".
+  static String formatRate(double ratePercent) {
+    final text = ratePercent
+        .toStringAsFixed(2)
+        .replaceFirst(RegExp(r'0+$'), '')
+        .replaceFirst(RegExp(r'\.$'), '');
+    return '$text%';
   }
 
   /// Formats an XIRR decimal: "—" when undefined, ">1000%" above the display
@@ -187,17 +222,5 @@ class ReturnDisplay {
     // formatXirr returns null only for near-zero values here.
     final text = formatXirr(xirr, showSign: showSign) ?? formatPercent(0);
     return method == XirrMethod.approximate ? l10n.xirrApproximate(text) : text;
-  }
-
-  static int? _holdingDays(InvestmentStats stats) {
-    final first = stats.firstCashFlowDate;
-    final last = stats.lastCashFlowDate;
-    if (first == null || last == null) return null;
-    // Date-only difference in UTC, so DST changes cannot shift it.
-    return DateTime.utc(
-      last.year,
-      last.month,
-      last.day,
-    ).difference(DateTime.utc(first.year, first.month, first.day)).inDays;
   }
 }

@@ -23,9 +23,10 @@ enum ScoreTier {
 
   const ScoreTier(this.minScore, this.maxScore, this.label, this.message, this.emoji);
 
-  /// Get tier for a given score
+  /// Get tier for a given score. A [PortfolioHealthScore]'s tier is that of
+  /// its [PortfolioHealthScore.displayScore], so the number shown and the
+  /// tier always agree (79.6 shows as 80, Excellent).
   static ScoreTier fromScore(double score) {
-    // Use raw double comparison to avoid rounding issues (79.6 should be good, not excellent)
     if (score >= 80.0) return ScoreTier.excellent;
     if (score >= 60.0) return ScoreTier.good;
     if (score >= 40.0) return ScoreTier.fair;
@@ -34,6 +35,14 @@ enum ScoreTier {
 }
 
 /// Individual component score of portfolio health
+/// Why a component's text is the screen's to word (from the ARB file)
+/// rather than [ComponentScore.description] and [ComponentScore.suggestions].
+enum ComponentNote {
+  /// Held for less than `InvestmentStats.shortHoldingDays`: returns are not
+  /// annualised yet.
+  tooEarlyToJudge,
+}
+
 class ComponentScore {
   final String name;
   final double score; // 0-100
@@ -41,12 +50,16 @@ class ComponentScore {
   final String description;
   final List<String> suggestions;
 
+  /// Set when the screen words this component itself; see [ComponentNote].
+  final ComponentNote? note;
+
   ComponentScore({
     required this.name,
     required this.score,
     required this.weight,
     required this.description,
     required this.suggestions,
+    this.note,
   })  : assert(score >= 0 && score <= 100, 'ComponentScore.score must be between 0 and 100'),
         assert(weight >= 0 && weight <= 1, 'ComponentScore.weight must be between 0 and 1') {
     // Runtime validation for isFinite (can't be in const assertion)
@@ -61,12 +74,17 @@ class ComponentScore {
   /// Weighted contribution to overall score
   double get weightedScore => score * weight;
 
+  /// The score as shown, and as coloured: [score] rounded half up, the same
+  /// rule as [PortfolioHealthScore.displayScore].
+  int get displayScore => score.round();
+
   ComponentScore copyWith({
     String? name,
     double? score,
     double? weight,
     String? description,
     List<String>? suggestions,
+    Object? note = _keepNote,
   }) {
     return ComponentScore(
       name: name ?? this.name,
@@ -74,8 +92,12 @@ class ComponentScore {
       weight: weight ?? this.weight,
       description: description ?? this.description,
       suggestions: suggestions ?? this.suggestions,
+      // Omitted keeps the note; an explicit null clears it.
+      note: identical(note, _keepNote) ? this.note : note as ComponentNote?,
     );
   }
+
+  static const Object _keepNote = Object();
 
   @override
   bool operator ==(Object other) {
@@ -91,7 +113,8 @@ class ComponentScore {
     return name == other.name &&
         score == other.score &&
         weight == other.weight &&
-        description == other.description;
+        description == other.description &&
+        note == other.note;
   }
 
   @override
@@ -101,6 +124,7 @@ class ComponentScore {
         weight,
         description,
         Object.hashAll(suggestions),
+        note,
       );
 }
 
@@ -119,8 +143,13 @@ class PortfolioHealthScore {
   /// When this score was calculated
   final DateTime calculatedAt;
 
-  /// Score tier for visual representation
-  ScoreTier get tier => ScoreTier.fromScore(overallScore);
+  /// The score as shown everywhere (ring, details, share text, trend chart,
+  /// analytics bucket): [overallScore] rounded half up. This is the one
+  /// rounding rule; never show or bucket [overallScore] any other way.
+  int get displayScore => overallScore.round();
+
+  /// Score tier for visual representation: the tier of [displayScore].
+  ScoreTier get tier => ScoreTier.fromScore(displayScore.toDouble());
 
   PortfolioHealthScore({
     required this.overallScore,
@@ -147,11 +176,17 @@ class PortfolioHealthScore {
       ];
 
   /// Get top 3 improvement suggestions across all components
-  List<String> get topSuggestions {
+  List<String> get topSuggestions => topSuggestionsWith((c) => c.suggestions);
+
+  /// [topSuggestions], with each component's suggestions taken from
+  /// [suggestionsOf] (the screen words a [ComponentNote] from the ARB file).
+  List<String> topSuggestionsWith(
+    List<String> Function(ComponentScore component) suggestionsOf,
+  ) {
     // Collect all suggestions with their component scores
     final allSuggestions = <({double score, String suggestion})>[];
     for (final component in components) {
-      for (final suggestion in component.suggestions) {
+      for (final suggestion in suggestionsOf(component)) {
         allSuggestions.add((score: component.score, suggestion: suggestion));
       }
     }

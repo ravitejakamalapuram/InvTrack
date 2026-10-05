@@ -11,7 +11,7 @@ part of 'portfolio_health_provider.dart';
 /// Provider for Health Score Repository
 
 @ProviderFor(healthScoreRepository)
-final healthScoreRepositoryProvider = HealthScoreRepositoryProvider._();
+const healthScoreRepositoryProvider = HealthScoreRepositoryProvider._();
 
 /// Provider for Health Score Repository
 
@@ -24,7 +24,7 @@ final class HealthScoreRepositoryProvider
         >
     with $Provider<HealthScoreRepository> {
   /// Provider for Health Score Repository
-  HealthScoreRepositoryProvider._()
+  const HealthScoreRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -62,12 +62,20 @@ String _$healthScoreRepositoryHash() =>
     r'1067203be826aee7ce4ba7c5427daa2f1de327a7';
 
 /// Provider for auto-save service
+///
+/// One service per signed-in account: the repository writes under whoever
+/// is signed in when it saves, so a score held for one account must never
+/// outlive a switch to another.
 
 @ProviderFor(healthScoreAutoSaveService)
-final healthScoreAutoSaveServiceProvider =
+const healthScoreAutoSaveServiceProvider =
     HealthScoreAutoSaveServiceProvider._();
 
 /// Provider for auto-save service
+///
+/// One service per signed-in account: the repository writes under whoever
+/// is signed in when it saves, so a score held for one account must never
+/// outlive a switch to another.
 
 final class HealthScoreAutoSaveServiceProvider
     extends
@@ -78,7 +86,11 @@ final class HealthScoreAutoSaveServiceProvider
         >
     with $Provider<HealthScoreAutoSaveService> {
   /// Provider for auto-save service
-  HealthScoreAutoSaveServiceProvider._()
+  ///
+  /// One service per signed-in account: the repository writes under whoever
+  /// is signed in when it saves, so a score held for one account must never
+  /// outlive a switch to another.
+  const HealthScoreAutoSaveServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -113,7 +125,7 @@ final class HealthScoreAutoSaveServiceProvider
 }
 
 String _$healthScoreAutoSaveServiceHash() =>
-    r'749bd1e4b7f5f0014f3d61149f9176c3ed8aec14';
+    r'd70bcaaeaf2aed2035aea43173903f4c64cf6b6d';
 
 /// Provider for Portfolio Health Score
 ///
@@ -123,9 +135,14 @@ String _$healthScoreAutoSaveServiceHash() =>
 /// - Liquidity (20%): % maturing in 90 days
 /// - Goal Alignment (15%): % goals on-track
 /// - Action Readiness (10%): Overdue renewals, stale investments
+///
+/// Worked out from one complete converted snapshot of the active portfolio
+/// (amounts in the base currency, with current values): it stays loading
+/// until that snapshot and the goals have loaded, so a partial score is
+/// never shown or saved. Null means there is not enough data for a score.
 
 @ProviderFor(PortfolioHealth)
-final portfolioHealthProvider = PortfolioHealthProvider._();
+const portfolioHealthProvider = PortfolioHealthProvider._();
 
 /// Provider for Portfolio Health Score
 ///
@@ -135,6 +152,11 @@ final portfolioHealthProvider = PortfolioHealthProvider._();
 /// - Liquidity (20%): % maturing in 90 days
 /// - Goal Alignment (15%): % goals on-track
 /// - Action Readiness (10%): Overdue renewals, stale investments
+///
+/// Worked out from one complete converted snapshot of the active portfolio
+/// (amounts in the base currency, with current values): it stays loading
+/// until that snapshot and the goals have loaded, so a partial score is
+/// never shown or saved. Null means there is not enough data for a score.
 final class PortfolioHealthProvider
     extends $AsyncNotifierProvider<PortfolioHealth, PortfolioHealthScore?> {
   /// Provider for Portfolio Health Score
@@ -145,7 +167,12 @@ final class PortfolioHealthProvider
   /// - Liquidity (20%): % maturing in 90 days
   /// - Goal Alignment (15%): % goals on-track
   /// - Action Readiness (10%): Overdue renewals, stale investments
-  PortfolioHealthProvider._()
+  ///
+  /// Worked out from one complete converted snapshot of the active portfolio
+  /// (amounts in the base currency, with current values): it stays loading
+  /// until that snapshot and the goals have loaded, so a partial score is
+  /// never shown or saved. Null means there is not enough data for a score.
+  const PortfolioHealthProvider._()
     : super(
         from: null,
         argument: null,
@@ -164,7 +191,7 @@ final class PortfolioHealthProvider
   PortfolioHealth create() => PortfolioHealth();
 }
 
-String _$portfolioHealthHash() => r'3fe703e9a1126deeaede0b0a2017d7c3ff1e3e70';
+String _$portfolioHealthHash() => r'f0218cfc79e1e76d9c9aa121d7b49f0362ff786e';
 
 /// Provider for Portfolio Health Score
 ///
@@ -174,6 +201,11 @@ String _$portfolioHealthHash() => r'3fe703e9a1126deeaede0b0a2017d7c3ff1e3e70';
 /// - Liquidity (20%): % maturing in 90 days
 /// - Goal Alignment (15%): % goals on-track
 /// - Action Readiness (10%): Overdue renewals, stale investments
+///
+/// Worked out from one complete converted snapshot of the active portfolio
+/// (amounts in the base currency, with current values): it stays loading
+/// until that snapshot and the goals have loaded, so a partial score is
+/// never shown or saved. Null means there is not enough data for a score.
 
 abstract class _$PortfolioHealth extends $AsyncNotifier<PortfolioHealthScore?> {
   FutureOr<PortfolioHealthScore?> build();
@@ -202,7 +234,7 @@ abstract class _$PortfolioHealth extends $AsyncNotifier<PortfolioHealthScore?> {
 /// Provider for historical health score snapshots (last 12 weeks)
 
 @ProviderFor(historicalHealthScores)
-final historicalHealthScoresProvider = HistoricalHealthScoresProvider._();
+const historicalHealthScoresProvider = HistoricalHealthScoresProvider._();
 
 /// Provider for historical health score snapshots (last 12 weeks)
 
@@ -217,7 +249,7 @@ final class HistoricalHealthScoresProvider
         $FutureModifier<List<HealthScoreSnapshotModel>>,
         $StreamProvider<List<HealthScoreSnapshotModel>> {
   /// Provider for historical health score snapshots (last 12 weeks)
-  HistoricalHealthScoresProvider._()
+  const HistoricalHealthScoresProvider._()
     : super(
         from: null,
         argument: null,
@@ -249,7 +281,7 @@ String _$historicalHealthScoresHash() =>
 /// Provider for chart data (simplified for trend visualization)
 
 @ProviderFor(healthScoreChartData)
-final healthScoreChartDataProvider = HealthScoreChartDataProvider._();
+const healthScoreChartDataProvider = HealthScoreChartDataProvider._();
 
 /// Provider for chart data (simplified for trend visualization)
 
@@ -264,7 +296,7 @@ final class HealthScoreChartDataProvider
         $FutureModifier<List<Map<String, dynamic>>>,
         $StreamProvider<List<Map<String, dynamic>>> {
   /// Provider for chart data (simplified for trend visualization)
-  HealthScoreChartDataProvider._()
+  const HealthScoreChartDataProvider._()
     : super(
         from: null,
         argument: null,
@@ -296,7 +328,7 @@ String _$healthScoreChartDataHash() =>
 /// Provider for latest health score value (for quick access)
 
 @ProviderFor(latestHealthScoreValue)
-final latestHealthScoreValueProvider = LatestHealthScoreValueProvider._();
+const latestHealthScoreValueProvider = LatestHealthScoreValueProvider._();
 
 /// Provider for latest health score value (for quick access)
 
@@ -304,7 +336,7 @@ final class LatestHealthScoreValueProvider
     extends $FunctionalProvider<double?, double?, double?>
     with $Provider<double?> {
   /// Provider for latest health score value (for quick access)
-  LatestHealthScoreValueProvider._()
+  const LatestHealthScoreValueProvider._()
     : super(
         from: null,
         argument: null,
@@ -343,7 +375,7 @@ String _$latestHealthScoreValueHash() =>
 /// Provider for latest health score tier (for color coding)
 
 @ProviderFor(latestHealthScoreTier)
-final latestHealthScoreTierProvider = LatestHealthScoreTierProvider._();
+const latestHealthScoreTierProvider = LatestHealthScoreTierProvider._();
 
 /// Provider for latest health score tier (for color coding)
 
@@ -351,7 +383,7 @@ final class LatestHealthScoreTierProvider
     extends $FunctionalProvider<ScoreTier?, ScoreTier?, ScoreTier?>
     with $Provider<ScoreTier?> {
   /// Provider for latest health score tier (for color coding)
-  LatestHealthScoreTierProvider._()
+  const LatestHealthScoreTierProvider._()
     : super(
         from: null,
         argument: null,

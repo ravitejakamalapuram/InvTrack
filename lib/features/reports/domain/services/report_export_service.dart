@@ -3,6 +3,8 @@
 /// Defines the contract for exporting reports to different formats
 library;
 
+import 'package:intl/intl.dart';
+
 /// Export format types
 enum ExportFormat {
   csv,
@@ -119,4 +121,16 @@ class ExportResult {
   });
 
   String get fileSizeKB => (fileSizeBytes / 1024).toStringAsFixed(1);
+}
+
+/// XIRR column text for exports: [xirr] is a decimal rate (0.15 is 15%).
+/// "—" when undefined (null); a break-even XIRR is "0.00%". The number uses
+/// [locale], like the export's amounts.
+String formatReportXirr(num? xirr, {String locale = 'en_US'}) {
+  if (xirr == null) return '—';
+  final number = NumberFormat.decimalPatternDigits(
+    locale: locale,
+    decimalDigits: 2,
+  );
+  return '${number.format(xirr * 100)}%';
 }

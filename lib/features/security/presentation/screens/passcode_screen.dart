@@ -36,6 +36,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
   String _message = 'Enter PIN';
   bool _isError = false;
   bool _autoAttemptedOnInit = false;
+  bool _initDelayElapsed = false;
   bool _biometricInProgress = false;
   int _biometricAttemptCount = 0;
   DateTime? _lastBiometricAttempt;
@@ -63,16 +64,28 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
     WidgetsBinding.instance.addObserver(this);
     _updateMessage();
     if (widget.mode == PasscodeMode.unlock) {
-      // Try biometrics automatically if enabled (with small delay to ensure state is ready)
+      // Try biometrics automatically once, after a short delay. At cold start
+      // this screen can show before secure storage has said whether
+      // biometrics are available, so wait for that rather than give up.
+      ref.listenManual(securityProvider, (_, _) => _maybeAutoAttempt());
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted && !_autoAttemptedOnInit) {
-            _autoAttemptedOnInit = true;
-            _tryBiometrics(isAutoAttempt: true);
-          }
+          _initDelayElapsed = true;
+          _maybeAutoAttempt();
         });
       });
     }
+  }
+
+  void _maybeAutoAttempt() {
+    if (!mounted || !_initDelayElapsed || _autoAttemptedOnInit) return;
+    final securityState = ref.read(securityProvider);
+    if (!securityState.isBiometricEnabled ||
+        !securityState.isBiometricAvailable) {
+      return;
+    }
+    _autoAttemptedOnInit = true;
+    _tryBiometrics(isAutoAttempt: true);
   }
 
   @override

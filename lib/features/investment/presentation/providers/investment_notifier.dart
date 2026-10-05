@@ -4,17 +4,22 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/analytics_utils.dart';
+import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
 import 'package:uuid/uuid.dart';
 
 // ============ INVESTMENT NOTIFIER (ACTIONS) ============
@@ -25,9 +30,8 @@ final investmentNotifierProvider =
     );
 
 class InvestmentNotifier extends Notifier<AsyncValue<void>> {
-  /// Track last progress percentage for each goal to detect milestone crossings
-  /// CodeRabbit fix: Prevents missing milestones when jumping past boundaries (e.g., 22% → 30%)
-  final Map<String, double> _lastGoalProgressPercent = {};
+  /// Goal milestones (%) checked after a cash flow.
+  static const _goalMilestones = [25.0, 50.0, 75.0, 100.0];
 
   @override
   AsyncValue<void> build() => const AsyncValue.data(null);
@@ -153,14 +157,26 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .read(investmentRepositoryProvider)
           .getInvestmentById(id);
       if (existing == null) throw DataException.notFound('Investment', id);
+      // The current value is in the stored currency; it means nothing in
+      // another one, so a currency change clears it (money rule 2).
+      final keepsValue = currency == null || currency == existing.currency;
 
-      final updated = existing.copyWith(
+      // Built explicitly, not with copyWith: the edit form sends every
+      // optional field, and null means the user cleared it. copyWith would
+      // keep the old value (and its reminders would return on next launch).
+      // Only identity and lifecycle fields come from the stored investment.
+      final updated = InvestmentEntity(
+        id: existing.id,
         name: name.trim(),
         type: type,
+        status: existing.status,
         notes: notes?.trim(),
+        createdAt: existing.createdAt,
+        closedAt: existing.closedAt,
         updatedAt: DateTime.now(),
         maturityDate: maturityDate,
         incomeFrequency: incomeFrequency,
+        isArchived: existing.isArchived,
         // New enhanced data capture fields
         startDate: startDate,
         expectedRate: expectedRate,
@@ -170,8 +186,11 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         autoRenewal: autoRenewal,
         riskLevel: riskLevel,
         compoundingFrequency: compoundingFrequency,
-        // Multi-currency
-        currency: currency,
+        // Multi-currency: no currency from the form keeps the stored one
+        currency: currency ?? existing.currency,
+        // Not on the edit form: set through setCurrentValue only.
+        currentValue: keepsValue ? existing.currentValue : null,
+        currentValueDate: keepsValue ? existing.currentValueDate : null,
       );
       final repo = ref.read(investmentRepositoryProvider);
 
@@ -214,6 +233,105 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       rethrow;
     }
   }
+
+  /// Sets the user's current value of an open investment, in the
+  /// investment's currency, as of [date] (date-only, not in the future).
+  /// It becomes the terminal inflow of its XIRR, MOIC and return %.
+  /// Throws [ValidationException] for a negative or non-finite value, a
+  /// future date, or an investment that is not open.
+  Future<void> setCurrentValue({
+    required String id,
+    required double value,
+    required DateTime date,
+  }) async {
+    if (!value.isFinite || value < 0) {
+      // No amount in the message: it may reach logs (money rule 7).
+      throw ValidationException(
+        userMessage: 'Enter a value of 0 or more.',
+        technicalMessage:
+            'Validation failed: current value is negative or '
+            'not finite',
+      );
+    }
+    final day = DateTime(date.year, date.month, date.day);
+    final now = DateTime.now();
+    if (day.isAfter(DateTime(now.year, now.month, now.day))) {
+      throw ValidationException.invalidDate(date);
+    }
+    // Money is kept to the paisa.
+    final rounded = (value * 100).roundToDouble() / 100;
+    await _writeCurrentValue(id, (existing) {
+      if (!existing.isOpen) {
+        throw ValidationException(
+          userMessage: 'Only open investments have a current value.',
+          technicalMessage: 'setCurrentValue on a closed investment',
+        );
+      }
+      return _withCurrentValue(existing, rounded, day);
+    });
+  }
+
+  /// Removes the user's current value, so the estimate (if any) applies.
+  Future<void> clearCurrentValue(String id) async {
+    await _writeCurrentValue(
+      id,
+      (existing) => _withCurrentValue(existing, null, null),
+    );
+  }
+
+  Future<void> _writeCurrentValue(
+    String id,
+    InvestmentEntity Function(InvestmentEntity existing) update,
+  ) async {
+    state = const AsyncValue.loading();
+    try {
+      final repo = ref.read(investmentRepositoryProvider);
+      final existing = await repo.getInvestmentById(id);
+      if (existing == null) throw DataException.notFound('Investment', id);
+      final updated = update(existing);
+      if (existing.isArchived) {
+        await repo.updateArchivedInvestment(updated);
+      } else {
+        await repo.updateInvestment(updated);
+      }
+      _invalidateAll();
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  /// [existing] with its current value replaced, including by null, which
+  /// copyWith cannot do.
+  InvestmentEntity _withCurrentValue(
+    InvestmentEntity existing,
+    double? value,
+    DateTime? date,
+  ) => InvestmentEntity(
+    id: existing.id,
+    name: existing.name,
+    type: existing.type,
+    status: existing.status,
+    notes: existing.notes,
+    createdAt: existing.createdAt,
+    closedAt: existing.closedAt,
+    updatedAt: DateTime.now(),
+    maturityDate: existing.maturityDate,
+    incomeFrequency: existing.incomeFrequency,
+    isArchived: existing.isArchived,
+    startDate: existing.startDate,
+    expectedRate: existing.expectedRate,
+    tenureMonths: existing.tenureMonths,
+    platform: existing.platform,
+    interestPayoutMode: existing.interestPayoutMode,
+    autoRenewal: existing.autoRenewal,
+    riskLevel: existing.riskLevel,
+    compoundingFrequency: existing.compoundingFrequency,
+    currency: existing.currency,
+    currentValue: value,
+    currentValueDate: date,
+  );
 
   /// Close an investment
   Future<void> closeInvestment(String id) async {
@@ -456,7 +574,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       }
 
       // Check for goal milestone achievements after any cash flow
-      await _checkGoalMilestonesAfterCashFlow();
+      await _checkGoalMilestonesAfterCashFlow(cashFlow.id);
 
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -821,16 +939,23 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .read(investmentRepositoryProvider)
           .getCashFlowsByInvestment(investmentId);
 
-      // Calculate totals
-      double totalInvested = 0;
-      double totalReturned = 0;
-      for (final cf in cashFlows) {
-        if (cf.type == CashFlowType.invest || cf.type == CashFlowType.fee) {
-          totalInvested += cf.amount;
-        } else {
-          totalReturned += cf.amount;
-        }
-      }
+      // Totals in the base currency: raw sums of mixed currencies would fire
+      // false milestones and be shown under the wrong symbol. Without a
+      // converter (signed out) there is no milestone to show. If a rate is
+      // unavailable, throwError skips the check until the next cash flow;
+      // the default fallback would keep the unconverted amount.
+      final engine = ref.read(calculationEngineProvider);
+      if (!engine.currency.isAvailable) return;
+      final baseCurrency = ref.read(currencyCodeProvider);
+      final converted = await engine.currency.batchConvert(
+        cashFlows: cashFlows,
+        baseCurrency: baseCurrency,
+        fallbackStrategy: ConversionFallbackStrategy.throwError,
+      );
+      final stats = engine.financial.calculateStats(
+        converted,
+        includeXirr: false,
+      );
 
       // Check for milestone notification
       await ref
@@ -838,8 +963,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .checkAndShowMilestone(
             investmentId: investmentId,
             investmentName: investment.name,
-            totalInvested: totalInvested,
-            totalReturned: totalReturned,
+            totalInvested: stats.totalInvested,
+            totalReturned: stats.totalReturned,
+            currency: baseCurrency,
           );
     } catch (e) {
       // Don't fail the main operation if milestone check fails
@@ -850,7 +976,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   ///
   /// BUG FIX: Only check milestone if progress increased significantly (>0.5%)
   /// to avoid spamming notifications on every single cashflow addition.
-  Future<void> _checkGoalMilestonesAfterCashFlow() async {
+  /// [newCashFlowId] is the cash flow just saved; progress without it is
+  /// the progress before it.
+  Future<void> _checkGoalMilestonesAfterCashFlow(String newCashFlowId) async {
     try {
       // Fetch data directly from repository to ensure fresh data
       final goalRepository = ref.read(goalRepositoryProvider);
@@ -865,20 +993,68 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
       // Get all cash flows
       final cashFlows = await investmentRepository.getAllCashFlows();
+      final cashFlowsBefore = cashFlows
+          .where((c) => c.id != newCashFlowId)
+          .toList();
 
       final notificationService = ref.read(notificationServiceProvider);
 
+      // Progress in the base currency, as the Goals screen shows it; raw sums
+      // of mixed currencies would announce the wrong milestones. Without a
+      // rate, throwError skips that goal's amount-based alerts rather than
+      // use unconverted amounts; other goals are still checked.
+      final batchConverter = ref.read(batchCurrencyConverterProvider);
+      final baseCurrency = ref.read(currencyCodeProvider);
+
       // Check each goal for milestone achievements and alerts
       for (final goal in goals) {
-        final progress = GoalProgressCalculator.calculate(
+        // Check for stale goals (no activity for X days). It needs no
+        // amounts, so it runs even when a rate is unavailable.
+        // This has built-in rate limiting (once per month)
+        final lastActivityDate = GoalProgressCalculator.getLastActivityDate(
           goal: goal,
           allInvestments: investments,
           allCashFlows: cashFlows,
         );
+        await notificationService.showGoalStaleNotification(
+          goalId: goal.id,
+          goalName: goal.name,
+          lastActivityDate: lastActivityDate,
+        );
 
-        // CodeRabbit fix: Track previous progress to detect milestone crossings
+        if (batchConverter == null) continue;
+        final GoalProgress progress;
+        final double targetInBase;
+        final double previousPercent;
+        try {
+          progress = await GoalProgressCalculator.calculateMultiCurrency(
+            goal: goal,
+            allInvestments: investments,
+            allCashFlows: cashFlows,
+            batchConverter: batchConverter,
+            baseCurrency: baseCurrency,
+            fallbackStrategy: ConversionFallbackStrategy.throwError,
+          );
+          targetInBase = await GoalProgressCalculator.targetInBaseCurrency(
+            goal: goal,
+            batchConverter: batchConverter,
+            baseCurrency: baseCurrency,
+            fallbackStrategy: ConversionFallbackStrategy.throwError,
+          );
+          previousPercent =
+              (await GoalProgressCalculator.calculateMultiCurrency(
+                goal: goal,
+                allInvestments: investments,
+                allCashFlows: cashFlowsBefore,
+                batchConverter: batchConverter,
+                baseCurrency: baseCurrency,
+                fallbackStrategy: ConversionFallbackStrategy.throwError,
+              )).progressPercent;
+        } on CurrencyConversionException {
+          continue;
+        }
+
         final currentPercent = progress.progressPercent;
-        final previousPercent = _lastGoalProgressPercent[goal.id];
 
         // Check if we should notify about milestone achievements
         // This handles both boundary proximity AND crossed milestones
@@ -887,9 +1063,6 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           previousPercent: previousPercent,
         );
 
-        // Update tracked progress for next time
-        _lastGoalProgressPercent[goal.id] = currentPercent;
-
         if (shouldCheckMilestone) {
           // Check for milestone achievements
           await notificationService.checkAndShowGoalMilestone(
@@ -897,7 +1070,11 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             goalName: goal.name,
             progressPercent: currentPercent,
             currentValue: progress.currentAmount,
-            targetValue: goal.targetAmount,
+            targetValue: targetInBase,
+            currency: baseCurrency,
+            // Only a milestone this cash flow crossed is announced; ones
+            // the goal had passed before it are recorded silently.
+            announce: _crossedGoalMilestone(previousPercent, currentPercent),
           );
         }
 
@@ -912,19 +1089,6 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             projectedDate: progress.projectedCompletionDate,
           );
         }
-
-        // Check for stale goals (no activity for X days)
-        // This has built-in rate limiting (once per month)
-        final lastActivityDate = GoalProgressCalculator.getLastActivityDate(
-          goal: goal,
-          allInvestments: investments,
-          allCashFlows: cashFlows,
-        );
-        await notificationService.showGoalStaleNotification(
-          goalId: goal.id,
-          goalName: goal.name,
-          lastActivityDate: lastActivityDate,
-        );
       }
     } catch (e) {
       // Don't fail the main operation if goal milestone check fails
@@ -947,19 +1111,19 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     required double currentPercent,
     double? previousPercent,
   }) {
-    // Milestones to check: 25%, 50%, 75%, 100%
-    const milestones = [25.0, 50.0, 75.0, 100.0];
     const threshold = 2.0; // Check if within 2% of milestone
 
     // Check if we're close to any milestone OR crossed one
-    for (final milestone in milestones) {
+    for (final milestone in _goalMilestones) {
       // Near boundary check (original logic)
-      final isNearBoundary = currentPercent >= milestone - threshold &&
+      final isNearBoundary =
+          currentPercent >= milestone - threshold &&
           currentPercent <= milestone + threshold;
 
       // CodeRabbit fix: Detect milestone crossing even when jumping past
       // Example: was 22%, now 30% → should trigger 25% notification
-      final crossedSinceLast = previousPercent != null &&
+      final crossedSinceLast =
+          previousPercent != null &&
           previousPercent < milestone &&
           currentPercent >= milestone;
 
@@ -975,4 +1139,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
     return false; // Far from any milestone and didn't cross any, skip check
   }
+
+  /// Whether progress went from below a milestone to at or above it.
+  static bool _crossedGoalMilestone(double before, double after) =>
+      _goalMilestones.any((m) => before < m && after >= m);
 }

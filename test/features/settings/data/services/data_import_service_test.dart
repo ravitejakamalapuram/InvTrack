@@ -339,9 +339,54 @@ Archived Goal,targetAmount,25000
         expect(result.fireSettingsImported, true);
         expect(fireSettingsRepository.settings, isNotNull);
         expect(fireSettingsRepository.settings!.monthlyExpenses, 50000.0);
-        expect(fireSettingsRepository.settings!.currentAge, 30);
+        // A11 / PLAN-05: an export from before birth years were stored has
+        // the age entered at setup (30 on 2024-01-01). The age now advances
+        // instead of staying 30.
+        expect(fireSettingsRepository.settings!.birthYear, 1994);
         expect(fireSettingsRepository.settings!.targetFireAge, 45);
         expect(fireSettingsRepository.settings!.fireType, FireType.regular);
+        // GAP2-01: amounts exported without a currency take the base
+        // currency, like rows, investments and goals, so a later
+        // base-currency change converts them instead of relabelling them.
+        expect(fireSettingsRepository.settings!.currency, 'INR');
+      });
+
+      // Rule 6: every stored FIRE field survives export and import.
+      test('imports the birth year, currency, other assets and SIP', () async {
+        final exported = FireSettingsEntity(
+          id: 'fire-test-2',
+          monthlyExpenses: 75000,
+          birthYear: 1990,
+          targetFireAge: 50,
+          healthcareBuffer: 15,
+          emergencyMonths: 9,
+          otherAssets: 1500000,
+          monthlySip: 40000,
+          currency: 'USD',
+          isSetupComplete: true,
+          createdAt: DateTime(2026, 1, 1),
+          updatedAt: DateTime(2026, 1, 1),
+        );
+        final bytes = createZipArchive({
+          'metadata.json': '{"version":"1.0","files":[]}',
+          'fire_settings.json': jsonEncode(exported.toJson()),
+        });
+
+        final result = await serviceWithFire.importFromZip(
+          bytes,
+          ImportStrategy.merge,
+          baseCurrency: 'INR',
+        );
+
+        expect(result.fireSettingsImported, true);
+        final imported = fireSettingsRepository.settings!;
+        expect(imported, exported);
+        expect(imported.birthYear, 1990);
+        expect(imported.currency, 'USD');
+        expect(imported.otherAssets, 1500000);
+        expect(imported.monthlySip, 40000);
+        expect(imported.healthcareBuffer, 15);
+        expect(imported.emergencyMonths, 9);
       });
 
       // FIRE amounts carry no currency, and the guest merge runs this import
@@ -350,7 +395,7 @@ Archived Goal,targetAmount,25000
       FireSettingsEntity existingSettings() => FireSettingsEntity(
         id: 'existing',
         monthlyExpenses: 200000,
-        currentAge: 40,
+        birthYear: DateTime.now().year - 40,
         targetFireAge: 55,
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),

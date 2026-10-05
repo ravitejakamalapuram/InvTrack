@@ -470,7 +470,8 @@ void main() {
         // Should contain the investment name, type, and returns info
         expect(sevenDayReminder.body, contains('My FD'));
         expect(sevenDayReminder.body, contains('FD'));
-        expect(sevenDayReminder.body, contains('₹108000'));
+        // Lakh grouping with the shared formatter, not '₹108000' (PLAT-18).
+        expect(sevenDayReminder.body, contains('₹1,08,000.00'));
         expect(sevenDayReminder.body, contains('8.0%'));
       },
     );
@@ -763,6 +764,84 @@ void main() {
     });
   });
 
+  // Amounts in notifications use the currency's own symbol and number locale
+  // (A18, GAP2-03): '\$5,000.00' for USD, never '₹5,000.00'; lakh grouping
+  // for INR.
+  group('NotificationService - Amount formatting', () {
+    test('a USD milestone shows the profit in dollars', () async {
+      await service.checkAndShowMilestone(
+        investmentId: 'inv-usd',
+        investmentName: 'US Fund',
+        totalInvested: 10000,
+        totalReturned: 15000,
+        currency: 'USD',
+      );
+
+      final body = fakePlugin.shownNotifications.single.body!;
+      expect(body, contains('\$5,000.00'));
+      expect(body, isNot(contains('₹')));
+    });
+
+    test('an INR milestone uses lakh grouping', () async {
+      await service.checkAndShowMilestone(
+        investmentId: 'inv-inr',
+        investmentName: 'FD',
+        totalInvested: 100000,
+        totalReturned: 970000,
+        currency: 'INR',
+      );
+
+      final body = fakePlugin.shownNotifications.single.body!;
+      expect(body, contains('₹8,70,000.00'));
+    });
+
+    test('a EUR goal milestone uses the euro format', () async {
+      await service.checkAndShowGoalMilestone(
+        goalId: 'goal-eur',
+        goalName: 'House',
+        progressPercent: 50,
+        currentValue: 25000,
+        targetValue: 50000,
+        currency: 'EUR',
+      );
+
+      final body = fakePlugin.shownNotifications.single.body!;
+      expect(body, contains('25.000,00\u00A0€'));
+      expect(body, contains('50.000,00\u00A0€'));
+      expect(body, isNot(contains('EUR')));
+    });
+
+    test('a BDT goal milestone uses Latin numerals', () async {
+      await service.checkAndShowGoalMilestone(
+        goalId: 'goal-bdt',
+        goalName: 'Savings',
+        progressPercent: 25,
+        currentValue: 250000,
+        targetValue: 1000000,
+        currency: 'BDT',
+      );
+
+      final body = fakePlugin.shownNotifications.single.body!;
+      expect(body, contains('৳2,50,000.00'));
+      expect(body, contains('৳10,00,000.00'));
+    });
+
+    test('a EUR maturity reminder never uses the dollar sign', () async {
+      await service.scheduleMaturityReminders(
+        investmentId: 'inv-eur',
+        investmentName: 'Bund',
+        maturityDate: DateTime.now().add(const Duration(days: 14)),
+        investedAmount: 50000,
+        currentValue: 51200,
+        currency: 'EUR',
+      );
+
+      final body = fakePlugin.scheduledNotifications.first.body!;
+      expect(body, contains('51.200,00\u00A0€'));
+      expect(body, isNot(contains('\$')));
+    });
+  });
+
   group('NotificationService - Tax Reminders', () {
     test('should schedule tax reminders when enabled', () async {
       await service.scheduleTaxReminders();
@@ -931,7 +1010,8 @@ void main() {
       expect(notification.title, contains('25%'));
       expect(notification.body, contains('Retirement Fund'));
       expect(notification.body, contains('₹25,000.00'));
-      expect(notification.body, contains('₹100,000.00'));
+      // INR uses lakh grouping, not '₹100,000.00' (GAP2-03).
+      expect(notification.body, contains('₹1,00,000.00'));
     });
 
     test('should show goal milestone notification at 50%', () async {
@@ -1008,8 +1088,10 @@ void main() {
       },
     );
 
-    test('should show lower milestones if skipped initially', () async {
-      // First call at 50% shows 50% (highest reached)
+    test('never shows a skipped lower milestone afterwards', () async {
+      // GAP3-07: this used to announce 50% and then, on the next check,
+      // 25%: milestones went backwards (after "Goal Achieved!" came 75%,
+      // 50% and 25%). Reaching 50% now also records 25%.
       await service.checkAndShowGoalMilestone(
         goalId: 'goal-dup',
         goalName: 'Duplicate Test',
@@ -1021,7 +1103,6 @@ void main() {
       expect(fakePlugin.shownNotifications.length, 1);
       expect(fakePlugin.shownNotifications.first.title, contains('50%'));
 
-      // Second call at 50% shows 25% (next highest not shown)
       await service.checkAndShowGoalMilestone(
         goalId: 'goal-dup',
         goalName: 'Duplicate Test',
@@ -1030,11 +1111,9 @@ void main() {
         targetValue: 100000,
       );
 
-      // Shows 25% since 50% was already shown
-      expect(fakePlugin.shownNotifications.length, 2);
-      expect(fakePlugin.shownNotifications.last.title, contains('25%'));
+      expect(fakePlugin.shownNotifications.length, 1);
 
-      // Third call should not show anything (both 25% and 50% already shown)
+      // Third call should not show anything (both 25% and 50% recorded)
       await service.checkAndShowGoalMilestone(
         goalId: 'goal-dup',
         goalName: 'Duplicate Test',
@@ -1044,7 +1123,7 @@ void main() {
       );
 
       // No new notification
-      expect(fakePlugin.shownNotifications.length, 2);
+      expect(fakePlugin.shownNotifications.length, 1);
     });
 
     test('should show new milestone when higher threshold reached', () async {

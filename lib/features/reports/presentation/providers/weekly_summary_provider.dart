@@ -5,6 +5,7 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/reports/data/services/weekly_summary_service.dart';
 import 'package:inv_tracker/features/reports/domain/entities/weekly_summary.dart';
@@ -37,7 +38,7 @@ final weeklySummaryProvider = FutureProvider.autoDispose
       )),
     );
 
-    final xirrMapAsync = ref.watch(activeInvestmentXirrMapProvider);
+    final xirrMapAsync = ref.watch(activeInvestmentXirrResultMapProvider);
 
     // Wait for all data to load
     final investments = await investmentsAsync.when(
@@ -54,7 +55,7 @@ final weeklySummaryProvider = FutureProvider.autoDispose
 
     final xirrMap = await xirrMapAsync.when(
       data: (data) => Future.value(data),
-      loading: () => Future.value(<String, double>{}),
+      loading: () => Future.value(<String, XirrResult>{}),
       error: (e, st) => throw e,
     );
 

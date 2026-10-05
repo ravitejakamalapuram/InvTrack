@@ -49,8 +49,8 @@ void main() {
       expect(result.isDefined, isFalse);
       expect(result.value, isNull);
       expect(result.reason, XirrUndefinedReason.insufficientFlows);
-      // Legacy behaviour is unchanged.
-      expect(XirrSolver.calculateXirr(dates, amounts), 0.0);
+      // A71: the bare-number API no longer turns this into 0.0.
+      expect(XirrSolver.calculateXirr(dates, amounts), isNull);
     });
 
     test('only outflows is undefined because there is no sign change', () {
@@ -65,12 +65,13 @@ void main() {
       expect(XirrSolver.calculateXirr(dates, amounts), isNull);
     });
 
-    test('empty input is undefined and legacy still returns 0.0', () {
+    test('empty input is undefined, also in the bare-number API', () {
       final result = XirrSolver.solve(const [], const []);
 
       expect(result.method, XirrMethod.undefined);
       expect(result.reason, XirrUndefinedReason.insufficientFlows);
-      expect(XirrSolver.calculateXirr(const [], const []), 0.0);
+      // A71: no longer 0.0.
+      expect(XirrSolver.calculateXirr(const [], const []), isNull);
     });
 
     test('mismatched lengths still throw', () {

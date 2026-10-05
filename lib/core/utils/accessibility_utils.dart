@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 
 /// Utility class for accessibility helpers
 class AccessibilityUtils {
@@ -28,11 +29,38 @@ class AccessibilityUtils {
     return _cachedDateFormatter ??= DateFormat('MMMM d, y');
   }
 
-  /// Formats currency for screen readers
-  static String formatCurrencyForScreenReader(double amount, String symbol) {
-    final formattedAmount = _currencyFormatter.format(amount.abs());
-    final sign = amount < 0 ? 'negative' : '';
-    return '$sign $formattedAmount ${_currencyName(symbol)}';
+  static final NumberFormat _indianNumberFormatter =
+      NumberFormat.decimalPattern('en_IN')..maximumFractionDigits = 2;
+
+  static const Map<String, String> _indianUnitNames = {
+    'L': 'lakh',
+    'Cr': 'crore',
+  };
+
+  /// Formats currency for screen readers.
+  ///
+  /// [locale] is the currency's number locale ([currencyLocaleProvider]).
+  /// For en_IN the amount is read as on screen, with the same rounding as the
+  /// compact format: 10505000 → '1.05 crore rupees', 99999 → '99,999 rupees'.
+  static String formatCurrencyForScreenReader(
+    double amount,
+    String symbol, {
+    required String locale,
+  }) {
+    final String formattedAmount;
+    final bool isZero;
+    if (locale == 'en_IN') {
+      final parts = indianCompactParts(amount.abs());
+      final number = _indianNumberFormatter.format(parts.value);
+      final unit = _indianUnitNames[parts.unit];
+      formattedAmount = unit == null ? number : '$number $unit';
+      isZero = parts.value == 0;
+    } else {
+      formattedAmount = _currencyFormatter.format(amount.abs());
+      isZero = formattedAmount == _currencyFormatter.format(0);
+    }
+    final sign = amount < 0 && !isZero ? 'negative ' : '';
+    return '$sign$formattedAmount ${_currencyName(symbol)}';
   }
 
   /// Gets full currency name from symbol
@@ -69,16 +97,19 @@ class AccessibilityUtils {
   ///
   /// [returnStatus] (e.g. "Awaiting first payout") replaces [returnPercent]
   /// when the return cannot be calculated yet. [returnIsApproximate] reads
-  /// [returnPercent] as approximate.
+  /// [returnPercent] as approximate. [expectedReturnBasis] (e.g. "Based on
+  /// 7% p.a.") reads it as expected, from an estimated current value.
   static String investmentCardLabel({
     required String name,
     required String type,
     required double currentValue,
     required double? returnPercent,
     required String currencySymbol,
+    required String currencyLocale,
     required bool isClosed,
     String? returnStatus,
     bool returnIsApproximate = false,
+    String? expectedReturnBasis,
     DateTime? maturityDate,
     double? totalInvested,
     DateTime? lastActivityDate,
@@ -87,15 +118,23 @@ class AccessibilityUtils {
     final status = isClosed ? 'Closed investment' : 'Open investment';
     final value = shouldMask
         ? 'Hidden amount'
-        : formatCurrencyForScreenReader(currentValue, currencySymbol);
+        : formatCurrencyForScreenReader(
+            currentValue,
+            currencySymbol,
+            locale: currencyLocale,
+          );
     final invested = totalInvested != null && totalInvested > 0
-        ? 'Invested: ${shouldMask ? "Hidden amount" : formatCurrencyForScreenReader(totalInvested, currencySymbol)}'
+        ? 'Invested: ${shouldMask ? "Hidden amount" : formatCurrencyForScreenReader(totalInvested, currencySymbol, locale: currencyLocale)}'
         : '';
     final approx = returnIsApproximate ? 'approximately ' : '';
+    final expected = expectedReturnBasis != null ? 'expected ' : '';
+    final basis = expectedReturnBasis != null && !shouldMask
+        ? ', $expectedReturnBasis'
+        : '';
     final returns = returnStatus != null
         ? 'Returns: $returnStatus'
         : returnPercent != null
-        ? 'Returns: ${shouldMask ? "Hidden percentage" : '$approx${formatPercentageForScreenReader(returnPercent)}'}'
+        ? 'Returns: $expected${shouldMask ? "Hidden percentage" : '$approx${formatPercentageForScreenReader(returnPercent)}'}$basis'
         : '';
     final lastActivity = lastActivityDate != null
         ? 'Last activity: ${formatDateForScreenReader(lastActivityDate)}'
@@ -139,11 +178,13 @@ class AccessibilityUtils {
     required double amount,
     required DateTime date,
     required String currencySymbol,
+    required String currencyLocale,
   }) {
     final formattedDate = formatDateForScreenReader(date);
     final formattedAmount = formatCurrencyForScreenReader(
       amount,
       currencySymbol,
+      locale: currencyLocale,
     );
     return '$type of $formattedAmount on $formattedDate';
   }

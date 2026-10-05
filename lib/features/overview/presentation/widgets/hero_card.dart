@@ -63,6 +63,7 @@ class HeroCardWithToggle extends ConsumerWidget {
             globalStats: global,
             openStats: open,
             closedStats: global,
+            closedStatsReady: false,
             currencyFormat: currencyFormat,
             showRealizedOnly: showRealizedOnly,
           ),
@@ -70,6 +71,7 @@ class HeroCardWithToggle extends ConsumerWidget {
             globalStats: global,
             openStats: open,
             closedStats: global,
+            closedStatsReady: false,
             currencyFormat: currencyFormat,
             showRealizedOnly: showRealizedOnly,
           ),
@@ -94,6 +96,10 @@ class HeroCardContent extends ConsumerWidget {
   /// terminal value yet, which decides whether returns can be shown.
   final InvestmentStats openStats;
   final InvestmentStats closedStats;
+
+  /// False while [closedStats] is a stand-in (still loading or failed), so
+  /// no other figure is shown as the realised XIRR.
+  final bool closedStatsReady;
   final NumberFormat currencyFormat;
   final bool showRealizedOnly;
 
@@ -102,6 +108,7 @@ class HeroCardContent extends ConsumerWidget {
     required this.globalStats,
     required this.openStats,
     required this.closedStats,
+    this.closedStatsReady = true,
     required this.currencyFormat,
     required this.showRealizedOnly,
   });
@@ -118,16 +125,23 @@ class HeroCardContent extends ConsumerWidget {
     final isPositive = netPosition >= 0;
     final status = display.statusLabel(l10n);
 
+    // Privacy mode hides amounts from the screen reader as well.
+    final isPrivacyMode = ref.watch(privacyModeProvider);
     final semanticLabel = AccessibilityUtils.statCardLabel(
       title: showRealizedOnly ? 'Realized Net Position' : l10n.netCashFlowSoFar,
-      value: AccessibilityUtils.formatCurrencyForScreenReader(
-        netPosition,
-        currencyFormat.currencySymbol,
-      ),
+      value: isPrivacyMode
+          ? 'Hidden amount'
+          : AccessibilityUtils.formatCurrencyForScreenReader(
+              netPosition,
+              currencyFormat.currencySymbol,
+              locale: currencyFormat.locale,
+            ),
       subtitle: !stats.hasData
           ? null
           : status != null
           ? 'Return: $status'
+          : isPrivacyMode
+          ? 'Return: Hidden percentage'
           : 'Return: ${AccessibilityUtils.formatPercentageForScreenReader(stats.absoluteReturn)}',
     );
 
@@ -142,7 +156,20 @@ class HeroCardContent extends ConsumerWidget {
             _buildValueRow(netPosition, isPositive, stats, status, ref),
             const SizedBox(height: 16),
             _buildStatsRow(stats, display, l10n, ref),
-            if (display.isAwaitingValue) ...[
+            // The return % is on paid-in capital, not on money out.
+            if (status == null && stats.hasReinvestedPayouts) ...[
+              const SizedBox(height: 6),
+              Text(
+                l10n.moneyOutIncludesFeesReinvested,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+            if (display.isAwaitingValue ||
+                (display.kind == ReturnDisplayKind.annualised &&
+                    display.isEstimate)) ...[
               const SizedBox(height: 6),
               Text(
                 display.secondaryText(l10n)!,
@@ -277,6 +304,7 @@ class HeroCardContent extends ConsumerWidget {
               amount: netPosition,
               compactText: currencyFormat.formatSmart(netPosition),
               currencySymbol: currencyFormat.currencySymbol,
+              locale: currencyFormat.locale,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 36,
@@ -321,48 +349,84 @@ class HeroCardContent extends ConsumerWidget {
     WidgetRef ref,
   ) {
     final isPrivacyMode = ref.watch(privacyModeProvider);
+    final showRealised =
+        closedStatsReady &&
+        display.kind == ReturnDisplayKind.annualised &&
+        display.isEstimate;
 
-    return Row(
+    // A Wrap, not a Row with a Spacer: with Realised and Expected XIRR side
+    // by side the figures move to their own line on narrow phones.
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.end,
+      spacing: 16,
+      runSpacing: 8,
       children: [
-        // Cash Out with up arrow
-        _buildCashFlowStat(
-          icon: Icons.arrow_upward_rounded,
-          amount: stats.totalInvested,
-          value: currencyFormat.formatCompact(stats.totalInvested),
-          label: 'out',
-          isPrivacyMode: isPrivacyMode,
-        ),
-        const SizedBox(width: 16),
-        // Cash In with down arrow
-        _buildCashFlowStat(
-          icon: Icons.arrow_downward_rounded,
-          amount: stats.totalReturned,
-          value: currencyFormat.formatCompact(stats.totalReturned),
-          label: 'in',
-          isPrivacyMode: isPrivacyMode,
-        ),
-        const Spacer(),
-        // XIRR
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+        Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              display.metricLabel(l10n),
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
-                fontSize: 12,
-              ),
+            // Cash Out with up arrow
+            _buildCashFlowStat(
+              icon: Icons.arrow_upward_rounded,
+              amount: stats.totalInvested,
+              value: currencyFormat.formatCompact(stats.totalInvested),
+              label: 'out',
+              isPrivacyMode: isPrivacyMode,
             ),
-            const SizedBox(height: 2),
-            MaskedAmountText(
-              text: display.primaryText(l10n, showSign: false),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+            const SizedBox(width: 16),
+            // Cash In with down arrow
+            _buildCashFlowStat(
+              icon: Icons.arrow_downward_rounded,
+              amount: stats.totalReturned,
+              value: currencyFormat.formatCompact(stats.totalReturned),
+              label: 'in',
+              isPrivacyMode: isPrivacyMode,
             ),
           ],
+        ),
+        Wrap(
+          spacing: 16,
+          runSpacing: 8,
+          children: [
+            // Realised XIRR of closed investments next to the expected one
+            if (showRealised) ...[
+              _buildXirrStat(
+                l10n.realisedXirrLabel,
+                ReturnDisplay.resolve(
+                  stats: closedStats,
+                ).primaryText(l10n, showSign: false),
+              ),
+            ],
+            // XIRR
+            _buildXirrStat(
+              display.metricLabel(l10n),
+              display.primaryText(l10n, showSign: false),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildXirrStat(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 2),
+        MaskedAmountText(
+          text: value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
@@ -417,6 +481,7 @@ class HeroCardContent extends ConsumerWidget {
                 amount: amount,
                 compactText: value,
                 currencySymbol: currencyFormat.currencySymbol,
+                locale: currencyFormat.locale,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,

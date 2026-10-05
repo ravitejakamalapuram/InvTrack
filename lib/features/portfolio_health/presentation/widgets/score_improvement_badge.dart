@@ -22,13 +22,14 @@ class ScoreImprovementBadge extends ConsumerWidget {
           return const SizedBox.shrink(); // Need at least 2 data points
         }
 
-        // Compare current score vs last week
-        final current = snapshots.last.overallScore;
-        final previous = snapshots[snapshots.length - 2].overallScore;
+        // Compare current score vs last week, as shown: each rounded half
+        // up, like PortfolioHealthScore.displayScore (ANLY-16).
+        final current = snapshots.last.overallScore.round();
+        final previous = snapshots[snapshots.length - 2].overallScore.round();
         final delta = current - previous;
 
-        if (delta.abs() < 1.0) {
-          return const SizedBox.shrink(); // No significant change
+        if (delta == 0) {
+          return const SizedBox.shrink(); // No visible change
         }
 
         return _buildBadge(delta, context);
@@ -38,15 +39,14 @@ class ScoreImprovementBadge extends ConsumerWidget {
     );
   }
 
-  Widget _buildBadge(double delta, BuildContext context) {
+  Widget _buildBadge(int delta, BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isPositive = delta > 0;
     final color = isPositive ? Colors.green : Colors.red;
     final icon = isPositive ? Icons.trending_up : Icons.trending_down;
-    final points = delta.round();
     final text = isPositive
-        ? l10n.scoreImprovementPositive(points)
-        : l10n.scoreImprovementNegative(points);
+        ? l10n.scoreImprovementPositive(delta)
+        : l10n.scoreImprovementNegative(delta);
 
     return Semantics(
       label: isPositive ? l10n.healthScoreImproved : l10n.healthScoreDeclined,

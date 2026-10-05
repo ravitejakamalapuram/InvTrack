@@ -14,7 +14,8 @@ final performanceReportProvider =
     FutureProvider.autoDispose<PerformanceReport>((ref) async {
   // Get all data
   final investmentsAsync = ref.watch(activeInvestmentsProvider);
-  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+  // Converted to the base currency, like every other stats screen.
+  final cashFlowsAsync = ref.watch(convertedCashFlowsProvider);
 
   // Wait for all data to load
   final investments = await investmentsAsync.when(

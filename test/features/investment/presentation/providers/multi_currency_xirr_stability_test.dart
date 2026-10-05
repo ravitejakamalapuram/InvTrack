@@ -97,12 +97,12 @@ void main() {
       // ✅ CRITICAL ASSERTION: XIRR must be identical across all currencies
       expect(
         statsUSD.xirr,
-        closeTo(statsEUR.xirr, 0.0001),
+        closeTo(statsEUR.xirr!, 0.0001),
         reason: 'XIRR should be identical when calculated in USD vs EUR',
       );
       expect(
         statsUSD.xirr,
-        closeTo(statsINR.xirr, 0.0001),
+        closeTo(statsINR.xirr!, 0.0001),
         reason: 'XIRR should be identical when calculated in USD vs INR',
       );
 

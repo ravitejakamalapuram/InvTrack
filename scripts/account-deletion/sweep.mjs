@@ -23,8 +23,9 @@ export async function loadRequests(db, now, coolingMs = COOLING_MS) {
 }
 
 /**
- * Firestore data whose Auth user is gone. users/{uid} is never written itself (a "missing
- * ancestor"), so collection('users').get() is empty; listDocuments() does return it.
+ * Firestore data whose Auth user is gone. users/{uid} is usually never written itself (a
+ * "missing ancestor"; the app writes only a usdTagRepairResolvedAt field on it), so
+ * collection('users').get() misses most users; listDocuments() returns both kinds.
  */
 export async function findOrphans(db, auth) {
   const uids = (await db.collection('users').listDocuments()).map((d) => d.id);

@@ -52,23 +52,31 @@ class InvestmentCard extends ConsumerWidget {
     final currencyFormat = ref.watch(currencyFormatProvider);
     final isPrivacyMode = ref.watch(privacyModeProvider);
 
-    // OPTIMIZATION: Use basic stats provider which skips expensive XIRR calculation
-    // for the main card render. Only calculate XIRR where strictly needed.
-    final statsAsync = investment.isArchived
-        ? ref.watch(archivedInvestmentBasicStatsProvider(investment.id))
-        : ref.watch(investmentBasicStatsProvider(investment.id));
-
-    // Watch XIRR separately to include in accessibility label when ready
-    final xirrAsync = investment.isArchived
-        ? ref.watch(archivedInvestmentXirrProvider(investment.id))
-        : ref.watch(investmentXirrProvider(investment.id));
+    // Amounts are in the base currency: active cards read the converted
+    // snapshot, archived cards the converted archived stats, the same values
+    // as the detail screen.
+    // OPTIMIZATION: Active cards use the basic stats map, which skips the
+    // expensive XIRR calculation, and watch XIRR separately.
+    final AsyncValue<InvestmentStats> statsAsync;
+    final AsyncValue<XirrResult> xirrAsync;
+    if (investment.isArchived) {
+      statsAsync = ref.watch(
+        multiCurrencyArchivedInvestmentStatsProvider(investment.id),
+      );
+      xirrAsync = statsAsync.whenData((stats) => stats.xirrResult);
+    } else {
+      statsAsync = ref.watch(investmentBasicStatsProvider(investment.id));
+      // Watch XIRR separately to include in accessibility label when ready
+      xirrAsync = ref.watch(investmentXirrProvider(investment.id));
+    }
 
     final l10n = AppLocalizations.of(context);
 
     // Build accessibility label
     final baseLabel = statsAsync.maybeWhen(
       data: (stats) {
-        // Use XIRR from async provider if available, otherwise fallback to stats (usually 0)
+        // Use XIRR from async provider if available, otherwise fall back to
+        // stats (undefined for basic stats)
         final xirrResult = xirrAsync.value;
         final xirrValue = xirrResult?.value ?? stats.xirr;
         final display = ReturnDisplay.resolve(
@@ -79,7 +87,7 @@ class InvestmentCard extends ConsumerWidget {
         );
         final double? returnPercent = switch (display.kind) {
           ReturnDisplayKind.annualised =>
-            xirrValue != 0 ? xirrValue * 100 : null,
+            xirrValue != null ? xirrValue * 100 : null,
           ReturnDisplayKind.shortHolding => stats.absoluteReturn,
           _ => null,
         };
@@ -88,14 +96,19 @@ class InvestmentCard extends ConsumerWidget {
           name: investment.name,
           type: investment.type.displayName,
           currentValue: stats.netCashFlow,
-          // XIRR might be 0.0 if not calculated, which is acceptable for semantic label
-          // rather than blocking UI for calculation
+          // Null while XIRR is loading or undefined: the label leaves it out
           returnPercent: returnPercent,
           returnIsApproximate:
               display.kind == ReturnDisplayKind.annualised &&
               display.xirrMethod == XirrMethod.approximate,
+          // "Expected", with its basis, until the user confirms the value.
+          expectedReturnBasis:
+              display.kind == ReturnDisplayKind.annualised && display.isEstimate
+              ? display.secondaryText(l10n)
+              : null,
           returnStatus: display.statusLabel(l10n),
           currencySymbol: currencySymbol,
+          currencyLocale: currencyFormat.locale,
           isClosed: isClosed,
           maturityDate: investment.maturityDate,
           totalInvested: stats.totalInvested,
@@ -468,6 +481,7 @@ class _InvestmentValueColumn extends StatelessWidget {
                       stats.netCashFlow.abs(),
                     ),
                     currencySymbol: currencyFormat.currencySymbol,
+                    locale: currencyFormat.locale,
                     prefix: isPositive ? '+' : '-',
                     style: valueStyle,
                   ),
@@ -494,7 +508,7 @@ class _InvestmentValueColumn extends StatelessWidget {
               // XIRR - only show if valid and loaded
               xirrAsync.when(
                 data: (result) {
-                  final xirr = result.value ?? 0.0;
+                  final xirr = result.value;
                   final display = ReturnDisplay.resolve(
                     stats: stats,
                     openStats: openStats,
@@ -503,18 +517,25 @@ class _InvestmentValueColumn extends StatelessWidget {
                   );
                   final isShortHolding =
                       display.kind == ReturnDisplayKind.shortHolding;
+                  // An undefined XIRR shows no badge, never "0%".
+                  if (!isShortHolding && xirr == null) {
+                    return const SizedBox.shrink();
+                  }
                   final isAboveMax =
+                      xirr != null &&
                       xirr * 100 >
-                      XirrFormatConfig.defaultConfig.maxDisplayPercent;
-                  if (!isShortHolding && !isValidXirr(xirr) && !isAboveMax) {
+                          XirrFormatConfig.defaultConfig.maxDisplayPercent;
+                  if (!isShortHolding && !isValidXirr(xirr!) && !isAboveMax) {
                     return const SizedBox.shrink();
                   }
                   final xirrColor =
-                      (isShortHolding ? stats.absoluteReturn : xirr) >= 0
+                      (isShortHolding ? stats.absoluteReturn : xirr!) >= 0
                       ? AppColors.graphEmerald
                       : AppColors.errorLight;
                   final xirrFormatted = isShortHolding
                       ? display.primaryText(l10n)
+                      : display.isEstimate
+                      ? '${display.primaryText(l10n)} ${display.metricLabel(l10n)}'
                       : '${display.primaryText(l10n)} IRR';
 
                   return AnimatedOpacity(
@@ -669,6 +690,7 @@ class _InvestmentBottomStrip extends StatelessWidget {
                               stats.totalInvested,
                             ),
                             currencySymbol: currencyFormat.currencySymbol,
+                            locale: currencyFormat.locale,
                             style: subtleTextStyle.copyWith(
                               fontWeight: FontWeight.w500,
                             ),
