@@ -7,8 +7,10 @@ import 'package:intl/intl.dart';
 /// where grouping cannot explain it ("1500,50" from a comma keyboard).
 ///
 /// Null when the text is not a finite, non-negative number or its
-/// separators fit neither reading ("1,5000", "1,50,00"), so callers show an
-/// error instead of saving an amount 100 or 1000 times off.
+/// separators fit neither reading ("1,5000", "1,50,00"), or fit both: one
+/// locale decimal mark before exactly three digits ("75,000" in de_DE,
+/// "1.500" in en_US). Callers then show an error instead of saving an
+/// amount 100 or 1000 times off.
 double? parseAmountInput(String text, String locale) {
   final cleaned = text.replaceAll(RegExp(r'\s'), '');
   if (!RegExp(r'^[0-9.,]*[0-9][0-9.,]*$').hasMatch(cleaned)) return null;
@@ -24,11 +26,13 @@ double? parseAmountInput(String text, String locale) {
   } else if (commas + points == 1) {
     final mark = commas == 1 ? ',' : '.';
     final digitsAfter = cleaned.length - cleaned.indexOf(mark) - 1;
-    if (mark == _localeDecimalMark(locale) ||
+    if (digitsAfter == 3) {
+      if (mark == _localeDecimalMark(locale)) return null;
+    } else if (mark == _localeDecimalMark(locale) ||
         digitsAfter == 1 ||
         digitsAfter == 2) {
       decimalMark = mark;
-    } else if (digitsAfter != 3) {
+    } else {
       return null;
     }
   }
@@ -66,12 +70,12 @@ final amountInputFormatters = <TextInputFormatter>[
 ];
 
 /// [value] as an amount field's starting text in [locale]: whole amounts
-/// without ".0", others exactly and with the locale's decimal mark, so
+/// without ".0", others to the paisa with the locale's decimal mark, so
 /// saving it unchanged stores the same amount.
 String amountInputText(double value, String locale) =>
     value == value.roundToDouble()
     ? value.toStringAsFixed(0)
-    : '$value'.replaceAll('.', _localeDecimalMark(locale));
+    : value.toStringAsFixed(2).replaceAll('.', _localeDecimalMark(locale));
 
 /// ',' for locales that write 1.500,50 (de_DE, pt_BR …), otherwise '.'.
 String _localeDecimalMark(String locale) {

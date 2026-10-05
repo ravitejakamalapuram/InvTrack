@@ -35,6 +35,10 @@ void main() {
       expect(parseAmountInput('1.500.50', 'en_US'), isNull);
       expect(parseAmountInput('1,500.50.25', 'en_US'), isNull);
       expect(parseAmountInput('1.5000', 'de_DE'), isNull);
+      // One locale decimal mark before exactly three digits may be grouping
+      // ("75,000" typed the English way) or decimals; neither is assumed.
+      expect(parseAmountInput('75,000', 'de_DE'), isNull);
+      expect(parseAmountInput('1.500', 'en_US'), isNull);
       expect(parseAmountInput(',', 'de_DE'), isNull);
       expect(parseAmountInput('', 'en_IN'), isNull);
       expect(parseAmountInput('-5', 'en_IN'), isNull);
@@ -47,8 +51,11 @@ void main() {
       expect(amountInputText(1234.56, 'de_DE'), '1234,56');
       expect(amountInputText(1234.56, 'en_IN'), '1234.56');
       expect(amountInputText(1500, 'de_DE'), '1500');
+      // Never three decimals, which would read as ambiguous.
+      expect(amountInputText(1500.5, 'de_DE'), '1500,50');
+      expect(amountInputText(1500.125, 'en_US'), '1500.13');
       for (final locale in ['de_DE', 'en_IN', 'en_US']) {
-        for (final value in [1234.56, 1500.125, 0.05, 75000.0]) {
+        for (final value in [1234.56, 1500.5, 0.05, 75000.0]) {
           expect(
             parseAmountInput(amountInputText(value, locale), locale),
             value,
