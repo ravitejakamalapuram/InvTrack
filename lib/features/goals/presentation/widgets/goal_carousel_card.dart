@@ -137,7 +137,7 @@ class GoalCarouselCard extends ConsumerWidget {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              '${progress.progressPercent.toStringAsFixed(0)}%',
+                              '${progress.displayPercent}%',
                               style: AppTypography.caption.copyWith(
                                 color: goal.color,
                                 fontWeight: FontWeight.w700,

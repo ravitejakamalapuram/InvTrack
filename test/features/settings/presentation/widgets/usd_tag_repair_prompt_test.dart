@@ -531,9 +531,14 @@ void main() {
       expect(legacy.isComplete, isTrue);
       expect(find.text(title), findsOneWidget);
       expect(find.text(message), findsOneWidget);
-      // 7 collections for the currency check, read once for both questions,
-      // then 4 for the US dollar scan.
-      expect(firestore.readOptions, hasLength(11));
+      // Every collection for the currency check (8 with the FIRE
+      // settings), read once for both questions, then 4 for the US dollar
+      // scan.
+      expect(
+        firestore.readOptions,
+        hasLength(LegacyCurrencyBackfillService.collections.length + 4),
+      );
+      expect(LegacyCurrencyBackfillService.collections, hasLength(8));
     });
 
     testWidgets('records without a currency already confirmed: nothing to '

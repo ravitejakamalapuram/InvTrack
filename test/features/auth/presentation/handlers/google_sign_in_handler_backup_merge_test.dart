@@ -501,7 +501,7 @@ void main() {
       final accountSettings = FireSettingsEntity(
         id: 'account',
         monthlyExpenses: 200000,
-        currentAge: 40,
+        birthYear: DateTime.now().year - 40,
         targetFireAge: 55,
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
