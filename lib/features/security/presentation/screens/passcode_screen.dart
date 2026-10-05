@@ -122,7 +122,8 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
 
       // Small delay to let the system settle after resume
       Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted && !_biometricInProgress) {
+        // Not once the user has started typing the PIN.
+        if (mounted && !_biometricInProgress && _input.isEmpty) {
           _tryBiometrics(isAutoAttempt: true);
         }
       });
@@ -215,6 +216,10 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
   }
 
   void _onKeyPress(String key) {
+    // The user chose the PIN: the automatic fingerprint prompt, which may
+    // still be waiting for biometrics to be reported available, must not
+    // open over the keypad. The fingerprint key still works.
+    _autoAttemptedOnInit = true;
     if (_input.length < 4) {
       setState(() {
         _input += key;

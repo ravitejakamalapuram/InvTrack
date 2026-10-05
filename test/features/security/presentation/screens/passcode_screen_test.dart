@@ -159,5 +159,27 @@ void main() {
         expect(localAuth.authenticateCallCount, 1);
       });
     }
+
+    // A114: a fingerprint prompt that opens while the user types the PIN
+    // takes the keypad away mid-entry.
+    testWidgets('does not prompt once the user has started typing the PIN', (
+      tester,
+    ) async {
+      const storageDelay = Duration(milliseconds: 800);
+      final localAuth = await pumpLockScreen(tester, storageDelay);
+
+      // Biometrics are not known to be available yet.
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('1'));
+      await tester.pump();
+      await tester.tap(find.text('2'));
+      await tester.pump();
+      // Storage answers and biometrics turn available.
+      await tester.pump(storageDelay);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(seconds: 3));
+
+      expect(localAuth.authenticateCallCount, 0);
+    });
   });
 }

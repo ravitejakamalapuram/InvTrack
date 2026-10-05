@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/features/security/data/services/security_clock.dart';
 import 'package:inv_tracker/features/security/data/services/security_service.dart';
 import 'package:local_auth/local_auth.dart';
 
@@ -20,30 +21,22 @@ final flutterSecureStorageProvider = Provider(
 final localAuthProvider = Provider((ref) => LocalAuthentication());
 // sharedPreferencesProvider is imported from settings_provider.dart
 
+/// Time source for auto-lock and the PIN lockout; see [SecurityClock].
+final securityClockProvider = Provider<SecurityClock>((ref) => SecurityClock());
+
 final securityServiceProvider = Provider<SecurityService>((ref) {
   return SecurityService(
     ref.watch(flutterSecureStorageProvider),
     ref.watch(localAuthProvider),
     ref.watch(sharedPreferencesProvider),
+    ref.watch(securityClockProvider),
   );
 });
 
-/// Time source for auto-lock. The wall clock can be changed by whoever holds
-/// the phone; the monotonic stopwatch cannot.
-class SecurityClock {
-  SecurityClock() : _stopwatch = Stopwatch()..start();
-
-  final Stopwatch _stopwatch;
-
-  DateTime now() => DateTime.now();
-
-  Duration monotonic() => _stopwatch.elapsed;
-}
-
-final securityClockProvider = Provider<SecurityClock>((ref) => SecurityClock());
-
-/// A moment as both clocks saw it.
-typedef _ClockMark = ({DateTime wall, Duration monotonic});
+/// A [SecurityClock] reading, taken when it was asked for. Readings are
+/// asynchronous; holding the future keeps their order even when the app
+/// resumes before the pause reading has arrived.
+typedef _ClockMark = Future<Duration>;
 
 // State
 class SecurityState {
@@ -79,6 +72,10 @@ class SecurityNotifier extends Notifier<SecurityState>
   _ClockMark? _lastPausedTime;
   _ClockMark? _lastUnlockTime;
   Timer? _lockTimer;
+
+  // Counts successful unlocks, so start-up checks that finish after one do
+  // not lock the app again (A114).
+  int _unlockCount = 0;
 
   // Secure storage failed with no has_pin mirror, so whether a PIN is set is
   // not known; the next resume reads storage again.
@@ -135,20 +132,20 @@ class SecurityNotifier extends Notifier<SecurityState>
     }
   }
 
-  _ClockMark _mark() => (wall: _clock.now(), monotonic: _clock.monotonic());
+  _ClockMark _mark() => _clock.elapsed();
 
-  /// Time since [mark]: the longer of wall-clock and monotonic time. The
-  /// monotonic clock cannot be changed but stops while the phone sleeps; the
-  /// wall clock keeps running but can be moved. A wall clock moved back past
-  /// [mark] counts as a very long time, so changing it can only lock sooner.
-  Duration _elapsedSince(_ClockMark mark) {
-    final wall = _clock.now().difference(mark.wall);
-    if (wall.isNegative) return const Duration(days: 3650);
-    final monotonic = _clock.monotonic() - mark.monotonic;
-    return wall > monotonic ? wall : monotonic;
+  /// Time between [mark] and [now], both [SecurityClock] readings. That
+  /// clock counts deep sleep and cannot be changed by whoever holds the
+  /// phone; the wall clock is not read at all. It never runs backwards, so a
+  /// negative difference means it fell back to its stopwatch in between; that
+  /// counts as long enough to lock.
+  Duration _elapsedBetween(Duration mark, Duration now) {
+    final elapsed = now - mark;
+    return elapsed.isNegative ? const Duration(days: 3650) : elapsed;
   }
 
   Future<void> _init(bool? hasPinMirror) async {
+    final unlocksBefore = _unlockCount;
     try {
       final hasPin = await _service.hasPin();
       final isBiometricEnabled = _service.isBiometricEnabled;
@@ -169,7 +166,9 @@ class SecurityNotifier extends Notifier<SecurityState>
         hasPin: hasPin,
         isBiometricEnabled: isBiometricEnabled,
         isBiometricAvailable: isBiometricAvailable,
-        isLocked: hasPin, // Lock on startup if PIN exists
+        // Lock on startup if PIN exists, unless the user unlocked while
+        // these checks ran (then keep whatever happened since).
+        isLocked: hasPin && (_unlockCount == unlocksBefore || state.isLocked),
       );
     } catch (e) {
       // Secure storage failed. If a PIN was set, stay locked rather than
@@ -180,7 +179,9 @@ class SecurityNotifier extends Notifier<SecurityState>
       _pinStateUnknown = hasPinMirror == null;
       state = SecurityState(
         hasPin: hasPinMirror ?? false,
-        isLocked: hasPinMirror ?? true,
+        isLocked:
+            (hasPinMirror ?? true) &&
+            (_unlockCount == unlocksBefore || state.isLocked),
       );
     }
   }
@@ -195,55 +196,69 @@ class SecurityNotifier extends Notifier<SecurityState>
         _init(_readHasPinMirror());
         return;
       }
-      _checkAutoLock();
+      unawaited(_checkAutoLock());
     }
   }
 
-  void _checkAutoLock() {
+  Future<void> _checkAutoLock() async {
     // Don't lock if no PIN or already locked
     if (!state.hasPin || state.isLocked) return;
 
+    // Decide on what the app knew when it resumed. The clock answers
+    // asynchronously, so read every time before deciding.
+    final suspended = _isAutoLockSuspended;
+    final suspendedMark = _suspendedAt;
+    final unlockedMark = _lastUnlockTime;
+    final pausedMark = _lastPausedTime;
+    final now = await _clock.elapsed();
+    final suspendedFor = suspendedMark == null
+        ? null
+        : _elapsedBetween(await suspendedMark, now);
+    final sinceUnlock = unlockedMark == null
+        ? null
+        : _elapsedBetween(await unlockedMark, now);
+    final away = pausedMark == null
+        ? null
+        : _elapsedBetween(await pausedMark, now);
+    if (!ref.mounted || !state.hasPin || state.isLocked) return;
+
     // Check if auto-lock is suspended (e.g., during picker operations)
-    if (_isAutoLockSuspended) {
+    if (suspended) {
       // Safety timeout: auto-expire suspension after 5 minutes
       // to prevent indefinite suspension if resumeAutoLock wasn't called
-      if (_suspendedAt != null) {
-        final suspendDuration = _elapsedSince(_suspendedAt!);
-        if (suspendDuration >= const Duration(minutes: 5)) {
-          LoggerService.debug('Auto-lock suspension expired after 5 minutes');
-          _isAutoLockSuspended = false;
-          _suspendedAt = null;
-        } else {
-          LoggerService.debug(
-            'Auto-lock suspended for picker operation, skipping',
-          );
-          return;
-        }
-      } else {
+      if (suspendedFor == null) {
         LoggerService.debug('Auto-lock suspended, skipping');
         return;
+      }
+      if (suspendedFor < const Duration(minutes: 5)) {
+        LoggerService.debug(
+          'Auto-lock suspended for picker operation, skipping',
+        );
+        return;
+      }
+      LoggerService.debug('Auto-lock suspension expired after 5 minutes');
+      // Unless a new suspension started meanwhile.
+      if (identical(_suspendedAt, suspendedMark)) {
+        _isAutoLockSuspended = false;
+        _suspendedAt = null;
       }
     }
 
     // Check if we're within the grace period after a successful unlock
     // This prevents the biometric dialog dismissal from triggering a re-lock
-    if (_lastUnlockTime != null) {
-      final timeSinceUnlock = _elapsedSince(_lastUnlockTime!);
-      if (timeSinceUnlock < _unlockGracePeriod) {
-        LoggerService.debug('Within unlock grace period, skipping auto-lock');
-        return;
-      }
+    if (sinceUnlock != null && sinceUnlock < _unlockGracePeriod) {
+      LoggerService.debug('Within unlock grace period, skipping auto-lock');
+      return;
     }
 
-    if (_lastPausedTime != null) {
-      final duration = _elapsedSince(_lastPausedTime!);
+    if (away != null) {
       final autoLockSeconds = _service.autoLockDurationSeconds;
 
-      if (duration.inSeconds >= autoLockSeconds) {
+      if (away.inSeconds >= autoLockSeconds) {
         LoggerService.info(
           'Auto-locking app',
           metadata: {
-            'durationSeconds': duration.inSeconds,
+            'durationSeconds': away.inSeconds,
             'thresholdSeconds': autoLockSeconds,
           },
         );
@@ -257,6 +272,7 @@ class SecurityNotifier extends Notifier<SecurityState>
   }
 
   void _onSuccessfulUnlock() {
+    _unlockCount++;
     _lastUnlockTime = _mark();
     _lastPausedTime = null; // Reset pause time to prevent immediate re-lock
     state = state.copyWith(isLocked: false);

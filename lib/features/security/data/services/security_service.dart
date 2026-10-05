@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/utils/security_utils.dart';
+import 'package:inv_tracker/features/security/data/services/security_clock.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,12 +14,14 @@ class SecurityService {
   final FlutterSecureStorage _secureStorage;
   final LocalAuthentication _localAuth;
   final SharedPreferences _prefs;
+  final SecurityClock _clock;
 
   static const String _pinKey = 'user_pin';
   static const String _hasPinMirrorKey = 'has_pin';
   static const String _biometricEnabledKey = 'biometric_enabled';
   static const String _autoLockDurationKey = 'auto_lock_duration';
   static const String _failedAttemptsKey = 'pin_failed_attempts';
+  // When the lockout began, as a SecurityClock reading in milliseconds.
   static const String _lockoutTimestampKey = 'pin_lockout_timestamp';
   static const int _maxAttempts = 5;
   static const int _lockoutDurationSeconds = 900; // 15 minutes
@@ -26,7 +29,12 @@ class SecurityService {
   bool _isVerifying = false;
   Future<bool>? _hasPinFuture;
 
-  SecurityService(this._secureStorage, this._localAuth, this._prefs);
+  SecurityService(
+    this._secureStorage,
+    this._localAuth,
+    this._prefs, [
+    SecurityClock? clock,
+  ]) : _clock = clock ?? SecurityClock();
 
   // --- PIN Management ---
 
@@ -213,13 +221,25 @@ class SecurityService {
     }
   }
 
-  Future<int?> getLockoutRemainingSeconds() async {
-    final lockoutTimestamp = await _getLockoutTimestamp();
-    if (lockoutTimestamp == null) return null;
+  Future<int> _clockMillis() async => (await _clock.elapsed()).inMilliseconds;
 
-    final lockoutTime = DateTime.fromMillisecondsSinceEpoch(lockoutTimestamp);
-    final now = DateTime.now();
-    final difference = now.difference(lockoutTime).inSeconds;
+  /// Seconds left of the failed-PIN lockout, or null when there is none.
+  ///
+  /// Measured on [SecurityClock], so changing the device clock cannot end it
+  /// early. That clock restarts at zero with the phone, and older versions
+  /// stored a wall-clock time here; either way a start later than the
+  /// current reading says nothing about the time served, so the lockout
+  /// starts again rather than end early.
+  Future<int?> getLockoutRemainingSeconds() async {
+    final lockoutStart = await _getLockoutTimestamp();
+    if (lockoutStart == null) return null;
+
+    final now = await _clockMillis();
+    if (lockoutStart > now) {
+      await _setLockoutTimestamp(now);
+      return _lockoutDurationSeconds;
+    }
+    final difference = (now - lockoutStart) ~/ 1000;
 
     if (difference < _lockoutDurationSeconds) {
       return _lockoutDurationSeconds - difference;
@@ -315,7 +335,7 @@ class SecurityService {
         await _setFailedAttempts(failedAttempts);
 
         if (failedAttempts >= _maxAttempts) {
-          await _setLockoutTimestamp(DateTime.now().millisecondsSinceEpoch);
+          await _setLockoutTimestamp(await _clockMillis());
         }
         return false;
       }

@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/features/security/data/services/security_clock.dart';
 import 'package:inv_tracker/features/security/data/services/security_service.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
@@ -440,6 +442,7 @@ void main() {
           container
               .read(securityProvider.notifier)
               .didChangeAppLifecycleState(AppLifecycleState.resumed);
+          await pumpEventQueue();
 
           // App should NOT be locked because auto-lock is suspended
           expect(container.read(securityProvider).isLocked, isFalse);
@@ -478,6 +481,7 @@ void main() {
           container
               .read(securityProvider.notifier)
               .didChangeAppLifecycleState(AppLifecycleState.resumed);
+          await pumpEventQueue();
 
           // Should NOT lock because pause time was reset
           expect(container.read(securityProvider).isLocked, isFalse);
@@ -485,9 +489,11 @@ void main() {
       );
     });
 
-    // A07: whoever holds an unlocked phone can change its clock. Moving it
-    // back must not skip the auto-lock or stretch the unlock grace period.
-    group('Auto-lock timing and device clock changes', () {
+    // A07 and A112: time away is measured on the boot clock (see
+    // SecurityClock), which counts deep sleep and which whoever holds the
+    // phone cannot change. The wall clock is not read at all, so the fake
+    // has none.
+    group('Auto-lock timing on the boot clock', () {
       late _FakeClock clock;
 
       /// PIN set, auto-lock after 60 s, unlocked at the clock's start.
@@ -503,14 +509,19 @@ void main() {
         return notifier;
       }
 
+      Future<bool> lockedAfterResume(SecurityNotifier notifier) async {
+        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+        await pumpEventQueue();
+        return container.read(securityProvider).isLocked;
+      }
+
       test('locks after 61 s in the background', () async {
         final notifier = await unlockedWithPin();
         clock.advance(const Duration(seconds: 10));
         notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
         clock.advance(const Duration(seconds: 61));
-        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
 
-        expect(container.read(securityProvider).isLocked, isTrue);
+        expect(await lockedAfterResume(notifier), isTrue);
       });
 
       test('does not lock after 59 s in the background', () async {
@@ -518,100 +529,234 @@ void main() {
         clock.advance(const Duration(seconds: 10));
         notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
         clock.advance(const Duration(seconds: 59));
-        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
 
-        expect(container.read(securityProvider).isLocked, isFalse);
+        expect(await lockedAfterResume(notifier), isFalse);
       });
 
-      test(
-        'locks when the clock is moved back while in the background',
-        () async {
-          final notifier = await unlockedWithPin();
-          clock.advance(const Duration(seconds: 10));
-          notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
-          clock.advance(const Duration(seconds: 61));
-          clock.moveWallClock(const Duration(hours: -1));
-          notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
-
-          expect(container.read(securityProvider).isLocked, isTrue);
-        },
-      );
-
-      test('locks when the clock is moved back by less than the time '
-          'away', () async {
+      // Before A112 these said that a monotonic clock stops while the phone
+      // sleeps and only the wall clock moves. The boot clock keeps counting
+      // in deep sleep, so time asleep is time away.
+      test('locks after 10 minutes asleep', () async {
         final notifier = await unlockedWithPin();
         clock.advance(const Duration(seconds: 10));
         notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
-        clock.advance(const Duration(seconds: 90));
-        // Wall clock now says only 30 s passed.
-        clock.moveWallClock(const Duration(seconds: -60));
-        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+        clock.advance(const Duration(minutes: 10));
 
-        expect(container.read(securityProvider).isLocked, isTrue);
+        expect(await lockedAfterResume(notifier), isTrue);
       });
 
-      test(
-        'a clock moved back does not stretch the unlock grace period',
-        () async {
-          final notifier = await unlockedWithPin();
-          // Leave at once (inside the 5 s grace), stay away 61 s, and move the
-          // clock back so "time since unlock" looks negative.
-          notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
-          clock.advance(const Duration(seconds: 61));
-          clock.moveWallClock(const Duration(hours: -1));
-          notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
-
-          expect(container.read(securityProvider).isLocked, isTrue);
-        },
-      );
-
-      test('locks after time asleep, when only the wall clock moved', () async {
+      test('time asleep does not stretch the unlock grace period', () async {
         final notifier = await unlockedWithPin();
-        clock.advance(const Duration(seconds: 10));
-        notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
-        // The monotonic clock stops while the phone sleeps.
-        clock.moveWallClock(const Duration(minutes: 10));
-        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
-
-        expect(container.read(securityProvider).isLocked, isTrue);
-      });
-
-      test('locks when the phone slept and the clock was then moved back '
-          'past the pause', () async {
-        final notifier = await unlockedWithPin();
-        clock.advance(const Duration(seconds: 10));
-        notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
-        // Asleep: the monotonic clock stops, only the wall clock moves.
-        clock.moveWallClock(const Duration(minutes: 10));
-        // Then the clock is set back to before the pause.
-        clock.moveWallClock(const Duration(hours: -1));
-        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
-
-        expect(container.read(securityProvider).isLocked, isTrue);
-      });
-
-      test('a sleep and a clock moved back past the unlock do not stretch '
-          'the grace period', () async {
-        final notifier = await unlockedWithPin();
-        // Leave inside the 5 s grace; monotonic time stays under 5 s.
+        // Leave inside the 5 s grace, then sleep for 10 minutes.
         clock.advance(const Duration(seconds: 2));
         notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
-        clock.moveWallClock(const Duration(minutes: 10));
-        clock.moveWallClock(const Duration(hours: -1));
-        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+        clock.advance(const Duration(minutes: 10));
 
-        expect(container.read(securityProvider).isLocked, isTrue);
+        expect(await lockedAfterResume(notifier), isTrue);
       });
 
-      test('a picker suspension still expires after 5 minutes when the clock '
-          'is moved back', () async {
+      test(
+        'leaving at once does not stretch the unlock grace period',
+        () async {
+          final notifier = await unlockedWithPin();
+          notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+          clock.advance(const Duration(seconds: 61));
+
+          expect(await lockedAfterResume(notifier), isTrue);
+        },
+      );
+
+      test('a picker suspension expires after 5 minutes', () async {
         final notifier = await unlockedWithPin();
         clock.advance(const Duration(seconds: 10));
         notifier.suspendAutoLock();
         notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
         clock.advance(const Duration(minutes: 6));
-        clock.moveWallClock(const Duration(hours: -1));
+
+        expect(await lockedAfterResume(notifier), isTrue);
+      });
+
+      test('a picker suspension holds for 4 minutes 59 seconds', () async {
+        final notifier = await unlockedWithPin();
+        clock.advance(const Duration(seconds: 10));
+        notifier.suspendAutoLock();
+        notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+        clock.advance(const Duration(minutes: 4, seconds: 59));
+
+        expect(await lockedAfterResume(notifier), isFalse);
+      });
+
+      test('a reading that runs backwards (the clock fell back to its '
+          'stopwatch) locks', () async {
+        final notifier = await unlockedWithPin();
+        clock.advance(const Duration(seconds: 10));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+        await pumpEventQueue();
+        clock.advance(const Duration(hours: -1));
+
+        expect(await lockedAfterResume(notifier), isTrue);
+      });
+    });
+
+    // A112: time away is read from Android's boot clock
+    // (SystemClock.elapsedRealtime over the security channel). It keeps
+    // counting while the phone sleeps and the user cannot set it, so the
+    // device clock can neither skip nor force the auto-lock.
+    group('A112: auto-lock reads the boot clock', () {
+      const channel = MethodChannel('com.invtracker/security');
+      late int bootMs;
+
+      setUp(() {
+        bootMs = 1000000;
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (call) async {
+              if (call.method == 'elapsedRealtime') return bootMs;
+              return null;
+            });
+      });
+
+      tearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null);
+      });
+
+      /// PIN set and unlocked at boot time 1,000 s, auto-lock after
+      /// [autoLockSeconds].
+      Future<SecurityNotifier> unlockedWithPin(
+        int autoLockSeconds, {
+        SecurityClock? clock,
+      }) async {
+        await prefs.setInt('auto_lock_duration', autoLockSeconds);
+        container = createContainer(clock: clock);
+        final notifier = container.read(securityProvider.notifier);
+        await pumpEventQueue();
+        await notifier.setPin('1234');
+        notifier.lockApp();
+        expect(await notifier.unlockWithPin('1234'), isTrue);
+        await pumpEventQueue();
+        return notifier;
+      }
+
+      /// Leaves the app at boot time 1,000 s and comes back at [resumeAtMs].
+      Future<bool> lockedAfterResumeAt(
+        SecurityNotifier notifier,
+        int resumeAtMs,
+      ) async {
+        notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+        await pumpEventQueue();
+        bootMs = resumeAtMs;
         notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+        await pumpEventQueue();
+        return container.read(securityProvider).isLocked;
+      }
+
+      test(
+        'locks after 30 minutes asleep, whatever the wall clock says',
+        () async {
+          // Paused at 10:00, asleep until 10:30, clock then set to 10:00:30:
+          // the wall clock and a stopwatch both say about 30 s.
+          final notifier = await unlockedWithPin(60);
+
+          expect(await lockedAfterResumeAt(notifier, 2800000), isTrue);
+        },
+      );
+
+      // Before A112 a wall clock moved back even 2 s (an NTP correction)
+      // counted as 10 years and locked here. The wall clock is not read now.
+      test('does not lock after 10 s with a 5 minute setting', () async {
+        final notifier = await unlockedWithPin(300);
+
+        expect(await lockedAfterResumeAt(notifier, 1010000), isFalse);
+      });
+
+      test('does not lock after 59 s with a 60 s setting', () async {
+        final notifier = await unlockedWithPin(60);
+
+        expect(await lockedAfterResumeAt(notifier, 1059000), isFalse);
+      });
+
+      test('locks after exactly 60 s with a 60 s setting', () async {
+        final notifier = await unlockedWithPin(60);
+
+        expect(await lockedAfterResumeAt(notifier, 1060000), isTrue);
+      });
+
+      test('without the channel, falls back to a stopwatch and locks after '
+          '61 s', () async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null);
+        final stopwatch = _ManualStopwatch();
+        final notifier = await unlockedWithPin(
+          60,
+          clock: SecurityClock(stopwatch: stopwatch),
+        );
+
+        notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+        await pumpEventQueue();
+        stopwatch.value += const Duration(seconds: 61);
+        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+        await pumpEventQueue();
+
+        expect(container.read(securityProvider).isLocked, isTrue);
+      });
+    });
+
+    // A114: the lock screen shows before secure storage answers, so the
+    // user can unlock before the start-up checks finish. Those checks must
+    // not lock the app again.
+    group('A114: start-up checks after an unlock', () {
+      late _HeldHasPinService service;
+
+      Future<SecurityNotifier> lockedWhileStorageIsSlow() async {
+        SharedPreferences.setMockInitialValues({'has_pin': true});
+        prefs = await SharedPreferences.getInstance();
+        service = _HeldHasPinService(fakeSecureStorage, fakeLocalAuth, prefs);
+        container = createContainer(customService: service);
+        expect(container.read(securityProvider).isLocked, isTrue);
+        return container.read(securityProvider.notifier);
+      }
+
+      test('a PIN unlock before storage answers is not undone', () async {
+        final notifier = await lockedWhileStorageIsSlow();
+
+        expect(await notifier.unlockWithPin('1234'), isTrue);
+        expect(container.read(securityProvider).isLocked, isFalse);
+
+        service.hasPinAnswer.complete(true);
+        await pumpEventQueue();
+
+        final state = container.read(securityProvider);
+        expect(state.isLocked, isFalse);
+        expect(state.hasPin, isTrue);
+      });
+
+      test('without an unlock, the start-up checks still lock', () async {
+        await lockedWhileStorageIsSlow();
+
+        service.hasPinAnswer.complete(true);
+        await pumpEventQueue();
+
+        expect(container.read(securityProvider).isLocked, isTrue);
+      });
+
+      test('a lock after that unlock is not undone either', () async {
+        final notifier = await lockedWhileStorageIsSlow();
+        expect(await notifier.unlockWithPin('1234'), isTrue);
+        notifier.lockApp();
+
+        service.hasPinAnswer.complete(true);
+        await pumpEventQueue();
+
+        expect(container.read(securityProvider).isLocked, isTrue);
+      });
+
+      test('lockApp after the start-up checks still locks', () async {
+        final notifier = await lockedWhileStorageIsSlow();
+        expect(await notifier.unlockWithPin('1234'), isTrue);
+        service.hasPinAnswer.complete(true);
+        await pumpEventQueue();
+
+        notifier.lockApp();
 
         expect(container.read(securityProvider).isLocked, isTrue);
       });
@@ -619,23 +764,35 @@ void main() {
   });
 }
 
-/// Wall clock and monotonic clock that tests move by hand.
+/// A security service whose secure storage has not answered yet: hasPin()
+/// waits for [hasPinAnswer]. The PIN is 1234.
+class _HeldHasPinService extends SecurityService {
+  _HeldHasPinService(super.secureStorage, super.localAuth, super.prefs);
+
+  final hasPinAnswer = Completer<bool>();
+
+  @override
+  Future<bool> hasPin() => hasPinAnswer.future;
+
+  @override
+  Future<bool> verifyPin(String pin) async => pin == '1234';
+}
+
+/// A stopwatch that tests move by hand.
+class _ManualStopwatch extends Stopwatch {
+  Duration value = Duration.zero;
+
+  @override
+  Duration get elapsed => value;
+}
+
+/// Boot clock that tests move by hand.
 class _FakeClock implements SecurityClock {
-  DateTime _wall = DateTime(2026, 10, 3, 9);
-  Duration _monotonic = Duration.zero;
+  Duration _boot = const Duration(seconds: 1000);
 
-  /// Real time passing: both clocks move.
-  void advance(Duration d) {
-    _wall = _wall.add(d);
-    _monotonic += d;
-  }
-
-  /// Someone changes the device clock: only the wall clock moves.
-  void moveWallClock(Duration d) => _wall = _wall.add(d);
+  /// Time passing, asleep or awake.
+  void advance(Duration d) => _boot += d;
 
   @override
-  DateTime now() => _wall;
-
-  @override
-  Duration monotonic() => _monotonic;
+  Future<Duration> elapsed() async => _boot;
 }
