@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/goals/presentation/ui_extensions/goal_type_ui.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_progress_ring.dart';
+import 'package:inv_tracker/features/goals/presentation/widgets/shared_goals_chip.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Card widget displaying a goal with its progress
@@ -263,6 +264,10 @@ class GoalCard extends ConsumerWidget {
         isPrivacyMode
             ? MaskedAmountText(text: progressText, style: progressTextStyle)
             : Text(progressText, style: progressTextStyle),
+        if (progress != null && progress.otherGoalsCount > 0) ...[
+          SizedBox(height: AppSpacing.xxs),
+          SharedGoalsChip(count: progress.otherGoalsCount),
+        ],
       ],
     );
   }
@@ -273,6 +278,10 @@ class GoalCard extends ConsumerWidget {
     GoalProgress? progress,
   ) {
     final status = progress?.status ?? GoalStatus.notStarted;
+    // English when the app's strings are missing, as the card allows above.
+    final l10n =
+        Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+        lookupAppLocalizations(const Locale('en'));
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -292,7 +301,7 @@ class GoalCard extends ConsumerWidget {
           Icon(status.icon, size: 14, color: status.color),
           const SizedBox(width: 6),
           Text(
-            status.displayName,
+            status.label(l10n),
             style: AppTypography.small.copyWith(
               color: status.color,
               fontWeight: FontWeight.w500,
@@ -302,7 +311,7 @@ class GoalCard extends ConsumerWidget {
           // Status message
           Flexible(
             child: Text(
-              progress?.statusMessage ?? '',
+              progress?.statusMessage(l10n) ?? '',
               style: AppTypography.small.copyWith(
                 color: isDark
                     ? AppColors.neutral400Dark

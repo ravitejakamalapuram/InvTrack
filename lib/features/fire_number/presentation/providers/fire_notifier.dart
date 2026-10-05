@@ -4,6 +4,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/utils/analytics_utils.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/domain/services/fire_settings_validator.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
@@ -20,9 +21,16 @@ class FireSettingsNotifier extends Notifier<AsyncValue<void>> {
   /// Save or update FIRE settings.
   /// Validates settings before saving and throws [FireSettingsValidationException]
   /// if validation fails.
+  ///
+  /// Settings without a currency are saved in the base currency: that is
+  /// the currency their amounts were entered and shown in (GAP2-01).
   Future<void> saveSettings(FireSettingsEntity settings) async {
     state = const AsyncValue.loading();
     try {
+      if (settings.currency == null) {
+        settings = settings.copyWith(currency: ref.read(currencyCodeProvider));
+      }
+
       // Validate settings before saving
       _validator.validateOrThrow(settings);
 

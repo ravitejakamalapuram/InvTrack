@@ -19,6 +19,7 @@ import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/screens/create_goal_screen.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_progress_ring.dart';
+import 'package:inv_tracker/features/goals/presentation/widgets/shared_goals_chip.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Screen displaying detailed goal information
@@ -113,6 +114,7 @@ class GoalDetailsScreen extends ConsumerWidget {
   ) {
     // Use multi-currency provider for accurate progress with mixed currencies (Rule 21.3)
     final progressAsync = ref.watch(multiCurrencyGoalProgressProvider(goal.id));
+    final linkedAsync = ref.watch(goalLinkedInvestmentsProvider(goal.id));
     final currencySymbol = ref.watch(currencySymbolProvider);
     final locale = ref.watch(currencyLocaleProvider);
     final isPrivacyMode = ref.watch(privacyModeProvider);
@@ -138,11 +140,14 @@ class GoalDetailsScreen extends ConsumerWidget {
                 _buildDetailsSection(
                   context,
                   goal,
+                  progress,
                   isDark,
                   currencySymbol,
                   isPrivacyMode,
                   locale,
                 ),
+                SizedBox(height: AppSpacing.lg),
+                _buildLinkedInvestmentsSection(context, linkedAsync, isDark),
                 SizedBox(height: AppSpacing.lg),
                 _buildMilestonesSection(context, progress, isDark),
                 SizedBox(height: AppSpacing.lg),
@@ -244,6 +249,7 @@ class GoalDetailsScreen extends ConsumerWidget {
     bool isPrivacyMode,
     String locale,
   ) {
+    final l10n = AppLocalizations.of(context);
     final percent = progress?.progressPercent ?? 0;
     final progressText =
         progress?.getProgressMessage(currencySymbol, locale) ??
@@ -292,7 +298,7 @@ class GoalDetailsScreen extends ConsumerWidget {
               ),
               SizedBox(width: 4),
               Text(
-                progress?.status.displayName ?? 'Not Started',
+                (progress?.status ?? GoalStatus.notStarted).label(l10n),
                 style: AppTypography.bodyMedium.copyWith(
                   color: progress?.status.color ?? Colors.grey,
                   fontWeight: FontWeight.w500,
@@ -300,10 +306,10 @@ class GoalDetailsScreen extends ConsumerWidget {
               ),
             ],
           ),
-          if (progress?.statusMessage != null) ...[
+          if (progress != null) ...[
             SizedBox(height: AppSpacing.xs),
             Text(
-              progress!.statusMessage,
+              progress.statusMessage(l10n),
               style: AppTypography.small.copyWith(
                 color: isDark
                     ? AppColors.neutral400Dark
@@ -311,6 +317,10 @@ class GoalDetailsScreen extends ConsumerWidget {
               ),
               textAlign: TextAlign.center,
             ),
+          ],
+          if (progress != null && progress.otherGoalsCount > 0) ...[
+            SizedBox(height: AppSpacing.sm),
+            SharedGoalsChip(count: progress.otherGoalsCount),
           ],
         ],
       ),
@@ -320,11 +330,16 @@ class GoalDetailsScreen extends ConsumerWidget {
   Widget _buildDetailsSection(
     BuildContext context,
     GoalEntity goal,
+    GoalProgress? progress,
     bool isDark,
     String currencySymbol,
     bool isPrivacyMode,
     String locale,
   ) {
+    final l10n = AppLocalizations.of(context);
+    // The targets are shown as entered, in the goal's own currency.
+    final goalSymbol = getCurrencySymbol(goal.currency);
+    final requiredMonthly = progress?.requiredMonthly;
     return GlassCard(
       padding: EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -341,7 +356,7 @@ class GoalDetailsScreen extends ConsumerWidget {
           _buildAmountDetailRow(
             'Target',
             goal.targetAmount,
-            currencySymbol,
+            goalSymbol,
             isDark,
             isPrivacyMode: isPrivacyMode,
             locale: locale,
@@ -350,7 +365,7 @@ class GoalDetailsScreen extends ConsumerWidget {
             _buildAmountDetailRow(
               'Monthly Income Target',
               goal.targetMonthlyIncome!,
-              currencySymbol,
+              goalSymbol,
               isDark,
               suffix: '/mo',
               isPrivacyMode: isPrivacyMode,
@@ -362,6 +377,26 @@ class GoalDetailsScreen extends ConsumerWidget {
               AppDateUtils.formatShort(goal.targetDate!),
               isDark,
             ),
+          if (requiredMonthly != null) ...[
+            _buildAmountDetailRow(
+              l10n.goalRequiredPerMonth,
+              requiredMonthly,
+              currencySymbol,
+              isDark,
+              isPrivacyMode: isPrivacyMode,
+              locale: locale,
+            ),
+            Text(
+              l10n.goalRequiredPerMonthAssumption(
+                GoalProgressCalculator.assumedAnnualReturn.toStringAsFixed(0),
+              ),
+              style: AppTypography.small.copyWith(
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
+              ),
+            ),
+          ],
           _buildDetailRow('Tracking', goal.trackingMode.displayName, isDark),
           _buildDetailRow(
             'Created',
@@ -446,6 +481,111 @@ class GoalDetailsScreen extends ConsumerWidget {
               if (suffix != null) Text(suffix, style: valueStyle),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLinkedInvestmentsSection(
+    BuildContext context,
+    AsyncValue<List<LinkedGoalInvestment>> linkedAsync,
+    bool isDark,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final secondary = AppTypography.small.copyWith(
+      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+    );
+    return GlassCard(
+      padding: EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.goalLinkedInvestments,
+            style: AppTypography.h4.copyWith(
+              color: isDark ? Colors.white : AppColors.neutral900Light,
+            ),
+          ),
+          SizedBox(height: AppSpacing.md),
+          linkedAsync.when(
+            data: (linked) {
+              if (linked.isEmpty) {
+                return Text(l10n.goalNoLinkedInvestments, style: secondary);
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final item in linked)
+                    _buildLinkedInvestmentRow(context, item, isDark),
+                  if (linked.any((item) => item.isArchived)) ...[
+                    SizedBox(height: AppSpacing.sm),
+                    Text(
+                      l10n.goalArchivedInvestmentsDisclosure,
+                      style: secondary,
+                    ),
+                  ],
+                ],
+              );
+            },
+            loading: () => const LinearProgressIndicator(),
+            error: (_, _) => Text(
+              l10n.failedToLoadInvestments,
+              style: secondary.copyWith(color: AppColors.errorLight),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLinkedInvestmentRow(
+    BuildContext context,
+    LinkedGoalInvestment item,
+    bool isDark,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final note = item.isArchived
+        ? l10n.goalInvestmentArchivedNotCounted
+        : item.isCounted
+        ? null
+        : l10n.goalInvestmentClosedNotCounted;
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Row(
+        children: [
+          Icon(
+            item.isCounted
+                ? Icons.check_circle_outline_rounded
+                : Icons.remove_circle_outline_rounded,
+            size: 18,
+            color: item.isCounted
+                ? AppColors.successLight
+                : AppColors.neutral400Dark,
+          ),
+          SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              item.investment.name,
+              style: AppTypography.bodyMedium.copyWith(
+                color: item.isCounted
+                    ? (isDark ? Colors.white : AppColors.neutral900Light)
+                    : AppColors.neutral400Dark,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (note != null) ...[
+            SizedBox(width: AppSpacing.sm),
+            Text(
+              note,
+              style: AppTypography.small.copyWith(
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -13,6 +13,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
@@ -64,6 +66,7 @@ PortfolioHealthScore? _score(
   List<InvestmentEntity> investments,
   List<CashFlowEntity> flows, {
   double benchmarkInflationRate = 0.06,
+  List<GoalProgress> goalProgress = const [],
 }) {
   final terminalValues = <String, TerminalValues>{
     for (final inv in investments)
@@ -83,7 +86,7 @@ PortfolioHealthScore? _score(
       terminalValues: terminalValues,
     ),
     allCashFlows: flows,
-    goalProgress: const [],
+    goalProgress: goalProgress,
     terminalValues: terminalValues,
     asOf: _asOf,
     benchmarkInflationRate: benchmarkInflationRate,
@@ -252,6 +255,68 @@ void main() {
 
       // 60 + (0.018 / 0.05) × 20 = 67.2.
       expect(score.returnsPerformance.score, closeTo(67.2, 1e-6));
+    });
+  });
+
+  group('goal alignment', () {
+    GoalProgress progress(String id, GoalStatus status) => GoalProgress(
+      goal: GoalEntity(
+        id: id,
+        name: id,
+        type: GoalType.targetAmount,
+        targetAmount: 100000,
+        trackingMode: GoalTrackingMode.all,
+        icon: '🎯',
+        colorValue: 0xFF3B82F6,
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+        currency: 'INR',
+      ),
+      currentAmount: 50000,
+      targetAmount: 100000,
+      progressPercent: 50,
+      monthlyVelocity: 0,
+      monthlyIncome: 0,
+      status: status,
+      currentMilestone: GoalMilestone.forPercentage(50),
+      achievedMilestones: GoalMilestone.achievedMilestones(50),
+      linkedInvestmentCount: 1,
+      calculatedAt: DateTime(2026),
+    );
+
+    // A21 gives an empty portfolio no score, so these hold one closed FD.
+    final fd = _investment('fd', InvestmentType.fixedDeposit);
+    final fdFlows = _yearFlows('fd', 107000);
+
+    test('a goal that is not projected counts neither for nor against', () {
+      // A12: income goals and goals with under 3 months of history are
+      // in progress, not on track (which inflated the score) or behind.
+      final score = _score(
+        [fd],
+        fdFlows,
+        goalProgress: [
+          progress('done', GoalStatus.achieved),
+          progress('new', GoalStatus.inProgress),
+          progress('late', GoalStatus.behind),
+        ],
+      )!;
+
+      expect(score.goalAlignment.score, 50.0);
+      expect(score.goalAlignment.description, '1/2 goals on track or better');
+    });
+
+    test('goals that are all in progress score neutral, not 100', () {
+      // A21: nothing to judge earns no penalty and no free 100.
+      final score = _score(
+        [fd],
+        fdFlows,
+        goalProgress: [
+          progress('a', GoalStatus.inProgress),
+          progress('b', GoalStatus.inProgress),
+        ],
+      )!;
+
+      expect(score.goalAlignment.score, PortfolioHealthCalculator.neutralScore);
     });
   });
 }

@@ -12,7 +12,7 @@ void main() {
       id: 'test-1',
       monthlyExpenses: 50000,
       safeWithdrawalRate: 4.0,
-      currentAge: 30,
+      birthYear: DateTime.now().year - 30,
       targetFireAge: 45,
       lifeExpectancy: 85,
       inflationRate: 6.0,
@@ -37,21 +37,25 @@ void main() {
     });
 
     test('rejects current age below 18', () {
-      final settings = validSettings.copyWith(currentAge: 17);
+      final settings = validSettings.copyWith(
+        birthYear: DateTime.now().year - 17,
+      );
       final result = validator.validate(settings);
       expect(result.isValid, isFalse);
       expect(result.errors, contains('Current age must be between 18 and 100'));
     });
 
     test('rejects current age above 100', () {
-      final settings = validSettings.copyWith(currentAge: 101);
+      final settings = validSettings.copyWith(
+        birthYear: DateTime.now().year - 101,
+      );
       final result = validator.validate(settings);
       expect(result.isValid, isFalse);
     });
 
     test('rejects target FIRE age less than current age', () {
       final settings = validSettings.copyWith(
-        currentAge: 40,
+        birthYear: DateTime.now().year - 40,
         targetFireAge: 35,
       );
       final result = validator.validate(settings);
@@ -60,6 +64,29 @@ void main() {
         result.errors,
         contains('Target FIRE age must be greater than current age'),
       );
+    });
+
+    // PLAN-07: a target equal to the current age passed validation and left
+    // no years to plan for.
+    test('rejects a target FIRE age equal to the current age', () {
+      final settings = validSettings.copyWith(
+        birthYear: DateTime.now().year - 45,
+        targetFireAge: 45,
+      );
+      final result = validator.validate(settings);
+      expect(result.isValid, isFalse);
+      expect(
+        result.errors,
+        contains('Target FIRE age must be greater than current age'),
+      );
+    });
+
+    test('rejects negative other assets and a negative SIP', () {
+      final result = validator.validate(
+        validSettings.copyWith(otherAssets: -1, monthlySip: -1),
+      );
+      expect(result.errors, contains('Other assets cannot be negative'));
+      expect(result.errors, contains('Monthly SIP cannot be negative'));
     });
 
     test('rejects target FIRE age above 100', () {
@@ -137,7 +164,7 @@ void main() {
 
     test('collects multiple errors', () {
       final settings = validSettings.copyWith(
-        currentAge: 15,
+        birthYear: DateTime.now().year - 15,
         monthlyExpenses: 0,
         safeWithdrawalRate: 0,
       );

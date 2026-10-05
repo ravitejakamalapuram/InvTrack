@@ -5,6 +5,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
@@ -14,7 +15,7 @@ final _loadError = Exception('permission-denied');
 final _settings = FireSettingsEntity(
   id: 'fire',
   monthlyExpenses: 50000,
-  currentAge: 30,
+  birthYear: DateTime.now().year - 30,
   targetFireAge: 45,
   isSetupComplete: true,
   createdAt: DateTime(2026, 1, 1),
@@ -27,6 +28,9 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         fireSettingsProvider.overrideWith((ref) => Stream.value(_settings)),
+        // The FIRE inputs come from the converted snapshot (A11), which
+        // needs the base currency.
+        currencyCodeProvider.overrideWith((ref) => 'INR'),
         allInvestmentsProvider.overrideWith((ref) => Stream.value(const [])),
         allCashFlowsStreamProvider.overrideWith(
           (ref) => Stream.error(_loadError),

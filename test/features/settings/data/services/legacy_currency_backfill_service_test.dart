@@ -48,8 +48,23 @@ void main() {
         'goals',
         'archivedGoals',
         'expectedCashFlows',
+        'fireSettings',
       ]),
     );
+  });
+
+  test('stamps FIRE settings saved before their amounts had a currency', () {
+    // GAP2-01: FIRE amounts without a currency are read in the base
+    // currency. Stamped before a base-currency change, they are converted
+    // from it instead of being read as the new currency.
+    firestore
+      ..put('fireSettings', 'settings', {'monthlyExpenses': 50000.0})
+      ..put('investments', 'inv-1', {'name': 'FD', 'currency': 'INR'});
+
+    return build().backfill('INR').then((stamped) {
+      expect(stamped, 1);
+      expect(firestore.stored('fireSettings', 'settings')!['currency'], 'INR');
+    });
   });
 
   test('stamps missing, null and empty currencies with the base currency, '

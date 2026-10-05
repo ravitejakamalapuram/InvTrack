@@ -294,8 +294,9 @@ void main() {
     final fireSettings = FireSettingsEntity(
       id: 'fire-settings-demo',
       monthlyExpenses: 60000,
-      currentAge: 32,
+      birthYear: FireSettingsEntity.birthYearForAge(32, now),
       targetFireAge: 45,
+      currency: 'INR',
       monthlyPassiveIncome: 15000,
       isSetupComplete: true,
       createdAt: now.subtract(const Duration(days: 200)),
