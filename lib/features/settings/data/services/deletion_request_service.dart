@@ -24,8 +24,9 @@ enum DeletionRequestStatus {
 /// The same queue is used by the web request page. A daily server job deletes
 /// the account once the request is older than the 24 hour withdrawal window,
 /// which also finishes deletions the app could not complete itself (offline,
-/// failed re-auth). The app only withdraws from the sign-in notice; a
-/// cancelled re-auth happens before anything is filed.
+/// failed re-auth). The app only withdraws from the sign-in notice or the
+/// pending-request banner; a cancelled re-auth happens before anything is
+/// filed.
 ///
 /// Security rules only allow the owner to `get`, `create` (exactly
 /// requestedAt = server time, source, version) and `delete` the document.
@@ -77,6 +78,20 @@ class DeletionRequestService {
         ? DeletionRequestStatus.pending
         : DeletionRequestStatus.none;
   }
+
+  /// Follows the request live. Metadata changes are included, so a request
+  /// saved offline moves from [DeletionRequestStatus.pending] to
+  /// [DeletionRequestStatus.confirmed] once the server acknowledges it.
+  /// Listen errors are passed on.
+  Stream<DeletionRequestStatus> watchStatus() => _doc
+      .snapshots(includeMetadataChanges: true)
+      .map(
+        (snap) => !snap.exists
+            ? DeletionRequestStatus.none
+            : snap.metadata.hasPendingWrites
+            ? DeletionRequestStatus.pending
+            : DeletionRequestStatus.confirmed,
+      );
 
   /// Files a request with source `app`. Returns true only when THIS call
   /// created it and the server acknowledged the write, so the caller knows

@@ -7,8 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
-import 'package:inv_tracker/core/error/app_exception.dart';
-import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -22,6 +21,7 @@ import 'package:inv_tracker/features/settings/data/services/account_deletion_flo
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/export_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/deletion_request_banner.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/saved_guest_backup_tile.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
@@ -57,6 +57,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       body: ListView(
         children: [
           SizedBox(height: AppSpacing.sm),
+
+          // Shown while a deletion request exists (A88).
+          const DeletionRequestBanner(),
 
           // Export section
           SettingsSection(
@@ -436,58 +439,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
 
     if (confirmed != true || !mounted) return;
 
-    // Proceed with deletion
-    setState(() => _isDeleting = true);
-
-    try {
-      final authRepo = ref.read(authRepositoryProvider);
-
-      // File the server-side request first so the job finishes a deletion
-      // that fails halfway, then delete all Firestore data
-      await ref.read(deletionRequestServiceProvider).requestDeletion();
-      await _deleteAllUserData();
-
-      // Delete Firebase Auth anonymous user
-      await authRepo.deleteAccount();
-
-      // Track analytics event
-      final analytics = ref.read(analyticsServiceProvider);
-      await analytics.logEvent(
-        name: 'guest_mode_data_deleted',
-        parameters: {'method': 'manual'},
-      );
-
-      if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(l10n.guestDataDeleted),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-
-      // User is now signed out, router will redirect to sign-in
-    } catch (e, st) {
-      LoggerService.error(
-        'Guest data deletion failed',
-        error: e,
-        stackTrace: st,
-      );
-      if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              e is NetworkException
-                  ? l10n.deletionNeedsInternet
-                  : l10n.guestDataDeletionFailed,
-            ),
-            backgroundColor: AppColors.errorLight,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isDeleting = false);
-    }
+    // Same order as Delete Account (A78): nothing is wiped until the server
+    // holds the deletion request.
+    await _runAccountDeletion(l10n, scaffoldMessenger, fromGuestTile: true);
   }
 
   Future<void> _handleDeleteAccount(BuildContext context) async {
@@ -495,29 +449,13 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     // Capture context-dependent objects before any async gap
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
-    // First confirmation dialog
+    // First confirmation dialog, with a way to keep a backup first (A93)
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) {
-        final l10n = AppLocalizations.of(context);
-        return AlertDialog(
-          title: Text(l10n.deleteAccount),
-          content: Text(l10n.deleteAccountMessage),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.errorLight,
-              ),
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: Text(l10n.deleteEverything),
-            ),
-          ],
-        );
-      },
+      builder: (dialogContext) => _DeleteAccountDialog(
+        exportBackup: () async =>
+            ref.read(dataExportServiceProvider)?.exportAndShare(),
+      ),
     );
 
     if (confirmed != true || !mounted) return;
@@ -531,15 +469,26 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
 
     if (confirmText != 'DELETE' || !mounted) return;
 
+    await _runAccountDeletion(l10n, scaffoldMessenger);
+  }
+
+  /// Runs [AccountDeletionFlow] and tells the user exactly what happened.
+  /// [fromGuestTile] keeps the Delete Guest Data success copy and event.
+  Future<void> _runAccountDeletion(
+    AppLocalizations l10n,
+    ScaffoldMessengerState scaffoldMessenger, {
+    bool fromGuestTile = false,
+  }) async {
     // Proceed with deletion
     setState(() => _isDeleting = true);
 
     try {
       final authRepo = ref.read(authRepositoryProvider);
+      final isGuest = ref.read(authStateProvider).value?.isAnonymous ?? false;
 
       final outcome = await AccountDeletionFlow(
         auth: authRepo,
-        isAnonymous: ref.read(authStateProvider).value?.isAnonymous ?? false,
+        isAnonymous: isGuest,
         requests: ref.read(deletionRequestServiceProvider),
         prepareGoogleSignIn: () =>
             ref.read(googleSignInInitializedProvider.future),
@@ -551,8 +500,11 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           scaffoldMessenger.showSnackBar(
             SnackBar(
               content: Text(switch (outcome) {
+                // A guest cannot sign back in to withdraw.
                 AccountDeletionOutcome.scheduled =>
-                  l10n.accountDeletionScheduled,
+                  isGuest
+                      ? l10n.guestDataDeletionScheduled
+                      : l10n.accountDeletionScheduledNotice,
                 AccountDeletionOutcome.notDeleted =>
                   l10n.accountDeletionNotStarted,
                 AccountDeletionOutcome.queued => l10n.accountDeletionQueued,
@@ -573,13 +525,26 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
         return;
       }
 
+      if (fromGuestTile) {
+        await ref
+            .read(analyticsServiceProvider)
+            .logEvent(
+              name: 'guest_mode_data_deleted',
+              parameters: {'method': 'manual'},
+            );
+      }
+
       // Log analytics
       ref.read(analyticsServiceProvider).setUserId(null);
 
       if (mounted) {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text(l10n.accountDeletedSuccessfully),
+            content: Text(
+              fromGuestTile
+                  ? l10n.guestDataDeleted
+                  : l10n.accountDeletedSuccessfully,
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -603,11 +568,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
         scaffoldMessenger.showSnackBar(
           SnackBar(
             duration: const Duration(seconds: 8),
-            content: Text(
-              e is NetworkException
-                  ? l10n.deletionNeedsInternet
-                  : l10n.error(e.toString()),
-            ),
+            content: Text(l10n.error(e.toString())),
             backgroundColor: AppColors.errorLight,
           ),
         );
@@ -644,6 +605,73 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
         if (mounted) ref.invalidate(savedGuestBackupsProvider);
       },
       prefs: ref.read(sharedPreferencesProvider),
+    );
+  }
+}
+
+/// First Delete Account dialog. "Export a backup first" shares a ZIP backup
+/// and keeps the dialog open; it never files a request or deletes anything.
+class _DeleteAccountDialog extends StatefulWidget {
+  const _DeleteAccountDialog({required this.exportBackup});
+
+  final Future<void> Function() exportBackup;
+
+  @override
+  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
+}
+
+class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
+  bool _exporting = false;
+
+  Future<void> _export() async {
+    setState(() => _exporting = true);
+    try {
+      await widget.exportBackup();
+    } catch (e, st) {
+      if (mounted) ErrorHandler.handle(e, st, context: context);
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.deleteAccount),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.deleteAccountMessage),
+            SizedBox(height: AppSpacing.sm),
+            Text(l10n.deleteAccountBackupCaveat, style: AppTypography.small),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _exporting ? null : () => Navigator.pop(context, false),
+          child: Text(l10n.cancel),
+        ),
+        TextButton.icon(
+          onPressed: _exporting ? null : _export,
+          icon: _exporting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.download),
+          label: Text(l10n.deleteAccountExportFirst),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: AppColors.errorLight),
+          onPressed: _exporting ? null : () => Navigator.pop(context, true),
+          child: Text(l10n.deleteEverything),
+        ),
+      ],
     );
   }
 }

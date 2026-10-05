@@ -183,4 +183,39 @@ void main() {
       expect(await service.requestStatus(), DeletionRequestStatus.none);
     });
   });
+  // A88: the banner follows the request live, including whether the server
+  // has seen it yet.
+  group('watchStatus', () {
+    test('maps each snapshot, including metadata-only changes, to none, '
+        'pending or confirmed', () async {
+      when(() => doc.snapshots(includeMetadataChanges: true)).thenAnswer(
+        (_) => Stream.fromIterable([
+          FakeSnap(false),
+          FakeSnap(true, pendingWrites: true),
+          FakeSnap(true),
+          FakeSnap(false),
+        ]),
+      );
+
+      expect(await service.watchStatus().toList(), [
+        DeletionRequestStatus.none,
+        DeletionRequestStatus.pending,
+        DeletionRequestStatus.confirmed,
+        DeletionRequestStatus.none,
+      ]);
+    });
+
+    test('passes a listen error on instead of hiding it', () async {
+      when(() => doc.snapshots(includeMetadataChanges: true)).thenAnswer(
+        (_) => Stream.error(
+          FirebaseException(plugin: 'firestore', code: 'permission-denied'),
+        ),
+      );
+
+      await expectLater(
+        service.watchStatus(),
+        emitsError(isA<FirebaseException>()),
+      );
+    });
+  });
 }

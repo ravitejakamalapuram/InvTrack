@@ -1,5 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
 import 'dart:typed_data';
+
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +16,9 @@ import 'package:inv_tracker/features/auth/domain/repositories/auth_repository.da
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/guest_backup_merge_provider.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
+import 'package:inv_tracker/features/settings/data/providers/data_export_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/account_data_deletion_service.dart';
+import 'package:inv_tracker/features/settings/data/services/data_export_service.dart';
 import 'package:inv_tracker/features/settings/data/services/deletion_request_service.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/data_management_screen.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -33,6 +37,8 @@ class MockAccountDataDeletionService extends Mock
 
 class MockDocumentStorageService extends Mock
     implements DocumentStorageService {}
+
+class MockDataExportService extends Mock implements DataExportService {}
 
 class FakeSharedPreferences extends Fake implements SharedPreferences {}
 
@@ -64,6 +70,13 @@ class FakeGuestBackupStore implements GuestBackupStore {
       byOwner.remove(ownerId);
 }
 
+/// What the user is told whenever the request is on the server but the app
+/// could not finish the deletion itself (A77).
+const _scheduledText =
+    'Your account is scheduled for deletion and will be fully deleted '
+    'within 7 days. Some of your data may already be gone. To keep your '
+    'account, sign in again within 24 hours and withdraw the request.';
+
 /// Delete Account flow on the Data & Account screen for a Google user whose
 /// sign-in is older than Firebase's recent-login window (the normal case for
 /// a returning user). Every side effect is recorded in [calls] so the tests
@@ -76,6 +89,7 @@ void main() {
   late MockDeletionRequestService requests;
   late MockAccountDataDeletionService dataDeletion;
   late MockDocumentStorageService documents;
+  late MockDataExportService export;
   late FakeGuestBackupStore guestBackups;
   late SharedPreferences prefs;
   late List<String> calls;
@@ -94,6 +108,7 @@ void main() {
     requests = MockDeletionRequestService();
     dataDeletion = MockAccountDataDeletionService();
     documents = MockDocumentStorageService();
+    export = MockDataExportService();
     guestBackups = FakeGuestBackupStore();
     calls = [];
     reauthenticated = false;
@@ -125,6 +140,9 @@ void main() {
         prefs: any(named: 'prefs'),
       ),
     ).thenAnswer((_) async => calls.add('wipe'));
+    when(
+      () => export.exportAndShare(),
+    ).thenAnswer((_) async => calls.add('export'));
   });
 
   Future<AppLocalizations> pumpScreen(
@@ -147,6 +165,7 @@ void main() {
           accountDataDeletionServiceProvider.overrideWithValue(dataDeletion),
           documentStorageServiceProvider.overrideWithValue(documents),
           guestBackupStoreProvider.overrideWithValue(guestBackups),
+          dataExportServiceProvider.overrideWithValue(export),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -234,13 +253,7 @@ void main() {
 
     expect(calls, ['init', 'reauth', 'request', 'signOut']);
     verifyNever(() => requests.withdraw());
-    expect(
-      find.text(
-        "We couldn't confirm your sign-in, so your account and data are "
-        'scheduled for deletion. This finishes within 7 days.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text(_scheduledText), findsOneWidget);
   });
 
   testWidgets('failed re-auth with no way to file the request deletes nothing '
@@ -362,5 +375,126 @@ void main() {
     expect(await guestBackups.list(ownerId: user.id), isEmpty);
     expect(await guestBackups.list(ownerId: 'uid-2'), hasLength(1));
     expect(find.text('Account deleted successfully'), findsOneWidget);
+  });
+  // A77: the request is on the server, so the job will delete the account.
+  // Saying "your account is still active" would hide that from the user.
+  testWidgets('a data wipe failing offline after the request was filed says '
+      'the deletion is scheduled, never that the account is still active, '
+      'and signs out', (tester) async {
+    when(() => auth.reauthenticateWithGoogle()).thenAnswer((_) async {
+      calls.add('reauth');
+      reauthenticated = true;
+      return true;
+    });
+    when(
+      () => dataDeletion.deleteEverything(
+        deleteLocalFiles: any(named: 'deleteLocalFiles'),
+        prefs: any(named: 'prefs'),
+      ),
+    ).thenAnswer((_) async {
+      calls.add('wipe');
+      throw NetworkException.noConnection();
+    });
+    final l10n = await pumpScreen(tester);
+
+    await confirmDeletion(tester, l10n);
+
+    expect(calls, ['init', 'reauth', 'request', 'wipe', 'signOut']);
+    verifyNever(() => auth.deleteAccount());
+    verifyNever(() => requests.withdraw());
+    verify(() => auth.signOut()).called(1);
+    expect(find.text(_scheduledText), findsOneWidget);
+    expect(find.textContaining('still active'), findsNothing);
+  });
+
+  group('A93: export a backup first', () {
+    Finder inDialog(Finder finder) =>
+        find.descendant(of: find.byType(AlertDialog), matching: finder);
+
+    Future<void> openDeleteDialog(WidgetTester tester) async {
+      await tester.tap(find.text('Delete Account'));
+      await tester.pumpAndSettle();
+    }
+
+    void expectNothingFiledOrDeleted() {
+      verifyNever(() => requests.requestDeletion());
+      verifyNever(
+        () => dataDeletion.deleteEverything(
+          deleteLocalFiles: any(named: 'deleteLocalFiles'),
+          prefs: any(named: 'prefs'),
+        ),
+      );
+      verifyNever(() => auth.deleteAccount());
+    }
+
+    testWidgets('the first dialog offers Cancel, Export a backup first and '
+        'Delete Everything, and says what the backup leaves out', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await pumpScreen(tester);
+
+      await openDeleteDialog(tester);
+
+      final dialog = tester.widget<AlertDialog>(find.byType(AlertDialog));
+      expect(dialog.actions, hasLength(3));
+      expect(inDialog(find.text('Cancel')), findsOneWidget);
+      expect(inDialog(find.text('Export a backup first')), findsOneWidget);
+      expect(inDialog(find.text('Delete Everything')), findsOneWidget);
+      expect(find.bySemanticsLabel('Export a backup first'), findsOneWidget);
+      expect(
+        inDialog(
+          find.textContaining(
+            'Some investment details, such as maturity dates and interest '
+            'rates, are not in the backup yet.',
+          ),
+        ),
+        findsOneWidget,
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('exporting shares a backup and keeps the dialog open without '
+        'filing or deleting anything', (tester) async {
+      await pumpScreen(tester);
+      await openDeleteDialog(tester);
+
+      await tester.tap(find.text('Export a backup first'));
+      await tester.pumpAndSettle();
+
+      verify(() => export.exportAndShare()).called(1);
+      expectNothingFiledOrDeleted();
+      expect(inDialog(find.text('Delete Account')), findsOneWidget);
+    });
+
+    testWidgets('after exporting, Delete Everything still asks for the DELETE '
+        'confirmation', (tester) async {
+      final l10n = await pumpScreen(tester);
+      await openDeleteDialog(tester);
+      await tester.tap(find.text('Export a backup first'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.deleteEverything));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Final Confirmation'), findsOneWidget);
+      expectNothingFiledOrDeleted();
+    });
+
+    testWidgets('a failed export keeps the dialog open and files or deletes '
+        'nothing', (tester) async {
+      when(
+        () => export.exportAndShare(),
+      ).thenThrow(const FileSystemException('disk full'));
+      await pumpScreen(tester);
+      await openDeleteDialog(tester);
+
+      await tester.tap(find.text('Export a backup first'));
+      await tester.pumpAndSettle();
+
+      expect(inDialog(find.text('Delete Account')), findsOneWidget);
+      expect(inDialog(find.text('Delete Everything')), findsOneWidget);
+      expectNothingFiledOrDeleted();
+    });
   });
 }

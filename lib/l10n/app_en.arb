@@ -5814,5 +5814,35 @@
   "tooltipRemoveFile": "Remove file",
   "@tooltipRemoveFile": {
     "description": "Tooltip for remove file button"
+  },
+
+  "accountDeletionScheduledNotice": "Your account is scheduled for deletion and will be fully deleted within 7 days. Some of your data may already be gone. To keep your account, sign in again within 24 hours and withdraw the request.",
+  "@accountDeletionScheduledNotice": {
+    "description": "Snackbar when the server holds the deletion request but the app could not finish the deletion itself (re-auth failed, or the wipe or Auth deletion failed, e.g. offline). The user is signed out next."
+  },
+
+  "guestDataDeletionScheduled": "Your guest data and anonymous account are scheduled for deletion and will be fully deleted within 7 days.",
+  "@guestDataDeletionScheduled": {
+    "description": "Snackbar for a guest when the server holds the deletion request but the app could not finish the deletion itself. A guest cannot sign back in, so it does not offer a withdrawal."
+  },
+
+  "deleteAccountExportFirst": "Export a backup first",
+  "@deleteAccountExportFirst": {
+    "description": "Action in the first Delete Account dialog that shares a ZIP backup and returns to the dialog"
+  },
+
+  "deleteAccountBackupCaveat": "Some investment details, such as maturity dates and interest rates, are not in the backup yet.",
+  "@deleteAccountBackupCaveat": {
+    "description": "One-line note in the Delete Account dialog until the export carries every investment field"
+  },
+
+  "deletionRequestBannerScheduled": "Your account is scheduled for deletion.",
+  "@deletionRequestBannerScheduled": {
+    "description": "Persistent banner while the server holds a deletion request for this account"
+  },
+
+  "deletionRequestBannerPending": "Your deletion request will be sent when you''re online.",
+  "@deletionRequestBannerPending": {
+    "description": "Persistent banner while a deletion request is saved on this device but not yet on the server"
   }
 }

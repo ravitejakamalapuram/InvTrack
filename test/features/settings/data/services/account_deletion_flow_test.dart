@@ -266,29 +266,71 @@ void main() {
       verifyNever(() => requests.withdraw());
     });
 
-    test('a failed data wipe is rethrown and the Auth user is kept', () async {
-      deleteUserData = () async => throw NetworkException.noConnection();
+    // A77: once the server holds the request, the job finishes the deletion
+    // whatever fails here, so the user must be told it is scheduled (and
+    // signed out), never that the account is still active.
+    test('a data wipe failing offline after the request was filed keeps the '
+        'request and reports the deletion as scheduled', () async {
+      deleteUserData = () async {
+        calls.add('wipe');
+        throw NetworkException.noConnection();
+      };
 
-      await expectLater(flow().run(), throwsA(isA<NetworkException>()));
+      expect(await flow().run(), AccountDeletionOutcome.scheduled);
+      expect(calls, ['request', 'wipe']);
+      verifyNever(() => requests.withdraw());
       verifyNever(() => auth.deleteAccount());
+    });
+
+    test('any other wipe failure after the request was filed is also '
+        'scheduled', () async {
+      deleteUserData = () async {
+        calls.add('wipe');
+        throw StateError('x');
+      };
+
+      expect(await flow().run(), AccountDeletionOutcome.scheduled);
+      expect(calls, ['request', 'wipe']);
+      verifyNever(() => requests.withdraw());
+      verifyNever(() => auth.deleteAccount());
+    });
+
+    test('a network failure deleting the Auth user after the wipe keeps the '
+        'request and reports the deletion as scheduled', () async {
+      when(() => auth.deleteAccount()).thenAnswer((_) async {
+        calls.add('deleteAuth');
+        throw FirebaseAuthException(code: 'network-request-failed');
+      });
+
+      expect(await flow().run(), AccountDeletionOutcome.scheduled);
+      expect(calls, ['request', 'wipe', 'deleteAuth']);
       verifyNever(() => requests.withdraw());
     });
 
-    test('other Auth errors are rethrown', () async {
-      when(
-        () => auth.deleteAccount(),
-      ).thenThrow(FirebaseAuthException(code: 'network-request-failed'));
+    test('a failure deleting the Auth user after a successful re-auth keeps '
+        'the request and reports the deletion as scheduled', () async {
+      reauthReturns(true);
+      var attempts = 0;
+      when(() => auth.deleteAccount()).thenAnswer((_) async {
+        calls.add('deleteAuth');
+        attempts++;
+        throw FirebaseAuthException(
+          code: attempts == 1
+              ? 'requires-recent-login'
+              : 'network-request-failed',
+        );
+      });
 
-      await expectLater(
-        flow().run(),
-        throwsA(
-          isA<FirebaseAuthException>().having(
-            (e) => e.code,
-            'code',
-            'network-request-failed',
-          ),
-        ),
-      );
+      expect(await flow().run(), AccountDeletionOutcome.scheduled);
+      expect(calls, [
+        'request',
+        'wipe',
+        'deleteAuth',
+        'init',
+        'reauth',
+        'deleteAuth',
+      ]);
+      verifyNever(() => requests.withdraw());
     });
   });
 
