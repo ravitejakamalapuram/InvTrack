@@ -95,7 +95,7 @@ void main() {
         id: 'fire-1',
         monthlyExpenses: 50000,
         safeWithdrawalRate: 4.0,
-        currentAge: 30,
+        birthYear: DateTime.now().year - 30,
         targetFireAge: 45,
         lifeExpectancy: 85,
         inflationRate: 6.0,

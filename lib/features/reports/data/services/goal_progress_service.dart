@@ -61,11 +61,18 @@ class GoalProgressService {
         case GoalStatus.archived:
           stale.add(goalWithProgress);
           break;
+        // Not projected: neither on track nor at risk.
+        case GoalStatus.inProgress:
+          break;
       }
 
-      // Accumulate totals
-      totalTarget += goal.targetAmount;
-      totalCurrent += progress.currentAmount;
+      // Totals add converted corpus targets: an income goal's monthly
+      // income is not a corpus, and goal.targetAmount is in the goal's own
+      // currency.
+      if (!goal.isIncomeGoal) {
+        totalTarget += progress.targetAmount;
+        totalCurrent += progress.currentAmount;
+      }
       totalProgress += progress.progressPercent;
     }
 

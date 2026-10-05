@@ -191,7 +191,7 @@ final class PortfolioHealthProvider
   PortfolioHealth create() => PortfolioHealth();
 }
 
-String _$portfolioHealthHash() => r'9bb1e967ad3212d34a4697d96b4d4d5a6cd6fb56';
+String _$portfolioHealthHash() => r'f0218cfc79e1e76d9c9aa121d7b49f0362ff786e';
 
 /// Provider for Portfolio Health Score
 ///

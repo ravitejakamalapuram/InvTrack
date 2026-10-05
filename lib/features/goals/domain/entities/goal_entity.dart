@@ -75,28 +75,15 @@ enum GoalTrackingMode {
 /// Goal status based on progress
 enum GoalStatus {
   notStarted,
+
+  /// Funded, with a date, but not projected: an income goal, or a corpus
+  /// goal with under 3 months of history. Neither on track nor behind.
+  inProgress,
   onTrack,
   ahead,
   behind,
   achieved,
-  archived;
-
-  String get displayName {
-    switch (this) {
-      case GoalStatus.notStarted:
-        return 'Not Started';
-      case GoalStatus.onTrack:
-        return 'On Track';
-      case GoalStatus.ahead:
-        return 'Ahead';
-      case GoalStatus.behind:
-        return 'Behind';
-      case GoalStatus.achieved:
-        return 'Achieved';
-      case GoalStatus.archived:
-        return 'Archived';
-    }
-  }
+  archived,
 }
 
 /// Default goal icons for selection
@@ -214,6 +201,8 @@ class GoalEntity {
     );
   }
 
+  /// Every field counts: goal screens skip a rebuild for an equal goal, so
+  /// an edit that only changes the linked investments must make it unequal.
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -225,24 +214,41 @@ class GoalEntity {
         other.targetMonthlyIncome == targetMonthlyIncome &&
         other.targetDate == targetDate &&
         other.trackingMode == trackingMode &&
+        _sameList(other.linkedInvestmentIds, linkedInvestmentIds) &&
+        _sameList(other.linkedTypes, linkedTypes) &&
         other.icon == icon &&
         other.colorValue == colorValue &&
         other.isArchived == isArchived &&
+        other.createdAt == createdAt &&
+        other.updatedAt == updatedAt &&
         other.currency == currency;
   }
 
   @override
-  int get hashCode {
-    return id.hashCode ^
-        name.hashCode ^
-        type.hashCode ^
-        targetAmount.hashCode ^
-        targetMonthlyIncome.hashCode ^
-        targetDate.hashCode ^
-        trackingMode.hashCode ^
-        icon.hashCode ^
-        colorValue.hashCode ^
-        isArchived.hashCode ^
-        currency.hashCode;
+  int get hashCode => Object.hash(
+    id,
+    name,
+    type,
+    targetAmount,
+    targetMonthlyIncome,
+    targetDate,
+    trackingMode,
+    Object.hashAll(linkedInvestmentIds),
+    Object.hashAll(linkedTypes),
+    icon,
+    colorValue,
+    isArchived,
+    createdAt,
+    updatedAt,
+    currency,
+  );
+}
+
+bool _sameList<T>(List<T> a, List<T> b) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
   }
+  return true;
 }
