@@ -134,7 +134,7 @@ void main() {
     test('follows the outline, in order, with CAPS headings', () {
       const headings = [
         'WHAT YOU CAN TRACK',
-        'REAL RETURNS, WORKED OUT FOR YOU',
+        'ANNUAL RETURNS, WORKED OUT FOR YOU',
         'NEVER MISS A PAYOUT',
         "GOALS AND FIRE IN TODAY'S RUPEES",
         'MADE FOR INDIA, WORKS GLOBALLY',
@@ -154,6 +154,13 @@ void main() {
         );
         last = index;
       }
+    });
+
+    // XIRR annualises dated cash flows; it does not adjust for inflation.
+    // In financial copy a "real" return means an inflation-adjusted one.
+    test('calls XIRR an annual return, never a "real" return', () {
+      expect(full.toLowerCase(), isNot(contains('real return')));
+      expect(full.split('\n\n').first, contains('annual return (XIRR)'));
     });
 
     test('drops the box-drawing dividers', () {

@@ -1,4 +1,4 @@
-Track the investments your broker app can't see: fixed deposits, P2P lending, bonds, chit funds and gold. Record money in and out, and see your real return (XIRR).
+Track the investments your broker app can't see: fixed deposits, P2P lending, bonds, chit funds and gold. Record money in and out, and see your annual return (XIRR).
 
 WHAT YOU CAN TRACK
 • Fixed deposits (FDs)
@@ -14,7 +14,7 @@ WHAT YOU CAN TRACK
 
 InvTrack is a ledger, not a price feed. You record what you put in and what came back (returns, interest, fees). It does not fetch market prices.
 
-REAL RETURNS, WORKED OUT FOR YOU
+ANNUAL RETURNS, WORKED OUT FOR YOU
 A simple percentage ignores time. InvTrack uses XIRR, the annual-return formula behind Excel's XIRR, so the date of every payment counts.
 
 Example: you put ₹1,00,000 into an FD on 1 April 2025 and get ₹1,07,100 back on 1 April 2026. That is 7.1% a year. Get the same ₹1,07,100 back on 1 October 2025 instead, and it is about 14.7% a year, because your money did the same work in half the time.
