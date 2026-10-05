@@ -95,7 +95,10 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
 
   Future<void> _completeSetup() async {
     // Validated on the expenses step; never replaced by a default.
-    final monthlyExpenses = parseAmountInput(_monthlyExpensesController.text);
+    final monthlyExpenses = parseAmountInput(
+      _monthlyExpensesController.text,
+      ref.read(currencyLocaleProvider),
+    );
     if (monthlyExpenses == null || monthlyExpenses <= 0) return;
 
     setState(() => _isLoading = true);
@@ -395,7 +398,10 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
             inputFormatters: amountInputFormatters,
             validator: (v) {
               if (v == null || v.trim().isEmpty) return 'Required';
-              final amount = parseAmountInput(v);
+              final amount = parseAmountInput(
+                v,
+                ref.read(currencyLocaleProvider),
+              );
               if (amount == null || amount <= 0) {
                 return l10n.fireEnterValidAmount;
               }

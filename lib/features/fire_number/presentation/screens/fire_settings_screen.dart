@@ -132,7 +132,9 @@ class FireSettingsScreen extends ConsumerWidget {
     final String currency =
         settings.currency ?? ref.watch(currencyCodeProvider);
     final currencySymbol = getCurrencySymbol(currency);
-    String amount(double value) => '$currencySymbol${value.toStringAsFixed(0)}';
+    final locale = getCurrencyLocale(currency);
+    String amount(double value) =>
+        formatCurrency(value, currencySymbol, locale);
     final sip = settings.monthlySip;
 
     return SingleChildScrollView(
@@ -201,7 +203,7 @@ class FireSettingsScreen extends ConsumerWidget {
                     context,
                     ref,
                     title: l10n.monthlyExpenses,
-                    currencySymbol: currencySymbol,
+                    currency: currency,
                     initial: settings.monthlyExpenses,
                     onSave: (v) => settings.copyWith(monthlyExpenses: v),
                   ),
@@ -236,7 +238,7 @@ class FireSettingsScreen extends ConsumerWidget {
                     ref,
                     title: l10n.fireOtherAssets,
                     hint: l10n.fireOtherAssetsHint,
-                    currencySymbol: currencySymbol,
+                    currency: currency,
                     initial: settings.otherAssets,
                     onSave: (v) => settings.copyWith(otherAssets: v),
                   ),
@@ -256,7 +258,7 @@ class FireSettingsScreen extends ConsumerWidget {
                     ref,
                     title: l10n.fireMonthlySip,
                     hint: l10n.fireMonthlySipHint,
-                    currencySymbol: currencySymbol,
+                    currency: currency,
                     initial: sip,
                     allowEmpty: true,
                     onSave: (v) => v == null
@@ -276,7 +278,7 @@ class FireSettingsScreen extends ConsumerWidget {
                     context,
                     ref,
                     title: l10n.firePassiveIncome,
-                    currencySymbol: currencySymbol,
+                    currency: currency,
                     initial: settings.monthlyPassiveIncome,
                     onSave: (v) => settings.copyWith(monthlyPassiveIncome: v),
                   ),
@@ -293,7 +295,7 @@ class FireSettingsScreen extends ConsumerWidget {
                     context,
                     ref,
                     title: l10n.firePension,
-                    currencySymbol: currencySymbol,
+                    currency: currency,
                     initial: settings.expectedPension,
                     onSave: (v) => settings.copyWith(expectedPension: v),
                   ),
@@ -659,7 +661,7 @@ class FireSettingsScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref, {
     required String title,
-    required String currencySymbol,
+    required String currency,
     required double? initial,
     required FireSettingsEntity Function(double? value) onSave,
     String? hint,
@@ -676,7 +678,8 @@ class FireSettingsScreen extends ConsumerWidget {
       builder: (ctx) => _AmountEditorSheet(
         title: title,
         hint: hint,
-        currencySymbol: currencySymbol,
+        currencySymbol: getCurrencySymbol(currency),
+        locale: getCurrencyLocale(currency),
         initial: initial,
         allowEmpty: allowEmpty,
         onSave: (value, showError) =>
@@ -879,6 +882,7 @@ class _AmountEditorSheet extends StatefulWidget {
   const _AmountEditorSheet({
     required this.title,
     required this.currencySymbol,
+    required this.locale,
     required this.initial,
     required this.allowEmpty,
     required this.onSave,
@@ -888,6 +892,9 @@ class _AmountEditorSheet extends StatefulWidget {
   final String title;
   final String? hint;
   final String currencySymbol;
+
+  /// The amount's currency locale, for its decimal mark and grouping.
+  final String locale;
   final double? initial;
   final bool allowEmpty;
   final Future<void> Function(double? value, void Function(String) showError)
@@ -900,7 +907,7 @@ class _AmountEditorSheet extends StatefulWidget {
 class _AmountEditorSheetState extends State<_AmountEditorSheet> {
   late final TextEditingController _controller = TextEditingController(
     text: switch (widget.initial) {
-      final initial? => amountInputText(initial),
+      final initial? => amountInputText(initial, widget.locale),
       null => '',
     },
   );
@@ -914,7 +921,7 @@ class _AmountEditorSheetState extends State<_AmountEditorSheet> {
 
   void _save(AppLocalizations l10n) {
     final text = _controller.text.trim();
-    final value = parseAmountInput(text);
+    final value = parseAmountInput(text, widget.locale);
     if (value == null && !(widget.allowEmpty && text.isEmpty)) {
       setState(() => _error = l10n.fireEnterValidAmount);
       return;

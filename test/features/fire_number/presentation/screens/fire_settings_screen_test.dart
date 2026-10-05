@@ -141,6 +141,39 @@ void main() {
     expect(saved.single.monthlyExpenses, 1234.56);
   });
 
+  testWidgets('a EUR amount typed with a decimal comma keeps its cents', (
+    tester,
+  ) async {
+    // "1500,50" was saved as €150,050.
+    final saved = await _pump(
+      tester,
+      settings: _settings.copyWith(currency: 'EUR', monthlyExpenses: 1234.56),
+    );
+
+    await tester.tap(find.text('Monthly Expenses'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      '1234,56',
+    );
+    await tester.enterText(find.byType(TextField), '1500,50');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+
+    expect(saved.single.monthlyExpenses, 1500.50);
+  });
+
+  testWidgets('amounts are grouped the way their currency writes them', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      settings: _settings.copyWith(monthlyExpenses: 1500000, otherAssets: 0),
+    );
+
+    expect(find.text('₹15,00,000'), findsOneWidget);
+  });
+
   testWidgets('invalid monthly expenses are not replaced by the old value', (
     tester,
   ) async {
