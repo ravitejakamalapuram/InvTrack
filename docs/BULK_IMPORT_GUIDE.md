@@ -47,8 +47,9 @@ The columns can be in any order. The in-app template has all eight, in the order
 
 - Use a dot for decimals. Commas may group thousands or lakhs: `1,234.56` and `1,23,456.78` both work.
 - A file whose amounts use a decimal comma (`"1.234,56"`, `"12,50"`) is read that way, as long as more of its amounts can only be read with a comma than only with a dot. Put such amounts in quotes, because the comma also separates columns.
+- **When an amount means different numbers with the two marks** (`1,500` is fifteen hundred with a decimal point but one and a half with a decimal comma), the app asks which mark the file uses, unless amounts such as `1,00,000` or `12.5` already show a decimal point.
 - An amount that does not fit the file's decimal mark is reported as an error, never read as a different number.
-- A leading minus or parentheses make an amount negative: `-5000`, `(5000)`.
+- Amounts must be more than zero. The Type column sets the direction, so `-5000`, `(5000)` and `0` are reported as errors.
 
 ### Sample CSV
 
@@ -71,7 +72,7 @@ The two Groww P2P rows have no currency, so they are imported in your base curre
 | Format | Example |
 |--------|---------|
 | ISO (recommended) | `2024-01-15` |
-| Day/month/year | `15/01/2024`, `15-01-2024`, `15/01/24` |
+| Day/month/year | `15/01/2024`, `15-01-2024`, `15/01/24`, `15/01/2024 10:30` (the time is dropped) |
 | Month/day/year | `01/15/2024` |
 | Day, month name, year | `15-Jan-2024`, `5-Mar-24` |
 | Month name, day, year | `Jan 15, 2024` |
@@ -126,7 +127,7 @@ The Investment Type column takes the names below, ignoring case, spaces and punc
 │  1. User taps "Import" on Investments screen                    │
 │  2. User selects CSV file from device                           │
 │  3. App parses CSV and validates data                           │
-│  4. If day and month could be swapped, user picks the order     │
+│  4. If dates or amounts read two ways, user picks how           │
 │  5. User reviews parsed entries (grouped by investment)         │
 │     Likely duplicates are marked and skipped unless allowed     │
 │  6. User confirms import                                        │
@@ -135,7 +136,11 @@ The Investment Type column takes the names below, ignoring case, spaces and punc
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-A row is a **likely duplicate** when one of your investments with the same name (ignoring case) already has a cash flow with the same date, type, amount and currency. The confirmation screen says how many there are and skips them by default; turn off **Skip these rows** to import them anyway.
+A row is a **likely duplicate** when one of your investments with the same name (ignoring case), active or archived, already has a cash flow with the same date, type, amount and currency. The confirmation screen says how many there are and skips them by default; turn off **Skip these rows** to import them anyway. The counts at the top cover only the rows that will be imported.
+
+When some rows of an investment match an active investment, the other rows are added to that investment instead of a second one with the same name. Archived investments take no new cash flows: when the match is archived, the other rows become a new investment, which counts in your totals, and the card says so.
+
+If your investments cannot be loaded, the screen cannot check for duplicates, so import stays off until **Retry** succeeds.
 
 ---
 
@@ -197,6 +202,8 @@ CSV File → SimpleCsvParser → ParsedCsvResult → ImportConfirmationScreen
 | Unknown currency code | "Row X: Invalid currency code: [value]" |
 | Invalid type | "Row X: Invalid type: [value]" |
 | Invalid amount | "Row X: Invalid amount: [value]" |
+| Zero or negative amount | "Row X: Amount must be more than zero (Type sets the direction): [value]" |
+| A quote that never closes | "Row X: Unmatched quote" (the rows after it are still read) |
 
 ---
 

@@ -33,6 +33,34 @@ class ImportConfirmationScreen extends ConsumerStatefulWidget {
       _ImportConfirmationScreenState();
 }
 
+/// One investment in the file, and where its rows go.
+class _ImportGroup {
+  const _ImportGroup({
+    required this.name,
+    required this.rows,
+    required this.toImport,
+    required this.existingId,
+    required this.matchesArchived,
+  });
+
+  final String name;
+
+  /// Every valid row, each shown with its duplicate label.
+  final List<ParsedCashFlowRow> rows;
+
+  /// The rows Import writes: likely duplicates are left out while skipping.
+  final List<ParsedCashFlowRow> toImport;
+
+  /// The active investment that already holds some of these rows; the rest
+  /// are added to it instead of to a second investment with the same name.
+  /// Null for a new investment.
+  final String? existingId;
+
+  /// Some rows match an archived investment, so the others become a new
+  /// investment beside it (archived ones take no new cash flows).
+  final bool matchesArchived;
+}
+
 class _ImportConfirmationScreenState
     extends ConsumerState<ImportConfirmationScreen> {
   bool _isImporting = false;
@@ -40,10 +68,6 @@ class _ImportConfirmationScreenState
 
   /// Leave rows that match an existing cash flow out of the import.
   bool _skipDuplicates = true;
-
-  /// Still waiting for the first load, so duplicates cannot be checked yet.
-  static bool _pending(AsyncValue<Object?> value) =>
-      !value.hasValue && !value.hasError;
 
   /// Group rows by investment name
   Map<String, List<ParsedCashFlowRow>> _groupByInvestment(
@@ -57,12 +81,58 @@ class _ImportConfirmationScreenState
     return map;
   }
 
-  Map<String, List<ParsedCashFlowRow>> get _groupedByInvestment =>
-      _groupByInvestment(widget.parseResult.validRowsOnly);
-
   String _normalizeInvestmentName(String name) {
     // Normalize for grouping but preserve original display name
     return name.trim();
+  }
+
+  /// How duplicates compare names: ignoring case and surrounding spaces.
+  static String _nameKey(String name) => name.trim().toLowerCase();
+
+  /// Where each investment in the file goes, given the likely [duplicates]
+  /// (row number to the investment holding it) and the ids of the user's
+  /// active investments.
+  List<_ImportGroup> _plan(
+    Map<int, String> duplicates,
+    Set<String> activeIds,
+  ) => [
+    for (final MapEntry(key: name, value: rows) in _groupByInvestment(
+      widget.parseResult.validRowsOnly,
+    ).entries)
+      _planGroup(name, rows, duplicates, activeIds),
+  ];
+
+  _ImportGroup _planGroup(
+    String name,
+    List<ParsedCashFlowRow> rows,
+    Map<int, String> duplicates,
+    Set<String> activeIds,
+  ) {
+    // The active investment holding most of this group's duplicates.
+    final matches = <String, int>{};
+    var matchesArchived = false;
+    for (final row in rows) {
+      final id = duplicates[row.rowNumber];
+      if (id == null) continue;
+      if (activeIds.contains(id)) {
+        matches[id] = (matches[id] ?? 0) + 1;
+      } else {
+        matchesArchived = true;
+      }
+    }
+    final existingId = matches.isEmpty
+        ? null
+        : matches.entries.reduce((a, b) => b.value > a.value ? b : a).key;
+    return _ImportGroup(
+      name: name,
+      rows: rows,
+      toImport: [
+        for (final row in rows)
+          if (!_skipDuplicates || !duplicates.containsKey(row.rowNumber)) row,
+      ],
+      existingId: existingId,
+      matchesArchived: existingId == null && matchesArchived,
+    );
   }
 
   /// A row's currency: from the CSV, or the user's base currency when the
@@ -85,18 +155,13 @@ class _ImportConfirmationScreenState
     locale: getCurrencyLocale(currency),
   );
 
-  Future<void> _importAll(Set<int> duplicates) async {
+  Future<void> _importAll(List<_ImportGroup> groups) async {
     HapticFeedback.mediumImpact();
     final l10n = AppLocalizations.of(context);
     setState(() => _isImporting = true);
 
     try {
       final notifier = ref.read(investmentNotifierProvider.notifier);
-      final grouped = _groupByInvestment(
-        widget.parseResult.validRowsOnly.where(
-          (row) => !_skipDuplicates || !duplicates.contains(row.rowNumber),
-        ),
-      );
       final baseCurrency = ref.read(currencyCodeProvider);
       const uuid = Uuid();
       final now = DateTime.now();
@@ -105,30 +170,27 @@ class _ImportConfirmationScreenState
       final investments = <InvestmentEntity>[];
       final cashFlows = <CashFlowEntity>[];
 
-      for (final entry in grouped.entries) {
-        final investmentName = entry.key;
-        final rows = entry.value;
-        final investmentId = uuid.v4();
+      for (final group in groups) {
+        final rows = group.toImport;
+        if (rows.isEmpty) continue;
+        final investmentId = group.existingId ?? uuid.v4();
 
-        // Get investment type and status from the first row (if available)
-        // All rows for the same investment should have the same type/status
-        final firstRow = rows.first;
-        final investmentType = firstRow.investmentType ?? InvestmentType.other;
-        final investmentStatus =
-            firstRow.investmentStatus ?? InvestmentStatus.open;
-
-        // Create investment entity
-        investments.add(
-          InvestmentEntity(
-            id: investmentId,
-            name: investmentName,
-            type: investmentType,
-            status: investmentStatus,
-            createdAt: now,
-            updatedAt: now,
-            currency: _investmentCurrency(rows, baseCurrency),
-          ),
-        );
+        if (group.existingId == null) {
+          // Get investment type and status from the first row (if available)
+          // All rows for the same investment should have the same type/status
+          final firstRow = rows.first;
+          investments.add(
+            InvestmentEntity(
+              id: investmentId,
+              name: group.name,
+              type: firstRow.investmentType ?? InvestmentType.other,
+              status: firstRow.investmentStatus ?? InvestmentStatus.open,
+              createdAt: now,
+              updatedAt: now,
+              currency: _investmentCurrency(rows, baseCurrency),
+            ),
+          );
+        }
 
         // Create all cash flow entities for this investment
         for (final row in rows) {
@@ -164,10 +226,14 @@ class _ImportConfirmationScreenState
       if (mounted) {
         AppFeedback.showSuccess(
           context,
-          l10n.importCreatedSummary(
-            l10n.importInvestmentCount(result.investments),
-            l10n.importCashFlowCount(result.cashFlows),
-          ),
+          result.investments == 0
+              ? l10n.importAddedSummary(
+                  l10n.importCashFlowCount(result.cashFlows),
+                )
+              : l10n.importCreatedSummary(
+                  l10n.importInvestmentCount(result.investments),
+                  l10n.importCashFlowCount(result.cashFlows),
+                ),
         );
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
@@ -190,26 +256,61 @@ class _ImportConfirmationScreenState
     }
   }
 
+  /// Loads the user's investments again after the duplicate check failed.
+  void _retryDuplicateCheck() {
+    reloadPortfolio(ref);
+    ref.invalidate(archivedCashFlowsByInvestmentProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final grouped = _groupedByInvestment;
     final baseCurrency = ref.watch(currencyCodeProvider);
-    final existingInvestments = ref.watch(allInvestmentsProvider);
-    final existingCashFlows = ref.watch(allCashFlowsStreamProvider);
-    // Importing before the user's data has loaded would skip the check.
-    final checkingDuplicates =
-        _pending(existingInvestments) || _pending(existingCashFlows);
-    final duplicates = findLikelyDuplicateRows(
-      widget.parseResult.validRowsOnly,
-      investments: existingInvestments.value ?? const [],
-      cashFlows: existingCashFlows.value ?? const [],
-      baseCurrency: baseCurrency,
-    );
-    final nothingToImport =
-        _skipDuplicates &&
-        duplicates.length == widget.parseResult.validRowsOnly.length;
+    final validRows = widget.parseResult.validRowsOnly;
+
+    // Duplicates are checked against active and archived investments.
+    // Archived cash flows are only loaded for names that are in the file.
+    final active = ref.watch(allInvestmentsProvider);
+    final activeFlows = ref.watch(allCashFlowsStreamProvider);
+    final archived = ref.watch(archivedInvestmentsProvider);
+    final fileNames = {for (final r in validRows) _nameKey(r.investmentName)};
+    final archivedMatches = [
+      for (final i in archived.value ?? const <InvestmentEntity>[])
+        if (fileNames.contains(_nameKey(i.name))) i,
+    ];
+    final archivedFlows = [
+      for (final i in archivedMatches)
+        ref.watch(archivedCashFlowsByInvestmentProvider(i.id)),
+    ];
+    final sources = <AsyncValue<Object?>>[
+      active,
+      activeFlows,
+      archived,
+      ...archivedFlows,
+    ];
+    // A failed load is not "no duplicates": import waits for a retry.
+    final checkFailed = sources.any((s) => s.hasError);
+    final checkingDuplicates = !checkFailed && sources.any((s) => !s.hasValue);
+    final duplicates = checkFailed || checkingDuplicates
+        ? const <int, String>{}
+        : findLikelyDuplicateRows(
+            validRows,
+            investments: [...active.requireValue, ...archivedMatches],
+            cashFlows: [
+              ...activeFlows.requireValue,
+              for (final flows in archivedFlows) ...flows.requireValue,
+            ],
+            baseCurrency: baseCurrency,
+          );
+    final activeIds = {
+      for (final i in active.value ?? const <InvestmentEntity>[]) i.id,
+    };
+    final groups = _plan(duplicates, activeIds);
+    final newInvestmentCount = groups
+        .where((g) => g.existingId == null && g.toImport.isNotEmpty)
+        .length;
+    final cashFlowCount = groups.fold(0, (n, g) => n + g.toImport.length);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.confirmImport), centerTitle: true),
@@ -226,8 +327,8 @@ class _ImportConfirmationScreenState
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   l10n.importCountsSummary(
-                    l10n.importInvestmentCount(grouped.length),
-                    l10n.importCashFlowCount(widget.parseResult.validRows),
+                    l10n.importInvestmentCount(newInvestmentCount),
+                    l10n.importCashFlowCount(cashFlowCount),
                   ),
                   style: AppTypography.body,
                 ),
@@ -236,6 +337,18 @@ class _ImportConfirmationScreenState
                   Text(
                     l10n.importRowsSkipped(widget.parseResult.errors.length),
                     style: TextStyle(color: Colors.orange[700], fontSize: 12),
+                  ),
+                ],
+                if (checkFailed) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    l10n.importDuplicateCheckFailed,
+                    style: TextStyle(color: Colors.orange[700], fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                  TextButton(
+                    onPressed: _retryDuplicateCheck,
+                    child: Text(l10n.retry),
                   ),
                 ],
                 if (duplicates.isNotEmpty) ...[
@@ -266,18 +379,14 @@ class _ImportConfirmationScreenState
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(AppSpacing.md),
-              itemCount: grouped.length,
-              itemBuilder: (context, index) {
-                final name = grouped.keys.elementAt(index);
-                final rows = grouped[name]!;
-                return _buildInvestmentCard(
-                  name,
-                  rows,
-                  isDark,
-                  baseCurrency,
-                  duplicates,
-                );
-              },
+              itemCount: groups.length,
+              itemBuilder: (context, index) => _buildInvestmentCard(
+                groups[index],
+                isDark,
+                baseCurrency,
+                duplicates,
+                activeIds,
+              ),
             ),
           ),
 
@@ -286,9 +395,13 @@ class _ImportConfirmationScreenState
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: GradientButton(
-                onPressed: _isImporting || checkingDuplicates || nothingToImport
+                onPressed:
+                    _isImporting ||
+                        checkingDuplicates ||
+                        checkFailed ||
+                        cashFlowCount == 0
                     ? null
-                    : () => _importAll(duplicates),
+                    : () => _importAll(groups),
                 isLoading: _isImporting || checkingDuplicates,
                 icon: Icons.check_circle_rounded,
                 label: l10n.importAllButton,
@@ -301,13 +414,15 @@ class _ImportConfirmationScreenState
   }
 
   Widget _buildInvestmentCard(
-    String name,
-    List<ParsedCashFlowRow> rows,
+    _ImportGroup group,
     bool isDark,
     String baseCurrency,
-    Set<int> duplicates,
+    Map<int, String> duplicates,
+    Set<String> activeIds,
   ) {
     final l10n = AppLocalizations.of(context);
+    // Counts and totals cover only what Import writes.
+    final rows = group.toImport;
     final currency = _investmentCurrency(rows, baseCurrency);
     // Totals are only meaningful when every row is in the same currency
     final singleCurrency = rows.every(
@@ -334,7 +449,7 @@ class _ImportConfirmationScreenState
 
     return GlassCard(
       child: ExpansionTile(
-        title: Text(name, style: AppTypography.h4),
+        title: Text(group.name, style: AppTypography.h4),
         subtitle: Text(
           l10n.importCardSubtitle(
             l10n.importCashFlowCount(rows.length),
@@ -343,6 +458,19 @@ class _ImportConfirmationScreenState
           style: AppTypography.caption,
         ),
         children: [
+          if (group.existingId != null || group.matchesArchived)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs,
+              ),
+              child: Text(
+                group.existingId != null
+                    ? l10n.importAddsToExisting
+                    : l10n.importNewBesideArchived,
+                style: AppTypography.caption,
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Row(
@@ -367,7 +495,7 @@ class _ImportConfirmationScreenState
             ),
           ),
           const Divider(),
-          ...rows.map(
+          ...group.rows.map(
             (row) => ListTile(
               dense: true,
               leading: _buildTypeChip(row.type, l10n),
@@ -376,9 +504,11 @@ class _ImportConfirmationScreenState
                 spacing: AppSpacing.sm,
                 children: [
                   Text(_rowCurrency(row, baseCurrency)),
-                  if (duplicates.contains(row.rowNumber))
+                  if (duplicates[row.rowNumber] case final id?)
                     Text(
-                      l10n.importDuplicateLabel,
+                      activeIds.contains(id)
+                          ? l10n.importDuplicateLabel
+                          : l10n.importDuplicateArchivedLabel,
                       style: TextStyle(color: Colors.orange[700]),
                     ),
                 ],

@@ -45,7 +45,7 @@ void main() {
         investments: [investment('bhive', name ?? 'Bhive Investment')],
         cashFlows: flows,
         baseCurrency: 'INR',
-      );
+      ).keys.toSet();
 
   test('re-importing the template flags only the row already saved', () {
     // The template's first row is Bhive Investment, INVEST 100000 INR on
@@ -96,8 +96,23 @@ void main() {
         investments: [investment('bhive', 'Bhive Investment')],
         cashFlows: [flow()],
         baseCurrency: 'INR',
+      ).keys,
+      [2],
+    );
+  });
+
+  test('says which investment holds the matching cash flow', () {
+    expect(
+      findLikelyDuplicateRows(
+        template.rows,
+        investments: [
+          investment('other', 'Other Investment'),
+          investment('bhive', 'Bhive Investment'),
+        ],
+        cashFlows: [flow()],
+        baseCurrency: 'INR',
       ),
-      {2},
+      {2: 'bhive'},
     );
   });
 }

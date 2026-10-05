@@ -12,6 +12,7 @@ import 'package:inv_tracker/features/bulk_import/data/services/csv_template_serv
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/import_confirmation_screen.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/widgets/date_order_dialog.dart';
+import 'package:inv_tracker/features/bulk_import/presentation/widgets/decimal_mark_dialog.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -82,17 +83,27 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
         baseCurrency: baseCurrency,
       );
 
-      // When no date shows whether the file is day-first or month-first,
+      // When the file's own dates or amounts do not show how to read them,
       // ask before anything is imported, then read the file that way.
+      CsvDateOrder? order;
+      bool? decimalComma;
       final question = parseResult.dateOrderQuestion;
       if (question != null) {
         if (!mounted) return;
-        final order = await showDateOrderDialog(context, question);
+        order = await showDateOrderDialog(context, question);
         if (order == null) return;
+      }
+      if (parseResult.decimalMarkUnclear) {
+        if (!mounted) return;
+        decimalComma = await showDecimalMarkDialog(context);
+        if (decimalComma == null) return;
+      }
+      if (order != null || decimalComma != null) {
         parseResult = SimpleCsvParser.parse(
           selectedFile.bytes!,
           baseCurrency: baseCurrency,
           dateOrder: order,
+          decimalComma: decimalComma,
         );
       }
 

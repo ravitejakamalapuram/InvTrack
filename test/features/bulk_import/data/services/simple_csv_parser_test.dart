@@ -171,14 +171,16 @@ not-a-date,Test,invest,1000''';
         expect(result.rows.first.amount, 100000);
       });
 
-      test('parses negative amounts in parentheses', () {
+      // A negative INVEST would count as money coming in; Type sets the
+      // direction, as in manual entry, so the amount must be positive.
+      test('a negative amount in parentheses is an error', () {
         const csv = '''Date,Investment Name,Type,Amount
 2024-01-01,Test,invest,(5000)''';
 
         final result = SimpleCsvParser.parseString(csv);
 
-        expect(result.validRows, 1);
-        expect(result.rows.first.amount, -5000);
+        expect(result.validRows, 0);
+        expect(result.errors.single, startsWith('Row 2: Amount must be more'));
       });
 
       test('returns error for invalid amount', () {
@@ -948,6 +950,7 @@ bad-date,Bad,invest,1000
 
         expect(result.errors, isEmpty);
         expect(result.dateOrderQuestion, isNull);
+        expect(result.decimalMarkUnclear, isFalse);
         final usd = result.rows.where((r) => r.currency == 'USD').toList();
         expect(usd, isNotEmpty);
         expect(usd.first.amount, 1000.50);

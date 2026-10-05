@@ -6365,5 +6365,55 @@
         "type": "String"
       }
     }
+  },
+
+  "importAddsToExisting": "Added to your existing investment with this name",
+  "@importAddsToExisting": {
+    "description": "Import confirmation card: the rows will be added to an investment the user already has, because some of them match its cash flows"
+  },
+
+  "importDuplicateArchivedLabel": "Matches an archived investment",
+  "@importDuplicateArchivedLabel": {
+    "description": "Import confirmation row label: the row matches a cash flow of an archived investment"
+  },
+
+  "importNewBesideArchived": "Your investment with this name is archived, so these rows become a new investment, which counts in your totals.",
+  "@importNewBesideArchived": {
+    "description": "Import confirmation card: rows matching an archived investment's name are imported as a new active investment"
+  },
+
+  "importDuplicateCheckFailed": "Couldn''t check these rows against your investments. Try again before importing.",
+  "@importDuplicateCheckFailed": {
+    "description": "Import confirmation: loading the user's investments failed, so duplicates could not be checked and import is paused"
+  },
+
+  "importDecimalMarkTitle": "Which decimal mark does this file use?",
+  "@importDecimalMarkTitle": {
+    "description": "Title of the dialog asking how amounts in a CSV file are written"
+  },
+
+  "importDecimalMarkMessage": "Some amounts in this file can be read two ways. For example, 1,500 is one thousand five hundred with a decimal point, but one and a half with a decimal comma.",
+  "@importDecimalMarkMessage": {
+    "description": "Body of the decimal mark dialog; the example numbers are fixed, not from the file"
+  },
+
+  "importDecimalMarkPoint": "Point (1,234.56)",
+  "@importDecimalMarkPoint": {
+    "description": "Decimal mark choice: amounts use a decimal point"
+  },
+
+  "importDecimalMarkComma": "Comma (1.234,56)",
+  "@importDecimalMarkComma": {
+    "description": "Decimal mark choice: amounts use a decimal comma"
+  },
+
+  "importAddedSummary": "Added {cashFlows} to investments you already have",
+  "@importAddedSummary": {
+    "description": "Shown after a CSV import that added cash flows only to existing investments. cashFlows is importCashFlowCount, e.g. 3 cash flows",
+    "placeholders": {
+      "cashFlows": {
+        "type": "String"
+      }
+    }
   }
 }

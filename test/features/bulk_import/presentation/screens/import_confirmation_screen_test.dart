@@ -96,6 +96,9 @@ void main() {
     Object? failure,
     List<InvestmentEntity> existingInvestments = const [],
     List<CashFlowEntity> existingCashFlows = const [],
+    List<InvestmentEntity> archivedInvestments = const [],
+    List<CashFlowEntity> archivedCashFlows = const [],
+    Stream<List<CashFlowEntity>> Function()? cashFlowStream,
   }) async {
     notifier = _CapturingInvestmentNotifier(failure: failure);
     await tester.pumpWidget(
@@ -107,7 +110,16 @@ void main() {
             (ref) => Stream.value(existingInvestments),
           ),
           allCashFlowsStreamProvider.overrideWith(
-            (ref) => Stream.value(existingCashFlows),
+            (ref) => cashFlowStream?.call() ?? Stream.value(existingCashFlows),
+          ),
+          archivedInvestmentsProvider.overrideWith(
+            (ref) => Stream.value(archivedInvestments),
+          ),
+          archivedCashFlowsByInvestmentProvider.overrideWith(
+            (ref, id) => Stream.value([
+              for (final cf in archivedCashFlows)
+                if (cf.investmentId == id) cf,
+            ]),
           ),
           investmentNotifierProvider.overrideWith(() => notifier),
           analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
@@ -264,6 +276,41 @@ void main() {
       expect(find.text(_l10n.importRowsSkipped(1)), findsOneWidget);
     });
 
+    testWidgets('every cash-flow type has its chip', (tester) async {
+      ParsedCashFlowRow row(int n, CashFlowType type) => ParsedCashFlowRow(
+        rowNumber: n,
+        date: DateTime(2024, 1, n),
+        investmentName: 'HDFC FD',
+        type: type,
+        amount: 100,
+      );
+      await pumpScreen(
+        tester,
+        result: ParsedCsvResult(
+          rows: [
+            row(2, CashFlowType.invest),
+            row(3, CashFlowType.income),
+            row(4, CashFlowType.returnFlow),
+            row(5, CashFlowType.fee),
+          ],
+          errors: const [],
+          totalRows: 4,
+          validRows: 4,
+        ),
+      );
+      await tester.tap(find.text('HDFC FD'));
+      await tester.pumpAndSettle();
+
+      for (final chip in [
+        _l10n.importTypeChipInvest,
+        _l10n.importTypeChipIncome,
+        _l10n.importTypeChipReturn,
+        _l10n.importTypeChipFee,
+      ]) {
+        expect(find.text(chip), findsOneWidget, reason: chip);
+      }
+    });
+
     group('when saving fails', () {
       late _MockFirebaseCrashlytics crashlytics;
 
@@ -387,16 +434,156 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(notifier.cashFlows, hasLength(template.rows.length - 1));
+      expect(notifier.cashFlows.where(isSavedInvest), isEmpty);
+    });
+
+    testWidgets('a partial re-import adds the new rows to the existing '
+        'investment instead of a second one with the same name', (
+      tester,
+    ) async {
+      await pumpTemplate(tester);
+      await tester.tap(find.text('Bhive Investment'));
+      await tester.pumpAndSettle();
+      expect(find.text(_l10n.importAddsToExisting), findsOneWidget);
+
+      await tester.tap(find.text(_l10n.importAllButton));
+      await tester.pumpAndSettle();
+
+      final bhiveRows = template.rows
+          .where((r) => r.investmentName == 'Bhive Investment')
+          .length;
       expect(
-        notifier.cashFlows.where(
-          (cf) =>
-              isSavedInvest(cf) &&
-              notifier.investments
-                      .firstWhere((i) => i.id == cf.investmentId)
-                      .name ==
-                  'Bhive Investment',
+        notifier.investments.map((i) => i.name),
+        isNot(contains('Bhive Investment')),
+      );
+      expect(
+        notifier.cashFlows.where((cf) => cf.investmentId == 'bhive'),
+        hasLength(bhiveRows - 1),
+      );
+    });
+
+    testWidgets('the header counts only what Import will write', (
+      tester,
+    ) async {
+      await pumpTemplate(tester);
+      final groups = template.rows.map((r) => r.investmentName).toSet();
+
+      // Bhive goes into the existing investment and its saved row is skipped.
+      expect(
+        find.text(
+          _l10n.importCountsSummary(
+            _l10n.importInvestmentCount(groups.length - 1),
+            _l10n.importCashFlowCount(template.rows.length - 1),
+          ),
         ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text(_l10n.importSkipDuplicates));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          _l10n.importCountsSummary(
+            _l10n.importInvestmentCount(groups.length - 1),
+            _l10n.importCashFlowCount(template.rows.length),
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('rows matching an archived investment are flagged and '
+        'skipped, and the rest become a new investment', (tester) async {
+      await pumpScreen(
+        tester,
+        result: template,
+        archivedInvestments: [bhive.copyWith(id: 'archived-bhive')],
+        archivedCashFlows: [
+          savedInvest.copyWith(investmentId: 'archived-bhive'),
+        ],
+      );
+
+      expect(find.text(_l10n.importLikelyDuplicates(1)), findsOneWidget);
+      await tester.tap(find.text('Bhive Investment'));
+      await tester.pumpAndSettle();
+      expect(find.text(_l10n.importDuplicateArchivedLabel), findsOneWidget);
+      expect(find.text(_l10n.importNewBesideArchived), findsOneWidget);
+
+      await tester.tap(find.text(_l10n.importAllButton));
+      await tester.pumpAndSettle();
+
+      expect(notifier.cashFlows, hasLength(template.rows.length - 1));
+      expect(notifier.cashFlows.where(isSavedInvest), isEmpty);
+      expect(
+        notifier.cashFlows.where((cf) => cf.investmentId == 'archived-bhive'),
         isEmpty,
+      );
+      expect(
+        notifier.investments.map((i) => i.name),
+        contains('Bhive Investment'),
+      );
+    });
+
+    testWidgets('import stays off until the duplicate check can run', (
+      tester,
+    ) async {
+      var failing = true;
+      await pumpScreen(
+        tester,
+        result: template,
+        existingInvestments: [bhive],
+        cashFlowStream: () => failing
+            ? Stream.error(Exception('permission-denied'))
+            : Stream.value([savedInvest]),
+      );
+
+      GradientButton button() =>
+          tester.widget<GradientButton>(find.byType(GradientButton));
+      expect(find.text(_l10n.importDuplicateCheckFailed), findsOneWidget);
+      expect(button().onPressed, isNull);
+
+      failing = false;
+      await tester.tap(find.text(_l10n.retry));
+      await tester.pumpAndSettle();
+
+      expect(find.text(_l10n.importDuplicateCheckFailed), findsNothing);
+      expect(button().onPressed, isNotNull);
+      expect(find.text(_l10n.importLikelyDuplicates(1)), findsOneWidget);
+    });
+
+    testWidgets('a failed archived lookup also pauses import', (tester) async {
+      notifier = _CapturingInvestmentNotifier();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currencyCodeProvider.overrideWithValue('INR'),
+            privacyModeProvider.overrideWith(() => _Privacy(false)),
+            allInvestmentsProvider.overrideWith((ref) => Stream.value([bhive])),
+            allCashFlowsStreamProvider.overrideWith(
+              (ref) => Stream.value([savedInvest]),
+            ),
+            archivedInvestmentsProvider.overrideWith(
+              (ref) => Stream.error(Exception('unavailable')),
+            ),
+            investmentNotifierProvider.overrideWith(() => notifier),
+            analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ImportConfirmationScreen(
+              parseResult: template,
+              fileName: 'portfolio.csv',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(_l10n.importDuplicateCheckFailed), findsOneWidget);
+      expect(
+        tester.widget<GradientButton>(find.byType(GradientButton)).onPressed,
+        isNull,
       );
     });
 
@@ -423,6 +610,9 @@ void main() {
             privacyModeProvider.overrideWith(() => _Privacy(false)),
             allInvestmentsProvider.overrideWith((ref) => Stream.value([bhive])),
             allCashFlowsStreamProvider.overrideWith((ref) => pending.stream),
+            archivedInvestmentsProvider.overrideWith(
+              (ref) => Stream.value(const []),
+            ),
             investmentNotifierProvider.overrideWith(
               _CapturingInvestmentNotifier.new,
             ),
