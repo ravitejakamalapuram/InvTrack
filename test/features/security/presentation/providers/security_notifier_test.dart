@@ -67,12 +67,16 @@ void main() {
     });
 
     /// Helper to create container with mocked dependencies
-    ProviderContainer createContainer({SecurityService? customService}) {
+    ProviderContainer createContainer({
+      SecurityService? customService,
+      SecurityClock? clock,
+    }) {
       final service =
           customService ??
           SecurityService(fakeSecureStorage, fakeLocalAuth, prefs);
       return ProviderContainer(
         overrides: [
+          if (clock != null) securityClockProvider.overrideWithValue(clock),
           sharedPreferencesProvider.overrideWithValue(prefs),
           flutterSecureStorageProvider.overrideWithValue(fakeSecureStorage),
           localAuthProvider.overrideWithValue(fakeLocalAuth),
@@ -83,13 +87,131 @@ void main() {
     }
 
     group('Initial State', () {
-      test('starts with default state', () {
+      // A07: this used to expect isLocked == false on the first read. That
+      // first state is what the router draws before secure storage answers,
+      // so with a PIN set the portfolio rendered before the lock. Without
+      // the has_pin mirror (first start after the update) the state is now
+      // unknown, which counts as locked, until storage answers.
+      test('starts locked while it is unknown whether a PIN is set', () async {
         container = createContainer();
 
         final state = container.read(securityProvider);
+        expect(state.isLocked, isTrue);
+        expect(state.hasPin, isFalse);
 
+        await pumpEventQueue();
+        expect(container.read(securityProvider).isLocked, isFalse);
+        expect(prefs.getBool('has_pin'), isFalse);
+      });
+
+      test('starts locked on the first read when the has_pin mirror is '
+          'set', () async {
+        SharedPreferences.setMockInitialValues({'has_pin': true});
+        prefs = await SharedPreferences.getInstance();
+        await fakeSecureStorage.write(key: 'user_pin', value: '1234');
+        container = createContainer();
+
+        // Read before any await: this is what the first frame sees.
+        final state = container.read(securityProvider);
+        expect(state.isLocked, isTrue);
+        expect(state.hasPin, isTrue);
+
+        await pumpEventQueue();
+        expect(container.read(securityProvider).isLocked, isTrue);
+      });
+
+      test('starts unlocked on the first read when the mirror says no '
+          'PIN', () async {
+        SharedPreferences.setMockInitialValues({'has_pin': false});
+        prefs = await SharedPreferences.getInstance();
+        container = createContainer();
+
+        expect(container.read(securityProvider).isLocked, isFalse);
+        await pumpEventQueue();
+        expect(container.read(securityProvider).isLocked, isFalse);
+      });
+
+      // A07: the lock screen shows from the first frame, so it must know
+      // biometrics are on before secure storage answers.
+      test('reads the biometric setting on the first read', () async {
+        SharedPreferences.setMockInitialValues({
+          'has_pin': true,
+          'biometric_enabled': true,
+        });
+        prefs = await SharedPreferences.getInstance();
+        container = createContainer();
+
+        expect(container.read(securityProvider).isBiometricEnabled, isTrue);
+      });
+
+      test('a PIN found in storage locks and fixes a stale mirror', () async {
+        SharedPreferences.setMockInitialValues({'has_pin': false});
+        prefs = await SharedPreferences.getInstance();
+        await fakeSecureStorage.write(key: 'user_pin', value: '1234');
+        container = createContainer();
+        container.read(securityProvider);
+
+        await pumpEventQueue();
+        expect(container.read(securityProvider).isLocked, isTrue);
+        expect(prefs.getBool('has_pin'), isTrue);
+      });
+
+      test('stays locked when secure storage fails and the mirror says a PIN '
+          'is set', () async {
+        SharedPreferences.setMockInitialValues({'has_pin': true});
+        prefs = await SharedPreferences.getInstance();
+        fakeSecureStorage.setThrowRead('user_pin', true);
+        container = createContainer();
+        container.read(securityProvider);
+
+        await pumpEventQueue();
+        final state = container.read(securityProvider);
+        expect(state.isLocked, isTrue);
+        expect(state.hasPin, isTrue);
+      });
+
+      // With no mirror (first start after the update) and secure storage
+      // failing, nobody knows whether a PIN is set: stay locked rather than
+      // open the portfolio, and read storage again when the app resumes.
+      test('stays locked when secure storage fails and there is no '
+          'mirror', () async {
+        fakeSecureStorage.setThrowRead('user_pin', true);
+        container = createContainer();
+        container.read(securityProvider);
+
+        await pumpEventQueue();
+        expect(container.read(securityProvider).isLocked, isTrue);
+      });
+
+      test('after a failed read with no mirror, reads storage again on '
+          'resume and unlocks when no PIN is set', () async {
+        fakeSecureStorage.setThrowRead('user_pin', true);
+        container = createContainer();
+        container.read(securityProvider);
+        await pumpEventQueue();
+
+        fakeSecureStorage.setThrowRead('user_pin', false);
+        container
+            .read(securityProvider.notifier)
+            .didChangeAppLifecycleState(AppLifecycleState.resumed);
+        await pumpEventQueue();
+
+        final state = container.read(securityProvider);
         expect(state.isLocked, isFalse);
         expect(state.hasPin, isFalse);
+        expect(prefs.getBool('has_pin'), isFalse);
+      });
+
+      test('setPin sets the mirror and removePin clears it', () async {
+        container = createContainer();
+        final notifier = container.read(securityProvider.notifier);
+        await pumpEventQueue();
+
+        await notifier.setPin('1234');
+        expect(prefs.getBool('has_pin'), isTrue);
+
+        await notifier.removePin();
+        expect(prefs.getBool('has_pin'), isFalse);
       });
 
       test('locks on startup if PIN exists', () async {
@@ -362,5 +484,158 @@ void main() {
         },
       );
     });
+
+    // A07: whoever holds an unlocked phone can change its clock. Moving it
+    // back must not skip the auto-lock or stretch the unlock grace period.
+    group('Auto-lock timing and device clock changes', () {
+      late _FakeClock clock;
+
+      /// PIN set, auto-lock after 60 s, unlocked at the clock's start.
+      Future<SecurityNotifier> unlockedWithPin() async {
+        clock = _FakeClock();
+        await prefs.setInt('auto_lock_duration', 60);
+        container = createContainer(clock: clock);
+        final notifier = container.read(securityProvider.notifier);
+        await pumpEventQueue();
+        await notifier.setPin('1234');
+        notifier.lockApp();
+        expect(await notifier.unlockWithPin('1234'), isTrue);
+        return notifier;
+      }
+
+      test('locks after 61 s in the background', () async {
+        final notifier = await unlockedWithPin();
+        clock.advance(const Duration(seconds: 10));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+        clock.advance(const Duration(seconds: 61));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+
+        expect(container.read(securityProvider).isLocked, isTrue);
+      });
+
+      test('does not lock after 59 s in the background', () async {
+        final notifier = await unlockedWithPin();
+        clock.advance(const Duration(seconds: 10));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+        clock.advance(const Duration(seconds: 59));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+
+        expect(container.read(securityProvider).isLocked, isFalse);
+      });
+
+      test(
+        'locks when the clock is moved back while in the background',
+        () async {
+          final notifier = await unlockedWithPin();
+          clock.advance(const Duration(seconds: 10));
+          notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+          clock.advance(const Duration(seconds: 61));
+          clock.moveWallClock(const Duration(hours: -1));
+          notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+
+          expect(container.read(securityProvider).isLocked, isTrue);
+        },
+      );
+
+      test('locks when the clock is moved back by less than the time '
+          'away', () async {
+        final notifier = await unlockedWithPin();
+        clock.advance(const Duration(seconds: 10));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+        clock.advance(const Duration(seconds: 90));
+        // Wall clock now says only 30 s passed.
+        clock.moveWallClock(const Duration(seconds: -60));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+
+        expect(container.read(securityProvider).isLocked, isTrue);
+      });
+
+      test(
+        'a clock moved back does not stretch the unlock grace period',
+        () async {
+          final notifier = await unlockedWithPin();
+          // Leave at once (inside the 5 s grace), stay away 61 s, and move the
+          // clock back so "time since unlock" looks negative.
+          notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+          clock.advance(const Duration(seconds: 61));
+          clock.moveWallClock(const Duration(hours: -1));
+          notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+
+          expect(container.read(securityProvider).isLocked, isTrue);
+        },
+      );
+
+      test('locks after time asleep, when only the wall clock moved', () async {
+        final notifier = await unlockedWithPin();
+        clock.advance(const Duration(seconds: 10));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+        // The monotonic clock stops while the phone sleeps.
+        clock.moveWallClock(const Duration(minutes: 10));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+
+        expect(container.read(securityProvider).isLocked, isTrue);
+      });
+
+      test('locks when the phone slept and the clock was then moved back '
+          'past the pause', () async {
+        final notifier = await unlockedWithPin();
+        clock.advance(const Duration(seconds: 10));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+        // Asleep: the monotonic clock stops, only the wall clock moves.
+        clock.moveWallClock(const Duration(minutes: 10));
+        // Then the clock is set back to before the pause.
+        clock.moveWallClock(const Duration(hours: -1));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+
+        expect(container.read(securityProvider).isLocked, isTrue);
+      });
+
+      test('a sleep and a clock moved back past the unlock do not stretch '
+          'the grace period', () async {
+        final notifier = await unlockedWithPin();
+        // Leave inside the 5 s grace; monotonic time stays under 5 s.
+        clock.advance(const Duration(seconds: 2));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+        clock.moveWallClock(const Duration(minutes: 10));
+        clock.moveWallClock(const Duration(hours: -1));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+
+        expect(container.read(securityProvider).isLocked, isTrue);
+      });
+
+      test('a picker suspension still expires after 5 minutes when the clock '
+          'is moved back', () async {
+        final notifier = await unlockedWithPin();
+        clock.advance(const Duration(seconds: 10));
+        notifier.suspendAutoLock();
+        notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+        clock.advance(const Duration(minutes: 6));
+        clock.moveWallClock(const Duration(hours: -1));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+
+        expect(container.read(securityProvider).isLocked, isTrue);
+      });
+    });
   });
+}
+
+/// Wall clock and monotonic clock that tests move by hand.
+class _FakeClock implements SecurityClock {
+  DateTime _wall = DateTime(2026, 10, 3, 9);
+  Duration _monotonic = Duration.zero;
+
+  /// Real time passing: both clocks move.
+  void advance(Duration d) {
+    _wall = _wall.add(d);
+    _monotonic += d;
+  }
+
+  /// Someone changes the device clock: only the wall clock moves.
+  void moveWallClock(Duration d) => _wall = _wall.add(d);
+
+  @override
+  DateTime now() => _wall;
+
+  @override
+  Duration monotonic() => _monotonic;
 }

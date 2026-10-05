@@ -48,9 +48,13 @@ class ReportsHomeScreen extends ConsumerWidget {
       orElse: () => 0,
     );
 
-    final healthScore = portfolioHealthAsync.maybeWhen(
-      data: (health) => health?.overallScore.round() ?? 0,
-      orElse: () => 0,
+    // No score means not enough data: never show it as 0, the worst score.
+    final healthSubtitle = portfolioHealthAsync.when(
+      data: (health) => health == null
+          ? l10n.noPortfolioData
+          : l10n.healthScore(health.displayScore),
+      loading: () => l10n.loading,
+      error: (_, _) => '—',
     );
 
     return Scaffold(
@@ -287,7 +291,7 @@ class ReportsHomeScreen extends ConsumerWidget {
                   l10n,
                   icon: Icons.health_and_safety_rounded,
                   title: l10n.portfolioHealth,
-                  subtitle: l10n.healthScore(healthScore),
+                  subtitle: healthSubtitle,
                   onTap: () => _navigateToReport(
                     context,
                     ReportConfiguration.portfolioHealth(),

@@ -1,11 +1,27 @@
+import 'package:inv_tracker/core/calculations/financial_calculator.dart';
+import 'package:inv_tracker/core/calculations/models/cash_flow_interface.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
+import 'package:inv_tracker/core/utils/financial_year.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 
 /// Investment statistics for display.
 /// Contains calculated metrics like returns, MOIC, and XIRR.
 class InvestmentStats {
-  /// Sum of INVEST + FEE (money out)
+  /// Sum of INVEST + FEE (money out), gross: money reinvested from earlier
+  /// payouts is counted each time it goes in.
   final double totalInvested;
+
+  /// The most of the user's own money in these investments at any one time
+  /// (fees included): the peak of cumulative outflows minus inflows, with
+  /// same-day flows netted, per investment and summed. A rollover or a
+  /// re-lent payout is not counted twice. The denominator of [moic] and
+  /// [absoluteReturn]. Equals [totalInvested] when nothing is reinvested.
+  final double paidInCapital;
+
+  /// Sum of INVEST flows only (no fees): the principal that earns interest.
+  /// The maturity projection compounds this, not [totalInvested]. 0 when the
+  /// stats were not built by calculateStats, which hides the projection.
+  final double principal;
 
   /// Sum of RETURN + INCOME (money in)
   final double totalReturned;
@@ -13,17 +29,22 @@ class InvestmentStats {
   /// Net cash flow (Returned - Invested)
   final double netCashFlow;
 
-  /// Percentage return on investment
+  /// Gain (returned + current value - invested) as a percentage of
+  /// [paidInCapital].
   final double absoluteReturn;
 
-  /// Multiple on Invested Capital
+  /// Multiple on Invested Capital: (returned + current value - reinvested)
+  /// / [paidInCapital], where reinvested = [totalInvested] - paid-in.
   final double moic;
 
-  /// Annualized return (XIRR). 0.0 when [xirrMethod] is undefined.
-  final double xirr;
+  /// Annualized return (XIRR), or null when [xirrMethod] is undefined: an
+  /// open investment without a current value, too few flows or no solution.
+  /// Never treat null as 0%: leave it out of sorts, averages and scores, and
+  /// show "—".
+  final double? xirr;
 
   /// How [xirr] was obtained. Show "approx." for approximate values and "—"
-  /// for undefined ones instead of the 0.0 placeholder.
+  /// for undefined ones.
   final XirrMethod xirrMethod;
 
   /// Number of cash flow transactions
@@ -35,8 +56,32 @@ class InvestmentStats {
   /// Date of the most recent cash flow
   final DateTime? lastCashFlowDate;
 
+  /// Sum of the current values of the open investments in these stats, used
+  /// as their terminal inflow in [xirr], [moic] and [absoluteReturn]. Null
+  /// when none of them has one. Not part of [totalReturned] or
+  /// [netCashFlow], which stay cash-only.
+  final double? currentValue;
+
+  /// Latest date among the current values in [currentValue].
+  final DateTime? currentValueDate;
+
+  /// Whether any value in [currentValue] is an estimate rather than one the
+  /// user entered; the XIRR is then an expected one.
+  final bool currentValueIsEstimate;
+
+  /// The rate (% p.a.) an estimated [currentValue] accrued at, when all of
+  /// it accrued at that one rate; otherwise null.
+  final double? currentValueRate;
+
+  /// Open investments in these stats that have neither a current value nor
+  /// their invested amount back. Their XIRR, MOIC and return % cannot be
+  /// known (money rule 4).
+  final int missingValueCount;
+
   const InvestmentStats({
     required this.totalInvested,
+    double? paidInCapital,
+    this.principal = 0,
     required this.totalReturned,
     required this.netCashFlow,
     required this.absoluteReturn,
@@ -46,7 +91,16 @@ class InvestmentStats {
     required this.cashFlowCount,
     this.firstCashFlowDate,
     this.lastCashFlowDate,
-  });
+    this.currentValue,
+    this.currentValueDate,
+    this.currentValueIsEstimate = false,
+    this.currentValueRate,
+    this.missingValueCount = 0,
+  }) : paidInCapital = paidInCapital ?? totalInvested,
+       assert(
+         xirr != null || xirrMethod == XirrMethod.undefined,
+         'A missing XIRR must be marked undefined',
+       );
 
   /// Creates an empty stats object with all values set to zero
   factory InvestmentStats.empty() => const InvestmentStats(
@@ -55,7 +109,7 @@ class InvestmentStats {
     netCashFlow: 0,
     absoluteReturn: 0,
     moic: 0,
-    xirr: 0,
+    xirr: null,
     xirrMethod: XirrMethod.undefined,
     cashFlowCount: 0,
   );
@@ -63,18 +117,70 @@ class InvestmentStats {
   /// Returns true if there is at least one cash flow
   bool get hasData => cashFlowCount > 0;
 
+  /// [xirr] and [xirrMethod] as an [XirrResult].
+  XirrResult get xirrResult {
+    final rate = xirr;
+    if (rate == null || xirrMethod == XirrMethod.undefined) {
+      return const XirrResult.undefined(XirrUndefinedReason.noSolution);
+    }
+    return xirrMethod == XirrMethod.approximate
+        ? XirrResult.approximate(rate)
+        : XirrResult.exact(rate);
+  }
+
+  /// True when an open investment in these stats needs a current value
+  /// before its returns can be shown.
+  bool get needsCurrentValue => missingValueCount > 0;
+
+  /// Holdings shorter than this show their absolute return instead of an
+  /// annualised XIRR, because annualising a few days of return gives absurd
+  /// rates. Every screen that judges a return uses this one rule.
+  static const int shortHoldingDays = 90;
+
+  /// Days from the first cash flow to the last cash flow or current value,
+  /// by calendar day, or null without dates.
+  int? get holdingDays {
+    final first = firstCashFlowDate;
+    var last = lastCashFlowDate;
+    if (first == null || last == null) return null;
+    final valueDate = currentValueDate;
+    if (valueDate != null && valueDate.isAfter(last)) last = valueDate;
+    // Date-only difference in UTC, so DST changes cannot shift it.
+    return DateTime.utc(
+      last.year,
+      last.month,
+      last.day,
+    ).difference(DateTime.utc(first.year, first.month, first.day)).inDays;
+  }
+
+  /// Whether these stats were held for less than [shortHoldingDays] with
+  /// money back or a current value, so their XIRR must not be judged.
+  ///
+  /// Without any inflow (or current value) there is no holding period to
+  /// report a return over: a closed investment with a single INVEST flow
+  /// would otherwise read "-100.0% in under a day".
+  bool get isShortHolding {
+    final days = holdingDays;
+    return totalInvested > 0 &&
+        totalReturned + (currentValue ?? 0) > 0 &&
+        days != null &&
+        days < shortHoldingDays;
+  }
+
   /// Returns true if net cash flow is positive
   bool get isProfit => netCashFlow > 0;
 
   /// Returns true if net cash flow is negative
   bool get isLoss => netCashFlow < 0;
 
-  /// Duration in years from first to last cash flow (or to now if ongoing)
+  /// Whether part of [totalInvested] was money paid out earlier and put
+  /// back in, which [moic] and [absoluteReturn] count once.
+  bool get hasReinvestedPayouts => paidInCapital < totalInvested;
+
+  /// [holdingDays] in years.
   double? get durationYears {
-    if (firstCashFlowDate == null) return null;
-    final endDate = lastCashFlowDate ?? DateTime.now();
-    final days = endDate.difference(firstCashFlowDate!).inDays;
-    return days / 365.0;
+    final days = holdingDays;
+    return days == null ? null : days / 365.0;
   }
 
   /// Formatted duration string (e.g., "2.3y" or "8mo")
@@ -89,6 +195,8 @@ class InvestmentStats {
   /// Creates a copy with the given fields replaced
   InvestmentStats copyWith({
     double? totalInvested,
+    double? paidInCapital,
+    double? principal,
     double? totalReturned,
     double? netCashFlow,
     double? absoluteReturn,
@@ -98,9 +206,16 @@ class InvestmentStats {
     int? cashFlowCount,
     DateTime? firstCashFlowDate,
     DateTime? lastCashFlowDate,
+    double? currentValue,
+    DateTime? currentValueDate,
+    bool? currentValueIsEstimate,
+    double? currentValueRate,
+    int? missingValueCount,
   }) {
     return InvestmentStats(
       totalInvested: totalInvested ?? this.totalInvested,
+      paidInCapital: paidInCapital ?? this.paidInCapital,
+      principal: principal ?? this.principal,
       totalReturned: totalReturned ?? this.totalReturned,
       netCashFlow: netCashFlow ?? this.netCashFlow,
       absoluteReturn: absoluteReturn ?? this.absoluteReturn,
@@ -110,6 +225,12 @@ class InvestmentStats {
       cashFlowCount: cashFlowCount ?? this.cashFlowCount,
       firstCashFlowDate: firstCashFlowDate ?? this.firstCashFlowDate,
       lastCashFlowDate: lastCashFlowDate ?? this.lastCashFlowDate,
+      currentValue: currentValue ?? this.currentValue,
+      currentValueDate: currentValueDate ?? this.currentValueDate,
+      currentValueIsEstimate:
+          currentValueIsEstimate ?? this.currentValueIsEstimate,
+      currentValueRate: currentValueRate ?? this.currentValueRate,
+      missingValueCount: missingValueCount ?? this.missingValueCount,
     );
   }
 
@@ -119,6 +240,8 @@ class InvestmentStats {
 
     return other is InvestmentStats &&
         other.totalInvested == totalInvested &&
+        other.paidInCapital == paidInCapital &&
+        other.principal == principal &&
         other.totalReturned == totalReturned &&
         other.netCashFlow == netCashFlow &&
         other.absoluteReturn == absoluteReturn &&
@@ -127,12 +250,18 @@ class InvestmentStats {
         other.xirrMethod == xirrMethod &&
         other.cashFlowCount == cashFlowCount &&
         other.firstCashFlowDate == firstCashFlowDate &&
-        other.lastCashFlowDate == lastCashFlowDate;
+        other.lastCashFlowDate == lastCashFlowDate &&
+        other.currentValue == currentValue &&
+        other.currentValueDate == currentValueDate &&
+        other.currentValueIsEstimate == currentValueIsEstimate &&
+        other.currentValueRate == currentValueRate &&
+        other.missingValueCount == missingValueCount;
   }
 
   @override
   int get hashCode {
     return totalInvested.hashCode ^
+        principal.hashCode ^
         totalReturned.hashCode ^
         netCashFlow.hashCode ^
         absoluteReturn.hashCode ^
@@ -141,7 +270,15 @@ class InvestmentStats {
         xirrMethod.hashCode ^
         cashFlowCount.hashCode ^
         firstCashFlowDate.hashCode ^
-        lastCashFlowDate.hashCode;
+        lastCashFlowDate.hashCode ^
+        Object.hash(
+          paidInCapital,
+          currentValue,
+          currentValueDate,
+          currentValueIsEstimate,
+          currentValueRate,
+          missingValueCount,
+        );
   }
 }
 
@@ -200,14 +337,38 @@ class TypeDistribution {
   }
 }
 
-/// Year-over-Year comparison statistics.
+/// Year-over-Year comparison: the financial year to date against the same
+/// days of the previous financial year (ANLY-09), so a part year is never
+/// compared with a whole one.
+///
+/// Invested, returned, income and net are reported separately: investing
+/// more is not a decline, and principal coming back is not income, so
+/// neither net cash flow nor money received must be read as performance.
 class YoYComparison {
   final double thisYearNet;
   final double lastYearNet;
+
+  /// Money out (INVEST + FEE) in each period.
   final double thisYearInvested;
   final double lastYearInvested;
+
+  /// Money received (RETURN + INCOME) in each period.
   final double thisYearReturned;
   final double lastYearReturned;
+
+  /// Income (INCOME: interest, dividends, rent) in each period, a part of
+  /// [thisYearReturned] and [lastYearReturned].
+  final double thisYearIncome;
+  final double lastYearIncome;
+
+  /// This period: [periodStart] (1 April) to [periodEnd], exclusive (the day
+  /// after today).
+  final DateTime periodStart;
+  final DateTime periodEnd;
+
+  /// The same days of the previous financial year, [periodEnd] exclusive.
+  final DateTime previousPeriodStart;
+  final DateTime previousPeriodEnd;
 
   const YoYComparison({
     required this.thisYearNet,
@@ -216,32 +377,94 @@ class YoYComparison {
     required this.lastYearInvested,
     required this.thisYearReturned,
     required this.lastYearReturned,
+    required this.thisYearIncome,
+    required this.lastYearIncome,
+    required this.periodStart,
+    required this.periodEnd,
+    required this.previousPeriodStart,
+    required this.previousPeriodEnd,
   });
 
-  /// Percentage change in net position year-over-year
-  double get netChange => lastYearNet != 0
-      ? ((thisYearNet - lastYearNet) / lastYearNet.abs()) * 100
-      : 0;
-
-  /// Returns true if this year's net is better than last year's
-  bool get isImproved => thisYearNet > lastYearNet;
-
-  /// Creates a copy with the given fields replaced
-  YoYComparison copyWith({
-    double? thisYearNet,
-    double? lastYearNet,
-    double? thisYearInvested,
-    double? lastYearInvested,
-    double? thisYearReturned,
-    double? lastYearReturned,
+  /// Compares the financial year to date, 1 April to [today] inclusive, with
+  /// the same days of the previous financial year, by calendar day. Flows
+  /// dated after [today] do not count yet. [cashFlows] must all be in one
+  /// currency (money rule 2).
+  factory YoYComparison.financialYearToDate(
+    List<ICashFlow> cashFlows, {
+    required DateTime today,
   }) {
+    final periodStart = FinancialYear.startOf(today);
+    final periodEnd = FinancialYear.dayAfter(today);
+    final previousPeriodStart = DateTime(periodStart.year - 1, DateTime.april);
+    final previousPeriodEnd = FinancialYear.dayAfter(
+      FinancialYear.sameDayLastYear(today),
+    );
+
+    final thisYear = <ICashFlow>[];
+    final lastYear = <ICashFlow>[];
+    for (final cf in cashFlows) {
+      if (FinancialYear.contains(periodStart, periodEnd, cf.date)) {
+        thisYear.add(cf);
+      } else if (FinancialYear.contains(
+        previousPeriodStart,
+        previousPeriodEnd,
+        cf.date,
+      )) {
+        lastYear.add(cf);
+      }
+    }
+
+    List<ICashFlow> incomeOf(List<ICashFlow> flows) => [
+      for (final cf in flows)
+        if (cf.calculationType == CalculationCashFlowType.income) cf,
+    ];
+
+    final thisInvested = FinancialCalculator.calculateTotalInvested(thisYear);
+    final thisReturned = FinancialCalculator.calculateTotalReturned(thisYear);
+    final lastInvested = FinancialCalculator.calculateTotalInvested(lastYear);
+    final lastReturned = FinancialCalculator.calculateTotalReturned(lastYear);
     return YoYComparison(
-      thisYearNet: thisYearNet ?? this.thisYearNet,
-      lastYearNet: lastYearNet ?? this.lastYearNet,
-      thisYearInvested: thisYearInvested ?? this.thisYearInvested,
-      lastYearInvested: lastYearInvested ?? this.lastYearInvested,
-      thisYearReturned: thisYearReturned ?? this.thisYearReturned,
-      lastYearReturned: lastYearReturned ?? this.lastYearReturned,
+      thisYearNet: FinancialCalculator.calculateNetCashFlow(
+        thisInvested,
+        thisReturned,
+      ),
+      lastYearNet: FinancialCalculator.calculateNetCashFlow(
+        lastInvested,
+        lastReturned,
+      ),
+      thisYearInvested: thisInvested,
+      lastYearInvested: lastInvested,
+      thisYearReturned: thisReturned,
+      lastYearReturned: lastReturned,
+      thisYearIncome: FinancialCalculator.calculateTotalReturned(
+        incomeOf(thisYear),
+      ),
+      lastYearIncome: FinancialCalculator.calculateTotalReturned(
+        incomeOf(lastYear),
+      ),
+      periodStart: periodStart,
+      periodEnd: periodEnd,
+      previousPeriodStart: previousPeriodStart,
+      previousPeriodEnd: previousPeriodEnd,
     );
   }
+
+  /// Whether either period has any cash flow.
+  bool get hasActivity =>
+      thisYearInvested != 0 ||
+      lastYearInvested != 0 ||
+      thisYearReturned != 0 ||
+      lastYearReturned != 0;
+
+  /// Money back from exits, sales and maturities (RETURN) in each period:
+  /// what was received apart from income.
+  double get thisYearCapitalReturned => thisYearReturned - thisYearIncome;
+  double get lastYearCapitalReturned => lastYearReturned - lastYearIncome;
+
+  /// Change in income, in percent (20.0 = +20%), or null when there was no
+  /// income in the previous period. Principal coming back is not income, so
+  /// a maturity does not read as growth.
+  double? get incomeChangePercent => lastYearIncome > 0
+      ? (thisYearIncome - lastYearIncome) / lastYearIncome * 100
+      : null;
 }

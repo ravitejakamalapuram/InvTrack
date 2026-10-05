@@ -362,7 +362,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   onTap: () => _openLegalScreen(
                     context,
                     l10n.privacyPolicy,
-                    privacyPolicyContent,
+                    privacyPolicyText(l10n),
                     linkUri: Uri.parse(hostedPrivacyPolicyUrl),
                     linkLabel: l10n.viewFullPrivacyPolicy,
                   ),

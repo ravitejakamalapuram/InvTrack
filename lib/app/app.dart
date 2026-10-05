@@ -11,6 +11,7 @@ import 'package:inv_tracker/core/widgets/currency_cache_initializer.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/deletion_request_notice.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/legacy_currency_backfill_initializer.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/usd_tag_repair_prompt.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/notification_sync_initializer.dart';
 import 'package:inv_tracker/features/income_projection/presentation/widgets/income_guardian_service_initializer.dart';
 import 'package:inv_tracker/features/security/presentation/widgets/privacy_protection_wrapper.dart';
@@ -44,7 +45,9 @@ class InvTrackerApp extends ConsumerWidget {
                     child: ConnectivityListener(
                       child: DeletionRequestNotice(
                         child: PrivacyProtectionWrapper(
-                          child: child ?? const SizedBox.shrink(),
+                          child: UsdTagRepairInitializer(
+                            child: child ?? const SizedBox.shrink(),
+                          ),
                         ),
                       ),
                     ),

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
+import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
@@ -243,6 +244,26 @@ class GoalProgressCalculator {
     return maxDate;
   }
 
+  /// The goal's target in [baseCurrency]: the monthly income target for an
+  /// income goal, otherwise the target amount.
+  static Future<double> targetInBaseCurrency({
+    required GoalEntity goal,
+    required BatchCurrencyConverter batchConverter,
+    required String baseCurrency,
+    ConversionFallbackStrategy fallbackStrategy =
+        ConversionFallbackStrategy.useLastKnown,
+  }) {
+    final targetAmountInGoalCurrency = goal.isIncomeGoal
+        ? (goal.targetMonthlyIncome ?? goal.targetAmount)
+        : goal.targetAmount;
+    return batchConverter.convert(
+      amount: targetAmountInGoalCurrency,
+      from: goal.currency,
+      to: baseCurrency,
+      fallbackStrategy: fallbackStrategy,
+    );
+  }
+
   /// Calculate progress for a goal with multi-currency support
   ///
   /// Converts all cash flows AND target amount to base currency before
@@ -257,6 +278,8 @@ class GoalProgressCalculator {
     required List<CashFlowEntity> allCashFlows,
     required BatchCurrencyConverter batchConverter,
     required String baseCurrency,
+    ConversionFallbackStrategy fallbackStrategy =
+        ConversionFallbackStrategy.useLastKnown,
   }) async {
     // Filter investments based on tracking mode
     final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
@@ -272,6 +295,7 @@ class GoalProgressCalculator {
     final convertedCashFlows = await batchConverter.batchConvert(
       cashFlows: linkedCashFlows,
       baseCurrency: baseCurrency,
+      fallbackStrategy: fallbackStrategy,
     );
 
     // Calculate current amount based on goal type
@@ -289,14 +313,11 @@ class GoalProgressCalculator {
 
     // Convert target amount to base currency (CRITICAL FIX for Rule 21.3)
     // Both currentAmount and targetAmount MUST be in same currency for stable %
-    final targetAmountInGoalCurrency = goal.isIncomeGoal
-        ? (goal.targetMonthlyIncome ?? goal.targetAmount)
-        : goal.targetAmount;
-
-    final targetAmount = await batchConverter.convert(
-      amount: targetAmountInGoalCurrency,
-      from: goal.currency,
-      to: baseCurrency,
+    final targetAmount = await targetInBaseCurrency(
+      goal: goal,
+      batchConverter: batchConverter,
+      baseCurrency: baseCurrency,
+      fallbackStrategy: fallbackStrategy,
     );
 
     // Calculate progress percentage
@@ -555,6 +576,14 @@ class GoalsSummary {
   ];
 }
 
+/// Retry policy for the goal progress providers below: never retry them.
+///
+/// They only compute from their sources, which Riverpod retries on its own
+/// and which rebuild them when they change. Retrying them as well would keep
+/// a load error in an `AsyncLoading` that `.when` shows as loading, so goal
+/// screens would spin indefinitely instead of showing the error.
+Duration? _noRetry(int retryCount, Object error) => null;
+
 /// Multi-currency provider for a single goal's progress
 ///
 /// Converts all cash flows to base currency before calculating progress.
@@ -570,25 +599,14 @@ final multiCurrencyGoalProgressProvider =
       // Use validCashFlowsProvider to only include cash flows from active investments
       final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
-      final goal = await goalAsync.when(
-        data: (g) async => g,
-        loading: () async => null,
-        error: (e, s) async => null,
-      );
+      // Stay loading, or fail, with the sources: substituting empty data
+      // would show '0%' and 'Not Started' for goals that have progress.
+      final goal = await dataOf(goalAsync);
 
       if (goal == null) return null;
 
-      final investments = await investmentsAsync.when(
-        data: (i) async => i,
-        loading: () async => <InvestmentEntity>[],
-        error: (e, s) async => <InvestmentEntity>[],
-      );
-
-      final cashFlows = await cashFlowsAsync.when(
-        data: (cf) async => cf,
-        loading: () async => <CashFlowEntity>[],
-        error: (e, s) async => <CashFlowEntity>[],
-      );
+      final investments = await dataOf(investmentsAsync);
+      final cashFlows = await dataOf(cashFlowsAsync);
 
       final batchConverter = ref.watch(batchCurrencyConverterProvider);
 
@@ -618,7 +636,7 @@ final multiCurrencyGoalProgressProvider =
         batchConverter: batchConverter,
         baseCurrency: baseCurrency,
       );
-    });
+    }, retry: _noRetry);
 
 /// Multi-currency provider for all goals with their progress
 ///
@@ -635,23 +653,11 @@ final multiCurrencyAllGoalsProgressProvider = FutureProvider<List<GoalProgress>>
   // Use validCashFlowsProvider to only include cash flows from active investments
   final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
-  final goals = await goalsAsync.when(
-    data: (g) async => g,
-    loading: () async => <GoalEntity>[],
-    error: (e, s) async => <GoalEntity>[],
-  );
-
-  final investments = await investmentsAsync.when(
-    data: (i) async => i,
-    loading: () async => <InvestmentEntity>[],
-    error: (e, s) async => <InvestmentEntity>[],
-  );
-
-  final cashFlows = await cashFlowsAsync.when(
-    data: (cf) async => cf,
-    loading: () async => <CashFlowEntity>[],
-    error: (e, s) async => <CashFlowEntity>[],
-  );
+  // Stay loading, or fail, with the sources: substituting empty lists would
+  // show 'Set your first goal' or '0%' to users who have goals.
+  final goals = await dataOf(goalsAsync);
+  final investments = await dataOf(investmentsAsync);
+  final cashFlows = await dataOf(cashFlowsAsync);
 
   final batchConverter = ref.watch(batchCurrencyConverterProvider);
 
@@ -689,7 +695,7 @@ final multiCurrencyAllGoalsProgressProvider = FutureProvider<List<GoalProgress>>
   );
 
   return progressList;
-});
+}, retry: _noRetry);
 
 /// Multi-currency provider for goals summary (for dashboard card)
 ///
@@ -769,4 +775,4 @@ final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((
     activeGoals: activeGoalsList, // Pass all active goals for carousel
     completedGoals: recentCompletedGoals, // Pass recent completed goals
   );
-});
+}, retry: _noRetry);

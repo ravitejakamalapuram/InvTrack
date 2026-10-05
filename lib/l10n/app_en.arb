@@ -524,7 +524,7 @@
     "description": "Change PIN subtitle"
   },
 
-  "dataStoredLocallyMessage": "The app lock protects access to InvTrack on this device. Your data is synced to your private cloud storage (Google Firebase) and is protected by your account, plus an offline copy on this device so InvTrack keeps working without a connection.",
+  "dataStoredLocallyMessage": "The app lock protects access to InvTrack on this device. Your data is stored in InvTrack''s Google Firebase project under your account, with an offline copy on this device so InvTrack keeps working without a connection. In the app, only your signed-in account can see it. The developer can technically access stored data and does so only to handle your support or deletion requests, or when the law requires it.",
   "@dataStoredLocallyMessage": {
     "description": "Security info message"
   },
@@ -532,6 +532,26 @@
   "viewFullPrivacyPolicy": "View full privacy policy online",
   "@viewFullPrivacyPolicy": {
     "description": "Button on the Privacy Policy screen that opens the hosted policy in the browser"
+  },
+
+  "privacyPolicyBody": "**Privacy Policy**\n\nLast updated: {lastUpdated}\n\n1. **Introduction**\n   InvTracker (\"we\", \"our\", or \"us\") is committed to protecting your privacy. This Privacy Policy explains how your personal information is collected, used, and disclosed by InvTracker.\n\n2. **Data Collection**\n   Your data is stored in InvTrack''s Google Firebase (Cloud Firestore) project under your account, so it syncs across your devices and works offline. Google encrypts it in transit and at rest. In the app, only your signed-in account can see your records. The developer can technically access stored data and does so only to answer a support request from you, to process a deletion request, or when the law requires it. We do not sell your data, and we do not use it for advertising. If you choose to sign in with Google, we receive your name, email and a unique user ID to create your account; we do not access your Drive, Gmail or Sheets.\n\n   We also use Google Firebase Analytics, Crashlytics and Performance Monitoring to measure app usage and diagnose crashes and slowness. This diagnostic data is associated with your user ID and device identifiers, and it is always on (there is currently no opt-out). Amounts are reported only in ranges, not exact values. You can delete your account and data in Settings > Data & Account.\n\n3. **Data Usage**\n   Your data is used exclusively to provide you with investment tracking features. We do not sell, trade, or rent your personal identification information to others.\n\n4. **Security**\n   We use administrative, technical, and physical security measures to help protect your personal information. While we have taken reasonable steps to secure the personal information you provide to us, please be aware that despite our efforts, no security measures are perfect or impenetrable.\n\n5. **Contact Us**\n   If you have questions about this Privacy Policy, please contact us at {supportEmail}.\n\n   The full, current policy is available at {policyUrl}",
+  "@privacyPolicyBody": {
+    "description": "Full in-app Privacy Policy shown on the Privacy Policy screen (Markdown-style emphasis is shown as typed). Keep it in step with the hosted policy.",
+    "placeholders": {
+      "lastUpdated": {
+        "type": "String",
+        "example": "October 4, 2026",
+        "description": "Date the policy last changed, formatted for the user's locale"
+      },
+      "supportEmail": {
+        "type": "String",
+        "description": "The support email address (supportEmailAddress)"
+      },
+      "policyUrl": {
+        "type": "String",
+        "description": "The hosted privacy policy URL (hostedPrivacyPolicyUrl)"
+      }
+    }
   },
 
   "helpFaqTitle": "Help & FAQ",
@@ -1231,6 +1251,11 @@
     "description": "Retry button label"
   },
 
+  "fireProgressLoadError": "Couldn''t load your FIRE progress",
+  "@fireProgressLoadError": {
+    "description": "FIRE card on Overview when the portfolio fails to load. No FIRE number is shown, because it would be computed from missing data."
+  },
+
   "signInFailed": "Sign-in failed: {error}",
   "@signInFailed": {
     "description": "Error message when Google sign-in fails",
@@ -1526,6 +1551,62 @@
     "description": "Sample data description"
   },
 
+  "xirrDemoTitle": "See Your Real Returns",
+  "@xirrDemoTitle": {
+    "description": "Title of the advertised-vs-real XIRR demo on the empty overview"
+  },
+
+  "xirrDemoSubtitle": "P2P platforms advertise {rate}. What did you really earn?",
+  "@xirrDemoSubtitle": {
+    "description": "Subtitle of the XIRR demo: the rate a P2P lending platform advertises",
+    "placeholders": {
+      "rate": {
+        "type": "String",
+        "example": "12%"
+      }
+    }
+  },
+
+  "xirrDemoAdvertised": "Advertised",
+  "@xirrDemoAdvertised": {
+    "description": "XIRR demo label under the advertised rate"
+  },
+
+  "xirrDemoYourXirr": "Your XIRR",
+  "@xirrDemoYourXirr": {
+    "description": "XIRR demo label under the real return (XIRR)"
+  },
+
+  "xirrDemoCaption": "Platform fees and one defaulted loan cut {advertised} to {real} a year.",
+  "@xirrDemoCaption": {
+    "description": "XIRR demo caption explaining why the real P2P return is lower than advertised",
+    "placeholders": {
+      "advertised": {
+        "type": "String",
+        "example": "12%"
+      },
+      "real": {
+        "type": "String",
+        "example": "6.3%"
+      }
+    }
+  },
+
+  "xirrDemoSemantics": "Advertised {advertised}. Your XIRR after fees and one defaulted loan: {real}.",
+  "@xirrDemoSemantics": {
+    "description": "Screen-reader label for the XIRR demo comparison",
+    "placeholders": {
+      "advertised": {
+        "type": "String",
+        "example": "12.0%"
+      },
+      "real": {
+        "type": "String",
+        "example": "6.3%"
+      }
+    }
+  },
+
   "tryIt": "Try It",
   "@tryIt": {
     "description": "Try it button label"
@@ -1539,6 +1620,21 @@
   "pleaseTryAgainLater": "Please try again later",
   "@pleaseTryAgainLater": {
     "description": "Generic retry message"
+  },
+
+  "overviewLoadingPortfolio": "Loading your portfolio",
+  "@overviewLoadingPortfolio": {
+    "description": "Screen reader label for the Overview skeletons shown while the portfolio loads"
+  },
+
+  "overviewLoadErrorTitle": "Couldn''t load your portfolio",
+  "@overviewLoadErrorTitle": {
+    "description": "Overview title when investments or cash flows fail to load. Must not suggest the account is empty."
+  },
+
+  "overviewLoadErrorMessage": "Your data is safe. Check your connection and try again.",
+  "@overviewLoadErrorMessage": {
+    "description": "Overview message under the load error title, reassuring the user their data was not lost"
   },
 
   "connectionError": "Connection Error",
@@ -2680,6 +2776,130 @@
     }
   },
 
+  "usdTagRepairTitle": "Investments recorded in US dollars",
+  "@usdTagRepairTitle": {
+    "description": "Title of the one-time question about investments that older versions saved as US dollars by mistake"
+  },
+
+  "usdTagRepairMessage": "{count, plural, =1{We found 1 investment recorded in US dollars. Was it in {symbol} ({currency})?} other{We found {count} investments recorded in US dollars. Were these in {symbol} ({currency})?}}",
+  "@usdTagRepairMessage": {
+    "description": "Question naming how many investments are stored as US dollars and the base currency they may really be in; symbol is the base currency symbol, currency its code",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "symbol": {
+        "type": "String"
+      },
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "usdTagRepairDetail": "Older versions of the app could save amounts as US dollars by mistake when importing, merging or restoring. Changing the currency keeps every amount as it is. You can undo it on this device in Settings > Data & Account.",
+  "@usdTagRepairDetail": {
+    "description": "Explains why investments may be stored as US dollars and that the fix keeps amounts and can be undone on the device that made it"
+  },
+
+  "usdTagRepairCashFlows": "{count, plural, =1{1 cash flow} other{{count} cash flows}}",
+  "@usdTagRepairCashFlows": {
+    "description": "Number of cash flows of an investment listed in the US dollar question",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "usdTagRepairMerged": "Merged",
+  "@usdTagRepairMerged": {
+    "description": "Label for an investment made by merging investments, in the US dollar question"
+  },
+
+  "usdTagRepairArchived": "Archived",
+  "@usdTagRepairArchived": {
+    "description": "Label for an archived investment, in the US dollar question"
+  },
+
+  "usdTagRepairKeep": "Keep in US dollars",
+  "@usdTagRepairKeep": {
+    "description": "Answer that the listed investments really are in US dollars; nothing is changed"
+  },
+
+  "usdTagRepairFix": "Change to {currency}",
+  "@usdTagRepairFix": {
+    "description": "Button that relabels the ticked investments with the base currency, keeping their amounts",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "usdTagRepairDone": "{count, plural, =1{1 investment changed to {currency}.} other{{count} investments changed to {currency}.}}",
+  "@usdTagRepairDone": {
+    "description": "Shown after investments were relabelled from US dollars to the base currency",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "usdTagRepairFailed": "Could not finish changing the currency. Check your connection. We will ask again the next time the app starts.",
+  "@usdTagRepairFailed": {
+    "description": "Shown when relabelling investments from US dollars could not finish"
+  },
+
+  "usdTagRepairNothingChanged": "Nothing needed changing. These investments are no longer recorded in US dollars.",
+  "@usdTagRepairNothingChanged": {
+    "description": "Shown after the user chose to change the currency but the investments had already been changed, for example on another device"
+  },
+
+  "usdTagRepairUndo": "Undo",
+  "@usdTagRepairUndo": {
+    "description": "Action that puts US dollars back on investments the fix changed"
+  },
+
+  "usdTagRepairUndoTitle": "Undo the US dollar fix",
+  "@usdTagRepairUndoTitle": {
+    "description": "Settings item and dialog title for undoing the US dollar fix"
+  },
+
+  "usdTagRepairUndoSubtitle": "{count, plural, =1{Show 1 investment in US dollars again} other{Show {count} investments in US dollars again}}",
+  "@usdTagRepairUndoSubtitle": {
+    "description": "Subtitle of the Settings item that undoes the US dollar fix",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "usdTagRepairUndoMessage": "{count, plural, =1{1 investment will be shown in US dollars again. Its amounts do not change.} other{{count} investments will be shown in US dollars again. Their amounts do not change.}}",
+  "@usdTagRepairUndoMessage": {
+    "description": "Confirmation before undoing the US dollar fix",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "usdTagRepairUndone": "The US dollar fix was undone.",
+  "@usdTagRepairUndone": {
+    "description": "Shown after the US dollar fix was undone"
+  },
+
+  "usdTagRepairUndoFailed": "Could not undo the fix. Check your connection and try again.",
+  "@usdTagRepairUndoFailed": {
+    "description": "Shown when undoing the US dollar fix failed"
+  },
+
   "loadingProgress": "Loading: {fetched} of {total}",
   "@loadingProgress": {
     "description": "Loading progress indicator with counts",
@@ -2934,14 +3154,35 @@
     "description": "Portfolio health details screen title"
   },
 
-  "noPortfolioData": "No data available",
+  "noPortfolioData": "Not enough data yet",
   "@noPortfolioData": {
-    "description": "Message when portfolio health data is not available"
+    "description": "Title when there is not enough data for a portfolio health score (no investments, or only open holdings without a current value)"
   },
 
-  "addInvestmentsToSeeHealth": "Add investments to see your portfolio health score",
+  "addInvestmentsToSeeHealth": "Add your investments, with a current value for open ones, to see your health score.",
   "@addInvestmentsToSeeHealth": {
-    "description": "Empty state message for portfolio health"
+    "description": "Body under the title when there is not enough data for a portfolio health score"
+  },
+
+  "healthScoreNotEnoughData": "Not enough data yet. Add your investments, with a current value for open ones, to see your health score.",
+  "@healthScoreNotEnoughData": {
+    "description": "Dashboard card text when there is not enough data for a portfolio health score (no investments, or only open holdings without a current value)"
+  },
+
+  "healthReturnsTooEarly": "Too early to judge",
+  "@healthReturnsTooEarly": {
+    "description": "Portfolio Health details: the Returns Performance component's description when the portfolio has been held for too short a time to annualise its return"
+  },
+
+  "healthReturnsTooEarlySuggestion": "Returns are judged once your investments are {days} days old",
+  "@healthReturnsTooEarlySuggestion": {
+    "description": "Portfolio Health suggestion shown while returns are too early to judge",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "90"
+      }
+    }
   },
 
   "healthScoreTrendWeeks": "Score Trend (Last {weeks} Weeks)",
@@ -3967,6 +4208,131 @@
     "description": "Hint under a dash shown in place of XIRR when an open investment has no terminal value yet"
   },
 
+  "expectedXirrLabel": "Expected XIRR",
+  "@expectedXirrLabel": {
+    "description": "Label for an XIRR that uses an estimated current value of open investments, not one the user confirmed"
+  },
+
+  "realisedXirrLabel": "Realised XIRR",
+  "@realisedXirrLabel": {
+    "description": "Label for the XIRR of closed investments only, shown next to the expected XIRR"
+  },
+
+  "expectedXirrBasisRate": "Based on {rate} p.a.",
+  "@expectedXirrBasisRate": {
+    "description": "Hint under an expected XIRR whose current value was estimated at the investment's expected rate, e.g. 'Based on 7% p.a.'",
+    "placeholders": {
+      "rate": {
+        "type": "String",
+        "example": "7%"
+      }
+    }
+  },
+
+  "expectedXirrBasisEstimates": "Includes estimated current values",
+  "@expectedXirrBasisEstimates": {
+    "description": "Hint under an expected XIRR that uses estimated current values, such as outstanding principal"
+  },
+
+  "currentValueLabel": "Current value",
+  "@currentValueLabel": {
+    "description": "Title of the card showing what an open investment is worth today"
+  },
+
+  "currentValueEstimatedAtRate": "Estimated at {rate} p.a.",
+  "@currentValueEstimatedAtRate": {
+    "description": "How a current value was estimated: deposits grown at the expected rate, e.g. 'Estimated at 7% p.a.'",
+    "placeholders": {
+      "rate": {
+        "type": "String",
+        "example": "7%"
+      }
+    }
+  },
+
+  "currentValueEstimatedPrincipal": "Estimated as principal still invested",
+  "@currentValueEstimatedPrincipal": {
+    "description": "How a current value was estimated: the principal not yet paid back (payout FDs, bonds, P2P loans)"
+  },
+
+  "moneyOutIncludesFees": "Money out includes fees.",
+  "@moneyOutIncludesFees": {
+    "description": "Note under an investment's money out / money in summary: the amount invested counts fees, so MOIC and return % are net of fees"
+  },
+
+  "moneyOutIncludesFeesReinvested": "Money out includes fees. Reinvested payouts count once in MOIC and return %.",
+  "@moneyOutIncludesFeesReinvested": {
+    "description": "Note under an investment's money out / money in summary when part of the money out came from earlier payouts (an FD renewed on maturity, a P2P payout re-lent): MOIC and return % count that money once"
+  },
+
+  "currentValueUpdatedOn": "Updated {date}",
+  "@currentValueUpdatedOn": {
+    "description": "Date of a current value the user entered, e.g. 'Updated Sep 30, 2026'",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Sep 30, 2026"
+      }
+    }
+  },
+
+  "currentValueNone": "No current value yet",
+  "@currentValueNone": {
+    "description": "Shown when an open investment has no current value, so its returns cannot be calculated"
+  },
+
+  "currentValueHidden": "Current value hidden",
+  "@currentValueHidden": {
+    "description": "Screen reader label for the current value card while privacy mode hides amounts"
+  },
+
+  "currentValueAdd": "Add current value",
+  "@currentValueAdd": {
+    "description": "Button that opens the editor for an open investment's current value when it has none"
+  },
+
+  "currentValueUpdate": "Update",
+  "@currentValueUpdate": {
+    "description": "Button that opens the editor for an open investment's current value"
+  },
+
+  "currentValueAmountLabel": "Value in {currency}",
+  "@currentValueAmountLabel": {
+    "description": "Label of the amount field in the current value editor, e.g. 'Value in INR'",
+    "placeholders": {
+      "currency": {
+        "type": "String",
+        "example": "INR"
+      }
+    }
+  },
+
+  "currentValueDateLabel": "Value as of {date}",
+  "@currentValueDateLabel": {
+    "description": "Button showing, and letting the user change, the date of a current value, e.g. 'Value as of Oct 2, 2026'",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Oct 2, 2026"
+      }
+    }
+  },
+
+  "currentValueInvalid": "Enter a value of 0 or more",
+  "@currentValueInvalid": {
+    "description": "Validation error in the current value editor"
+  },
+
+  "currentValueRemove": "Use estimate",
+  "@currentValueRemove": {
+    "description": "Button in the current value editor that removes the user's value so the app's estimate (or none) applies"
+  },
+
+  "currentValueSaveFailed": "Could not save the current value. Try again.",
+  "@currentValueSaveFailed": {
+    "description": "Error shown when saving or removing a current value fails"
+  },
+
   "netCashFlowSoFar": "Net cash flow so far",
   "@netCashFlowSoFar": {
     "description": "Headline for money received minus money invested while investments are still open"
@@ -4047,6 +4413,79 @@
   "investedLabel": "Invested",
   "@investedLabel": {
     "description": "Invested label for charts"
+  },
+
+  "yoyTitle": "Year over Year",
+  "@yoyTitle": {
+    "description": "Title of the Overview card comparing this financial year to date with the same days of the previous financial year"
+  },
+
+  "yoyPeriodCaption": "Financial year to date ({start} – {end}) vs the same days last year",
+  "@yoyPeriodCaption": {
+    "description": "Caption of the Year over Year card: both periods run from 1 April to today's day and month",
+    "placeholders": {
+      "start": {
+        "type": "String",
+        "example": "Apr 1"
+      },
+      "end": {
+        "type": "String",
+        "example": "Oct 4"
+      }
+    }
+  },
+
+  "yoyReturnedLabel": "Returned",
+  "@yoyReturnedLabel": {
+    "description": "Row label on the Year over Year card: money back from exits, sales and maturities (RETURN cash flows) in the period"
+  },
+
+  "yoyIncomeLabel": "Income",
+  "@yoyIncomeLabel": {
+    "description": "Row label on the Year over Year card: interest, dividends and rent (INCOME cash flows) in the period"
+  },
+
+  "yoyNetLabel": "Net cash flow",
+  "@yoyNetLabel": {
+    "description": "Row label on the Year over Year card: returned plus income minus invested in the period"
+  },
+
+  "yoyIncomeChange": "Income {change} vs the same days last year",
+  "@yoyIncomeChange": {
+    "description": "Change in income (interest, dividends, rent) on the Year over Year card",
+    "placeholders": {
+      "change": {
+        "type": "String",
+        "example": "+20.0%"
+      }
+    }
+  },
+
+  "yoyRowSemantics": "{label}: {lastYear} {lastAmount}, {thisYear} {thisAmount}",
+  "@yoyRowSemantics": {
+    "description": "Screen reader label for one row of the Year over Year card: the row, then each financial year with its amount (or 'Hidden amount' in privacy mode)",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Invested"
+      },
+      "lastYear": {
+        "type": "String",
+        "example": "FY 2025-26"
+      },
+      "lastAmount": {
+        "type": "String",
+        "example": "6,00,000 rupees"
+      },
+      "thisYear": {
+        "type": "String",
+        "example": "FY 2026-27"
+      },
+      "thisAmount": {
+        "type": "String",
+        "example": "9,00,000 rupees"
+      }
+    }
   },
 
   "returnedLabel": "Returned",

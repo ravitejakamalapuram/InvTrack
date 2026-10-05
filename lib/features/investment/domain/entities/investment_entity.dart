@@ -1,3 +1,5 @@
+import 'package:inv_tracker/core/calculations/investment_projector.dart';
+
 // ============ NEW ENUMS FOR ENHANCED DATA CAPTURE ============
 
 /// How interest/income is paid out
@@ -311,6 +313,14 @@ class InvestmentEntity {
   /// Default: 'USD' for backward compatibility
   final String currency;
 
+  /// The user's own current value of this investment, in [currency], kept
+  /// separate from its cash flows. Null when the user has not set one; an
+  /// estimate is then derived (see CurrentValueCalculator).
+  final double? currentValue;
+
+  /// Date-only date of [currentValue]; set whenever [currentValue] is.
+  final DateTime? currentValueDate;
+
   const InvestmentEntity({
     required this.id,
     required this.name,
@@ -333,6 +343,8 @@ class InvestmentEntity {
     this.riskLevel,
     this.compoundingFrequency,
     this.currency = 'USD', // Default for backward compatibility
+    this.currentValue,
+    this.currentValueDate,
   });
 
   bool get isOpen => status == InvestmentStatus.open;
@@ -356,17 +368,14 @@ class InvestmentEntity {
   /// Whether this investment has platform info
   bool get hasPlatform => platform != null && platform!.isNotEmpty;
 
-  /// Calculate maturity date from startDate + tenureMonths if not set directly
+  /// Calculate maturity date from startDate + tenureMonths if not set
+  /// directly. A month-end start is clamped (31 Jan + 1 month = 28/29 Feb).
   DateTime? get calculatedMaturityDate {
     if (maturityDate != null) return maturityDate;
-    if (startDate != null && tenureMonths != null) {
-      return DateTime(
-        startDate!.year,
-        startDate!.month + tenureMonths!,
-        startDate!.day,
-      );
-    }
-    return null;
+    return InvestmentProjector.calculateMaturityDate(
+      startDate: startDate,
+      tenureMonths: tenureMonths,
+    );
   }
 
   /// Get remaining tenure in days (null if no maturity info)
@@ -400,6 +409,8 @@ class InvestmentEntity {
     RiskLevel? riskLevel,
     CompoundingFrequency? compoundingFrequency,
     String? currency,
+    double? currentValue,
+    DateTime? currentValueDate,
   }) {
     return InvestmentEntity(
       id: id ?? this.id,
@@ -423,6 +434,8 @@ class InvestmentEntity {
       riskLevel: riskLevel ?? this.riskLevel,
       compoundingFrequency: compoundingFrequency ?? this.compoundingFrequency,
       currency: currency ?? this.currency,
+      currentValue: currentValue ?? this.currentValue,
+      currentValueDate: currentValueDate ?? this.currentValueDate,
     );
   }
 
@@ -450,12 +463,14 @@ class InvestmentEntity {
         other.autoRenewal == autoRenewal &&
         other.riskLevel == riskLevel &&
         other.compoundingFrequency == compoundingFrequency &&
-        other.currency == currency;
+        other.currency == currency &&
+        other.currentValue == currentValue &&
+        other.currentValueDate == currentValueDate;
   }
 
   @override
   int get hashCode {
-    return Object.hash(
+    return Object.hashAll([
       id,
       name,
       type,
@@ -477,6 +492,8 @@ class InvestmentEntity {
       riskLevel,
       compoundingFrequency,
       currency,
-    );
+      currentValue,
+      currentValueDate,
+    ]);
   }
 }

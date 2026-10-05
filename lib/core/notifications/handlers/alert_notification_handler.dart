@@ -137,7 +137,7 @@ class AlertNotificationHandler with NotificationPreferencesMixin {
 
       LoggerService.info(
         'Idle alert shown',
-        metadata: {'investmentId': inv.id, 'investmentName': inv.name},
+        metadata: {'investmentId': inv.id},
       );
     }
   }

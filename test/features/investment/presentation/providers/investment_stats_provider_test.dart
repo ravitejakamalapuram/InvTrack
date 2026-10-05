@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
@@ -176,7 +177,8 @@ void main() {
     });
   });
 
-  group('archivedInvestmentStatsProvider', () {
+  // The raw archived provider is gone (A13): archived stats are converted.
+  group('multiCurrencyArchivedInvestmentStatsProvider', () {
     late FakeInvestmentRepository fakeRepository;
     late ProviderContainer container;
 
@@ -218,6 +220,12 @@ void main() {
       container = ProviderContainer(
         overrides: [
           investmentRepositoryProvider.overrideWithValue(fakeRepository),
+          isAuthenticatedProvider.overrideWith((ref) => true),
+          // The flows are in USD (the entity default): no conversion needed.
+          currencyCodeProvider.overrideWith((ref) => 'USD'),
+          currencyConversionServiceProvider.overrideWithValue(
+            MockCurrencyConversionService(),
+          ),
         ],
       );
     });
@@ -230,45 +238,31 @@ void main() {
     test(
       'should return empty stats for non-existent archived investment',
       () async {
-        // Wait for stream to emit
-        await Future.delayed(const Duration(milliseconds: 50));
-
-        final statsAsync = container.read(
-          archivedInvestmentStatsProvider('non-existent-id'),
+        final provider = multiCurrencyArchivedInvestmentStatsProvider(
+          'non-existent-id',
         );
+        container.listen(provider, (_, _) {});
+        final stats = await container.read(provider.future);
 
-        statsAsync.when(
-          data: (stats) {
-            expect(stats.hasData, false);
-            expect(stats.totalInvested, 0);
-          },
-          loading: () {}, // Stream may still be initializing
-          error: (e, st) => fail('Should not error: $e'),
-        );
+        expect(stats.hasData, false);
+        expect(stats.totalInvested, 0);
       },
     );
 
     test('should calculate stats correctly for archived investment', () async {
-      // Give provider time to process stream
-      await Future.delayed(const Duration(milliseconds: 50));
-
-      final statsAsync = container.read(
-        archivedInvestmentStatsProvider('archived-inv-1'),
+      final provider = multiCurrencyArchivedInvestmentStatsProvider(
+        'archived-inv-1',
       );
+      container.listen(provider, (_, _) {});
+      final stats = await container.read(provider.future);
 
-      statsAsync.when(
-        data: (stats) {
-          expect(stats.hasData, true);
-          expect(stats.totalInvested, 1000);
-          expect(stats.totalReturned, 1500);
-          expect(stats.netCashFlow, 500);
-          expect(stats.absoluteReturn, 50);
-          expect(stats.moic, 1.5);
-          expect(stats.cashFlowCount, 2);
-        },
-        loading: () {}, // May still be loading
-        error: (e, st) => fail('Should not error: $e'),
-      );
+      expect(stats.hasData, true);
+      expect(stats.totalInvested, 1000);
+      expect(stats.totalReturned, 1500);
+      expect(stats.netCashFlow, 500);
+      expect(stats.absoluteReturn, 50);
+      expect(stats.moic, 1.5);
+      expect(stats.cashFlowCount, 2);
     });
   });
 
@@ -380,7 +374,7 @@ void main() {
 
       // Read archived stats - should calculate from archived cash flows
       final archivedStatsAsync = container.read(
-        archivedInvestmentStatsProvider('archived-inv-1'),
+        multiCurrencyArchivedInvestmentStatsProvider('archived-inv-1'),
       );
       archivedStatsAsync.when(
         data: (stats) {
@@ -420,7 +414,7 @@ void main() {
 
         // Using archivedInvestmentStatsProvider on active investment returns empty
         final wrongProviderAsync = container.read(
-          archivedInvestmentStatsProvider('active-inv-1'),
+          multiCurrencyArchivedInvestmentStatsProvider('active-inv-1'),
         );
         wrongProviderAsync.whenData((stats) {
           expect(stats.hasData, false);

@@ -49,9 +49,10 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
-            // Override the stream provider to return data immediately
-            cashFlowsByInvestmentProvider('inv_1').overrideWith(
-              (ref) => Stream.fromIterable([mixedCurrencyCashFlows]),
+            // The detail stats read the converted snapshot of the active
+            // cash flows (A13), the same source as the list cards.
+            validCashFlowsProvider.overrideWith(
+              (ref) => AsyncValue.data(mixedCurrencyCashFlows),
             ),
             currencyConversionServiceProvider.overrideWithValue(
               mockConversionService,
@@ -62,7 +63,7 @@ void main() {
 
         // Keep the provider alive by listening to it
         final subscription = container.listen(
-          cashFlowsByInvestmentProvider('inv_1'),
+          multiCurrencyInvestmentStatsProvider('inv_1'),
           (previous, next) {},
         );
 

@@ -59,6 +59,7 @@ class ReportCsvExporter {
     );
   }
 
+
   /// Format amount with privacy masking support and locale-aware formatting
   String _formatAmount(double amount, String symbol, bool isPrivacyMode, String locale) {
     if (isPrivacyMode) {
@@ -134,7 +135,7 @@ class ReportCsvExporter {
       rows.add([
         CsvUtils.sanitizeField(performer.investment.name),
         CsvUtils.sanitizeField(_formatAmount(performer.returns, symbol, isPrivacyMode, locale)),
-        CsvUtils.sanitizeField('${performer.xirr.toStringAsFixed(2)}%'),
+        CsvUtils.sanitizeField(formatReportXirr(performer.xirr, locale: locale)),
       ]);
     }
 
@@ -151,7 +152,7 @@ class ReportCsvExporter {
     rows.add(['Total Invested', _formatAmount(report.totalInvested, symbol, isPrivacyMode, locale)]);
     rows.add(['Total Returned', _formatAmount(report.totalReturned, symbol, isPrivacyMode, locale)]);
     rows.add(['Net Position', _formatAmount(report.netPosition, symbol, isPrivacyMode, locale)]);
-    rows.add(['XIRR', '${report.xirr.toStringAsFixed(2)}%']);
+    rows.add(['XIRR', formatReportXirr(report.xirr, locale: locale)]);
     rows.add([]);
     rows.add(['Monthly Breakdown']);
     rows.add(['Month', 'Invested', 'Returns', 'Income', 'Fees', 'Net']);
@@ -179,7 +180,7 @@ class ReportCsvExporter {
       rows.add([
         CsvUtils.sanitizeField(p.investment.name),
         CsvUtils.sanitizeField(_formatAmount(p.returns, symbol, isPrivacyMode, locale)),
-        '${p.xirr.toStringAsFixed(2)}%',
+        formatReportXirr(p.xirr, locale: locale),
       ]);
     }
     rows.add([]);
@@ -189,7 +190,7 @@ class ReportCsvExporter {
       rows.add([
         CsvUtils.sanitizeField(p.investment.name),
         CsvUtils.sanitizeField(_formatAmount(p.returns, symbol, isPrivacyMode, locale)),
-        '${p.xirr.toStringAsFixed(2)}%',
+        formatReportXirr(p.xirr, locale: locale),
       ]);
     }
     return rows;

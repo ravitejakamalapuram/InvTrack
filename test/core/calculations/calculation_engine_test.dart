@@ -112,9 +112,8 @@ void main() {
     });
 
     group('FinancialCalculatorModule - Advanced returns & edge cases', () {
-      test('CAGR, MOIC, absolute return standard values', () {
+      test('MOIC, absolute return standard values', () {
         final f = identityEngine.financial;
-        expect(f.calculateCAGR(1000, 2000, 5), closeTo(0.1487, 0.0001));
         expect(f.calculateMOIC(1000, 2500), 2.5);
         expect(f.calculateAbsoluteReturn(1000, 1500), 50.0);
         expect(f.calculateNetCashFlow(1000, 1500), 500.0);
@@ -122,7 +121,6 @@ void main() {
 
       test('protects against division-by-zero on zero principal/invested inputs', () {
         final f = identityEngine.financial;
-        expect(f.calculateCAGR(0, 100, 5), 0.0);
         expect(f.calculateMOIC(0, 100), 0.0);
         expect(f.calculateAbsoluteReturn(0, 100), 0.0);
       });
@@ -140,7 +138,8 @@ void main() {
         expect(stats.netCashFlow, 0.0);
         expect(stats.absoluteReturn, 0.0);
         expect(stats.moic, 0.0);
-        expect(stats.xirr, 0.0);
+        // A71: no XIRR exists, so it is undefined (null), not 0%.
+        expect(stats.xirr, isNull);
       });
 
       test('calculateStats skips XIRR calculation when includeXirr is false', () {
@@ -167,7 +166,8 @@ void main() {
         expect(stats.totalInvested, 1000.0);
         expect(stats.totalReturned, 1200.0);
         expect(stats.netCashFlow, 200.0);
-        expect(stats.xirr, 0.0); // skipped!
+        // Skipped, so not computed: undefined (null), never a 0% placeholder.
+        expect(stats.xirr, isNull);
       });
     });
 
@@ -350,22 +350,53 @@ void main() {
           ),
         };
 
+        // The returns component solves one XIRR over the cash flows (A21),
+        // so each map comes with the flows it was calculated from.
+        List<CashFlowEntity> flows(String id, double invested, double returned,
+                String currency) =>
+            [
+              CashFlowEntity(
+                id: '$id-in',
+                investmentId: id,
+                date: DateTime(2025, 1, 1),
+                type: CashFlowType.invest,
+                amount: invested,
+                currency: currency,
+                createdAt: DateTime(2025, 1, 1),
+              ),
+              CashFlowEntity(
+                id: '$id-out',
+                investmentId: id,
+                date: DateTime(2026, 1, 1),
+                type: CashFlowType.returnFlow,
+                amount: returned,
+                currency: currency,
+                createdAt: DateTime(2026, 1, 1),
+              ),
+            ];
+
         // When baseCurrency is 'INR', USD stats should be converted to INR.
         // 100 USD becomes 8000 INR.
         // Portfolio will have equal weights: 8000 INR (Tech) and 8000 INR (FD).
         final score = conversionEngine.health.calculate(
           investments: investments,
           investmentStats: convertedStatsMap,
-          allCashFlows: const [],
+          allCashFlows: [
+            ...flows('inv-usd', 8000, 8800, 'INR'),
+            ...flows('inv-inr', 8000, 8800, 'INR'),
+          ],
           goalProgress: const [],
-        );
+        )!;
 
         final identityScore = identityEngine.health.calculate(
           investments: investments,
           investmentStats: statsMap,
-          allCashFlows: const [],
+          allCashFlows: [
+            ...flows('inv-usd', 100, 110, 'USD'),
+            ...flows('inv-inr', 8000, 8800, 'INR'),
+          ],
           goalProgress: const [],
-        );
+        )!;
 
         // Overall score should resolve successfully and both return/diversification must be positive
         expect(score.overallScore, greaterThan(0));

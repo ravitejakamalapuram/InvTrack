@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/utils/stored_date.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
@@ -374,20 +375,9 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     required DateTime startDate,
     required DateTime endDate,
   }) {
-    // Convert DateTime to Firestore Timestamp for query
-    final startTimestamp = Timestamp.fromDate(startDate);
-    final endTimestamp = Timestamp.fromDate(endDate);
-
-    return _cashFlowsRef
-        .where('date', isGreaterThanOrEqualTo: startTimestamp)
-        .where('date', isLessThanOrEqualTo: endTimestamp)
-        .orderBy('date', descending: true)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => _cashFlowFromFirestore(doc.data(), doc.id))
-              .toList(),
-        );
+    return _cashFlowsInDaysQuery(startDate, endDate).snapshots().map(
+      (snapshot) => _cashFlowsWithinDays(snapshot, startDate, endDate),
+    );
   }
 
   @override
@@ -418,19 +408,32 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
-    // Convert DateTime to Firestore Timestamp for query
-    final startTimestamp = Timestamp.fromDate(startDate);
-    final endTimestamp = Timestamp.fromDate(endDate);
-
-    final snapshot = await _cashFlowsRef
-        .where('date', isGreaterThanOrEqualTo: startTimestamp)
-        .where('date', isLessThanOrEqualTo: endTimestamp)
-        .orderBy('date', descending: true)
-        .get();
-    return snapshot.docs
-        .map((doc) => _cashFlowFromFirestore(doc.data(), doc.id))
-        .toList();
+    final snapshot = await _cashFlowsInDaysQuery(startDate, endDate).get();
+    return _cashFlowsWithinDays(snapshot, startDate, endDate);
   }
+
+  /// Cash flows dated from [firstDay] to [lastDay], both included, compared
+  /// by calendar day. The stored window is wider than the days, so that
+  /// documents saved by older builds (the writer's local midnight) are not
+  /// missed; [_cashFlowsWithinDays] then keeps only the requested days.
+  Query<Map<String, dynamic>> _cashFlowsInDaysQuery(
+    DateTime firstDay,
+    DateTime lastDay,
+  ) {
+    final window = StoredDate.queryWindow(firstDay, lastDay);
+    return _cashFlowsRef
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(window.from))
+        .where('date', isLessThan: Timestamp.fromDate(window.until))
+        .orderBy('date', descending: true);
+  }
+
+  List<CashFlowEntity> _cashFlowsWithinDays(
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+    DateTime firstDay,
+    DateTime lastDay,
+  ) => [
+    for (final doc in snapshot.docs) _cashFlowFromFirestore(doc.data(), doc.id),
+  ].where((cf) => StoredDate.isWithinDays(cf.date, firstDay, lastDay)).toList();
 
   @override
   Future<void> addCashFlow(CashFlowEntity cashFlow) async {
@@ -592,6 +595,22 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   // ============ FIRESTORE MAPPERS ============
 
+  /// Stores a date-only field (cash-flow date, start or maturity date) as
+  /// UTC midnight of its calendar day. See [StoredDate].
+  static Timestamp? _dateToFirestore(DateTime? date) =>
+      date == null ? null : Timestamp.fromDate(StoredDate.toStorage(date));
+
+  /// Reads a date-only field as a local date-only value with the same
+  /// calendar day in every time zone, including documents saved by older
+  /// builds. [offsetAt] is the reading device's zone (tests inject one).
+  static DateTime? _dateFromFirestore(Object? value, UtcOffsetAt? offsetAt) =>
+      value == null
+      ? null
+      : StoredDate.fromStorage(
+          (value as Timestamp).toDate(),
+          offsetAt: offsetAt,
+        );
+
   Map<String, dynamic> _investmentToFirestore(InvestmentEntity investment) {
     return {
       'name': investment.name,
@@ -603,15 +622,11 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
           ? Timestamp.fromDate(investment.closedAt!)
           : null,
       'updatedAt': FieldValue.serverTimestamp(),
-      'maturityDate': investment.maturityDate != null
-          ? Timestamp.fromDate(investment.maturityDate!)
-          : null,
+      'maturityDate': _dateToFirestore(investment.maturityDate),
       'incomeFrequency': investment.incomeFrequency?.name,
       'isArchived': investment.isArchived,
       // New enhanced data capture fields
-      'startDate': investment.startDate != null
-          ? Timestamp.fromDate(investment.startDate!)
-          : null,
+      'startDate': _dateToFirestore(investment.startDate),
       'expectedRate': investment.expectedRate,
       'tenureMonths': investment.tenureMonths,
       'platform': investment.platform,
@@ -621,6 +636,11 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       'compoundingFrequency': investment.compoundingFrequency?.name,
       // Multi-currency support
       'currency': investment.currency,
+      // The user's current value; written as null when cleared.
+      'currentValue': investment.currentValue,
+      'currentValueDate': investment.currentValueDate != null
+          ? Timestamp.fromDate(investment.currentValueDate!)
+          : null,
     };
   }
 
@@ -631,11 +651,14 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   /// Maps an investment document. Documents written before multi-currency
   /// support have no `currency` and take [baseCurrency], never USD.
+  /// Date-only fields keep their calendar day in the zone [offsetAt]
+  /// describes, which defaults to this device's.
   @visibleForTesting
   static InvestmentEntity investmentFromFirestore(
     Map<String, dynamic> data,
     String id, {
     required String baseCurrency,
+    UtcOffsetAt? offsetAt,
   }) {
     return InvestmentEntity(
       id: id,
@@ -650,17 +673,13 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       updatedAt: data['updatedAt'] != null
           ? (data['updatedAt'] as Timestamp).toDate()
           : DateTime.now(),
-      maturityDate: data['maturityDate'] != null
-          ? (data['maturityDate'] as Timestamp).toDate()
-          : null,
+      maturityDate: _dateFromFirestore(data['maturityDate'], offsetAt),
       incomeFrequency: IncomeFrequency.fromString(
         data['incomeFrequency'] as String?,
       ),
       isArchived: data['isArchived'] as bool? ?? false,
       // New enhanced data capture fields
-      startDate: data['startDate'] != null
-          ? (data['startDate'] as Timestamp).toDate()
-          : null,
+      startDate: _dateFromFirestore(data['startDate'], offsetAt),
       expectedRate: (data['expectedRate'] as num?)?.toDouble(),
       tenureMonths: data['tenureMonths'] as int?,
       platform: data['platform'] as String?,
@@ -674,13 +693,20 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       ),
       // Multi-currency support; legacy documents use the base currency
       currency: data['currency'] as String? ?? baseCurrency,
+      // A value without its date is ignored rather than dated today.
+      currentValue: data['currentValueDate'] != null
+          ? (data['currentValue'] as num?)?.toDouble()
+          : null,
+      currentValueDate: data['currentValue'] != null
+          ? (data['currentValueDate'] as Timestamp?)?.toDate()
+          : null,
     );
   }
 
   Map<String, dynamic> _cashFlowToFirestore(CashFlowEntity cashFlow) {
     return {
       'investmentId': cashFlow.investmentId,
-      'date': Timestamp.fromDate(cashFlow.date),
+      'date': _dateToFirestore(cashFlow.date),
       'type': cashFlow.type.toDbString(),
       'amount': cashFlow.amount,
       'notes': cashFlow.notes,
@@ -695,16 +721,19 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   /// Maps a cash flow document. Documents written before multi-currency
   /// support have no `currency` and take [baseCurrency], never USD.
+  /// Date-only fields keep their calendar day in the zone [offsetAt]
+  /// describes, which defaults to this device's.
   @visibleForTesting
   static CashFlowEntity cashFlowFromFirestore(
     Map<String, dynamic> data,
     String id, {
     required String baseCurrency,
+    UtcOffsetAt? offsetAt,
   }) {
     return CashFlowEntity(
       id: id,
       investmentId: data['investmentId'] as String,
-      date: (data['date'] as Timestamp).toDate(),
+      date: _dateFromFirestore(data['date'], offsetAt)!,
       type: CashFlowType.fromString(data['type'] as String),
       amount: (data['amount'] as num).toDouble(),
       notes: data['notes'] as String?,

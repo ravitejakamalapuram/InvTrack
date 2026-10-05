@@ -12,6 +12,8 @@ import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
 import 'package:inv_tracker/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
+import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_load_error_card.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Compact FIRE progress card for the overview dashboard
@@ -45,7 +47,8 @@ class FireDashboardCard extends ConsumerWidget {
             isPrivacyMode,
           ),
           loading: () => _buildLoadingCard(isDark),
-          error: (_, st) => const SizedBox.shrink(),
+          error: (_, st) =>
+              FireLoadErrorCard(onRetry: () => reloadPortfolio(ref)),
         );
       },
       loading: () => _buildLoadingCard(isDark),
