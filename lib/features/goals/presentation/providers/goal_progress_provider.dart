@@ -244,6 +244,26 @@ class GoalProgressCalculator {
     return maxDate;
   }
 
+  /// The goal's target in [baseCurrency]: the monthly income target for an
+  /// income goal, otherwise the target amount.
+  static Future<double> targetInBaseCurrency({
+    required GoalEntity goal,
+    required BatchCurrencyConverter batchConverter,
+    required String baseCurrency,
+    ConversionFallbackStrategy fallbackStrategy =
+        ConversionFallbackStrategy.useLastKnown,
+  }) {
+    final targetAmountInGoalCurrency = goal.isIncomeGoal
+        ? (goal.targetMonthlyIncome ?? goal.targetAmount)
+        : goal.targetAmount;
+    return batchConverter.convert(
+      amount: targetAmountInGoalCurrency,
+      from: goal.currency,
+      to: baseCurrency,
+      fallbackStrategy: fallbackStrategy,
+    );
+  }
+
   /// Calculate progress for a goal with multi-currency support
   ///
   /// Converts all cash flows AND target amount to base currency before
@@ -258,6 +278,8 @@ class GoalProgressCalculator {
     required List<CashFlowEntity> allCashFlows,
     required BatchCurrencyConverter batchConverter,
     required String baseCurrency,
+    ConversionFallbackStrategy fallbackStrategy =
+        ConversionFallbackStrategy.useLastKnown,
   }) async {
     // Filter investments based on tracking mode
     final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
@@ -273,6 +295,7 @@ class GoalProgressCalculator {
     final convertedCashFlows = await batchConverter.batchConvert(
       cashFlows: linkedCashFlows,
       baseCurrency: baseCurrency,
+      fallbackStrategy: fallbackStrategy,
     );
 
     // Calculate current amount based on goal type
@@ -290,14 +313,11 @@ class GoalProgressCalculator {
 
     // Convert target amount to base currency (CRITICAL FIX for Rule 21.3)
     // Both currentAmount and targetAmount MUST be in same currency for stable %
-    final targetAmountInGoalCurrency = goal.isIncomeGoal
-        ? (goal.targetMonthlyIncome ?? goal.targetAmount)
-        : goal.targetAmount;
-
-    final targetAmount = await batchConverter.convert(
-      amount: targetAmountInGoalCurrency,
-      from: goal.currency,
-      to: baseCurrency,
+    final targetAmount = await targetInBaseCurrency(
+      goal: goal,
+      batchConverter: batchConverter,
+      baseCurrency: baseCurrency,
+      fallbackStrategy: fallbackStrategy,
     );
 
     // Calculate progress percentage

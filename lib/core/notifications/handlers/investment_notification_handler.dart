@@ -4,6 +4,7 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_constants.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 import 'package:inv_tracker/core/notifications/notification_preferences.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -160,8 +161,18 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     if (!maturityRemindersEnabled) return;
 
     final now = _clock();
-    final sevenDaysBefore = maturityDate.subtract(const Duration(days: 7));
-    final oneDayBefore = maturityDate.subtract(const Duration(days: 1));
+    // Count back calendar days, not 24-hour periods: across a DST change,
+    // a local midnight minus 7 x 24 hours is 23:00 on the day before.
+    final sevenDaysBefore = DateTime(
+      maturityDate.year,
+      maturityDate.month,
+      maturityDate.day - 7,
+    );
+    final oneDayBefore = DateTime(
+      maturityDate.year,
+      maturityDate.month,
+      maturityDate.day - 1,
+    );
 
     // Calculate returns if both values are provided
     double? returnPercent;
@@ -309,8 +320,7 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
 
     // Add financial context if available
     if (currentValue != null) {
-      final currencySymbol = currency == 'INR' ? '₹' : '\$';
-      buffer.write(' Value: $currencySymbol${currentValue.toInt()}');
+      buffer.write(' Value: ${formatCurrencyForCode(currentValue, currency)}');
       if (returnPercent != null) {
         buffer.write(' (${returnPercent.toStringAsFixed(1)}% return)');
       }

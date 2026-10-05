@@ -64,6 +64,7 @@ void main() {
           currencyFormatProvider.overrideWith(
             (ref) => NumberFormat.currency(symbol: '\$'),
           ),
+          currencyCodeProvider.overrideWith((ref) => 'USD'),
           privacyModeProvider.overrideWith(MockPrivacyModeNotifier.new),
         ],
         child: MaterialApp(
@@ -194,6 +195,7 @@ void main() {
           currencyFormatProvider.overrideWith(
             (ref) => NumberFormat.currency(symbol: '\$'),
           ),
+          currencyCodeProvider.overrideWith((ref) => 'USD'),
           privacyModeProvider.overrideWith(MockPrivacyModeNotifier.new),
         ],
         child: MaterialApp(

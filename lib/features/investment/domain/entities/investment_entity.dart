@@ -1,3 +1,5 @@
+import 'package:inv_tracker/core/calculations/investment_projector.dart';
+
 // ============ NEW ENUMS FOR ENHANCED DATA CAPTURE ============
 
 /// How interest/income is paid out
@@ -366,17 +368,14 @@ class InvestmentEntity {
   /// Whether this investment has platform info
   bool get hasPlatform => platform != null && platform!.isNotEmpty;
 
-  /// Calculate maturity date from startDate + tenureMonths if not set directly
+  /// Calculate maturity date from startDate + tenureMonths if not set
+  /// directly. A month-end start is clamped (31 Jan + 1 month = 28/29 Feb).
   DateTime? get calculatedMaturityDate {
     if (maturityDate != null) return maturityDate;
-    if (startDate != null && tenureMonths != null) {
-      return DateTime(
-        startDate!.year,
-        startDate!.month + tenureMonths!,
-        startDate!.day,
-      );
-    }
-    return null;
+    return InvestmentProjector.calculateMaturityDate(
+      startDate: startDate,
+      tenureMonths: tenureMonths,
+    );
   }
 
   /// Get remaining tenure in days (null if no maturity info)

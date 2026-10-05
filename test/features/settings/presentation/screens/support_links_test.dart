@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:inv_tracker/core/providers/package_info_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/about_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/help_faq_screen.dart';
@@ -39,7 +40,11 @@ void main() {
       expect(supportEmailAddress, _canonicalSupportEmail);
     });
 
-    test('in-app privacy policy names the same URL and address', () {
+    test('in-app privacy policy names the same URL and address', () async {
+      await initializeDateFormatting();
+      final privacyPolicyContent = privacyPolicyText(
+        lookupAppLocalizations(const Locale('en')),
+      );
       expect(privacyPolicyContent, contains(hostedPrivacyPolicyUrl));
       expect(privacyPolicyContent, contains(supportEmailAddress));
     });

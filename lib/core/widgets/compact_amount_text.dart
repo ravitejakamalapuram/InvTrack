@@ -46,6 +46,11 @@ class CompactAmountText extends ConsumerWidget {
   /// Optional prefix (e.g., "+" or "-")
   final String? prefix;
 
+  /// Number locale of the currency, e.g. `currencyFormat.locale`, so the
+  /// screen reader hears 'en_IN' amounts in lakh and crore as shown. Without
+  /// it the amount is read with Western grouping.
+  final String? locale;
+
   const CompactAmountText({
     super.key,
     required this.amount,
@@ -56,6 +61,7 @@ class CompactAmountText extends ConsumerWidget {
     this.overflow,
     this.textAlign,
     this.prefix,
+    this.locale,
   });
 
   String _fullFormattedAmount(WidgetRef ref) {
@@ -182,6 +188,7 @@ class CompactAmountText extends ConsumerWidget {
       label: AccessibilityUtils.formatCurrencyForScreenReader(
         amount,
         currencySymbol,
+        locale: locale ?? 'en_US',
       ),
       hint: l10n.doubleTapHoldToCopy,
       onLongPress: () => _showFullAmount(context, ref),

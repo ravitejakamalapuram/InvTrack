@@ -49,6 +49,7 @@ Future<void> _pumpCard(
             decimalDigits: 0,
           ),
         ),
+        currencyCodeProvider.overrideWith((ref) => 'USD'),
         privacyModeProvider.overrideWith(_PrivacyOff.new),
       ],
       child: MaterialApp(
