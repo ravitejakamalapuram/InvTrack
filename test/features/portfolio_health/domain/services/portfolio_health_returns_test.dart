@@ -151,6 +151,50 @@ void main() {
   // scored rather than called "not enough data", and short holdings are not
   // annualised (the Overview's ReturnDisplay rules).
   group('review follow-ups', () {
+    test('a current value given for a closed investment does not count', () {
+      // ₹1,00,000 in, ₹1,07,000 back a year later: closed at 7%. A stray
+      // ₹50,000 "current value" for it must not lift the returns score.
+      final fd = _investment(
+        'fd',
+        InvestmentType.fixedDeposit,
+        status: InvestmentStatus.closed,
+      );
+      final flows = [
+        _flow('fd', CashFlowType.invest, 100000, DateTime(2025, 10, 4)),
+        _flow('fd', CashFlowType.returnFlow, 107000, DateTime(2026, 10, 4)),
+      ];
+      PortfolioHealthScore? score(Map<String, TerminalValues> values) =>
+          PortfolioHealthCalculator.calculate(
+            investments: [fd],
+            investmentStats: FinancialCalculatorModule()
+                .calculateStatsByInvestment(flows),
+            allCashFlows: flows,
+            goalProgress: const [],
+            terminalValues: values,
+            asOf: _asOf,
+            benchmarkInflationRate: 0.06,
+          );
+
+      final stray = TerminalValues(
+        flows: [
+          CashFlowEntity(
+            id: '${TerminalValues.idPrefix}fd',
+            investmentId: 'fd',
+            type: CashFlowType.returnFlow,
+            amount: 50000,
+            currency: 'INR',
+            date: _asOf,
+            createdAt: _asOf,
+          ),
+        ],
+      );
+
+      expect(
+        score({'fd': stray})!.returnsPerformance.score,
+        score(const {})!.returnsPerformance.score,
+      );
+    });
+
     test('a portfolio with an open holding still awaiting a current value has '
         'not enough data, even when other holdings have a return', () {
       // ₹50,00,000 of gold with no value, next to a closed ₹10,000 P2P loan

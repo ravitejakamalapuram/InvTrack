@@ -116,6 +116,7 @@ class PortfolioHealthCalculator {
     Map<String, TerminalValues> terminalValues,
   ) {
     final included = <String>{};
+    final open = <String>{};
     for (final investment in investments) {
       final stat = stats[investment.id];
       if (investment.isArchived || stat == null || stat.totalInvested <= 0) {
@@ -131,6 +132,7 @@ class PortfolioHealthCalculator {
         return null;
       }
       included.add(investment.id);
+      if (investment.isOpen) open.add(investment.id);
     }
     if (included.isEmpty) return null;
 
@@ -138,8 +140,10 @@ class PortfolioHealthCalculator {
       for (final cf in allCashFlows)
         if (included.contains(cf.investmentId)) cf,
     ];
+    // Only an open investment has a current value; a closed one's money is
+    // all in its cash flows.
     final values = TerminalValues(
-      flows: [for (final id in included) ...?terminalValues[id]?.flows],
+      flows: [for (final id in open) ...?terminalValues[id]?.flows],
     );
     return FinancialCalculatorModule().calculateStats(
       flows,

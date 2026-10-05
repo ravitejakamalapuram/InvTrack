@@ -84,7 +84,7 @@ class ComponentScore {
     double? weight,
     String? description,
     List<String>? suggestions,
-    ComponentNote? note,
+    Object? note = _keepNote,
   }) {
     return ComponentScore(
       name: name ?? this.name,
@@ -92,9 +92,12 @@ class ComponentScore {
       weight: weight ?? this.weight,
       description: description ?? this.description,
       suggestions: suggestions ?? this.suggestions,
-      note: note ?? this.note,
+      // Omitted keeps the note; an explicit null clears it.
+      note: identical(note, _keepNote) ? this.note : note as ComponentNote?,
     );
   }
+
+  static const Object _keepNote = Object();
 
   @override
   bool operator ==(Object other) {

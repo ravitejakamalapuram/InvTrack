@@ -161,6 +161,20 @@ void main() {
       expect(copied.weight, 0.30); // Unchanged
       expect(copied.description, 'Original desc'); // Unchanged
     });
+
+    test('copyWith keeps the note unless told to clear it', () {
+      final tooEarly = ComponentScore(
+        name: 'Returns Performance',
+        score: 50,
+        weight: 0.30,
+        description: '',
+        suggestions: const [],
+        note: ComponentNote.tooEarlyToJudge,
+      );
+
+      expect(tooEarly.copyWith(score: 60).note, ComponentNote.tooEarlyToJudge);
+      expect(tooEarly.copyWith(note: null).note, isNull);
+    });
   });
 
   group('ScoreTier', () {
