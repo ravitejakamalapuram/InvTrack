@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -8,7 +9,31 @@ import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_card.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations_en.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// The app's strings with the in-progress status texts marked, to show the
+/// card reads them from the ARB file rather than English in the domain.
+class _MarkedL10n extends AppLocalizationsEn {
+  @override
+  String get goalStatusInProgress => '[label: in progress]';
+
+  @override
+  String get goalStatusMessageTooEarly => '[message: too early]';
+}
+
+class _MarkedL10nDelegate extends LocalizationsDelegate<AppLocalizations> {
+  const _MarkedL10nDelegate();
+
+  @override
+  bool isSupported(Locale locale) => true;
+
+  @override
+  Future<AppLocalizations> load(Locale locale) async => _MarkedL10n();
+
+  @override
+  bool shouldReload(_MarkedL10nDelegate old) => false;
+}
 
 void main() {
   group('GoalCard Multi-Currency Tests', () {
@@ -319,6 +344,56 @@ void main() {
       // Since the callback closure captures the variable, it may or may not be executed
       // based on exact timing, but the key assertion is that no NullPointerException was thrown.
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the in-progress status comes from the app strings', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
+      final prefs = await SharedPreferences.getInstance();
+      final progress = GoalProgress(
+        goal: testGoal,
+        currentAmount: 250000,
+        targetAmount: 1000000,
+        progressPercent: 25,
+        monthlyVelocity: 0,
+        monthlyIncome: 0,
+        status: GoalStatus.inProgress,
+        currentMilestone: GoalMilestone.quarter,
+        achievedMilestones: [GoalMilestone.start, GoalMilestone.quarter],
+        linkedInvestmentCount: 1,
+        calculatedAt: DateTime(2026, 10, 4),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            currencySymbolProvider.overrideWith((ref) => '\$'),
+            currencyLocaleProvider.overrideWith((ref) => 'en_US'),
+            multiCurrencyGoalProgressProvider(
+              testGoal.id,
+            ).overrideWith((ref) => Future.value(progress)),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: const [
+              _MarkedL10nDelegate(),
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: GoalCard(goal: testGoal, onTap: () {}),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('[label: in progress]'), findsOneWidget);
+      expect(find.text('[message: too early]'), findsOneWidget);
+      expect(find.text('In Progress'), findsNothing);
     });
   });
 }

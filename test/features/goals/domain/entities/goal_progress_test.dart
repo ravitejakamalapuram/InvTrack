@@ -108,50 +108,5 @@ void main() {
       expect(progress.progressMessage, contains('500'));
       expect(progress.progressMessage, '₹500/mo of ₹1,000/mo');
     });
-
-    test('statusMessage for ahead status shows encouragement', () {
-      final progress = GoalProgress(
-        goal: testGoal,
-        currentAmount: 7500,
-        targetAmount: 10000,
-        progressPercent: 75,
-        monthlyVelocity: 500,
-        monthlyIncome: 0,
-        projectedCompletionDate: DateTime(2025, 6, 1),
-        status: GoalStatus.ahead,
-        currentMilestone: GoalMilestone.threeQuarters,
-        achievedMilestones: [
-          GoalMilestone.quarter,
-          GoalMilestone.half,
-          GoalMilestone.threeQuarters,
-        ],
-        linkedInvestmentCount: 5,
-        calculatedAt: DateTime.now(),
-      );
-
-      expect(progress.statusMessage.toLowerCase(), contains('ahead'));
-      expect(progress.statusMessage.toLowerCase(), contains('keep'));
-    });
-
-    test('achieved status shows goal complete', () {
-      final progress = GoalProgress(
-        goal: testGoal,
-        currentAmount: 10000,
-        targetAmount: 10000,
-        progressPercent: 100,
-        monthlyVelocity: 500,
-        monthlyIncome: 0,
-        projectedCompletionDate: null,
-        status: GoalStatus.achieved,
-        currentMilestone: GoalMilestone.complete,
-        achievedMilestones: GoalMilestone.values
-            .where((m) => m.percentage > 0)
-            .toList(),
-        linkedInvestmentCount: 5,
-        calculatedAt: DateTime.now(),
-      );
-
-      expect(progress.statusMessage.toLowerCase(), contains('achieved'));
-    });
   });
 }

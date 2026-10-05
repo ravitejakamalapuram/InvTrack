@@ -119,15 +119,6 @@ void main() {
   });
 
   group('GoalStatus', () {
-    test('displayName returns correct names', () {
-      expect(GoalStatus.notStarted.displayName, 'Not Started');
-      expect(GoalStatus.onTrack.displayName, 'On Track');
-      expect(GoalStatus.ahead.displayName, 'Ahead');
-      expect(GoalStatus.behind.displayName, 'Behind');
-      expect(GoalStatus.achieved.displayName, 'Achieved');
-      expect(GoalStatus.archived.displayName, 'Archived');
-    });
-
     test('icon returns correct icons', () {
       expect(GoalStatus.achieved.icon, Icons.check_circle_rounded);
       expect(GoalStatus.behind.icon, Icons.trending_down_rounded);

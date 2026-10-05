@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// UI-specific extensions for Goal domain entities.
 /// Keeps domain entities framework-agnostic by moving Color and IconData here.
@@ -73,6 +76,57 @@ extension GoalStatusUI on GoalStatus {
         return Icons.archive_rounded;
     }
   }
+
+  /// Status label, from the app's strings.
+  String label(AppLocalizations l10n) {
+    switch (this) {
+      case GoalStatus.notStarted:
+        return l10n.goalStatusNotStarted;
+      case GoalStatus.inProgress:
+        return l10n.goalStatusInProgress;
+      case GoalStatus.onTrack:
+        return l10n.goalStatusOnTrack;
+      case GoalStatus.ahead:
+        return l10n.goalStatusAhead;
+      case GoalStatus.behind:
+        return l10n.goalStatusBehind;
+      case GoalStatus.achieved:
+        return l10n.goalStatusAchieved;
+      case GoalStatus.archived:
+        return l10n.goalStatusArchived;
+    }
+  }
+}
+
+/// Extension providing UI text for [GoalProgress].
+extension GoalProgressUI on GoalProgress {
+  /// One line on what [status] means for this goal, from the app's strings.
+  String statusMessage(AppLocalizations l10n) {
+    switch (status) {
+      case GoalStatus.notStarted:
+        return l10n.goalStatusMessageNotStarted;
+      case GoalStatus.inProgress:
+        return goal.isIncomeGoal
+            ? l10n.goalStatusMessageIncomeNotProjected
+            : l10n.goalStatusMessageTooEarly;
+      case GoalStatus.onTrack:
+        final projected = projectedCompletionDate;
+        if (projected == null) return l10n.goalStatusMessageSteady;
+        return l10n.goalStatusMessageOnTrackBy(
+          AppDateUtils.formatYearMonth(projected, locale: l10n.localeName),
+        );
+      case GoalStatus.ahead:
+        return l10n.goalStatusMessageAhead;
+      case GoalStatus.behind:
+        return goal.targetDate != null
+            ? l10n.goalStatusMessageBehindDate
+            : l10n.goalStatusMessageBehind;
+      case GoalStatus.achieved:
+        return l10n.goalStatusMessageAchieved;
+      case GoalStatus.archived:
+        return l10n.goalStatusMessageArchived;
+    }
+  }
 }
 
 /// Extension providing UI-specific properties for [GoalEntity].
@@ -96,4 +150,3 @@ class GoalColors {
 
   static Color get defaultColor => available[0];
 }
-

@@ -278,6 +278,10 @@ class GoalCard extends ConsumerWidget {
     GoalProgress? progress,
   ) {
     final status = progress?.status ?? GoalStatus.notStarted;
+    // English when the app's strings are missing, as the card allows above.
+    final l10n =
+        Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+        lookupAppLocalizations(const Locale('en'));
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -297,7 +301,7 @@ class GoalCard extends ConsumerWidget {
           Icon(status.icon, size: 14, color: status.color),
           const SizedBox(width: 6),
           Text(
-            status.displayName,
+            status.label(l10n),
             style: AppTypography.small.copyWith(
               color: status.color,
               fontWeight: FontWeight.w500,
@@ -307,7 +311,7 @@ class GoalCard extends ConsumerWidget {
           // Status message
           Flexible(
             child: Text(
-              progress?.statusMessage ?? '',
+              progress?.statusMessage(l10n) ?? '',
               style: AppTypography.small.copyWith(
                 color: isDark
                     ? AppColors.neutral400Dark

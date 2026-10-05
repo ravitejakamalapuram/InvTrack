@@ -2,6 +2,7 @@
 // the investments it tracks (archived ones too, labelled as not counted,
 // money rule 9), and how many other goals count the same investments.
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -14,6 +15,7 @@ import 'package:inv_tracker/features/goals/presentation/widgets/goal_carousel_ca
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations_en.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final _goal = GoalEntity(
@@ -43,28 +45,56 @@ InvestmentEntity _inv(String id, String name, {bool isArchived = false}) =>
       isArchived: isArchived,
     );
 
-GoalProgress _progress({double percent = 20, int otherGoals = 1}) =>
-    GoalProgress(
-      goal: _goal,
-      currentAmount: 200000,
-      targetAmount: 1000000,
-      progressPercent: percent,
-      monthlyVelocity: 0,
-      monthlyIncome: 0,
-      requiredMonthly: 18402.43,
-      otherGoalsCount: otherGoals,
-      status: GoalStatus.behind,
-      currentMilestone: GoalMilestone.start,
-      achievedMilestones: const [],
-      linkedInvestmentCount: 1,
-      calculatedAt: DateTime(2026, 10, 4),
-    );
+GoalProgress _progress({
+  double percent = 20,
+  int otherGoals = 1,
+  GoalStatus status = GoalStatus.behind,
+}) => GoalProgress(
+  goal: _goal,
+  currentAmount: 200000,
+  targetAmount: 1000000,
+  progressPercent: percent,
+  monthlyVelocity: 0,
+  monthlyIncome: 0,
+  requiredMonthly: 18402.43,
+  otherGoalsCount: otherGoals,
+  status: status,
+  currentMilestone: GoalMilestone.start,
+  achievedMilestones: const [],
+  linkedInvestmentCount: 1,
+  calculatedAt: DateTime(2026, 10, 4),
+);
+
+/// The app's strings with the in-progress status texts marked, to show the
+/// screen reads them from the ARB file rather than English in the domain.
+class _MarkedL10n extends AppLocalizationsEn {
+  @override
+  String get goalStatusInProgress => '[label: in progress]';
+
+  @override
+  String get goalStatusMessageTooEarly => '[message: too early]';
+}
+
+class _MarkedL10nDelegate extends LocalizationsDelegate<AppLocalizations> {
+  const _MarkedL10nDelegate();
+
+  @override
+  bool isSupported(Locale locale) => true;
+
+  @override
+  Future<AppLocalizations> load(Locale locale) async => _MarkedL10n();
+
+  @override
+  bool shouldReload(_MarkedL10nDelegate old) => false;
+}
 
 Future<void> _pump(
   WidgetTester tester, {
   bool privacy = false,
   List<LinkedGoalInvestment>? linked,
   int otherGoals = 1,
+  GoalStatus status = GoalStatus.behind,
+  bool markedStrings = false,
 }) async {
   SharedPreferences.setMockInitialValues({'privacy_mode_enabled': privacy});
   final prefs = await SharedPreferences.getInstance();
@@ -77,9 +107,9 @@ Future<void> _pump(
         watchGoalByIdProvider(
           _goal.id,
         ).overrideWith((ref) => Stream.value(_goal)),
-        multiCurrencyGoalProgressProvider(
-          _goal.id,
-        ).overrideWith((ref) async => _progress(otherGoals: otherGoals)),
+        multiCurrencyGoalProgressProvider(_goal.id).overrideWith(
+          (ref) async => _progress(otherGoals: otherGoals, status: status),
+        ),
         goalLinkedInvestmentsProvider(_goal.id).overrideWith(
           (ref) async =>
               linked ??
@@ -98,7 +128,14 @@ Future<void> _pump(
         ),
       ],
       child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: markedStrings
+            ? const [
+                _MarkedL10nDelegate(),
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ]
+            : AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: GoalDetailsScreen(goalId: _goal.id),
       ),
@@ -108,6 +145,16 @@ Future<void> _pump(
 }
 
 void main() {
+  testWidgets('the in-progress status comes from the app strings', (
+    tester,
+  ) async {
+    await _pump(tester, status: GoalStatus.inProgress, markedStrings: true);
+
+    expect(find.text('[label: in progress]'), findsOneWidget);
+    expect(find.text('[message: too early]'), findsOneWidget);
+    expect(find.text('In Progress'), findsNothing);
+  });
+
   testWidgets('shows the monthly amount needed and the rate it assumes', (
     tester,
   ) async {

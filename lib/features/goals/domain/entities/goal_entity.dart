@@ -83,26 +83,7 @@ enum GoalStatus {
   ahead,
   behind,
   achieved,
-  archived;
-
-  String get displayName {
-    switch (this) {
-      case GoalStatus.notStarted:
-        return 'Not Started';
-      case GoalStatus.inProgress:
-        return 'In Progress';
-      case GoalStatus.onTrack:
-        return 'On Track';
-      case GoalStatus.ahead:
-        return 'Ahead';
-      case GoalStatus.behind:
-        return 'Behind';
-      case GoalStatus.achieved:
-        return 'Achieved';
-      case GoalStatus.archived:
-        return 'Archived';
-    }
-  }
+  archived,
 }
 
 /// Default goal icons for selection

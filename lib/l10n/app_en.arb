@@ -6132,5 +6132,80 @@
   "fireStatusShortNotEnoughHistory": "Too early to tell",
   "@fireStatusShortNotEnoughHistory": {
     "description": "FIRE dashboard: short status under the projected date, monthly savings cannot be estimated yet"
+  },
+  "goalStatusNotStarted": "Not Started",
+  "@goalStatusNotStarted": {
+    "description": "Goal status label: nothing invested in the goal yet"
+  },
+  "goalStatusInProgress": "In Progress",
+  "@goalStatusInProgress": {
+    "description": "Goal status label: funded but not projected (an income goal, or under 3 months of history)"
+  },
+  "goalStatusOnTrack": "On Track",
+  "@goalStatusOnTrack": {
+    "description": "Goal status label: projected to reach the goal by its date"
+  },
+  "goalStatusAhead": "Ahead",
+  "@goalStatusAhead": {
+    "description": "Goal status label: projected to reach the goal before its date"
+  },
+  "goalStatusBehind": "Behind",
+  "@goalStatusBehind": {
+    "description": "Goal status label: projected to reach the goal after its date"
+  },
+  "goalStatusAchieved": "Achieved",
+  "@goalStatusAchieved": {
+    "description": "Goal status label: the goal is reached"
+  },
+  "goalStatusArchived": "Archived",
+  "@goalStatusArchived": {
+    "description": "Goal status label: the goal is archived"
+  },
+  "goalStatusMessageNotStarted": "Start investing to make progress",
+  "@goalStatusMessageNotStarted": {
+    "description": "Goal status message: nothing invested in the goal yet"
+  },
+  "goalStatusMessageIncomeNotProjected": "Income goals are not projected",
+  "@goalStatusMessageIncomeNotProjected": {
+    "description": "Goal status message: an income goal has no projected date"
+  },
+  "goalStatusMessageTooEarly": "Not enough history to project yet",
+  "@goalStatusMessageTooEarly": {
+    "description": "Goal status message: under 3 months of history, so no projected date"
+  },
+  "goalStatusMessageOnTrackBy": "On track for {date}",
+  "@goalStatusMessageOnTrackBy": {
+    "description": "Goal status message: on track, with the projected month",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Mar 2027",
+        "description": "Projected month and year, formatted for the user's locale"
+      }
+    }
+  },
+  "goalStatusMessageSteady": "Making steady progress",
+  "@goalStatusMessageSteady": {
+    "description": "Goal status message: on track, with no projected date"
+  },
+  "goalStatusMessageAhead": "Ahead of schedule! Keep it up!",
+  "@goalStatusMessageAhead": {
+    "description": "Goal status message: ahead of the goal's date"
+  },
+  "goalStatusMessageBehindDate": "Behind schedule - needs attention",
+  "@goalStatusMessageBehindDate": {
+    "description": "Goal status message: behind the goal's date"
+  },
+  "goalStatusMessageBehind": "Consider increasing contributions",
+  "@goalStatusMessageBehind": {
+    "description": "Goal status message: behind, for a goal without a date"
+  },
+  "goalStatusMessageAchieved": "Goal achieved!",
+  "@goalStatusMessageAchieved": {
+    "description": "Goal status message: the goal is reached"
+  },
+  "goalStatusMessageArchived": "Goal archived",
+  "@goalStatusMessageArchived": {
+    "description": "Goal status message: the goal is archived"
   }
 }

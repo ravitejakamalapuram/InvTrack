@@ -173,57 +173,11 @@ class GoalProgress {
   /// Progress message for display (default ₹, en_IN)
   String get progressMessage => getProgressMessage();
 
-  /// Status message
-  String get statusMessage {
-    switch (status) {
-      case GoalStatus.notStarted:
-        return 'Start investing to make progress';
-      case GoalStatus.inProgress:
-        return goal.isIncomeGoal
-            ? 'Income goals are not projected'
-            : 'Not enough history to project yet';
-      case GoalStatus.onTrack:
-        if (projectedCompletionDate != null) {
-          return 'On track for ${_formatDate(projectedCompletionDate!)}';
-        }
-        return 'Making steady progress';
-      case GoalStatus.ahead:
-        return 'Ahead of schedule! Keep it up!';
-      case GoalStatus.behind:
-        if (goal.targetDate != null) {
-          return 'Behind schedule - needs attention';
-        }
-        return 'Consider increasing contributions';
-      case GoalStatus.achieved:
-        return 'Goal achieved!';
-      case GoalStatus.archived:
-        return 'Goal archived';
-    }
-  }
-
   /// Formats amount using locale-aware compact notation (100K/1M for Western, 1L/1Cr for Indian)
   /// without the currency symbol prefix (symbol is added separately in getProgressMessage)
   String _formatAmount(double amount, String locale) {
     // Use locale-aware formatter but strip the symbol since we add it separately
     final formatted = formatCompactCurrency(amount, symbol: '', locale: locale);
     return formatted;
-  }
-
-  String _formatDate(DateTime date) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.year}';
   }
 }

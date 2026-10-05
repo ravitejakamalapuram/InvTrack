@@ -249,6 +249,7 @@ class GoalDetailsScreen extends ConsumerWidget {
     bool isPrivacyMode,
     String locale,
   ) {
+    final l10n = AppLocalizations.of(context);
     final percent = progress?.progressPercent ?? 0;
     final progressText =
         progress?.getProgressMessage(currencySymbol, locale) ??
@@ -297,7 +298,7 @@ class GoalDetailsScreen extends ConsumerWidget {
               ),
               SizedBox(width: 4),
               Text(
-                progress?.status.displayName ?? 'Not Started',
+                (progress?.status ?? GoalStatus.notStarted).label(l10n),
                 style: AppTypography.bodyMedium.copyWith(
                   color: progress?.status.color ?? Colors.grey,
                   fontWeight: FontWeight.w500,
@@ -305,10 +306,10 @@ class GoalDetailsScreen extends ConsumerWidget {
               ),
             ],
           ),
-          if (progress?.statusMessage != null) ...[
+          if (progress != null) ...[
             SizedBox(height: AppSpacing.xs),
             Text(
-              progress!.statusMessage,
+              progress.statusMessage(l10n),
               style: AppTypography.small.copyWith(
                 color: isDark
                     ? AppColors.neutral400Dark
