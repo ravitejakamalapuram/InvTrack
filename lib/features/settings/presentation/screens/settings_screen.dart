@@ -112,13 +112,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           // cash flows (A42).
           if (isIncomeGuardianEnabled)
             SettingsSection(
-              title: 'Income Guardian',
+              title: l10n.incomeGuardianSettings,
               children: [
                 SettingsNavTile(
                   icon: Icons.security,
                   iconColor: AppColors.successLight,
-                  title: 'Income Guardian',
-                  subtitle: 'Automated income tracking and payment alerts',
+                  title: l10n.incomeGuardianSettings,
+                  subtitle: l10n.incomeGuardianSettingsSubtitle,
                   onTap: () => _navigateTo(
                     context,
                     const IncomeGuardianSettingsScreen(),

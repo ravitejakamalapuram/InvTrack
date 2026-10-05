@@ -89,9 +89,17 @@ void main() {
       overridesAllowed: true,
       stored: {'feature_flag_income_guardian': true},
     );
+    final l10n = AppLocalizations.of(tester.element(find.byType(Scaffold)));
 
     expect(
       find.text('Automated income tracking and payment alerts'),
+      findsOneWidget,
+    );
+    // Both labels come from the string file, not from code.
+    expect(find.text(l10n.incomeGuardianSettingsSubtitle), findsOneWidget);
+    expect(find.text(l10n.incomeGuardianSettings), findsWidgets);
+    expect(
+      find.bySemanticsLabel(RegExp(l10n.incomeGuardianSettingsSubtitle)),
       findsOneWidget,
     );
   });

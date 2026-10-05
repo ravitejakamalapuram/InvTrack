@@ -6207,5 +6207,9 @@
   "goalStatusMessageArchived": "Goal archived",
   "@goalStatusMessageArchived": {
     "description": "Goal status message: the goal is archived"
+  },
+  "incomeGuardianSettingsSubtitle": "Automated income tracking and payment alerts",
+  "@incomeGuardianSettingsSubtitle": {
+    "description": "Subtitle of the Income Guardian tile in Settings"
   }
 }
