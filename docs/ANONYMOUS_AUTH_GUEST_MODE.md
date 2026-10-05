@@ -26,7 +26,7 @@ Firestore offline persistence enabled (works offline)
 When user signs in with Google:
     ↓
 Try to link accounts → Success: Data stays at same UID
-                     → Fail: Create ZIP backup, sign in, manual import
+                     → Fail: Save ZIP backup, sign in, merge it automatically
 ```
 
 ### Key Benefits
@@ -44,7 +44,7 @@ Try to link accounts → Success: Data stays at same UID
 | Issue | Status | Mitigation |
 |-------|--------|------------|
 | Data lost on uninstall | ✅ Accepted | Same as current app behavior |
-| Account linking fails (Google account exists) | ✅ Accepted | ZIP backup + manual import |
+| Account linking fails (Google account exists) | ✅ Accepted | ZIP backup + automatic merge import |
 | Orphaned anonymous users | ✅ Accepted | Cloud Function cleanup (30 days) |
 | Firebase costs (≈$0.0055/user as of Mar 2026) | ✅ Accepted | Minimal per-user cost — [verify current pricing](https://firebase.google.com/pricing) |
 | First launch needs internet | ✅ Accepted | Same as current app |
@@ -124,7 +124,7 @@ Try to link accounts → Success: Data stays at same UID
 6. Handle linking success (data stays at same UID)
 7. Handle linking failure (Google account already exists)
 8. Show backup & merge dialog on linking failure
-9. Create encrypted ZIP backup (AES-256 or protected internal directory)
+9. Save an unencrypted ZIP backup in app-private storage (encryption is planned in A33, #776)
 
 **Files to Create**:
 - `lib/features/auth/domain/usecases/link_account_usecase.dart` (business logic)
@@ -136,25 +136,23 @@ Try to link accounts → Success: Data stays at same UID
 - `lib/features/auth/presentation/providers/auth_provider.dart` (suppress navigation during linking)
 - `lib/core/di/repository_module.dart` (invalidate providers on UID change)
 
-**ZIP Backup Format** (OWASP MASVS compliance):
+**ZIP Backup Format** (same as Settings > Export, `DataExportService.exportAsZipBytes`):
 
-```json
-{
-  "version": "1.0",
-  "exportDate": "2026-03-12T10:30:00Z",
-  "anonymousUID": "aBcD1234xyz",
-  "encryption": "AES-256-GCM",
-  "collections": {
-    "investments": [...],
-    "cashflows": [...],
-    "goals": [...]
-  }
-}
+```
+cashflows.csv            active cash flows (date, investment, type, amount, currency, notes, investment type and status)
+cashflows_archived.csv   archived cash flows
+goals.csv                active goals
+goals_archived.csv       archived goals
+valuations.csv           current values
+metadata.json            {"version": "1.0", "exportedAt": ..., "files": [...], "documents": [...]}
+documents/<id>/<file>    attached documents
+fire_settings.json       FIRE settings, if any
 ```
 
-- Encrypted with AES-256-GCM using device-generated key
-- Stored in protected internal directory (not external storage)
-- Deleted after successful import
+- **Not encrypted.** `ZipEncoder().encode(archive)` is called without a password. Password-based encryption is planned in A33 (#776); update this section when it ships.
+- Stored in app-private storage, `getApplicationSupportDirectory()/guest_backups/<uid>` (`GuestBackupStore`), not external storage and not in Android Auto Backup. Each backup belongs to one account: the guest until the sign-in, then the Google account.
+- Deleted after a merge that added every record, or when the sign-in did not happen. Otherwise it is kept until the user deletes it in Settings > Data & Account, or Delete Account removes it.
+- Not the same as Settings > Export, which writes an unencrypted ZIP to the temp directory for the share sheet.
 
 **Analytics Events**:
 - `account_link_success` - Anonymous account linked to Google
@@ -169,17 +167,18 @@ Try to link accounts → Success: Data stays at same UID
    - Show dialog: "This Google account already exists. Create backup?"
    - User chooses: "Backup & Sign In" or "Cancel"
    - If "Backup & Sign In":
-     - Create encrypted ZIP backup
-     - Sign in with Google (new session)
-     - Show success: "Backup created. Import now?"
-     - User chooses: "Import Now" or "Later"
+     - Save the unencrypted ZIP backup and a pending-merge marker (guest UID and backup path only)
+     - Sign in with Google using the credential from the failed link, so the account picker opens once (falls back to the picker if Firebase rejects it)
+     - Hand the backup to the Google account and merge it in automatically
+     - If not every record could be added, offer to share the kept backup (it is offered once more at the next launch)
+   - If the app is killed part-way, the next launch hands any backup still owned by the guest to the signed-in Google account and offers it once: "Import now", "Share" or "Keep"
 
 **Deliverables**:
 - [ ] `LinkAccountUseCase` implemented in domain layer
 - [ ] Account linking logic in `FirebaseAuthRepository`
 - [ ] Account linking works when Google account is new
 - [ ] Backup dialog shown when Google account exists
-- [ ] Encrypted ZIP backup created (AES-256)
+- [ ] ZIP backup saved in app-private storage (unencrypted until A33)
 - [ ] User can import backup after signing in
 - [ ] Auth-state navigation guarded during linking
 - [ ] Providers invalidated on UID change
