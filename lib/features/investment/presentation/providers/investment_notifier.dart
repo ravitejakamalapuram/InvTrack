@@ -129,6 +129,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
   /// Update an existing investment.
   /// Throws [ValidationException] if name is empty or exceeds max length.
+  /// Every optional argument is the edit form's value, and null clears the
+  /// stored one, so a caller must pass every field it does not mean to clear.
   Future<void> updateInvestment({
     required String id,
     required String name,
