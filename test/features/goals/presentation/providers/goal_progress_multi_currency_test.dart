@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/calculations/planning_inputs_calculator.dart';
 import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
@@ -22,6 +23,14 @@ import '../../../../mocks/mock_currency_conversion_service.dart';
 /// - Progress % calculated in base currency should be currency-invariant
 /// - Switching USD → EUR → INR should give same % (within rounding error)
 /// - Only display amounts change, not progress percentage
+DateTime _monthsAgo(int months) {
+  final now = DateTime.now();
+  return PlanningInputsCalculator.addMonths(
+    DateTime(now.year, now.month, now.day),
+    -months,
+  );
+}
+
 void main() {
   group('Multi-Currency Goal Progress - TDD Tests', () {
     late MockCurrencyConversionService mockConversionService;
@@ -196,18 +205,20 @@ void main() {
           type: CashFlowType.invest,
           amount: 500000, // ₹5L invested
           currency: 'INR',
-          date: DateTime(2024, 1, 1),
-          createdAt: DateTime(2024, 1, 1),
+          date: _monthsAgo(24),
+          createdAt: _monthsAgo(24),
         ),
-        // Quarterly income payments (₹9,063 × 4 = ₹36,252/year)
+        // Quarterly income payments in the last 12 months (₹9,063 × 4 =
+        // ₹36,252/year). A12: income goals count the last 12 months, so the
+        // payouts are dated relative to today.
         ...List.generate(4, (i) => CashFlowEntity(
           id: 'cf-income-$i',
           investmentId: 'inv1',
           type: CashFlowType.income,
           amount: 9063, // ₹9,063 quarterly
           currency: 'INR',
-          date: DateTime(2024, 1 + i * 3, 1),
-          createdAt: DateTime(2024, 1 + i * 3, 1),
+          date: _monthsAgo(11 - i * 3),
+          createdAt: _monthsAgo(11 - i * 3),
         )),
       ];
 

@@ -3,6 +3,7 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_constants.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 import 'package:inv_tracker/core/notifications/notification_preferences.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Handler for goal-related notifications.
@@ -36,6 +37,12 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
   // ============ Goal Milestone Notifications ============
 
   /// Check if goal has reached a new milestone and show notification.
+  ///
+  /// Announces only the highest milestone reached and records every lower
+  /// one as shown, so milestones are never announced backwards (GAP3-07).
+  /// Without [announce] (the change being checked crossed no milestone),
+  /// every milestone reached is recorded without a notification: it was
+  /// reached before, not now.
   Future<void> checkAndShowGoalMilestone({
     required String goalId,
     required String goalName,
@@ -43,25 +50,26 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
     required double currentValue,
     required double targetValue,
     String currency = 'INR',
+    bool announce = true,
   }) async {
     await ensureInitialized();
     if (!goalMilestonesEnabled) return;
     if (targetValue <= 0) return;
 
-    if (!await ensurePermissionsForShow()) return;
+    final reached = [
+      for (final milestone in goalMilestones)
+        if (progressPercent >= milestone) milestone,
+    ];
+    if (reached.isEmpty) return;
+    final reachedMilestone = reached.last;
+    if (isGoalMilestoneShown(goalId, reachedMilestone)) return;
 
-    int? reachedMilestone;
-    for (final milestone in goalMilestones.reversed) {
-      if (progressPercent >= milestone &&
-          !isGoalMilestoneShown(goalId, milestone)) {
-        reachedMilestone = milestone;
-        break;
-      }
+    if (announce && !await ensurePermissionsForShow()) return;
+
+    for (final milestone in reached) {
+      await markGoalMilestoneShown(goalId, milestone);
     }
-
-    if (reachedMilestone == null) return;
-
-    await markGoalMilestoneShown(goalId, reachedMilestone);
+    if (!announce) return;
 
     final formattedCurrent = formatCurrency(currentValue, currency);
     final formattedTarget = formatCurrency(targetValue, currency);
@@ -147,7 +155,7 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
     final daysOver = projectedDate.difference(targetDate).inDays;
     const title = '⚠️ Goal At Risk';
     final body =
-        '"$goalName" is ${progressPercent.toStringAsFixed(0)}% complete but '
+        '"$goalName" is ${GoalProgress.wholePercent(progressPercent)}% complete but '
         'projected to miss deadline by $daysOver days. Consider increasing contributions.';
 
     final androidDetails = AndroidNotificationDetails(
