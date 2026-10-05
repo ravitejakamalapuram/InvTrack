@@ -15,6 +15,8 @@ import 'package:inv_tracker/features/settings/data/services/account_data_deletio
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../mocks/crashlytics_recorder.dart';
+
 class MockFirestore extends Mock implements FirebaseFirestore {}
 
 class MockCollection extends Mock
@@ -207,6 +209,25 @@ void main() {
       expect(tree.remaining('investments'), 2);
     },
   );
+
+  test('an unconfirmed user-document delete keeps the path and user id out of '
+      'crash reports', () async {
+    final records = recordCrashReports();
+    // No subcollection data, so the only commit is the user document's.
+    final tree = FakeUserTree({})..commitsHang = true;
+
+    await expectLater(
+      build(tree).deleteAllServerData(),
+      throwsA(isA<NetworkException>()),
+    );
+
+    expect(records, isNotEmpty);
+    for (final r in records) {
+      final text = '${r.exception} ${r.reason}';
+      expect(text, isNot(contains('users/')));
+      expect(text, isNot(contains(FakeUserTree.uid)));
+    }
+  });
 
   test('offline (server read never returns) throws NetworkException', () async {
     final tree = FakeUserTree({'investments': 2})..getsHang = true;
