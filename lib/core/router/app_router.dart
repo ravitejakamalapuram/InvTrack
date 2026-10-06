@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/screens/sign_in_screen.dart';
@@ -51,7 +52,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/',
-    debugLogDiagnostics: true,
+    // Route paths are diagnostics; release builds must not log them (A35).
+    debugLogDiagnostics: ref.watch(developerToolsAvailableProvider),
     observers: [...?analyticsObserver != null ? [analyticsObserver] : null],
     redirect: (context, state) {
       final isLocked = securityState.isLocked;
