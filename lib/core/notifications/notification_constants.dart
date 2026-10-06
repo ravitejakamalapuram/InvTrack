@@ -19,7 +19,8 @@ class NotificationChannels {
   static const String fySummary = 'fy_summary';
   static const String general = 'general'; // For test notifications
   static const String activation = 'activation'; // New user activation nudges
-  static const String incomeGuardian = 'income_guardian'; // Income Guardian alerts
+  static const String incomeGuardian =
+      'income_guardian'; // Income Guardian alerts
 }
 
 /// Notification group keys for Android grouping
@@ -143,6 +144,17 @@ class NotificationPrefsKeys {
   /// Track which goal milestones have been shown (to avoid duplicates)
   static String goalMilestoneShown(String goalId, int milestonePercent) =>
       'goal_milestone_shown_${goalId}_$milestonePercent';
+
+  /// Due date (yyyy-MM-dd) of the latest income reminder for an investment
+  /// that was shown or handed to the OS, so a reminder for a due day that
+  /// has already been delivered is not shown again.
+  static String incomeReminderDue(String investmentId) =>
+      'income_reminder_due_$investmentId';
+
+  /// The day the app itself last showed an investment's income reminder,
+  /// so a retry after a failed reschedule does not show it twice.
+  static String incomeReminderShown(String investmentId) =>
+      'income_reminder_shown_$investmentId';
 
   /// Track when idle alert was last shown for an investment
   static String idleAlertLastShown(String investmentId) =>

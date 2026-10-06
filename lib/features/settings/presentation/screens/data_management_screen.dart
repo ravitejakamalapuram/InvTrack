@@ -607,11 +607,12 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       throw StateError('User not authenticated');
     }
     final documentStorageService = ref.read(documentStorageServiceProvider);
-    final guestBackupStore = ref.read(guestBackupStoreProvider);
+    final guestBackups = ref.read(guestBackupMergeServiceProvider);
     return () async {
       await documentStorageService.deleteAllUserDocuments();
-      await guestBackupStore.deleteAll(ownerId: user.id);
-      if (mounted) ref.invalidate(savedGuestBackupsProvider);
+      // Also deletes the backups an unfinished guest merge was moving into
+      // this account, and what the device kept about them.
+      await guestBackups.deleteBackupsForAccountDeletion(user);
     };
   }
 }
