@@ -559,7 +559,13 @@ class _CsvParserSession {
 
       // Parse amount with the file's decimal mark
       final amount = _parseAmount(amountStr, decimalComma: commaDecimals);
-      if (amount == null) {
+      // An overlong amount reads as Infinity, which would corrupt totals and
+      // XIRR. Bulk imports also keep to the 15 digits a double stores
+      // exactly; a backup restores what the app itself stored.
+      if (amount == null ||
+          !amount.isFinite ||
+          (!fromBackup &&
+              amountStr.replaceAll(RegExp(r'\D'), '').length > 15)) {
         return ParsedCashFlowRow.withError(
           rowNumber: rowNum,
           error: 'Invalid amount: $amountStr',

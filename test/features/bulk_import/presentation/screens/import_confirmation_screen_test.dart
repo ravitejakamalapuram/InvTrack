@@ -223,38 +223,46 @@ void main() {
         find.bySemanticsLabel(RegExp(RegExp.escape(text)));
 
     testWidgets('hides every amount, in text and in semantics', (tester) async {
+      // Disposed in finally: Flutter checks for live handles before
+      // addTearDown callbacks run, so a teardown would fail every test.
       final semantics = tester.ensureSemantics();
-      await pumpScreen(tester, result: p2p, privacy: true);
-      await tester.tap(find.text('Bhive Investment'));
-      await tester.pumpAndSettle();
+      try {
+        await pumpScreen(tester, result: p2p, privacy: true);
+        await tester.tap(find.text('Bhive Investment'));
+        await tester.pumpAndSettle();
 
-      for (final amount in [inr(100000), inr(112500)]) {
-        expect(find.textContaining(amount), findsNothing, reason: amount);
-        expect(labelled(amount), findsNothing, reason: amount);
+        for (final amount in [inr(100000), inr(112500)]) {
+          expect(find.textContaining(amount), findsNothing, reason: amount);
+          expect(labelled(amount), findsNothing, reason: amount);
+        }
+        // The Invested, Income and Returned totals plus the two rows are all
+        // masked; a row's semantics merge its texts, so match by substring.
+        expect(find.byType(MaskedAmountText), findsNWidgets(5));
+        expect(find.bySemanticsLabel(RegExp('Hidden amount')), findsWidgets);
+      } finally {
+        semantics.dispose();
       }
-      // The Invested, Income and Returned totals plus the two rows are all
-      // masked; a row's semantics merge its texts, so match by substring.
-      expect(find.byType(MaskedAmountText), findsNWidgets(5));
-      expect(find.bySemanticsLabel(RegExp('Hidden amount')), findsWidgets);
-      semantics.dispose();
     });
 
     testWidgets('shows the amounts when privacy mode is off', (tester) async {
       final semantics = tester.ensureSemantics();
-      await pumpScreen(tester, result: p2p);
-      await tester.tap(find.text('Bhive Investment'));
-      await tester.pumpAndSettle();
+      try {
+        await pumpScreen(tester, result: p2p);
+        await tester.tap(find.text('Bhive Investment'));
+        await tester.pumpAndSettle();
 
-      // Each appears as a total and as its row.
-      expect(find.text(inr(100000)), findsNWidgets(2));
-      expect(find.text(inr(112500)), findsNWidgets(2));
-      expect(labelled(inr(100000)), findsWidgets);
-      expect(find.text(_l10n.investedLabel), findsOneWidget);
-      expect(find.text(_l10n.importIncomeLabel), findsOneWidget);
-      expect(find.text(_l10n.returnedLabel), findsOneWidget);
-      expect(find.text(_l10n.importTypeChipInvest), findsOneWidget);
-      expect(find.text(_l10n.importTypeChipReturn), findsOneWidget);
-      semantics.dispose();
+        // Each appears as a total and as its row.
+        expect(find.text(inr(100000)), findsNWidgets(2));
+        expect(find.text(inr(112500)), findsNWidgets(2));
+        expect(labelled(inr(100000)), findsWidgets);
+        expect(find.text(_l10n.investedLabel), findsOneWidget);
+        expect(find.text(_l10n.importIncomeLabel), findsOneWidget);
+        expect(find.text(_l10n.returnedLabel), findsOneWidget);
+        expect(find.text(_l10n.importTypeChipInvest), findsOneWidget);
+        expect(find.text(_l10n.importTypeChipReturn), findsOneWidget);
+      } finally {
+        semantics.dispose();
+      }
     });
   });
 

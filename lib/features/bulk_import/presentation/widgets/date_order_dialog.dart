@@ -11,7 +11,10 @@ Future<CsvDateOrder?> showDateOrderDialog(
 ) {
   final l10n = AppLocalizations.of(context);
   // Month as a word, so the two readings cannot be confused with each other.
-  final format = DateFormat('d MMM yyyy');
+  final format = DateFormat(
+    'd MMM yyyy',
+    Localizations.localeOf(context).toString(),
+  );
 
   return showDialog<CsvDateOrder>(
     context: context,

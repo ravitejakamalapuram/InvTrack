@@ -188,6 +188,44 @@ void main() {
     });
   });
 
+  group('amounts must fit in 15 digits', () {
+    final huge = '1' * 400;
+
+    test('an amount too long to store exactly, or infinite, is a row '
+        'error', () {
+      final result = parseAmounts([
+        huge,
+        '1234567890123456',
+        '12345678901234.56',
+        '123456789012345',
+        '5000',
+      ]);
+
+      expect(amountsOf(result), equals([123456789012345, 5000]));
+      expect(
+        result.errors,
+        equals([
+          'Row 2: Invalid amount: $huge',
+          'Row 3: Invalid amount: 1234567890123456',
+          'Row 4: Invalid amount: 12345678901234.56',
+        ]),
+      );
+    });
+
+    test('a backup never restores an infinite amount', () {
+      final result = SimpleCsvParser.parseString(
+        'Date,Investment Name,Type,Amount,Currency\n'
+        '2024-01-15,Old FD,INVEST,$huge,INR\n'
+        '2024-02-15,Old FD,INVEST,5000.0,INR',
+        baseCurrency: 'INR',
+        fromBackup: true,
+      );
+
+      expect(amountsOf(result), equals([5000]));
+      expect(result.errors, equals(['Row 2: Invalid amount: $huge']));
+    });
+  });
+
   group('backups restore what the app exported', () {
     const exportHeader =
         'Date,Investment Name,Type,Amount,Currency,Notes,Investment Type,'
