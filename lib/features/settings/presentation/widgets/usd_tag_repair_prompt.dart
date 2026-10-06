@@ -130,10 +130,13 @@ class _UsdTagRepairInitializerState
     }
 
     final int changed;
+    final int goals;
     try {
       // What this run really changed: the re-scan and the transactions skip
-      // investments changed elsewhere since the question opened.
-      changed = (await service.repair(selected, currency)).investments;
+      // investments and goals changed elsewhere since the question opened.
+      final result = await service.repair(selected, currency);
+      goals = result.goals;
+      changed = result.investments + goals;
     } catch (e) {
       LoggerService.warn(
         'USD tag repair did not finish; will ask again',
@@ -154,14 +157,25 @@ class _UsdTagRepairInitializerState
     if (ctx == null || !ctx.mounted) return;
     final l10n = AppLocalizations.of(ctx);
     if (changed == 0) {
-      ScaffoldMessenger.of(
-        ctx,
-      ).showSnackBar(SnackBar(content: Text(l10n.usdTagRepairNothingChanged)));
+      final listedGoals = candidates.any((c) => c.kind == UsdTagKind.goal);
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        SnackBar(
+          content: Text(
+            listedGoals
+                ? l10n.usdTagRepairNothingChangedWithGoals
+                : l10n.usdTagRepairNothingChanged,
+          ),
+        ),
+      );
       return;
     }
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
-        content: Text(l10n.usdTagRepairDone(changed, currency)),
+        content: Text(switch ((changed - goals, goals)) {
+          (_, 0) => l10n.usdTagRepairDone(changed, currency),
+          (0, _) => l10n.usdTagRepairDoneGoals(changed, currency),
+          _ => l10n.usdTagRepairDoneWithGoals(changed, currency),
+        }),
         duration: const Duration(seconds: 10),
         action: SnackBarAction(
           label: l10n.usdTagRepairUndo,

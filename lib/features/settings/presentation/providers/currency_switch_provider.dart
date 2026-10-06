@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart' show FirebaseException;
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -513,7 +514,7 @@ class CurrencySwitch extends _$CurrencySwitch {
       await backfill.backfill(currency);
       return true;
     } catch (e) {
-      throw LegacyCurrencyStampException(e.runtimeType.toString());
+      throw LegacyCurrencyStampException.from(e);
     }
   }
 
@@ -528,6 +529,17 @@ class CurrencySwitch extends _$CurrencySwitch {
 /// Carries only the cause's type, never document paths or values.
 class LegacyCurrencyStampException implements Exception {
   const LegacyCurrencyStampException(this.causeType);
+
+  /// Keeps the cause's type, and a Firestore error's code (for example
+  /// `deadline-exceeded` or `unavailable`), so a report can tell a timeout
+  /// from an unreachable server. Never the message, which can hold a path.
+  factory LegacyCurrencyStampException.from(Object error) =>
+      LegacyCurrencyStampException(
+        error is FirebaseException
+            ? 'FirebaseException(${error.code})'
+            : error.runtimeType.toString(),
+      );
+
   final String causeType;
 
   @override
