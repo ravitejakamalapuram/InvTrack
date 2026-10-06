@@ -44,15 +44,25 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
   /// Standard MOIC milestones for investment notifications
   static const List<double> standardMilestones = [1.5, 2.0, 3.0, 5.0, 10.0];
 
+  /// A fire time this close to now counts as due. The plugin reads the clock
+  /// again before it accepts a date, so a 09:00 alarm handed over a moment
+  /// before 09:00 would be rejected as past.
+  static const Duration _dueLeeway = Duration(seconds: 30);
+
   // ============ Income Reminders ============
 
   /// Schedule income reminder notification for an investment.
   ///
   /// [lastIncomeDate] anchors the payout schedule (pass the start date when
-  /// there is no income yet): the reminder fires on the first
-  /// `anchor + k * monthsBetweenPayments` (k >= 1) that is not in the past.
+  /// there is no income yet): the reminder fires at 09:00 on the first
+  /// `anchor + k * monthsBetweenPayments` (k >= 1) that is not before today.
   /// The same inputs always give the same date, so calling this on every
   /// launch does not push the reminder out.
+  ///
+  /// The due day stays current until it ends. The alarm is inexact, so after
+  /// 09:00 Android may not have delivered it yet: if today's reminder is
+  /// still pending or was never scheduled, it is shown now, and the next
+  /// period is scheduled.
   Future<void> scheduleIncomeReminder({
     required String investmentId,
     required String investmentName,
@@ -60,34 +70,45 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     DateTime? lastIncomeDate,
   }) async {
     await ensureInitialized();
-    // Cancel first so that a reminder scheduled before the type was turned
-    // off does not keep firing.
-    await _plugin.cancel(id: NotificationIds.incomeReminder(investmentId));
-    if (!incomeRemindersEnabled) return;
+    final id = NotificationIds.incomeReminder(investmentId);
+    if (!incomeRemindersEnabled) {
+      // A reminder scheduled before the type was turned off must not keep
+      // firing.
+      await _plugin.cancel(id: id);
+      return;
+    }
 
     final now = _clock();
+    final today = DateTime(now.year, now.month, now.day);
     DateTime nextIncomeDate;
+    var showDueToday = false;
 
     if (lastIncomeDate != null) {
       // Step from the anchor each time so a month-end anchor (Jan 31) does
       // not drift to an earlier day (Feb 28, Mar 28, ...).
-      var periods = 1;
-      nextIncomeDate = _addMonthsSafely(
+      DateTime dueAt(int periods) => _addMonthsSafely(
         lastIncomeDate,
-        monthsBetweenPayments,
+        monthsBetweenPayments * periods,
         hour: 9,
       );
-      while (nextIncomeDate.isBefore(now)) {
-        periods++;
-        nextIncomeDate = _addMonthsSafely(
-          lastIncomeDate,
-          monthsBetweenPayments * periods,
-          hour: 9,
-        );
+      var periods = 1;
+      nextIncomeDate = dueAt(periods);
+      while (nextIncomeDate.isBefore(today)) {
+        nextIncomeDate = dueAt(++periods);
+      }
+      // Today is the due day and 09:00 has passed (or is moments away).
+      // Never hand the plugin a time that is not safely in the future.
+      if (!nextIncomeDate.isAfter(now.add(_dueLeeway))) {
+        showDueToday = await _isTodaysReminderOwed(id, investmentId, today);
+        nextIncomeDate = dueAt(++periods);
       }
     } else {
       nextIncomeDate = _addMonthsSafely(now, monthsBetweenPayments, hour: 9);
     }
+
+    // No cancel here: on Android it would also remove today's reminder from
+    // the notification shade. Scheduling the same id replaces a late alarm
+    // for today, so it is not shown twice.
 
     final androidDetails = AndroidNotificationDetails(
       NotificationChannels.incomeReminders,
@@ -108,15 +129,48 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       threadIdentifier: NotificationGroups.incomeReminders,
     );
 
+    const title = '💰 Income Expected';
+    final body =
+        'Income from $investmentName may be due today. Check your account!';
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    final shownToday = showDueToday && await ensurePermissionsForShow();
+    if (shownToday) {
+      await _plugin.show(
+        id: id,
+        title: title,
+        body: body,
+        notificationDetails: details,
+        payload: NotificationPayload.incomeReminder(investmentId),
+      );
+      await _recordReminderDue(investmentId, today);
+      await _prefs.setString(
+        NotificationPrefsKeys.incomeReminderShown(investmentId),
+        DateFormat('yyyy-MM-dd').format(today),
+      );
+    }
+
     await _plugin.zonedSchedule(
-      id: NotificationIds.incomeReminder(investmentId),
-      title: '💰 Income Expected',
-      body: 'Income from $investmentName may be due today. Check your account!',
+      id: id,
+      title: title,
+      body: body,
       scheduledDate: tz.TZDateTime.from(nextIncomeDate, tz.local),
-      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
+      notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       payload: NotificationPayload.incomeReminder(investmentId),
     );
+    await _recordReminderDue(investmentId, nextIncomeDate);
+    if (showDueToday && !shownToday) {
+      // Held back (no permission): keep today's reminder owed, so a later
+      // launch today shows it once permission is granted.
+      await _recordReminderDue(
+        investmentId,
+        DateTime(today.year, today.month, today.day - 1),
+      );
+    }
 
     LoggerService.info(
       'Income reminder scheduled',
@@ -127,9 +181,75 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     );
   }
 
+  /// Whether today's income reminder, due at 09:00 that has now passed,
+  /// still has to be shown.
+  ///
+  /// It does when its alarm is still pending (Android has not delivered it
+  /// yet), or when the latest reminder handed over was for an earlier due
+  /// date (today's was never scheduled). A pending alarm for a later date
+  /// means today's was already shown. With no record (first run after an
+  /// update) and nothing pending, it is taken as delivered.
+  Future<bool> _isTodaysReminderOwed(
+    int id,
+    String investmentId,
+    DateTime today,
+  ) async {
+    final shown = _prefs.getString(
+      NotificationPrefsKeys.incomeReminderShown(investmentId),
+    );
+    if (shown == DateFormat('yyyy-MM-dd').format(today)) return false;
+    final raw = _prefs.getString(
+      NotificationPrefsKeys.incomeReminderDue(investmentId),
+    );
+    final handedOver = raw == null ? null : DateTime.tryParse(raw);
+    final pending = await _plugin.pendingNotificationRequests();
+    if (pending.any((request) => request.id == id)) {
+      return handedOver == null || !handedOver.isAfter(today);
+    }
+    return handedOver != null && handedOver.isBefore(today);
+  }
+
+  Future<void> _recordReminderDue(String investmentId, DateTime due) =>
+      _prefs.setString(
+        NotificationPrefsKeys.incomeReminderDue(investmentId),
+        DateFormat('yyyy-MM-dd').format(due),
+      );
+
+  /// Mark every income alarm that is still pending as not delivered, before
+  /// it is cancelled in bulk (account change, no investments left).
+  ///
+  /// Its recorded due date is moved back a day, so if the same reminders
+  /// are scheduled again on that due day after 09:00, the reminder is shown
+  /// instead of being taken as delivered.
+  Future<void> markPendingIncomeRemindersUndelivered() async {
+    await ensureInitialized();
+    final pendingIds = {
+      for (final request in await _plugin.pendingNotificationRequests())
+        request.id,
+    };
+    final prefix = NotificationPrefsKeys.incomeReminderDue('');
+    for (final key in _prefs.getKeys()) {
+      if (!key.startsWith(prefix)) continue;
+      final investmentId = key.substring(prefix.length);
+      if (!pendingIds.contains(NotificationIds.incomeReminder(investmentId))) {
+        continue;
+      }
+      final due = DateTime.tryParse(_prefs.getString(key) ?? '');
+      if (due == null) continue;
+      await _recordReminderDue(
+        investmentId,
+        DateTime(due.year, due.month, due.day - 1),
+      );
+    }
+  }
+
   /// Cancel income reminder for a specific investment.
   Future<void> cancelIncomeReminder(String investmentId) async {
     await _plugin.cancel(id: NotificationIds.incomeReminder(investmentId));
+    await _prefs.remove(NotificationPrefsKeys.incomeReminderDue(investmentId));
+    await _prefs.remove(
+      NotificationPrefsKeys.incomeReminderShown(investmentId),
+    );
     LoggerService.info(
       'Income reminder cancelled',
       metadata: {'investmentId': investmentId},
@@ -286,8 +406,12 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
 
   /// Cancel maturity reminders for a specific investment.
   Future<void> cancelMaturityReminders(String investmentId) async {
-    await _plugin.cancel(id: NotificationIds.maturityReminder7Days(investmentId));
-    await _plugin.cancel(id: NotificationIds.maturityReminder1Day(investmentId));
+    await _plugin.cancel(
+      id: NotificationIds.maturityReminder7Days(investmentId),
+    );
+    await _plugin.cancel(
+      id: NotificationIds.maturityReminder1Day(investmentId),
+    );
     LoggerService.info(
       'Maturity reminders cancelled',
       metadata: {'investmentId': investmentId},
@@ -459,7 +583,10 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       id: NotificationIds.incomeRemindersSummary,
       title: title,
       body: body,
-      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
+      notificationDetails: NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      ),
     );
   }
 
@@ -504,7 +631,10 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       id: NotificationIds.maturityRemindersSummary,
       title: title,
       body: body,
-      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
+      notificationDetails: NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      ),
     );
   }
 
@@ -571,16 +701,16 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       id: NotificationIds.milestone(investmentId, reachedMilestone),
       title: title,
       body: body,
-      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
+      notificationDetails: NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      ),
       payload: NotificationPayload.milestone(investmentId, reachedMilestone),
     );
 
     LoggerService.info(
       'Milestone notification shown',
-      metadata: {
-        'investmentId': investmentId,
-        'milestone': reachedMilestone,
-      },
+      metadata: {'investmentId': investmentId, 'milestone': reachedMilestone},
     );
   }
 

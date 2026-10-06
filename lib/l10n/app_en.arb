@@ -6401,6 +6401,10 @@
       }
     }
   },
+  "notificationInvestmentClosed": "This investment is closed",
+  "@notificationInvestmentClosed": {
+    "description": "Shown when an income reminder is tapped for an investment that has since been closed; the investment opens instead of the add-income form"
+  },
   "usdTagRepairTitleGoals": "Goals recorded in US dollars",
   "@usdTagRepairTitleGoals": {
     "description": "Title of the US dollar repair question when the list has only goals (A109). Shown instead of usdTagRepairTitle."
