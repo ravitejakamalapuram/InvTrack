@@ -30,6 +30,7 @@ void main() {
         onboardingCompleteProvider.overrideWith((ref) async => true),
         analyticsObserverProvider.overrideWithValue(null),
         isReportsTabEnabledProvider.overrideWithValue(false),
+        isIncomeGuardianEnabledProvider.overrideWithValue(false),
       ],
     );
     addTearDown(container.dispose);
