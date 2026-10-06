@@ -288,7 +288,10 @@ void main() {
       expect(fakePlugin.scheduledNotifications, isEmpty);
     });
 
-    test('should cancel existing reminder before scheduling new one', () async {
+    // Rescheduling replaces the pending reminder without a cancel: on
+    // Android a cancel also removes a delivered reminder from the shade.
+    test('rescheduling replaces the pending reminder without cancelling '
+        'one already shown', () async {
       await service.scheduleIncomeReminder(
         investmentId: 'inv-123',
         investmentName: 'Bond 1',
@@ -302,7 +305,12 @@ void main() {
       );
 
       final expectedId = NotificationIds.incomeReminder('inv-123');
-      expect(fakePlugin.cancelledNotificationIds.contains(expectedId), isTrue);
+      final pending = fakePlugin.scheduledNotifications
+          .where((n) => n.id == expectedId)
+          .toList();
+      expect(pending, hasLength(1));
+      expect(pending.single.body, contains('Bond 1 Updated'));
+      expect(fakePlugin.cancelledNotificationIds, isNot(contains(expectedId)));
     });
 
     test('should cancel income reminder by investment ID', () async {
