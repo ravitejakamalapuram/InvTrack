@@ -20,7 +20,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///    recorded as done, and the next start retries.
 ///  * Each chunk is written in a transaction that re-reads every document
 ///    and only adds `currency` where it is still missing, so a currency set
-///    by another device or an edit in between is never overwritten. A
+///    by another device or an edit in between is never overwritten. The
+///    chunk's reads run in parallel, so a chunk takes about one round trip
+///    and stays well inside cloud_firestore's 30-second runTransaction
+///    timeout on a slow network ([defaultChunkSize] documents per
+///    transaction). Reads that take longer than the read timeout fail the
+///    chunk first, so that timeout path is never reached. A
 ///    transaction fails instead of queueing while offline, so a stale stamp
 ///    can never be replayed later on top of a newer value.
 class LegacyCurrencyBackfillService {
@@ -28,7 +33,7 @@ class LegacyCurrencyBackfillService {
     required FirebaseFirestore firestore,
     required String userId,
     required SharedPreferences prefs,
-    int chunkSize = maxWritesPerCommit,
+    int chunkSize = defaultChunkSize,
     Duration readTimeout = const Duration(seconds: 20),
   }) : _firestore = firestore,
        _userId = userId,
@@ -67,6 +72,10 @@ class LegacyCurrencyBackfillService {
 
   /// Firestore's limit on writes in one batch or transaction.
   static const int maxWritesPerCommit = 500;
+
+  /// Documents stamped per transaction. Smaller than [maxWritesPerCommit] so
+  /// a transaction's parallel reads finish quickly on a slow network.
+  static const int defaultChunkSize = 100;
 
   static const String _field = 'currency';
 
@@ -207,13 +216,17 @@ class LegacyCurrencyBackfillService {
     String currency,
   ) {
     return _firestore.runTransaction<int>((tx) async {
-      final stillMissing = <DocumentReference<Map<String, dynamic>>>[];
-      for (final ref in refs) {
-        final snap = await tx.get(ref);
-        if (snap.exists && isMissingCurrency(snap.data())) {
-          stillMissing.add(ref);
-        }
-      }
+      // One read per document, all at once: read one after another, a few
+      // hundred documents ran past the 30-second runTransaction timeout.
+      // Failing here first keeps the plugin's own timeout path, which can
+      // still commit, out of reach.
+      final snaps = await Future.wait([
+        for (final ref in refs) tx.get(ref),
+      ]).timeout(_readTimeout);
+      final stillMissing = [
+        for (var i = 0; i < refs.length; i++)
+          if (snaps[i].exists && isMissingCurrency(snaps[i].data())) refs[i],
+      ];
       for (final ref in stillMissing) {
         tx.update(ref, {_field: currency});
       }

@@ -1,9 +1,12 @@
 /// Feature flags provider for enabling/disabling experimental features.
 ///
-/// Feature flags allow gradual rollout of new features, A/B testing, and
-/// controlled release. Flags are persisted and can be toggled via Debug Settings.
+/// A feature ships by changing its [FeatureFlag.defaultEnabled] in code in a
+/// release. Release builds always use that code default. Debug builds may
+/// override it with a value stored from Debug Settings, so production never
+/// depends on the debug menu or on values left on a device.
 library;
 
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 
@@ -20,7 +23,7 @@ enum FeatureFlag {
   /// - Smart Insights with auto-generated investment alerts
   /// - DIY Report Builder with custom configurations
   /// - Weekly/Monthly summaries and analytics
-  /// - Disabled by default, enable via Debug Settings
+  /// - Off until the FY report is real (A60); most report cards are stubs
   reportsTab('reports_tab', 'Reports Tab'),
 
   /// Future: Predictive Risk Alerts
@@ -32,30 +35,39 @@ enum FeatureFlag {
   /// Future: AI Assistant
   aiAssistant('ai_assistant', 'AI Assistant'),
 
-  /// Income Guardian - AI-powered income tracking
-  /// - Expected payment monitoring with ML-based predictions
-  /// - Platform reliability scoring
-  /// - Automatic overdue payment detection
-  /// - Income trend analysis and forecasting
-  /// - Disabled by default, enable via Debug Settings
+  /// Income Guardian: expected-payment tracking and alerts.
+  /// - Off until something generates expected cash flows (founder decision,
+  ///   2026-10-02). While off, its Settings tile, the investment "Upcoming"
+  ///   tab and its background services are all hidden or stopped.
   incomeGuardian('income_guardian', 'Income Guardian'),
 
-  /// Play in-app review prompt after a first recorded return/exit.
+  /// Play in-app review prompt after a first recorded INCOME or RETURN.
   /// - One-shot per install, gated on a genuine success moment
-  /// - Disabled by default, enable via Debug Settings (POR-91/POR-99)
-  reviewPrompt('review_prompt', 'Play Review Prompt');
+  /// - On by default (A42)
+  reviewPrompt('review_prompt', 'Play Review Prompt', defaultEnabled: true);
 
-  const FeatureFlag(this.key, this.displayName);
+  const FeatureFlag(this.key, this.displayName, {this.defaultEnabled = false});
 
   final String key;
   final String displayName;
+
+  /// Whether the feature is on in this release. Change it here, in a release
+  /// PR, to ship or withdraw a feature.
+  final bool defaultEnabled;
 }
+
+/// Whether values stored on the device (set from Debug Settings) may change
+/// a flag. False in release builds, where only the code default counts.
+/// Overridable so tests can exercise the release-build behaviour.
+final featureFlagOverridesAllowedProvider = Provider<bool>(
+  (ref) => !kReleaseMode,
+);
 
 /// Provider for feature flag states
 final featureFlagsProvider =
     NotifierProvider<FeatureFlagsNotifier, Map<FeatureFlag, bool>>(
-  FeatureFlagsNotifier.new,
-);
+      FeatureFlagsNotifier.new,
+    );
 
 /// Notifier for managing feature flag states
 class FeatureFlagsNotifier extends Notifier<Map<FeatureFlag, bool>> {
@@ -63,18 +75,17 @@ class FeatureFlagsNotifier extends Notifier<Map<FeatureFlag, bool>> {
 
   @override
   Map<FeatureFlag, bool> build() {
-    final prefs = ref.watch(sharedPreferencesProvider);
-    final flags = <FeatureFlag, bool>{};
-
-    for (final flag in FeatureFlag.values) {
-      // Default: Portfolio Health Score is DISABLED (developer-only)
-      // Other flags default to false
-      final defaultValue = flag == FeatureFlag.portfolioHealthScore ? false : false;
-      flags[flag] = prefs.getBool('$_prefPrefix${flag.key}') ?? defaultValue;
+    if (!ref.watch(featureFlagOverridesAllowedProvider)) {
+      return {for (final flag in FeatureFlag.values) flag: flag.defaultEnabled};
     }
-
-    return flags;
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return {
+      for (final flag in FeatureFlag.values)
+        flag: prefs.getBool('$_prefPrefix${flag.key}') ?? flag.defaultEnabled,
+    };
   }
+
+  bool get _overridesAllowed => ref.read(featureFlagOverridesAllowedProvider);
 
   /// Check if a specific feature is enabled
   bool isEnabled(FeatureFlag flag) {
@@ -83,6 +94,7 @@ class FeatureFlagsNotifier extends Notifier<Map<FeatureFlag, bool>> {
 
   /// Toggle a specific feature flag
   Future<void> toggle(FeatureFlag flag) async {
+    if (!_overridesAllowed) return;
     final prefs = ref.read(sharedPreferencesProvider);
     final newValue = !(state[flag] ?? false);
 
@@ -93,6 +105,7 @@ class FeatureFlagsNotifier extends Notifier<Map<FeatureFlag, bool>> {
 
   /// Set a specific feature flag to a value
   Future<void> setEnabled(FeatureFlag flag, bool enabled) async {
+    if (!_overridesAllowed) return;
     if (state[flag] == enabled) return; // No change
 
     final prefs = ref.read(sharedPreferencesProvider);
@@ -103,6 +116,7 @@ class FeatureFlagsNotifier extends Notifier<Map<FeatureFlag, bool>> {
 
   /// Enable all feature flags (for testing)
   Future<void> enableAll() async {
+    if (!_overridesAllowed) return;
     final prefs = ref.read(sharedPreferencesProvider);
 
     for (final flag in FeatureFlag.values) {
@@ -114,6 +128,7 @@ class FeatureFlagsNotifier extends Notifier<Map<FeatureFlag, bool>> {
 
   /// Disable all feature flags (reset to defaults)
   Future<void> disableAll() async {
+    if (!_overridesAllowed) return;
     final prefs = ref.read(sharedPreferencesProvider);
 
     for (final flag in FeatureFlag.values) {
