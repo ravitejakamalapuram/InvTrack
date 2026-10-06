@@ -77,12 +77,17 @@ void main() {
       findsOneWidget,
     );
     expect(find.descendant(of: tile, matching: find.text('INR')), findsNothing);
+    // A87: the loading text already ends in "...", so the tile's value must
+    // not add another three dots. The spinner takes the value's place, so
+    // the value is not on screen today; it must still be right if shown.
+    expect(tester.widget<SettingsValueTile>(tile).value, 'Loading...');
+    expect(find.text('Loading......'), findsNothing);
     expect(
       tester.getSemantics(
         find.ancestor(of: tile, matching: find.byType(Semantics)).first,
       ),
       matchesSemantics(
-        label: '${l10n.currency}, ${l10n.loading}',
+        label: 'Currency, Loading...',
         isButton: true,
         hasEnabledState: true,
         isEnabled: false,
