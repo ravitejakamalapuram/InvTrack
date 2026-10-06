@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/screens/sign_in_screen.dart';
@@ -46,11 +47,13 @@ final routerProvider = Provider<GoRouter>((ref) {
   final onboardingComplete = ref.watch(onboardingCompleteProvider);
   final analyticsObserver = ref.watch(analyticsObserverProvider);
   final isReportsEnabled = ref.watch(isReportsTabEnabledProvider);
+  final isIncomeGuardianEnabled = ref.watch(isIncomeGuardianEnabledProvider);
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/',
-    debugLogDiagnostics: true,
+    // Route paths are diagnostics; release builds must not log them (A35).
+    debugLogDiagnostics: ref.watch(developerToolsAvailableProvider),
     observers: [...?analyticsObserver != null ? [analyticsObserver] : null],
     redirect: (context, state) {
       final isLocked = securityState.isLocked;
@@ -96,6 +99,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isReportsRoute = state.uri.path.startsWith('/reports');
       if (isLoggedIn && !isReportsEnabled && isReportsRoute) {
         LoggerService.debug('Reports feature disabled, redirecting to Overview');
+        return '/';
+      }
+
+      // Income Guardian is hidden while its flag is off (A42), including its
+      // calendar reached by a deep link or a stale navigation.
+      final isIncomeCalendarRoute = state.uri.path == '/income-calendar';
+      if (isLoggedIn && !isIncomeGuardianEnabled && isIncomeCalendarRoute) {
         return '/';
       }
 
