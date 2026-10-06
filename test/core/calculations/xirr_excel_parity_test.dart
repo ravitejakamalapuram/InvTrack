@@ -156,6 +156,18 @@ final List<_GoldenCase> _cases = [
     _Flow(_d(2022, 1, 1), -1000),
     _Flow(_d(2023, 1, 1), 4000),
   ], 3.0000000000),
+  // A73 (#838): rates above 1000%. f(10) is still positive here, so the root
+  // lies above the old search range.
+  _GoldenCase('above 1000%: payout on day 1, return on day 3', [
+    _Flow(_d(2023, 3, 1), -100000),
+    _Flow(_d(2023, 3, 2), 500),
+    _Flow(_d(2023, 3, 4), 102000),
+  ], 19.3717874102),
+  // 2% over 3 days: 1.02^(365/3) - 1.
+  _GoldenCase('above 1000%: 2% over 3 days', [
+    _Flow(_d(2023, 3, 1), -100000),
+    _Flow(_d(2023, 3, 4), 102000),
+  ], 10.1263887794),
 ];
 
 /// NPV at [rate] using whole calendar days / 365, independent of the solver.
@@ -181,6 +193,21 @@ void main() {
         );
         expect(xirr, isNotNull);
         expect(xirr, closeTo(c.expected, _rateTolerance));
+      });
+    }
+  });
+
+  // A73 (#838): every golden has a root, so none may come back as the
+  // timing-blind approximation, including the rates above 1000%.
+  group('XirrSolver marks every golden as exact', () {
+    for (final c in _cases) {
+      test(c.name, () {
+        final result = XirrSolver.solve(
+          c.flows.map((f) => f.date).toList(),
+          c.flows.map((f) => f.amount).toList(),
+        );
+        expect(result.method, XirrMethod.exact);
+        expect(result.value, closeTo(c.expected, _rateTolerance));
       });
     }
   });
