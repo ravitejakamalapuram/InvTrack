@@ -31,6 +31,9 @@ abstract class GuestBackupStore {
   Future<void> deleteAll({required String ownerId});
 }
 
+/// Reads the backup at a path a [GuestBackupStore] returned.
+typedef GuestBackupReader = Future<Uint8List> Function(String filePath);
+
 /// [GuestBackupStore] that writes ZIP files under
 /// `<baseDirectory>/guest_backups/<ownerId>`.
 class FileGuestBackupStore implements GuestBackupStore {
@@ -117,6 +120,16 @@ class FileGuestBackupStore implements GuestBackupStore {
           .map((e) => e.path)
           .toList();
       return paths..sort();
+    });
+  }
+
+  /// Reads the backup at [filePath]; only files this store wrote.
+  Future<Uint8List> read(String filePath) async {
+    return _guard('read', () async {
+      if (!path.isWithin((await _root).path, filePath)) {
+        throw ArgumentError('Not a guest backup');
+      }
+      return File(filePath).readAsBytes();
     });
   }
 
