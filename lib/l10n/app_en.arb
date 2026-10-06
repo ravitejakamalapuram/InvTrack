@@ -6197,6 +6197,10 @@
   "@noteTenureClearedWithMaturity": {
     "description": "Note under the maturity date in the investment form after the user clears the maturity date of an investment whose start date and tenure would otherwise work it out again; the tenure is cleared with it"
   },
+  "notificationInvestmentClosed": "This investment is closed",
+  "@notificationInvestmentClosed": {
+    "description": "Shown when an income reminder is tapped for an investment that has since been closed; the investment opens instead of the add-income form"
+  },
   "usdTagRepairTitleGoals": "Goals recorded in US dollars",
   "@usdTagRepairTitleGoals": {
     "description": "Title of the US dollar repair question when the list has only goals (A109). Shown instead of usdTagRepairTitle."

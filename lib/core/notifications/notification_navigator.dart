@@ -9,19 +9,23 @@ library;
 import 'dart:async';
 
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
+import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
+import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_type.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Provider for the notification navigator
 final notificationNavigatorProvider = Provider<NotificationNavigator>((ref) {
@@ -241,6 +245,12 @@ class NotificationNavigator {
     if (_deferIfLocked(payloadString)) return false;
     if (!context.mounted) return false;
 
+    // A reminder left in the shade outlives closing the investment on
+    // another device. Never open add income for it without saying so.
+    if (!investment.isOpen) {
+      return _openClosedInvestment(context, investment);
+    }
+
     // A route, so the lock redirect applies.
     final flowType = params['flowType'];
     final location = Uri(
@@ -263,6 +273,44 @@ class NotificationNavigator {
       'Navigated to add cash flow',
       metadata: {'investmentId': investmentId},
     );
+    return true;
+  }
+
+  /// Opens a closed [investment] with a note that it is closed, and cancels
+  /// its income reminder so no more arrive.
+  Future<bool> _openClosedInvestment(
+    BuildContext context,
+    InvestmentEntity investment,
+  ) async {
+    try {
+      context.go(
+        '/investments/${Uri.encodeComponent(investment.id)}',
+        extra: investment,
+      );
+    } catch (e, stack) {
+      LoggerService.error(
+        'Failed to push investment detail screen',
+        metadata: {'investmentId': investment.id},
+        error: e,
+        stackTrace: stack,
+      );
+      return false;
+    }
+    AppFeedback.showInfo(
+      context,
+      AppLocalizations.of(context).notificationInvestmentClosed,
+    );
+
+    try {
+      await _ref
+          .read(notificationServiceProvider)
+          .cancelIncomeReminder(investment.id);
+    } catch (e) {
+      LoggerService.warn(
+        'Could not cancel the income reminder of a closed investment',
+        error: e,
+      );
+    }
     return true;
   }
 

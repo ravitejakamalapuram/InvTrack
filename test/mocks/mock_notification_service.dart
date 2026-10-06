@@ -267,6 +267,8 @@ class FakeFlutterLocalNotificationsPlugin
     if (failingScheduleIds.contains(id)) {
       throw StateError('zonedSchedule failed for $id');
     }
+    // As on Android, scheduling an id that is already pending replaces it.
+    scheduledNotifications.removeWhere((n) => n.id == id);
     scheduledNotifications.add(
       FakeScheduledNotification(
         id: id,
@@ -288,6 +290,9 @@ class FakeFlutterLocalNotificationsPlugin
   Future<void> cancel({required int id, String? tag}) async {
     cancelledNotificationIds.add(id);
     scheduledNotifications.removeWhere((n) => n.id == id);
+    // As on Android, cancel also removes a notification already presented
+    // with this id from the notification shade.
+    shownNotifications.removeWhere((n) => n.id == id);
     if (kDebugMode) {
       debugPrint('🔔 FakeNotificationPlugin: cancel($id)');
     }
