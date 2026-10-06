@@ -212,6 +212,44 @@ void main() {
       expect(pendingReminderDate(), DateTime(2026, 11, 3, 9));
     });
 
+    test('a reminder held back for missing permission is shown once '
+        'permission is granted later that day', () async {
+      fakeNow = DateTime(2026, 9, 20, 10);
+      await schedule();
+      fakePlugin.permissionsGranted = false;
+      fakeNow = DateTime(2026, 10, 3, 10, 30);
+      await schedule();
+      expect(shownReminders(), isEmpty);
+
+      fakePlugin.permissionsGranted = true;
+      fakeNow = DateTime(2026, 10, 3, 11);
+      await schedule();
+
+      expect(shownReminders(), hasLength(1));
+      expect(pendingReminderDate(), DateTime(2026, 11, 3, 9));
+    });
+
+    test('a reminder shown before its reschedule failed is not shown again '
+        'when the reschedule is retried', () async {
+      fakeNow = DateTime(2026, 9, 20, 10);
+      await schedule();
+      // Shown at 10:30, but replacing today's pending alarm fails, so the
+      // 09:00 alarm is still pending.
+      fakeNow = DateTime(2026, 10, 3, 10, 30);
+      fakePlugin.failingScheduleIds.add(reminderId);
+      try {
+        await schedule();
+      } catch (_) {}
+      expect(shownReminders(), hasLength(1));
+
+      fakePlugin.failingScheduleIds.clear();
+      fakeNow = DateTime(2026, 10, 3, 11);
+      await schedule();
+
+      expect(shownReminders(), hasLength(1));
+      expect(pendingReminderDate(), DateTime(2026, 11, 3, 9));
+    });
+
     test('cancelling the reminder (investment closed or removed) forgets '
         'its due date', () async {
       fakeNow = DateTime(2026, 9, 20, 10);

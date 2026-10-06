@@ -137,7 +137,8 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       iOS: iosDetails,
     );
 
-    if (showDueToday && await ensurePermissionsForShow()) {
+    final shownToday = showDueToday && await ensurePermissionsForShow();
+    if (shownToday) {
       await _plugin.show(
         id: id,
         title: title,
@@ -146,6 +147,10 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
         payload: NotificationPayload.incomeReminder(investmentId),
       );
       await _recordReminderDue(investmentId, today);
+      await _prefs.setString(
+        NotificationPrefsKeys.incomeReminderShown(investmentId),
+        DateFormat('yyyy-MM-dd').format(today),
+      );
     }
 
     await _plugin.zonedSchedule(
@@ -158,6 +163,14 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       payload: NotificationPayload.incomeReminder(investmentId),
     );
     await _recordReminderDue(investmentId, nextIncomeDate);
+    if (showDueToday && !shownToday) {
+      // Held back (no permission): keep today's reminder owed, so a later
+      // launch today shows it once permission is granted.
+      await _recordReminderDue(
+        investmentId,
+        DateTime(today.year, today.month, today.day - 1),
+      );
+    }
 
     LoggerService.info(
       'Income reminder scheduled',
@@ -181,6 +194,10 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     String investmentId,
     DateTime today,
   ) async {
+    final shown = _prefs.getString(
+      NotificationPrefsKeys.incomeReminderShown(investmentId),
+    );
+    if (shown == DateFormat('yyyy-MM-dd').format(today)) return false;
     final raw = _prefs.getString(
       NotificationPrefsKeys.incomeReminderDue(investmentId),
     );
@@ -230,6 +247,9 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
   Future<void> cancelIncomeReminder(String investmentId) async {
     await _plugin.cancel(id: NotificationIds.incomeReminder(investmentId));
     await _prefs.remove(NotificationPrefsKeys.incomeReminderDue(investmentId));
+    await _prefs.remove(
+      NotificationPrefsKeys.incomeReminderShown(investmentId),
+    );
     LoggerService.info(
       'Income reminder cancelled',
       metadata: {'investmentId': investmentId},
@@ -386,8 +406,12 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
 
   /// Cancel maturity reminders for a specific investment.
   Future<void> cancelMaturityReminders(String investmentId) async {
-    await _plugin.cancel(id: NotificationIds.maturityReminder7Days(investmentId));
-    await _plugin.cancel(id: NotificationIds.maturityReminder1Day(investmentId));
+    await _plugin.cancel(
+      id: NotificationIds.maturityReminder7Days(investmentId),
+    );
+    await _plugin.cancel(
+      id: NotificationIds.maturityReminder1Day(investmentId),
+    );
     LoggerService.info(
       'Maturity reminders cancelled',
       metadata: {'investmentId': investmentId},
@@ -559,7 +583,10 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       id: NotificationIds.incomeRemindersSummary,
       title: title,
       body: body,
-      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
+      notificationDetails: NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      ),
     );
   }
 
@@ -604,7 +631,10 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       id: NotificationIds.maturityRemindersSummary,
       title: title,
       body: body,
-      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
+      notificationDetails: NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      ),
     );
   }
 
@@ -671,16 +701,16 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       id: NotificationIds.milestone(investmentId, reachedMilestone),
       title: title,
       body: body,
-      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
+      notificationDetails: NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      ),
       payload: NotificationPayload.milestone(investmentId, reachedMilestone),
     );
 
     LoggerService.info(
       'Milestone notification shown',
-      metadata: {
-        'investmentId': investmentId,
-        'milestone': reachedMilestone,
-      },
+      metadata: {'investmentId': investmentId, 'milestone': reachedMilestone},
     );
   }
 

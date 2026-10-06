@@ -19,7 +19,8 @@ class NotificationChannels {
   static const String fySummary = 'fy_summary';
   static const String general = 'general'; // For test notifications
   static const String activation = 'activation'; // New user activation nudges
-  static const String incomeGuardian = 'income_guardian'; // Income Guardian alerts
+  static const String incomeGuardian =
+      'income_guardian'; // Income Guardian alerts
 }
 
 /// Notification group keys for Android grouping
@@ -149,6 +150,11 @@ class NotificationPrefsKeys {
   /// has already been delivered is not shown again.
   static String incomeReminderDue(String investmentId) =>
       'income_reminder_due_$investmentId';
+
+  /// The day the app itself last showed an investment's income reminder,
+  /// so a retry after a failed reschedule does not show it twice.
+  static String incomeReminderShown(String investmentId) =>
+      'income_reminder_shown_$investmentId';
 
   /// Track when idle alert was last shown for an investment
   static String idleAlertLastShown(String investmentId) =>
