@@ -146,29 +146,41 @@ void main() {
       expect(SecurityUtils.verifyPin(pin, storedValue), isTrue);
     });
 
-    test('removePin removes the PIN, disables biometrics, and clears rate limiting', () async {
-      await service.setPin('1234');
-      await service.setBiometricEnabled(true);
+    test(
+      'removePin removes the PIN, disables biometrics, and clears rate limiting',
+      () async {
+        await service.setPin('1234');
+        await service.setBiometricEnabled(true);
 
-      // Simulate failed attempts (5 attempts to trigger lockout)
-      await service.verifyPin('5678'); // 1st attempt
-      await service.verifyPin('5678'); // 2nd attempt
-      await service.verifyPin('5678'); // 3rd attempt
-      await service.verifyPin('5678'); // 4th attempt
-      await service.verifyPin('5678'); // 5th attempt - triggers lockout
-      expect(fakeSecureStorage.storage['pin_failed_attempts'], equals('5'));
-      expect(fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'), isTrue);
+        // Simulate failed attempts (5 attempts to trigger lockout)
+        await service.verifyPin('5678'); // 1st attempt
+        await service.verifyPin('5678'); // 2nd attempt
+        await service.verifyPin('5678'); // 3rd attempt
+        await service.verifyPin('5678'); // 4th attempt
+        await service.verifyPin('5678'); // 5th attempt - triggers lockout
+        expect(fakeSecureStorage.storage['pin_failed_attempts'], equals('5'));
+        expect(
+          fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'),
+          isTrue,
+        );
 
-      expect(await service.hasPin(), isTrue);
-      expect(service.isBiometricEnabled, isTrue);
+        expect(await service.hasPin(), isTrue);
+        expect(service.isBiometricEnabled, isTrue);
 
-      await service.removePin();
+        await service.removePin();
 
-      expect(await service.hasPin(), isFalse);
-      expect(service.isBiometricEnabled, isFalse);
-      expect(fakeSecureStorage.storage.containsKey('pin_failed_attempts'), isFalse);
-      expect(fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'), isFalse);
-    });
+        expect(await service.hasPin(), isFalse);
+        expect(service.isBiometricEnabled, isFalse);
+        expect(
+          fakeSecureStorage.storage.containsKey('pin_failed_attempts'),
+          isFalse,
+        );
+        expect(
+          fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'),
+          isFalse,
+        );
+      },
+    );
 
     test('removePin clears rate limiting data', () async {
       await service.setPin('1234');
@@ -180,13 +192,25 @@ void main() {
       await service.verifyPin('0000'); // 4th attempt
       await service.verifyPin('0000'); // 5th attempt - triggers lockout
 
-      expect(fakeSecureStorage.storage.containsKey('pin_failed_attempts'), isTrue);
-      expect(fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'), isTrue);
+      expect(
+        fakeSecureStorage.storage.containsKey('pin_failed_attempts'),
+        isTrue,
+      );
+      expect(
+        fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'),
+        isTrue,
+      );
 
       await service.removePin();
 
-      expect(fakeSecureStorage.storage.containsKey('pin_failed_attempts'), isFalse);
-      expect(fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'), isFalse);
+      expect(
+        fakeSecureStorage.storage.containsKey('pin_failed_attempts'),
+        isFalse,
+      );
+      expect(
+        fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'),
+        isFalse,
+      );
     });
 
     test('setPin clears existing rate limiting data', () async {
@@ -199,14 +223,26 @@ void main() {
       await service.verifyPin('0000'); // 4th attempt
       await service.verifyPin('0000'); // 5th attempt - triggers lockout
 
-      expect(fakeSecureStorage.storage.containsKey('pin_failed_attempts'), isTrue);
-      expect(fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'), isTrue);
+      expect(
+        fakeSecureStorage.storage.containsKey('pin_failed_attempts'),
+        isTrue,
+      );
+      expect(
+        fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'),
+        isTrue,
+      );
 
       // Set a new PIN - should clear rate limiting
       await service.setPin('5678');
 
-      expect(fakeSecureStorage.storage.containsKey('pin_failed_attempts'), isFalse);
-      expect(fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'), isFalse);
+      expect(
+        fakeSecureStorage.storage.containsKey('pin_failed_attempts'),
+        isFalse,
+      );
+      expect(
+        fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'),
+        isFalse,
+      );
 
       // Verify new PIN works
       expect(await service.verifyPin('5678'), isTrue);
@@ -331,42 +367,58 @@ void main() {
         }
       });
 
-      test('5 hours later, the lockout is over and the PIN works', () async {
-        clock.now = const Duration(minutes: 2);
+      test('5 hours later, with over 15 minutes since the restart, the '
+          'lockout is over and the PIN works', () async {
+        // 950 s of uptime: more than the lockout, and less than the 1000 s
+        // boot reading the lockout began at, so it reads as a restart.
+        clock.now = const Duration(seconds: 950);
         clock.wall = clock.wall.add(const Duration(hours: 5));
 
         expect(await service.getLockoutRemainingSeconds(), isNull);
         expect(await service.verifyPin('1234'), isTrue);
       });
 
-      test('100 s later, the rest runs on the boot clock', () async {
+      test('30 s after the restart, those 30 s count and the rest runs on '
+          'the boot clock', () async {
         clock.now = const Duration(seconds: 30);
         clock.wall = clock.wall.add(const Duration(seconds: 100));
 
-        expect(await service.getLockoutRemainingSeconds(), 800);
+        // The time since the restart is a lower bound on the time served;
+        // the device clock, which whoever holds the phone can set, is not
+        // trusted.
+        expect(await service.getLockoutRemainingSeconds(), 870);
         expect(
           fakeSecureStorage.storage['pin_lockout_timestamp'],
-          'boot:-70000:1791158400000',
+          'boot:0:1791158470000',
         );
 
         // From here on the device clock no longer counts.
         clock.wall = clock.wall.add(const Duration(days: 1));
-        clock.advance(const Duration(seconds: 799));
+        clock.advance(const Duration(seconds: 869));
         expect(await service.getLockoutRemainingSeconds(), 1);
         clock.advance(const Duration(seconds: 1));
         expect(await service.getLockoutRemainingSeconds(), isNull);
       });
 
-      test('device clock set before the lockout began: it starts '
-          'again', () async {
+      test('device clock set before the lockout began: only the time since '
+          'the restart counts', () async {
         clock.now = const Duration(seconds: 30);
         clock.wall = clock.wall.subtract(const Duration(hours: 1));
 
-        expect(await service.getLockoutRemainingSeconds(), 900);
+        expect(await service.getLockoutRemainingSeconds(), 870);
         expect(
           fakeSecureStorage.storage['pin_lockout_timestamp'],
-          'boot:30000:1791154800000',
+          'boot:0:1791154770000',
         );
+      });
+
+      test('restarting the phone and setting the device clock a day forward '
+          'does not end the lockout', () async {
+        clock.now = const Duration(minutes: 2);
+        clock.wall = clock.wall.add(const Duration(days: 1));
+
+        expect(await service.getLockoutRemainingSeconds(), 780);
+        expect(await service.verifyPin('1234'), isFalse);
       });
     });
 
@@ -516,27 +568,21 @@ void main() {
       },
     );
 
-    test(
-      'Migrates PIN from SharedPreferences to SecureStorage',
-      () async {
-        // Setup legacy state - PIN stored in SharedPreferences
-        const legacyPin = '1234';
-        await prefs.setString('user_pin', legacyPin);
-        expect(
-          fakeSecureStorage.storage.containsKey('user_pin'),
-          isFalse,
-        );
+    test('Migrates PIN from SharedPreferences to SecureStorage', () async {
+      // Setup legacy state - PIN stored in SharedPreferences
+      const legacyPin = '1234';
+      await prefs.setString('user_pin', legacyPin);
+      expect(fakeSecureStorage.storage.containsKey('user_pin'), isFalse);
 
-        // Check if PIN exists (should trigger migration)
-        final hasPinResult = await service.hasPin();
-        expect(hasPinResult, isTrue);
+      // Check if PIN exists (should trigger migration)
+      final hasPinResult = await service.hasPin();
+      expect(hasPinResult, isTrue);
 
-        // Should have migrated to SecureStorage
-        expect(fakeSecureStorage.storage['user_pin'], equals(legacyPin));
-        // Legacy should be removed
-        expect(prefs.containsKey('user_pin'), isFalse);
-      },
-    );
+      // Should have migrated to SecureStorage
+      expect(fakeSecureStorage.storage['user_pin'], equals(legacyPin));
+      // Legacy should be removed
+      expect(prefs.containsKey('user_pin'), isFalse);
+    });
 
     test(
       'user with existing PIN before upgrade is unlocked after upgrade',
@@ -544,10 +590,7 @@ void main() {
         // Setup: Legacy PIN stored in SharedPreferences (pre-upgrade state)
         const legacyPin = '1234';
         await prefs.setString('user_pin', legacyPin);
-        expect(
-          fakeSecureStorage.storage.containsKey('user_pin'),
-          isFalse,
-        );
+        expect(fakeSecureStorage.storage.containsKey('user_pin'), isFalse);
 
         // Check hasPin (simulates app startup after upgrade)
         final hasPinResult = await service.hasPin();
@@ -592,10 +635,7 @@ void main() {
         // Setup: Legacy PIN stored in SharedPreferences
         const legacyPin = '1234';
         await prefs.setString('user_pin', legacyPin);
-        expect(
-          fakeSecureStorage.storage.containsKey('user_pin'),
-          isFalse,
-        );
+        expect(fakeSecureStorage.storage.containsKey('user_pin'), isFalse);
 
         // Simulate concurrent calls to hasPin (e.g., during app startup)
         final results = await Future.wait([

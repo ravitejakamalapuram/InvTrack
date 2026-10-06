@@ -52,7 +52,9 @@ class SecurityService {
       const IOSOptions(accessibility: KeychainAccessibility.first_unlock);
 
   Future<bool> hasPin() {
-    _hasPinFuture ??= _hasPinInternal().whenComplete(() => _hasPinFuture = null);
+    _hasPinFuture ??= _hasPinInternal().whenComplete(
+      () => _hasPinFuture = null,
+    );
     return _hasPinFuture!;
   }
 
@@ -256,11 +258,12 @@ class SecurityService {
   /// Measured on [SecurityClock], so changing the device clock cannot end it
   /// early. That clock cannot judge a start from before a phone restart (it
   /// restarts at zero), from its stopwatch fallback, or from an older version
-  /// (which stored the device clock alone). Only then does the device clock
-  /// judge it, once: an ended lockout is cleared, and the rest of a running
-  /// one is timed on [SecurityClock] again. A start ahead of the device
-  /// clock restarts the lockout rather than end it early, and so does a
-  /// stopwatch start after the app restarted.
+  /// (which stored the device clock alone). After a phone restart only the
+  /// time since the restart counts. For a stopwatch or older start the
+  /// device clock judges it, once. Either way an ended lockout is cleared,
+  /// and the rest of a running one is timed on [SecurityClock] again. A
+  /// start ahead of the device clock restarts the lockout rather than end it
+  /// early, and so does a stopwatch start after the app restarted.
   Future<int?> getLockoutRemainingSeconds() async {
     final stored = await _getLockoutTimestamp();
     final start = stored == null ? null : _decodeLockoutStart(stored);
@@ -278,7 +281,16 @@ class SecurityService {
       // app, which whoever holds the phone can do at will.
       final bothStopwatch =
           start.source == 'stopwatch' && now.source == 'stopwatch';
-      servedMs = bothStopwatch ? 0 : max(0, now.wallMs - start.wallMs);
+      // Boot clock behind the start: the phone restarted after the lockout
+      // began. The time since the restart is a lower bound on the time
+      // served, and the device clock, which whoever holds the phone can
+      // set, is not trusted.
+      final restarted = start.source == 'boot' && now.source == 'boot';
+      servedMs = bothStopwatch
+          ? 0
+          : restarted
+          ? now.clockMs
+          : max(0, now.wallMs - start.wallMs);
       if (servedMs < _lockoutDurationSeconds * 1000) {
         await _setLockoutTimestamp(
           _encodeLockoutStart((
