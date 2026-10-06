@@ -394,8 +394,11 @@ void main() {
 
     testWidgets('answered on another device: one read of the answer, no '
         'scan, no question', (tester) async {
+      // The current question; an answer to the A04 one alone asks again
+      // about the new kinds (usd_tag_repair_goals_widgets_test.dart).
       firestore.userFields = {
         UsdTagRepairService.resolvedField: DateTime.utc(2026, 10, 2),
+        UsdTagRepairService.extendedResolvedField: DateTime.utc(2026, 10, 5),
       };
       await tester.pumpWidget(app(repair: service()));
       await tester.pumpAndSettle();
@@ -532,11 +535,11 @@ void main() {
       expect(find.text(title), findsOneWidget);
       expect(find.text(message), findsOneWidget);
       // Every collection for the currency check (8 with the FIRE
-      // settings), read once for both questions, then 4 for the US dollar
-      // scan.
+      // settings), read once for both questions, then 7 for the US dollar
+      // scan (with goals and expected payments).
       expect(
         firestore.readOptions,
-        hasLength(LegacyCurrencyBackfillService.collections.length + 4),
+        hasLength(LegacyCurrencyBackfillService.collections.length + 7),
       );
       expect(LegacyCurrencyBackfillService.collections, hasLength(8));
     });

@@ -5,31 +5,82 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// An investment whose cash flows are all stored as US dollars while the
-/// user's base currency is not USD. Older versions saved such tags by
-/// mistake when merging, importing a CSV or restoring a backup (A03), so its
-/// amounts are converted from USD and shown many times too high.
+/// What an older version tagged US dollars by mistake.
+enum UsdTagKind {
+  /// An investment whose cash flows are all in US dollars.
+  allUsd,
+
+  /// An investment in US dollars with no cash flows yet: its next cash flow
+  /// would be in US dollars too.
+  noCashFlows,
+
+  /// An investment with some documents (cash flows, the investment itself
+  /// or its expected payments) in US dollars and the rest in the base
+  /// currency.
+  partlyUsd,
+
+  /// A goal in US dollars.
+  goal,
+}
+
+/// An investment or goal stored as US dollars while the user's base currency
+/// is not USD. Older versions saved such tags by mistake when merging,
+/// importing a CSV or restoring a backup (A03), so its amounts are converted
+/// from USD and shown many times too high.
 class UsdTagCandidate {
   const UsdTagCandidate({
-    required this.investmentId,
+    required this.id,
     required this.name,
     required this.isMerged,
     required this.isArchived,
     required this.cashFlowCount,
-  });
+    this.kind = UsdTagKind.allUsd,
+    int? usdCashFlowCount,
+    this.expectedPaymentCount = 0,
+    this.investmentTagged = false,
+    this.askedBefore = false,
+  }) : usdCashFlowCount = usdCashFlowCount ?? cashFlowCount;
 
-  final String investmentId;
+  /// What [UsdTagRepairService.repair] takes. The investment id for
+  /// [UsdTagKind.allUsd] (as in A04); otherwise the kind's prefix and the
+  /// investment or goal id, so an item that changed kind since the question
+  /// was asked is not changed.
+  final String id;
   final String name;
 
   /// Its notes start with "Merged from:" (made by Merge investments).
   final bool isMerged;
   final bool isArchived;
+  final UsdTagKind kind;
+
+  /// All of the investment's cash flows; 0 for a goal.
   final int cashFlowCount;
+
+  /// The cash flows that would change.
+  final int usdCashFlowCount;
+
+  /// The investment's expected payments that would change.
+  final int expectedPaymentCount;
+
+  /// The investment's own currency is US dollars and would change, so its
+  /// new cash flows would no longer start in US dollars.
+  final bool investmentTagged;
+
+  /// The user already answered the earlier question about investments all
+  /// in US dollars, which may have listed this one and kept it.
+  final bool askedBefore;
+
+  /// Only merged investments start ticked, and only the first time: older
+  /// merges always wrote US dollars. Anything else may really be in US
+  /// dollars, so the user ticks it.
+  bool get tickedByDefault =>
+      kind == UsdTagKind.allUsd && isMerged && !askedBefore;
 }
 
-/// Finds investments wrongly stored as US dollars (A04) and, only for the
-/// ones the user confirms, relabels them with the base currency. Amounts are
-/// never changed.
+/// Finds investments (A04), their expected payments and goals (A109)
+/// wrongly stored as US dollars and, only for the ones the user confirms,
+/// relabels them with the base currency. Only documents in US dollars
+/// change, and amounts never do.
 ///
 /// Safety:
 ///  * Reads come from the server only. Offline they throw and nothing is
@@ -37,17 +88,32 @@ class UsdTagCandidate {
 ///  * Before any write, a backup of every document about to change
 ///    (collection, id, previous and new currency) is saved for this user, so
 ///    [undo] can put the previous currency back.
+///  * The repair scans again and changes only items of the kind the user
+///    saw: an investment that became partly US dollars since the question,
+///    for example, is left alone.
 ///  * Each chunk is written in a transaction that re-reads every document.
-///    An investment with any document no longer `USD` (another device, an
-///    edit) is skipped as a whole, so a changed value is never overwritten
-///    and no investment is left with mixed currencies. A transaction fails
-///    instead of queueing while offline.
+///    An investment or goal with any document no longer `USD` (another
+///    device, an edit) is skipped as a whole within that transaction, so a
+///    changed value is never overwritten. A transaction fails instead of
+///    queueing while offline.
+///  * One investment with more documents than [defaultChunkSize] (a long
+///    run of monthly cash flows) is split across transactions. A change
+///    made elsewhere, or a failure, before a later one leaves the earlier
+///    ones written: the investment is then partly relabelled, listed again
+///    as partly US dollars and unticked, and [undo] puts the written part
+///    back.
+///  * A transaction's reads run in parallel, [defaultChunkSize] documents at
+///    a time, so it takes about one round trip and stays well inside
+///    cloud_firestore's 30-second runTransaction timeout on a slow network.
+///    All of a transaction's reads (two rounds in [undo]) share one read
+///    timeout, which fails the transaction first, so that plugin timeout
+///    path, which can still commit, is never reached.
 class UsdTagRepairService {
   UsdTagRepairService({
     required FirebaseFirestore firestore,
     required String userId,
     required SharedPreferences prefs,
-    int chunkSize = maxWritesPerCommit,
+    int chunkSize = defaultChunkSize,
     Duration readTimeout = const Duration(seconds: 20),
   }) : _firestore = firestore,
        _userId = userId,
@@ -79,36 +145,67 @@ class UsdTagRepairService {
   /// Firestore's limit on writes in one batch or transaction.
   static const int maxWritesPerCommit = 500;
 
+  /// Documents written per transaction. Smaller than [maxWritesPerCommit] so
+  /// a transaction's parallel reads finish quickly on a slow network.
+  static const int defaultChunkSize = 100;
+
   /// Investment collection and its cash-flow collection, active and archived.
   static const List<(String, String)> _collections = [
     ('investments', 'cashflows'),
     ('archivedInvestments', 'archivedCashflows'),
   ];
 
+  /// Goal collections, active and archived.
+  static const List<String> _goalCollections = ['goals', 'archivedGoals'];
+
+  /// Expected payments of active and archived investments.
+  static const String _expectedCashFlows = 'expectedCashFlows';
+
+  /// Prefixes of [UsdTagCandidate.id] for the kinds A04 did not flag.
+  static const String _goalPrefix = 'goal:';
+  static const String _noCashFlowsPrefix = 'empty:';
+  static const String _partlyUsdPrefix = 'partly:';
+
   static const String _field = 'currency';
 
-  /// Where sample data mode records its investment ids
+  /// Where sample data mode records its investment and goal ids
   /// (SampleDataModeNotifier).
   static const String _sampleInvestmentIdsKey = 'sample_data_investment_ids';
+  static const String _sampleGoalIdsKey = 'sample_data_goal_ids';
 
   /// Every SharedPreferences key this service keeps for [userId]. Removed on
   /// account deletion.
   static List<String> prefsKeysFor(String userId) => [
     'usd_tag_repair_resolved_$userId',
     'usd_tag_repair_backup_$userId',
+    'usd_tag_repair_extended_resolved_$userId',
   ];
 
   String get _resolvedKey => 'usd_tag_repair_resolved_$_userId';
   String get _backupKey => 'usd_tag_repair_backup_$_userId';
+  String get _extendedResolvedKey =>
+      'usd_tag_repair_extended_resolved_$_userId';
 
-  /// Whether this device has recorded the answer (or that there was nothing
-  /// to fix). See [checkResolved] for the account-wide answer.
-  bool get isResolved => _prefs.getBool(_resolvedKey) ?? false;
+  /// Whether this device has recorded the answer to the current question
+  /// (or that there was nothing to fix). See [checkResolved] for the
+  /// account-wide answer.
+  bool get isResolved => _prefs.getBool(_extendedResolvedKey) ?? false;
 
-  /// Field on the `users/{uid}` document that records the answer for the
-  /// account, so a new install or another phone is not asked again. Removed
-  /// with that document on account deletion.
+  /// Whether this user answered the A04 question, which listed only
+  /// investments all in US dollars, on this device or (after
+  /// [checkResolved]) on another one. Those investments then start
+  /// unticked.
+  bool get answeredAllUsd => _prefs.getBool(_resolvedKey) ?? false;
+
+  /// Field on the `users/{uid}` document that records the A04 answer for
+  /// the account. Removed with that document on account deletion.
   static const String resolvedField = 'usdTagRepairResolvedAt';
+
+  /// Field on the `users/{uid}` document that records the answer to the
+  /// current question (A109: goals, expected payments, empty and partly US
+  /// dollar investments too), so a new install or another phone is not
+  /// asked again. Removed with that document on account deletion.
+  static const String extendedResolvedField = 'usdTagRepairExtendedResolvedAt';
 
   DocumentReference<Map<String, dynamic>> get _userDoc =>
       _firestore.collection('users').doc(_userId);
@@ -121,8 +218,13 @@ class UsdTagRepairService {
     final snapshot = await _userDoc
         .get(const GetOptions(source: Source.server))
         .timeout(_readTimeout);
-    if (snapshot.data()?[resolvedField] == null) return false;
+    final data = snapshot.data();
+    if (data?[resolvedField] != null) {
+      await _prefs.setBool(_resolvedKey, true);
+    }
+    if (data?[extendedResolvedField] == null) return false;
     await _prefs.setBool(_resolvedKey, true);
+    await _prefs.setBool(_extendedResolvedKey, true);
     return true;
   }
 
@@ -131,10 +233,12 @@ class UsdTagRepairService {
   /// Firestore sends the account record when the connection is back.
   Future<void> markResolved() async {
     await _prefs.setBool(_resolvedKey, true);
+    await _prefs.setBool(_extendedResolvedKey, true);
     try {
       await _userDoc
           .set({
             resolvedField: FieldValue.serverTimestamp(),
+            extendedResolvedField: FieldValue.serverTimestamp(),
           }, SetOptions(merge: true))
           .timeout(_writeTimeout);
     } on TimeoutException {
@@ -152,7 +256,18 @@ class UsdTagRepairService {
 
   /// How many investments [undo] would put back.
   int get backedUpInvestmentCount =>
-      {for (final e in _backup()) e['inv']}.length;
+      _backedUpOwners().where((o) => !o.startsWith(_goalPrefix)).length;
+
+  /// How many goals [undo] would put back.
+  int get backedUpGoalCount =>
+      _backedUpOwners().where((o) => o.startsWith(_goalPrefix)).length;
+
+  /// The investment id, or `goal:` and the goal id, of each backed-up
+  /// document.
+  Set<String> _backedUpOwners() => {
+    for (final e in _backup())
+      if (e['inv'] case final String owner) owner,
+  };
 
   List<Map<String, dynamic>> _backup() {
     final raw = _prefs.getString(_backupKey);
@@ -172,62 +287,141 @@ class UsdTagRepairService {
     }
   }
 
-  /// Investments that look wrongly stored as US dollars, read from the
-  /// server. Writes nothing. Empty when [baseCurrency] is USD. Throws offline.
-  Future<List<UsdTagCandidate>> findCandidates(String baseCurrency) async {
-    final scan = await _scan(baseCurrency);
-    return [for (final s in scan) s.candidate];
-  }
+  /// Investments and goals that look wrongly stored as US dollars, read
+  /// from the server. Writes nothing. Empty when [baseCurrency] is USD.
+  /// Throws offline. After the A04 answer ([answeredAllUsd]), investments
+  /// all in US dollars are still listed, since A04 skipped those that had
+  /// no cash flows then, but they start unticked.
+  Future<List<UsdTagCandidate>> findCandidates(String baseCurrency) async => [
+    for (final s in await _scan(baseCurrency)) s.candidate,
+  ];
 
   Future<List<_Scanned>> _scan(String baseCurrency) async {
     if (baseCurrency == taggedCurrency) return const [];
     final userDoc = _userDoc;
-    // Sample data includes a US dollar investment on purpose.
-    final sampleIds = {...?_prefs.getStringList(_sampleInvestmentIdsKey)};
+    final askedBefore = answeredAllUsd;
+    // Sample data includes a US dollar investment on purpose, and its goals
+    // are in the base currency of the day it was loaded.
+    final sampleIds = {
+      ...?_prefs.getStringList(_sampleInvestmentIdsKey),
+      for (final id in _prefs.getStringList(_sampleGoalIdsKey) ?? const [])
+        '$_goalPrefix$id',
+    };
+    final paymentsByInvestment = _byInvestment(
+      await _read(userDoc.collection(_expectedCashFlows)),
+    );
     final found = <_Scanned>[];
     for (final (investmentsName, cashFlowsName) in _collections) {
       final investments = await _read(userDoc.collection(investmentsName));
-      final cashFlows = await _read(userDoc.collection(cashFlowsName));
-      final flowsByInvestment =
-          <String, List<QueryDocumentSnapshot<Map<String, dynamic>>>>{};
-      for (final doc in cashFlows.docs) {
-        final investmentId = doc.data()['investmentId'];
-        if (investmentId is! String) continue;
-        flowsByInvestment.putIfAbsent(investmentId, () => []).add(doc);
-      }
+      final flowsByInvestment = _byInvestment(
+        await _read(userDoc.collection(cashFlowsName)),
+      );
       final inCollection = <_Scanned>[];
       for (final inv in investments.docs) {
         if (sampleIds.contains(inv.id)) continue;
-        final flows = flowsByInvestment[inv.id] ?? const [];
-        if (flows.isEmpty) continue;
-        if (!flows.every((f) => _isTagged(f.data()))) continue;
         final data = inv.data();
+        final flows = flowsByInvestment[inv.id] ?? const [];
+        final payments = paymentsByInvestment[inv.id] ?? const [];
+        final usdFlows = [
+          for (final f in flows)
+            if (_isTagged(f.data())) f,
+        ];
+        final usdPayments = [
+          for (final p in payments)
+            if (_isTagged(p.data())) p,
+        ];
+        final UsdTagKind kind;
+        if (flows.isNotEmpty && usdFlows.length == flows.length) {
+          kind = UsdTagKind.allUsd;
+        } else if (!_isTagged(data) &&
+            usdFlows.isEmpty &&
+            usdPayments.isEmpty) {
+          continue;
+        } else if (![
+          data,
+          for (final f in flows) f.data(),
+          for (final p in payments) p.data(),
+        ].every((d) => _isTagged(d) || _isIn(d, baseCurrency))) {
+          // Also in a third currency: really multi-currency, not a mistake.
+          continue;
+        } else if (flows.isEmpty && _isTagged(data)) {
+          kind = UsdTagKind.noCashFlows;
+        } else {
+          kind = UsdTagKind.partlyUsd;
+        }
         final notes = data['notes'];
         inCollection.add(
           _Scanned(
             UsdTagCandidate(
-              investmentId: inv.id,
+              id: switch (kind) {
+                UsdTagKind.noCashFlows => '$_noCashFlowsPrefix${inv.id}',
+                UsdTagKind.partlyUsd => '$_partlyUsdPrefix${inv.id}',
+                _ => inv.id,
+              },
               name: data['name'] as String? ?? '',
               isMerged: notes is String && notes.startsWith(mergedNotesPrefix),
               isArchived: investmentsName != 'investments',
+              kind: kind,
               cashFlowCount: flows.length,
+              usdCashFlowCount: usdFlows.length,
+              expectedPaymentCount: usdPayments.length,
+              investmentTagged: _isTagged(data),
+              askedBefore: askedBefore && kind == UsdTagKind.allUsd,
             ),
+            inv.id,
             [
               if (_isTagged(data)) (investmentsName, inv.reference),
-              for (final f in flows) (cashFlowsName, f.reference),
+              for (final f in usdFlows) (cashFlowsName, f.reference),
+              for (final p in usdPayments) (_expectedCashFlows, p.reference),
             ],
           ),
         );
       }
-      inCollection.sort(
-        (a, b) => a.candidate.name.toLowerCase().compareTo(
-          b.candidate.name.toLowerCase(),
-        ),
+      found.addAll(_byName(inCollection));
+    }
+    for (final goalsName in _goalCollections) {
+      final goals = await _read(userDoc.collection(goalsName));
+      found.addAll(
+        _byName([
+          for (final goal in goals.docs)
+            if (_isTagged(goal.data()) &&
+                !sampleIds.contains('$_goalPrefix${goal.id}'))
+              _Scanned(
+                UsdTagCandidate(
+                  id: '$_goalPrefix${goal.id}',
+                  name: goal.data()['name'] as String? ?? '',
+                  isMerged: false,
+                  isArchived: goalsName != 'goals',
+                  kind: UsdTagKind.goal,
+                  cashFlowCount: 0,
+                ),
+                '$_goalPrefix${goal.id}',
+                [(goalsName, goal.reference)],
+              ),
+        ]),
       );
-      found.addAll(inCollection);
     }
     return found;
   }
+
+  static Map<String, List<QueryDocumentSnapshot<Map<String, dynamic>>>>
+  _byInvestment(QuerySnapshot<Map<String, dynamic>> snapshot) {
+    final byInvestment =
+        <String, List<QueryDocumentSnapshot<Map<String, dynamic>>>>{};
+    for (final doc in snapshot.docs) {
+      final investmentId = doc.data()['investmentId'];
+      if (investmentId is! String) continue;
+      byInvestment.putIfAbsent(investmentId, () => []).add(doc);
+    }
+    return byInvestment;
+  }
+
+  static List<_Scanned> _byName(List<_Scanned> scanned) => scanned
+    ..sort(
+      (a, b) => a.candidate.name.toLowerCase().compareTo(
+        b.candidate.name.toLowerCase(),
+      ),
+    );
 
   Future<QuerySnapshot<Map<String, dynamic>>> _read(
     CollectionReference<Map<String, dynamic>> collection,
@@ -238,14 +432,23 @@ class UsdTagRepairService {
   static bool _isTagged(Map<String, dynamic>? data) =>
       data?[_field] == taggedCurrency;
 
-  /// Relabels the confirmed [investmentIds] (and their cash flows) from USD
-  /// to [baseCurrency], after re-reading them from the server. Investments
-  /// that are no longer all USD are skipped, so a second run writes nothing.
-  /// Returns how many documents and investments this run changed, and
-  /// records the answer. Throws if a read or write fails; documents already
-  /// written stay in the backup.
-  Future<({int documents, int investments})> repair(
-    Set<String> investmentIds,
+  /// In [currency], or with no currency (read as the base currency).
+  static bool _isIn(Map<String, dynamic>? data, String currency) {
+    final value = data?[_field];
+    return value == currency ||
+        value == null ||
+        value is String && value.trim().isEmpty;
+  }
+
+  /// Relabels the documents in US dollars of the confirmed candidates
+  /// ([UsdTagCandidate.id]) with [baseCurrency], after re-reading them from
+  /// the server. Candidates that are no longer of the kind the user saw, or
+  /// no longer in US dollars, are skipped, so a second run writes nothing.
+  /// Returns how many documents, investments and goals this run changed,
+  /// and records the answer. Throws if a read or write fails; documents
+  /// already written stay in the backup.
+  Future<({int documents, int investments, int goals})> repair(
+    Set<String> ids,
     String baseCurrency,
   ) async {
     if (baseCurrency.trim().isEmpty || baseCurrency == taggedCurrency) {
@@ -253,18 +456,18 @@ class UsdTagRepairService {
     }
     final selected = [
       for (final s in await _scan(baseCurrency))
-        if (investmentIds.contains(s.candidate.investmentId)) s,
+        if (ids.contains(s.candidate.id)) s,
     ];
 
     var written = 0;
-    final changedInvestments = <String>{};
+    final changed = <String>{};
     for (final chunk in _chunks(selected)) {
       final planned = [
-        for (final (investmentId, collection, ref) in chunk)
+        for (final (owner, collection, ref) in chunk)
           {
             'c': collection,
             'id': ref.id,
-            'inv': investmentId,
+            'inv': owner,
             'from': taggedCurrency,
             'to': baseCurrency,
           },
@@ -293,33 +496,35 @@ class UsdTagRepairService {
           if (done.contains(chunk[i].$3)) planned[i],
       ]);
       written += done.length;
-      changedInvestments.addAll([
-        for (final (investmentId, _, ref) in chunk)
-          if (done.contains(ref)) investmentId,
+      changed.addAll([
+        for (final (owner, _, ref) in chunk)
+          if (done.contains(ref)) owner,
       ]);
     }
     await markResolved();
+    final goals = changed.where((o) => o.startsWith(_goalPrefix)).length;
+    final investments = changed.length - goals;
     // Counts only: never ids, names or amounts (CLAUDE.md rule 7).
     LoggerService.info(
       'USD tag repair finished',
       metadata: {
-        'investments': changedInvestments.length,
+        'investments': investments,
+        'goals': goals,
         'documents': written,
       },
     );
-    return (documents: written, investments: changedInvestments.length);
+    return (documents: written, investments: investments, goals: goals);
   }
 
-  /// Groups documents so that one investment's documents share a
-  /// transaction; an investment with more documents than [_chunkSize] is
-  /// split only because it must be.
+  /// Groups documents so that one investment's (or goal's) documents share
+  /// a transaction; one with more documents than [_chunkSize] is split only
+  /// because it must be.
   List<List<_Target>> _chunks(List<_Scanned> selected) {
     final chunks = <List<_Target>>[];
     var current = <_Target>[];
     for (final s in selected) {
       final refs = [
-        for (final (collection, ref) in s.refs)
-          (s.candidate.investmentId, collection, ref),
+        for (final (collection, ref) in s.refs) (s.owner, collection, ref),
       ];
       if (current.isNotEmpty && current.length + refs.length > _chunkSize) {
         chunks.add(current);
@@ -337,13 +542,15 @@ class UsdTagRepairService {
     return chunks;
   }
 
-  /// Where a document moves when its investment is archived or restored.
-  /// Archiving keeps document ids.
+  /// Where a document moves when its investment or goal is archived or
+  /// restored. Archiving keeps document ids.
   static const Map<String, String> _movedTo = {
     'investments': 'archivedInvestments',
     'archivedInvestments': 'investments',
     'cashflows': 'archivedCashflows',
     'archivedCashflows': 'cashflows',
+    'goals': 'archivedGoals',
+    'archivedGoals': 'goals',
   };
 
   /// Puts US dollars back on every document the last repairs changed, where
@@ -353,7 +560,6 @@ class UsdTagRepairService {
   Future<int> undo() async {
     final entries = _backup();
     if (entries.isEmpty) return 0;
-    final userDoc = _userDoc;
     var restored = 0;
     for (var i = 0; i < entries.length; i += _chunkSize) {
       final chunk = entries.sublist(
@@ -361,19 +567,14 @@ class UsdTagRepairService {
         i + _chunkSize > entries.length ? entries.length : i + _chunkSize,
       );
       restored += await _firestore.runTransaction<int>((tx) async {
-        final toRestore = <(DocumentReference<Map<String, dynamic>>, String)>[];
-        for (final e in chunk) {
-          final collection = e['c'] as String;
-          for (final name in [collection, ?_movedTo[collection]]) {
-            final ref = userDoc.collection(name).doc(e['id'] as String);
-            final snap = await tx.get(ref);
-            if (!snap.exists) continue;
-            if (snap.data()?[_field] == e['to']) {
-              toRestore.add((ref, e['from'] as String));
-            }
-            break;
-          }
-        }
+        // Both rounds of reads share one read timeout, so the transaction
+        // fails before the plugin's 30-second wait runs out.
+        final (refs, snaps) = await _locate(tx, chunk).timeout(_readTimeout);
+        final toRestore = [
+          for (var i = 0; i < chunk.length; i++)
+            if (snaps[i].exists && snaps[i].data()?[_field] == chunk[i]['to'])
+              (refs[i], chunk[i]['from'] as String),
+        ];
         for (final (ref, from) in toRestore) {
           tx.update(ref, {_field: from});
         }
@@ -388,21 +589,58 @@ class UsdTagRepairService {
     return restored;
   }
 
+  /// Reads each backed-up document of [chunk] in [tx] where the repair
+  /// wrote it, all at once; then, only for documents no longer there, in the
+  /// collection they moved to when their investment or goal was archived or
+  /// restored.
+  Future<
+    (
+      List<DocumentReference<Map<String, dynamic>>>,
+      List<DocumentSnapshot<Map<String, dynamic>>>,
+    )
+  >
+  _locate(Transaction tx, List<Map<String, dynamic>> chunk) async {
+    final userDoc = _userDoc;
+    DocumentReference<Map<String, dynamic>> refIn(String name, int at) =>
+        userDoc.collection(name).doc(chunk[at]['id'] as String);
+    final refs = [
+      for (var i = 0; i < chunk.length; i++) refIn(chunk[i]['c'] as String, i),
+    ];
+    final snaps = await _readAll(tx, refs);
+    final moved = [
+      for (var i = 0; i < chunk.length; i++)
+        if (!snaps[i].exists && _movedTo[chunk[i]['c']] != null) i,
+    ];
+    final movedRefs = [
+      for (final i in moved) refIn(_movedTo[chunk[i]['c']]!, i),
+    ];
+    final movedSnaps = await _readAll(tx, movedRefs);
+    for (var m = 0; m < moved.length; m++) {
+      refs[moved[m]] = movedRefs[m];
+      snaps[moved[m]] = movedSnaps[m];
+    }
+    return (refs, snaps);
+  }
+
   /// Changes `currency` from [from] to [to] on each document of [targets],
-  /// in one transaction. An investment with any existing document no longer
-  /// holding [from] is skipped as a whole, so it never ends up with mixed
-  /// currencies. Returns the documents written.
+  /// in one transaction. An investment or goal with any existing document no
+  /// longer holding [from] is skipped as a whole, so a value changed
+  /// elsewhere is never overwritten. Returns the documents written.
   Future<List<DocumentReference<Map<String, dynamic>>>> _rewrite(
     List<_Target> targets, {
     required String from,
     required String to,
   }) {
     return _firestore.runTransaction((tx) async {
+      final snaps = await _readAll(tx, [
+        for (final (_, _, ref) in targets) ref,
+      ]).timeout(_readTimeout);
       final still = <_Target>[];
       final changedElsewhere = <String>{};
-      for (final target in targets) {
-        final (investmentId, _, ref) = target;
-        final snap = await tx.get(ref);
+      for (var i = 0; i < targets.length; i++) {
+        final target = targets[i];
+        final (investmentId, _, _) = target;
+        final snap = snaps[i];
         if (!snap.exists) continue;
         if (snap.data()?[_field] == from) {
           still.add(target);
@@ -420,16 +658,30 @@ class UsdTagRepairService {
       return toWrite;
     });
   }
+
+  /// Reads [refs] in [tx] all at once. One after another, a few hundred
+  /// documents ran past the 30-second runTransaction timeout on a slow
+  /// network (A81). Callers put one read timeout on all of a transaction's
+  /// reads.
+  Future<List<DocumentSnapshot<Map<String, dynamic>>>> _readAll(
+    Transaction tx,
+    List<DocumentReference<Map<String, dynamic>>> refs,
+  ) => Future.wait([for (final ref in refs) tx.get(ref)]);
 }
 
-/// Investment id, collection name and document to rewrite.
+/// Owner (see [_Scanned.owner]), collection name and document to rewrite.
 typedef _Target = (String, String, DocumentReference<Map<String, dynamic>>);
 
 class _Scanned {
-  _Scanned(this.candidate, this.refs);
+  _Scanned(this.candidate, this.owner, this.refs);
   final UsdTagCandidate candidate;
 
-  /// Collection name and document of the investment (when it is tagged USD)
-  /// and of each of its cash flows.
+  /// The investment id, or `goal:` and the goal id, recorded with each
+  /// document in the backup.
+  final String owner;
+
+  /// Collection name and document of everything in US dollars that the
+  /// repair changes: the investment, its cash flows and expected payments,
+  /// or the goal.
   final List<(String, DocumentReference<Map<String, dynamic>>)> refs;
 }
