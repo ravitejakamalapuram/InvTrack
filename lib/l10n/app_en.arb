@@ -55,17 +55,6 @@
     "description": "Yesterday label for relative dates"
   },
   
-  "daysAgo": "{count} days ago",
-  "@daysAgo": {
-    "description": "Days ago label for relative dates",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "3"
-      }
-    }
-  },
-  
   "weeksAgo": "{count} weeks ago",
   "@weeksAgo": {
     "description": "Weeks ago label for relative dates",
@@ -327,11 +316,6 @@
   "periodicUpdatesAboutPortfolio": "Periodic updates about your portfolio performance",
   "@periodicUpdatesAboutPortfolio": {
     "description": "Summaries section footer"
-  },
-
-  "weeklySummary": "Weekly Summary",
-  "@weeklySummary": {
-    "description": "Weekly summary toggle title"
   },
 
   "getSummaryEverySunday": "Get a summary every Sunday",
@@ -1361,11 +1345,6 @@
     "description": "Seed data button label"
   },
 
-  "deleteAccount": "Delete Account?",
-  "@deleteAccount": {
-    "description": "Delete account dialog title"
-  },
-
   "deleteAccountMessage": "This will permanently delete:\n\n• All investments & cash flows\n• All goals & progress\n• All documents & attachments\n• Your user profile\n\nThis action cannot be undone!",
   "@deleteAccountMessage": {
     "description": "Delete account warning message"
@@ -2289,21 +2268,6 @@
     "description": "Tooltip for hide amounts button"
   },
 
-  "tooltipCloseSearch": "Close search",
-  "@tooltipCloseSearch": {
-    "description": "Tooltip for close search button"
-  },
-
-  "tooltipRemoveFile": "Remove file",
-  "@tooltipRemoveFile": {
-    "description": "Tooltip for remove file button"
-  },
-
-  "tooltipCopyAmount": "Copy amount",
-  "@tooltipCopyAmount": {
-    "description": "Tooltip for copy amount button"
-  },
-
   "tooltipSortInvestments": "Sort investments",
   "@tooltipSortInvestments": {
     "description": "Tooltip for sort investments button"
@@ -2312,11 +2276,6 @@
   "tooltipFilterInvestments": "Filter investments",
   "@tooltipFilterInvestments": {
     "description": "Tooltip for filter investments button"
-  },
-
-  "tooltipCloseSearch": "Close search",
-  "@tooltipCloseSearch": {
-    "description": "Tooltip for close search button"
   },
 
   "tooltipSearchInvestments": "Search investments",
@@ -2339,16 +2298,6 @@
     "description": "Tooltip for clear maturity date button"
   },
 
-  "tooltipCloseSearch": "Close search",
-  "@tooltipCloseSearch": {
-    "description": "Tooltip for close search button"
-  },
-
-  "tooltipRemoveFile": "Remove file",
-  "@tooltipRemoveFile": {
-    "description": "Tooltip for remove file button"
-  },
-
   "tooltipBiometric": "Use biometric authentication",
   "@tooltipBiometric": {
     "description": "Tooltip for biometric authentication button"
@@ -2362,11 +2311,6 @@
   "tooltipCopyAmount": "Copy amount",
   "@tooltipCopyAmount": {
     "description": "Tooltip for copy amount button"
-  },
-
-  "tooltipRemoveFile": "Remove file",
-  "@tooltipRemoveFile": {
-    "description": "Tooltip for remove file button"
   },
 
   "hintNoMaturityDateSet": "No maturity date set",
@@ -2640,7 +2584,7 @@
     "description": "Snackbar when withdrawing the deletion request failed"
   },
 
-  "deletionNeedsInternet": "Couldn't finish deleting because you're offline or the connection is unstable. Some of your data may already have been removed, but your account is still active. Please connect to the internet and try again to finish.",
+  "deletionNeedsInternet": "Couldn''t finish deleting because you''re offline or the connection is unstable. Some of your data may already have been removed, but your account is still active. Please connect to the internet and try again to finish.",
   "@deletionNeedsInternet": {
     "description": "Error shown when account or guest data deletion cannot be confirmed by the server (offline/timeout). The account is NOT deleted."
   },
@@ -2678,11 +2622,6 @@
   "whatHappensToGuestDataAnswer": "If your Google account is new, your guest data is linked to it automatically. If your Google account already exists, InvTrack backs up your guest data and adds it to that account for you, so there is nothing to import by hand. Some investment details, such as maturity dates, interest rates, payout frequency and notes, cannot be moved yet and are not in the backup, so InvTrack tells you before you sign in if any would be lost. If some investments, cash flows or goals cannot be added, a backup of them is kept on this device until you delete it in Settings > Data & Account.",
   "@whatHappensToGuestDataAnswer": {
     "description": "FAQ answer about guest data after sign-in"
-  },
-
-  "loading": "Loading",
-  "@loading": {
-    "description": "Loading indicator text"
   },
 
   "currencySwitchedSuccessfully": "Currency switched to {currency}",
@@ -3094,11 +3033,6 @@
     "description": "Empty state message when no investments exist"
   },
 
-  "netPosition": "Net Position",
-  "@netPosition": {
-    "description": "Label for net position in investment details"
-  },
-
   "bulkOpsNotAvailableForArchived": "Bulk operations are not available for archived goals.\nUse swipe actions to delete or unarchive individual items.",
   "@bulkOpsNotAvailableForArchived": {
     "description": "Message shown when trying to use bulk operations on archived goals"
@@ -3112,11 +3046,6 @@
   "enterNameForMergedInvestment": "Enter name for merged investment",
   "@enterNameForMergedInvestment": {
     "description": "Hint for new investment name field in merge dialog"
-  },
-
-  "investmentType": "Investment Type",
-  "@investmentType": {
-    "description": "Label for investment type selection"
   },
 
   "updateRequired": "Update Required",
@@ -3137,11 +3066,6 @@
   "hiddenAmount": "Hidden amount",
   "@hiddenAmount": {
     "description": "Semantic label for privacy-masked amounts"
-  },
-
-  "portfolioHealth": "Portfolio Health",
-  "@portfolioHealth": {
-    "description": "Portfolio health score feature name"
   },
 
   "portfolioHealthScore": "Portfolio Health Score",
@@ -3229,11 +3153,6 @@
   "topSuggestions": "Top Suggestions",
   "@topSuggestions": {
     "description": "Top suggestions section title"
-  },
-
-  "scoreCopiedToClipboard": "Score copied to clipboard",
-  "@scoreCopiedToClipboard": {
-    "description": "Message when score is copied"
   },
 
   "scoreImprovementPositive": "+{points} pts",
@@ -3669,7 +3588,7 @@
 
   "weeklySummary": "Weekly Summary",
   "@weeklySummary": {
-    "description": "Weekly summary report title"
+    "description": "Weekly summary: notification toggle title and report title"
   },
 
   "thisWeek": "This Week",
@@ -3734,7 +3653,7 @@
 
   "portfolioHealth": "Portfolio Health",
   "@portfolioHealth": {
-    "description": "Portfolio health report title"
+    "description": "Portfolio health: dashboard card title and report title"
   },
 
   "quickReports": "Quick Reports",
@@ -3941,11 +3860,6 @@
     "description": "Tooltip for export button"
   },
 
-  "exportAsCsv": "Export as CSV",
-  "@exportAsCsv": {
-    "description": "CSV export menu item"
-  },
-
   "forSpreadsheetApps": "For spreadsheet apps",
   "@forSpreadsheetApps": {
     "description": "Description for CSV export"
@@ -4011,11 +3925,6 @@
   "avgXirr": "Avg XIRR",
   "@avgXirr": {
     "description": "Average XIRR label"
-  },
-
-  "medianXirr": "Median XIRR",
-  "@medianXirr": {
-    "description": "Median XIRR label"
   },
 
   "profitable": "Profitable",
@@ -4948,7 +4857,8 @@
     "description": "Shows days in the past",
     "placeholders": {
       "days": {
-        "type": "int"
+        "type": "int",
+        "example": "3"
       }
     }
   },
@@ -5068,11 +4978,6 @@
     "description": "CTA button text to add first investment"
   },
 
-  "smartInsights": "Smart Insights",
-  "@smartInsights": {
-    "description": "Section title for auto-generated insights"
-  },
-
   "reportBuilder": "Report Builder",
   "@reportBuilder": {
     "description": "Title for DIY report builder"
@@ -5091,11 +4996,6 @@
   "viewPastReports": "View Past Reports",
   "@viewPastReports": {
     "description": "Button to expand historical reports"
-  },
-
-  "needsAttention": "Needs Attention",
-  "@needsAttention": {
-    "description": "Section title for action-required items"
   },
 
   "investmentsDown": "{count} investments down >10%",
@@ -5236,7 +5136,7 @@
 
   "investmentType": "Investment Type",
   "@investmentType": {
-    "description": "Filter label for investment type"
+    "description": "Label for the investment type selection"
   },
 
   "category": "Category",
@@ -5436,7 +5336,7 @@
 
   "smartInsights": "Smart Insights",
   "@smartInsights": {
-    "description": "Section title for AI-generated insights"
+    "description": "Section title for automatically generated insights"
   },
 
   "needsAttention": "Needs Attention",
@@ -5552,7 +5452,7 @@
   },
   "exportAsCsv": "Export as CSV",
   "@exportAsCsv": {
-    "description": "Export as CSV option title"
+    "description": "Export as CSV menu item title"
   },
   "exportAsCsvSubtitle": "Spreadsheet format",
   "@exportAsCsvSubtitle": {
@@ -5584,7 +5484,7 @@
   },
   "deleteAccount": "Delete Account",
   "@deleteAccount": {
-    "description": "Delete account option title"
+    "description": "Title of the delete-account dialog"
   },
   "deleteAccountSubtitle": "Permanently delete all data",
   "@deleteAccountSubtitle": {

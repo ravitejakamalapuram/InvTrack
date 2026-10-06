@@ -396,7 +396,7 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
       icon: Icons.currency_exchange_rounded,
       iconColor: AppColors.successLight,
       title: l10n.currency,
-      value: currencySwitchStatus.isBusy ? '${l10n.loading}...' : currency,
+      value: currencySwitchStatus.isBusy ? l10n.loading : currency,
       trailing: currencySwitchStatus.isBusy
           ? Semantics(
               label:
