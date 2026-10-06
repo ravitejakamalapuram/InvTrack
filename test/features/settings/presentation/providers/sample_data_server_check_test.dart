@@ -4,6 +4,8 @@
 // first ask the server and write nothing unless both investment collections
 // and both goal collections are empty there: sample data includes a goal.
 
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -57,6 +59,14 @@ class _DeniedInvestmentRepository extends FakeInvestmentRepository {
       plugin: 'cloud_firestore',
       code: 'permission-denied',
     );
+  }
+}
+
+/// A repository whose server check times out.
+class _TimedOutInvestmentRepository extends FakeInvestmentRepository {
+  @override
+  Future<bool> hasAnyInvestmentOnServer() async {
+    throw TimeoutException('Server check timed out.');
   }
 }
 
@@ -137,6 +147,7 @@ void main() {
     final state = container.read(sampleDataModeProvider);
     expect(state.isActive, isFalse);
     expect(state.isLoading, isFalse);
+    expect(state.error, 'account_not_empty');
     expect(prefs.getBool('sample_data_mode_active'), isNull);
   });
 
@@ -173,7 +184,25 @@ void main() {
     final state = container.read(sampleDataModeProvider);
     expect(state.isActive, isFalse);
     expect(state.isLoading, isFalse);
+    expect(state.error, 'server_unreachable');
     expect(prefs.getBool('sample_data_mode_active'), isNull);
+  });
+
+  test('reports a timed-out server check as unreachable, and writes '
+      'nothing', () async {
+    final investments = _TimedOutInvestmentRepository();
+    final (:container, :service) = build(investments);
+
+    final activated = await container
+        .read(sampleDataModeProvider.notifier)
+        .activateSampleData();
+
+    expect(activated, isFalse);
+    expect(service.createCalls, 0);
+    final state = container.read(sampleDataModeProvider);
+    expect(state.isActive, isFalse);
+    expect(state.isLoading, isFalse);
+    expect(state.error, 'server_unreachable');
   });
 
   for (final (label, seed) in [
@@ -221,6 +250,9 @@ void main() {
     expect(service.createCalls, 0);
     expect(investments.investments, isEmpty);
     expect(goals.goals, isEmpty);
+    final state = container.read(sampleDataModeProvider);
+    expect(state.isLoading, isFalse);
+    expect(state.error, 'server_unreachable');
   });
 
   test('refuses when the server rejects the check (not just offline), and '
@@ -236,7 +268,9 @@ void main() {
     expect(service.createCalls, 0);
     expect(investments.investments, isEmpty);
     expect(goals.goals, isEmpty);
-    expect(container.read(sampleDataModeProvider).isLoading, isFalse);
+    final state = container.read(sampleDataModeProvider);
+    expect(state.isLoading, isFalse);
+    expect(state.error, 'server_check_failed');
   });
 
   test('creates sample data once when the server confirms every collection '
