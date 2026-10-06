@@ -15,9 +15,8 @@
       "buildScript": "flutter build appbundle",
       "artifactPath": "build/app/outputs/bundle/release/app-release.aab",
       "playStoreListing": {
-        "title": "inv_tracker",
-        "shortDescription": "\"InvTracker - Track what you invested and what came back. XIRR & MOIC calculatio",
-        "fullDescription": "\"InvTracker - Track what you invested and what came back. XIRR & MOIC calculations. Works offline, syncs online.\"",
+        "authoritative": false,
+        "listingSource": "android/fastlane/metadata/android/en-US",
         "category": "utilities",
         "privacyPolicyUrl": "https://ravitejakamalapuram.github.io/privacy/invtrack.html"
       }

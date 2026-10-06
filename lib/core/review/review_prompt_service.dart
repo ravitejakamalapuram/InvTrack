@@ -25,7 +25,7 @@ class InAppReviewLauncher implements ReviewLauncher {
 }
 
 /// Requests the Play in-app review sheet at most once per install, after a
-/// genuine success moment (recording a return/exit cash flow).
+/// genuine success moment (recording a new INCOME or RETURN cash flow).
 ///
 /// See `company-brain/decisions/0001-invtrack-in-app-review-prompt.md` for the
 /// gating rationale.
@@ -63,7 +63,7 @@ class ReviewPromptService {
   /// unset before either has written it.
   bool _isChecking = false;
 
-  /// Call after a return/exit cash flow is recorded. Every check is local
+  /// Call after a new INCOME or RETURN cash flow is recorded. Every check is local
   /// and every failure is swallowed; nothing here can throw into the caller.
   Future<void> maybeRequestAfterExitRecorded() async {
     if (_isChecking) return;
