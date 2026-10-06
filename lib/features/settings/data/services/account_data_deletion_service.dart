@@ -87,6 +87,19 @@ class AccountDataDeletionService {
     required SharedPreferences prefs,
   }) async {
     await deleteAllServerData();
+    await deleteLocalData(deleteLocalFiles: deleteLocalFiles, prefs: prefs);
+  }
+
+  /// This device's copy only: [deleteLocalFiles] (attachments, guest
+  /// backups) and the per-user preferences. Never touches the server.
+  ///
+  /// Delete Account also calls it on its own when the server wipe fails
+  /// after the deletion request was filed: the user is then signed out and
+  /// the server job cannot reach this device, so nothing else would remove it.
+  Future<void> deleteLocalData({
+    required Future<void> Function() deleteLocalFiles,
+    required SharedPreferences prefs,
+  }) async {
     await deleteLocalFiles();
     for (final key in [
       ...userPreferenceKeys,
