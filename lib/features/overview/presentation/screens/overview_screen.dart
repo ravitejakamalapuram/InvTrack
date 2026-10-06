@@ -27,6 +27,7 @@ import 'package:inv_tracker/features/overview/presentation/widgets/overview_empt
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_quick_stats.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/sample_data_banner.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/deletion_request_banner.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class OverviewScreen extends ConsumerStatefulWidget {
@@ -122,6 +123,10 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                 ),
                 centerTitle: false,
               ),
+
+              // Shown while a deletion request exists, whatever the
+              // portfolio state (A88).
+              const SliverToBoxAdapter(child: DeletionRequestBanner()),
 
               // Content
               SliverPadding(

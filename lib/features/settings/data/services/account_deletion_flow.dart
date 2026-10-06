@@ -11,9 +11,10 @@ enum AccountDeletionOutcome {
   /// The user cancelled re-authentication. Nothing was deleted or filed.
   cancelled,
 
-  /// Re-authentication failed or was cancelled, or Firebase refused to delete
-  /// a guest, after the data was wiped. A `deletionRequests/{uid}` request is
-  /// filed and kept, so the server job finishes the deletion.
+  /// The server holds a `deletionRequests/{uid}` request, but the app did not
+  /// finish the deletion itself: re-authentication failed or was cancelled,
+  /// or wiping the data or deleting the Auth user failed (e.g. offline). The
+  /// request is kept, so the server job finishes the deletion.
   scheduled,
 
   /// The request could not be filed (e.g. offline, or rejected). Nothing was
@@ -33,7 +34,11 @@ enum AccountDeletionOutcome {
 /// Only after that is the server-side request filed, the data wiped and the
 /// Auth user deleted. Nothing is wiped, and nothing is reported as scheduled,
 /// until the server has confirmed the request. Every path that gives up after
-/// filing keeps the request so the scheduled job completes the deletion. A guest ([isAnonymous]) is
+/// filing, including a failed wipe, keeps the request and reports
+/// [AccountDeletionOutcome.scheduled], because the job will complete the
+/// deletion whatever the app says. When the wipe itself fails, this device's
+/// copy is still removed ([deleteLocalData]), since the job cannot reach it
+/// and the user is signed out next. A guest ([isAnonymous]) is
 /// never sent to Google re-auth: the request is filed, the data wiped and the
 /// anonymous user deleted, or left to the job if Firebase refuses.
 class AccountDeletionFlow {
@@ -43,12 +48,14 @@ class AccountDeletionFlow {
     required DeletionRequestService requests,
     required Future<void> Function() prepareGoogleSignIn,
     required Future<void> Function() deleteUserData,
+    required Future<void> Function() deleteLocalData,
     DateTime Function() now = DateTime.now,
   }) : _auth = auth,
        _isAnonymous = isAnonymous,
        _requests = requests,
        _prepareGoogleSignIn = prepareGoogleSignIn,
        _deleteUserData = deleteUserData,
+       _deleteLocalData = deleteLocalData,
        _now = now;
 
   /// Firebase's recent-login window is about 5 minutes; stay inside it.
@@ -59,6 +66,7 @@ class AccountDeletionFlow {
   final DeletionRequestService _requests;
   final Future<void> Function() _prepareGoogleSignIn;
   final Future<void> Function() _deleteUserData;
+  final Future<void> Function() _deleteLocalData;
   final DateTime Function() _now;
 
   Future<AccountDeletionOutcome> run() async {
@@ -83,13 +91,45 @@ class AccountDeletionFlow {
     // holds, that promise cannot be kept, so wipe nothing.
     final filed = await _fileRequest();
     if (filed != AccountDeletionOutcome.scheduled) return filed;
-    await _deleteUserData();
 
+    // From here the server holds the request and the job will delete the
+    // account whatever fails, so a failure must never read as "still active".
+    try {
+      await _deleteUserData();
+    } catch (e) {
+      _leftToJob(e);
+      // Nothing is kept for a retry any more, and the job cannot reach this
+      // device: remove its copy now, as far as possible.
+      try {
+        await _deleteLocalData();
+      } catch (e) {
+        LoggerService.warn(
+          'Local data cleanup after a failed wipe did not finish',
+          metadata: {'errorType': e.runtimeType.toString()},
+        );
+      }
+      return AccountDeletionOutcome.scheduled;
+    }
+    try {
+      return await _deleteAuthUser();
+    } catch (e) {
+      _leftToJob(e);
+      return AccountDeletionOutcome.scheduled;
+    }
+  }
+
+  /// Logs the error type only: a wipe error can carry a device path, and an
+  /// Auth error an email (rule 7).
+  void _leftToJob(Object e) => LoggerService.warn(
+    'Account deletion left to the server job',
+    metadata: {'errorType': e.runtimeType.toString()},
+  );
+
+  Future<AccountDeletionOutcome> _deleteAuthUser() async {
     try {
       await _auth.deleteAccount();
     } on FirebaseAuthException catch (e) {
       if (e.code != 'requires-recent-login') rethrow;
-      // The data is already gone: keep the request whatever happens here.
       if (_isAnonymous || await _reauthenticate() != _Reauth.succeeded) {
         return AccountDeletionOutcome.scheduled;
       }

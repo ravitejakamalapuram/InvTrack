@@ -9,32 +9,28 @@ import 'package:inv_tracker/features/investment/presentation/screens/add_transac
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 void main() {
+  // A42: INCOME (an interest payout) is as much a success moment as a
+  // RETURN, and is far more common for FD, bond and P2P users, so it now
+  // earns the one-shot prompt too. This replaces the earlier test that
+  // pinned INCOME as never a success moment.
   group('isReviewPromptSuccessMoment', () {
-    test('a new (non-editing) return/exit is a success moment', () {
-      expect(
-        isReviewPromptSuccessMoment(
-          isEditing: false,
-          type: CashFlowType.returnFlow,
-        ),
-        isTrue,
-      );
-    });
+    for (final type in [CashFlowType.returnFlow, CashFlowType.income]) {
+      test('a new (non-editing) $type is a success moment', () {
+        expect(
+          isReviewPromptSuccessMoment(isEditing: false, type: type),
+          isTrue,
+        );
+      });
 
-    test('editing an existing return/exit is not a success moment', () {
-      expect(
-        isReviewPromptSuccessMoment(
-          isEditing: true,
-          type: CashFlowType.returnFlow,
-        ),
-        isFalse,
-      );
-    });
+      test('editing an existing $type is not a success moment', () {
+        expect(
+          isReviewPromptSuccessMoment(isEditing: true, type: type),
+          isFalse,
+        );
+      });
+    }
 
-    for (final type in [
-      CashFlowType.invest,
-      CashFlowType.income,
-      CashFlowType.fee,
-    ]) {
+    for (final type in [CashFlowType.invest, CashFlowType.fee]) {
       test('a new $type is never a success moment', () {
         expect(
           isReviewPromptSuccessMoment(isEditing: false, type: type),

@@ -26,14 +26,18 @@ import 'package:inv_tracker/features/investment/presentation/ui_extensions/inves
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Whether recording this cash flow is the "genuine success moment" that
-/// earns a one-shot Play review prompt: a brand-new (non-editing) exit.
-/// A pure, unit-testable seam so invest/income/fee and edit flows can be
-/// verified without pumping the full screen widget.
+/// earns a one-shot Play review prompt: a brand-new (non-editing) payout,
+/// either INCOME (interest, rent, dividends) or a RETURN. INCOME counts too
+/// because FD, bond and P2P users may not record a RETURN for years.
+/// A pure, unit-testable seam so invest/fee and edit flows can be verified
+/// without pumping the full screen widget.
 @visibleForTesting
 bool isReviewPromptSuccessMoment({
   required bool isEditing,
   required CashFlowType type,
-}) => !isEditing && type == CashFlowType.returnFlow;
+}) =>
+    !isEditing &&
+    (type == CashFlowType.returnFlow || type == CashFlowType.income);
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final String investmentId;

@@ -10,7 +10,11 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Screen displaying help and frequently asked questions about using the app
 class HelpFaqScreen extends StatelessWidget {
-  const HelpFaqScreen({super.key});
+  const HelpFaqScreen({super.key, required this.showDeveloperFaq});
+
+  /// Whether to explain the developer tools. Callers pass
+  /// developerToolsAvailableProvider, which is false in release builds.
+  final bool showDeveloperFaq;
 
   @override
   Widget build(BuildContext context) {
@@ -166,23 +170,24 @@ class HelpFaqScreen extends StatelessWidget {
               isDark,
             ),
           ]),
-          _buildSection(l10n.advancedFeatures, [
-            _buildFaqItem(
-              l10n.howToEnableDebugMode,
-              l10n.howToEnableDebugModeAnswer,
-              isDark,
-            ),
-            _buildFaqItem(
-              l10n.whatIsDebugModeFor,
-              l10n.whatIsDebugModeForAnswer,
-              isDark,
-            ),
-            _buildFaqItem(
-              l10n.howToDisableDebugMode,
-              l10n.howToDisableDebugModeAnswer,
-              isDark,
-            ),
-          ]),
+          if (showDeveloperFaq)
+            _buildSection(l10n.advancedFeatures, [
+              _buildFaqItem(
+                l10n.howToEnableDebugMode,
+                l10n.howToEnableDebugModeAnswer,
+                isDark,
+              ),
+              _buildFaqItem(
+                l10n.whatIsDebugModeFor,
+                l10n.whatIsDebugModeForAnswer,
+                isDark,
+              ),
+              _buildFaqItem(
+                l10n.howToDisableDebugMode,
+                l10n.howToDisableDebugModeAnswer,
+                isDark,
+              ),
+            ]),
           SizedBox(height: AppSpacing.xl),
           Center(
             child: Text(
