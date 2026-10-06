@@ -12,6 +12,10 @@ class FirebaseAuthRepository implements AuthRepository {
   final FirebaseAuth _firebaseAuth;
   final GoogleSignIn _googleSignIn;
 
+  /// The Google credential of the last link that failed because the account
+  /// already exists, for [signInWithLinkCredential]. Memory only.
+  AuthCredential? _linkCredential;
+
   FirebaseAuthRepository({
     required FirebaseAuth firebaseAuth,
     required GoogleSignIn googleSignIn,
@@ -172,7 +176,45 @@ class FirebaseAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<UserEntity?> signInWithLinkCredential() async {
+    final credential = _linkCredential;
+    _linkCredential = null;
+    if (credential == null) return null;
+    try {
+      final userCredential = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
+      final user = userCredential.user;
+      LoggerService.info(
+        'Signed in with the credential from the failed link',
+        metadata: {'userId': user?.uid},
+      );
+      return user == null ? null : _mapFirebaseUserToEntity(user);
+    } on FirebaseAuthException catch (e, stackTrace) {
+      LoggerService.info(
+        'Credential from the failed link not accepted',
+        metadata: {'errorCode': e.code},
+      );
+      throw e.code == 'invalid-credential'
+          ? AuthException(
+              userMessage: 'Invalid Google credentials. Please try again.',
+              technicalMessage: 'Kept link credential rejected',
+              cause: e,
+              stackTrace: stackTrace,
+              shouldReport: false,
+              code: AuthExceptionCode.invalidCredential,
+            )
+          : AuthException.signInFailed(
+              cause: e,
+              stackTrace: stackTrace,
+              shouldReport: !_isTransientAuthError(e.code),
+            );
+    }
+  }
+
+  @override
   Future<void> signOut() async {
+    _linkCredential = null;
     await _googleSignIn.signOut();
     await _firebaseAuth.signOut();
   }
@@ -284,6 +326,7 @@ class FirebaseAuthRepository implements AuthRepository {
     }
 
     LoggerService.info('Deleting user account', metadata: {'userId': user.uid});
+    _linkCredential = null;
 
     try {
       // Only sign out from Google for non-anonymous users
@@ -363,6 +406,8 @@ class FirebaseAuthRepository implements AuthRepository {
 
   @override
   Future<UserEntity?> linkAnonymousToGoogle() async {
+    _linkCredential = null;
+    AuthCredential? credential;
     try {
       final currentUser = _firebaseAuth.currentUser;
 
@@ -394,9 +439,7 @@ class FirebaseAuthRepository implements AuthRepository {
 
       // In google_sign_in v7, authentication is a synchronous property, not a Future
       final googleAuth = googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        idToken: googleAuth.idToken,
-      );
+      credential = GoogleAuthProvider.credential(idToken: googleAuth.idToken);
 
       // Link the credential to the anonymous account
       LoggerService.info('Linking Google credential to anonymous account');
@@ -418,6 +461,9 @@ class FirebaseAuthRepository implements AuthRepository {
       return _mapFirebaseUserToEntity(userCredential.user!);
     } on FirebaseAuthException catch (e, stackTrace) {
       final isCredentialInUse = e.code == 'credential-already-in-use';
+      // Kept so the backup-and-merge sign-in does not ask for the account
+      // again.
+      if (isCredentialInUse) _linkCredential = credential ?? e.credential;
       final isProviderLinked = e.code == 'provider-already-linked';
       final isTransient = _isTransientAuthError(e.code);
       final shouldReport = !isCredentialInUse && !isProviderLinked && !isTransient;

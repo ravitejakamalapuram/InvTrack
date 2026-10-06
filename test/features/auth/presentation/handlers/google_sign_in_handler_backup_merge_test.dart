@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/data/services/guest_backup_store.dart';
 import 'package:inv_tracker/features/auth/presentation/handlers/google_sign_in_handler.dart';
@@ -21,6 +22,7 @@ import 'package:inv_tracker/features/settings/data/services/data_export_service.
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../fire_number/data/repositories/mock_fire_settings_repository.dart';
 import '../../../goals/data/repositories/mock_goal_repository.dart';
@@ -231,9 +233,13 @@ void main() {
   });
 
   Future<void> pumpAndStartBackupMerge(WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          // The merge records itself there before the sign-in (A79).
+          sharedPreferencesProvider.overrideWithValue(prefs),
           authRepositoryProvider.overrideWithValue(authRepo),
           analyticsServiceProvider.overrideWithValue(analytics),
           googleSignInInitializedProvider.overrideWith((ref) async {}),
