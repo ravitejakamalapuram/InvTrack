@@ -26,6 +26,8 @@ import 'package:inv_tracker/features/onboarding/presentation/screens/onboarding_
 import 'package:inv_tracker/features/overview/presentation/screens/overview_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
+import 'package:inv_tracker/features/settings/data/services/deletion_request_service.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/deletion_request_status_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -111,6 +113,11 @@ void main() {
         // Overview watches archived investments too (A28). Without this the
         // stream reads Firestore, fails, and leaves a retry timer running.
         archivedInvestmentsProvider.overrideWith((ref) => Stream.value([])),
+        // The deletion-request banner on Overview (A88) listens to Firestore
+        // the same way.
+        deletionRequestStatusProvider.overrideWith(
+          (ref) => Stream.value(DeletionRequestStatus.none),
+        ),
         // Today's date checks the clock once a minute for midnight (A21);
         // a fixed date leaves no timer running when the test ends.
         valuationDateProvider.overrideWithValue(DateTime(2026, 10, 4)),

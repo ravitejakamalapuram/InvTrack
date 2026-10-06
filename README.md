@@ -25,7 +25,7 @@ InvTrack is a mobile-first investment tracking application designed for alternat
 - **Bulk Import** - Import historical data via CSV files
 
 ### 🌍 Localization & Internationalization
-- **Multi-Currency Support**: 40+ currencies with automatic locale detection
+- **Multi-Currency Support**: Record each investment in its own currency and see totals in your base currency, with automatic locale detection
 - **Smart Date Formatting**: Adapts to your region (US, UK, India, Japan, etc.)
 - **Locale-Aware Number Formatting**: Indian lakh/crore system, European formatting, etc.
 - **Automatic Setup**: Detects your country on first login and configures currency, number format, and date format

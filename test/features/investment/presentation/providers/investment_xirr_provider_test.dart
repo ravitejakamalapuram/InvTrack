@@ -50,8 +50,8 @@ void main() {
       ),
     ];
 
-    // Investment 4: +2% in 3 days, which annualises above the solver's search
-    // range, so the rate comes from the approximate fallback.
+    // Investment 4: +2% in 3 days, which annualises to 1012.6%. A73 (#838):
+    // the solver finds this root exactly.
     final cashFlows4 = [
       CashFlowEntity(
         id: 'cf4-1',
@@ -71,12 +71,38 @@ void main() {
       ),
     ];
 
+    // Investment 5: +5% in 1 day. The true rate, 1.05^365 - 1, is above the
+    // bound the solver searches to, so it comes from the approximate fallback.
+    final cashFlows5 = [
+      CashFlowEntity(
+        id: 'cf5-1',
+        investmentId: 'inv5',
+        date: DateTime(2026, 1, 1),
+        type: CashFlowType.invest,
+        amount: 100000,
+        createdAt: DateTime(2026, 1, 1),
+      ),
+      CashFlowEntity(
+        id: 'cf5-2',
+        investmentId: 'inv5',
+        date: DateTime(2026, 1, 2),
+        type: CashFlowType.returnFlow,
+        amount: 105000,
+        createdAt: DateTime(2026, 1, 2),
+      ),
+    ];
+
     setUp(() {
       container = ProviderContainer(
         overrides: [
           // Override validCashFlowsProvider directly to bypass repository and streams
           validCashFlowsProvider.overrideWithValue(
-            AsyncValue.data([...cashFlows1, ...cashFlows2, ...cashFlows4]),
+            AsyncValue.data([
+              ...cashFlows1,
+              ...cashFlows2,
+              ...cashFlows4,
+              ...cashFlows5,
+            ]),
           ),
           isAuthenticatedProvider.overrideWith((ref) => true),
           // The flows are in USD (the entity default): no conversion needed.
@@ -115,11 +141,18 @@ void main() {
       },
     );
 
-    test('flags an approximate XIRR as approximate', () async {
+    test('gives the exact XIRR above 1000%', () async {
       final xirr4 = await container.read(investmentXirrProvider('inv4').future);
 
-      expect(xirr4.method, XirrMethod.approximate);
+      expect(xirr4.method, XirrMethod.exact);
       expect(xirr4.value, closeTo(10.126388779444367, 1e-6));
+    });
+
+    test('flags an approximate XIRR as approximate', () async {
+      final xirr5 = await container.read(investmentXirrProvider('inv5').future);
+
+      expect(xirr5.method, XirrMethod.approximate);
+      expect(xirr5.value, closeTo(54211840.577839525, 1e-6));
     });
 
     // A71: the bare-number map (undefined read as 0.0) is gone; callers read
@@ -131,7 +164,8 @@ void main() {
 
       expect(map['inv1']!.value, closeTo(0.5, 0.001));
       expect(map['inv4']!.value, closeTo(10.126388779444367, 1e-6));
-      expect(map['inv4']!.method, XirrMethod.approximate);
+      expect(map['inv4']!.method, XirrMethod.exact);
+      expect(map['inv5']!.method, XirrMethod.approximate);
     });
 
     test('is undefined for investment with no cash flows', () async {

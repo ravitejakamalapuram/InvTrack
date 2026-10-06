@@ -4,13 +4,15 @@
 /// - IncomeGuardianMonitorService: Triggers notifications for overdue/upcoming payments
 /// - IncomeGuardianSyncService: Auto-matches actual payments to expected projections
 ///
-/// Services only start when user is authenticated and stop on cleanup.
+/// Services only start when the user is authenticated and the Income Guardian
+/// feature flag is on, and stop on cleanup.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/income_guardian_service_providers.dart';
 
 /// A widget that initializes Income Guardian background services.
@@ -45,11 +47,18 @@ class _IncomeGuardianServiceInitializerState
     final isAuthenticated = ref.read(isAuthenticatedProvider);
 
     if (!isAuthenticated) {
-      LoggerService.debug('User not authenticated - skipping Income Guardian services');
+      LoggerService.debug(
+        'User not authenticated - skipping Income Guardian services',
+      );
       return;
     }
 
     if (_servicesStarted) {
+      return;
+    }
+
+    if (!ref.read(isIncomeGuardianEnabledProvider)) {
+      LoggerService.debug('Income Guardian is off - skipping its services');
       return;
     }
 
@@ -73,6 +82,15 @@ class _IncomeGuardianServiceInitializerState
     // Listen to auth state changes
     ref.listen<bool>(isAuthenticatedProvider, (previous, next) {
       if (next && !_servicesStarted) {
+        _startServicesIfAuthenticated();
+      }
+    });
+
+    // The provider stops the services itself when the flag turns off.
+    ref.listen<bool>(isIncomeGuardianEnabledProvider, (previous, next) {
+      if (!next) {
+        _servicesStarted = false;
+      } else if (!_servicesStarted) {
         _startServicesIfAuthenticated();
       }
     });

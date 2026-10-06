@@ -339,4 +339,41 @@ void main() {
       expect(prefs.getBool('sample_data_mode_active'), isTrue);
     });
   });
+
+  // After a server wipe fails, Delete Account has already filed the request
+  // and signs the user out, so this device's copy is cleared on its own.
+  group('deleteLocalData', () {
+    test('removes local files and per-user prefs without touching the '
+        'server', () async {
+      SharedPreferences.setMockInitialValues({
+        'sample_data_mode_active': true,
+        'themeMode': 1,
+        'legacy_currency_confirmed_${FakeUserTree.uid}': 'INR',
+        'usd_tag_repair_backup_${FakeUserTree.uid}': '[]',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final tree = FakeUserTree({'investments': 1})..getsHang = true;
+      var filesDeleted = false;
+
+      await build(tree).deleteLocalData(
+        deleteLocalFiles: () async => filesDeleted = true,
+        prefs: prefs,
+      );
+
+      expect(filesDeleted, isTrue);
+      expect(prefs.containsKey('sample_data_mode_active'), isFalse);
+      expect(
+        prefs.containsKey('legacy_currency_confirmed_${FakeUserTree.uid}'),
+        isFalse,
+      );
+      expect(
+        prefs.containsKey('usd_tag_repair_backup_${FakeUserTree.uid}'),
+        isFalse,
+      );
+      expect(prefs.getInt('themeMode'), 1, reason: 'app settings are kept');
+      verifyNever(() => tree.firestore.batch());
+      expect(tree.remaining('investments'), 1);
+      expect(tree.userDocExists, isTrue);
+    });
+  });
 }

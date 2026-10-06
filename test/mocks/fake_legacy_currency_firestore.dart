@@ -49,6 +49,14 @@ class FakeLegacyCurrencyFirestore extends Fake implements FirebaseFirestore {
   /// simulate another device writing in between.
   void Function()? beforeTransaction;
 
+  /// When set, every read inside a transaction takes this long, like one
+  /// round trip to the server.
+  Duration? transactionReadLatency;
+
+  /// The most transaction reads that were waiting at the same time.
+  int maxConcurrentTransactionReads = 0;
+  int _pendingTransactionReads = 0;
+
   int get transactionCount => commitSizes.length;
   int get updatedDocs => commitSizes.fold(0, (a, b) => a + b);
 
@@ -74,7 +82,14 @@ class FakeLegacyCurrencyFirestore extends Fake implements FirebaseFirestore {
     beforeTransaction?.call();
     if (transactionError != null) throw transactionError!;
     final tx = _FakeTransaction(this);
-    final result = await transactionHandler(tx);
+    // Like the server, give up on a transaction that runs past [timeout].
+    final result = await transactionHandler(tx).timeout(
+      timeout,
+      onTimeout: () => throw FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'deadline-exceeded',
+      ),
+    );
     for (final entry in tx.updates) {
       stored(entry.key.collectionName, entry.key.id)!.addAll(entry.value);
     }
@@ -209,6 +224,16 @@ class _FakeTransaction extends Fake implements Transaction {
   ) async {
     if (updates.isNotEmpty) {
       throw StateError('Transactions must read before they write');
+    }
+    final latency = store.transactionReadLatency;
+    if (latency != null) {
+      store._pendingTransactionReads++;
+      if (store._pendingTransactionReads >
+          store.maxConcurrentTransactionReads) {
+        store.maxConcurrentTransactionReads = store._pendingTransactionReads;
+      }
+      await Future<void>.delayed(latency);
+      store._pendingTransactionReads--;
     }
     final ref = documentReference as _FakeDocRef;
     return _FakeDocSnapshot(store.stored(ref.collectionName, ref.id))

@@ -1,1 +1,1 @@
-InvTrack - Investment Tracker
+InvTrack: FD & P2P Tracker
