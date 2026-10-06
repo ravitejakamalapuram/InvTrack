@@ -1,6 +1,7 @@
 /// Main settings screen - hub for all settings sub-screens.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -8,6 +9,7 @@ import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -49,6 +51,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       securityProvider.select((s) => s.isBiometricEnabled),
     );
     final isDebugEnabled = ref.watch(debugModeProvider);
+    final isIncomeGuardianEnabled = ref.watch(isIncomeGuardianEnabledProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings, style: AppTypography.h3)),
@@ -106,20 +109,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
 
-          // Income Guardian
-          SettingsSection(
-            title: 'Income Guardian',
-            children: [
-              SettingsNavTile(
-                icon: Icons.security,
-                iconColor: AppColors.successLight,
-                title: 'Income Guardian',
-                subtitle: 'Automated income tracking and payment alerts',
-                onTap: () =>
-                    _navigateTo(context, const IncomeGuardianSettingsScreen()),
-              ),
-            ],
-          ),
+          // Income Guardian: hidden until something generates expected
+          // cash flows (A42).
+          if (isIncomeGuardianEnabled)
+            SettingsSection(
+              title: l10n.incomeGuardianSettings,
+              children: [
+                SettingsNavTile(
+                  icon: Icons.security,
+                  iconColor: AppColors.successLight,
+                  title: l10n.incomeGuardianSettings,
+                  subtitle: l10n.incomeGuardianSettingsSubtitle,
+                  onTap: () => _navigateTo(
+                    context,
+                    const IncomeGuardianSettingsScreen(),
+                  ),
+                ),
+              ],
+            ),
 
           // Data & Account
           SettingsSection(
@@ -149,8 +156,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
 
-          // Developer (only visible when debug mode is enabled)
-          if (isDebugEnabled)
+          // Developer (only visible when debug mode is enabled). The
+          // kReleaseMode check compiles the debug screen out of release builds.
+          if (!kReleaseMode && isDebugEnabled)
             SettingsSection(
               title: l10n.developer,
               children: [
@@ -396,7 +404,7 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
       icon: Icons.currency_exchange_rounded,
       iconColor: AppColors.successLight,
       title: l10n.currency,
-      value: currencySwitchStatus.isBusy ? '${l10n.loading}...' : currency,
+      value: currencySwitchStatus.isBusy ? l10n.loading : currency,
       trailing: currencySwitchStatus.isBusy
           ? Semantics(
               label:
