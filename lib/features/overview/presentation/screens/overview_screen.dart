@@ -132,10 +132,13 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
               SliverPadding(
                 padding: EdgeInsets.all(AppSpacing.md),
                 sliver: globalStats.when(
-                  // Without archived investments it is not known whether
-                  // the account is empty: show the load error, not onboarding.
-                  data: (stats) => !stats.hasData &&
-                          archivedInvestmentsAsync.hasError
+                  // Without archived investments, or the server's answer on
+                  // whether the account is empty, it is not known whether the
+                  // account is empty: show the load error, not onboarding.
+                  data: (stats) =>
+                      !stats.hasData &&
+                          (archivedInvestmentsAsync.hasError ||
+                              hasNoInvestmentsAsync.hasError)
                       ? _buildLoadErrorContent(ref)
                       // Stats can be empty before the investments arrive;
                       // the empty state must wait for both collections and

@@ -32,8 +32,9 @@ void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
 
   Future<(FakeAnalyticsService, InvestmentFirestoreMock)> pumpOverview(
-    WidgetTester tester,
-  ) async {
+    WidgetTester tester, {
+    Stream<bool>? hasNoInvestments,
+  }) async {
     final analytics = FakeAnalyticsService();
     final firestore = InvestmentFirestoreMock();
     addTearDown(firestore.close);
@@ -56,6 +57,8 @@ void main() {
           allCashFlowsStreamProvider.overrideWith(
             (ref) => Stream.value(const []),
           ),
+          if (hasNoInvestments != null)
+            hasNoInvestmentsProvider.overrideWith((ref) => hasNoInvestments),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -110,6 +113,24 @@ void main() {
 
     expect(find.byType(HeroCardSkeleton), findsNothing);
     expect(find.byType(OverviewEmptyState), findsOneWidget);
+    expect(find.text(l10n.trySampleData), findsNothing);
+    expect(_emptyStateEvents(analytics), 0);
+  });
+
+  testWidgets('when the server check for an empty account fails, Overview '
+      'shows the load error with Retry, not the empty state', (tester) async {
+    final (analytics, firestore) = await pumpOverview(
+      tester,
+      hasNoInvestments: Stream.error(Exception('server check failed')),
+    );
+
+    firestore.activeSnapshots.add(querySnapshot(fromCache: true));
+    firestore.archivedSnapshots.add(querySnapshot(fromCache: true));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(OverviewLoadErrorState), findsOneWidget);
+    expect(find.byType(OverviewEmptyState), findsNothing);
     expect(find.text(l10n.trySampleData), findsNothing);
     expect(_emptyStateEvents(analytics), 0);
   });

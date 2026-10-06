@@ -102,123 +102,59 @@ final _existing = InvestmentEntity(
 );
 
 void main() {
-  late FakeGoalRepository goals;
-  late SharedPreferences prefs;
+  group('activateSampleData checks the server first', () {
+    late FakeGoalRepository goals;
+    late SharedPreferences prefs;
 
-  setUp(() async {
-    SharedPreferences.setMockInitialValues({});
-    prefs = await SharedPreferences.getInstance();
-    goals = FakeGoalRepository();
-  });
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+      goals = FakeGoalRepository();
+    });
 
-  ({ProviderContainer container, _SpySampleDataService service}) build(
-    FakeInvestmentRepository investments,
-  ) {
-    final service = _SpySampleDataService(investments, goals);
-    final container = ProviderContainer(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
-        currencyCodeProvider.overrideWithValue('INR'),
-        investmentRepositoryProvider.overrideWithValue(investments),
-        goalRepositoryProvider.overrideWithValue(goals),
-        sampleDataServiceProvider.overrideWithValue(service),
-      ],
-    );
-    addTearDown(container.dispose);
-    return (container: container, service: service);
-  }
+    ({ProviderContainer container, _SpySampleDataService service}) build(
+      FakeInvestmentRepository investments,
+    ) {
+      final service = _SpySampleDataService(investments, goals);
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
+          currencyCodeProvider.overrideWithValue('INR'),
+          investmentRepositoryProvider.overrideWithValue(investments),
+          goalRepositoryProvider.overrideWithValue(goals),
+          sampleDataServiceProvider.overrideWithValue(service),
+        ],
+      );
+      addTearDown(container.dispose);
+      return (container: container, service: service);
+    }
 
-  test('refuses when the server has an active investment, and writes '
-      'nothing', () async {
-    final investments = FakeInvestmentRepository()
-      ..seed(investments: [_existing]);
-    final (:container, :service) = build(investments);
-
-    final activated = await container
-        .read(sampleDataModeProvider.notifier)
-        .activateSampleData();
-
-    expect(activated, isFalse);
-    expect(service.createCalls, 0);
-    expect(investments.investments.map((i) => i.id), ['inv-real']);
-    expect(investments.cashFlows, isEmpty);
-    expect(goals.goals, isEmpty);
-    final state = container.read(sampleDataModeProvider);
-    expect(state.isActive, isFalse);
-    expect(state.isLoading, isFalse);
-    expect(state.error, 'account_not_empty');
-    expect(prefs.getBool('sample_data_mode_active'), isNull);
-  });
-
-  test('refuses when the server has only an archived investment', () async {
-    final investments = FakeInvestmentRepository()
-      ..seed(archivedInvestments: [_existing]);
-    final (:container, :service) = build(investments);
-
-    final activated = await container
-        .read(sampleDataModeProvider.notifier)
-        .activateSampleData();
-
-    expect(activated, isFalse);
-    expect(service.createCalls, 0);
-    expect(investments.investments, isEmpty);
-    expect(investments.cashFlows, isEmpty);
-    expect(goals.goals, isEmpty);
-  });
-
-  test('refuses when the server cannot be reached (offline), and writes '
-      'nothing', () async {
-    final investments = _OfflineInvestmentRepository();
-    final (:container, :service) = build(investments);
-
-    final activated = await container
-        .read(sampleDataModeProvider.notifier)
-        .activateSampleData();
-
-    expect(activated, isFalse);
-    expect(service.createCalls, 0);
-    expect(investments.investments, isEmpty);
-    expect(investments.cashFlows, isEmpty);
-    expect(goals.goals, isEmpty);
-    final state = container.read(sampleDataModeProvider);
-    expect(state.isActive, isFalse);
-    expect(state.isLoading, isFalse);
-    expect(state.error, 'server_unreachable');
-    expect(prefs.getBool('sample_data_mode_active'), isNull);
-  });
-
-  test('reports a timed-out server check as unreachable, and writes '
-      'nothing', () async {
-    final investments = _TimedOutInvestmentRepository();
-    final (:container, :service) = build(investments);
-
-    final activated = await container
-        .read(sampleDataModeProvider.notifier)
-        .activateSampleData();
-
-    expect(activated, isFalse);
-    expect(service.createCalls, 0);
-    final state = container.read(sampleDataModeProvider);
-    expect(state.isActive, isFalse);
-    expect(state.isLoading, isFalse);
-    expect(state.error, 'server_unreachable');
-  });
-
-  for (final (label, seed) in [
-    (
-      'an active goal',
-      (FakeGoalRepository g) => g.seed(goals: [_existingGoal]),
-    ),
-    (
-      'only an archived goal',
-      (FakeGoalRepository g) => g.seed(archivedGoals: [_existingGoal]),
-    ),
-  ]) {
-    test('refuses when the server has $label and no investments, and writes '
+    test('refuses when the server has an active investment, and writes '
         'nothing', () async {
-      seed(goals);
-      final investments = FakeInvestmentRepository();
+      final investments = FakeInvestmentRepository()
+        ..seed(investments: [_existing]);
+      final (:container, :service) = build(investments);
+
+      final activated = await container
+          .read(sampleDataModeProvider.notifier)
+          .activateSampleData();
+
+      expect(activated, isFalse);
+      expect(service.createCalls, 0);
+      expect(investments.investments.map((i) => i.id), ['inv-real']);
+      expect(investments.cashFlows, isEmpty);
+      expect(goals.goals, isEmpty);
+      final state = container.read(sampleDataModeProvider);
+      expect(state.isActive, isFalse);
+      expect(state.isLoading, isFalse);
+      expect(state.error, 'account_not_empty');
+      expect(prefs.getBool('sample_data_mode_active'), isNull);
+    });
+
+    test('refuses when the server has only an archived investment', () async {
+      final investments = FakeInvestmentRepository()
+        ..seed(archivedInvestments: [_existing]);
       final (:container, :service) = build(investments);
 
       final activated = await container
@@ -229,68 +165,134 @@ void main() {
       expect(service.createCalls, 0);
       expect(investments.investments, isEmpty);
       expect(investments.cashFlows, isEmpty);
-      expect(goals.goals.length + goals.archivedGoals.length, 1);
+      expect(goals.goals, isEmpty);
+    });
+
+    test('refuses when the server cannot be reached (offline), and writes '
+        'nothing', () async {
+      final investments = _OfflineInvestmentRepository();
+      final (:container, :service) = build(investments);
+
+      final activated = await container
+          .read(sampleDataModeProvider.notifier)
+          .activateSampleData();
+
+      expect(activated, isFalse);
+      expect(service.createCalls, 0);
+      expect(investments.investments, isEmpty);
+      expect(investments.cashFlows, isEmpty);
+      expect(goals.goals, isEmpty);
       final state = container.read(sampleDataModeProvider);
       expect(state.isActive, isFalse);
       expect(state.isLoading, isFalse);
+      expect(state.error, 'server_unreachable');
       expect(prefs.getBool('sample_data_mode_active'), isNull);
     });
-  }
 
-  test('refuses when the goals cannot be checked on the server', () async {
-    goals = _OfflineGoalRepository();
-    final investments = FakeInvestmentRepository();
-    final (:container, :service) = build(investments);
+    test('reports a timed-out server check as unreachable, and writes '
+        'nothing', () async {
+      final investments = _TimedOutInvestmentRepository();
+      final (:container, :service) = build(investments);
 
-    final activated = await container
-        .read(sampleDataModeProvider.notifier)
-        .activateSampleData();
+      final activated = await container
+          .read(sampleDataModeProvider.notifier)
+          .activateSampleData();
 
-    expect(activated, isFalse);
-    expect(service.createCalls, 0);
-    expect(investments.investments, isEmpty);
-    expect(goals.goals, isEmpty);
-    final state = container.read(sampleDataModeProvider);
-    expect(state.isLoading, isFalse);
-    expect(state.error, 'server_unreachable');
-  });
+      expect(activated, isFalse);
+      expect(service.createCalls, 0);
+      final state = container.read(sampleDataModeProvider);
+      expect(state.isActive, isFalse);
+      expect(state.isLoading, isFalse);
+      expect(state.error, 'server_unreachable');
+    });
 
-  test('refuses when the server rejects the check (not just offline), and '
-      'writes nothing', () async {
-    final investments = _DeniedInvestmentRepository();
-    final (:container, :service) = build(investments);
+    for (final (label, seed) in [
+      (
+        'an active goal',
+        (FakeGoalRepository g) => g.seed(goals: [_existingGoal]),
+      ),
+      (
+        'only an archived goal',
+        (FakeGoalRepository g) => g.seed(archivedGoals: [_existingGoal]),
+      ),
+    ]) {
+      test('refuses when the server has $label and no investments, and writes '
+          'nothing', () async {
+        seed(goals);
+        final investments = FakeInvestmentRepository();
+        final (:container, :service) = build(investments);
 
-    final activated = await container
-        .read(sampleDataModeProvider.notifier)
-        .activateSampleData();
+        final activated = await container
+            .read(sampleDataModeProvider.notifier)
+            .activateSampleData();
 
-    expect(activated, isFalse);
-    expect(service.createCalls, 0);
-    expect(investments.investments, isEmpty);
-    expect(goals.goals, isEmpty);
-    final state = container.read(sampleDataModeProvider);
-    expect(state.isLoading, isFalse);
-    expect(state.error, 'server_check_failed');
-  });
+        expect(activated, isFalse);
+        expect(service.createCalls, 0);
+        expect(investments.investments, isEmpty);
+        expect(investments.cashFlows, isEmpty);
+        expect(goals.goals.length + goals.archivedGoals.length, 1);
+        final state = container.read(sampleDataModeProvider);
+        expect(state.isActive, isFalse);
+        expect(state.isLoading, isFalse);
+        expect(prefs.getBool('sample_data_mode_active'), isNull);
+      });
+    }
 
-  test('creates sample data once when the server confirms every collection '
-      'is empty', () async {
-    final investments = FakeInvestmentRepository();
-    final (:container, :service) = build(investments);
+    test('refuses when the goals cannot be checked on the server', () async {
+      goals = _OfflineGoalRepository();
+      final investments = FakeInvestmentRepository();
+      final (:container, :service) = build(investments);
 
-    final activated = await container
-        .read(sampleDataModeProvider.notifier)
-        .activateSampleData();
+      final activated = await container
+          .read(sampleDataModeProvider.notifier)
+          .activateSampleData();
 
-    expect(activated, isTrue);
-    expect(service.createCalls, 1);
-    expect(investments.investments, isNotEmpty);
-    final state = container.read(sampleDataModeProvider);
-    expect(state.isActive, isTrue);
-    expect(
-      state.sampleInvestmentIds,
-      unorderedEquals(investments.investments.map((i) => i.id)),
-    );
-    expect(prefs.getBool('sample_data_mode_active'), isTrue);
+      expect(activated, isFalse);
+      expect(service.createCalls, 0);
+      expect(investments.investments, isEmpty);
+      expect(goals.goals, isEmpty);
+      final state = container.read(sampleDataModeProvider);
+      expect(state.isLoading, isFalse);
+      expect(state.error, 'server_unreachable');
+    });
+
+    test('refuses when the server rejects the check (not just offline), and '
+        'writes nothing', () async {
+      final investments = _DeniedInvestmentRepository();
+      final (:container, :service) = build(investments);
+
+      final activated = await container
+          .read(sampleDataModeProvider.notifier)
+          .activateSampleData();
+
+      expect(activated, isFalse);
+      expect(service.createCalls, 0);
+      expect(investments.investments, isEmpty);
+      expect(goals.goals, isEmpty);
+      final state = container.read(sampleDataModeProvider);
+      expect(state.isLoading, isFalse);
+      expect(state.error, 'server_check_failed');
+    });
+
+    test('creates sample data once when the server confirms every collection '
+        'is empty', () async {
+      final investments = FakeInvestmentRepository();
+      final (:container, :service) = build(investments);
+
+      final activated = await container
+          .read(sampleDataModeProvider.notifier)
+          .activateSampleData();
+
+      expect(activated, isTrue);
+      expect(service.createCalls, 1);
+      expect(investments.investments, isNotEmpty);
+      final state = container.read(sampleDataModeProvider);
+      expect(state.isActive, isTrue);
+      expect(
+        state.sampleInvestmentIds,
+        unorderedEquals(investments.investments.map((i) => i.id)),
+      );
+      expect(prefs.getBool('sample_data_mode_active'), isTrue);
+    });
   });
 }
