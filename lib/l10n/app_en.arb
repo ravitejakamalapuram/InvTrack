@@ -6197,6 +6197,30 @@
   "@noteTenureClearedWithMaturity": {
     "description": "Note under the maturity date in the investment form after the user clears the maturity date of an investment whose start date and tenure would otherwise work it out again; the tenure is cleared with it"
   },
+  "guestBackupNoticeTitle": "Add your guest data to this account?",
+  "@guestBackupNoticeTitle": {
+    "description": "Title of the notice shown at launch when a backup of guest data, saved during an interrupted or incomplete move into a Google account, is still on the device"
+  },
+
+  "guestBackupNoticeMessage": "A backup of the investments, cash flows and goals you added as a guest is saved on this device, and some or all of it is not in this account yet. Import it now, share it to keep a copy, or keep it on this device. You can share or delete it later in Settings > Data & Account.",
+  "@guestBackupNoticeMessage": {
+    "description": "Body of the launch notice offering a kept guest backup"
+  },
+
+  "guestBackupImportNow": "Import now",
+  "@guestBackupImportNow": {
+    "description": "Button in the launch notice that merges the kept guest backup into the signed-in account"
+  },
+
+  "guestBackupImportIncomplete": "Not all of your guest data could be added, for example an investment or goal whose name this account already uses. The backup stays on this device until you delete it in Settings > Data & Account.",
+  "@guestBackupImportIncomplete": {
+    "description": "Shown after Import now in the launch notice when some guest records were not added; the backup is kept"
+  },
+
+  "guestBackupImportUnchecked": "Your guest data was imported. This backup was saved by an older version of InvTrack, so it cannot be checked and stays on this device until you delete it in Settings > Data & Account.",
+  "@guestBackupImportUnchecked": {
+    "description": "Shown after Import now for a guest backup saved before its contents were counted; the backup is kept"
+  },
   "notificationInvestmentClosed": "This investment is closed",
   "@notificationInvestmentClosed": {
     "description": "Shown when an income reminder is tapped for an investment that has since been closed; the investment opens instead of the add-income form"

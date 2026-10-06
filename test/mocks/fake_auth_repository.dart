@@ -33,6 +33,9 @@ class FakeAuthRepository extends Fake implements AuthRepository {
         code: AuthExceptionCode.credentialAlreadyInUse,
       );
 
+  /// What [signInWithLinkCredential] does. Defaults to no kept credential.
+  Future<UserEntity?> Function() onSignInWithLinkCredential = () async => null;
+
   int signInWithGoogleCalls = 0;
   int signOutCalls = 0;
 
@@ -67,6 +70,10 @@ class FakeAuthRepository extends Fake implements AuthRepository {
     signInWithGoogleCalls++;
     return onSignInWithGoogle();
   }
+
+  @override
+  Future<UserEntity?> signInWithLinkCredential() =>
+      onSignInWithLinkCredential();
 
   @override
   Future<UserEntity?> linkAnonymousToGoogle() => onLinkAnonymousToGoogle();
