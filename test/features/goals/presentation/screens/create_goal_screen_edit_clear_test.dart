@@ -154,17 +154,17 @@ void main() {
     expect(stored.type, GoalType.targetAmount);
     expect(stored.targetAmount, 500000.00);
     expect(stored.targetMonthlyIncome, isNull);
-    expect(stored.targetDate, DateTime(2030, 3, 31));
+    expect(stored.targetDate, equals(DateTime(2030, 3, 31)));
     expect(stored.trackingMode, GoalTrackingMode.selected);
-    expect(stored.linkedInvestmentIds, ['inv-1', 'inv-2']);
+    expect(stored.linkedInvestmentIds, equals(['inv-1', 'inv-2']));
     expect(stored.linkedTypes, isEmpty);
     expect(stored.icon, '🏠');
     expect(stored.colorValue, 0xFF4CAF50);
     expect(stored.isArchived, isFalse);
-    expect(stored.createdAt, DateTime(2026, 1, 15));
+    expect(stored.createdAt, equals(DateTime(2026, 1, 15)));
     expect(stored.updatedAt.isAfter(DateTime(2026, 1, 15)), isTrue);
     expect(stored.currency, 'INR');
-    expect(_afterRestart(stored).targetDate, DateTime(2030, 3, 31));
+    expect(_afterRestart(stored).targetDate, equals(DateTime(2030, 3, 31)));
   });
 
   testWidgets('control: editing an archived goal keeps it archived', (
