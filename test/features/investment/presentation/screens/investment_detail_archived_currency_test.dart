@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_providers.dart';
@@ -9,6 +10,7 @@ import 'package:inv_tracker/features/investment/presentation/providers/document_
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _PrivacyOff extends PrivacyModeNotifier {
   @override
@@ -94,9 +96,13 @@ final _flows = [
 ];
 
 Future<void> _pump(WidgetTester tester, {bool privacy = false}) async {
+  // The screen reads feature flags (the Upcoming tab), which read prefs.
+  SharedPreferences.setMockInitialValues({});
+  final prefs = await SharedPreferences.getInstance();
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
         privacyModeProvider.overrideWith(
           privacy ? _PrivacyOn.new : _PrivacyOff.new,
         ),
