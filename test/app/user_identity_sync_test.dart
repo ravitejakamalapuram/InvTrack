@@ -97,4 +97,20 @@ void main() {
 
     verify(() => analytics.setUserId('google1')).called(1);
   });
+
+  test('a failed update is tried again when the same UID comes back', () async {
+    var failures = 1;
+    when(() => crashlytics.setUserIdentifier(any())).thenAnswer((_) async {
+      if (failures-- > 0) throw StateError('no Firebase');
+    });
+
+    await emit(guest);
+    // A link re-emits the same UID: the failed update is tried again.
+    await emit(const UserEntity(id: 'g1', email: 'a@example.com'));
+    // Once it has succeeded, the same UID is not sent again.
+    await emit(guest);
+
+    verify(() => crashlytics.setUserIdentifier('g1')).called(2);
+    verify(() => analytics.setUserId('g1')).called(2);
+  });
 }

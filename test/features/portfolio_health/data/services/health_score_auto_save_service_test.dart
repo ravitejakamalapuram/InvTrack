@@ -11,6 +11,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/portfolio_health/data/repositories/health_score_repository.dart';
 import 'package:inv_tracker/features/portfolio_health/data/services/health_score_auto_save_service.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
@@ -80,8 +81,9 @@ void main() {
     });
 
     test('forceSave saves current score immediately', () async {
-      when(() => mockRepository.saveSnapshot(any()))
-          .thenAnswer((_) async => Future.value());
+      when(
+        () => mockRepository.saveSnapshot(any()),
+      ).thenAnswer((_) async => Future.value());
 
       final score = createTestScore(overallScore: 85.0);
       service.updateScore(score);
@@ -97,16 +99,14 @@ void main() {
     });
 
     test('forceSave rethrows errors', () async {
-      when(() => mockRepository.saveSnapshot(any()))
-          .thenThrow(Exception('Save failed'));
+      when(
+        () => mockRepository.saveSnapshot(any()),
+      ).thenThrow(Exception('Save failed'));
 
       final score = createTestScore();
       service.updateScore(score);
 
-      expect(
-        () => service.forceSave(),
-        throwsA(isA<Exception>()),
-      );
+      expect(() => service.forceSave(), throwsA(isA<Exception>()));
     });
 
     test('forceSave queues if already saving', () async {
@@ -126,7 +126,9 @@ void main() {
       await service.forceSave();
 
       // Verify saveSnapshot was called
-      verify(() => mockRepository.saveSnapshot(any())).called(greaterThanOrEqualTo(1));
+      verify(
+        () => mockRepository.saveSnapshot(any()),
+      ).called(greaterThanOrEqualTo(1));
     });
 
     test('dispose stops timer and clears score', () {
@@ -177,17 +179,41 @@ void main() {
       expect(records, isEmpty);
     });
 
-    test('a failed auto-save the repository already recorded is not '
+    // The real repository records a failed save itself, once.
+    void saveFailsAndIsRecordedOnce() {
+      when(() => mockRepository.saveSnapshot(any())).thenAnswer((_) async {
+        final error = Exception('permission-denied');
+        LoggerService.error('Health score save failed', error: error);
+        throw error;
+      });
+    }
+
+    test('a failed force-save the repository already recorded is not '
         'recorded again', () async {
       final records = recordCrashReports();
-      when(
-        () => mockRepository.saveSnapshot(any()),
-      ).thenThrow(Exception('permission-denied'));
+      saveFailsAndIsRecordedOnce();
       service.updateScore(createTestScore());
 
       await expectLater(service.forceSave(), throwsA(isA<Exception>()));
 
-      expect(records, isEmpty);
+      expect(records, hasLength(1));
+    });
+
+    testWidgets('a failed periodic save the repository already recorded is '
+        'not recorded again', (tester) async {
+      final records = recordCrashReports();
+      when(
+        () => mockRepository.getLatestSnapshot(),
+      ).thenAnswer((_) async => null);
+      saveFailsAndIsRecordedOnce();
+      service.updateScore(createTestScore());
+
+      service.start();
+      await tester.pump(const Duration(minutes: 5));
+
+      verify(() => mockRepository.saveSnapshot(any())).called(1);
+      expect(records, hasLength(1));
+      service.stop();
     });
   });
 }

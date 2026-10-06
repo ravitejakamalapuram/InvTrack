@@ -142,7 +142,8 @@ class AccountDataDeletionService {
     } on TimeoutException catch (e, st) {
       LoggerService.warn(
         'Account data deletion not confirmed (timeout)',
-        metadata: {'step': what},
+        // `operation` is on the crash-report allowlist, so the label is kept.
+        metadata: {'operation': what},
       );
       throw NetworkException.noConnection(cause: e, stackTrace: st);
     } on FirebaseException catch (e, st) {

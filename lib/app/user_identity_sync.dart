@@ -24,11 +24,19 @@ final userIdentitySyncProvider = Provider<void>((ref) {
     if (synced && uid == syncedUid) return;
     synced = true;
     syncedUid = uid;
-    unawaited(_apply(ref, uid));
+    unawaited(
+      _apply(ref, uid).then((ok) {
+        // A failed update stays due, so the next emission of this UID (a
+        // token refresh) tries again instead of keeping a stale ID.
+        if (!ok && syncedUid == uid) synced = false;
+      }),
+    );
   }, fireImmediately: true);
 });
 
-Future<void> _apply(Ref ref, String? uid) async {
+/// Sets both IDs to [uid], or clears them when it is null. Returns whether
+/// both calls succeeded.
+Future<bool> _apply(Ref ref, String? uid) async {
   try {
     final analytics = ref.read(analyticsServiceProvider);
     final crashlytics = ref.read(crashlyticsServiceProvider);
@@ -38,6 +46,7 @@ Future<void> _apply(Ref ref, String? uid) async {
           ? crashlytics.clearUserIdentifier()
           : crashlytics.setUserIdentifier(uid),
     ]);
+    return true;
   } catch (e, st) {
     // Losing an ID update must never break sign-in or sign-out.
     LoggerService.warn(
@@ -45,5 +54,6 @@ Future<void> _apply(Ref ref, String? uid) async {
       error: e,
       stackTrace: st,
     );
+    return false;
   }
 }

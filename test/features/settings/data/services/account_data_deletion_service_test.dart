@@ -211,7 +211,7 @@ void main() {
   );
 
   test('an unconfirmed user-document delete keeps the path and user id out of '
-      'crash reports', () async {
+      'crash reports, but names the step', () async {
     final records = recordCrashReports();
     // No subcollection data, so the only commit is the user document's.
     final tree = FakeUserTree({})..commitsHang = true;
@@ -227,6 +227,11 @@ void main() {
       expect(text, isNot(contains('users/')));
       expect(text, isNot(contains(FakeUserTree.uid)));
     }
+    // The fixed label says which delete timed out.
+    expect(
+      records.map((r) => r.reason),
+      contains(contains('operation=userDocument')),
+    );
   });
 
   test('offline (server read never returns) throws NetworkException', () async {
