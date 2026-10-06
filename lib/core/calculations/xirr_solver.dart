@@ -39,21 +39,23 @@
 ///
 /// ## Bisection Method (Fallback)
 ///
-/// Binary search in range [-0.99, 5.0] (i.e., -99% to 500% return)
+/// Binary search in range [-0.99, 5.0] (i.e., -99% to 500% return), widened
+/// to 1000% and then by doubling up to 1e6 when there is no sign change
 /// - Guaranteed to find a root if one exists in the interval
 /// - Slower but more robust than Newton-Raphson
 /// - Used when Newton-Raphson fails to converge
 ///
 /// ## Edge Cases Handled
 ///
-/// 1. **No root in [-99%, 1000%]**: Falls back to a timing-blind CAGR on
+/// 1. **No sign change in [-99%, 1e6]**: Falls back to a timing-blind CAGR on
 ///    total inflows over total outflows. [solve] flags this as
 ///    [XirrMethod.approximate]; [calculateXirr] returns the bare number.
 /// 2. **All inflows or all outflows**: Returns null (invalid scenario)
 /// 3. **Single cash flow**: Returns 0.0 (no return)
 /// 4. **Same-day transactions**: Normalized to years from first date
-/// 5. **Extreme returns**: The solvers search up to 1000% (x ≤ 10.0); higher
-///    rates come from the approximate fallback.
+/// 5. **Extreme returns**: Newton-Raphson stays at or below 1000% (x ≤ 10.0);
+///    bisection searches up to x = 1e6, and only rates above that come from
+///    the approximate fallback.
 ///
 /// ## Usage Example
 ///
@@ -153,6 +155,10 @@ class XirrSolver {
 
   /// Maximum iterations before giving up or falling back to bisection method.
   static const int _maxIterations = 200;
+
+  /// Highest rate bisection searches (1e6 = 100,000,000%). Above it, the
+  /// approximate fallback answers.
+  static const double _maxBisectionRate = 1e6;
 
   /// Calculates XIRR (Extended Internal Rate of Return) for a series of cash flows.
   ///
@@ -418,7 +424,7 @@ class XirrSolver {
 
       // Bounds check
       if (x <= -1.0) x = -0.99;
-      if (x > 10.0) x = 10.0; // 1000% return cap
+      if (x > 10.0) x = 10.0; // Bisection searches higher rates
     }
 
     return null;
@@ -444,8 +450,10 @@ class XirrSolver {
   /// 1. Start with interval [-0.99, 5.0] (i.e., -99% to 500% return)
   /// 2. Check if f(low) and f(high) have opposite signs (root exists)
   /// 3. If not, expand range to [-0.99, 10.0] and try again
-  /// 4. If still no root, return null
-  /// 5. Otherwise, repeatedly bisect interval until convergence
+  /// 4. If still not and the flows made money (sum > 0), move low up to high
+  ///    and double high, up to 1e6
+  /// 5. If still no root, return null
+  /// 6. Otherwise, repeatedly bisect interval until convergence
   ///
   /// ## Convergence Criteria
   ///
@@ -465,7 +473,19 @@ class XirrSolver {
     if (fLow.sign == fHigh.sign) {
       // Try expanding the range
       high = 10.0;
-      final fHigh2 = _f(high, yearsFromStart, amounts);
+      double fHigh2 = _f(high, yearsFromStart, amounts);
+      // Short, very profitable holdings have roots above 1000%: keep doubling
+      // the upper end, bisecting only the newest segment, up to the bound.
+      // Only flows that made money (NPV at 0% is the plain sum) are searched:
+      // a net loss can have a far multiple-root above 1000%, which would show
+      // a losing investment as ">1000%".
+      final net = amounts.fold(0.0, (s, a) => s + a);
+      while (net > 0 && fLow.sign == fHigh2.sign && high < _maxBisectionRate) {
+        low = high;
+        fLow = fHigh2;
+        high = min(high * 2, _maxBisectionRate);
+        fHigh2 = _f(high, yearsFromStart, amounts);
+      }
       if (fLow.sign == fHigh2.sign) {
         return null; // No root in range
       }
