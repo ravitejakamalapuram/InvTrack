@@ -1,3 +1,4 @@
+import Darwin
 import Flutter
 import UIKit
 import flutter_local_notifications
@@ -10,7 +11,6 @@ import flutter_local_notifications
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    // Required for flutter_local_notifications
     FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { (registry) in
       GeneratedPluginRegistrant.register(with: registry)
     }
@@ -20,6 +20,36 @@ import flutter_local_notifications
     }
 
     GeneratedPluginRegistrant.register(with: self)
+
+    if let controller = window?.rootViewController as? FlutterViewController {
+      let channel = FlutterMethodChannel(
+        name: "com.invtracker/security",
+        binaryMessenger: controller.binaryMessenger
+      )
+      channel.setMethodCallHandler { call, result in
+        switch call.method {
+        case "elapsedRealtime":
+          var timebase = mach_timebase_info_data_t()
+          guard mach_timebase_info(&timebase) == KERN_SUCCESS else {
+            result(
+              FlutterError(
+                code: "CLOCK_UNAVAILABLE",
+                message: "Could not read the continuous clock",
+                details: nil
+              )
+            )
+            return
+          }
+
+          let ticks = mach_continuous_time()
+          let nanos = Double(ticks) * Double(timebase.numer) / Double(timebase.denom)
+          result(Int64(nanos / 1_000_000))
+        default:
+          result(FlutterMethodNotImplemented)
+        }
+      }
+    }
+
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
