@@ -71,6 +71,23 @@ abstract class InvestmentRepository {
   /// Watch all archived investments (reactive stream)
   Stream<List<InvestmentEntity>> watchArchivedInvestments();
 
+  /// Whether the user has no active and no archived investments.
+  ///
+  /// Emits false as soon as either collection holds an investment, from the
+  /// cache or the server, and true only once the server confirms both are
+  /// empty. An empty cache proves nothing (a fresh install offline), so until
+  /// the server answers this emits nothing. Only the new-account decision
+  /// needs this; lists use [watchAllInvestments] and
+  /// [watchArchivedInvestments], which show the cache as it is.
+  Stream<bool> watchHasNoInvestments();
+
+  /// Whether the server holds at least one active or archived investment.
+  ///
+  /// Reads the server only, never the cache, so an unsynced empty cache
+  /// cannot pass for an empty account. Throws when the server cannot be
+  /// reached.
+  Future<bool> hasAnyInvestmentOnServer();
+
   /// Get archived investment by ID
   Future<InvestmentEntity?> getArchivedInvestmentById(String id);
 

@@ -6,6 +6,8 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
@@ -93,11 +95,52 @@ class SampleDataModeNotifier extends Notifier<SampleDataState> {
     );
   }
 
-  /// Activate sample data mode by creating sample investments
+  /// Activate sample data mode by creating sample investments.
+  ///
+  /// Only for an account the server confirms is empty: sample data must never
+  /// be mixed into a real portfolio, and an empty offline cache proves
+  /// nothing. Returns false and writes nothing when the server holds an
+  /// active or archived investment or goal, or cannot be asked.
   Future<bool> activateSampleData() async {
     if (state.isActive || state.isLoading) return false;
 
     state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final onServer = await Future.wait([
+        ref.read(investmentRepositoryProvider).hasAnyInvestmentOnServer(),
+        ref.read(goalRepositoryProvider).hasAnyGoalOnServer(),
+      ]);
+      if (onServer.contains(true)) {
+        LoggerService.info('Sample data refused: account has data');
+        state = state.copyWith(isLoading: false, error: 'account_not_empty');
+        return false;
+      }
+    } catch (e, st) {
+      final metadata = {'errorType': e.runtimeType.toString()};
+      final unreachable = ErrorHandler.mapException(e, st) is NetworkException;
+      if (unreachable) {
+        // Offline or timed out: expected, so not reported as an error.
+        LoggerService.info(
+          'Sample data refused: server unreachable',
+          metadata: metadata,
+        );
+      } else {
+        // Anything else (rules, App Check, a bug) would silently disable
+        // sample data for everyone, so it is reported.
+        LoggerService.error(
+          'Sample data refused: server check failed',
+          metadata: metadata,
+          error: e,
+          stackTrace: st,
+        );
+      }
+      state = state.copyWith(
+        isLoading: false,
+        error: unreachable ? 'server_unreachable' : 'server_check_failed',
+      );
+      return false;
+    }
 
     try {
       final service = ref.read(sampleDataServiceProvider);

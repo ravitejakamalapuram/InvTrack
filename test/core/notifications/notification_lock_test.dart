@@ -113,6 +113,8 @@ void main() {
         // Overview watches archived investments too (A28). Without this the
         // stream reads Firestore, fails, and leaves a retry timer running.
         archivedInvestmentsProvider.overrideWith((ref) => Stream.value([])),
+        // Likewise its new-account check (A121); this user has an investment.
+        hasNoInvestmentsProvider.overrideWith((ref) => Stream.value(false)),
         // The deletion-request banner on Overview (A88) listens to Firestore
         // the same way.
         deletionRequestStatusProvider.overrideWith(

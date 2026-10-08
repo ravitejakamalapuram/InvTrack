@@ -102,6 +102,7 @@ void reloadPortfolio(WidgetRef ref) {
   ref.invalidate(allInvestmentsProvider);
   ref.invalidate(allCashFlowsStreamProvider);
   ref.invalidate(archivedInvestmentsProvider);
+  ref.invalidate(hasNoInvestmentsProvider);
 }
 
 /// Watch cash flows in a specific date range (optimized for reports).
@@ -132,6 +133,19 @@ final activeInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>((
   ref,
 ) {
   return ref.watch(allInvestmentsProvider);
+});
+
+/// Whether the user has no active and no archived investments, confirmed by
+/// the server: loading until that is known, which offline with an empty cache
+/// is not (A121). For the new-account decision only; lists read
+/// [allInvestmentsProvider] and [archivedInvestmentsProvider].
+/// False when not authenticated.
+final hasNoInvestmentsProvider = StreamProvider<bool>((ref) {
+  final isAuthenticated = ref.watch(isAuthenticatedProvider);
+  if (!isAuthenticated) {
+    return Stream.value(false);
+  }
+  return ref.watch(investmentRepositoryProvider).watchHasNoInvestments();
 });
 
 // ============ ARCHIVED INVESTMENT STREAM PROVIDERS ============
