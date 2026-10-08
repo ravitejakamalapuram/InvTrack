@@ -1,6 +1,5 @@
-// A112: auto-lock and the PIN lockout read Android's boot clock
-// (SystemClock.elapsedRealtime), which counts deep sleep and cannot be set
-// by whoever holds the phone.
+// A112: auto-lock and the PIN lockout use a trusted, sleep-inclusive clock.
+// Production never falls back to a sleep-unaware stopwatch.
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/security/data/services/security_clock.dart';
@@ -32,40 +31,46 @@ void main() {
 
   test('reads elapsedRealtime from the security channel', () async {
     answer(() => 2800000);
-    final clock = SecurityClock(stopwatch: stopwatch);
+    // No stopwatch: an injected one is test-only and short-circuits the
+    // channel, which is what the next test covers.
+    final clock = SecurityClock();
 
     expect(await clock.elapsed(), const Duration(milliseconds: 2800000));
+    expect(clock.isBootClock, isTrue);
     expect(calls, ['elapsedRealtime']);
   });
 
-  test('without the channel, uses the stopwatch and stops asking', () async {
+  test('an explicitly injected stopwatch is test-only and deterministic', () async {
     final clock = SecurityClock(stopwatch: stopwatch);
 
     expect(await clock.elapsed(), const Duration(seconds: 7));
-    answer(() => 2800000);
+    expect(clock.isBootClock, isFalse);
+
     stopwatch.value = const Duration(seconds: 9);
-    // One timeline per run: once on the stopwatch, it stays there.
     expect(await clock.elapsed(), const Duration(seconds: 9));
     expect(calls, isEmpty);
   });
 
-  test(
-    'a channel error or an empty answer falls back to the stopwatch',
-    () async {
-      answer(() => throw PlatformException(code: 'ERROR'));
-      expect(
-        await SecurityClock(stopwatch: stopwatch).elapsed(),
-        const Duration(seconds: 7),
-      );
+  test('channel failure fails closed instead of using a stopwatch', () async {
+    answer(() => throw PlatformException(code: 'ERROR'));
 
-      answer(() => null);
-      expect(
-        await SecurityClock(stopwatch: stopwatch).elapsed(),
-        const Duration(seconds: 7),
-      );
-      expect(calls, ['elapsedRealtime', 'elapsedRealtime']);
-    },
-  );
+    final clock = SecurityClock();
+
+    await expectLater(
+      clock.elapsed(),
+      throwsA(isA<SecurityClockUnavailable>()),
+    );
+    expect(calls, ['elapsedRealtime']);
+  });
+
+  test('an empty channel answer also fails closed', () async {
+    answer(() => null);
+
+    await expectLater(
+      SecurityClock().elapsed(),
+      throwsA(isA<SecurityClockUnavailable>()),
+    );
+  });
 }
 
 class _ManualStopwatch extends Stopwatch {

@@ -417,11 +417,13 @@ void main() {
       });
     });
 
+    // A112: these read the clock to decide, and an unreadable clock now locks
+    // the app, so they need one that answers.
     group('Auto-Lock Suspension for Picker Operations', () {
       test(
         'suspendAutoLock prevents auto-lock during picker operations',
         () async {
-          container = createContainer();
+          container = createContainer(clock: _FakeClock());
           await container.read(securityProvider.notifier).setPin('1234');
 
           // Unlock the app first
@@ -468,7 +470,7 @@ void main() {
       test(
         'resumeAutoLock resets pause time to prevent immediate lock',
         () async {
-          container = createContainer();
+          container = createContainer(clock: _FakeClock());
           await container.read(securityProvider.notifier).setPin('1234');
           await container.read(securityProvider.notifier).unlockWithPin('1234');
 
@@ -681,19 +683,15 @@ void main() {
         expect(await lockedAfterResumeAt(notifier, 1060000), isTrue);
       });
 
-      test('without the channel, falls back to a stopwatch and locks after '
-          '61 s', () async {
-        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMethodCallHandler(channel, null);
-        final stopwatch = _ManualStopwatch();
-        final notifier = await unlockedWithPin(
-          60,
-          clock: SecurityClock(stopwatch: stopwatch),
-        );
+      test('a trusted clock failure locks instead of weakening auto-lock',
+          () async {
+        final clock = _FlakyClock();
+        final notifier = await unlockedWithPin(60, clock: clock);
 
         notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
         await pumpEventQueue();
-        stopwatch.value += const Duration(seconds: 61);
+
+        clock.failNext = true;
         notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
         await pumpEventQueue();
 
@@ -805,14 +803,6 @@ class _HeldHasPinService extends SecurityService {
   Future<bool> verifyPin(String pin) async => pin == '1234';
 }
 
-/// A stopwatch that tests move by hand.
-class _ManualStopwatch extends Stopwatch {
-  Duration value = Duration.zero;
-
-  @override
-  Duration get elapsed => value;
-}
-
 /// Boot clock that tests move by hand.
 class _FakeClock implements SecurityClock {
   Duration _boot = const Duration(seconds: 1000);
@@ -827,6 +817,27 @@ class _FakeClock implements SecurityClock {
   bool get isBootClock => true;
 
   /// Auto-lock never reads it.
+  @override
+  DateTime wallTime() => DateTime.utc(2026, 10, 5);
+}
+
+
+class _FlakyClock implements SecurityClock {
+  final Duration _boot = const Duration(seconds: 1000);
+  bool failNext = false;
+
+  @override
+  Future<Duration> elapsed() async {
+    if (failNext) {
+      failNext = false;
+      throw const SecurityClockUnavailable('test clock failure');
+    }
+    return _boot;
+  }
+
+  @override
+  bool get isBootClock => true;
+
   @override
   DateTime wallTime() => DateTime.utc(2026, 10, 5);
 }

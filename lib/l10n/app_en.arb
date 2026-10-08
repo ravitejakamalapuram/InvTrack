@@ -6429,6 +6429,8 @@
         "type": "String"
       }
     }
+  },
+
   "noteTenureClearedWithMaturity": "Tenure cleared too, so no maturity date is worked out from it.",
   "@noteTenureClearedWithMaturity": {
     "description": "Note under the maturity date in the investment form after the user clears the maturity date of an investment whose start date and tenure would otherwise work it out again; the tenure is cleared with it"

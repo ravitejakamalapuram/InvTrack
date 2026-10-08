@@ -14,23 +14,55 @@ import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.d
 /// UID is sent, never the email or name (CLAUDE.md rule 7). Watch it once,
 /// from the app root.
 final userIdentitySyncProvider = Provider<void>((ref) {
+  String? desiredUid;
   String? syncedUid;
-  var synced = false;
+  // "Nothing sent yet" is not the same as "sent, and it was null": starting
+  // signed out has to clear both IDs once, which a null/null comparison
+  // alone would skip.
+  var hasSynced = false;
+  int emissionVersion = 0;
+  bool applying = false;
+
+  // Declared before the listener: `fireImmediately` runs the listener during
+  // this build, so the function has to exist by then.
+  Future<void> drain() async {
+    if (applying) return;
+    applying = true;
+    try {
+      while (!hasSynced || desiredUid != syncedUid) {
+        final targetUid = desiredUid;
+        final targetVersion = emissionVersion;
+        // Either service may change even if this attempt fails. Invalidate
+        // the old sync so returning to its UID still reapplies both IDs.
+        hasSynced = false;
+        final ok = await _apply(ref, targetUid);
+        if (ok && desiredUid == targetUid) {
+          syncedUid = targetUid;
+          hasSynced = true;
+        }
+
+        // If the update failed and no newer auth emission arrived, leave the
+        // target unsynced so the next auth emission retries it. If an emission
+        // arrived while this attempt was pending, retry even when the UID is
+        // unchanged.
+        if (!ok && emissionVersion == targetVersion) break;
+      }
+    } finally {
+      applying = false;
+    }
+  }
+
   ref.listen(authStateProvider, (_, next) {
     // Loading or failed: keep the IDs we have.
     if (!next.hasValue) return;
-    final uid = next.value?.id;
-    // A token refresh or a link re-emits the same UID.
-    if (synced && uid == syncedUid) return;
-    synced = true;
-    syncedUid = uid;
-    unawaited(
-      _apply(ref, uid).then((ok) {
-        // A failed update stays due, so the next emission of this UID (a
-        // token refresh) tries again instead of keeping a stale ID.
-        if (!ok && syncedUid == uid) synced = false;
-      }),
-    );
+    desiredUid = next.value?.id;
+    emissionVersion++;
+
+    // A token refresh/link can emit the same UID while the previous update is
+    // still in flight. Keep that emission as durable demand so a failure of
+    // the in-flight update cannot silently discard the retry.
+    if (applying || (hasSynced && syncedUid == desiredUid)) return;
+    unawaited(drain());
   }, fireImmediately: true);
 });
 

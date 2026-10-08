@@ -207,7 +207,10 @@ class AnalyticsEvents {
 ///
 /// See library documentation above for usage examples and privacy guidelines.
 class AnalyticsService {
-  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+  AnalyticsService({FirebaseAnalytics? analytics})
+      : _analytics = analytics ?? FirebaseAnalytics.instance;
+
+  final FirebaseAnalytics _analytics;
 
   /// Get the analytics observer for navigation tracking.
   ///
@@ -344,11 +347,12 @@ class AnalyticsService {
   Future<void> setUserId(String? userId) async {
     try {
       await _analytics.setUserId(id: userId);
-    } catch (e) {
+    } catch (e, st) {
       LoggerService.warn(
         'Analytics error setting user ID',
-        metadata: {'error': e.toString()},
+        metadata: {'errorType': e.runtimeType.toString()},
       );
+      Error.throwWithStackTrace(e, st);
     }
   }
 

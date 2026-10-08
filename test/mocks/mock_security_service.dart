@@ -12,11 +12,16 @@ class MockLocalAuthentication extends Mock implements LocalAuthentication {}
 class FakeFlutterSecureStorage extends FlutterSecureStorage {
   final Map<String, String> _storage = {};
   final Map<String, bool> _shouldThrowRead = {};
+  final Map<String, bool> _shouldThrowWrite = {};
 
   FakeFlutterSecureStorage() : super();
 
   void setThrowRead(String key, bool shouldThrow) {
     _shouldThrowRead[key] = shouldThrow;
+  }
+
+  void setThrowWrite(String key, bool shouldThrow) {
+    _shouldThrowWrite[key] = shouldThrow;
   }
 
   @override
@@ -46,6 +51,9 @@ class FakeFlutterSecureStorage extends FlutterSecureStorage {
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
+    if (_shouldThrowWrite[key] == true) {
+      throw PlatformException(code: 'WRITE_ERROR', message: 'Failed to write');
+    }
     if (value != null) {
       _storage[key] = value;
     } else {
@@ -70,6 +78,7 @@ class FakeFlutterSecureStorage extends FlutterSecureStorage {
   void reset() {
     _storage.clear();
     _shouldThrowRead.clear();
+    _shouldThrowWrite.clear();
   }
 
   /// Get current storage contents for assertions

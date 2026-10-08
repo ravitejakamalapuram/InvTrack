@@ -98,6 +98,92 @@ void main() {
     verify(() => analytics.setUserId('google1')).called(1);
   });
 
+  for (final fails in [false, true]) {
+    test('sign-out restores both IDs after a pending sign-in '
+        '${fails ? 'fails' : 'succeeds'}', () async {
+      String? analyticsUid;
+      String? crashlyticsUid;
+      final releaseSignIn = Completer<void>();
+      when(() => analytics.setUserId(any())).thenAnswer((call) async {
+        final uid = call.positionalArguments.single as String?;
+        if (uid == 'g1') {
+          await releaseSignIn.future;
+          if (fails) throw StateError('analytics unavailable');
+        }
+        analyticsUid = uid;
+      });
+      when(() => crashlytics.setUserIdentifier(any())).thenAnswer((call) async {
+        crashlyticsUid = call.positionalArguments.single as String;
+      });
+      when(() => crashlytics.clearUserIdentifier()).thenAnswer((_) async {
+        crashlyticsUid = null;
+      });
+
+      // Establish null as the last successfully synced UID, then return to
+      // it while the first sign-in update is still changing the services.
+      await emit(null);
+      await emit(guest);
+      expect(crashlyticsUid, 'g1');
+      await emit(null);
+
+      releaseSignIn.complete();
+      await pumpEventQueue();
+
+      expect(analyticsUid, isNull);
+      expect(crashlyticsUid, isNull);
+      verify(() => analytics.setUserId(null)).called(2);
+      verify(() => crashlytics.clearUserIdentifier()).called(2);
+    });
+  }
+
+  test('an Analytics failure keeps the same UID eligible for retry', () async {
+    var failures = 1;
+    when(() => analytics.setUserId(any())).thenAnswer((_) async {
+      if (failures-- > 0) throw StateError('analytics unavailable');
+    });
+
+    await emit(guest);
+    // A link re-emits the same UID: the failed Analytics update must be retried.
+    await emit(const UserEntity(id: 'g1', email: 'a@example.com'));
+    // Once both services succeed, the same UID is not sent again.
+    await emit(guest);
+
+    verify(() => analytics.setUserId('g1')).called(2);
+    verify(() => crashlytics.setUserIdentifier('g1')).called(2);
+  });
+
+  test('same UID emitted while update is pending is retried after failure', () async {
+    final firstAttempt = Completer<void>();
+    final releaseFirstAttempt = Completer<void>();
+    var calls = 0;
+
+    when(() => analytics.setUserId('g1')).thenAnswer((_) async {
+      calls++;
+      if (calls == 1) {
+        firstAttempt.complete();
+        await releaseFirstAttempt.future;
+        throw StateError('analytics unavailable');
+      }
+    });
+
+    auth.add(guest);
+    await firstAttempt.future;
+
+    // The second emission happens while the first update is still pending.
+    // It carries the same UID but a different account state, as a link does;
+    // an identical UserEntity would compare equal and never reach the
+    // listener at all.
+    auth.add(const UserEntity(id: 'g1', email: 'ravi@example.com'));
+    await pumpEventQueue();
+
+    releaseFirstAttempt.complete();
+    await pumpEventQueue();
+    await pumpEventQueue();
+
+    verify(() => analytics.setUserId('g1')).called(2);
+    verify(() => crashlytics.setUserIdentifier('g1')).called(2);
+  });
+
   test('a failed update is tried again when the same UID comes back', () async {
     var failures = 1;
     when(() => crashlytics.setUserIdentifier(any())).thenAnswer((_) async {

@@ -267,7 +267,20 @@ class SecurityService {
   Future<int?> getLockoutRemainingSeconds() async {
     final stored = await _getLockoutTimestamp();
     final start = stored == null ? null : _decodeLockoutStart(stored);
-    if (start == null) return null;
+
+    // The attempt counter is itself a security boundary. If five or more
+    // failures were durably recorded but the timestamp could not be written
+    // (for example, storage failed between the two writes), never treat the
+    // missing timestamp as "no lockout". Start a fresh lockout so it can
+    // expire normally once storage is writable again.
+    if (start == null) {
+      final failedAttempts = await _getFailedAttempts();
+      if (failedAttempts >= _maxAttempts) {
+        await _setLockoutTimestamp(_encodeLockoutStart(await _clockNow()));
+        return _lockoutDurationSeconds;
+      }
+      return null;
+    }
 
     final now = await _clockNow();
     final startClockMs = start.clockMs;
