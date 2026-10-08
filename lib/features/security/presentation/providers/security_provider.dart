@@ -150,7 +150,26 @@ class SecurityNotifier extends Notifier<SecurityState>
     }
   }
 
-  _ClockMark _mark() => _clock.elapsed();
+  _ClockMark _mark() {
+    final mark = _clock.elapsed();
+
+    // Lifecycle markers can be replaced before they are awaited. Attach an
+    // observer immediately so a rejected marker future is never an unhandled
+    // async error; the original future remains unchanged and still propagates
+    // the failure when its owner awaits it.
+    unawaited(
+      mark.catchError((Object error, StackTrace stackTrace) {
+        LoggerService.warn(
+          'Security clock marker failed',
+          metadata: {'errorType': error.runtimeType.toString()},
+          error: error,
+          stackTrace: stackTrace,
+        );
+        return const Duration();
+      }),
+    );
+    return mark;
+  }
 
   /// Time between [mark] and [now], both [SecurityClock] readings. That
   /// clock counts deep sleep and cannot be changed by whoever holds the
