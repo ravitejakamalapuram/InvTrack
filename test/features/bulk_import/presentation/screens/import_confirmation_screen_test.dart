@@ -470,62 +470,145 @@ void main() {
       );
     });
 
-    testWidgets('pauses import when duplicate rows match multiple active investments', (
-      tester,
-    ) async {
-      final first = bhive.copyWith(id: 'bhive-1');
-      final second = bhive.copyWith(id: 'bhive-2');
-      final result = ParsedCsvResult(
-        rows: [
-          ParsedCashFlowRow(
-            rowNumber: 2,
-            date: DateTime(2024, 1, 15),
-            investmentName: 'Bhive Investment',
-            type: CashFlowType.invest,
-            amount: 100000,
-            currency: 'INR',
-          ),
-          ParsedCashFlowRow(
-            rowNumber: 3,
-            date: DateTime(2024, 2, 15),
-            investmentName: 'Bhive Investment',
-            type: CashFlowType.invest,
-            amount: 200000,
-            currency: 'INR',
-          ),
-        ],
-        errors: const [],
-        totalRows: 2,
-        validRows: 2,
-      );
-      final firstFlow = savedInvest.copyWith(
-        id: 'cf-1',
-        investmentId: first.id,
-        amount: 100000,
-      );
-      final secondFlow = savedInvest.copyWith(
-        id: 'cf-2',
-        investmentId: second.id,
-        amount: 200000,
-        date: DateTime(2024, 2, 15),
-      );
+    testWidgets(
+      'pauses import when duplicate rows match multiple active investments',
+      (tester) async {
+        final first = bhive.copyWith(id: 'bhive-1');
+        final second = bhive.copyWith(id: 'bhive-2');
+        final result = ParsedCsvResult(
+          rows: [
+            ParsedCashFlowRow(
+              rowNumber: 2,
+              date: DateTime(2024, 1, 15),
+              investmentName: 'Bhive Investment',
+              type: CashFlowType.invest,
+              amount: 100000,
+              currency: 'INR',
+            ),
+            ParsedCashFlowRow(
+              rowNumber: 3,
+              date: DateTime(2024, 2, 15),
+              investmentName: 'Bhive Investment',
+              type: CashFlowType.invest,
+              amount: 200000,
+              currency: 'INR',
+            ),
+            ParsedCashFlowRow(
+              rowNumber: 4,
+              date: DateTime(2024, 3, 15),
+              investmentName: 'Bhive Investment',
+              type: CashFlowType.invest,
+              amount: 300000,
+              currency: 'INR',
+            ),
+          ],
+          errors: const [],
+          totalRows: 3,
+          validRows: 3,
+        );
+        final firstFlow = savedInvest.copyWith(
+          id: 'cf-1',
+          investmentId: first.id,
+          amount: 100000,
+        );
+        final secondFlow = savedInvest.copyWith(
+          id: 'cf-2',
+          investmentId: second.id,
+          amount: 200000,
+          date: DateTime(2024, 2, 15),
+        );
 
-      await pumpScreen(
-        tester,
-        result: result,
-        existingInvestments: [first, second],
-        existingCashFlows: [firstFlow, secondFlow],
-      );
+        await pumpScreen(
+          tester,
+          result: result,
+          existingInvestments: [first, second],
+          existingCashFlows: [firstFlow, secondFlow],
+        );
 
-      expect(find.text(_l10n.importLikelyDuplicates(2)), findsOneWidget);
-      expect(find.text(_l10n.importDuplicateCheckFailed), findsOneWidget);
-      expect(
-        tester.widget<GradientButton>(find.byType(GradientButton)).onPressed,
-        isNull,
-      );
-      expect(notifier.investments, isEmpty);
-      expect(notifier.cashFlows, isEmpty);
-    });
+        expect(find.text(_l10n.importLikelyDuplicates(2)), findsOneWidget);
+        expect(
+          find.text(_l10n.importAmbiguousInvestmentMatches),
+          findsOneWidget,
+        );
+        expect(find.text(_l10n.importAddsToExisting), findsNothing);
+        expect(
+          tester.widget<GradientButton>(find.byType(GradientButton)).onPressed,
+          isNull,
+        );
+
+        await tester.tap(find.text('Bhive Investment'));
+        await tester.pumpAndSettle();
+        expect(find.text(_l10n.importAddsToExisting), findsNothing);
+        expect(notifier.investments, isEmpty);
+        expect(notifier.cashFlows, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'keeps ambiguous import disabled when duplicate skipping is off',
+      (tester) async {
+        final first = bhive.copyWith(id: 'bhive-1');
+        final second = bhive.copyWith(id: 'bhive-2');
+        final result = ParsedCsvResult(
+          rows: [
+            ParsedCashFlowRow(
+              rowNumber: 2,
+              date: DateTime(2024, 1, 15),
+              investmentName: 'Bhive Investment',
+              type: CashFlowType.invest,
+              amount: 100000,
+              currency: 'INR',
+            ),
+            ParsedCashFlowRow(
+              rowNumber: 3,
+              date: DateTime(2024, 2, 15),
+              investmentName: 'Bhive Investment',
+              type: CashFlowType.invest,
+              amount: 200000,
+              currency: 'INR',
+            ),
+            ParsedCashFlowRow(
+              rowNumber: 4,
+              date: DateTime(2024, 3, 15),
+              investmentName: 'Bhive Investment',
+              type: CashFlowType.invest,
+              amount: 300000,
+              currency: 'INR',
+            ),
+          ],
+          errors: const [],
+          totalRows: 3,
+          validRows: 3,
+        );
+        final firstFlow = savedInvest.copyWith(
+          id: 'cf-1',
+          investmentId: first.id,
+          amount: 100000,
+        );
+        final secondFlow = savedInvest.copyWith(
+          id: 'cf-2',
+          investmentId: second.id,
+          amount: 200000,
+          date: DateTime(2024, 2, 15),
+        );
+
+        await pumpScreen(
+          tester,
+          result: result,
+          existingInvestments: [first, second],
+          existingCashFlows: [firstFlow, secondFlow],
+        );
+        await tester.tap(find.text(_l10n.importSkipDuplicates));
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.widget<GradientButton>(find.byType(GradientButton)).onPressed,
+          isNull,
+        );
+        expect(notifier.investments, isEmpty);
+        expect(notifier.cashFlows, isEmpty);
+      },
+    );
 
     testWidgets('the header counts only what Import will write', (
       tester,
