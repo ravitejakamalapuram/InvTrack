@@ -6396,9 +6396,13 @@
     "description": "Import confirmation card: rows matching an archived investment's name are imported as a new active investment"
   },
 
-  "importDuplicateCheckFailed": "Couldn''t safely match these rows to your investments. Resolve any ambiguous matches or try again before importing.",
+  "importDuplicateCheckFailed": "Couldn''t check these rows against your investments. Try again before importing.",
   "@importDuplicateCheckFailed": {
     "description": "Import confirmation: loading the user's investments failed, so duplicates could not be checked and import is paused"
+  },
+  "importAmbiguousInvestmentMatches": "Some rows match multiple active investments with the same name. Rename or archive one of them before importing.",
+  "@importAmbiguousInvestmentMatches": {
+    "description": "Import confirmation: duplicate rows matched more than one active investment with the same name, so import is paused to prevent cash flows being assigned to the wrong investment"
   },
 
   "importDecimalMarkTitle": "Which decimal mark does this file use?",
