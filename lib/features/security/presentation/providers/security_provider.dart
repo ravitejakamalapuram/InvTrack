@@ -235,66 +235,71 @@ class SecurityNotifier extends Notifier<SecurityState>
   }
 
   Future<void> _decideAutoLock() async {
-    // Decide on what the app knew when it resumed. The clock answers
-    // asynchronously, so read every time before deciding.
-    final suspended = _isAutoLockSuspended;
-    final suspendedMark = _suspendedAt;
-    final unlockedMark = _lastUnlockTime;
-    final pausedMark = _lastPausedTime;
-    final now = await _clock.elapsed();
-    final suspendedFor = suspendedMark == null
-        ? null
-        : _elapsedBetween(await suspendedMark, now);
-    final sinceUnlock = unlockedMark == null
-        ? null
-        : _elapsedBetween(await unlockedMark, now);
-    final away = pausedMark == null
-        ? null
-        : _elapsedBetween(await pausedMark, now);
-    if (!ref.mounted || !state.hasPin || state.isLocked) return;
+    try {
+      // Decide on what the app knew when it resumed. The trusted clock answers
+      // asynchronously, so read every time before deciding.
+      final suspended = _isAutoLockSuspended;
+      final suspendedMark = _suspendedAt;
+      final unlockedMark = _lastUnlockTime;
+      final pausedMark = _lastPausedTime;
+      final now = await _clock.elapsed();
+      final suspendedFor = suspendedMark == null
+          ? null
+          : _elapsedBetween(await suspendedMark, now);
+      final sinceUnlock = unlockedMark == null
+          ? null
+          : _elapsedBetween(await unlockedMark, now);
+      final away = pausedMark == null
+          ? null
+          : _elapsedBetween(await pausedMark, now);
+      if (!ref.mounted || !state.hasPin || state.isLocked) return;
 
-    // Check if auto-lock is suspended (e.g., during picker operations)
-    if (suspended) {
-      // Safety timeout: auto-expire suspension after 5 minutes
-      // to prevent indefinite suspension if resumeAutoLock wasn't called
-      if (suspendedFor == null) {
-        LoggerService.debug('Auto-lock suspended, skipping');
+      // Check if auto-lock is suspended (e.g., during picker operations)
+      if (suspended) {
+        if (suspendedFor == null) {
+          LoggerService.debug('Auto-lock suspended, skipping');
+          return;
+        }
+        if (suspendedFor < const Duration(minutes: 5)) {
+          LoggerService.debug(
+            'Auto-lock suspended for picker operation, skipping',
+          );
+          return;
+        }
+        LoggerService.debug('Auto-lock suspension expired after 5 minutes');
+        if (identical(_suspendedAt, suspendedMark)) {
+          _isAutoLockSuspended = false;
+          _suspendedAt = null;
+        }
+      }
+
+      if (sinceUnlock != null && sinceUnlock < _unlockGracePeriod) {
+        LoggerService.debug('Within unlock grace period, skipping auto-lock');
         return;
       }
-      if (suspendedFor < const Duration(minutes: 5)) {
-        LoggerService.debug(
-          'Auto-lock suspended for picker operation, skipping',
-        );
-        return;
-      }
-      LoggerService.debug('Auto-lock suspension expired after 5 minutes');
-      // Unless a new suspension started meanwhile.
-      if (identical(_suspendedAt, suspendedMark)) {
-        _isAutoLockSuspended = false;
-        _suspendedAt = null;
-      }
-    }
 
-    // Check if we're within the grace period after a successful unlock
-    // This prevents the biometric dialog dismissal from triggering a re-lock
-    if (sinceUnlock != null && sinceUnlock < _unlockGracePeriod) {
-      LoggerService.debug('Within unlock grace period, skipping auto-lock');
-      return;
-    }
-
-    if (away != null) {
-      final autoLockSeconds = _service.autoLockDurationSeconds;
-
-      if (away.inSeconds >= autoLockSeconds) {
-        LoggerService.info(
-          'Auto-locking app',
-          metadata: {
-            'durationSeconds': away.inSeconds,
-            'thresholdSeconds': autoLockSeconds,
-          },
-        );
-        lockApp();
+      if (away != null) {
+        final autoLockSeconds = _service.autoLockDurationSeconds;
+        if (away.inSeconds >= autoLockSeconds) {
+          LoggerService.info(
+            'Auto-locking app',
+            metadata: {
+              'durationSeconds': away.inSeconds,
+              'thresholdSeconds': autoLockSeconds,
+            },
+          );
+          lockApp();
+        }
       }
+    } catch (e, st) {
+      // A missing/untrusted clock must never weaken the privacy boundary.
+      LoggerService.error(
+        'Trusted security clock unavailable; locking app',
+        metadata: {'errorType': e.runtimeType.toString()},
+        error: e,
+        stackTrace: st,
+      );
+      if (ref.mounted) lockApp();
     }
   }
 
