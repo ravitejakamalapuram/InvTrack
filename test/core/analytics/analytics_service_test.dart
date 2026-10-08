@@ -26,15 +26,20 @@ void main() {
     test('propagates Firebase failures so identity sync can retry', () async {
       final firebase = _MockFirebaseAnalytics();
       final error = StateError('analytics unavailable');
-      when(() => firebase.setUserId(id: 'g1'))
-          .thenThrow(error);
+      final expectedStack = StackTrace.current;
+      when(() => firebase.setUserId(id: 'g1')).thenAnswer((_) async {
+        Error.throwWithStackTrace(error, expectedStack);
+      });
 
       final service = AnalyticsService(analytics: firebase);
 
-      await expectLater(
-        service.setUserId('g1'),
-        throwsA(same(error)),
-      );
+      try {
+        await service.setUserId('g1');
+        fail('setUserId should propagate Firebase failures');
+      } catch (e, stackTrace) {
+        expect(e, same(error));
+        expect(stackTrace.toString(), expectedStack.toString());
+      }
     });
 
     test('clears the Firebase identity when user ID is null', () async {
