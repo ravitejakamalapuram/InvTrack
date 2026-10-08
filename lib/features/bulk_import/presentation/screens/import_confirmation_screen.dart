@@ -347,6 +347,14 @@ class _ImportConfirmationScreenState
                     style: TextStyle(color: Colors.orange[700], fontSize: 12),
                   ),
                 ],
+                if (hasAmbiguousActiveMatches) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    l10n.importAmbiguousInvestmentMatches,
+                    style: TextStyle(color: Colors.orange[700], fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
                 if (checkFailed) ...[
                   const SizedBox(height: AppSpacing.xs),
                   Text(
@@ -366,17 +374,6 @@ class _ImportConfirmationScreenState
                     style: TextStyle(color: Colors.orange[700], fontSize: 12),
                     textAlign: TextAlign.center,
                   ),
-                  if (hasAmbiguousActiveMatches) ...[
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      l10n.importDuplicateCheckFailed,
-                      style: TextStyle(
-                        color: Colors.orange[700],
-                        fontSize: 12,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
                   SwitchListTile(
                     value: _skipDuplicates,
                     onChanged: _isImporting
