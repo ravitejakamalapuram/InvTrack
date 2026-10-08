@@ -28,10 +28,7 @@ final userIdentitySyncProvider = Provider<void>((ref) {
     // A token refresh/link can emit the same UID while the previous update is
     // still in flight. Keep that emission as durable demand so a failure of
     // the in-flight update cannot silently discard the retry.
-    if (applying || syncedUid == desiredUid && version == emissionVersion) {
-      if (applying) return;
-      return;
-    }
+    if (applying || syncedUid == desiredUid) return;
     unawaited(_drain(ref));
   }, fireImmediately: true);
 
