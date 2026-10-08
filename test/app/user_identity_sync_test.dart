@@ -98,6 +98,22 @@ void main() {
     verify(() => analytics.setUserId('google1')).called(1);
   });
 
+  test('an Analytics failure keeps the same UID eligible for retry', () async {
+    var failures = 1;
+    when(() => analytics.setUserId(any())).thenAnswer((_) async {
+      if (failures-- > 0) throw StateError('analytics unavailable');
+    });
+
+    await emit(guest);
+    // A link re-emits the same UID: the failed Analytics update must be retried.
+    await emit(const UserEntity(id: 'g1', email: 'a@example.com'));
+    // Once both services succeed, the same UID is not sent again.
+    await emit(guest);
+
+    verify(() => analytics.setUserId('g1')).called(2);
+    verify(() => crashlytics.setUserIdentifier('g1')).called(2);
+  });
+
   test('a failed update is tried again when the same UID comes back', () async {
     var failures = 1;
     when(() => crashlytics.setUserIdentifier(any())).thenAnswer((_) async {
