@@ -31,9 +31,12 @@ void main() {
 
   test('reads elapsedRealtime from the security channel', () async {
     answer(() => 2800000);
-    final clock = SecurityClock(stopwatch: stopwatch);
+    // No stopwatch: an injected one is test-only and short-circuits the
+    // channel, which is what the next test covers.
+    final clock = SecurityClock();
 
     expect(await clock.elapsed(), const Duration(milliseconds: 2800000));
+    expect(clock.isBootClock, isTrue);
     expect(calls, ['elapsedRealtime']);
   });
 

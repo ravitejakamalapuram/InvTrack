@@ -14,13 +14,17 @@ void main() {
   late FakeLocalAuthentication fakeLocalAuth;
   late SharedPreferences prefs;
   late SecurityService service;
+  late _FakeClock clock;
 
   setUp(() async {
     fakeSecureStorage = FakeFlutterSecureStorage();
     fakeLocalAuth = FakeLocalAuthentication();
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
-    service = SecurityService(fakeSecureStorage, fakeLocalAuth, prefs);
+    // The real SecurityClock reads the platform channel and fails closed when
+    // it cannot (A112), so every test needs a clock it can read.
+    clock = _FakeClock();
+    service = SecurityService(fakeSecureStorage, fakeLocalAuth, prefs, clock);
   });
 
   tearDown(() {
@@ -289,8 +293,10 @@ void main() {
         expect(await service.verifyPin('5678'), isFalse);
       }
 
-      expect(
-        () => service.verifyPin('5678'),
+      // Awaited: the fifth attempt has to finish before its effects are read,
+      // and `_isVerifying` would turn a still-running call into a silent false.
+      await expectLater(
+        service.verifyPin('5678'),
         throwsA(isA<PlatformException>()),
       );
       expect(fakeSecureStorage.storage['pin_failed_attempts'], equals('5'));

@@ -16,32 +16,26 @@ import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.d
 final userIdentitySyncProvider = Provider<void>((ref) {
   String? desiredUid;
   String? syncedUid;
+  // "Nothing sent yet" is not the same as "sent, and it was null": starting
+  // signed out has to clear both IDs once, which a null/null comparison
+  // alone would skip.
+  var hasSynced = false;
   int emissionVersion = 0;
   bool applying = false;
 
-  ref.listen(authStateProvider, (_, next) {
-    // Loading or failed: keep the IDs we have.
-    if (!next.hasValue) return;
-    desiredUid = next.value?.id;
-    emissionVersion++;
-
-    // A token refresh/link can emit the same UID while the previous update is
-    // still in flight. Keep that emission as durable demand so a failure of
-    // the in-flight update cannot silently discard the retry.
-    if (applying || syncedUid == desiredUid) return;
-    unawaited(_drain(ref));
-  }, fireImmediately: true);
-
-  Future<void> _drain(Ref ref) async {
+  // Declared before the listener: `fireImmediately` runs the listener during
+  // this build, so the function has to exist by then.
+  Future<void> drain() async {
     if (applying) return;
     applying = true;
     try {
-      while (desiredUid != syncedUid) {
+      while (!hasSynced || desiredUid != syncedUid) {
         final targetUid = desiredUid;
         final targetVersion = emissionVersion;
         final ok = await _apply(ref, targetUid);
         if (ok && desiredUid == targetUid) {
           syncedUid = targetUid;
+          hasSynced = true;
         }
 
         // If the update failed and no newer auth emission arrived, leave the
@@ -54,6 +48,19 @@ final userIdentitySyncProvider = Provider<void>((ref) {
       applying = false;
     }
   }
+
+  ref.listen(authStateProvider, (_, next) {
+    // Loading or failed: keep the IDs we have.
+    if (!next.hasValue) return;
+    desiredUid = next.value?.id;
+    emissionVersion++;
+
+    // A token refresh/link can emit the same UID while the previous update is
+    // still in flight. Keep that emission as durable demand so a failure of
+    // the in-flight update cannot silently discard the retry.
+    if (applying || (hasSynced && syncedUid == desiredUid)) return;
+    unawaited(drain());
+  }, fireImmediately: true);
 });
 
 /// Sets both IDs to [uid], or clears them when it is null. Returns whether

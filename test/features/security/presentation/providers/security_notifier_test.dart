@@ -417,11 +417,13 @@ void main() {
       });
     });
 
+    // A112: these read the clock to decide, and an unreadable clock now locks
+    // the app, so they need one that answers.
     group('Auto-Lock Suspension for Picker Operations', () {
       test(
         'suspendAutoLock prevents auto-lock during picker operations',
         () async {
-          container = createContainer();
+          container = createContainer(clock: _FakeClock());
           await container.read(securityProvider.notifier).setPin('1234');
 
           // Unlock the app first
@@ -468,7 +470,7 @@ void main() {
       test(
         'resumeAutoLock resets pause time to prevent immediate lock',
         () async {
-          container = createContainer();
+          container = createContainer(clock: _FakeClock());
           await container.read(securityProvider.notifier).setPin('1234');
           await container.read(securityProvider.notifier).unlockWithPin('1234');
 
@@ -801,14 +803,6 @@ class _HeldHasPinService extends SecurityService {
   Future<bool> verifyPin(String pin) async => pin == '1234';
 }
 
-/// A stopwatch that tests move by hand.
-class _ManualStopwatch extends Stopwatch {
-  Duration value = Duration.zero;
-
-  @override
-  Duration get elapsed => value;
-}
-
 /// Boot clock that tests move by hand.
 class _FakeClock implements SecurityClock {
   Duration _boot = const Duration(seconds: 1000);
@@ -829,7 +823,7 @@ class _FakeClock implements SecurityClock {
 
 
 class _FlakyClock implements SecurityClock {
-  Duration _boot = const Duration(seconds: 1000);
+  final Duration _boot = const Duration(seconds: 1000);
   bool failNext = false;
 
   @override

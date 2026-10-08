@@ -132,7 +132,10 @@ void main() {
     await firstAttempt.future;
 
     // The second emission happens while the first update is still pending.
-    auth.add(guest);
+    // It carries the same UID but a different account state, as a link does;
+    // an identical UserEntity would compare equal and never reach the
+    // listener at all.
+    auth.add(const UserEntity(id: 'g1', email: 'ravi@example.com'));
     await pumpEventQueue();
 
     releaseFirstAttempt.complete();
