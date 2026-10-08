@@ -132,10 +132,16 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
           : null;
 
       if (widget.isEditing) {
+        final existing = widget.goalToEdit!;
+        // Built explicitly, not with copyWith: a cleared target date or
+        // monthly income is null here and must be saved as null, which
+        // copyWith would ignore. Only identity and lifecycle fields come
+        // from the stored goal; the notifier sets updatedAt.
         await ref
             .read(goalsNotifierProvider.notifier)
             .updateGoal(
-              widget.goalToEdit!.copyWith(
+              GoalEntity(
+                id: existing.id,
                 name: name,
                 type: _selectedType,
                 targetAmount: targetAmount,
@@ -146,6 +152,9 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
                 linkedTypes: _linkedTypes,
                 icon: _selectedIcon,
                 colorValue: _selectedColor.toARGB32(),
+                isArchived: existing.isArchived,
+                createdAt: existing.createdAt,
+                updatedAt: existing.updatedAt,
                 currency:
                     _selectedCurrency, // Multi-currency support (Rule 21.2)
               ),

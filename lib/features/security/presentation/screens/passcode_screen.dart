@@ -32,6 +32,11 @@ class PasscodeScreen extends ConsumerStatefulWidget {
 class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
     with WidgetsBindingObserver {
   String _input = '';
+
+  /// Set by the first key press and never cleared: submitting clears
+  /// [_input] before the PIN is checked, so an empty entry does not mean
+  /// the user has not typed.
+  bool _pinEntryStarted = false;
   String? _tempPin; // For create mode (first entry)
   String _message = 'Enter PIN';
   bool _isError = false;
@@ -122,7 +127,8 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
 
       // Small delay to let the system settle after resume
       Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted && !_biometricInProgress) {
+        // Not once the user has started typing the PIN.
+        if (mounted && !_biometricInProgress && !_pinEntryStarted) {
           _tryBiometrics(isAutoAttempt: true);
         }
       });
@@ -215,6 +221,11 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
   }
 
   void _onKeyPress(String key) {
+    // The user chose the PIN: the automatic fingerprint prompt, which may
+    // still be waiting for biometrics to be reported available, must not
+    // open over the keypad. The fingerprint key still works.
+    _autoAttemptedOnInit = true;
+    _pinEntryStarted = true;
     if (_input.length < 4) {
       setState(() {
         _input += key;

@@ -80,6 +80,10 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   // Smart defaults tracking
   bool _maturityDateAutoCalculated = false;
 
+  /// The user cleared a maturity date that the start date and tenure would
+  /// work out again, so the tenure was cleared with it (A119).
+  bool _tenureClearedWithMaturity = false;
+
   @override
   void initState() {
     super.initState();
@@ -167,6 +171,24 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         });
       }
     }
+  }
+
+  /// Clears the maturity date. A start date and tenure would work it out
+  /// again (InvestmentEntity.calculatedMaturityDate), and the health score
+  /// and value estimate would keep using it, so the tenure is cleared too.
+  void _clearMaturityDate() {
+    final derivable =
+        InvestmentProjector.calculateMaturityDate(
+          startDate: _startDate,
+          tenureMonths: int.tryParse(_tenureController.text.trim()),
+        ) !=
+        null;
+    setState(() {
+      _maturityDate = null;
+      _maturityDateAutoCalculated = false;
+      _tenureClearedWithMaturity = derivable;
+    });
+    if (derivable) _tenureController.clear();
   }
 
   /// Apply template defaults to the form
@@ -1311,12 +1333,8 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               onTap: () => _selectMaturityDate(context, isDark),
               customSemanticsActions: _maturityDate != null
                   ? {
-                      CustomSemanticsAction(label: clearLabel): () {
-                        setState(() {
-                          _maturityDate = null;
-                          _maturityDateAutoCalculated = false;
-                        });
-                      },
+                      CustomSemanticsAction(label: clearLabel):
+                          _clearMaturityDate,
                     }
                   : null,
               child: GlassCard(
@@ -1368,10 +1386,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                         tooltip: AppLocalizations.of(
                           context,
                         ).tooltipClearMaturityDate,
-                        onPressed: () => setState(() {
-                          _maturityDate = null;
-                          _maturityDateAutoCalculated = false;
-                        }),
+                        onPressed: _clearMaturityDate,
                       )
                     else
                       Icon(
@@ -1386,6 +1401,22 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
             );
           },
         ),
+        // Shown while the tenure stays cleared, also after a new date is
+        // picked, because the save then drops the tenure.
+        if (_tenureClearedWithMaturity && _tenureController.text.isEmpty) ...[
+          SizedBox(height: AppSpacing.xs),
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              AppLocalizations.of(context).noteTenureClearedWithMaturity,
+              style: AppTypography.caption.copyWith(
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

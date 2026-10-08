@@ -87,6 +87,19 @@ class AccountDataDeletionService {
     required SharedPreferences prefs,
   }) async {
     await deleteAllServerData();
+    await deleteLocalData(deleteLocalFiles: deleteLocalFiles, prefs: prefs);
+  }
+
+  /// This device's copy only: [deleteLocalFiles] (attachments, guest
+  /// backups) and the per-user preferences. Never touches the server.
+  ///
+  /// Delete Account also calls it on its own when the server wipe fails
+  /// after the deletion request was filed: the user is then signed out and
+  /// the server job cannot reach this device, so nothing else would remove it.
+  Future<void> deleteLocalData({
+    required Future<void> Function() deleteLocalFiles,
+    required SharedPreferences prefs,
+  }) async {
     await deleteLocalFiles();
     for (final key in [
       ...userPreferenceKeys,
@@ -109,7 +122,8 @@ class AccountDataDeletionService {
     // Finally the (possibly non-existent) parent user document itself.
     final batch = _firestore.batch();
     batch.delete(userDoc);
-    await _confirm(batch.commit(), 'users/$_userId');
+    // A fixed label, not the path: the label reaches crash reports.
+    await _confirm(batch.commit(), 'userDocument');
     LoggerService.info('Account data deletion complete on server');
   }
 
@@ -133,11 +147,17 @@ class AccountDataDeletionService {
     }
   }
 
+  /// [what] is sent to crash reports as metadata, so it must be a fixed
+  /// label (a collection name), never a path or user id.
   Future<T> _confirm<T>(Future<T> operation, String what) async {
     try {
       return await operation.timeout(confirmTimeout);
     } on TimeoutException catch (e, st) {
-      LoggerService.warn('Deletion of $what not confirmed (timeout)');
+      LoggerService.warn(
+        'Account data deletion not confirmed (timeout)',
+        // `operation` is on the crash-report allowlist, so the label is kept.
+        metadata: {'operation': what},
+      );
       throw NetworkException.noConnection(cause: e, stackTrace: st);
     } on FirebaseException catch (e, st) {
       if (e.code == 'unavailable' || e.code == 'deadline-exceeded') {

@@ -10,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/portfolio_health/data/models/health_score_snapshot_model.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 
@@ -70,14 +71,10 @@ class HealthScoreRepository {
         const Duration(seconds: 5),
         onTimeout: () => throw TimeoutException('Health score save timed out'),
       );
-    } on TimeoutException catch (e, stackTrace) {
-      // Timeout is expected offline - snapshot cached locally
-      _crashlytics.recordError(
-        e,
-        stackTrace,
-        reason: 'Health score save timeout - will sync when online',
-        fatal: false,
-      );
+    } on TimeoutException {
+      // Expected offline: Firestore keeps the write and syncs it later, so
+      // this is logged locally, not reported as a crash.
+      LoggerService.debug('Health score save timed out; will sync when online');
       // Rethrow to let callers handle timeout (forceSave vs auto-save)
       rethrow;
     } catch (e, stackTrace) {

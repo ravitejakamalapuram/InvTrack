@@ -20,11 +20,57 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 ///
 /// Displays overall health score (0-100) as a circular progress indicator
 /// with color-coded tiers (green/yellow/orange/red)
-class PortfolioHealthDashboardCard extends ConsumerWidget {
+class PortfolioHealthDashboardCard extends ConsumerStatefulWidget {
   const PortfolioHealthDashboardCard({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PortfolioHealthDashboardCard> createState() =>
+      _PortfolioHealthDashboardCardState();
+}
+
+class _PortfolioHealthDashboardCardState
+    extends ConsumerState<PortfolioHealthDashboardCard> {
+  ProviderSubscription<AsyncValue<PortfolioHealthScore?>>? _scoreErrors;
+
+  /// The last error sent to Crashlytics. Riverpod's automatic retries pass
+  /// through loading states that still carry the error, so comparing with
+  /// the previous state would skip a failure that repeats the same error.
+  Object? _reportedError;
+
+  @override
+  void initState() {
+    super.initState();
+    // Report a failed load once per error, outside build(): the card hides
+    // itself on error and may rebuild many times while the error lasts.
+    // Only while the feature is on, so a disabled card computes nothing.
+    ref.listenManual<bool>(isPortfolioHealthEnabledProvider, (_, enabled) {
+      _scoreErrors?.close();
+      _scoreErrors = enabled
+          ? ref.listenManual(
+              portfolioHealthProvider,
+              _reportError,
+              fireImmediately: true,
+            )
+          : null;
+    }, fireImmediately: true);
+  }
+
+  void _reportError(
+    AsyncValue<PortfolioHealthScore?>? _,
+    AsyncValue<PortfolioHealthScore?> next,
+  ) {
+    if (next is! AsyncError || identical(next.error, _reportedError)) return;
+    _reportedError = next.error;
+    LoggerService.error(
+      'PortfolioHealthDashboardCard error',
+      error: next.error,
+      stackTrace: next.stackTrace,
+      metadata: {'widget': 'PortfolioHealthDashboardCard'},
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Check if feature is enabled
     final isEnabled = ref.watch(isPortfolioHealthEnabledProvider);
 
@@ -43,18 +89,10 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
         return _buildScoreCard(context, isDark, score);
       },
       loading: () => _buildLoadingCard(context, isDark),
-      error: (error, stackTrace) {
-        // Log error for debugging
-        LoggerService.error(
-          'PortfolioHealthDashboardCard error',
-          error: error,
-          stackTrace: stackTrace,
-          metadata: {'widget': 'PortfolioHealthDashboardCard'},
-        );
-        // Don't show error card on dashboard - just hide the widget
-        // Full error display is available on details screen
-        return const SizedBox.shrink();
-      },
+      // Don't show error card on dashboard - just hide the widget. The error
+      // is reported once by _reportError; full error display is available
+      // on the details screen.
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 

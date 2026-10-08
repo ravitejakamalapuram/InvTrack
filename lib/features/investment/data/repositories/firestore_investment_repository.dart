@@ -7,6 +7,7 @@ import 'package:inv_tracker/core/utils/stored_date.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// Firestore-based implementation of InvestmentRepository
 /// Provides offline persistence and real-time sync across devices
@@ -19,6 +20,9 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   /// Timeout for write operations - allows offline writes to complete quickly
   static const Duration _writeTimeout = Duration(seconds: 3);
+
+  /// Timeout for a read that must come from the server.
+  static const Duration _serverReadTimeout = Duration(seconds: 10);
 
   FirestoreInvestmentRepository({
     required FirebaseFirestore firestore,
@@ -311,6 +315,49 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
               .map((doc) => _investmentFromFirestore(doc.data(), doc.id))
               .toList(),
         );
+  }
+
+  @override
+  Stream<bool> watchHasNoInvestments() {
+    return Rx.combineLatest2(
+      _watchIsEmpty(_investmentsRef.orderBy('createdAt', descending: true)),
+      _watchIsEmpty(
+        _archivedInvestmentsRef.orderBy('createdAt', descending: true),
+      ),
+      (bool? active, bool? archived) {
+        if (active == false || archived == false) return false;
+        if (active == true && archived == true) return true;
+        return null;
+      },
+    ).where((isEmpty) => isEmpty != null).cast<bool>().distinct();
+  }
+
+  /// Whether [query] has no documents, or null while that is unknown because
+  /// only an empty cache has answered.
+  ///
+  /// Listens to metadata changes, so that an empty server answer arrives
+  /// after an empty cache answer. The query is the one the lists use, so
+  /// Firestore serves both from one listener.
+  Stream<bool?> _watchIsEmpty(Query<Map<String, dynamic>> query) {
+    return query
+        .snapshots(includeMetadataChanges: true)
+        .map(
+          (snapshot) => snapshot.docs.isNotEmpty
+              ? false
+              : snapshot.metadata.isFromCache
+              ? null
+              : true,
+        );
+  }
+
+  @override
+  Future<bool> hasAnyInvestmentOnServer() async {
+    const serverOnly = GetOptions(source: Source.server);
+    final snapshots = await Future.wait([
+      _investmentsRef.limit(1).get(serverOnly),
+      _archivedInvestmentsRef.limit(1).get(serverOnly),
+    ]).timeout(_serverReadTimeout);
+    return snapshots.any((snapshot) => snapshot.docs.isNotEmpty);
   }
 
   @override

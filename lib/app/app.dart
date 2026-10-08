@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/app/user_identity_sync.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_navigator.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
@@ -26,6 +27,8 @@ class InvTrackerApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     final settings = ref.watch(settingsProvider);
+    // Analytics and Crashlytics user IDs follow the signed-in account.
+    ref.watch(userIdentitySyncProvider);
 
     return IncomeGuardianServiceInitializer(
       child: NotificationSyncInitializer(

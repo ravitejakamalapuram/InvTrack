@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/security/presentation/widgets/privacy_protection_wrapper.dart';
 
 void main() {
+  // The wrapper also reads the auto-lock check from a provider.
+  Future<void> pumpApp(WidgetTester tester, Widget app) =>
+      tester.pumpWidget(ProviderScope(child: app));
+
   group('PrivacyProtectionWrapper', () {
     /// Finder for the overlay's positioned container (uses Positioned.fill)
     Finder findPrivacyOverlay() {
@@ -19,7 +24,8 @@ void main() {
     testWidgets('shows overlay when inactive/paused', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(
+      await pumpApp(
+        tester,
         const MaterialApp(
           home: PrivacyProtectionWrapper(
             child: Scaffold(body: Center(child: Text('Content'))),
@@ -54,7 +60,8 @@ void main() {
     });
 
     testWidgets('does nothing if disabled', (WidgetTester tester) async {
-      await tester.pumpWidget(
+      await pumpApp(
+        tester,
         const MaterialApp(
           home: PrivacyProtectionWrapper(
             enabled: false,
@@ -73,7 +80,8 @@ void main() {
     testWidgets('overlay contains ColoredBox with app colors', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(
+      await pumpApp(
+        tester,
         const MaterialApp(
           home: PrivacyProtectionWrapper(
             child: Scaffold(body: Center(child: Text('Content'))),
@@ -95,7 +103,8 @@ void main() {
     testWidgets('child widget remains in tree when overlay is shown', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(
+      await pumpApp(
+        tester,
         const MaterialApp(
           home: PrivacyProtectionWrapper(
             child: Scaffold(body: Center(child: Text('Sensitive Content'))),
@@ -113,7 +122,8 @@ void main() {
     });
 
     testWidgets('responds to detached state', (WidgetTester tester) async {
-      await tester.pumpWidget(
+      await pumpApp(
+        tester,
         const MaterialApp(
           home: PrivacyProtectionWrapper(
             child: Scaffold(body: Center(child: Text('Content'))),
@@ -131,7 +141,8 @@ void main() {
     testWidgets('app icon image has semantic label for accessibility', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(
+      await pumpApp(
+        tester,
         const MaterialApp(
           home: PrivacyProtectionWrapper(
             child: Scaffold(body: Center(child: Text('Content'))),
@@ -156,7 +167,8 @@ void main() {
     testWidgets('fallback icon has semantic label when image fails to load', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(
+      await pumpApp(
+        tester,
         const MaterialApp(
           home: PrivacyProtectionWrapper(
             child: Scaffold(body: Center(child: Text('Content'))),
@@ -186,7 +198,8 @@ void main() {
     testWidgets('privacy overlay is accessible to screen readers', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(
+      await pumpApp(
+        tester,
         const MaterialApp(
           home: PrivacyProtectionWrapper(
             child: Scaffold(body: Center(child: Text('Content'))),

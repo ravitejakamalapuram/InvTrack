@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 
 /// A widget that overlays a privacy screen when the app goes into the background
 /// or becomes inactive (e.g. app switcher, notification shade).
 ///
 /// This protects sensitive data from being visible in the app switcher snapshot.
-/// Follows Android standard: solid brand color with centered app icon.
-class PrivacyProtectionWrapper extends StatefulWidget {
+/// It also stays up after a resume until the auto-lock check has decided
+/// ([autoLockCheckPendingProvider]), so the portfolio never shows before the
+/// lock. Follows Android standard: solid brand color with centered app icon.
+class PrivacyProtectionWrapper extends ConsumerStatefulWidget {
   final Widget child;
   final bool enabled;
 
@@ -17,11 +21,12 @@ class PrivacyProtectionWrapper extends StatefulWidget {
   });
 
   @override
-  State<PrivacyProtectionWrapper> createState() =>
+  ConsumerState<PrivacyProtectionWrapper> createState() =>
       _PrivacyProtectionWrapperState();
 }
 
-class _PrivacyProtectionWrapperState extends State<PrivacyProtectionWrapper>
+class _PrivacyProtectionWrapperState
+    extends ConsumerState<PrivacyProtectionWrapper>
     with WidgetsBindingObserver {
   bool _shouldObscure = false;
 
@@ -58,11 +63,13 @@ class _PrivacyProtectionWrapperState extends State<PrivacyProtectionWrapper>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lockPending =
+        widget.enabled && ref.watch(autoLockCheckPendingProvider);
 
     return Stack(
       children: [
         widget.child,
-        if (_shouldObscure)
+        if (_shouldObscure || lockPending)
           Positioned.fill(
             child: ColoredBox(
               // Solid brand color - professional Android standard

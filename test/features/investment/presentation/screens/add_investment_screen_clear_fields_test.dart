@@ -172,10 +172,12 @@ void main() {
     expect(values['platform'], isNull);
     expect(values['maturityDate'], isNull);
     expect(values['incomeFrequency'], isNull);
+    // A119 (#893): the start date and tenure would work the cleared
+    // maturity date out again, so clearing it clears the tenure too.
+    expect(values['tenureMonths'], isNull);
     // Untouched: sent with the stored value.
     expect(values['startDate'], DateTime(2026, 4, 1));
     expect(values['expectedRate'], 7.25);
-    expect(values['tenureMonths'], 12);
     expect(values['interestPayoutMode'], InterestPayoutMode.periodic);
     expect(values['autoRenewal'], isTrue);
     expect(values['riskLevel'], RiskLevel.low);

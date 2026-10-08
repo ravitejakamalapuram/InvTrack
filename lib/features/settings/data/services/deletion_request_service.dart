@@ -24,8 +24,9 @@ enum DeletionRequestStatus {
 /// The same queue is used by the web request page. A daily server job deletes
 /// the account once the request is older than the 24 hour withdrawal window,
 /// which also finishes deletions the app could not complete itself (offline,
-/// failed re-auth). The app only withdraws from the sign-in notice; a
-/// cancelled re-auth happens before anything is filed.
+/// failed re-auth). The app only withdraws from the sign-in notice or the
+/// pending-request banner; a cancelled re-auth happens before anything is
+/// filed.
 ///
 /// Security rules only allow the owner to `get`, `create` (exactly
 /// requestedAt = server time, source, version) and `delete` the document.
@@ -52,8 +53,12 @@ class DeletionRequestService {
     try {
       final snap = await _doc.get().timeout(timeout);
       return snap.exists;
-    } catch (e) {
-      LoggerService.warn('Could not read deletion request: $e');
+    } catch (e, st) {
+      LoggerService.warn(
+        'Could not read deletion request',
+        error: e,
+        stackTrace: st,
+      );
       return false;
     }
   }
@@ -70,12 +75,51 @@ class DeletionRequestService {
       if (snap.exists && !snap.metadata.hasPendingWrites) {
         return DeletionRequestStatus.confirmed;
       }
-    } catch (e) {
-      LoggerService.warn('Could not confirm deletion request: $e');
+    } catch (e, st) {
+      LoggerService.warn(
+        'Could not confirm deletion request',
+        error: e,
+        stackTrace: st,
+      );
     }
     return await hasRequest()
         ? DeletionRequestStatus.pending
         : DeletionRequestStatus.none;
+  }
+
+  /// Follows the request live. Metadata changes are included, so a request
+  /// saved offline moves from [DeletionRequestStatus.pending] to
+  /// [DeletionRequestStatus.confirmed] once the server acknowledges it.
+  /// A withdrawal reads as [DeletionRequestStatus.none] as soon as it is
+  /// issued, even offline (see [pendingWritesSent]). Listen errors are passed
+  /// on.
+  Stream<DeletionRequestStatus> watchStatus() => _doc
+      .snapshots(includeMetadataChanges: true)
+      .map(
+        (snap) => !snap.exists
+            ? DeletionRequestStatus.none
+            : snap.metadata.hasPendingWrites
+            ? DeletionRequestStatus.pending
+            : DeletionRequestStatus.confirmed,
+      );
+
+  /// Completes with true once the server has acknowledged every write
+  /// queued on this device, such as a [withdraw] that timed out. Firestore
+  /// drops a deleted document from [watchStatus] as soon as the delete is
+  /// issued and does not flag it as a pending write, so this is the only
+  /// sign that a queued withdrawal reached the server. False if Firestore
+  /// stops waiting (e.g. the user changed). Never throws; no timeout.
+  Future<bool> pendingWritesSent() async {
+    try {
+      await _firestore.waitForPendingWrites();
+      return true;
+    } catch (e) {
+      LoggerService.warn(
+        'Stopped waiting for queued writes',
+        metadata: {'errorType': e.runtimeType.toString()},
+      );
+      return false;
+    }
   }
 
   /// Files a request with source `app`. Returns true only when THIS call
@@ -94,8 +138,12 @@ class DeletionRequestService {
           })
           .timeout(timeout);
       return true;
-    } catch (e) {
-      LoggerService.warn('Could not file deletion request: $e');
+    } catch (e, st) {
+      LoggerService.warn(
+        'Could not file deletion request',
+        error: e,
+        stackTrace: st,
+      );
       return false;
     }
   }
@@ -105,8 +153,12 @@ class DeletionRequestService {
     try {
       await _doc.delete().timeout(timeout);
       return true;
-    } catch (e) {
-      LoggerService.warn('Could not withdraw deletion request: $e');
+    } catch (e, st) {
+      LoggerService.warn(
+        'Could not withdraw deletion request',
+        error: e,
+        stackTrace: st,
+      );
       return false;
     }
   }

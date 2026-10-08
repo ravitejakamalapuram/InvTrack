@@ -159,5 +159,73 @@ void main() {
         expect(localAuth.authenticateCallCount, 1);
       });
     }
+
+    // A114: a fingerprint prompt that opens while the user types the PIN
+    // takes the keypad away mid-entry.
+    testWidgets('does not prompt once the user has started typing the PIN', (
+      tester,
+    ) async {
+      const storageDelay = Duration(milliseconds: 800);
+      final localAuth = await pumpLockScreen(tester, storageDelay);
+
+      // Biometrics are not known to be available yet.
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('1'));
+      await tester.pump();
+      await tester.tap(find.text('2'));
+      await tester.pump();
+      // Storage answers and biometrics turn available.
+      await tester.pump(storageDelay);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(seconds: 3));
+
+      expect(localAuth.authenticateCallCount, 0);
+    });
+
+    // A114: the prompt after a resume (500 ms later) is skipped the same way.
+    testWidgets('does not prompt on resume once the user has started typing '
+        'the PIN', (tester) async {
+      const storageDelay = Duration(milliseconds: 800);
+      final localAuth = await pumpLockScreen(tester, storageDelay);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('1'));
+      await tester.pump();
+      await tester.tap(find.text('2'));
+      await tester.pump();
+      // Storage answers: biometrics are on and available.
+      await tester.pump(storageDelay);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(seconds: 3));
+
+      expect(localAuth.authenticateCallCount, 0);
+    });
+
+    // Submitting the fourth digit clears the dots before the PIN is
+    // checked, so an empty entry must not count as "not typing".
+    testWidgets('does not prompt on resume while a submitted PIN is being '
+        'checked', (tester) async {
+      const storageDelay = Duration(milliseconds: 800);
+      final localAuth = await pumpLockScreen(tester, storageDelay);
+      await tester.pump(const Duration(milliseconds: 300));
+      for (final digit in ['1', '2', '3', '4']) {
+        await tester.tap(find.text(digit));
+        await tester.pump();
+      }
+      // Storage answers: biometrics are on and available; the PIN check is
+      // still waiting on storage.
+      await tester.pump(storageDelay);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(localAuth.authenticateCallCount, 0);
+    });
   });
 }

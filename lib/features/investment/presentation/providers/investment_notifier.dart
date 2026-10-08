@@ -128,6 +128,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
   /// Update an existing investment.
   /// Throws [ValidationException] if name is empty or exceeds max length.
+  /// Every optional argument is the edit form's value, and null clears the
+  /// stored one, so a caller must pass every field it does not mean to clear.
   Future<void> updateInvestment({
     required String id,
     required String name,
@@ -210,21 +212,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         },
       );
 
-      // Update income reminder based on new frequency
-      if (incomeFrequency != null) {
-        await _scheduleIncomeReminder(updated);
-      } else {
-        // Cancel reminder if frequency was removed
-        await _cancelIncomeReminder(id);
-      }
-
-      // Update maturity reminders based on new maturity date
-      if (maturityDate != null) {
-        await _scheduleMaturityReminders(updated);
-      } else {
-        // Cancel reminders if maturity date was removed
-        await _cancelMaturityReminders(id);
-      }
+      await _syncReminders(updated);
 
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -371,14 +359,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .getInvestmentById(id);
       await ref.read(investmentRepositoryProvider).reopenInvestment(id);
       if (investment != null) {
-        // Re-schedule income reminder if investment has income frequency
-        if (investment.incomeFrequency != null) {
-          await _scheduleIncomeReminder(investment);
-        }
-        // Re-schedule maturity reminders if investment has maturity date
-        if (investment.maturityDate != null) {
-          await _scheduleMaturityReminders(investment);
-        }
+        // An archived investment stays archived, so it gets no reminders.
+        await _syncReminders(
+          investment.copyWith(status: InvestmentStatus.open),
+        );
 
         // Track analytics
         ref
@@ -431,13 +415,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .getArchivedInvestmentById(id);
       await ref.read(investmentRepositoryProvider).unarchiveInvestment(id);
       if (investment != null) {
-        // Re-schedule reminders if applicable
-        if (investment.incomeFrequency != null) {
-          await _scheduleIncomeReminder(investment);
-        }
-        if (investment.maturityDate != null) {
-          await _scheduleMaturityReminders(investment);
-        }
+        // Only an open investment gets its reminders back.
+        await _syncReminders(investment.copyWith(isArchived: false));
 
         // Track analytics
         ref
@@ -843,6 +822,26 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         'Notes',
         ValidationConstants.maxNotesLength,
       );
+    }
+  }
+
+  // ============ Reminder Helpers ============
+
+  /// Schedules the income and maturity reminders of [investment], given as
+  /// it is after the change, when it is open and not archived and has the
+  /// field set; cancels them otherwise. A closed or archived investment
+  /// never gets reminders.
+  Future<void> _syncReminders(InvestmentEntity investment) async {
+    final active = investment.isOpen && !investment.isArchived;
+    if (active && investment.incomeFrequency != null) {
+      await _scheduleIncomeReminder(investment);
+    } else {
+      await _cancelIncomeReminder(investment.id);
+    }
+    if (active && investment.maturityDate != null) {
+      await _scheduleMaturityReminders(investment);
+    } else {
+      await _cancelMaturityReminders(investment.id);
     }
   }
 

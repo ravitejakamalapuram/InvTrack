@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:inv_tracker/app/app.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
+import 'package:inv_tracker/core/analytics/run_guarded.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
@@ -18,7 +19,7 @@ import 'package:inv_tracker/features/settings/presentation/providers/settings_pr
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 
 void main() async {
-  runZonedGuarded(
+  runGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
 
@@ -58,9 +59,9 @@ void main() async {
         _initializeNonCriticalServices(notificationService, sharedPreferences);
       });
     },
-    (error, stack) => CrashlyticsService(
+    service: CrashlyticsService(
       debugModeEnabled: CrashlyticsService.enableInDebugMode,
-    ).handleZoneError(error, stack),
+    ),
   );
 }
 

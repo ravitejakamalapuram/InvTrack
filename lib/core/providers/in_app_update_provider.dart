@@ -151,7 +151,10 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
       if (exception.shouldReport) {
         LoggerService.error('Update check failed', error: exception, stackTrace: st);
       } else {
-        LoggerService.info('Update check failed (environmental): $e');
+        LoggerService.info(
+          'Update check failed (environmental)',
+          metadata: {'errorType': e.runtimeType.toString()},
+        );
       }
       state = state.copyWith(
         updateInfo: null,  // Clear stale update info
@@ -185,7 +188,10 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
       if (exception.shouldReport) {
         LoggerService.error('Immediate update error', error: exception, stackTrace: st);
       } else {
-        LoggerService.info('Immediate update error (environmental): $e');
+        LoggerService.info(
+          'Immediate update error (environmental)',
+          metadata: {'errorType': e.runtimeType.toString()},
+        );
       }
       state = state.copyWith(error: 'Failed to start update. Please try again later.');
     }
@@ -227,7 +233,10 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
       if (exception.shouldReport) {
         LoggerService.error('Flexible update error', error: exception, stackTrace: st);
       } else {
-        LoggerService.info('Flexible update error (environmental): $e');
+        LoggerService.info(
+          'Flexible update error (environmental)',
+          metadata: {'errorType': e.runtimeType.toString()},
+        );
       }
       state = state.copyWith(
         isDownloading: false,
@@ -246,7 +255,10 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
       if (exception.shouldReport) {
         LoggerService.error('Complete update error', error: exception, stackTrace: st);
       } else {
-        LoggerService.info('Complete update error (environmental): $e');
+        LoggerService.info(
+          'Complete update error (environmental)',
+          metadata: {'errorType': e.runtimeType.toString()},
+        );
       }
       state = state.copyWith(error: 'Failed to complete update. Please restart the app manually.');
     }

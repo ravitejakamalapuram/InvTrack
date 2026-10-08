@@ -61,6 +61,18 @@ Future<void> _pumpOverview(
         archivedInvestmentsProvider.overrideWith(
           (ref) => archivedInvestments?.call() ?? Stream.value(const []),
         ),
+        // The lists stand in for the server: the account is new when both
+        // are empty.
+        hasNoInvestmentsProvider.overrideWith((ref) {
+          final active = ref.watch(allInvestmentsProvider.future);
+          final archived = ref.watch(archivedInvestmentsProvider.future);
+          return Stream.fromFuture(
+            Future.wait([
+              active,
+              archived,
+            ]).then((lists) => lists.every((list) => list.isEmpty)),
+          );
+        }),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
