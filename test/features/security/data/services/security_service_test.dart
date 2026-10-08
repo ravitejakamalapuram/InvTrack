@@ -281,6 +281,28 @@ void main() {
       );
     });
 
+    test('five failures remain locked if lockout timestamp cannot be persisted', () async {
+      await service.setPin('1234');
+      fakeSecureStorage.setThrowWrite('pin_lockout_timestamp', true);
+
+      for (int i = 0; i < 4; i++) {
+        expect(await service.verifyPin('5678'), isFalse);
+      }
+
+      expect(
+        () => service.verifyPin('5678'),
+        throwsA(isA<PlatformException>()),
+      );
+      expect(fakeSecureStorage.storage['pin_failed_attempts'], equals('5'));
+      expect(
+        fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'),
+        isFalse,
+      );
+
+      // A correct PIN must not bypass the durable five-failure boundary.
+      expect(await service.verifyPin('1234'), isFalse);
+    });
+
     test('verifyPin locks out after max attempts', () async {
       await service.setPin('1234');
 
