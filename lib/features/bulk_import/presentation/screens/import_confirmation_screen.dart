@@ -41,6 +41,7 @@ class _ImportGroup {
     required this.toImport,
     required this.existingId,
     required this.matchesArchived,
+    required this.hasAmbiguousActiveMatches,
   });
 
   final String name;
@@ -59,6 +60,10 @@ class _ImportGroup {
   /// Some rows match an archived investment, so the others become a new
   /// investment beside it (archived ones take no new cash flows).
   final bool matchesArchived;
+
+  /// More than one active investment matched duplicate rows for this name.
+  /// Import must stop rather than guessing which investment owns the new rows.
+  final bool hasAmbiguousActiveMatches;
 }
 
 class _ImportConfirmationScreenState
@@ -120,9 +125,8 @@ class _ImportConfirmationScreenState
         matchesArchived = true;
       }
     }
-    final existingId = matches.isEmpty
-        ? null
-        : matches.entries.reduce((a, b) => b.value > a.value ? b : a).key;
+    final hasAmbiguousActiveMatches = matches.length > 1;
+    final existingId = matches.length == 1 ? matches.keys.single : null;
     return _ImportGroup(
       name: name,
       rows: rows,
@@ -132,6 +136,7 @@ class _ImportConfirmationScreenState
       ],
       existingId: existingId,
       matchesArchived: existingId == null && matchesArchived,
+      hasAmbiguousActiveMatches: hasAmbiguousActiveMatches,
     );
   }
 
@@ -307,6 +312,9 @@ class _ImportConfirmationScreenState
       for (final i in active.value ?? const <InvestmentEntity>[]) i.id,
     };
     final groups = _plan(duplicates, activeIds);
+    final hasAmbiguousActiveMatches = groups.any(
+      (group) => group.hasAmbiguousActiveMatches,
+    );
     final newInvestmentCount = groups
         .where((g) => g.existingId == null && g.toImport.isNotEmpty)
         .length;
@@ -358,6 +366,17 @@ class _ImportConfirmationScreenState
                     style: TextStyle(color: Colors.orange[700], fontSize: 12),
                     textAlign: TextAlign.center,
                   ),
+                  if (hasAmbiguousActiveMatches) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      l10n.importDuplicateCheckFailed,
+                      style: TextStyle(
+                        color: Colors.orange[700],
+                        fontSize: 12,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                   SwitchListTile(
                     value: _skipDuplicates,
                     onChanged: _isImporting
@@ -399,6 +418,7 @@ class _ImportConfirmationScreenState
                     _isImporting ||
                         checkingDuplicates ||
                         checkFailed ||
+                        hasAmbiguousActiveMatches ||
                         cashFlowCount == 0
                     ? null
                     : () => _importAll(groups),
