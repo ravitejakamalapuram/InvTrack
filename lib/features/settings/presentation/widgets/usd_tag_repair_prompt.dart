@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
+import 'package:inv_tracker/core/security/wait_until_unlocked.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
-import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/usd_tag_repair_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/currency_switch_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/usd_tag_repair_actions.dart';
@@ -44,9 +44,9 @@ class UsdTagRepairInitializer extends ConsumerStatefulWidget {
 }
 
 class _UsdTagRepairInitializerState
-    extends ConsumerState<UsdTagRepairInitializer> {
+    extends ConsumerState<UsdTagRepairInitializer>
+    with WaitsForUnlock {
   String? _handledUserId;
-  Completer<bool>? _unlocked;
 
   @override
   void initState() {
@@ -94,7 +94,7 @@ class _UsdTagRepairInitializerState
     }
     // The question lists investment names, so it never opens over the lock
     // screen; it waits until the app is unlocked.
-    if (!await _waitUntilUnlocked() || !_stillCurrent(service, currency)) {
+    if (!await waitUntilUnlocked() || !_stillCurrent(service, currency)) {
       return;
     }
     if (ref.read(currencySwitchProvider).isBusy) return;
@@ -220,33 +220,6 @@ class _UsdTagRepairInitializerState
       );
       return false;
     }
-  }
-
-  /// Completes with true once the app is not locked, or false if this
-  /// widget goes away first.
-  Future<bool> _waitUntilUnlocked() async {
-    if (!ref.read(securityProvider).isLocked) return true;
-    final unlocked = _unlocked = Completer<bool>();
-    final sub = ref.listenManual<bool>(
-      securityProvider.select((s) => s.isLocked),
-      (_, isLocked) {
-        if (!isLocked && !unlocked.isCompleted) unlocked.complete(true);
-      },
-    );
-    try {
-      return await unlocked.future;
-    } finally {
-      // After dispose the subscription is already closed with the widget.
-      if (mounted) sub.close();
-      if (identical(_unlocked, unlocked)) _unlocked = null;
-    }
-  }
-
-  @override
-  void dispose() {
-    final unlocked = _unlocked;
-    if (unlocked != null && !unlocked.isCompleted) unlocked.complete(false);
-    super.dispose();
   }
 
   bool _stillCurrent(UsdTagRepairService service, String currency) =>

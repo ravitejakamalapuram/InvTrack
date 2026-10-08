@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
+import 'package:inv_tracker/core/security/wait_until_unlocked.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/legacy_currency_backfill_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/currency_switch_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -29,8 +31,9 @@ final legacyCurrencyPromptedUsersProvider = Provider<Set<String>>(
 /// and the repositories keep their read-time fallback. If the base currency
 /// or the signed-in user changes during the check or while the question is
 /// open, nothing is written or recorded. While a base-currency change is
-/// running (it asks this itself), the start-up question is not shown. A
-/// failure (for example offline) is retried on the next start.
+/// running (it asks this itself), the start-up question is not shown. It
+/// never opens over the lock screen; it waits until the app is unlocked
+/// (A113). A failure (for example offline) is retried on the next start.
 class LegacyCurrencyBackfillInitializer extends ConsumerStatefulWidget {
   const LegacyCurrencyBackfillInitializer({super.key, required this.child});
 
@@ -42,7 +45,8 @@ class LegacyCurrencyBackfillInitializer extends ConsumerStatefulWidget {
 }
 
 class _LegacyCurrencyBackfillInitializerState
-    extends ConsumerState<LegacyCurrencyBackfillInitializer> {
+    extends ConsumerState<LegacyCurrencyBackfillInitializer>
+    with WaitsForUnlock {
   String? _handledUserId;
 
   @override
@@ -91,6 +95,11 @@ class _LegacyCurrencyBackfillInitializerState
     // on a later start instead. The user may also have signed out (or another
     // user in) meanwhile; then this question is not theirs to answer.
     if (!pending || !_stillCurrent(service, currency)) return;
+    // Confirming writes to Firestore, so whoever holds a locked phone must
+    // not answer it. The user or the currency may change while it waits.
+    if (!await waitUntilUnlocked() || !_stillCurrent(service, currency)) {
+      return;
+    }
     // A base-currency change is running and asks this itself; a second
     // dialog stacked over it would make its promise untrue. Ask on a later
     // start instead.
@@ -100,8 +109,40 @@ class _LegacyCurrencyBackfillInitializerState
     if (context == null || !context.mounted) return;
     // add() is false when another run already asked this user this session.
     if (!askedThisSession.add(service.userId)) return;
+    var confirmed = await _ask(context, currency);
+    // Locking the app takes the question away unanswered; ask again once
+    // unlocked. Any other null is a tap outside it, which is Not Now.
+    while (_stillCurrent(service, currency) &&
+        confirmed == null &&
+        ref.read(securityProvider).isLocked) {
+      if (!await waitUntilUnlocked() ||
+          !_stillCurrent(service, currency) ||
+          ref.read(currencySwitchProvider).isBusy) {
+        return;
+      }
+      final again = rootNavigatorKey.currentContext;
+      if (again == null || !again.mounted) return;
+      confirmed = await _ask(again, currency);
+    }
+    // Whoever answered must still be the user asked, and the currency they
+    // saw must still be the base currency (either may have changed while the
+    // dialog was open). Otherwise nothing is recorded and a later start asks
+    // again.
+    if (!_stillCurrent(service, currency)) return;
+    if (confirmed != true) {
+      // A base-currency change that started while the question was open asks
+      // this itself, so this answer is not counted against later starts.
+      if (ref.read(currencySwitchProvider).isBusy) return;
+      await service.recordPromptDismissed();
+      return;
+    }
+    await service.confirm(currency);
+    await service.runOnce(currency);
+  }
+
+  Future<bool?> _ask(BuildContext context, String currency) {
     final l10n = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
+    return showDialog<bool>(
       context: context,
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
@@ -119,20 +160,6 @@ class _LegacyCurrencyBackfillInitializerState
         ],
       ),
     );
-    // Whoever answered must still be the user asked, and the currency they
-    // saw must still be the base currency (either may have changed while the
-    // dialog was open). Otherwise nothing is recorded and a later start asks
-    // again.
-    if (!_stillCurrent(service, currency)) return;
-    if (confirmed != true) {
-      // A base-currency change that started while the question was open asks
-      // this itself, so this answer is not counted against later starts.
-      if (ref.read(currencySwitchProvider).isBusy) return;
-      await service.recordPromptDismissed();
-      return;
-    }
-    await service.confirm(currency);
-    await service.runOnce(currency);
   }
 
   bool _stillCurrent(LegacyCurrencyBackfillService service, String currency) =>
