@@ -3,49 +3,61 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 
 /// Time source for auto-lock and the PIN lockout.
 ///
-/// Reads Android's `SystemClock.elapsedRealtime()`: time since the phone
-/// started, deep sleep included. Whoever holds the phone cannot change it,
-/// unlike the wall clock, so moving the device clock can neither skip nor
-/// force a lock. It restarts at zero when the phone restarts.
+/// Production reads Android's SystemClock.elapsedRealtime() through the
+/// security channel. Android's clock includes deep sleep. iOS provides the
+/// same contract through mach_continuous_time().
 ///
-/// Where the channel is missing or fails (other platforms, tests), it falls
-/// back to a stopwatch for the rest of this run. The stopwatch cannot be
-/// changed either, but it stops while the phone sleeps and restarts with the
-/// app, so it can only count less time, never more.
+/// A stopwatch is accepted only when explicitly injected by tests. Production
+/// never silently falls back to a sleep-unaware clock: if the trusted clock
+/// cannot be read, callers must fail closed.
 class SecurityClock {
   SecurityClock({
     MethodChannel channel = const MethodChannel('com.invtracker/security'),
     Stopwatch? stopwatch,
   }) : _channel = channel,
-       _stopwatch = stopwatch ?? (Stopwatch()..start());
+       _testStopwatch = stopwatch;
 
   final MethodChannel _channel;
-  final Stopwatch _stopwatch;
-  bool _useStopwatch = false;
+  final Stopwatch? _testStopwatch;
 
   /// The current reading. Readings are only comparable with each other.
   Future<Duration> elapsed() async {
-    if (!_useStopwatch) {
-      try {
-        final ms = await _channel.invokeMethod<int>('elapsedRealtime');
-        if (ms != null) return Duration(milliseconds: ms);
-      } catch (e) {
-        LoggerService.warn(
-          'Boot clock unavailable; using a stopwatch',
-          metadata: {'errorType': e.runtimeType.toString()},
-        );
+    final testStopwatch = _testStopwatch;
+    if (testStopwatch != null) return testStopwatch.elapsed;
+
+    try {
+      final ms = await _channel.invokeMethod<int>('elapsedRealtime');
+      if (ms != null) return Duration(milliseconds: ms);
+      throw const SecurityClockUnavailable('Trusted clock returned no value');
+    } catch (e, st) {
+      LoggerService.warn(
+        'Trusted security clock unavailable',
+        metadata: {'errorType': e.runtimeType.toString()},
+      );
+      if (e is SecurityClockUnavailable) {
+        Error.throwWithStackTrace(e, st);
       }
-      _useStopwatch = true;
+      Error.throwWithStackTrace(
+        SecurityClockUnavailable('Trusted clock invocation failed'),
+        st,
+      );
     }
-    return _stopwatch.elapsed;
   }
 
-  /// Whether readings come from the boot clock; false once this run has
-  /// fallen back to the stopwatch. Readings from the two are not comparable.
-  bool get isBootClock => !_useStopwatch;
+  /// Whether readings come from a trusted boot/continuous clock.
+  ///
+  /// Explicit test stopwatches are deliberately not considered trusted.
+  bool get isBootClock => _testStopwatch == null;
 
-  /// The device clock. Whoever holds the phone can set it, so it only judges
-  /// what the readings cannot: a PIN lockout from before a phone restart,
-  /// from the stopwatch, or from an older version.
+  /// The device clock. Kept only for legacy lockout migration paths.
   DateTime wallTime() => DateTime.now();
+}
+
+class SecurityClockUnavailable implements Exception {
+  const SecurityClockUnavailable(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'SecurityClockUnavailable: $message';
 }
