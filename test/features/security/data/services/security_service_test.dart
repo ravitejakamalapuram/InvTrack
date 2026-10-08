@@ -306,8 +306,38 @@ void main() {
       );
 
       // A correct PIN must not bypass the durable five-failure boundary.
-      expect(await service.verifyPin('1234'), isFalse);
+      await expectLater(
+        service.verifyPin('1234'),
+        throwsA(isA<PlatformException>()),
+      );
     });
+
+    test(
+      'a missing lockout timestamp recovers once storage is writable',
+      () async {
+        await service.setPin('1234');
+        fakeSecureStorage.setThrowWrite('pin_lockout_timestamp', true);
+        for (int i = 0; i < 4; i++) {
+          expect(await service.verifyPin('5678'), isFalse);
+        }
+        await expectLater(
+          service.verifyPin('5678'),
+          throwsA(isA<PlatformException>()),
+        );
+        expect(fakeSecureStorage.storage['pin_failed_attempts'], '5');
+        expect(fakeSecureStorage.storage['pin_lockout_timestamp'], isNull);
+
+        fakeSecureStorage.setThrowWrite('pin_lockout_timestamp', false);
+        expect(await service.verifyPin('1234'), isFalse);
+        expect(await service.getLockoutRemainingSeconds(), 900);
+
+        clock.advance(const Duration(seconds: 901));
+        expect(await service.verifyPin('1234'), isTrue);
+        expect(await service.getLockoutRemainingSeconds(), isNull);
+        expect(fakeSecureStorage.storage['pin_failed_attempts'], isNull);
+        expect(fakeSecureStorage.storage['pin_lockout_timestamp'], isNull);
+      },
+    );
 
     test('verifyPin locks out after max attempts', () async {
       await service.setPin('1234');

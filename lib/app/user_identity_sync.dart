@@ -32,6 +32,9 @@ final userIdentitySyncProvider = Provider<void>((ref) {
       while (!hasSynced || desiredUid != syncedUid) {
         final targetUid = desiredUid;
         final targetVersion = emissionVersion;
+        // Either service may change even if this attempt fails. Invalidate
+        // the old sync so returning to its UID still reapplies both IDs.
+        hasSynced = false;
         final ok = await _apply(ref, targetUid);
         if (ok && desiredUid == targetUid) {
           syncedUid = targetUid;

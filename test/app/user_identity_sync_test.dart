@@ -98,6 +98,44 @@ void main() {
     verify(() => analytics.setUserId('google1')).called(1);
   });
 
+  for (final fails in [false, true]) {
+    test('sign-out restores both IDs after a pending sign-in '
+        '${fails ? 'fails' : 'succeeds'}', () async {
+      String? analyticsUid;
+      String? crashlyticsUid;
+      final releaseSignIn = Completer<void>();
+      when(() => analytics.setUserId(any())).thenAnswer((call) async {
+        final uid = call.positionalArguments.single as String?;
+        if (uid == 'g1') {
+          await releaseSignIn.future;
+          if (fails) throw StateError('analytics unavailable');
+        }
+        analyticsUid = uid;
+      });
+      when(() => crashlytics.setUserIdentifier(any())).thenAnswer((call) async {
+        crashlyticsUid = call.positionalArguments.single as String;
+      });
+      when(() => crashlytics.clearUserIdentifier()).thenAnswer((_) async {
+        crashlyticsUid = null;
+      });
+
+      // Establish null as the last successfully synced UID, then return to
+      // it while the first sign-in update is still changing the services.
+      await emit(null);
+      await emit(guest);
+      expect(crashlyticsUid, 'g1');
+      await emit(null);
+
+      releaseSignIn.complete();
+      await pumpEventQueue();
+
+      expect(analyticsUid, isNull);
+      expect(crashlyticsUid, isNull);
+      verify(() => analytics.setUserId(null)).called(2);
+      verify(() => crashlytics.clearUserIdentifier()).called(2);
+    });
+  }
+
   test('an Analytics failure keeps the same UID eligible for retry', () async {
     var failures = 1;
     when(() => analytics.setUserId(any())).thenAnswer((_) async {
