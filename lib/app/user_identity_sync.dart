@@ -55,11 +55,6 @@ final userIdentitySyncProvider = Provider<void>((ref) {
       }
     } finally {
       applying = false;
-      if (desiredUid != syncedUid && emissionVersion > 0) {
-        // A new emission may have arrived just after the loop observed its
-        // condition. Schedule another drain rather than losing that demand.
-        unawaited(_drain(ref));
-      }
     }
   }
 });
