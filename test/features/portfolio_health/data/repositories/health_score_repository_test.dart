@@ -135,6 +135,46 @@ void main() {
         );
       });
 
+      test('does not record an offline save timeout (A127)', () async {
+        when(
+          () => mockCollection.add(any()),
+        ).thenThrow(TimeoutException('Timeout'));
+
+        await expectLater(
+          repository.saveSnapshot(createTestScore()),
+          throwsA(isA<TimeoutException>()),
+        );
+
+        verifyNever(
+          () => mockCrashlytics.recordError(
+            any(),
+            any(),
+            reason: any(named: 'reason'),
+            fatal: any(named: 'fatal'),
+          ),
+        );
+      });
+
+      test('records any other save failure once (A127)', () async {
+        when(
+          () => mockCollection.add(any()),
+        ).thenThrow(Exception('Permission denied'));
+
+        await expectLater(
+          repository.saveSnapshot(createTestScore()),
+          throwsA(isA<DataException>()),
+        );
+
+        verify(
+          () => mockCrashlytics.recordError(
+            any(),
+            any(),
+            reason: any(named: 'reason'),
+            fatal: any(named: 'fatal'),
+          ),
+        ).called(1);
+      });
+
       test('wraps other errors in DataException', () async {
         when(() => mockCollection.add(any()))
             .thenThrow(Exception('Permission denied'));

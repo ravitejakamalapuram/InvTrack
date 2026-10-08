@@ -536,7 +536,6 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
         // to withdraw the request if they come back. A queued request stays
         // signed in so Firestore can send it once the device is online.
         if (outcome == AccountDeletionOutcome.scheduled) {
-          ref.read(analyticsServiceProvider).setUserId(null);
           await authRepo.signOut();
         }
         return;
@@ -551,9 +550,8 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
             );
       }
 
-      // Log analytics
-      ref.read(analyticsServiceProvider).setUserId(null);
-
+      // The user IDs are cleared when the auth state empties
+      // (userIdentitySyncProvider).
       if (mounted) {
         scaffoldMessenger.showSnackBar(
           SnackBar(

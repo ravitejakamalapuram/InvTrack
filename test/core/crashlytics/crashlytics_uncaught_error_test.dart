@@ -1,8 +1,9 @@
 // Global error handlers -> Crashlytics (A30: ARCH-15, ARCH-V01).
 //
-// One uncaught error must produce exactly one Crashlytics event: fatal when it
-// is a real crash, and nothing at all when it is a transient network or
-// Firestore error. This holds for all three global handlers.
+// One uncaught error must produce exactly one Crashlytics event, and nothing
+// at all when it is a transient network or Firestore error. Zone and platform
+// errors end the session, so they are fatal. A framework error (build, layout,
+// paint) is recovered by drawing an error widget, so it is non-fatal (A126).
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -41,6 +42,9 @@ void main() {
     when(
       () => firebase.recordFlutterFatalError(any()),
     ).thenAnswer((_) async {});
+    when(
+      () => firebase.recordFlutterError(any(), fatal: any(named: 'fatal')),
+    ).thenAnswer((_) async {});
     // Tests run with kDebugMode == true, so reporting needs the debug override.
     CrashlyticsService.enableInDebugMode = true;
     service = CrashlyticsService(debugModeEnabled: true, crashlytics: firebase);
@@ -78,6 +82,9 @@ void main() {
       ),
     );
     verifyNever(() => firebase.recordFlutterFatalError(any()));
+    verifyNever(
+      () => firebase.recordFlutterError(any(), fatal: any(named: 'fatal')),
+    );
   }
 
   final transientErrors = <String, Object>{
@@ -170,7 +177,7 @@ void main() {
   });
 
   group('FlutterError.onError', () {
-    test('records one framework crash exactly once, as fatal', () {
+    test('records one framework error exactly once, as non-fatal', () {
       service.handleFlutterError(
         FlutterErrorDetails(
           exception: StateError('build failed'),
@@ -179,7 +186,8 @@ void main() {
         ),
       );
 
-      verify(() => firebase.recordFlutterFatalError(any())).called(1);
+      verify(() => firebase.recordFlutterError(any(), fatal: false)).called(1);
+      verifyNever(() => firebase.recordFlutterFatalError(any()));
       verifyNever(
         () => firebase.recordError(
           any(),

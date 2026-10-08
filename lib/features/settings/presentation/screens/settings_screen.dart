@@ -5,8 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
-import 'package:inv_tracker/core/analytics/analytics_service.dart';
-import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
@@ -259,9 +257,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _signOut(WidgetRef ref) async {
-    // Clear user identity from Analytics and Crashlytics
-    ref.read(analyticsServiceProvider).setUserId(null);
-    ref.read(crashlyticsServiceProvider).clearUserIdentifier();
+    // The Analytics and Crashlytics user IDs are cleared when the auth state
+    // empties (userIdentitySyncProvider).
     await ref.read(authRepositoryProvider).signOut();
   }
 }

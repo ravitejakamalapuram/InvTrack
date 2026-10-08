@@ -145,30 +145,25 @@ void main() {
       LoggerService.crashlyticsServiceForTesting = null;
     });
 
-    test('sends neither the device path nor the user id', () async {
-      // Export reads every document by its stored path; a deleted file makes
-      // symlink resolution throw a FileSystemException that carries the path.
+    test('sends nothing for a missing document: the export reports it '
+        'once, as a count (A127)', () async {
+      // Export reads every document by its stored path; this file was
+      // deleted. Symlink resolution of the path used to throw, and the
+      // storage layer logged it twice before the export logged it again.
       final missingPath = '${validFile.parent.path}/receipt-missing.pdf';
 
       final bytes = await service.readDocument(missingPath);
       expect(bytes, isNull);
 
-      final captured = verify(
+      verifyNever(
         () => firebase.recordError(
-          captureAny(),
           any(),
-          reason: captureAny(named: 'reason'),
+          any(),
+          reason: any(named: 'reason'),
           fatal: any(named: 'fatal'),
           information: any(named: 'information'),
         ),
-      ).captured;
-      expect(captured, isNotEmpty);
-      for (final value in captured) {
-        final text = value.toString();
-        expect(text, isNot(contains(missingPath)));
-        expect(text, isNot(contains('test_user')));
-        expect(text, isNot(contains('receipt-missing')));
-      }
+      );
     });
   });
 }

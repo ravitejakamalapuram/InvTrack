@@ -71,8 +71,9 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
+import 'package:inv_tracker/core/analytics/crash_report_sanitizer.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 
 /// Centralized error handler for the application.
@@ -315,21 +316,27 @@ class ErrorHandler {
       // Wrap in try-catch to gracefully handle cases where Firebase isn't initialized (e.g., tests)
       try {
         unawaited(
-          CrashlyticsService(
-            debugModeEnabled: CrashlyticsService.enableInDebugMode,
-          ).recordError(
-            exception.cause ?? exception,
-            exception.stackTrace,
-            reason: '${exception.runtimeType}: ${exception.technicalMessage}',
-          ).catchError((error, stack) {
-            // Log Crashlytics recording failure without triggering another Crashlytics call
-            debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-            debugPrint('⚠️  Failed to record error to Crashlytics');
-            debugPrint('Original exception: ${exception.runtimeType}');
-            debugPrint('Crashlytics error: $error');
-            debugPrint('Stack trace: $stack');
-            debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-          }),
+          LoggerService.crashlyticsService
+              .recordError(
+                exception.cause ?? exception,
+                exception.stackTrace,
+                // Type and code only: the technical message can hold a
+                // Firestore path, an email or a name (CLAUDE.md rule 7).
+                reason: describeForCrashReport(exception),
+              )
+              .catchError((error, stack) {
+                // Log Crashlytics recording failure without triggering another Crashlytics call
+                debugPrint(
+                  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+                );
+                debugPrint('⚠️  Failed to record error to Crashlytics');
+                debugPrint('Original exception: ${exception.runtimeType}');
+                debugPrint('Crashlytics error: $error');
+                debugPrint('Stack trace: $stack');
+                debugPrint(
+                  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+                );
+              }),
         );
       } catch (e) {
         // Silently ignore Crashlytics initialization errors (e.g., in test environment)

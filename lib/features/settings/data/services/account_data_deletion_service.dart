@@ -122,7 +122,8 @@ class AccountDataDeletionService {
     // Finally the (possibly non-existent) parent user document itself.
     final batch = _firestore.batch();
     batch.delete(userDoc);
-    await _confirm(batch.commit(), 'users/$_userId');
+    // A fixed label, not the path: the label reaches crash reports.
+    await _confirm(batch.commit(), 'userDocument');
     LoggerService.info('Account data deletion complete on server');
   }
 
@@ -146,11 +147,17 @@ class AccountDataDeletionService {
     }
   }
 
+  /// [what] is sent to crash reports as metadata, so it must be a fixed
+  /// label (a collection name), never a path or user id.
   Future<T> _confirm<T>(Future<T> operation, String what) async {
     try {
       return await operation.timeout(confirmTimeout);
     } on TimeoutException catch (e, st) {
-      LoggerService.warn('Deletion of $what not confirmed (timeout)');
+      LoggerService.warn(
+        'Account data deletion not confirmed (timeout)',
+        // `operation` is on the crash-report allowlist, so the label is kept.
+        metadata: {'operation': what},
+      );
       throw NetworkException.noConnection(cause: e, stackTrace: st);
     } on FirebaseException catch (e, st) {
       if (e.code == 'unavailable' || e.code == 'deadline-exceeded') {

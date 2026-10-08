@@ -53,8 +53,12 @@ class DeletionRequestService {
     try {
       final snap = await _doc.get().timeout(timeout);
       return snap.exists;
-    } catch (e) {
-      LoggerService.warn('Could not read deletion request: $e');
+    } catch (e, st) {
+      LoggerService.warn(
+        'Could not read deletion request',
+        error: e,
+        stackTrace: st,
+      );
       return false;
     }
   }
@@ -71,8 +75,12 @@ class DeletionRequestService {
       if (snap.exists && !snap.metadata.hasPendingWrites) {
         return DeletionRequestStatus.confirmed;
       }
-    } catch (e) {
-      LoggerService.warn('Could not confirm deletion request: $e');
+    } catch (e, st) {
+      LoggerService.warn(
+        'Could not confirm deletion request',
+        error: e,
+        stackTrace: st,
+      );
     }
     return await hasRequest()
         ? DeletionRequestStatus.pending
@@ -130,8 +138,12 @@ class DeletionRequestService {
           })
           .timeout(timeout);
       return true;
-    } catch (e) {
-      LoggerService.warn('Could not file deletion request: $e');
+    } catch (e, st) {
+      LoggerService.warn(
+        'Could not file deletion request',
+        error: e,
+        stackTrace: st,
+      );
       return false;
     }
   }
@@ -141,8 +153,12 @@ class DeletionRequestService {
     try {
       await _doc.delete().timeout(timeout);
       return true;
-    } catch (e) {
-      LoggerService.warn('Could not withdraw deletion request: $e');
+    } catch (e, st) {
+      LoggerService.warn(
+        'Could not withdraw deletion request',
+        error: e,
+        stackTrace: st,
+      );
       return false;
     }
   }

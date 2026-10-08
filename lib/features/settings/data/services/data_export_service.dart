@@ -266,8 +266,7 @@ class DataExportService {
         archive.addFile(ArchiveFile(docPath, bytes.length, bytes));
         documentsAdded++;
       } else {
-        // Log warning when document can't be read
-        LoggerService.warn(
+        LoggerService.debug(
           'Document not found or inaccessible during export',
           metadata: {
             'documentId': doc.id,
@@ -276,6 +275,13 @@ class DataExportService {
         );
         documentsFailed++;
       }
+    }
+    // One report per export, as a count: no names or paths (CLAUDE.md rule 7).
+    if (documentsFailed > 0) {
+      LoggerService.warn(
+        'Documents missing from export',
+        metadata: {'documentsMissing': documentsFailed},
+      );
     }
 
     LoggerService.info(

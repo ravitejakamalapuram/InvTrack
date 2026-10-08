@@ -2,7 +2,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
-import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
@@ -143,17 +142,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       if (!mounted) return;
 
       if (user != null) {
-        // Track successful sign-in in Analytics
-        final analytics = ref.read(analyticsServiceProvider);
-        await analytics.logSignIn(method: 'google');
-        await analytics.setUserId(user.id);
-
-        // Check mounted again before accessing crashlytics
-        if (!mounted) return;
-
-        // Set user identifier in Crashlytics for crash reports
-        final crashlytics = ref.read(crashlyticsServiceProvider);
-        await crashlytics.setUserIdentifier(user.id);
+        // Track successful sign-in in Analytics. The user IDs follow the
+        // auth state (userIdentitySyncProvider).
+        await ref.read(analyticsServiceProvider).logSignIn(method: 'google');
 
         // Request notification permissions on first sign-in
         if (!mounted) return;
