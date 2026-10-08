@@ -23,7 +23,7 @@ final userIdentitySyncProvider = Provider<void>((ref) {
     // Loading or failed: keep the IDs we have.
     if (!next.hasValue) return;
     desiredUid = next.value?.id;
-    final version = ++emissionVersion;
+    emissionVersion++;
 
     // A token refresh/link can emit the same UID while the previous update is
     // still in flight. Keep that emission as durable demand so a failure of
