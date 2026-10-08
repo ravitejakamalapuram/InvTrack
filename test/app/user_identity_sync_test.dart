@@ -114,6 +114,35 @@ void main() {
     verify(() => crashlytics.setUserIdentifier('g1')).called(2);
   });
 
+  test('same UID emitted while update is pending is retried after failure', () async {
+    final firstAttempt = Completer<void>();
+    final releaseFirstAttempt = Completer<void>();
+    var calls = 0;
+
+    when(() => analytics.setUserId('g1')).thenAnswer((_) async {
+      calls++;
+      if (calls == 1) {
+        firstAttempt.complete();
+        await releaseFirstAttempt.future;
+        throw StateError('analytics unavailable');
+      }
+    });
+
+    auth.add(guest);
+    await firstAttempt.future;
+
+    // The second emission happens while the first update is still pending.
+    auth.add(guest);
+    await pumpEventQueue();
+
+    releaseFirstAttempt.complete();
+    await pumpEventQueue();
+    await pumpEventQueue();
+
+    verify(() => analytics.setUserId('g1')).called(2);
+    verify(() => crashlytics.setUserIdentifier('g1')).called(2);
+  });
+
   test('a failed update is tried again when the same UID comes back', () async {
     var failures = 1;
     when(() => crashlytics.setUserIdentifier(any())).thenAnswer((_) async {
