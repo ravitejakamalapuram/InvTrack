@@ -207,7 +207,10 @@ class AnalyticsEvents {
 ///
 /// See library documentation above for usage examples and privacy guidelines.
 class AnalyticsService {
-  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+  AnalyticsService({FirebaseAnalytics? analytics})
+      : _analytics = analytics ?? FirebaseAnalytics.instance;
+
+  final FirebaseAnalytics _analytics;
 
   /// Get the analytics observer for navigation tracking.
   ///
