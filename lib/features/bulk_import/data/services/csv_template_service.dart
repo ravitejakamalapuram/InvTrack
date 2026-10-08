@@ -29,7 +29,7 @@ class CsvTemplateService {
       '100000',
       'INR',
       'Initial investment',
-      'p2p',
+      'p2pLending',
       'open',
     ],
     [
@@ -39,7 +39,7 @@ class CsvTemplateService {
       '1500',
       'INR',
       'Monthly interest',
-      'p2p',
+      'p2pLending',
       'open',
     ],
     [
@@ -49,7 +49,7 @@ class CsvTemplateService {
       '1500',
       'INR',
       'Monthly interest',
-      'p2p',
+      'p2pLending',
       'open',
     ],
     // Another investment (INR)
@@ -60,7 +60,7 @@ class CsvTemplateService {
       '50000',
       'INR',
       'Started P2P',
-      'p2p',
+      'p2pLending',
       'open',
     ],
     [
@@ -70,7 +70,7 @@ class CsvTemplateService {
       '750',
       'INR',
       'Interest received',
-      'p2p',
+      'p2pLending',
       'open',
     ],
     [
@@ -80,7 +80,7 @@ class CsvTemplateService {
       '10000',
       'INR',
       'Partial withdrawal',
-      'p2p',
+      'p2pLending',
       'open',
     ],
     // Third investment with fees (INR)
@@ -171,7 +171,9 @@ class CsvTemplateService {
 # Use ISO 4217 currency codes: INR, USD, EUR, GBP, JPY, CAD, AUD, CHF, CNY, SGD, HKD, AED, SAR, BRL, MXN, ZAR
 #
 # Investment Type Column Values (optional):
-# p2p, fixedDeposit, bonds, mutualFund, stocks, realEstate, gold, crypto, other
+# p2pLending, fixedDeposit, bonds, realEstate, privateEquity, angelInvesting,
+# chitFunds, gold, crypto, mutualFunds, stocks, invoiceDiscounting, financing,
+# other. Short forms such as p2p, fd and mf are also understood.
 #
 # Investment Status Column Values (optional):
 # open, closed

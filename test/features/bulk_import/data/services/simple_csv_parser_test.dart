@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/features/bulk_import/data/services/csv_template_service.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
 void main() {
@@ -55,7 +58,10 @@ void main() {
     });
 
     group('parseString - Date Parsing', () {
-      test('parses various date formats', () {
+      test('parses various date formats with one day/month order', () {
+        // Two rows prove day-first (15-01-2024, 15/01/2024) and one proves
+        // month-first (01/15/2024). The file is read day-first, so the
+        // month-first row is reported instead of being read differently.
         const csv = '''Date,Investment Name,Type,Amount
 2024-01-15,Test,invest,1000
 15-01-2024,Test2,invest,2000
@@ -66,18 +72,32 @@ September-25,Test6,invest,6000''';
 
         final result = SimpleCsvParser.parseString(csv);
 
-        expect(result.validRows, greaterThanOrEqualTo(4));
+        expect(result.rows.map((r) => r.date).toList(), [
+          DateTime(2024, 1, 15),
+          DateTime(2024, 1, 15),
+          DateTime(2024, 1, 15),
+          DateTime(2024, 1, 1),
+          DateTime(2025, 9, 1),
+        ]);
+        expect(result.rows.map((r) => r.investmentName).toList(), [
+          'Test',
+          'Test2',
+          'Test4',
+          'Test5',
+          'Test6',
+        ]);
+        expect(result.errors, hasLength(1));
+        expect(result.errors.single, startsWith('Row 4:'));
       });
 
       test('parses Excel serial date numbers', () {
         const csv = '''Date,Investment Name,Type,Amount
-45307,Test,invest,1000'''; // 45307 = 2024-01-15
+45306,Test,invest,1000'''; // =DATE(2024,1,15) in Excel is 45306
 
         final result = SimpleCsvParser.parseString(csv);
 
         expect(result.validRows, 1);
-        final date = result.rows.first.date;
-        expect(date.year, 2024);
+        expect(result.rows.first.date, DateTime(2024, 1, 15));
       });
 
       test('returns error for invalid date', () {
@@ -151,14 +171,16 @@ not-a-date,Test,invest,1000''';
         expect(result.rows.first.amount, 100000);
       });
 
-      test('parses negative amounts in parentheses', () {
+      // A negative INVEST would count as money coming in; Type sets the
+      // direction, as in manual entry, so the amount must be positive.
+      test('a negative amount in parentheses is an error', () {
         const csv = '''Date,Investment Name,Type,Amount
 2024-01-01,Test,invest,(5000)''';
 
         final result = SimpleCsvParser.parseString(csv);
 
-        expect(result.validRows, 1);
-        expect(result.rows.first.amount, -5000);
+        expect(result.validRows, 0);
+        expect(result.errors.single, startsWith('Row 2: Amount must be more'));
       });
 
       test('returns error for invalid amount', () {
@@ -669,16 +691,273 @@ bad-date,Bad,invest,1000
           expect(test1.currency, 'USD');
         });
 
-        test('handles currency with numbers', () {
+        test('reports a currency code that is not supported', () {
+          // A14: an unknown code used to be stored and then failed every FX
+          // conversion. It is now a row error, like on the goals CSV.
           const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
-2024-01-01,Test,INVEST,1000,USD123,Invalid but preserved''';
+2024-01-01,Test,INVEST,1000,USD123,Not a currency''';
 
           final result = SimpleCsvParser.parseString(csv);
 
-          expect(result.validRows, 1);
-          // Parser doesn't validate currency codes, just preserves them
-          expect(result.rows.first.currency, 'USD123');
+          expect(result.validRows, 0);
+          expect(result.errors.single, 'Row 2: Invalid currency code: USD123');
         });
+      });
+    });
+
+    // ============ A25: read the file the way it is meant ============
+    group('Dates are read with one order per file (A25)', () {
+      ParsedCsvResult parseDates(List<String> dates, {CsvDateOrder? order}) {
+        final csv = [
+          'Date,Investment Name,Type,Amount',
+          for (var i = 0; i < dates.length; i++)
+            '${dates[i]},Inv ${i + 1},INVEST,1000',
+        ].join('\n');
+        return SimpleCsvParser.parseString(csv, dateOrder: order);
+      }
+
+      test('two-digit years are read as this century', () {
+        expect(parseDates(['05-03-24']).rows.single.date, DateTime(2024, 3, 5));
+        expect(parseDates(['5-Mar-24']).rows.single.date, DateTime(2024, 3, 5));
+        expect(parseDates(['05/03/24']).rows.single.date, DateTime(2024, 3, 5));
+      });
+
+      test('one month-first row does not flip a day-first file', () {
+        final result = parseDates([
+          '13/02/2024',
+          '05/03/2024',
+          '01/13/2024',
+          '05/03/2024',
+        ]);
+
+        expect(result.rows.map((r) => r.date).toList(), [
+          DateTime(2024, 2, 13),
+          DateTime(2024, 3, 5),
+          DateTime(2024, 3, 5),
+        ]);
+        expect(result.errors, hasLength(1));
+        expect(result.errors.single, startsWith('Row 4:'));
+        expect(result.dateOrderQuestion, isNull);
+      });
+
+      test('a US file is read month-first from its first row', () {
+        final result = parseDates([
+          '01/02/2024',
+          '02/10/2024',
+          '01/15/2024',
+          '03/04/2024',
+        ]);
+
+        expect(result.errors, isEmpty);
+        expect(result.rows.map((r) => r.date).toList(), [
+          DateTime(2024, 1, 2),
+          DateTime(2024, 2, 10),
+          DateTime(2024, 1, 15),
+          DateTime(2024, 3, 4),
+        ]);
+        expect(result.dateOrderQuestion, isNull);
+      });
+
+      test('a file whose dates fit both orders asks which one it uses', () {
+        const dates = ['05/03/2024', '04/02/2024'];
+
+        final question = parseDates(dates).dateOrderQuestion;
+        expect(question, isNotNull);
+        expect(question!.sample, '05/03/2024');
+        expect(question.dayFirst, DateTime(2024, 3, 5));
+        expect(question.monthFirst, DateTime(2024, 5, 3));
+
+        final dayFirst = parseDates(dates, order: CsvDateOrder.dayFirst);
+        expect(dayFirst.dateOrderQuestion, isNull);
+        expect(dayFirst.rows.map((r) => r.date).toList(), [
+          DateTime(2024, 3, 5),
+          DateTime(2024, 2, 4),
+        ]);
+
+        final monthFirst = parseDates(dates, order: CsvDateOrder.monthFirst);
+        expect(monthFirst.dateOrderQuestion, isNull);
+        expect(monthFirst.rows.map((r) => r.date).toList(), [
+          DateTime(2024, 5, 3),
+          DateTime(2024, 4, 2),
+        ]);
+      });
+
+      test('ISO dates never raise the question', () {
+        final result = parseDates(['2024-03-05', '2024-02-04']);
+
+        expect(result.dateOrderQuestion, isNull);
+        expect(result.rows.map((r) => r.date).toList(), [
+          DateTime(2024, 3, 5),
+          DateTime(2024, 2, 4),
+        ]);
+      });
+
+      test('a year before 1950 is an error row', () {
+        final result = parseDates(['01/01/1949', '01/01/1950']);
+
+        expect(result.rows.map((r) => r.date).toList(), [DateTime(1950, 1, 1)]);
+        expect(result.errors, hasLength(1));
+        expect(result.errors.single, startsWith('Row 2:'));
+      });
+
+      test('a date far in the future is an error row', () {
+        final result = parseDates(['2999-01-01']);
+
+        expect(result.validRows, 0);
+        expect(result.errors.single, startsWith('Row 2:'));
+      });
+    });
+
+    group('Amounts are read with one decimal mark per file (A25)', () {
+      List<double> amounts(String csv, {bool? decimalComma}) =>
+          SimpleCsvParser.parseString(
+            csv,
+            decimalComma: decimalComma,
+          ).rows.map((r) => r.amount).toList();
+
+      test('decimal-comma mode reads 1.234,56 as 1234.56', () {
+        const csv = '''Date,Investment Name,Type,Amount
+2024-01-01,Test,invest,"1.234,56"''';
+
+        expect(amounts(csv, decimalComma: true), [1234.56]);
+      });
+
+      test('by default commas group thousands and lakhs', () {
+        const csv = '''Date,Investment Name,Type,Amount
+2024-01-01,T1,invest,"1,234.56"
+2024-01-01,T2,invest,"₹1,23,456.78"''';
+
+        expect(amounts(csv), [1234.56, 123456.78]);
+      });
+
+      test('a file whose amounts use a decimal comma is read that way', () {
+        const csv = '''Date,Investment Name,Type,Amount
+2024-01-01,T1,invest,"1.234,56"
+2024-01-01,T2,invest,"12,50"''';
+
+        expect(amounts(csv), [1234.56, 12.5]);
+      });
+
+      test('an amount that fits neither mark is an error, never 1.23456', () {
+        const csv = '''Date,Investment Name,Type,Amount
+2024-01-01,T1,invest,"1,234.56"
+2024-01-01,T2,invest,"1.234,56"''';
+
+        final result = SimpleCsvParser.parseString(csv);
+
+        expect(result.rows.map((r) => r.amount).toList(), [1234.56]);
+        expect(result.errors.single, 'Row 3: Invalid amount: 1.234,56');
+      });
+    });
+
+    group('Investment Type values (A25)', () {
+      InvestmentType? typeOf(String value) => SimpleCsvParser.parseString(
+        'Date,Investment Name,Type,Amount,Investment Type\n'
+        '2024-01-01,Test,INVEST,1000,$value',
+      ).rows.single.investmentType;
+
+      test('common names map to the right type', () {
+        expect(typeOf('p2p'), InvestmentType.p2pLending);
+        expect(typeOf('P2P Lending'), InvestmentType.p2pLending);
+        expect(typeOf('p2pLending'), InvestmentType.p2pLending);
+        expect(typeOf('mutualFund'), InvestmentType.mutualFunds);
+        expect(typeOf('mf'), InvestmentType.mutualFunds);
+        expect(typeOf('fd'), InvestmentType.fixedDeposit);
+        expect(typeOf('Fixed Deposit'), InvestmentType.fixedDeposit);
+        expect(typeOf('something else'), InvestmentType.other);
+      });
+
+      test('no template row is read as Other', () {
+        final result = SimpleCsvParser.parseString(
+          CsvTemplateService.generateTemplateContent(),
+          baseCurrency: 'INR',
+        );
+
+        expect(result.errors, isEmpty);
+        expect(
+          result.rows.map((r) => r.investmentType).toList(),
+          everyElement(isNot(anyOf(isNull, InvestmentType.other))),
+        );
+        expect(
+          result.rows
+              .where((r) => r.investmentName == 'Bhive Investment')
+              .map((r) => r.investmentType)
+              .toSet(),
+          {InvestmentType.p2pLending},
+        );
+      });
+    });
+
+    group('Records (A25)', () {
+      test('a quoted note with a line break stays one row', () {
+        const csv =
+            'Date,Investment Name,Type,Amount,Notes\n'
+            '2024-01-15,Test,INVEST,1000,"x\ny"';
+
+        final result = SimpleCsvParser.parseString(csv);
+
+        expect(result.errors, isEmpty);
+        expect(result.rows, hasLength(1));
+        expect(result.rows.single.notes, 'x\ny');
+        expect(result.rows.single.amount, 1000);
+      });
+    });
+
+    group('Currency codes (A14)', () {
+      test('an unknown code is a row error', () {
+        const csv = '''Date,Investment Name,Type,Amount,Currency
+2024-01-01,T1,INVEST,1000,XYZ
+2024-01-02,T2,INVEST,1000,INR''';
+
+        final result = SimpleCsvParser.parseString(csv, baseCurrency: 'INR');
+
+        expect(result.rows.map((r) => r.investmentName).toList(), ['T2']);
+        expect(result.errors, ['Row 2: Invalid currency code: XYZ']);
+      });
+
+      test('a lower-case code is read in upper case', () {
+        const csv = '''Date,Investment Name,Type,Amount,Currency
+2024-01-01,Dubai FD,INVEST,1000,aed''';
+
+        final result = SimpleCsvParser.parseString(csv, baseCurrency: 'INR');
+
+        expect(result.errors, isEmpty);
+        expect(result.rows.single.currency, 'AED');
+      });
+    });
+
+    // ============ A106: the guide's sample matches the template ============
+    group('docs/BULK_IMPORT_GUIDE.md sample (A106)', () {
+      String guideSample() {
+        final guide = File('docs/BULK_IMPORT_GUIDE.md').readAsStringSync();
+        final match = RegExp(r'```csv\n([\s\S]*?)\n```').firstMatch(guide);
+        expect(match, isNotNull, reason: 'the guide has a ```csv block');
+        return match!.group(1)!;
+      }
+
+      test('uses the same columns as the in-app template', () {
+        expect(
+          guideSample().split('\n').first,
+          CsvTemplateService.headers.join(','),
+        );
+      });
+
+      test('parses without errors and keeps the USD row in USD', () {
+        final result = SimpleCsvParser.parseString(
+          guideSample(),
+          baseCurrency: 'INR',
+        );
+
+        expect(result.errors, isEmpty);
+        expect(result.dateOrderQuestion, isNull);
+        expect(result.decimalMarkUnclear, isFalse);
+        final usd = result.rows.where((r) => r.currency == 'USD').toList();
+        expect(usd, isNotEmpty);
+        expect(usd.first.amount, 1000.50);
+        expect(
+          result.rows.where((r) => r.currency != 'USD').map((r) => r.currency),
+          everyElement('INR'),
+        );
       });
     });
   });

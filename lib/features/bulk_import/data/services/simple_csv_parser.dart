@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:any_date/any_date.dart';
-import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
@@ -51,6 +50,24 @@ class ParsedCashFlowRow {
       investmentStatus = null;
 }
 
+/// How to read a numeric date such as 05/03/2024.
+enum CsvDateOrder { dayFirst, monthFirst }
+
+/// Asked when no date in a file shows whether it is day-first or
+/// month-first, so the user can choose before anything is imported.
+class DateOrderQuestion {
+  /// A date cell from the file that can be read both ways.
+  final String sample;
+  final DateTime dayFirst;
+  final DateTime monthFirst;
+
+  const DateOrderQuestion({
+    required this.sample,
+    required this.dayFirst,
+    required this.monthFirst,
+  });
+}
+
 /// Result of parsing a CSV file
 class ParsedCsvResult {
   final List<ParsedCashFlowRow> rows;
@@ -58,11 +75,24 @@ class ParsedCsvResult {
   final int totalRows;
   final int validRows;
 
+  /// Set when every day/month date in the file fits both orders and the
+  /// caller did not choose one. The rows were read day-first; parse again
+  /// with the user's answer as `dateOrder`.
+  final DateOrderQuestion? dateOrderQuestion;
+
+  /// Set when some amount means a different number with a decimal comma
+  /// (1,500 is 1500 or 1.5) and the file's other amounts do not settle it.
+  /// The rows were read with a decimal point; ask the user and parse again
+  /// with their answer as `decimalComma`.
+  final bool decimalMarkUnclear;
+
   const ParsedCsvResult({
     required this.rows,
     required this.errors,
     required this.totalRows,
     required this.validRows,
+    this.dateOrderQuestion,
+    this.decimalMarkUnclear = false,
   });
 
   bool get hasErrors => errors.isNotEmpty;
@@ -75,97 +105,200 @@ class ParsedCsvResult {
       rows.where((r) => r.isValid).toList();
 }
 
-/// Simple CSV parser with smart date inference
+/// CSV parser that reads each file one consistent way: one day/month order
+/// for its dates and one decimal mark for its amounts.
 class SimpleCsvParser {
-  /// Common date format patterns to try (in order of priority)
-  /// Note: We store patterns as strings and create DateFormat lazily to avoid
-  /// initialization errors when the class is loaded before initializeDateFormatting()
-  static const List<String> _dateFormatPatterns = [
-    'yyyy-MM-dd',
-    'dd-MM-yyyy',
-    'MM-dd-yyyy',
-    'dd/MM/yyyy',
-    'MM/dd/yyyy',
-    'yyyy/MM/dd',
-    'd-MMM-yyyy',
-    'dd-MMM-yyyy',
-    'MMM d, yyyy',
-    'MMMM d, yyyy',
-    'd/M/yyyy',
-    'M/d/yyyy',
-    'MMM-yy', // Jan-21 format
-    'MMMM-yy', // January-21 format
-    'MM-yy', // 01-21 format
-    'MM/yy', // 01/21 format
-    // Excel serial date handled separately
-  ];
-
   /// Parse CSV bytes into structured data.
   ///
   /// A missing or blank Currency becomes [baseCurrency] (the user's base
   /// currency). Without one, [ParsedCashFlowRow.currency] stays null and the
   /// caller must resolve it; it is never assumed to be USD.
-  static ParsedCsvResult parse(Uint8List bytes, {String? baseCurrency}) {
+  ///
+  /// [dateOrder] says how to read dates such as 05/03/2024. When it is null
+  /// the file's own dates decide; see [ParsedCsvResult.dateOrderQuestion].
+  /// [decimalComma] says whether amounts are written 1.234,56. When it is
+  /// null the file's amounts decide; see [ParsedCsvResult.decimalMarkUnclear].
+  ///
+  /// [fromBackup] reads a cashflows.csv that the app exported itself, so a
+  /// restore gets back exactly what was stored: amounts use a decimal point,
+  /// and rows that a bulk import rejects (years outside 1950 to now+10, a
+  /// currency code the app does not list, an amount of zero or less) are
+  /// kept as they were.
+  static ParsedCsvResult parse(
+    Uint8List bytes, {
+    String? baseCurrency,
+    CsvDateOrder? dateOrder,
+    bool? decimalComma,
+    bool fromBackup = false,
+  }) {
     final content = utf8.decode(bytes);
-    return parseString(content, baseCurrency: baseCurrency);
+    return parseString(
+      content,
+      baseCurrency: baseCurrency,
+      dateOrder: dateOrder,
+      decimalComma: decimalComma,
+      fromBackup: fromBackup,
+    );
   }
 
-  /// Parse CSV string content. See [parse] for [baseCurrency].
-  static ParsedCsvResult parseString(String content, {String? baseCurrency}) {
-    return _CsvParserSession(content, baseCurrency).parse();
-  }
-
-  /// Parse a single CSV line handling quotes
-  static List<String> _parseCSVLine(String line) {
-    final result = <String>[];
-    var current = StringBuffer();
-    var inQuotes = false;
-
-    for (var i = 0; i < line.length; i++) {
-      final char = line[i];
-      if (char == '"') {
-        if (inQuotes && i + 1 < line.length && line[i + 1] == '"') {
-          current.write('"');
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (char == ',' && !inQuotes) {
-        result.add(current.toString().trim());
-        current = StringBuffer();
-      } else {
-        current.write(char);
-      }
-    }
-    result.add(current.toString().trim());
-    return result;
+  /// Parse CSV string content. See [parse] for the options.
+  static ParsedCsvResult parseString(
+    String content, {
+    String? baseCurrency,
+    CsvDateOrder? dateOrder,
+    bool? decimalComma,
+    bool fromBackup = false,
+  }) {
+    return _CsvParserSession(
+      content,
+      baseCurrency: baseCurrency,
+      dateOrder: dateOrder,
+      decimalComma: fromBackup ? false : decimalComma,
+      fromBackup: fromBackup,
+    ).parse();
   }
 }
 
-class _CsvParserSession {
-  final String content;
-  DateFormat? _detectedDateFormat;
+/// One CSV record. [error] is set, and [values] empty, when the record
+/// could not be read.
+typedef _CsvRecord = ({int rowNumber, List<String> values, String? error});
 
-  // Cache formatters by locale to avoid expensive re-creation
-  static final Map<String, List<DateFormat>> _formattersCache = {};
-
-  List<DateFormat> get _dateFormats {
-    final locale = Intl.defaultLocale ?? 'default';
-    return _formattersCache.putIfAbsent(locale, () {
-      return SimpleCsvParser._dateFormatPatterns
-          .map((p) => DateFormat(p, locale == 'default' ? null : locale))
-          .toList();
-    });
+/// The records of a CSV file with their row numbers (the header is row 1).
+/// Blank records are dropped but still counted.
+///
+/// A quote opens or closes a quoted part wherever it appears in a cell, so
+/// `"Best" FD` is the cell `Best FD` and a space before a quoted cell does no
+/// harm; `""` inside quotes is a quote. A quoted cell may run onto the next
+/// lines (a note written over two lines). But when one of those lines would
+/// be a full record on its own ([isRecord], given the header), or the file
+/// ends inside the quote, the quote was never closed: that record's first
+/// line is reported as an "Unmatched quote" and the lines after it are read
+/// as records again, so no row disappears into a note.
+List<_CsvRecord> _readCsvRecords(
+  String content, {
+  required bool Function(List<String> header, List<String> values) isRecord,
+}) {
+  final lines = const LineSplitter().convert(content);
+  final records = <_CsvRecord>[];
+  List<String>? header;
+  var rowNumber = 0;
+  var start = 0;
+  while (start < lines.length) {
+    rowNumber++;
+    final record = _readRecord(lines, start);
+    final runaway =
+        record.open ||
+        (header != null &&
+            [
+              for (var i = start + 1; i <= record.end; i++)
+                _readRecord([lines[i]], 0).cells,
+            ].any((cells) => isRecord(header!, cells)));
+    if (runaway) {
+      records.add((
+        rowNumber: rowNumber,
+        values: const [],
+        error: 'Unmatched quote',
+      ));
+      start++;
+      continue;
+    }
+    if (record.cells.any((v) => v.isNotEmpty)) {
+      header ??= record.cells;
+      records.add((rowNumber: rowNumber, values: record.cells, error: null));
+    }
+    start = record.end + 1;
   }
+  return records;
+}
+
+/// The trimmed cells of the record that starts at [lines][start], the line
+/// it ends on, and whether the file ended inside a quote.
+({List<String> cells, int end, bool open}) _readRecord(
+  List<String> lines,
+  int start,
+) {
+  final cells = <String>[];
+  final cell = StringBuffer();
+  var quoted = false;
+  var end = start;
+  while (true) {
+    final line = lines[end];
+    for (var i = 0; i < line.length; i++) {
+      final char = line[i];
+      if (char == '"') {
+        if (quoted && i + 1 < line.length && line[i + 1] == '"') {
+          cell.write('"');
+          i++;
+        } else {
+          quoted = !quoted;
+        }
+      } else if (char == ',' && !quoted) {
+        cells.add(cell.toString().trim());
+        cell.clear();
+      } else {
+        cell.write(char);
+      }
+    }
+    if (!quoted || end + 1 >= lines.length) break;
+    cell.write('\n');
+    end++;
+  }
+  cells.add(cell.toString().trim());
+  return (cells: cells, end: end, open: quoted);
+}
+
+/// The ways one date cell can be read.
+class _DateCell {
+  /// The only reading (ISO, month names, Excel serials, d/m equal).
+  final DateTime? fixed;
+  final DateTime? dayFirst;
+  final DateTime? monthFirst;
+
+  const _DateCell({this.fixed, this.dayFirst, this.monthFirst});
+
+  bool get onlyDayFirst =>
+      fixed == null && dayFirst != null && monthFirst == null;
+  bool get onlyMonthFirst =>
+      fixed == null && monthFirst != null && dayFirst == null;
+  bool get eitherOrder =>
+      fixed == null && dayFirst != null && monthFirst != null;
+
+  DateTime? read(CsvDateOrder order) =>
+      fixed ?? (order == CsvDateOrder.dayFirst ? dayFirst : monthFirst);
+}
+
+class _CsvParserSession {
+  _CsvParserSession(
+    this.content, {
+    required this.baseCurrency,
+    required this.dateOrder,
+    required this.decimalComma,
+    required this.fromBackup,
+  });
+
+  final String content;
 
   /// Currency for rows whose Currency column is missing or blank.
   final String? baseCurrency;
 
-  _CsvParserSession(this.content, this.baseCurrency);
+  /// The caller's choice; null lets the file decide.
+  final CsvDateOrder? dateOrder;
+  final bool? decimalComma;
+
+  /// Keep rows the app exported even when a bulk import would reject them.
+  final bool fromBackup;
+
+  /// Dates before this year are typing mistakes, not investments.
+  static const int minYear = 1950;
+
+  /// Dates more than this many years ahead are typing mistakes.
+  static const int maxYearsAhead = 10;
+
+  final int _maxYear = DateTime.now().year + maxYearsAhead;
 
   ParsedCsvResult parse() {
-    final lines = const LineSplitter().convert(content);
-    if (lines.isEmpty) {
+    final records = _readCsvRecords(content, isRecord: _looksLikeRow);
+    if (records.isEmpty) {
       return const ParsedCsvResult(
         rows: [],
         errors: ['Empty file'],
@@ -174,9 +307,8 @@ class _CsvParserSession {
       );
     }
 
-    // Parse header row
-    final headerRow = SimpleCsvParser._parseCSVLine(lines.first);
-    final columnMap = _mapColumns(headerRow);
+    final columnMap = _mapColumns(records.first.values);
+    final data = records.skip(1).toList();
 
     if (!columnMap.containsKey('date') ||
         !columnMap.containsKey('investment') ||
@@ -187,21 +319,43 @@ class _CsvParserSession {
         errors: [
           'Missing required columns. Required: Date, Investment Name, Type, Amount',
         ],
-        totalRows: lines.length - 1,
+        totalRows: data.length,
         validRows: 0,
       );
     }
 
+    // First pass: every date and amount cell decides how the whole file is
+    // read, so one odd row cannot change how the rows after it are read.
+    final dateCells = [
+      for (final r in data)
+        r.error != null
+            ? null
+            : _readDateCell(_getValue(r.values, columnMap['date']!)),
+    ];
+    final (:order, :question) = _chooseDateOrder(data, columnMap, dateCells);
+    final mark = decimalComma != null
+        ? (comma: decimalComma!, unclear: false)
+        : _decimalMark([
+            for (final r in data)
+              if (r.error == null) _getValue(r.values, columnMap['amount']!),
+          ]);
+
     final rows = <ParsedCashFlowRow>[];
     final errors = <String>[];
 
-    // Parse data rows (skip header)
-    for (var i = 1; i < lines.length; i++) {
-      final line = lines[i].trim();
-      if (line.isEmpty) continue;
-
-      final values = SimpleCsvParser._parseCSVLine(line);
-      final result = _parseRow(i + 1, values, columnMap);
+    for (var i = 0; i < data.length; i++) {
+      if (data[i].error case final error?) {
+        errors.add('Row ${data[i].rowNumber}: $error');
+        continue;
+      }
+      final result = _parseRow(
+        data[i].rowNumber,
+        data[i].values,
+        columnMap,
+        dateCells[i],
+        order,
+        mark.comma,
+      );
 
       if (result.isValid) {
         rows.add(result);
@@ -213,10 +367,76 @@ class _CsvParserSession {
     return ParsedCsvResult(
       rows: rows,
       errors: errors,
-      totalRows: lines.length - 1,
+      totalRows: data.length,
       // Optimization: The rows list only contains valid rows due to the check above,
       // so we can use rows.length directly to avoid an unnecessary O(N) iteration.
       validRows: rows.length,
+      dateOrderQuestion: question,
+      decimalMarkUnclear: mark.unclear,
+    );
+  }
+
+  /// Whether [values], read with [header], is a full cash-flow row: a date,
+  /// an investment name, a type and an amount.
+  bool _looksLikeRow(List<String> header, List<String> values) {
+    final columns = _mapColumns(header);
+    String cell(String key) =>
+        columns[key] == null ? '' : _getValue(values, columns[key]!);
+    return _readDateCell(cell('date')) != null &&
+        cell('investment').isNotEmpty &&
+        _parseType(cell('type')) != null &&
+        cell('amount').isNotEmpty;
+  }
+
+  /// The day/month order for the file: the caller's, else the order more
+  /// cells can only be read in (the first such cell breaks a tie), else
+  /// day-first with a question for the user when some cells fit both.
+  ({CsvDateOrder order, DateOrderQuestion? question}) _chooseDateOrder(
+    List<_CsvRecord> data,
+    Map<String, int> columnMap,
+    List<_DateCell?> cells,
+  ) {
+    if (dateOrder != null) return (order: dateOrder!, question: null);
+
+    var dayFirstOnly = 0;
+    var monthFirstOnly = 0;
+    CsvDateOrder? firstDecided;
+    int? firstEither;
+    for (var i = 0; i < cells.length; i++) {
+      final cell = cells[i];
+      if (cell == null) continue;
+      if (cell.onlyDayFirst) {
+        dayFirstOnly++;
+        firstDecided ??= CsvDateOrder.dayFirst;
+      } else if (cell.onlyMonthFirst) {
+        monthFirstOnly++;
+        firstDecided ??= CsvDateOrder.monthFirst;
+      } else if (cell.eitherOrder) {
+        firstEither ??= i;
+      }
+    }
+
+    if (dayFirstOnly != monthFirstOnly) {
+      return (
+        order: dayFirstOnly > monthFirstOnly
+            ? CsvDateOrder.dayFirst
+            : CsvDateOrder.monthFirst,
+        question: null,
+      );
+    }
+    if (firstDecided != null) return (order: firstDecided, question: null);
+    if (firstEither == null) {
+      return (order: CsvDateOrder.dayFirst, question: null);
+    }
+
+    final sample = cells[firstEither]!;
+    return (
+      order: CsvDateOrder.dayFirst,
+      question: DateOrderQuestion(
+        sample: _getValue(data[firstEither].values, columnMap['date']!),
+        dayFirst: sample.dayFirst!,
+        monthFirst: sample.monthFirst!,
+      ),
     );
   }
 
@@ -256,6 +476,9 @@ class _CsvParserSession {
     int rowNum,
     List<String> values,
     Map<String, int> columnMap,
+    _DateCell? dateCell,
+    CsvDateOrder dateOrder,
+    bool commaDecimals,
   ) {
     try {
       final dateStr = _getValue(values, columnMap['date']!);
@@ -278,11 +501,8 @@ class _CsvParserSession {
       // blank cell is the user's base currency, never USD (null when the
       // caller resolves it later).
       final currencyRaw = columnMap.containsKey('currency')
-          ? _getValue(values, columnMap['currency']!)
-          : null;
-      final currency = (currencyRaw == null || currencyRaw.isEmpty)
-          ? baseCurrency
-          : currencyRaw.toUpperCase();
+          ? _getValue(values, columnMap['currency']!).toUpperCase()
+          : '';
 
       // Validate required fields
       if (dateStr.isEmpty) {
@@ -310,12 +530,21 @@ class _CsvParserSession {
         );
       }
 
-      // Parse date
-      final date = _parseDate(dateStr);
+      // Parse date in the file's day/month order
+      final date = dateCell?.read(dateOrder);
       if (date == null) {
         return ParsedCashFlowRow.withError(
           rowNumber: rowNum,
-          error: 'Invalid date: $dateStr',
+          error: dateCell == null
+              ? 'Invalid date: $dateStr'
+              : 'Date $dateStr does not match the day/month order of the '
+                    'other dates in this file',
+        );
+      }
+      if (!fromBackup && (date.year < minYear || date.year > _maxYear)) {
+        return ParsedCashFlowRow.withError(
+          rowNumber: rowNum,
+          error: 'Date out of range ($minYear to $_maxYear): $dateStr',
         );
       }
 
@@ -328,22 +557,48 @@ class _CsvParserSession {
         );
       }
 
-      // Parse amount
-      final amount = _parseAmount(amountStr);
-      if (amount == null) {
+      // Parse amount with the file's decimal mark
+      final amount = _parseAmount(amountStr, decimalComma: commaDecimals);
+      // An overlong amount reads as Infinity, which would corrupt totals and
+      // XIRR. Bulk imports also keep to the 15 digits a double stores
+      // exactly; a backup restores what the app itself stored.
+      if (amount == null ||
+          !amount.isFinite ||
+          (!fromBackup &&
+              amountStr.replaceAll(RegExp(r'\D'), '').length > 15)) {
         return ParsedCashFlowRow.withError(
           rowNumber: rowNum,
           error: 'Invalid amount: $amountStr',
         );
       }
+      // Type sets the direction, as in manual entry; a negative INVEST would
+      // otherwise count as money coming in.
+      if (amount <= 0 && !fromBackup) {
+        return ParsedCashFlowRow.withError(
+          rowNumber: rowNum,
+          error:
+              'Amount must be more than zero (Type sets the direction): '
+              '$amountStr',
+        );
+      }
+
+      // An unknown code would be stored and then fail every FX conversion.
+      if (currencyRaw.isNotEmpty &&
+          !fromBackup &&
+          !getValidCurrencyCodes().contains(currencyRaw)) {
+        return ParsedCashFlowRow.withError(
+          rowNumber: rowNum,
+          error: 'Invalid currency code: $currencyRaw',
+        );
+      }
+      final currency = currencyRaw.isEmpty ? baseCurrency : currencyRaw;
 
       // Parse optional investment metadata
       InvestmentType? investmentType;
       if (investmentTypeStr != null && investmentTypeStr.isNotEmpty) {
-        investmentType = InvestmentType.values.firstWhere(
-          (t) => t.name.toLowerCase() == investmentTypeStr.toLowerCase(),
-          orElse: () => InvestmentType.other,
-        );
+        investmentType =
+            _investmentTypes[_typeKey(investmentTypeStr)] ??
+            InvestmentType.other;
       }
 
       InvestmentStatus? investmentStatus;
@@ -360,7 +615,7 @@ class _CsvParserSession {
         investmentName: investmentName.trim(),
         type: type,
         amount: amount,
-        currency: currency, // Already resolved above
+        currency: currency,
         notes: notes?.isNotEmpty == true ? notes : null,
         investmentType: investmentType,
         investmentStatus: investmentStatus,
@@ -377,11 +632,30 @@ class _CsvParserSession {
     return index < values.length ? values[index].trim() : '';
   }
 
-  /// Flexible date parser that handles any format
+  /// Investment Type cell values, compared without case, spaces or
+  /// punctuation: enum names, display names and common short forms.
+  static final Map<String, InvestmentType> _investmentTypes = {
+    for (final t in InvestmentType.values) ...{
+      _typeKey(t.name): t,
+      _typeKey(t.displayName): t,
+    },
+    'p2p': InvestmentType.p2pLending,
+    'fd': InvestmentType.fixedDeposit,
+    'mutualfund': InvestmentType.mutualFunds,
+    'mf': InvestmentType.mutualFunds,
+    'bond': InvestmentType.bonds,
+    'stock': InvestmentType.stocks,
+    'chitfund': InvestmentType.chitFunds,
+    'chit': InvestmentType.chitFunds,
+    'property': InvestmentType.realEstate,
+  };
+
+  static String _typeKey(String value) =>
+      value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+  /// Flexible parser for dates written with words, used last
   static final AnyDate _dateParser = AnyDate(
-    info: const DateParserInfo(
-      dayFirst: true,
-    ), // Prefer day-first for non-US formats
+    info: const DateParserInfo(dayFirst: true),
   );
 
   /// Month name variations for custom month-year parsing
@@ -402,55 +676,103 @@ class _CsvParserSession {
     'december': 12,
   };
 
-  /// Parse date with smart format detection
-  DateTime? _parseDate(String dateStr) {
-    if (dateStr.isEmpty) return null;
+  static final _isoDate = RegExp(
+    r'^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[T ].*)?$',
+  );
+  static final _numericDate = RegExp(
+    r'^(\d{1,2})([-/.])(\d{1,2})\2(\d{2}|\d{4})(?:[T ].*)?$',
+  );
+  static final _dayMonthNameYear = RegExp(
+    r'^(\d{1,2})[-/\s.]+([A-Za-z]+)\.?[-/\s.,]+(\d{2}|\d{4})$',
+  );
+  static final _monthNameDayYear = RegExp(
+    r'^([A-Za-z]+)\.?[-/\s.]+(\d{1,2}),?[-/\s.]+(\d{4})$',
+  );
+  static final _monthNameYear = RegExp(r'^([A-Za-z]+)[-/\s](\d{2,4})$');
+  static final _monthYear = RegExp(r'^(\d{1,2})[-/](\d{2}|\d{4})$');
+  static final _excelSerial = RegExp(r'^\d{5}(\.\d+)?$');
 
-    // Check for Excel serial date (number like 45678)
-    final serialNum = double.tryParse(dateStr);
-    if (serialNum != null && serialNum > 25000 && serialNum < 60000) {
-      return DateTime(1899, 12, 30).add(Duration(days: serialNum.toInt()));
-    }
+  /// A two-digit year is in this century unless that is beyond the latest
+  /// accepted year; 24 is 2024 and 99 is 1999.
+  int _fullYear(String year) {
+    final value = int.parse(year);
+    if (year.length != 2) return value;
+    return 2000 + value <= _maxYear ? 2000 + value : 1900 + value;
+  }
 
-    // Try month-year format first (e.g., Jan-21, Sept-25, Feb/22)
-    // This format is common in financial data but not supported by any_date
-    final monthYearMatch = RegExp(
-      r'^([A-Za-z]+)[-/\s](\d{2,4})$',
-    ).firstMatch(dateStr);
-    if (monthYearMatch != null) {
-      final monthStr = monthYearMatch.group(1)!.toLowerCase();
-      final yearStr = monthYearMatch.group(2)!;
-      final month = _monthNames[monthStr];
-      if (month != null) {
-        final year = yearStr.length == 2
-            ? 2000 + int.parse(yearStr)
-            : int.parse(yearStr);
-        return DateTime(year, month, 1);
+  /// The date, or null when the day does not exist in that month.
+  static DateTime? _validDate(int year, int month, int day) {
+    if (month < 1 || month > 12 || day < 1) return null;
+    final date = DateTime(year, month, day);
+    return date.month == month && date.day == day ? date : null;
+  }
+
+  /// Every way [text] can be read as a date, or null when it is not one.
+  _DateCell? _readDateCell(String text) {
+    if (text.isEmpty) return null;
+
+    // Excel serial date (days since 1899-12-30), without a time of day
+    if (_excelSerial.hasMatch(text)) {
+      final serial = double.parse(text).floor();
+      if (serial > 25000 && serial < 60000) {
+        return _DateCell(fixed: DateTime(1899, 12, 30 + serial));
       }
+      return null;
     }
 
-    // Optimization: Try detected format first
-    if (_detectedDateFormat != null) {
-      try {
-        return _detectedDateFormat!.parseStrict(dateStr);
-      } catch (_) {
-        // Failed, continue to fallback
+    if (_isoDate.firstMatch(text) case final m?) {
+      final date = _validDate(
+        int.parse(m[1]!),
+        int.parse(m[2]!),
+        int.parse(m[3]!),
+      );
+      return date == null ? null : _DateCell(fixed: date);
+    }
+
+    if (_numericDate.firstMatch(text) case final m?) {
+      final first = int.parse(m[1]!);
+      final second = int.parse(m[3]!);
+      final year = _fullYear(m[4]!);
+      final dayFirst = _validDate(year, second, first);
+      final monthFirst = _validDate(year, first, second);
+      if (dayFirst == null && monthFirst == null) return null;
+      if (dayFirst != null && dayFirst == monthFirst) {
+        return _DateCell(fixed: dayFirst);
       }
+      return _DateCell(dayFirst: dayFirst, monthFirst: monthFirst);
     }
 
-    // Try manual date formats first to detect consistent pattern
-    for (final format in _dateFormats) {
-      try {
-        final date = format.parseStrict(dateStr);
-        // If successful, memoize this format for future rows
-        _detectedDateFormat = format;
-        return date;
-      } catch (_) {}
+    if (_dayMonthNameYear.firstMatch(text) case final m?) {
+      final month = _monthNames[m[2]!.toLowerCase()];
+      if (month == null) return null;
+      final date = _validDate(_fullYear(m[3]!), month, int.parse(m[1]!));
+      return date == null ? null : _DateCell(fixed: date);
     }
 
-    // Fallback: try any_date library for flexible full-date parsing
+    if (_monthNameDayYear.firstMatch(text) case final m?) {
+      final month = _monthNames[m[1]!.toLowerCase()];
+      if (month == null) return null;
+      final date = _validDate(int.parse(m[3]!), month, int.parse(m[2]!));
+      return date == null ? null : _DateCell(fixed: date);
+    }
+
+    // Month and year only (Jan-21, Sept-25, Feb/22): the 1st of the month
+    if (_monthNameYear.firstMatch(text) case final m?) {
+      final month = _monthNames[m[1]!.toLowerCase()];
+      if (month == null) return null;
+      return _DateCell(fixed: DateTime(_fullYear(m[2]!), month, 1));
+    }
+    if (_monthYear.firstMatch(text) case final m?) {
+      final date = _validDate(_fullYear(m[2]!), int.parse(m[1]!), 1);
+      return date == null ? null : _DateCell(fixed: date);
+    }
+
+    // Other dates written with words, e.g. "Monday, 15 January 2024".
+    // Digits-only dates never get here, so their order stays the file's.
+    if (!RegExp('[A-Za-z]').hasMatch(text)) return null;
     try {
-      return _dateParser.parse(dateStr);
+      final date = _dateParser.parse(text);
+      return _DateCell(fixed: DateTime(date.year, date.month, date.day));
     } catch (_) {
       return null;
     }
@@ -486,14 +808,66 @@ class _CsvParserSession {
     }
   }
 
-  /// Parse amount, removing currency symbols and commas
-  double? _parseAmount(String amountStr) {
-    if (amountStr.isEmpty) return null;
-    final cleaned = amountStr
-        .replaceAll(RegExp(r'[₹$€£¥,\s]'), '')
-        .replaceAll('(', '-')
-        .replaceAll(')', '');
-    return double.tryParse(cleaned);
+  /// Digits with an optional decimal part (.5 and 5. too), grouped by commas
+  /// in thousands (1,234,567) or lakhs (12,34,567), or by dots with a
+  /// decimal comma.
+  static final _decimalPointAmount = RegExp(
+    r'^(\d*|\d{1,3}(,\d{2,3})*,\d{3})(\.\d*)?$',
+  );
+  static final _decimalCommaAmount = RegExp(
+    r'^(\d*|\d{1,3}(\.\d{2,3})*\.\d{3})(,\d*)?$',
+  );
+
+  /// Parse an amount, ignoring currency symbols and spaces. A leading minus
+  /// or surrounding parentheses make it negative.
+  static double? _parseAmount(String amountStr, {required bool decimalComma}) {
+    var text = amountStr.replaceAll(RegExp(r'[₹$€£¥\s ]'), '');
+    var negative = false;
+    if (text.startsWith('(') && text.endsWith(')')) {
+      negative = true;
+      text = text.substring(1, text.length - 1);
+    }
+    if (text.startsWith('-')) {
+      negative = !negative;
+      text = text.substring(1);
+    } else if (text.startsWith('+')) {
+      text = text.substring(1);
+    }
+
+    final shape = decimalComma ? _decimalCommaAmount : _decimalPointAmount;
+    if (!shape.hasMatch(text) || !text.contains(RegExp(r'\d'))) return null;
+    final plain = decimalComma
+        ? text.replaceAll('.', '').replaceAll(',', '.')
+        : text.replaceAll(',', '');
+    final value = double.parse(plain);
+    return negative ? -value : value;
+  }
+
+  /// The file's decimal mark. Amounts that can only be read one way vote:
+  /// 1.234,56 and 12,50 for a comma, 1,234.56 and 12.5 for a point.
+  ///
+  /// An amount such as 1,500 or 1.500 reads as two different numbers, so it
+  /// is never re-read on the strength of other rows: a decimal comma is
+  /// then used only when the user says so ([unclear]), and the rows are
+  /// read with a point until they do. Only point-only votes settle it
+  /// without asking, because they confirm the reading the rows already have.
+  static ({bool comma, bool unclear}) _decimalMark(Iterable<String> amounts) {
+    var pointOnly = 0;
+    var commaOnly = 0;
+    var readsTwoWays = false;
+    for (final amount in amounts) {
+      final asPoint = _parseAmount(amount, decimalComma: false);
+      final asComma = _parseAmount(amount, decimalComma: true);
+      if (asComma == null) {
+        if (asPoint != null) pointOnly++;
+      } else if (asPoint == null) {
+        commaOnly++;
+      } else if (asPoint != asComma) {
+        readsTwoWays = true;
+      }
+    }
+    if (!readsTwoWays) return (comma: commaOnly > pointOnly, unclear: false);
+    return (comma: false, unclear: commaOnly > 0 || pointOnly == 0);
   }
 }
 
@@ -586,8 +960,8 @@ class GoalsCsvParser {
   /// A missing or blank Currency becomes [baseCurrency]; without one,
   /// [ParsedGoalRow.currency] stays null for the caller to resolve.
   static ParsedGoalsResult parseString(String content, {String? baseCurrency}) {
-    final lines = const LineSplitter().convert(content);
-    if (lines.isEmpty) {
+    final records = _readCsvRecords(content, isRecord: _looksLikeRow);
+    if (records.isEmpty) {
       return const ParsedGoalsResult(
         rows: [],
         errors: ['Empty file'],
@@ -597,8 +971,8 @@ class GoalsCsvParser {
     }
 
     // Parse header row
-    final headerRow = SimpleCsvParser._parseCSVLine(lines.first);
-    final columnMap = _mapColumns(headerRow);
+    final columnMap = _mapColumns(records.first.values);
+    final data = records.skip(1).toList();
 
     if (!columnMap.containsKey('name') ||
         !columnMap.containsKey('type') ||
@@ -608,7 +982,7 @@ class GoalsCsvParser {
         errors: [
           'Missing required columns. Required: Name, Type, Target Amount',
         ],
-        totalRows: lines.length - 1,
+        totalRows: data.length,
         validRows: 0,
       );
     }
@@ -616,13 +990,17 @@ class GoalsCsvParser {
     final rows = <ParsedGoalRow>[];
     final errors = <String>[];
 
-    // Parse data rows (skip header)
-    for (var i = 1; i < lines.length; i++) {
-      final line = lines[i].trim();
-      if (line.isEmpty) continue;
-
-      final values = SimpleCsvParser._parseCSVLine(line);
-      final result = _parseRow(i + 1, values, columnMap, baseCurrency);
+    for (final record in data) {
+      if (record.error case final error?) {
+        errors.add('Row ${record.rowNumber}: $error');
+        continue;
+      }
+      final result = _parseRow(
+        record.rowNumber,
+        record.values,
+        columnMap,
+        baseCurrency,
+      );
 
       if (result.isValid) {
         rows.add(result);
@@ -634,11 +1012,22 @@ class GoalsCsvParser {
     return ParsedGoalsResult(
       rows: rows,
       errors: errors,
-      totalRows: lines.length - 1,
+      totalRows: data.length,
       // Optimization: The rows list only contains valid rows due to the check above,
       // so we can use rows.length directly to avoid an unnecessary O(N) iteration.
       validRows: rows.length,
     );
+  }
+
+  /// Whether [values], read with [header], is a full goal row: a name, a
+  /// type and a target amount.
+  static bool _looksLikeRow(List<String> header, List<String> values) {
+    final columns = _mapColumns(header);
+    String cell(String key) =>
+        columns[key] == null ? '' : _getValue(values, columns[key]!);
+    return cell('name').isNotEmpty &&
+        cell('type').isNotEmpty &&
+        double.tryParse(cell('targetAmount')) != null;
   }
 
   /// Map column headers to indices

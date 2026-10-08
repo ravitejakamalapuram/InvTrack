@@ -11,6 +11,8 @@ import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/csv_template_service.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/import_confirmation_screen.dart';
+import 'package:inv_tracker/features/bulk_import/presentation/widgets/date_order_dialog.dart';
+import 'package:inv_tracker/features/bulk_import/presentation/widgets/decimal_mark_dialog.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -75,10 +77,35 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
     try {
       // Parse the CSV
       // Rows without a currency take the user's base currency
-      final parseResult = SimpleCsvParser.parse(
+      final baseCurrency = ref.read(currencyCodeProvider);
+      var parseResult = SimpleCsvParser.parse(
         selectedFile.bytes!,
-        baseCurrency: ref.read(currencyCodeProvider),
+        baseCurrency: baseCurrency,
       );
+
+      // When the file's own dates or amounts do not show how to read them,
+      // ask before anything is imported, then read the file that way.
+      CsvDateOrder? order;
+      bool? decimalComma;
+      final question = parseResult.dateOrderQuestion;
+      if (question != null) {
+        if (!mounted) return;
+        order = await showDateOrderDialog(context, question);
+        if (order == null) return;
+      }
+      if (parseResult.decimalMarkUnclear) {
+        if (!mounted) return;
+        decimalComma = await showDecimalMarkDialog(context);
+        if (decimalComma == null) return;
+      }
+      if (order != null || decimalComma != null) {
+        parseResult = SimpleCsvParser.parse(
+          selectedFile.bytes!,
+          baseCurrency: baseCurrency,
+          dateOrder: order,
+          decimalComma: decimalComma,
+        );
+      }
 
       if (parseResult.validRows == 0) {
         if (mounted) {
@@ -109,7 +136,8 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
         AppFeedback.showError(context, 'Error reading file: $e');
       }
     } finally {
-      setState(() => _isLoading = false);
+      // The screen can close while the date order dialog is open.
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

@@ -6222,6 +6222,213 @@
   "@goalStatusMessageArchived": {
     "description": "Goal status message: the goal is archived"
   },
+  "importInvestmentCount": "{count, plural, =1{1 investment} other{{count} investments}}",
+  "@importInvestmentCount": {
+    "description": "Number of investments in a CSV import, used inside other import messages",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "importCashFlowCount": "{count, plural, =1{1 cash flow} other{{count} cash flows}}",
+  "@importCashFlowCount": {
+    "description": "Number of cash flows in a CSV import, used inside other import messages",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "importCountsSummary": "{investments} • {cashFlows}",
+  "@importCountsSummary": {
+    "description": "Import confirmation header, e.g. '2 investments • 5 cash flows'. Both values come from importInvestmentCount and importCashFlowCount",
+    "placeholders": {
+      "investments": {
+        "type": "String"
+      },
+      "cashFlows": {
+        "type": "String"
+      }
+    }
+  },
+
+  "importRowsSkipped": "{count, plural, =1{1 row skipped due to errors} other{{count} rows skipped due to errors}}",
+  "@importRowsSkipped": {
+    "description": "Import confirmation: number of CSV rows that could not be read",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "importAllButton": "Import All",
+  "@importAllButton": {
+    "description": "Button that imports every row shown on the import confirmation screen"
+  },
+
+  "importCardSubtitle": "{cashFlows} • {currency}",
+  "@importCardSubtitle": {
+    "description": "Subtitle of an investment on the import confirmation screen, e.g. '3 cash flows • INR'. cashFlows comes from importCashFlowCount",
+    "placeholders": {
+      "cashFlows": {
+        "type": "String"
+      },
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "importIncomeLabel": "Income",
+  "@importIncomeLabel": {
+    "description": "Label for the total income of an investment on the import confirmation screen"
+  },
+
+  "importCreatedSummary": "Created {investments} with {cashFlows}",
+  "@importCreatedSummary": {
+    "description": "Shown after a CSV import succeeds, e.g. 'Created 2 investments with 5 cash flows'. Values come from importInvestmentCount and importCashFlowCount",
+    "placeholders": {
+      "investments": {
+        "type": "String"
+      },
+      "cashFlows": {
+        "type": "String"
+      }
+    }
+  },
+
+  "importFailedTryAgain": "Import failed. Please try again.",
+  "@importFailedTryAgain": {
+    "description": "Shown when saving a CSV import fails. Never includes the error text"
+  },
+
+  "importTypeChipInvest": "INV",
+  "@importTypeChipInvest": {
+    "description": "Short tag for an INVEST cash flow on the import confirmation screen"
+  },
+
+  "importTypeChipIncome": "INC",
+  "@importTypeChipIncome": {
+    "description": "Short tag for an INCOME cash flow on the import confirmation screen"
+  },
+
+  "importTypeChipReturn": "RET",
+  "@importTypeChipReturn": {
+    "description": "Short tag for a RETURN cash flow on the import confirmation screen"
+  },
+
+  "importTypeChipFee": "FEE",
+  "@importTypeChipFee": {
+    "description": "Short tag for a FEE cash flow on the import confirmation screen"
+  },
+
+  "importLikelyDuplicates": "{count, plural, =1{1 row matches a cash flow you already have} other{{count} rows match cash flows you already have}}",
+  "@importLikelyDuplicates": {
+    "description": "Import confirmation warning: rows with the same investment name, date, type, amount and currency as an existing cash flow",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "importSkipDuplicates": "Skip these rows",
+  "@importSkipDuplicates": {
+    "description": "Switch on the import confirmation screen that leaves likely duplicate rows out of the import"
+  },
+
+  "importDuplicateLabel": "Likely duplicate",
+  "@importDuplicateLabel": {
+    "description": "Tag on a CSV row that matches a cash flow the user already has"
+  },
+
+  "importDateOrderTitle": "How are dates written in this file?",
+  "@importDateOrderTitle": {
+    "description": "Title of the dialog asking whether the CSV's dates are day-first or month-first"
+  },
+
+  "importDateOrderMessage": "A date such as {sample} can mean two different days. Choose how to read every date in this file.",
+  "@importDateOrderMessage": {
+    "description": "Body of the date order dialog. sample is a date cell from the file, e.g. 05/03/2024",
+    "placeholders": {
+      "sample": {
+        "type": "String"
+      }
+    }
+  },
+
+  "importDateOrderDayFirst": "Day first ({date})",
+  "@importDateOrderDayFirst": {
+    "description": "Date order choice: read dates as day/month/year. date is the sample read that way, e.g. 5 Mar 2024",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+
+  "importDateOrderMonthFirst": "Month first ({date})",
+  "@importDateOrderMonthFirst": {
+    "description": "Date order choice: read dates as month/day/year. date is the sample read that way, e.g. 3 May 2024",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+
+  "importAddsToExisting": "Added to your existing investment with this name",
+  "@importAddsToExisting": {
+    "description": "Import confirmation card: the rows will be added to an investment the user already has, because some of them match its cash flows"
+  },
+
+  "importDuplicateArchivedLabel": "Matches an archived investment",
+  "@importDuplicateArchivedLabel": {
+    "description": "Import confirmation row label: the row matches a cash flow of an archived investment"
+  },
+
+  "importNewBesideArchived": "Your investment with this name is archived, so these rows become a new investment, which counts in your totals.",
+  "@importNewBesideArchived": {
+    "description": "Import confirmation card: rows matching an archived investment's name are imported as a new active investment"
+  },
+
+  "importDuplicateCheckFailed": "Couldn''t check these rows against your investments. Try again before importing.",
+  "@importDuplicateCheckFailed": {
+    "description": "Import confirmation: loading the user's investments failed, so duplicates could not be checked and import is paused"
+  },
+
+  "importDecimalMarkTitle": "Which decimal mark does this file use?",
+  "@importDecimalMarkTitle": {
+    "description": "Title of the dialog asking how amounts in a CSV file are written"
+  },
+
+  "importDecimalMarkMessage": "Some amounts in this file can be read two ways. For example, 1,500 is one thousand five hundred with a decimal point, but one and a half with a decimal comma.",
+  "@importDecimalMarkMessage": {
+    "description": "Body of the decimal mark dialog; the example numbers are fixed, not from the file"
+  },
+
+  "importDecimalMarkPoint": "Point (1,234.56)",
+  "@importDecimalMarkPoint": {
+    "description": "Decimal mark choice: amounts use a decimal point"
+  },
+
+  "importDecimalMarkComma": "Comma (1.234,56)",
+  "@importDecimalMarkComma": {
+    "description": "Decimal mark choice: amounts use a decimal comma"
+  },
+
+  "importAddedSummary": "Added {cashFlows} to investments you already have",
+  "@importAddedSummary": {
+    "description": "Shown after a CSV import that added cash flows only to existing investments. cashFlows is importCashFlowCount, e.g. 3 cash flows",
+    "placeholders": {
+      "cashFlows": {
+        "type": "String"
+      }
+    }
   "noteTenureClearedWithMaturity": "Tenure cleared too, so no maturity date is worked out from it.",
   "@noteTenureClearedWithMaturity": {
     "description": "Note under the maturity date in the investment form after the user clears the maturity date of an investment whose start date and tenure would otherwise work it out again; the tenure is cleared with it"

@@ -389,9 +389,13 @@ class DataImportService {
     required String baseCurrency,
     Map<(bool, String), _ImportedValuation> valuations = const {},
   }) async {
+    // The app wrote this file, so restore what it holds: rows that a bulk
+    // import now rejects (old dates, stored codes) must not be lost, as
+    // Replace has already deleted the existing data.
     final parseResult = SimpleCsvParser.parseString(
       csvContent,
       baseCurrency: baseCurrency,
+      fromBackup: true,
     );
     if (parseResult.validRows == 0) {
       return _CsvImportResult(
