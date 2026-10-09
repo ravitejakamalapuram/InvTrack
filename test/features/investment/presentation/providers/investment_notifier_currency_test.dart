@@ -113,7 +113,6 @@ void main() {
 
       expect(repo.cashFlows.single.currency, 'INR');
     });
-  });
 
     test('updateCashFlow rounds zero-decimal currencies to whole units', () async {
       await repo.addCashFlow(
@@ -141,6 +140,7 @@ void main() {
       expect(repo.cashFlows.single.amount, 126);
       expect(repo.cashFlows.single.currency, 'JPY');
     });
+  });
 
   group('mergeInvestments', () {
     Future<void> merge(List<String> ids, String name) {
