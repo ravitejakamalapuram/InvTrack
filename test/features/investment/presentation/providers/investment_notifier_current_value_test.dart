@@ -20,6 +20,7 @@ InvestmentEntity _gold({
   bool isArchived = false,
   double? value,
   DateTime? date,
+  String currency = 'INR',
 }) => InvestmentEntity(
   id: 'gold',
   name: 'SGB 2031',
@@ -28,7 +29,7 @@ InvestmentEntity _gold({
   createdAt: DateTime(2025, 1, 1),
   updatedAt: DateTime(2025, 1, 1),
   isArchived: isArchived,
-  currency: 'INR',
+  currency: currency,
   currentValue: value,
   currentValueDate: date,
 );
@@ -70,6 +71,19 @@ void main() {
     final saved = (await repo.getInvestmentById('gold'))!;
     expect(saved.currentValue, 125000.56, reason: 'rounded to the paisa');
     expect(saved.currentValueDate, DateTime(2026, 10, 1));
+  });
+
+  test('rounds a current value to the investment currency minor unit', () async {
+    repo.seed(investments: [_gold(currency: 'JPY')]);
+
+    await notifier.setCurrentValue(
+      id: 'gold',
+      value: 125.6,
+      date: DateTime(2026, 10, 1),
+    );
+
+    final saved = (await repo.getInvestmentById('gold'))!;
+    expect(saved.currentValue, 126, reason: 'JPY has zero minor-unit digits');
   });
 
   test('clearing the value removes it', () async {
