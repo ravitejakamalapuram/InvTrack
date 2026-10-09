@@ -19,7 +19,10 @@ service cloud.firestore {
         && request.resource.data.requestedAt == request.time
         && request.resource.data.source in ['web', 'app']
         && request.resource.data.version == 1;
-      allow delete: if request.auth != null && request.auth.uid == userId;
+      // Legacy requests have no status and are pending. Once the Admin-SDK job atomically claims
+      // a due request as processing, the client can no longer withdraw it mid-deletion.
+      allow delete: if request.auth != null && request.auth.uid == userId
+        && (!resource.data.keys().hasAny(['status']) || resource.data.status == 'pending');
       allow list, update: if false;
     }
 
