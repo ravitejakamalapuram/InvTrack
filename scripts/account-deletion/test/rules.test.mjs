@@ -65,6 +65,21 @@ describe('deletionRequests/{uid}', () => {
     await assertSucceeds(deleteDoc(doc(asAlice(), 'deletionRequests/alice')));
   });
 
+  it('owner cannot withdraw a request after the server claims it for processing', async () => {
+    await env.withSecurityRulesDisabled((ctx) =>
+      setDoc(doc(ctx.firestore(), 'deletionRequests/alice'), {
+        requestedAt: Timestamp.now(),
+        source: 'web',
+        version: 1,
+        status: 'processing',
+        processingRunId: 'run1',
+        claimedAt: Timestamp.now(),
+      }),
+    );
+    await assertSucceeds(getDoc(doc(asAlice(), 'deletionRequests/alice')));
+    await assertFails(deleteDoc(doc(asAlice(), 'deletionRequests/alice')));
+  });
+
   it('owner can get a request that does not exist (page probes before creating)', async () => {
     await assertSucceeds(getDoc(doc(asAlice(), 'deletionRequests/alice')));
   });
