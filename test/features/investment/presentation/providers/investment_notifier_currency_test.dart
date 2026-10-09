@@ -74,6 +74,23 @@ void main() {
       expect(repo.cashFlows.single.amount, 1.01);
     });
 
+    test('rejects non-finite cash-flow amounts before persistence', () async {
+      for (final amount in [double.nan, double.infinity]) {
+        await expectLater(
+          notifier().addCashFlow(
+            investmentId: 'inv-1',
+            type: CashFlowType.income,
+            amount: amount,
+            date: DateTime(2024, 1, 15),
+            currency: 'INR',
+          ),
+          throwsA(isA<ValidationException>()),
+        );
+      }
+
+      expect(repo.cashFlows, isEmpty);
+    });
+
     test('rejects a positive amount that rounds to zero minor units', () async {
       await expectLater(
         notifier().addCashFlow(
