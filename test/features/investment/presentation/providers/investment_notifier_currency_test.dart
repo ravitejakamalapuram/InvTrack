@@ -61,6 +61,18 @@ void main() {
       expect(repo.cashFlows.single.currency, 'INR');
     });
 
+    test('addCashFlow rounds using the selected currency precision', () async {
+      await notifier().addCashFlow(
+        investmentId: 'inv-1',
+        type: CashFlowType.income,
+        amount: 1.005,
+        date: DateTime(2024, 1, 15),
+        currency: 'INR',
+      );
+
+      expect(repo.cashFlows.single.amount, 1.01);
+    });
+
     test('updateCashFlow without a currency uses the base currency', () async {
       await repo.addCashFlow(
         CashFlowEntity(
@@ -84,6 +96,34 @@ void main() {
       );
 
       expect(repo.cashFlows.single.currency, 'INR');
+    });
+  });
+
+    test('updateCashFlow rounds zero-decimal currencies to whole units', () async {
+      await repo.addCashFlow(
+        CashFlowEntity(
+          id: 'jpy-flow',
+          investmentId: 'inv-1',
+          type: CashFlowType.income,
+          amount: 100,
+          date: DateTime(2024, 1, 15),
+          createdAt: DateTime(2024, 1, 15),
+          currency: 'JPY',
+        ),
+      );
+
+      await notifier().updateCashFlow(
+        id: 'jpy-flow',
+        investmentId: 'inv-1',
+        type: CashFlowType.income,
+        amount: 125.6,
+        date: DateTime(2024, 1, 15),
+        createdAt: DateTime(2024, 1, 15),
+        currency: 'JPY',
+      );
+
+      expect(repo.cashFlows.single.amount, 126);
+      expect(repo.cashFlows.single.currency, 'JPY');
     });
   });
 
