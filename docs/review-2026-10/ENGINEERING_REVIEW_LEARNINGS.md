@@ -27,3 +27,11 @@ Compact, evidence-backed reusable lessons from engineering reviews. Keep this fi
 - **Evidence:** Follow-up update to InvTrack #941 and #944 added detailed acceptance checklists and scenario coverage for baseline valuation, principal vs income, historical import, snapshot selection, currency, legacy migration, lifecycle, account isolation, consumer consistency, and telemetry privacy.
 - **Improved heuristic (default for future ticket changes):** Before finishing any ticket creation or edit, verify the canonical issue body contains: (1) problem/context, (2) intended behavior/scope, (3) explicit acceptance criteria, (4) concrete test scenarios including failure/edge cases, and (5) dependencies/migration or rollout notes where relevant. For a small maintenance ticket, keep these sections concise rather than omitting them. Update the issue body, not only a comment, when requirements change. Do not invent tests or claim they ran; distinguish required test scenarios from executed tests.
 - **Confidence:** High. Apply across active repositories; adapt detail to risk and scope.
+
+## 2026-10-09 — Regression assertions must observe the behavior under test
+
+- **Pattern:** A test that asserts an initially empty capture list remains empty can pass even when the code under test never reaches or incorrectly invokes the persistence boundary. Assert the relevant call count or observable side effect directly.
+- **Why it was missed:** The ambiguous-import regression tests checked that captured investments and cash flows were empty, but the test notifier initializes both lists empty. Those assertions did not prove that `bulkImport` was never called.
+- **Evidence:** InvTrack PR #935 review found the vacuous assertions; the follow-up adds a `bulkImportCalls` counter and asserts zero calls in both the ambiguous-match and skip-duplicates cases.
+- **Improved heuristic:** For every negative-path test, identify the exact prohibited behavior and instrument its boundary (method invocation, write attempt, network request, event emission, or persisted state). Prove the test fails if the guard is removed. Empty output alone is insufficient when the output container starts empty or the operation can fail before writing.
+- **Confidence:** High.
