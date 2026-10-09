@@ -44,6 +44,9 @@ class MoneyPrecision {
   /// boundaries; this fallback is not permission to invent a currency.
   static int fractionDigitsFor(String currencyCode) {
     final code = currencyCode.trim().toUpperCase();
+    if (code.isEmpty) {
+      throw ArgumentError.value(currencyCode, 'currencyCode', 'Must not be empty');
+    }
     if (_zeroFractionCurrencies.contains(code)) return 0;
     if (_threeFractionCurrencies.contains(code)) return 3;
     return 2;
