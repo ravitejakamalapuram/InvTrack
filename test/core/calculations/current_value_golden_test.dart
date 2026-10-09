@@ -190,6 +190,28 @@ void main() {
   });
 
   group('Estimated current value', () {
+    test('manual valuation rounds using the investment currency precision', () {
+      final jpyGold = _investment(
+        'jpy-gold',
+        InvestmentType.gold,
+        currentValue: 125.6,
+        currentValueDate: DateTime(2026, 10, 1),
+        currency: 'JPY',
+      );
+      final valuation = CurrentValueCalculator.valuationOf(jpyGold, [
+        _flow(
+          'jpy-gold',
+          CashFlowType.invest,
+          100,
+          DateTime(2026, 10, 1),
+          currency: 'JPY',
+        ),
+      ], asOf: _today)!;
+
+      expect(valuation.amount, 126);
+      expect(valuation.currency, 'JPY');
+    });
+
     test('₹1,00,000 @7% quarterly accrues by actual/365 days', () {
       // 183 days: 1,00,000 × 1.0175^(4 × 183/365). Exactly half a year
       // (two full quarters) would be 1,03,530.63; see the PR for why the
