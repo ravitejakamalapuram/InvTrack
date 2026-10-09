@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_notifier.dart';
@@ -71,6 +72,21 @@ void main() {
       );
 
       expect(repo.cashFlows.single.amount, 1.01);
+    });
+
+    test('rejects a positive amount that rounds to zero minor units', () async {
+      await expectLater(
+        notifier().addCashFlow(
+          investmentId: 'inv-1',
+          type: CashFlowType.income,
+          amount: 0.4,
+          date: DateTime(2024, 1, 15),
+          currency: 'JPY',
+        ),
+        throwsA(isA<ValidationException>()),
+      );
+
+      expect(repo.cashFlows, isEmpty);
     });
 
     test('updateCashFlow without a currency uses the base currency', () async {
