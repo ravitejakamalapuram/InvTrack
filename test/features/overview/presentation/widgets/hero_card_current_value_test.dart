@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -132,6 +133,51 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Realised XIRR'), findsOneWidget);
   });
+
+  testWidgets(
+    'keeps net cash flow above awaiting-current-value status on narrow large-text layouts',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      const awaiting = InvestmentStats(
+        totalInvested: 500000,
+        totalReturned: 10000,
+        netCashFlow: -490000,
+        absoluteReturn: -98,
+        moic: 0.02,
+        xirr: null,
+        xirrMethod: XirrMethod.undefined,
+        cashFlowCount: 2,
+        firstCashFlowDate: DateTime(2024, 1, 1),
+        lastCashFlowDate: DateTime(2025, 1, 1),
+        missingValueCount: 1,
+      );
+
+      await _pump(
+        tester,
+        card: MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.8)),
+          child: const HeroCardContent(
+            globalStats: awaiting,
+            openStats: awaiting,
+            closedStats: _closed,
+            currencyFormat: _inr,
+            showRealizedOnly: false,
+          ),
+        ),
+      );
+
+      expect(find.text('Awaiting current value'), findsOneWidget);
+      expect(find.byType(CompactAmountText), findsOneWidget);
+      expect(
+        tester.getRect(find.byType(CompactAmountText)).bottom,
+        lessThan(tester.getRect(find.text('Awaiting current value')).top),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('privacy mode hides both XIRRs', (tester) async {
     await _pump(tester, privacy: true);
