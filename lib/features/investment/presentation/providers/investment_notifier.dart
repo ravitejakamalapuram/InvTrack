@@ -823,7 +823,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   /// Validates amount for cash flows.
   /// Throws [ValidationException] if amount is not positive.
   void _validateAmount(double amount) {
-    if (amount <= 0) {
+    if (!amount.isFinite || amount <= 0) {
       throw ValidationException.invalidAmount(amount);
     }
   }
