@@ -10,6 +10,7 @@ void main() {
       expect(MoneyPrecision.fractionDigitsFor('USD'), 2);
       expect(MoneyPrecision.fractionDigitsFor('KWD'), 3);
       expect(MoneyPrecision.fractionDigitsFor('  kwd '), 3);
+      expect(() => MoneyPrecision.fractionDigitsFor(' '), throwsArgumentError);
     });
   });
 
