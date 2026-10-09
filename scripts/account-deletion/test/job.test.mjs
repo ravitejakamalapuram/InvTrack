@@ -1,6 +1,6 @@
 import { beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { runJob, requestByEmail, hashUid } from '../run.mjs';
+import { runJob, requestByEmail, hashUid, claimDeletionRequest } from '../run.mjs';
 import { verifyRun } from '../verify-run.mjs';
 import { deleteUserData } from '../delete.mjs';
 import { auth, authExists, db, DAY, exists, quiet, resetEmulators, seedRequest, seedUser, snapshot } from './helpers.mjs';
@@ -84,6 +84,35 @@ describe('deletion run', () => {
     assert.equal(out.results.length, 0);
     assert.equal(await exists('users/u1/investments/i1'), true);
     assert.equal(await exists('deletionRequests/u1'), true);
+  });
+
+  it('does not delete an account when its request disappears after the queue snapshot', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    let deleteCalls = 0;
+    const withdrawBeforeClaim = async ({ db: d, uid }) => {
+      await d.doc(`deletionRequests/${uid}`).delete();
+      return false;
+    };
+    const out = await runJob(opts({
+      claimRequest: withdrawBeforeClaim,
+      deleter: async (args) => { deleteCalls++; return deleteUserData(args); },
+    }));
+    assert.equal(out.exitCode, 0);
+    assert.equal(out.results[0].skipped, 'request withdrawn or another run holds an active claim');
+    assert.equal(deleteCalls, 0);
+    assert.equal(await exists('users/u1/investments/i1'), true);
+    assert.equal(await authExists('u1'), true);
+  });
+
+  it('atomically claims a due request once and rejects a second active claimant', async () => {
+    await seedRequest('u1', 2 * DAY);
+    const now = new Date();
+    assert.equal(await claimDeletionRequest({ db, uid: 'u1', now, runId: 'run1' }), true);
+    assert.equal(await claimDeletionRequest({ db, uid: 'u1', now, runId: 'run2' }), false);
+    const request = await db.doc('deletionRequests/u1').get();
+    assert.equal(request.get('status'), 'processing');
+    assert.equal(request.get('processingRunId'), 'run1');
   });
 
   it('resumes after a crash between recursiveDelete and deleteUser', async () => {
