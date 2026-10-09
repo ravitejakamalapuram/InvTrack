@@ -26,6 +26,7 @@ class _CapturingInvestmentNotifier extends InvestmentNotifier {
   final Object? failure;
   List<InvestmentEntity> investments = [];
   List<CashFlowEntity> cashFlows = [];
+  int bulkImportCalls = 0;
 
   @override
   AsyncValue<void> build() => const AsyncValue.data(null);
@@ -35,6 +36,7 @@ class _CapturingInvestmentNotifier extends InvestmentNotifier {
     required List<InvestmentEntity> investments,
     required List<CashFlowEntity> cashFlows,
   }) async {
+    bulkImportCalls++;
     if (failure != null) throw failure!;
     this.investments = investments;
     this.cashFlows = cashFlows;
@@ -539,8 +541,11 @@ void main() {
         await tester.tap(find.text('Bhive Investment'));
         await tester.pumpAndSettle();
         expect(find.text(_l10n.importAddsToExisting), findsNothing);
-        expect(notifier.investments, isEmpty);
-        expect(notifier.cashFlows, isEmpty);
+        expect(
+          notifier.bulkImportCalls,
+          0,
+          reason: 'ambiguous imports must never invoke persistence',
+        );
       },
     );
 
@@ -605,8 +610,11 @@ void main() {
           tester.widget<GradientButton>(find.byType(GradientButton)).onPressed,
           isNull,
         );
-        expect(notifier.investments, isEmpty);
-        expect(notifier.cashFlows, isEmpty);
+        expect(
+          notifier.bulkImportCalls,
+          0,
+          reason: 'ambiguous imports must never invoke persistence',
+        );
       },
     );
 
