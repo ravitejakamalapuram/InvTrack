@@ -532,6 +532,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       amount,
       currencyCode: flowCurrency,
     );
+    _validateAmount(roundedAmount);
 
     state = const AsyncValue.loading();
     try {
@@ -591,6 +592,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       amount,
       currencyCode: flowCurrency,
     );
+    _validateAmount(roundedAmount);
 
     state = const AsyncValue.loading();
     try {
