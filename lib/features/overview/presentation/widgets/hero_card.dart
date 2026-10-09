@@ -294,49 +294,64 @@ class HeroCardContent extends ConsumerWidget {
         ? Colors.greenAccent
         : Colors.redAccent;
 
+    final value = PrivacyMask(
+      child: CompactAmountText(
+        amount: netPosition,
+        compactText: currencyFormat.formatSmart(netPosition),
+        currencySymbol: currencyFormat.currencySymbol,
+        locale: currencyFormat.locale,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 36,
+          fontWeight: FontWeight.bold,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+
+    final badge = AnimatedOpacity(
+      duration: const Duration(milliseconds: 200),
+      opacity: isPrivacyMode ? 0.0 : 1.0,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: badgeColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          status ??
+              '${stats.absoluteReturn >= 0 ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}%',
+          style: TextStyle(
+            color: badgeTextColor,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+
+    // Status text is descriptive, not a metric. Keep it below the amount so
+    // a long localized "Awaiting current value" label can never squeeze the
+    // primary net-cash-flow figure out of the row on narrow screens.
+    if (status != null) {
+      return SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [value, const SizedBox(height: 6), badge],
+        ),
+      );
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
       children: [
-        Flexible(
-          child: PrivacyMask(
-            child: CompactAmountText(
-              amount: netPosition,
-              compactText: currencyFormat.formatSmart(netPosition),
-              currencySymbol: currencyFormat.currencySymbol,
-              locale: currencyFormat.locale,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ),
+        Flexible(child: value),
         if (stats.hasData) ...[
           const SizedBox(width: 10),
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
-            opacity: isPrivacyMode ? 0.0 : 1.0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: badgeColor,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                status ??
-                    '${stats.absoluteReturn >= 0 ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}%',
-                style: TextStyle(
-                  color: badgeTextColor,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ),
+          badge,
         ],
       ],
     );
