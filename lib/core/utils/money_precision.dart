@@ -84,7 +84,7 @@ class MoneyPrecision {
       final divisor = BigInt.from(10).pow(-shift);
       var quotient = digits ~/ divisor;
       final remainder = digits.remainder(divisor);
-      if (remainder * BigInt.two >= divisor) quotient += BigInt.one;
+      if (remainder * BigInt.from(2) >= divisor) quotient += BigInt.one;
       minorUnits = quotient;
     }
 
