@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
+import 'package:inv_tracker/core/utils/money_precision.dart';
 
 /// Where a current value comes from.
 enum ValuationSource {
@@ -211,7 +212,10 @@ class CurrentValueCalculator {
         amount += cf.type == CashFlowType.invest ? grown : -grown;
       }
       return InvestmentValuation(
-        amount: math.max(0, amount),
+        amount: MoneyPrecision.round(
+          math.max(0, amount),
+          currencyCode: currency,
+        ),
         currency: currency,
         date: date,
         source: ValuationSource.accruedInterest,
@@ -220,7 +224,10 @@ class CurrentValueCalculator {
     }
 
     return InvestmentValuation(
-      amount: math.max(0, _principalChange(flows)),
+      amount: MoneyPrecision.round(
+        math.max(0, _principalChange(flows)),
+        currencyCode: currency,
+      ),
       currency: currency,
       date: date,
       source: ValuationSource.outstandingPrincipal,
@@ -316,7 +323,10 @@ class CurrentValueCalculator {
     ];
     if (later.any((cf) => cf.currency != investment.currency)) return null;
     return InvestmentValuation(
-      amount: math.max(0, investment.currentValue! + _principalChange(later)),
+      amount: MoneyPrecision.round(
+        math.max(0, investment.currentValue! + _principalChange(later)),
+        currencyCode: investment.currency,
+      ),
       currency: investment.currency,
       date: lastFlow.isAfter(date) ? lastFlow : date,
       source: ValuationSource.manual,
