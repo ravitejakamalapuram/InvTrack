@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
+import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
-import 'package:inv_tracker/core/utils/money_precision.dart';
 
 /// Where a current value comes from.
 enum ValuationSource {
