@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/analytics_utils.dart';
 import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
@@ -246,8 +247,6 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     if (day.isAfter(DateTime(now.year, now.month, now.day))) {
       throw ValidationException.invalidDate(date);
     }
-    // Money is kept to the paisa.
-    final rounded = (value * 100).roundToDouble() / 100;
     await _writeCurrentValue(id, (existing) {
       if (!existing.isOpen) {
         throw ValidationException(
@@ -255,6 +254,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           technicalMessage: 'setCurrentValue on a closed investment',
         );
       }
+      final rounded = MoneyPrecision.round(
+        value,
+        currencyCode: existing.currency,
+      );
       return _withCurrentValue(existing, rounded, day);
     });
   }
@@ -524,6 +527,11 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     // Input validation
     _validateAmount(amount);
     _validateNotes(notes);
+    final flowCurrency = currency ?? ref.read(currencyCodeProvider);
+    final roundedAmount = MoneyPrecision.round(
+      amount,
+      currencyCode: flowCurrency,
+    );
 
     state = const AsyncValue.loading();
     try {
@@ -531,11 +539,11 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         id: const Uuid().v4(),
         investmentId: investmentId,
         type: type,
-        amount: amount,
+        amount: roundedAmount,
         date: date,
         notes: notes?.trim(),
         createdAt: DateTime.now(),
-        currency: currency ?? ref.read(currencyCodeProvider),
+        currency: flowCurrency,
       );
       await ref.read(investmentRepositoryProvider).addCashFlow(cashFlow);
 
@@ -544,7 +552,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .read(analyticsServiceProvider)
           .logCashFlowAdded(
             flowType: type.name,
-            amountRange: getAmountRange(amount),
+            amountRange: getAmountRange(roundedAmount),
           );
 
       // Check for milestone achievements after adding return cash flows
@@ -578,6 +586,11 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     // Input validation
     _validateAmount(amount);
     _validateNotes(notes);
+    final flowCurrency = currency ?? ref.read(currencyCodeProvider);
+    final roundedAmount = MoneyPrecision.round(
+      amount,
+      currencyCode: flowCurrency,
+    );
 
     state = const AsyncValue.loading();
     try {
@@ -585,11 +598,11 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         id: id,
         investmentId: investmentId,
         type: type,
-        amount: amount,
+        amount: roundedAmount,
         date: date,
         notes: notes?.trim(),
         createdAt: createdAt,
-        currency: currency ?? ref.read(currencyCodeProvider),
+        currency: flowCurrency,
       );
       await ref.read(investmentRepositoryProvider).updateCashFlow(cashFlow);
 
