@@ -1,6 +1,6 @@
 # Engineering Review Checkpoints
 
-Last refreshed: 2026-10-09 UTC. This is a delta-review checkpoint, not a claim that every open PR has been fully reviewed. Re-fetch each exact head, discussion, and CI state before acting; code/evidence outrank this file. Never store secrets, raw logs, or customer data here.
+Last refreshed: 2026-10-09 15:40 UTC. This is a delta-review checkpoint, not a claim that every open PR has been fully reviewed. Re-fetch each exact head, discussion, and CI state before acting; code/evidence outrank this file. Never store secrets, raw logs, or customer data here.
 
 | Project / PR | Last reviewed head | Review state | Verification state | Next action |
 |---|---|---|---|---|
@@ -10,6 +10,9 @@ Last refreshed: 2026-10-09 UTC. This is a delta-review checkpoint, not a claim t
 | cors-enabler #7 — AppForge workflow wiring | `73f485341ed93755d505677a955c4c7cfd437eae` | Reviewed; reusable workflow refs pinned. Draft. Review comment persisted. | CI run `37950295526` failed in AppForge checks. Existing lockfile still resolves vulnerable Vite/Vitest packages; CSP check also flags `style-src 'unsafe-inline'`. | Do not merge. Regenerate manifest/lockfile with patched dependency versions, test compatibility, and re-run OSV/CSP checks. |
 | InvTrack #948 — review learning log | `c171fc0e34c0bab0ad9a829326a442814dd0d3c0` | Draft documentation PR; records the non-vacuous regression assertion heuristic. | No code tests required; workflow run was skipped. | Inspect the doc diff and keep separate from code changes. |
 | pr-triage #2 / #3 — sync and auth gate | #2 `ad2485c87a23d88424252e06f2a19c36abed9972`; #3 `10c85d2f80d56ce357f5a9e84c0e61bc23a4c040` | Both now draft. #2 is intentionally unauthenticated; #3 adds the fail-closed Basic-auth gate. | Do not treat draft status or historical local tests as release evidence. | Do not deploy #2. Recheck current CI and stacked-base/retargeting before any deployment. |
+| InvTrack #950 — Overview awaiting-value layout | `8844442e975d860390873dc3a9397a32d6ddf8bc` | Reviewed by inspection; amount and neutral status now occupy separate rows. Draft. Review comment persisted. | CI run `37951640105` skipped because this is a draft; Flutter test not run locally. | Keep draft until widget test/analyzer actually run. |
+| InvTrack #951 — financial data-model contract | `2eb207e3a54e5e1ba21c4edb28e61680d254b877` | Reviewed documentation foundation; explicitly distinguishes current schema from target entities. Draft. Review comment persisted. | Documentation-only; no app tests claimed. | Keep #944 open until code-level enforcement/tests land in dependent work. |
+| InvTrack #952 — currency-aware precision | `7bd08ad712667fef073a04ad518f588e96017126` | Reviewed by inspection; currency-aware write/output rounding and regression tests added. Draft. Review comment persisted. | CI run skipped because this is a draft; Flutter tests not run locally. | Keep #945 open until CI runs and allocations/report consumers use the policy. |
 | InvTrack website #6 — account-deletion page | `08f091107ef0b6e3bb9d2faa06ed4d8f8718998f` | Previously flagged race: a withdrawal can race with a processor that has already discovered a pending request. No fix persisted in this pass. | Backend claim/processing protocol has not been verified in the website repository. | Locate and review the authoritative deletion processor before changing client rules; require an atomic server-side claim/withdrawal protocol and regression tests. |
 
 ## Checkpoint discipline
