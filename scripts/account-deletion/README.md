@@ -8,7 +8,7 @@ Server-side deletion of InvTrack account data (Firestore `users/{uid}` tree + Fi
 2. **Orphan sweep**: uids from `collection('users').listDocuments()` (the parent doc is never written, so `.get()` would be empty) that `auth.getUsers()` reports as not found.
 3. **Guest sweep** (off unless `SWEEP_INACTIVE_GUESTS=<days>`, workflow input `sweep_inactive_guests_days`): Auth users with no linked provider and no activity for that many days.
 4. **Cap**: more than `max_per_run` (25) candidates and no `force` -> nothing is deleted, `deletionRuns/{runId}` gets `refused: true`, exit 2.
-5. **Per uid**: `recursiveDelete(users/{uid})` -> `auth.deleteUser` -> `verify.mjs` -> `deletionAudit/{runId}-{sha256(uid)[:16]}` (no raw uid, no email) -> delete the request **last**. A crash or a failed verify leaves the request for the next run.
+5. **Per uid**: for request candidates, atomically claim a due request as `processing` in a Firestore transaction before any destructive operation. The client can withdraw only while the request is pending; once claimed, Firestore rules deny withdrawal. A missing request after the queue snapshot means withdrawal won, so no deletion occurs. Then `recursiveDelete(users/{uid})` -> `auth.deleteUser` -> `verify.mjs` -> `deletionAudit/{runId}-{sha256(uid)[:16]}` (no raw uid, no email) -> delete the request **last**. Failed work releases its claim; a crashed runner's claim can be reclaimed after the 2-hour lease.
 6. **Alert**: a request still pending after 3 days fails the run (the page promises 7 days).
 7. `dry_run` (default **true**) prints the plan and writes nothing: no audit, no run record, no deletes.
 
