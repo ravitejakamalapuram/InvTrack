@@ -7,10 +7,62 @@ import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { countDocs, deleteUserData } from './delete.mjs';
-import { findInactiveGuests, findOrphans, loadRequests, STALE_MS } from './sweep.mjs';
+import { COOLING_MS, findInactiveGuests, findOrphans, loadRequests, STALE_MS } from './sweep.mjs';
 import { verifyUserGone } from './verify.mjs';
 
 export const hashUid = (uid) => createHash('sha256').update(uid).digest('hex').slice(0, 16);
+
+// A processing claim closes the race between reading the queue and deleting the account.
+// A crashed runner may be retried after the lease expires; ordinary failures release it sooner.
+export const CLAIM_LEASE_MS = 2 * 60 * 60 * 1000;
+
+export async function claimDeletionRequest({ db, uid, now, runId }) {
+  const ref = db.collection('deletionRequests').doc(uid);
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) return false; // withdrawn after the queue snapshot was read
+    const data = snap.data() ?? {};
+    const requestedAt = data.requestedAt;
+    if (
+      typeof requestedAt?.toDate !== 'function' ||
+      now.getTime() - requestedAt.toDate().getTime() < COOLING_MS
+    ) return false;
+
+    const status = data.status ?? 'pending'; // existing v1 requests have no status field
+    if (status === 'processing') {
+      const claimedAt = data.claimedAt;
+      if (
+        typeof claimedAt?.toDate === 'function' &&
+        now.getTime() - claimedAt.toDate().getTime() < CLAIM_LEASE_MS
+      ) return false; // another live run owns the lease
+    } else if (status !== 'pending') {
+      return false;
+    }
+
+    tx.update(ref, {
+      status: 'processing',
+      processingRunId: runId,
+      claimedAt: FieldValue.serverTimestamp(),
+    });
+    return true;
+  });
+}
+
+export async function releaseDeletionRequestClaim({ db, uid, runId }) {
+  const ref = db.collection('deletionRequests').doc(uid);
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists || snap.get('status') !== 'processing' || snap.get('processingRunId') !== runId) {
+      return false;
+    }
+    tx.update(ref, {
+      status: 'pending',
+      processingRunId: FieldValue.delete(),
+      claimedAt: FieldValue.delete(),
+    });
+    return true;
+  });
+}
 
 export async function runJob({
   db,
@@ -23,6 +75,8 @@ export async function runJob({
   sweepGuestsDays = 0,
   deleter = deleteUserData,
   verifier = verifyUserGone,
+  claimRequest = claimDeletionRequest,
+  releaseRequestClaim = releaseDeletionRequestClaim,
   log = console.log,
 }) {
   const { due, fresh, malformed } = await loadRequests(db, now);
@@ -44,6 +98,7 @@ export async function runJob({
   const refused = candidates.size > maxPerRun && !force;
   const results = [];
   const removedRequests = new Set();
+  const skippedRequests = new Set();
 
   if (refused) {
     log(`REFUSED: ${candidates.size} candidates exceed max_per_run=${maxPerRun}; nothing deleted. Re-run with force to override.`);
@@ -56,6 +111,14 @@ export async function runJob({
         if (dryRun) {
           result.docsToDelete = await countDocs(db.collection('users').doc(uid));
           result.ok = true;
+          continue;
+        }
+        if (c.hasRequest && !(await claimRequest({ db, uid, now, runId }))) {
+          // A withdrawal or another active worker won the race after the initial queue read.
+          // Never proceed with destructive work from a stale snapshot.
+          result.ok = true;
+          result.skipped = 'request withdrawn or another run holds an active claim';
+          skippedRequests.add(uid);
           continue;
         }
         const { docsDeleted, authDeleted } = await deleter({ db, auth, uid });
@@ -74,25 +137,35 @@ export async function runJob({
           outcome: docsDeleted === 0 && !authDeleted ? 'nothing-to-delete' : 'deleted',
           completedAt: FieldValue.serverTimestamp(),
         });
-        if (!check.ok) continue;
+        if (!check.ok) {
+          if (c.hasRequest) await releaseRequestClaim({ db, uid, runId });
+          continue;
+        }
         if (c.hasRequest) {
           await db.collection('deletionRequests').doc(uid).delete();
           removedRequests.add(uid);
         }
         result.ok = true;
       } catch (e) {
+        if (c.hasRequest) {
+          try {
+            await releaseRequestClaim({ db, uid, runId });
+          } catch (releaseError) {
+            log(`Could not release deletion claim for ${uidHash}: ${releaseError.code ?? releaseError.message}`);
+          }
+        }
         result.error = e.code ?? e.message;
       }
     }
   }
 
-  const pending = [...due, ...fresh].filter((r) => !removedRequests.has(r.uid));
+  const pending = [...due, ...fresh].filter((r) => !removedRequests.has(r.uid) && !skippedRequests.has(r.uid));
   const stale = pending.filter((r) => now.getTime() - r.requestedAt.getTime() > STALE_MS).length;
   if (stale > 0) log(`ALERT: ${stale} request(s) older than 3 days are still pending.`);
 
-  const failed = results.filter((r) => !r.ok).length;
+  const failed = results.filter((r) => !r.ok && !r.skipped).length;
   const exitCode = refused ? 2 : failed > 0 || stale > 0 ? 1 : 0;
-  const processedUids = dryRun ? [] : [...candidates.keys()].filter((_, i) => results[i]?.ok);
+  const processedUids = dryRun ? [] : [...candidates.keys()].filter((_, i) => results[i]?.ok && !results[i]?.skipped);
 
   if (!dryRun) {
     await db.collection('deletionRuns').doc(runId).set({
@@ -124,7 +197,7 @@ export async function requestByEmail({ db, auth, email, dryRun = true, log = con
 
 function summary(out) {
   const rows = out.results.map(
-    (r) => `| ${r.uidHash} | ${r.source} | ${r.docsDeleted ?? r.docsToDelete ?? '-'} | ${r.verified ?? '-'} | ${r.ok ? 'ok' : (r.error ?? (r.problems ?? []).join('; ')) || 'FAILED'} |`,
+    (r) => `| ${r.uidHash} | ${r.source} | ${r.docsDeleted ?? r.docsToDelete ?? '-'} | ${r.verified ?? '-'} | ${r.skipped ?? (r.ok ? 'ok' : (r.error ?? (r.problems ?? []).join('; ')) || 'FAILED')} |`,
   );
   return ['## Account deletion', '', '| uid hash | source | docs | verified | result |', '|---|---|---|---|---|', ...rows, ''].join('\n');
 }
