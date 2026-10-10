@@ -41,6 +41,7 @@ class _ImportGroup {
     required this.toImport,
     required this.existingId,
     required this.matchesArchived,
+    required this.hasAmbiguousActiveMatches,
   });
 
   final String name;
@@ -59,6 +60,10 @@ class _ImportGroup {
   /// Some rows match an archived investment, so the others become a new
   /// investment beside it (archived ones take no new cash flows).
   final bool matchesArchived;
+
+  /// More than one active investment matched duplicate rows for this name.
+  /// Import must stop rather than guessing which investment owns the new rows.
+  final bool hasAmbiguousActiveMatches;
 }
 
 class _ImportConfirmationScreenState
@@ -68,6 +73,9 @@ class _ImportConfirmationScreenState
 
   /// Leave rows that match an existing cash flow out of the import.
   bool _skipDuplicates = true;
+
+  /// The plan from the latest build, which is what a tap on Import acts on.
+  List<_ImportGroup> _groups = const [];
 
   /// Group rows by investment name
   Map<String, List<ParsedCashFlowRow>> _groupByInvestment(
@@ -90,16 +98,17 @@ class _ImportConfirmationScreenState
   static String _nameKey(String name) => name.trim().toLowerCase();
 
   /// Where each investment in the file goes, given the likely [duplicates]
-  /// (row number to the investment holding it) and the ids of the user's
-  /// active investments.
+  /// (row number to the investment holding it), the ids of the user's
+  /// active investments and how many of them carry each name key.
   List<_ImportGroup> _plan(
     Map<int, String> duplicates,
     Set<String> activeIds,
+    Map<String, int> activeNameCounts,
   ) => [
     for (final MapEntry(key: name, value: rows) in _groupByInvestment(
       widget.parseResult.validRowsOnly,
     ).entries)
-      _planGroup(name, rows, duplicates, activeIds),
+      _planGroup(name, rows, duplicates, activeIds, activeNameCounts),
   ];
 
   _ImportGroup _planGroup(
@@ -107,8 +116,9 @@ class _ImportConfirmationScreenState
     List<ParsedCashFlowRow> rows,
     Map<int, String> duplicates,
     Set<String> activeIds,
+    Map<String, int> activeNameCounts,
   ) {
-    // The active investment holding most of this group's duplicates.
+    // The active investments holding this group's duplicates.
     final matches = <String, int>{};
     var matchesArchived = false;
     for (final row in rows) {
@@ -120,9 +130,18 @@ class _ImportConfirmationScreenState
         matchesArchived = true;
       }
     }
-    final existingId = matches.isEmpty
+    // The duplicate lookup names one holder per row, so it cannot show that a
+    // second investment holds the same cash flow. Count the active
+    // investments that carry the name instead: with two or more, the new rows
+    // could belong to any of them, even when only one holds a duplicate.
+    // Without a match nothing goes to an existing investment, so the rows
+    // simply become a new one.
+    final hasAmbiguousActiveMatches =
+        matches.isNotEmpty &&
+        (matches.length > 1 || (activeNameCounts[_nameKey(name)] ?? 0) > 1);
+    final existingId = matches.isEmpty || hasAmbiguousActiveMatches
         ? null
-        : matches.entries.reduce((a, b) => b.value > a.value ? b : a).key;
+        : matches.keys.single;
     return _ImportGroup(
       name: name,
       rows: rows,
@@ -131,7 +150,9 @@ class _ImportConfirmationScreenState
           if (!_skipDuplicates || !duplicates.containsKey(row.rowNumber)) row,
       ],
       existingId: existingId,
-      matchesArchived: existingId == null && matchesArchived,
+      matchesArchived:
+          existingId == null && !hasAmbiguousActiveMatches && matchesArchived,
+      hasAmbiguousActiveMatches: hasAmbiguousActiveMatches,
     );
   }
 
@@ -155,7 +176,13 @@ class _ImportConfirmationScreenState
     locale: getCurrencyLocale(currency),
   );
 
-  Future<void> _importAll(List<_ImportGroup> groups) async {
+  Future<void> _importAll() async {
+    // Import is off while a group is paused, but a tap already on its way
+    // when the data changed still lands here. Act on the latest plan and
+    // write nothing while any group is paused.
+    final groups = _groups;
+    if (groups.any((group) => group.hasAmbiguousActiveMatches)) return;
+
     HapticFeedback.mediumImpact();
     final l10n = AppLocalizations.of(context);
     setState(() => _isImporting = true);
@@ -303,14 +330,31 @@ class _ImportConfirmationScreenState
             ],
             baseCurrency: baseCurrency,
           );
-    final activeIds = {
-      for (final i in active.value ?? const <InvestmentEntity>[]) i.id,
-    };
-    final groups = _plan(duplicates, activeIds);
-    final newInvestmentCount = groups
+    final activeInvestments = active.value ?? const <InvestmentEntity>[];
+    final activeIds = {for (final i in activeInvestments) i.id};
+    final activeNameCounts = <String, int>{};
+    for (final i in activeInvestments) {
+      activeNameCounts.update(
+        _nameKey(i.name),
+        (n) => n + 1,
+        ifAbsent: () => 1,
+      );
+    }
+    final groups = _plan(duplicates, activeIds, activeNameCounts);
+    _groups = groups;
+    // Paused groups are not written, and Import stays off until none is left.
+    final pausedNames = [
+      for (final g in groups)
+        if (g.hasAmbiguousActiveMatches) g.name,
+    ];
+    final importable = [
+      for (final g in groups)
+        if (!g.hasAmbiguousActiveMatches) g,
+    ];
+    final newInvestmentCount = importable
         .where((g) => g.existingId == null && g.toImport.isNotEmpty)
         .length;
-    final cashFlowCount = groups.fold(0, (n, g) => n + g.toImport.length);
+    final cashFlowCount = importable.fold(0, (n, g) => n + g.toImport.length);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.confirmImport), centerTitle: true),
@@ -323,20 +367,44 @@ class _ImportConfirmationScreenState
             color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
             child: Column(
               children: [
-                Text(l10n.readyToImport, style: AppTypography.h3),
-                const SizedBox(height: AppSpacing.xs),
                 Text(
-                  l10n.importCountsSummary(
-                    l10n.importInvestmentCount(newInvestmentCount),
-                    l10n.importCashFlowCount(cashFlowCount),
-                  ),
-                  style: AppTypography.body,
+                  pausedNames.isEmpty
+                      ? l10n.readyToImport
+                      : l10n.importPausedTitle,
+                  style: AppTypography.h3,
                 ),
+                // With every group paused there is nothing else to import, so
+                // "0 investments • 0 cash flows will import…" would mislead.
+                if (pausedNames.isEmpty ||
+                    newInvestmentCount > 0 ||
+                    cashFlowCount > 0) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    (pausedNames.isEmpty
+                        ? l10n.importCountsSummary
+                        : l10n.importPausedCountsSummary)(
+                      l10n.importInvestmentCount(newInvestmentCount),
+                      l10n.importCashFlowCount(cashFlowCount),
+                    ),
+                    style: AppTypography.body,
+                  ),
+                ],
                 if (widget.parseResult.hasErrors) ...[
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     l10n.importRowsSkipped(widget.parseResult.errors.length),
                     style: TextStyle(color: Colors.orange[700], fontSize: 12),
+                  ),
+                ],
+                if (pausedNames.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    l10n.importAmbiguousMatches(
+                      pausedNames.length,
+                      pausedNames.join(', '),
+                    ),
+                    style: TextStyle(color: Colors.orange[700], fontSize: 12),
+                    textAlign: TextAlign.center,
                   ),
                 ],
                 if (checkFailed) ...[
@@ -399,9 +467,10 @@ class _ImportConfirmationScreenState
                     _isImporting ||
                         checkingDuplicates ||
                         checkFailed ||
+                        pausedNames.isNotEmpty ||
                         cashFlowCount == 0
                     ? null
-                    : () => _importAll(groups),
+                    : _importAll,
                 isLoading: _isImporting || checkingDuplicates,
                 icon: Icons.check_circle_rounded,
                 label: l10n.importAllButton,
@@ -447,16 +516,26 @@ class _ImportConfirmationScreenState
       }
     }
 
+    final subtitle = Text(
+      l10n.importCardSubtitle(l10n.importCashFlowCount(rows.length), currency),
+      style: AppTypography.caption,
+    );
+
     return GlassCard(
       child: ExpansionTile(
         title: Text(group.name, style: AppTypography.h4),
-        subtitle: Text(
-          l10n.importCardSubtitle(
-            l10n.importCashFlowCount(rows.length),
-            currency,
-          ),
-          style: AppTypography.caption,
-        ),
+        subtitle: group.hasAmbiguousActiveMatches
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  subtitle,
+                  Text(
+                    l10n.importAmbiguousCardNote,
+                    style: TextStyle(color: Colors.orange[700], fontSize: 12),
+                  ),
+                ],
+              )
+            : subtitle,
         children: [
           if (group.existingId != null || group.matchesArchived)
             Padding(

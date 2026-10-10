@@ -6400,6 +6400,38 @@
   "@importDuplicateCheckFailed": {
     "description": "Import confirmation: loading the user's investments failed, so duplicates could not be checked and import is paused"
   },
+  "importPausedTitle": "Import paused",
+  "@importPausedTitle": {
+    "description": "Header text of the import confirmation screen while Import is switched off because a name in the file matches more than one active investment"
+  },
+  "importPausedCountsSummary": "{investments} • {cashFlows} will import once the pause is resolved.",
+  "@importPausedCountsSummary": {
+    "description": "Import confirmation header line while import is paused, e.g. '1 investment • 3 cash flows will import once the pause is resolved.' Both values come from importInvestmentCount and importCashFlowCount and cover only the investments that are not paused",
+    "placeholders": {
+      "investments": {
+        "type": "String"
+      },
+      "cashFlows": {
+        "type": "String"
+      }
+    }
+  },
+  "importAmbiguousMatches": "{count, plural, =1{{names} matches more than one of your active investments with the same name.} other{These investments each match more than one of your active investments with the same name: {names}.}} Rename the extra ones, then try again.",
+  "@importAmbiguousMatches": {
+    "description": "Import confirmation warning: the file has rows for a name that more than one active investment has, so there is no safe investment to add them to and Import is off. count is how many names in the file are affected; names lists them, separated by commas",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "importAmbiguousCardNote": "Import paused: this name matches more than one of your active investments",
+  "@importAmbiguousCardNote": {
+    "description": "Note under an investment on the import confirmation screen when its name matches more than one active investment, so its rows have no safe place to go"
+  },
 
   "importDecimalMarkTitle": "Which decimal mark does this file use?",
   "@importDecimalMarkTitle": {
