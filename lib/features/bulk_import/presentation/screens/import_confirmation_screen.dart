@@ -375,7 +375,9 @@ class _ImportConfirmationScreenState
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  l10n.importCountsSummary(
+                  (pausedNames.isEmpty
+                      ? l10n.importCountsSummary
+                      : l10n.importPausedCountsSummary)(
                     l10n.importInvestmentCount(newInvestmentCount),
                     l10n.importCashFlowCount(cashFlowCount),
                   ),

@@ -753,7 +753,17 @@ void main() {
 
         expect(find.text(_l10n.importPausedTitle), findsOneWidget);
         expect(find.text(_l10n.readyToImport), findsNothing);
-        // Only the HDFC FD row is left to write; Bhive is paused.
+        // HDFC FD could import, but Import stays off while Bhive is paused.
+        expect(importButton(tester).onPressed, isNull);
+        // Only the HDFC FD row is left to write; Bhive is paused. While
+        // paused, nothing imports yet, so the line says when those counts do.
+        expect(
+          find.text(
+            '1 investment • 1 cash flow will import once the pause is '
+            'resolved.',
+          ),
+          findsOneWidget,
+        );
         expect(
           find.text(
             _l10n.importCountsSummary(
@@ -761,9 +771,16 @@ void main() {
               _l10n.importCashFlowCount(1),
             ),
           ),
-          findsOneWidget,
+          findsNothing,
         );
         expect(find.text(ambiguousWarning), findsOneWidget);
+        // Archiving would quietly drop the investment from totals, goals and
+        // FIRE, so the warning only offers renaming.
+        expect(
+          ambiguousWarning,
+          endsWith('Rename the extra ones, then try again.'),
+        );
+        expect(ambiguousWarning.toLowerCase(), isNot(contains('archive')));
         expect(
           find.bySemanticsLabel(RegExp('Bhive Investment matches more than')),
           findsOneWidget,
