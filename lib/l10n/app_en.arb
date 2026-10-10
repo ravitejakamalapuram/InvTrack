@@ -1859,7 +1859,7 @@
     "description": "Button text to keep data"
   },
 
-  "invTrackerPremium": "InvTracker Premium",
+  "invTrackerPremium": "InvTrack Premium",
   "@invTrackerPremium": {
     "description": "Title for premium paywall screen"
   },

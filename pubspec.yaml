@@ -1,5 +1,5 @@
 name: inv_tracker
-description: "InvTracker - Track what you invested and what came back. XIRR & MOIC calculations. Works offline, syncs online."
+description: "InvTrack - Track what you invested and what came back. XIRR & MOIC calculations. Works offline, syncs online."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -161,14 +161,3 @@ flutter_launcher_icons:
   min_sdk_android: 21
   adaptive_icon_background: "#1A1A2E"
   adaptive_icon_foreground: "assets/icons/app_icon.png"
-  web:
-    generate: true
-    image_path: "assets/icons/app_icon.png"
-    background_color: "#1A1A2E"
-    theme_color: "#6C63FF"
-  windows:
-    generate: true
-    image_path: "assets/icons/app_icon.png"
-  macos:
-    generate: true
-    image_path: "assets/icons/app_icon.png"

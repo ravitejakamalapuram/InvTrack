@@ -4,9 +4,12 @@
 
 InvTrack is a mobile-first investment tracking application designed for alternative investments like Fixed Deposits, P2P Lending, Gold, Chit Funds, and other illiquid assets. Unlike traditional portfolio trackers, InvTrack uses a **cash-flow based methodology** to provide professional-grade metrics (XIRR, MOIC, CAGR) for investments that don't have daily market prices.
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.32+-02569B?logo=flutter)](https://flutter.dev)
+[![Google Play](https://img.shields.io/badge/Google_Play-Get_it-3DDC84?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker)
+[![Flutter](https://img.shields.io/badge/Built_with-Flutter-02569B?logo=flutter)](https://flutter.dev)
 [![Firebase](https://img.shields.io/badge/Firebase-Firestore-FFCA28?logo=firebase)](https://firebase.google.com)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-All_rights_reserved-lightgrey.svg)](LICENSE)
+
+**[Get InvTrack on Google Play](https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker)** (Android). iOS is deferred until Android activation and retention targets are met.
 
 ---
 
@@ -45,7 +48,7 @@ See [LOCALIZATION.md](docs/LOCALIZATION.md) for detailed documentation.
 - **India-Focused Defaults** - Optimized for Indian investors (INR, 6% inflation, 12% returns)
 - **Retirement Planning** - Track progress towards early retirement with realistic goals
 
-### 🔔 Smart Notifications (11 Types)
+### 🔔 Smart Notifications
 - Investment milestones (10x, 50x, 100x returns)
 - Goal progress alerts (25%, 50%, 75%, 100%)
 - Stale investment warnings
@@ -74,13 +77,14 @@ See [LOCALIZATION.md](docs/LOCALIZATION.md) for detailed documentation.
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Development Setup
+
+Seeing the source does not grant a licence to use it (see [License](#-license)). These steps are for people the owner has given permission to work on the code.
 
 ### Prerequisites
-- Flutter 3.32 or higher
-- Dart 3.0 or higher
+- Flutter and Dart at the versions CI uses: the Flutter version is pinned in [`release.yaml`](release.yaml) and the Dart constraint is in [`pubspec.yaml`](pubspec.yaml)
 - Firebase account (free tier works)
-- Android Studio / Xcode (for mobile development)
+- Android Studio (the app ships on Android; the `ios/` folder is kept for a later release)
 
 ### Installation
 
@@ -105,22 +109,13 @@ See [LOCALIZATION.md](docs/LOCALIZATION.md) for detailed documentation.
      - iOS: `ios/Runner/GoogleService-Info.plist`
 
 4. **Configure Firestore Security Rules**
-   ```javascript
-   rules_version = '2';
-   service cloud.firestore {
-     match /databases/{database}/documents {
-       match /users/{userId}/{document=**} {
-         allow read, write: if request.auth != null && request.auth.uid == userId;
-       }
-       match /appConfig/{document=**} {
-         allow read: if request.auth != null;
-       }
-     }
-   }
-   ```
 
-5. **Run the app**
+   Use [`firestore.rules`](firestore.rules) from this repository. Production deploys it with the `deploy-firestore-rules` workflow; for your own Firebase project, deploy the same file.
+
+5. **Generate the localisation files and run the app**
    ```bash
+   flutter gen-l10n
+
    # Run on connected device/emulator
    flutter run
 
@@ -130,9 +125,9 @@ See [LOCALIZATION.md](docs/LOCALIZATION.md) for detailed documentation.
 
 ---
 
-## 📱 Screenshots
+## 📱 Get the App
 
-> Coming soon! Screenshots will be added after App Store submission.
+InvTrack is live on Google Play: [play.google.com/store/apps/details?id=com.invtracker.inv_tracker](https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker). The listing has the current screenshots.
 
 ---
 
@@ -161,7 +156,7 @@ lib/
 ```
 
 ### Tech Stack
-- **Framework**: Flutter 3.32+
+- **Framework**: Flutter (version pinned in `release.yaml`)
 - **State Management**: Riverpod
 - **Database**: Firebase Firestore (offline-first)
 - **Authentication**: Firebase Auth (Google Sign-In)
@@ -183,14 +178,9 @@ lib/
 
 ## 🧪 Testing
 
-InvTrack has comprehensive test coverage:
-
 ```bash
-# Run all unit tests
-flutter test
-
-# Run integration tests
-flutter test integration_test/app_test.dart
+# What pull-request CI runs (golden tests excluded)
+flutter test --exclude-tags=golden
 
 # Run specific test suites
 flutter test test/features/investment/
@@ -198,65 +188,61 @@ flutter test test/core/calculations/
 
 # Run with coverage
 flutter test --coverage
+
+# Golden tests (these also run nightly)
+flutter test --tags golden test/golden
+
+# Integration tests (Android device or emulator)
+flutter test integration_test/app_test.dart
 ```
 
 **Test Stats:**
-- ✅ 868+ unit tests passing
-- ✅ Comprehensive integration test suite
-- ✅ Golden tests for theme & widgets
-- ✅ Zero static analysis errors/warnings
+- ✅ More than 3,000 automated tests run on every pull request (`flutter test --exclude-tags=golden`)
+- ✅ Static analysis runs in CI with warnings treated as errors (`flutter analyze --fatal-warnings`)
+- ✅ Golden tests for theme and widgets run only in the nightly workflow ([`nightly.yml`](.github/workflows/nightly.yml)), not on pull requests
+- ✅ Critical integration flows run nightly on an Android emulator
 
 ---
 
 ## 📚 Documentation
 
-- **[Product Roadmap](docs/PRODUCT_ROADMAP.md)** - Feature roadmap and vision
-- **[PRD](docs/InvTracker_PRD.md)** - Product Requirements Document
-- **[Bulk Import Guide](docs/BULK_IMPORT_GUIDE.md)** - CSV import instructions
+- **[Review action plan](docs/review-2026-10/ACTION_PLAN.md)** and **[findings](docs/review-2026-10/FINDINGS.md)** - The current plan of record (October 2026 review)
+- **[Financial data model](docs/FINANCIAL_DATA_MODEL.md)** - Ledger, valuation and currency rules
+- **[Currency conversion architecture](docs/CURRENCY_CONVERSION_ARCHITECTURE.md)** - How cash flows are converted to your base currency
+- **[Localization](docs/LOCALIZATION.md)** and **[currency localization guide](docs/CURRENCY_LOCALIZATION_GUIDE.md)** - Number, date and currency formatting
+- **[Notifications](docs/NOTIFICATIONS_KT.md)** - How the notification system works
 - **[FIRE Number Guide](docs/fire-number-kt.md)** - FIRE calculator documentation
-- **[TODO](TODO.md)** - Technical debt and improvement backlog
+- **[Bulk Import Guide](docs/BULK_IMPORT_GUIDE.md)** - CSV import instructions
+- **[Accessibility](docs/ACCESSIBILITY.md)** - Accessibility guidance
+- **[Store listing runbook](docs/UPDATE_STORE_LISTING.md)** and **[CI/CD workflows](.github/workflows/README.md)** - Releasing and the Play listing
+- **[Archive](docs/archive/)** - Older status reports, specs and plans. They are kept for history and may not describe the current code.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these guidelines:
+Please open an [issue](https://github.com/ravitejakamalapuram/InvTrack/issues) before sending a pull request. All rights are reserved (see [License](#-license)), so code contributions are accepted only after the owner agrees to them.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Follow the coding standards in `.augment/rules/invtrack_rules.md`
-4. Write tests for new features
-5. Ensure all tests pass (`flutter test`)
-6. Run static analysis (`flutter analyze`)
-7. Commit your changes (`git commit -m 'feat: Add amazing feature'`)
-8. Push to the branch (`git push origin feature/amazing-feature`)
-9. Open a Pull Request
+Development workflow:
+
+1. Create a feature branch (`git checkout -b feature/amazing-feature`)
+2. Follow the coding standards in `CLAUDE.md` and `.augment/rules/invtrack_rules.md`
+3. Write tests for new features
+4. Run static analysis (`flutter analyze --fatal-warnings --no-fatal-infos`) and the tests (`flutter test --exclude-tags=golden`)
+5. Commit with a conventional-commit message (`git commit -m 'feat: add amazing feature'`); release notes are generated from these
+6. Push the branch and open a Pull Request
 
 ### 🤖 AI-Powered Code Review
 
-InvTrack uses **CodeRabbit AI** for automated code reviews (FREE for open source!):
-
-- ✅ **Auto-fix tools**: Localization, privacy, accessibility, architecture checks
-- ✅ **Generate unit tests**: AI-generated test cases for new code
-- ✅ **Smart suggestions**: Context-aware code improvements
-- ✅ **Knowledge base**: Learns from InvTrack's rules and documentation
-
-**See [CODERABBIT_FEATURES.md](docs/CODERABBIT_FEATURES.md) for full guide**
-
-### Code Quality Standards
-- Zero analyzer errors/warnings
-- All tests passing (≥60% coverage)
-- Cyclomatic complexity <15 per 100 lines
-- Proper error handling with `AppException` hierarchy
-- Accessibility compliance (WCAG)
-- Security best practices (OWASP MASVS)
-- Clean Architecture layer boundaries enforced
+Pull requests are reviewed with **CodeRabbit** (configured in [`.coderabbit.yaml`](.coderabbit.yaml)). Reviews are not automatic: ask for one by commenting `@coderabbitai review` on the pull request.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Copyright (c) 2025-2026 Raviteja Kamalapuram. All rights reserved.
+
+The source code is visible so it can be read and reviewed. No licence to use, copy, modify or distribute it is granted. See the [LICENSE](LICENSE) file.
 
 ---
 
@@ -272,7 +258,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Contact & Support
 
-- **Developer**: Ravi Teja Kamalapuram
+- **Developer**: Raviteja Kamalapuram
 - **GitHub**: [@ravitejakamalapuram](https://github.com/ravitejakamalapuram)
 - **Issues**: [GitHub Issues](https://github.com/ravitejakamalapuram/InvTrack/issues)
 - **Support email**: [support@invtracker.app](mailto:support@invtracker.app)
@@ -281,26 +267,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 🗺️ Roadmap
+## 🗺️ Status and Plans
 
-### Phase 1: MVP ✅ **COMPLETE**
-- [x] Firebase Firestore integration
-- [x] Investment CRUD operations
-- [x] XIRR/CAGR/MOIC calculations
-- [x] Goal tracking
-- [x] Smart notifications
-- [x] FIRE number calculator
-- [x] Multi-device sync
+The app is live on Google Play (Android). The core product is built: investment and cash-flow tracking, XIRR/MOIC/CAGR, goals, the FIRE number, smart notifications and multi-device sync.
 
-### Phase 2: Intelligence & Automation (Q1 2026)
-- [ ] **AI Document Parser** - Google Gemini integration for CSV/PDF parsing
-- [ ] Recurring income projections
-- [ ] Investment insights & recommendations
-
-### Phase 3: Portfolio Intelligence (Q2 2026)
-- [ ] Benchmark comparison (Nifty, S&P 500)
-- [ ] Tax reporting
-- [ ] What-if scenarios
+What is being worked on now, and in what order, is in the [review action plan](docs/review-2026-10/ACTION_PLAN.md). iOS is deferred until Android activation and retention targets are met.
 
 ---
 

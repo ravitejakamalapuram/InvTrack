@@ -890,7 +890,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
       builder: (context) => AlertDialog(
         title: Text(l10n.permissionRequired),
         content: Text(
-          'InvTracker needs $permissionName access to attach documents. '
+          'InvTrack needs $permissionName access to attach documents. '
           'Please enable it in Settings.',
         ),
         actions: [

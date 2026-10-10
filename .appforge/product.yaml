@@ -26,8 +26,8 @@ monetization:
   provider: admob # dormant in current release builds — see notes
 permissions: .appforge/permissions.yaml
 data_collection:
-  # Sourced from the founder-approved draft privacy audit at
-  # ~/git-personal/.claude/invtrack-privacy/FINDINGS.md (2026-09-23), not re-derived here.
+  # Sourced from the founder-approved privacy audit of 2026-09-23 and kept in step with
+  # docs/review-2026-10/FINDINGS.md, not re-derived here.
   collected:
     - investment_holdings_and_amounts
     - cashflows_and_goals
@@ -50,25 +50,25 @@ data_collection:
       - "exchangerate-api.com" # exchange rates
   sensitive: [financial_holdings_and_amounts, personal_info_name_email_age_locale]
   third_party: [firebase_google, admob_dormant]
-  retention: { firestore: "until account deletion (see known gaps below)", local_attachments: "until account deletion or app data clear" }
-  deletion: "In-app: Settings > Data & Account > Delete Account; a required web deletion link exists but per FINDINGS.md is not yet published"
+  retention: { firestore: "until account deletion", local_attachments: "until account deletion or app data clear" }
+  deletion: "In-app: Settings > Data & Account > Delete Account; the public web deletion page is tracked in docs/review-2026-10/FINDINGS.md"
 security_classification: high
 release_channel: default
-current_version: "3.70.18+274"
+# Do not copy the app version here. The source in the repo is `version:` in pubspec.yaml;
+# release builds take theirs from the latest vX.Y.Z tag (see release.yaml).
 kill_policy: null
 scale_policy: null
 notes: |
-  Known gaps from the founder-approved privacy audit (.claude/invtrack-privacy/FINDINGS.md,
-  2026-09-23), reproduced here for the record, not newly discovered by this backfill:
-  - The LIVE Play Store privacy policy currently understates data collection (says local
-    SQLite + Sheets sync; actual storage is Cloud Firestore, no Sheets integration at all).
-    A corrected draft policy exists at .claude/invtrack-privacy/privacy.html, awaiting the
-    founder's approval to publish (TASKS.md item L).
-  - Account deletion is incomplete: expectedCashFlows and document metadata are not deleted,
-    and local attachment files are not wiped.
+  Known gaps, recorded from the privacy audit of 2026-09-23 and the October 2026 review
+  (docs/review-2026-10/FINDINGS.md); check the current findings before relying on them:
+  - The hosted privacy policy is being rewritten to match what the app does (data is in Cloud
+    Firestore; there is no Sheets integration). Until the corrected text is published, the live
+    policy may understate data collection.
+  - Account deletion: the in-app request wipes the account's Firestore collections (including
+    expectedCashFlows and document metadata) and this device's local data, and the processing
+    job in scripts/account-deletion finishes it server-side (AccountDataDeletionService).
   - Only the app-lock PIN is encrypted (PBKDF2); Firestore data itself is not additionally
     encrypted at the app layer (relies on Firebase's transport/at-rest encryption).
-  - Three inconsistent support emails exist across code/listings.
   - AdMob code is present but dormant in release builds (SDK never started, test ad unit IDs,
     consent flow is a stub) — Data Safety form language should reflect "declared but not
     currently active" rather than "no ads" outright, given AD_ID is still requested.

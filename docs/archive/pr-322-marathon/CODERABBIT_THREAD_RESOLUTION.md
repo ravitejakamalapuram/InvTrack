@@ -14,8 +14,8 @@
 **Status**: ✅ **Deferred to V2 with full justification**
 - UI is 100% localized (users see NO hardcoded strings)
 - Requires breaking API changes (ComponentScore refactor)
-- Full documentation: `docs/DOMAIN_LOCALIZATION_DECISION.md`
-- V2 tracking: `docs/GITHUB_ISSUE_DOMAIN_LOCALIZATION.md`
+- Full documentation: `docs/archive/DOMAIN_LOCALIZATION_DECISION.md`
+- V2 tracking: `docs/archive/GITHUB_ISSUE_DOMAIN_LOCALIZATION.md`
 
 ---
 

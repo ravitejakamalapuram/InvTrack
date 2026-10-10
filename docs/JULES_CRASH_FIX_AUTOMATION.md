@@ -385,8 +385,8 @@ Adjust in workflow dispatch inputs or modify `fetch-crashlytics-data.sh` to add 
 
 | Document | Purpose |
 |----------|---------|
-| [FIREBASE_CRASHLYTICS_MCP_SETUP.md](./FIREBASE_CRASHLYTICS_MCP_SETUP.md) | Firebase MCP tools setup |
-| [CRASHLYTICS_AUTOMATION.md](./CRASHLYTICS_AUTOMATION.md) | Manual crash monitoring |
+| [FIREBASE_CRASHLYTICS_MCP_SETUP.md](archive/FIREBASE_CRASHLYTICS_MCP_SETUP.md) | Firebase MCP tools setup |
+| [CRASHLYTICS_AUTOMATION.md](archive/CRASHLYTICS_AUTOMATION.md) | Manual crash monitoring |
 | [InvTrack Enterprise Rules](../.augment/rules/invtrack_rules.md) | Coding standards |
 
 ---
