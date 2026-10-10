@@ -10,6 +10,10 @@ import 'package:inv_tracker/features/investment/domain/entities/transaction_enti
 ///
 /// Re-importing a file after fixing a few rows would otherwise add every
 /// earlier row a second time and double the totals.
+///
+/// When several investments hold the same cash flow only the first one found
+/// is reported, so the result cannot tell a caller that a name is unique.
+/// Callers that route rows by it must count the investments with that name.
 Map<int, String> findLikelyDuplicateRows(
   Iterable<ParsedCashFlowRow> rows, {
   required List<InvestmentEntity> investments,
