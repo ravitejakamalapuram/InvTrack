@@ -10,8 +10,13 @@ import 'package:inv_tracker/features/investment/domain/models/custom_type_catalo
 import 'package:uuid/uuid.dart';
 
 /// Every stored definition, removed ones included. Empty while signed out.
+///
+/// Auto-disposed: only the add/edit form and the manage sheet watch it, so the
+/// Firestore listener closes with them instead of staying open for the whole
+/// session (read cost, #803). The save, rename and remove actions and the
+/// investment notifier read the repository directly and do not need it alive.
 final customInvestmentTypesProvider =
-    StreamProvider<List<CustomInvestmentType>>((ref) {
+    StreamProvider.autoDispose<List<CustomInvestmentType>>((ref) {
       if (!ref.watch(isAuthenticatedProvider)) return Stream.value(const []);
       return ref.watch(customInvestmentTypeRepositoryProvider).watchAll();
     });
@@ -22,18 +27,20 @@ final customInvestmentTypesProvider =
 /// Nothing is suggested while the types are loading, and that includes a
 /// reload because the signed-in user changed: the previous account's types
 /// must not show to the next one.
-final customTypeSuggestionsProvider = Provider<List<CustomInvestmentType>>((
-  ref,
-) {
-  final all = ref
-      .watch(customInvestmentTypesProvider)
-      .when(
-        data: (all) => all,
-        loading: () => const <CustomInvestmentType>[],
-        error: (_, _) => const <CustomInvestmentType>[],
-      );
-  return CustomTypeCatalog.suggestions(all);
-});
+///
+/// Auto-disposed with [customInvestmentTypesProvider]: a plain provider that
+/// watched it would keep its listener open.
+final customTypeSuggestionsProvider =
+    Provider.autoDispose<List<CustomInvestmentType>>((ref) {
+      final all = ref
+          .watch(customInvestmentTypesProvider)
+          .when(
+            data: (all) => all,
+            loading: () => const <CustomInvestmentType>[],
+            error: (_, _) => const <CustomInvestmentType>[],
+          );
+      return CustomTypeCatalog.suggestions(all);
+    });
 
 final customInvestmentTypeNotifierProvider =
     NotifierProvider<CustomInvestmentTypeNotifier, AsyncValue<void>>(
