@@ -117,20 +117,61 @@ class FirestoreValuationRepository implements ValuationRepository {
       for (final snapshot in snapshots)
         (
           id: snapshot.id,
+          investmentId: snapshot.investmentId,
           data: snapshotToFirestore(snapshot, keepUpdatedAt: true),
         ),
     ];
-    for (var i = 0; i < documents.length; i += _importBatchSize) {
-      final end = (i + _importBatchSize < documents.length)
-          ? i + _importBatchSize
-          : documents.length;
+    for (final chunk in _chunksByInvestment(
+      documents,
+      (document) => document.investmentId,
+    )) {
       final batch = _firestore.batch();
-      for (final document in documents.sublist(i, end)) {
+      for (final document in chunk) {
         batch.set(_valuationsRef.doc(document.id), document.data);
       }
       await _executeWrite(() => batch.commit());
     }
     return documents.length;
+  }
+
+  /// [documents] in chunks of at most [_importBatchSize] that keep an
+  /// investment's documents together, so that a batch which fails after
+  /// earlier ones committed leaves an investment with all of its snapshots or
+  /// none, never part of its history. Investments keep the order in which
+  /// they first appear. One that alone holds more than a batch (the app writes
+  /// at most 100, a file could say more) is split into batches of its own.
+  static List<List<T>> _chunksByInvestment<T>(
+    List<T> documents,
+    String Function(T) investmentOf,
+  ) {
+    final byInvestment = <String, List<T>>{};
+    for (final document in documents) {
+      byInvestment.putIfAbsent(investmentOf(document), () => []).add(document);
+    }
+    final chunks = <List<T>>[];
+    var current = <T>[];
+    void flush() {
+      if (current.isEmpty) return;
+      chunks.add(current);
+      current = [];
+    }
+
+    for (final group in byInvestment.values) {
+      if (group.length > _importBatchSize) {
+        flush();
+        for (var i = 0; i < group.length; i += _importBatchSize) {
+          final end = i + _importBatchSize < group.length
+              ? i + _importBatchSize
+              : group.length;
+          chunks.add(group.sublist(i, end));
+        }
+        continue;
+      }
+      if (current.length + group.length > _importBatchSize) flush();
+      current.addAll(group);
+    }
+    flush();
+    return chunks;
   }
 
   List<InvestmentValuationSnapshot> _readAll(

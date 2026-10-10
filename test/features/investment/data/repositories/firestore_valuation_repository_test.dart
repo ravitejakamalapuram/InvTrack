@@ -8,9 +8,11 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/utils/stored_date.dart';
 import 'package:inv_tracker/features/investment/data/repositories/firestore_valuation_repository.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
+import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/valuation_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -428,6 +430,167 @@ void main() {
       expect([for (final b in batches) b.sets.length], [450, 450, 1]);
       expect([for (final b in batches) b.commits], [1, 1, 1]);
       expect([for (final b in batches) b.updates.length], [0, 0, 0]);
+    });
+
+    // CodeRabbit round 3 on PR 961: a batch that fails after earlier ones
+    // committed must not leave an investment with part of its history. An
+    // investment's snapshots go into one batch.
+    group('an investment is never split between batches', () {
+      List<InvestmentValuationSnapshot> history(String investmentId, int n) => [
+        for (var i = 0; i < n; i++)
+          testSnapshot(
+            '$investmentId-$i',
+            investmentId: investmentId,
+            amount: 1000000.0 + i * 1000,
+            date: DateTime(2025, 1, 1).add(Duration(days: i)),
+          ),
+      ];
+
+      /// For each batch, the count written per investment (ids are
+      /// '<investment>-<n>').
+      List<Map<String, int>> perBatch() {
+        final idOf = {for (final e in valuationDocs.entries) e.value: e.key};
+        return [
+          for (final b in batches)
+            () {
+              final counts = <String, int>{};
+              for (final (ref, _) in b.sets) {
+                final investment = idOf[ref]!.split('-').first;
+                counts[investment] = (counts[investment] ?? 0) + 1;
+              }
+              return counts;
+            }(),
+        ];
+      }
+
+      void expectWhole(Map<String, int> sizes) {
+        final seen = <String, int>{};
+        for (final batch in perBatch()) {
+          for (final e in batch.entries) {
+            expect(
+              seen.containsKey(e.key),
+              isFalse,
+              reason: '${e.key} is in more than one batch',
+            );
+            seen[e.key] = e.value;
+          }
+        }
+        expect(seen, sizes);
+      }
+
+      test('exactly 450 snapshots are one batch', () async {
+        final all = [for (var n = 0; n < 5; n++) ...history('inv$n', 90)];
+        expect(await repository.importAll(all), 450);
+        expect([for (final b in batches) b.sets.length], [450]);
+      });
+
+      test(
+        '451 snapshots start a second batch at an investment boundary',
+        () async {
+          final all = [
+            for (var n = 0; n < 4; n++) ...history('inv$n', 100),
+            ...history('inv4', 51),
+          ];
+          expect(await repository.importAll(all), 451);
+          expect([for (final b in batches) b.sets.length], [400, 51]);
+          expectWhole({
+            'inv0': 100,
+            'inv1': 100,
+            'inv2': 100,
+            'inv3': 100,
+            'inv4': 51,
+          });
+        },
+      );
+
+      test('5 investments of 100: 400 then 100, not 450 then 50', () async {
+        final all = [for (var n = 0; n < 5; n++) ...history('inv$n', 100)];
+        expect(await repository.importAll(all), 500);
+        expect([for (final b in batches) b.sets.length], [400, 100]);
+        expectWhole({for (var n = 0; n < 5; n++) 'inv$n': 100});
+      });
+
+      test('an investment that alone exceeds a batch gets batches of its '
+          'own', () async {
+        final all = [
+          ...history('inv0', 50),
+          ...history('big', 460),
+          ...history('inv2', 30),
+        ];
+        expect(await repository.importAll(all), 540);
+        expect([for (final b in batches) b.sets.length], [50, 450, 10, 30]);
+      });
+
+      test('snapshots of one investment apart in the list still go '
+          'together', () async {
+        final a = history('a', 300);
+        final b = history('b', 300);
+        // a, b, a, b, ...: no investment is contiguous.
+        await repository.importAll([
+          for (var i = 0; i < 300; i++) ...[a[i], b[i]],
+        ]);
+        expect([for (final batch in batches) batch.sets.length], [300, 300]);
+        expectWhole({'a': 300, 'b': 300});
+      });
+
+      test('a rejected second batch leaves no investment with part of its '
+          'history, and every reader still shows the latest value', () async {
+        // The second batch to be created is rejected by the server.
+        var created = 0;
+        when(() => firestore.batch()).thenAnswer((_) {
+          final batch = _RecordingBatch();
+          if (++created == 2) batch.commitError = StateError('exhausted');
+          batches.add(batch);
+          return batch;
+        });
+        final all = [for (var n = 0; n < 5; n++) ...history('inv$n', 100)];
+        await expectLater(
+          () => repository.importAll(all),
+          throwsA(isA<StateError>()),
+        );
+
+        // What the server has: the first batch only.
+        final idOf = {for (final e in valuationDocs.entries) e.value: e.key};
+        final stored = <String, List<InvestmentValuationSnapshot>>{};
+        for (final (ref, data) in batches.first.sets) {
+          final s = FirestoreValuationRepository.snapshotFromFirestore(
+            data,
+            idOf[ref]!,
+          )!;
+          stored.putIfAbsent(s.investmentId, () => []).add(s);
+        }
+        expect(
+          {for (final e in stored.entries) e.key: e.value.length},
+          {'inv0': 100, 'inv1': 100, 'inv2': 100, 'inv3': 100},
+        );
+
+        // Each investment holds the backup's latest in its pair, as the
+        // import wrote it. Complete ones show their latest snapshot; the one
+        // with none shows the pair.
+        for (var n = 0; n < 5; n++) {
+          final investment = testInvestment(
+            'inv$n',
+            compatValue: 1000000.0 + 99 * 1000,
+            compatDate: DateTime(2025, 1, 1).add(const Duration(days: 99)),
+            updatedAt: DateTime.utc(2026, 6, 1),
+          );
+          final shown = CurrentValueCalculator.valuationOf(
+            investment,
+            [
+              testFlow(
+                'inv$n',
+                CashFlowType.invest,
+                1000000,
+                DateTime(2024, 1, 1),
+              ),
+            ],
+            asOf: DateTime(2026, 10, 10),
+            snapshots: {'inv$n': stored['inv$n'] ?? const []},
+          );
+          expect(shown?.amount, 1099000.00, reason: 'inv$n');
+          expect(shown?.date, DateTime(2025, 4, 10), reason: 'inv$n');
+        }
+      });
     });
 
     test('keeps the update time it was given', () async {
