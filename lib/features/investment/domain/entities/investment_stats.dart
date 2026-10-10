@@ -188,6 +188,12 @@ class InvestmentStats {
   /// Returns true if net cash flow is negative
   bool get isLoss => netCashFlow < 0;
 
+  /// What the holder has made so far: [netCashFlow] plus the [currentValue]
+  /// of what is still open, to the paisa. Money paid out and put back in
+  /// changes neither, so it equals ([moic] - 1) x [paidInCapital].
+  double get gain =>
+      FinancialCalculator.roundMoney(netCashFlow + (currentValue ?? 0));
+
   /// Whether part of [totalInvested] was money paid out earlier and put
   /// back in, which [moic] and [absoluteReturn] count once.
   bool get hasReinvestedPayouts => paidInCapital < totalInvested;
