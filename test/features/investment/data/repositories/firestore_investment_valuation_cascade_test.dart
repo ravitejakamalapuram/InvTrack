@@ -210,6 +210,24 @@ void main() {
       expect(deletedPerBatch.expand((d) => d), contains(cached));
     });
 
+    // Pins the offline policy, which matches cash flows (cache-first, no
+    // server needed): an empty cache and an unreachable server still delete.
+    // Requiring a server answer here would make every offline delete fail,
+    // flag on or off, for the sake of accounts that may hold snapshots no
+    // listener ever cached. That is the owner's call (PR 961 review).
+    test('deletes offline when the cache is empty and the server cannot be '
+        'reached, like cash flows', () async {
+      stubDocs('cashflows', id, []);
+      stubDocs('valuations', id, []);
+
+      await repository.deleteInvestment(id);
+
+      expect(
+        deletedPerBatch.expand((d) => d),
+        contains(investmentDocs['investments/$id']),
+      );
+    });
+
     test('uses the server alone when the cache cannot be read', () async {
       final remote = _MockDoc();
       stubDocs('cashflows', id, []);
