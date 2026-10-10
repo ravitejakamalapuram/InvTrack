@@ -13,6 +13,7 @@ import 'package:inv_tracker/features/investment/data/services/document_storage_s
 import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
+import 'package:inv_tracker/features/investment/domain/repositories/custom_investment_type_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/settings/data/services/data_export_service.dart';
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
@@ -35,6 +36,20 @@ class _PerformanceService extends Mock implements PerformanceService {
 class _DocumentRepository extends Mock implements DocumentRepository {}
 
 class _DocumentStorageService extends Mock implements DocumentStorageService {}
+
+/// A type store that is not reachable.
+class _FailingTypes implements CustomInvestmentTypeRepository {
+  @override
+  Stream<List<CustomInvestmentType>> watchAll() => Stream.error(_failure());
+
+  @override
+  Future<List<CustomInvestmentType>> getAll() async => throw _failure();
+
+  @override
+  Future<void> put(CustomInvestmentType type) async => throw _failure();
+
+  static StateError _failure() => StateError('unreachable');
+}
 
 final _day = DateTime.utc(2026, 1, 1);
 
@@ -378,6 +393,39 @@ void main() {
       expect((await imported('Album')).customTypeLabel, '=Stamps');
     },
   );
+
+  test('if the types cannot be saved, the investments still import with their '
+      'labels, unlinked, and the user is told', () async {
+    final broken = DataImportService(
+      investmentRepository: investments,
+      goalRepository: FakeGoalRepository(),
+      documentRepository: _DocumentRepository(),
+      documentStorageService: _DocumentStorageService(),
+      customInvestmentTypeRepository: _FailingTypes(),
+      performanceService: _PerformanceService(),
+    );
+
+    final result = await broken.importFromZip(
+      _zip({
+        'cashflows.csv':
+            '${_cashFlowsHeader}2025-10-01,Album,INVEST,100000,INR,,other,open\n',
+        'custom_types.csv': 'Label,Removed\nStamps,false\n',
+        'investment_custom_types.csv':
+            'Investment Name,Archived,Custom Type,Linked\nAlbum,false,Stamps,true\n',
+      }),
+      ImportStrategy.replace,
+      baseCurrency: 'INR',
+    );
+
+    expect(result.errors, isEmpty);
+    expect(result.investmentsImported, 1);
+    expect(result.warnings, [
+      'Custom types not imported: they could not be saved',
+    ]);
+    final album = await imported('Album');
+    expect(album.customTypeLabel, 'Stamps');
+    expect(album.customTypeId, isNull);
+  });
 
   test('without a type repository the labels still import, unlinked', () async {
     final noTypes = DataImportService(

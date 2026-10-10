@@ -184,16 +184,23 @@ class DataImportService {
     // Reusable custom types (#936) first, so the investments below can link
     // to them. Replace keeps the account's own types, like its FIRE settings:
     // they are a preference, not investment data, and the file may lack them.
+    // If they cannot be saved (Replace has already cleared the investments),
+    // the investments still import with their labels, unlinked.
     final customTypesFile = archive.findFile('custom_types.csv');
-    final customTypesByKey = customTypesFile == null
-        ? const <String, CustomInvestmentType>{}
-        : await _importCustomTypes(
-            _parseCustomTypesCsv(
-              utf8.decode(customTypesFile.content as List<int>),
-              warnings,
-            ),
+    var customTypesByKey = const <String, CustomInvestmentType>{};
+    if (customTypesFile != null) {
+      try {
+        customTypesByKey = await _importCustomTypes(
+          _parseCustomTypesCsv(
+            utf8.decode(customTypesFile.content as List<int>),
             warnings,
-          );
+          ),
+          warnings,
+        );
+      } catch (e) {
+        warnings.add('Custom types not imported: they could not be saved');
+      }
+    }
     final investmentCustomTypesFile = archive.findFile(
       'investment_custom_types.csv',
     );
