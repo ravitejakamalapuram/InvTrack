@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -62,10 +63,14 @@ List<String> _captureLaunchedUrls() {
 
 /// Makes the platform answer every launch with [launched], or fail with an
 /// exception whose text must never reach the screen. Returns the clipboard
-/// text, which stays null until the app copies something.
+/// text, which stays null until the app copies something. A [launchGate] or
+/// [clipboardGate] holds that answer back until the test completes it, so a
+/// test can act while the app is still waiting.
 ValueNotifier<String?> _mockLauncherAndClipboard({
   bool launched = true,
   bool throws = false,
+  Completer<bool>? launchGate,
+  Completer<void>? clipboardGate,
 }) {
   final clipboard = ValueNotifier<String?>(null);
   final messenger =
@@ -76,12 +81,14 @@ ValueNotifier<String?> _mockLauncherAndClipboard({
       if (throws) {
         throw PlatformException(code: 'ERROR', message: _secretDetail);
       }
+      if (launchGate != null) return launchGate.future;
       return launched;
     },
   );
   messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
     if (call.method == 'Clipboard.setData') {
       clipboard.value = (call.arguments as Map)['text'] as String?;
+      await clipboardGate?.future;
     }
     return null;
   });
@@ -453,6 +460,118 @@ void main() {
           await entry.value(tester);
 
           expect(clipboard.value, isNull);
+          expect(find.byType(SnackBar), findsNothing);
+        },
+      );
+    }
+
+    // The user can leave the screen while the browser launch or the clipboard
+    // write is still pending. The fallback must then stop: no clipboard write
+    // after the launch, and no snackbar on the screen they went to.
+    Future<void> openFromHome(WidgetTester tester, Widget screen) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            packageInfoProvider.overrideWith((ref) async => packageInfo),
+          ],
+          child: _localized(
+            Builder(
+              builder: (context) => Scaffold(
+                body: TextButton(
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute<void>(builder: (_) => screen)),
+                  child: const Text('open screen'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open screen'));
+      await tester.pumpAndSettle();
+    }
+
+    final leavingEntryPoints =
+        <String, ({Type screen, Future<void> Function(WidgetTester) tapLink})>{
+          'About': (
+            screen: AboutScreen,
+            tapLink: (tester) async {
+              await openFromHome(tester, const AboutScreen());
+              final l10n = AppLocalizations.of(
+                tester.element(find.byType(AboutScreen)),
+              );
+              final tile = find.text(l10n.deleteAccountOnTheWeb);
+              await tester.scrollUntilVisible(
+                tile,
+                200,
+                scrollable: find.byType(Scrollable).first,
+              );
+              await tester.tap(tile);
+              await tester.pump();
+            },
+          ),
+          'Help & FAQ': (
+            screen: HelpFaqScreen,
+            tapLink: (tester) async {
+              await openFromHome(
+                tester,
+                const HelpFaqScreen(showDeveloperFaq: true),
+              );
+              final link = find.byKey(const Key('delete_account_web_link'));
+              await tester.scrollUntilVisible(
+                link,
+                300,
+                scrollable: find.byType(Scrollable).first,
+              );
+              await tester.tap(link);
+              await tester.pump();
+            },
+          ),
+        };
+
+    for (final entry in leavingEntryPoints.entries) {
+      Future<void> leave(WidgetTester tester) async {
+        Navigator.of(tester.element(find.byType(entry.value.screen))).pop();
+        await tester.pumpAndSettle();
+        expect(find.byType(entry.value.screen), findsNothing);
+      }
+
+      testWidgets(
+        '${entry.key}: leaving the screen while the browser launch is '
+        'pending copies nothing and shows no snackbar',
+        (tester) async {
+          final launchGate = Completer<bool>();
+          final clipboard = _mockLauncherAndClipboard(launchGate: launchGate);
+
+          await entry.value.tapLink(tester);
+          await leave(tester);
+          launchGate.complete(false);
+          await tester.pumpAndSettle();
+
+          expect(clipboard.value, isNull);
+          expect(find.byType(SnackBar), findsNothing);
+        },
+      );
+
+      testWidgets(
+        '${entry.key}: leaving the screen while the address is being copied '
+        'shows no snackbar',
+        (tester) async {
+          final clipboardGate = Completer<void>();
+          final clipboard = _mockLauncherAndClipboard(
+            launched: false,
+            clipboardGate: clipboardGate,
+          );
+
+          await entry.value.tapLink(tester);
+          await tester.pumpAndSettle();
+          // The launch failed, so the copy has started and is waiting.
+          expect(clipboard.value, _canonicalDeletionUrl);
+          await leave(tester);
+          clipboardGate.complete();
+          await tester.pumpAndSettle();
+
           expect(find.byType(SnackBar), findsNothing);
         },
       );

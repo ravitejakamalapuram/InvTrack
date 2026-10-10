@@ -20,13 +20,15 @@ Future<bool> openAccountDeletionPage() async {
 }
 
 /// Opens the page, or when no browser can, copies the address to the clipboard
-/// and says so, as About does for the support email.
+/// and says so, as About does for the support email. Stops without copying or
+/// showing anything when the screen was left while the launch was pending.
 Future<void> openAccountDeletionPageOrCopyLink(BuildContext context) async {
-  final l10n = AppLocalizations.of(context);
-  final messenger = ScaffoldMessenger.of(context);
   if (await openAccountDeletionPage()) return;
+  if (!context.mounted) return;
   await Clipboard.setData(const ClipboardData(text: hostedAccountDeletionUrl));
-  messenger.showSnackBar(
+  if (!context.mounted) return;
+  final l10n = AppLocalizations.of(context);
+  ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(
         l10n.accountDeletionLinkCopiedMessage(hostedAccountDeletionUrl),
