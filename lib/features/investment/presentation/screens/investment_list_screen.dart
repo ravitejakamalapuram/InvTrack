@@ -402,6 +402,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
 
               final investment = filteredInvestments[index];
               final isArchived = investment.isArchived;
+              final l10n = AppLocalizations.of(context);
               return StaggeredFadeIn(
                 index: index,
                 // OPTIMIZATION: Wrap in RepaintBoundary to isolate the expensive GlassCard
@@ -430,22 +431,23 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                     ),
                     archiveConfig: ArchiveActionConfig(
                       confirmTitle: archiveToggleTitle(
-                        AppLocalizations.of(context),
+                        l10n,
                         isArchived: isArchived,
                       ),
                       // States what archiving does to the totals, goals and
                       // FIRE; the goals it changes are listed under it.
                       confirmMessage: archiveToggleMessage(
-                        AppLocalizations.of(context),
+                        l10n,
                         isArchived: isArchived,
                       ),
                       confirmDetails: () =>
                           archiveConfirmDetails(ref, investment),
                       successMessage: isArchived
-                          ? 'Investment restored'
-                          : 'Investment archived',
-                      failureMessage:
-                          'Failed to ${isArchived ? 'unarchive' : 'archive'} investment',
+                          ? l10n.investmentRestored
+                          : l10n.investmentArchived,
+                      failureMessage: isArchived
+                          ? l10n.unarchiveInvestmentFailed
+                          : l10n.archiveInvestmentFailed,
                       isArchived: isArchived,
                       onArchive: () {
                         final notifier = ref.read(

@@ -176,10 +176,19 @@ class GoalArchiveImpact {
 /// dialog can say so before the user confirms.
 ///
 /// Both sides come from [GoalProgressCalculator], with and without the
-/// investment, so they match the goal screens. A goal the investment does
-/// not feed, for example because it is closed, is not listed. A goal whose
-/// target has no exchange rate is left out, like in
+/// investment, so they match the goal screens. A goal is listed when the
+/// percent it shows ([GoalProgress.displayPercent]) changes, which includes
+/// a goal falling from reached to not reached. A goal the investment does
+/// not feed, for example because it is closed, is not listed, and neither is
+/// one that reads the same either way, such as a goal past its target (100%
+/// with or without it) or a holding too small to move the whole percent. A
+/// goal whose target has no exchange rate is left out, like in
 /// [multiCurrencyAllGoalsProgressProvider].
+///
+/// Only the progress percent is previewed. A closed linked investment adds
+/// nothing to it, but its flows do feed the goal's net new money, so
+/// archiving it can still move the goal's projected date, monthly velocity
+/// and the statuses derived from them; those are not listed.
 final archiveGoalImpactProvider =
     FutureProvider.family<List<GoalArchiveImpact>, String>((
       ref,
@@ -211,10 +220,10 @@ final archiveGoalImpactProvider =
                 _progressOf(goal, without, goals, _currencyOf(ref)),
               ])
               .then<GoalArchiveImpact?>(
-                // To the paisa: floating-point noise is not a change.
-                (both) =>
-                    (both[0].currentAmount - both[1].currentAmount).abs() <
-                        0.005
+                // What the dialog shows is the whole percent, so a goal that
+                // reads the same before and after (clamped at 100%, or a
+                // holding too small to move it) is not a change.
+                (both) => both[0].displayPercent == both[1].displayPercent
                     ? null
                     : GoalArchiveImpact(
                         goal: goal,

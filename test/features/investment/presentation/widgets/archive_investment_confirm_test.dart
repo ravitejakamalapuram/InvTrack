@@ -1,6 +1,8 @@
 // A17 / GAP1-01, GAP1-02: the archive confirmation says what archiving does
 // to the totals, goals and FIRE, and which goals change before the user
 // confirms. The wording is the ticket's.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -149,16 +151,66 @@ void main() {
     expect(find.text('Goals that will change'), findsNothing);
   });
 
-  testWidgets('unarchiving says the investment counts again', (tester) async {
+  testWidgets('unarchiving says what counts again, and that closed ones do '
+      'not feed goals or FIRE', (tester) async {
     await _open(tester, impacts: () async => const [], isArchived: true);
 
     expect(find.text('Unarchive Investment?'), findsOneWidget);
+    // Goals and FIRE count open investments only (a closed one reads
+    // 'Closed · not counted' on the goal and FIRE screens), so the sentence
+    // must not promise more than that.
     expect(
       find.text(
         'This restores the investment to your lists and counts it in '
-        'Overview totals, goals and FIRE again.',
+        'Overview totals again. Goals and FIRE count it only while it is '
+        'open.',
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('a goal preview that never loads does not hold the dialog back '
+      'for more than 3 seconds', (tester) async {
+    // The preview future never completes: the dialog must still open, with
+    // the disclosure and no goal list, once the 3 second limit is up.
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          privacyModeProvider.overrideWith(_PrivacyOff.new),
+          archiveGoalImpactProvider(
+            'fund',
+          ).overrideWith((ref) => Completer<List<GoalArchiveImpact>>().future),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) => TextButton(
+                onPressed: () => confirmArchiveToggle(context, ref, _fund),
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pump();
+
+    // Still waiting for the preview: no dialog yet.
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.text('Archive Investment?'), findsNothing);
+
+    // Just short of the limit: still waiting.
+    await tester.pump(const Duration(milliseconds: 900));
+    expect(find.text('Archive Investment?'), findsNothing);
+
+    // Past it: the dialog opens with the text alone.
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+    expect(find.text('Archive Investment?'), findsOneWidget);
+    expect(find.text(_disclosure), findsOneWidget);
+    expect(find.text('Goals that will change'), findsNothing);
   });
 }

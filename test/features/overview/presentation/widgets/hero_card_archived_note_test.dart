@@ -116,8 +116,18 @@ void main() {
   testWidgets('a count is not an amount: privacy mode keeps the footnote', (
     tester,
   ) async {
+    final handle = tester.ensureSemantics();
     await _pumpHero(tester, archivedCount: 2, privacy: true);
 
     expect(find.text('Excludes 2 archived investments'), findsOneWidget);
+    // Privacy mode hides amounts, including from screen readers; the count is
+    // not an amount, so the footnote is still announced.
+    final label = tester
+        .getSemantics(find.text('Excludes 2 archived investments'))
+        .label;
+    expect(label, contains('Excludes 2 archived investments'));
+    expect(label, contains('Hidden amount'));
+    expect(label, isNot(contains('14,000')));
+    handle.dispose();
   });
 }

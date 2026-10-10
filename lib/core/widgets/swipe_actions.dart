@@ -8,6 +8,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Configuration for archive action
 class ArchiveActionConfig {
@@ -24,8 +25,9 @@ class ArchiveActionConfig {
   /// Success message to show after archiving
   final String successMessage;
 
-  /// Message to show when [onArchive] throws
-  final String failureMessage;
+  /// Message to show when [onArchive] throws. Null shows the generic
+  /// "Something went wrong" message from the localisation file.
+  final String? failureMessage;
 
   /// Whether the item is currently archived (for unarchive action)
   final bool isArchived;
@@ -40,7 +42,7 @@ class ArchiveActionConfig {
     required this.confirmMessage,
     required this.onArchive,
     required this.successMessage,
-    this.failureMessage = 'Something went wrong. Please try again.',
+    this.failureMessage,
     this.isArchived = false,
     this.confirmDetails,
   });
@@ -217,6 +219,7 @@ class SwipeActions extends StatelessWidget {
         archiveConfig != null) {
       final config = archiveConfig!;
       final isArchived = config.isArchived;
+      final l10n = AppLocalizations.of(context);
       final details = await config.confirmDetails?.call();
       if (!context.mounted) return false;
       final confirmed = await AppFeedback.showConfirmDialog(
@@ -224,7 +227,7 @@ class SwipeActions extends StatelessWidget {
         title: config.confirmTitle,
         message: config.confirmMessage,
         details: details,
-        confirmText: isArchived ? 'Unarchive' : 'Archive',
+        confirmText: isArchived ? l10n.unarchive : l10n.archive,
       );
       if (confirmed == true) {
         // The message follows the result: a failed archive is not announced
@@ -239,7 +242,10 @@ class SwipeActions extends StatelessWidget {
           if (succeeded) {
             AppFeedback.showSuccess(context, config.successMessage);
           } else {
-            AppFeedback.showError(context, config.failureMessage);
+            AppFeedback.showError(
+              context,
+              config.failureMessage ?? l10n.archiveActionFailed,
+            );
           }
         }
       }

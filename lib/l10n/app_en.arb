@@ -6752,9 +6752,9 @@
   "@unarchiveInvestmentTitle": {
     "description": "Unarchive investment confirmation dialog: title (A17)"
   },
-  "unarchiveInvestmentDisclosure": "This restores the investment to your lists and counts it in Overview totals, goals and FIRE again.",
+  "unarchiveInvestmentDisclosure": "This restores the investment to your lists and counts it in Overview totals again. Goals and FIRE count it only while it is open.",
   "@unarchiveInvestmentDisclosure": {
-    "description": "Unarchive investment confirmation dialog: what unarchiving does to lists, Overview totals, goals and FIRE (A17)"
+    "description": "Unarchive investment confirmation dialog: what unarchiving does to lists and Overview totals, and that goals and FIRE count only open investments (A17)"
   },
   "archiveGoalImpactHeading": "Goals that will change",
   "@archiveGoalImpactHeading": {
@@ -6808,5 +6808,25 @@
   "overviewAllArchivedAction": "View investments",
   "@overviewAllArchivedAction": {
     "description": "Overview card button that opens the Investments tab when every investment is archived (A17)"
+  },
+  "investmentArchived": "Investment archived",
+  "@investmentArchived": {
+    "description": "Message shown after an investment has been archived (A17)"
+  },
+  "investmentRestored": "Investment restored",
+  "@investmentRestored": {
+    "description": "Message shown after an archived investment has been unarchived (A17)"
+  },
+  "archiveInvestmentFailed": "Failed to archive investment",
+  "@archiveInvestmentFailed": {
+    "description": "Message shown when archiving an investment failed (A17)"
+  },
+  "unarchiveInvestmentFailed": "Failed to unarchive investment",
+  "@unarchiveInvestmentFailed": {
+    "description": "Message shown when unarchiving an investment failed (A17)"
+  },
+  "archiveActionFailed": "Something went wrong. Please try again.",
+  "@archiveActionFailed": {
+    "description": "Default message shown when archiving or unarchiving a swiped list item failed and the list gave no message of its own (A17)"
   }
 }

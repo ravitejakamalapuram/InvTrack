@@ -1,21 +1,31 @@
-// A17 / GAP1-13: pins what archiving does to the Overview totals and goals.
+// A17 / GAP1-13: pins what archiving does to the Overview totals, the FIRE
+// corpus, year over year, the goals and the health goal alignment.
 //
 // Founder decision, 2026-10-02: archived investments stay EXCLUDED from
 // totals, goals and FIRE. These tests assert the exclusion (and that the
 // archived detail screen's own stats are converted), so a refactor cannot
 // flip it without a test failing. Each value is checked before and after the
-// archive. Today is pinned to 2026-10-04.
+// archive, so that a zero after is not just an empty provider. The swipe and
+// detail dialogs, the hero footnote and the all-archived card have their own
+// widget tests. Today is pinned to 2026-10-04.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
+import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
+import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_analytics_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
+import 'package:inv_tracker/features/portfolio_health/data/services/health_score_auto_save_service.dart';
+import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
+import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
 
 import '../../mocks/mock_currency_conversion_service.dart';
 
@@ -84,6 +94,46 @@ final _house = GoalEntity(
   currency: 'INR',
 );
 
+/// Keeps the health score out of Firestore.
+class _NoAutoSave implements HealthScoreAutoSaveService {
+  @override
+  void updateScore(PortfolioHealthScore score) {}
+
+  @override
+  void clearScore() {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+final _fireSettings = FireSettingsEntity(
+  id: 'fire',
+  monthlyExpenses: 50000,
+  birthYear: 1996,
+  targetFireAge: 45,
+  isSetupComplete: true,
+  currency: 'INR',
+  createdAt: DateTime(2026, 1, 1),
+  updatedAt: DateTime(2026, 1, 1),
+);
+
+/// An open gold holding that stays active, so that a portfolio remains to be
+/// scored after the fund is archived.
+final _gold = InvestmentEntity(
+  id: 'gold',
+  name: 'Gold',
+  type: InvestmentType.gold,
+  status: InvestmentStatus.open,
+  currency: 'INR',
+  createdAt: DateTime(2025, 4, 1),
+  updatedAt: DateTime(2025, 4, 1),
+  currentValue: 50000,
+  currentValueDate: DateTime(2026, 10, 1),
+);
+final _goldFlows = [
+  _cf('gold', CashFlowType.invest, 40000, DateTime(2025, 4, 1)),
+];
+
 /// What the app shows once the investments are archived: the active streams
 /// no longer hold them or their cash flows (archiving moves both to the
 /// archived collections), and the archived streams do.
@@ -112,6 +162,16 @@ ProviderContainer _container({
         archivedCashFlowsByInvestmentProvider(
           entry.key,
         ).overrideWith((ref) => Stream.value(entry.value)),
+      for (final inv in active)
+        cashFlowsByInvestmentProvider(inv.id).overrideWith(
+          (ref) => Stream.value([
+            for (final cf in activeFlows)
+              if (cf.investmentId == inv.id) cf,
+          ]),
+        ),
+      fireSettingsProvider.overrideWith((ref) => Stream.value(_fireSettings)),
+      isAuthenticatedProvider.overrideWith((ref) => true),
+      healthScoreAutoSaveServiceProvider.overrideWithValue(_NoAutoSave()),
       currencyCodeProvider.overrideWith((ref) => baseCurrency),
       currencyConversionServiceProvider.overrideWithValue(
         MockCurrencyConversionService(),
@@ -251,6 +311,86 @@ void main() {
         expect(linked, hasLength(1));
         expect(linked.single.isArchived, isTrue);
         expect(linked.single.isCounted, isFalse);
+      },
+    );
+  });
+
+  group('FIRE corpus', () {
+    test('before archive: the fund is in the corpus at its value', () async {
+      final container = _container(active: [_fund], activeFlows: _fundFlows);
+
+      final FireCalculationResult result = await _resolve(
+        container,
+        fireCalculationProvider,
+      );
+
+      expect(result.currentPortfolioValue, closeTo(114000.00, 0.005));
+    });
+
+    test('after archive: the fund is not in the corpus', () async {
+      final container = _container(
+        archived: [_fund.copyWith(isArchived: true)],
+        archivedFlows: {'fund': _fundFlows},
+      );
+
+      final result = await _resolve(container, fireCalculationProvider);
+
+      expect(result.currentPortfolioValue, closeTo(0.00, 0.005));
+    });
+  });
+
+  group('Year over year', () {
+    test('before archive: the FD is in this and last year', () async {
+      final container = _container(active: [_fd], activeFlows: _fdFlows);
+
+      final yoy = await _resolve(container, yoyComparisonProvider);
+
+      // This FY to date (from 2026-04-01): the 7,000 payout and the
+      // 1,00,000 back. Same days last FY: the 7,000 payout.
+      expect(yoy.thisYearNet, closeTo(107000.00, 0.005));
+      expect(yoy.lastYearNet, closeTo(7000.00, 0.005));
+    });
+
+    test('after archive: the FD is in neither', () async {
+      final container = _container(archived: [_fd.copyWith(isArchived: true)]);
+
+      final yoy = await _resolve(container, yoyComparisonProvider);
+
+      expect(yoy.thisYearNet, 0);
+      expect(yoy.lastYearNet, 0);
+    });
+  });
+
+  group('Health goal alignment', () {
+    test(
+      'before archive: House is counted and the goals are aligned',
+      () async {
+        final container = _container(
+          active: [_fund, _gold],
+          activeFlows: [..._fundFlows, ..._goldFlows],
+          goals: [_house],
+        );
+
+        final score = await _resolve(container, portfolioHealthProvider);
+
+        expect(score!.goalAlignment.score, closeTo(100.0, 1e-6));
+      },
+    );
+
+    test(
+      'after archive: House no longer counts the fund, so none are aligned',
+      () async {
+        final container = _container(
+          active: [_gold],
+          activeFlows: _goldFlows,
+          archived: [_fund.copyWith(isArchived: true)],
+          archivedFlows: {'fund': _fundFlows},
+          goals: [_house],
+        );
+
+        final score = await _resolve(container, portfolioHealthProvider);
+
+        expect(score!.goalAlignment.score, closeTo(0.0, 1e-6));
       },
     );
   });

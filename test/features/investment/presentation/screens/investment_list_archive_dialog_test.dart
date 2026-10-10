@@ -55,19 +55,51 @@ GoalArchiveImpact _impact() {
   );
 }
 
-Future<void> _pumpList(WidgetTester tester) async {
+/// Archives succeed or fail as told; `archived` and `restored` record the ids.
+class _FakeInvestmentNotifier extends InvestmentNotifier {
+  _FakeInvestmentNotifier({this.fails = false});
+
+  final bool fails;
+  final archived = <String>[];
+  final restored = <String>[];
+
+  @override
+  AsyncValue<void> build() => const AsyncValue.data(null);
+
+  @override
+  Future<void> archiveInvestment(String id) async {
+    if (fails) throw Exception('offline');
+    archived.add(id);
+  }
+
+  @override
+  Future<void> unarchiveInvestment(String id) async {
+    if (fails) throw Exception('offline');
+    restored.add(id);
+  }
+}
+
+AppLocalizations _l10n(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(InvestmentListScreen)));
+
+Future<void> _pumpList(
+  WidgetTester tester, {
+  InvestmentEntity? investment,
+  _FakeInvestmentNotifier? notifier,
+}) async {
+  final shown = investment ?? _investment;
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
-        allInvestmentsProvider.overrideWith(
-          (ref) => Stream.value([_investment]),
-        ),
+        if (notifier != null)
+          investmentNotifierProvider.overrideWith(() => notifier),
+        allInvestmentsProvider.overrideWith((ref) => Stream.value([shown])),
         archivedInvestmentsProvider.overrideWith((ref) => Stream.value([])),
         filteredInvestmentsProvider.overrideWith(
-          (ref) => AsyncValue.data([_investment]),
+          (ref) => AsyncValue.data([shown]),
         ),
         investmentCountsProvider.overrideWithValue((
           all: 1,
@@ -113,5 +145,77 @@ void main() {
       find.textContaining('will be hidden from your active'),
       findsNothing,
     );
+  });
+  testWidgets('confirming the swipe archives it and says so', (tester) async {
+    final notifier = _FakeInvestmentNotifier();
+    await _pumpList(tester, notifier: notifier);
+
+    await tester.drag(find.text('Test Investment'), const Offset(500, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, _l10n(tester).archive));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(notifier.archived, ['inv-1']);
+    expect(find.text(_l10n(tester).investmentArchived), findsOneWidget);
+    expect(find.text('Investment archived'), findsOneWidget);
+  });
+
+  testWidgets('a failed swipe archive says it failed, from the ARB', (
+    tester,
+  ) async {
+    final notifier = _FakeInvestmentNotifier(fails: true);
+    await _pumpList(tester, notifier: notifier);
+
+    await tester.drag(find.text('Test Investment'), const Offset(500, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, _l10n(tester).archive));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text(_l10n(tester).archiveInvestmentFailed), findsOneWidget);
+    expect(find.text('Failed to archive investment'), findsOneWidget);
+    expect(find.text('Investment archived'), findsNothing);
+  });
+
+  testWidgets('swiping an archived investment offers Unarchive and says it '
+      'was restored', (tester) async {
+    final notifier = _FakeInvestmentNotifier();
+    await _pumpList(
+      tester,
+      investment: _investment.copyWith(isArchived: true),
+      notifier: notifier,
+    );
+
+    await tester.drag(find.text('Test Investment'), const Offset(500, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Unarchive Investment?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, _l10n(tester).unarchive));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(notifier.restored, ['inv-1']);
+    expect(find.text(_l10n(tester).investmentRestored), findsOneWidget);
+    expect(find.text('Investment restored'), findsOneWidget);
+  });
+
+  testWidgets('a failed unarchive says it failed, from the ARB', (
+    tester,
+  ) async {
+    final notifier = _FakeInvestmentNotifier(fails: true);
+    await _pumpList(
+      tester,
+      investment: _investment.copyWith(isArchived: true),
+      notifier: notifier,
+    );
+
+    await tester.drag(find.text('Test Investment'), const Offset(500, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, _l10n(tester).unarchive));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text(_l10n(tester).unarchiveInvestmentFailed), findsOneWidget);
+    expect(find.text('Failed to unarchive investment'), findsOneWidget);
   });
 }

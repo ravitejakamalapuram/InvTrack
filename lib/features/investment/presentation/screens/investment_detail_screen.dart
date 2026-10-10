@@ -915,10 +915,13 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     // Capture navigator and messenger upfront before any async operations
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    final successMessage =
-        'Investment ${isArchived ? 'unarchived' : 'archived'}';
-    final errorMessage =
-        'Failed to ${isArchived ? 'unarchive' : 'archive'} investment';
+    final l10n = AppLocalizations.of(context);
+    final successMessage = isArchived
+        ? l10n.investmentRestored
+        : l10n.investmentArchived;
+    final errorMessage = isArchived
+        ? l10n.unarchiveInvestmentFailed
+        : l10n.archiveInvestmentFailed;
 
     // Says what archiving does to the totals, goals and FIRE, and which
     // goals it changes.

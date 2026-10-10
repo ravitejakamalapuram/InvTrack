@@ -21,6 +21,7 @@ import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_
 import 'package:inv_tracker/features/income_projection/presentation/widgets/income_guardian_dashboard_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_enums.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/widgets/portfolio_health_dashboard_card.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_analytics.dart';
@@ -329,6 +330,20 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
     );
   }
 
+  /// Opens the Investments tab on its Archived filter: the default filter
+  /// lists active investments only, and the archived ones are what the
+  /// all-archived card is about.
+  void _showArchivedInvestments(BuildContext context) {
+    // The list state is auto-disposed, and the Investments tab may not be
+    // built yet, so hold the state until that tab has taken it over.
+    final hold = ref.listenManual(investmentListStateProvider, (_, _) {});
+    ref
+        .read(investmentListStateProvider.notifier)
+        .setFilter(InvestmentFilter.archived);
+    context.go('/investments');
+    WidgetsBinding.instance.addPostFrameCallback((_) => hold.close());
+  }
+
   /// Build content for empty state (no cash flows).
   ///
   /// Sample data and the `empty_state_viewed` event are only for a new
@@ -374,7 +389,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
           ),
           const SizedBox(height: 32),
           OverviewAllArchivedCard(
-            onViewInvestments: () => context.go('/investments'),
+            onViewInvestments: () => _showArchivedInvestments(context),
           ),
           // Bottom padding for FAB
           const SizedBox(height: 80),
