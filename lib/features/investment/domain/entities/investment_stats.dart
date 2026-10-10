@@ -78,6 +78,18 @@ class InvestmentStats {
   /// known (money rule 4).
   final int missingValueCount;
 
+  /// Investments in these stats that have limited history (an opening
+  /// baseline): they count in [totalInvested], [totalReturned],
+  /// [netCashFlow] and [currentValue], but not in [xirr], [moic] or
+  /// [absoluteReturn].
+  final int limitedHistoryCount;
+
+  /// Whether [xirr], [moic] and [absoluteReturn] describe any investment.
+  /// False when every investment in these stats has limited history: then
+  /// [moic] and [absoluteReturn] are 0 only because nothing was paid in, and
+  /// must not be shown as 0.00x or 0%.
+  final bool returnsKnown;
+
   const InvestmentStats({
     required this.totalInvested,
     double? paidInCapital,
@@ -96,6 +108,8 @@ class InvestmentStats {
     this.currentValueIsEstimate = false,
     this.currentValueRate,
     this.missingValueCount = 0,
+    this.limitedHistoryCount = 0,
+    this.returnsKnown = true,
   }) : paidInCapital = paidInCapital ?? totalInvested,
        assert(
          xirr != null || xirrMethod == XirrMethod.undefined,
@@ -114,8 +128,9 @@ class InvestmentStats {
     cashFlowCount: 0,
   );
 
-  /// Returns true if there is at least one cash flow
-  bool get hasData => cashFlowCount > 0;
+  /// Returns true if there is at least one cash flow, or a current value: a
+  /// portfolio of opening baselines has data and no cash flows.
+  bool get hasData => cashFlowCount > 0 || currentValue != null;
 
   /// [xirr] and [xirrMethod] as an [XirrResult].
   XirrResult get xirrResult {
@@ -211,6 +226,8 @@ class InvestmentStats {
     bool? currentValueIsEstimate,
     double? currentValueRate,
     int? missingValueCount,
+    int? limitedHistoryCount,
+    bool? returnsKnown,
   }) {
     return InvestmentStats(
       totalInvested: totalInvested ?? this.totalInvested,
@@ -231,6 +248,8 @@ class InvestmentStats {
           currentValueIsEstimate ?? this.currentValueIsEstimate,
       currentValueRate: currentValueRate ?? this.currentValueRate,
       missingValueCount: missingValueCount ?? this.missingValueCount,
+      limitedHistoryCount: limitedHistoryCount ?? this.limitedHistoryCount,
+      returnsKnown: returnsKnown ?? this.returnsKnown,
     );
   }
 
@@ -255,7 +274,9 @@ class InvestmentStats {
         other.currentValueDate == currentValueDate &&
         other.currentValueIsEstimate == currentValueIsEstimate &&
         other.currentValueRate == currentValueRate &&
-        other.missingValueCount == missingValueCount;
+        other.missingValueCount == missingValueCount &&
+        other.limitedHistoryCount == limitedHistoryCount &&
+        other.returnsKnown == returnsKnown;
   }
 
   @override
@@ -278,6 +299,8 @@ class InvestmentStats {
           currentValueIsEstimate,
           currentValueRate,
           missingValueCount,
+          limitedHistoryCount,
+          returnsKnown,
         );
   }
 }

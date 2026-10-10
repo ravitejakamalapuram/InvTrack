@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/utils/custom_type_label.dart';
 import 'package:inv_tracker/core/utils/stored_date.dart';
@@ -24,6 +25,10 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   /// Timeout for a read that must come from the server.
   static const Duration _serverReadTimeout = Duration(seconds: 10);
+
+  /// Deletes per batch when an investment and what belongs to it are removed
+  /// (the Firestore limit is 500).
+  static const int _deleteBatchSize = 450;
 
   FirestoreInvestmentRepository({
     required FirebaseFirestore firestore,
@@ -51,6 +56,11 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   CollectionReference<Map<String, dynamic>> get _cashFlowsRef =>
       _firestore.collection('users').doc(_userId).collection('cashflows');
+
+  // Dated valuation snapshots of active and archived investments alike (the
+  // collection name is a literal for the account deletion coverage test).
+  CollectionReference<Map<String, dynamic>> get _valuationsRef =>
+      _firestore.collection('users').doc(_userId).collection('valuations');
 
   // Collection references for ARCHIVED data (complete isolation)
   CollectionReference<Map<String, dynamic>> get _archivedInvestmentsRef =>
@@ -159,11 +169,19 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   }
 
   @override
-  Future<void> updateInvestment(InvestmentEntity investment) async {
+  Future<void> updateInvestment(
+    InvestmentEntity investment, {
+    bool preserveCurrentValue = false,
+  }) async {
     await _executeWrite(
       () => _investmentsRef
           .doc(investment.id)
-          .update(_investmentToFirestore(investment)),
+          .update(
+            _investmentToFirestore(
+              investment,
+              preserveCurrentValue: preserveCurrentValue,
+            ),
+          ),
     );
   }
 
@@ -260,18 +278,44 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   }
 
   @override
-  Future<void> deleteInvestment(String id) async {
-    final cashFlows = await _getCashFlowDocsForDeletion(_cashFlowsRef, id);
-    final batch = _firestore.batch();
-    for (final doc in cashFlows.docs) {
-      batch.delete(doc.reference);
+  Future<void> deleteInvestment(String id) => _deleteWithDependents(
+    investment: _investmentsRef.doc(id),
+    cashFlowsRef: _cashFlowsRef,
+    investmentId: id,
+  );
+
+  /// Deletes [investment], its cash flows in [cashFlowsRef] and its valuation
+  /// snapshots, tombstones included, so that none is left behind.
+  ///
+  /// Everything that has to go is found first, so that a failure to find it
+  /// deletes nothing. The investment is removed last, in the final batch: if
+  /// an earlier batch fails, the investment is still there to retry from.
+  Future<void> _deleteWithDependents({
+    required DocumentReference<Map<String, dynamic>> investment,
+    required CollectionReference<Map<String, dynamic>> cashFlowsRef,
+    required String investmentId,
+  }) async {
+    final cashFlows = await _getDocsForDeletion(cashFlowsRef, investmentId);
+    final snapshots = await _valuationRefsForDeletion(investmentId);
+    final refs = <DocumentReference>[
+      for (final doc in cashFlows.docs) doc.reference,
+      ...snapshots,
+      investment,
+    ];
+    for (var i = 0; i < refs.length; i += _deleteBatchSize) {
+      final end = (i + _deleteBatchSize < refs.length)
+          ? i + _deleteBatchSize
+          : refs.length;
+      final batch = _firestore.batch();
+      for (final ref in refs.sublist(i, end)) {
+        batch.delete(ref);
+      }
+      await _executeWrite(() => batch.commit());
     }
-    batch.delete(_investmentsRef.doc(id));
-    await _executeWrite(() => batch.commit());
   }
 
-  /// Finds every cash flow document for [investmentId] so it can be deleted
-  /// alongside the investment.
+  /// Finds every document of [ref] for [investmentId] in the local cache (cash
+  /// flows) so it can be deleted alongside the investment.
   ///
   /// Cache-first: the local Firestore cache is unlimited in size (see
   /// `database_module.dart`), so it holds every cash flow this device has
@@ -286,17 +330,17 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   /// fallback. Throwing here surfaces a clear error so the user can retry
   /// once they're back online, rather than the app reporting success while
   /// leaving data behind.
-  Future<QuerySnapshot<Map<String, dynamic>>> _getCashFlowDocsForDeletion(
-    CollectionReference<Map<String, dynamic>> cashFlowsRef,
+  Future<QuerySnapshot<Map<String, dynamic>>> _getDocsForDeletion(
+    CollectionReference<Map<String, dynamic>> ref,
     String investmentId,
   ) async {
     try {
-      return await cashFlowsRef
+      return await ref
           .where('investmentId', isEqualTo: investmentId)
           .get(const GetOptions(source: Source.cache));
     } catch (_) {
       try {
-        return await cashFlowsRef
+        return await ref
             .where('investmentId', isEqualTo: investmentId)
             .get()
             .timeout(_writeTimeout);
@@ -304,6 +348,40 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
         throw NetworkException.noConnection(cause: e, stackTrace: st);
       }
     }
+  }
+
+  /// Every valuation snapshot of [investmentId], tombstones included.
+  ///
+  /// Unlike cash flows, snapshots are not kept in the local cache by a
+  /// listener: none runs with the feature flag off, on a fresh install or
+  /// after an account switch, and an empty cache answers with no documents
+  /// rather than an error. So the server is asked as well, and the cache adds
+  /// what it holds that the server has not seen yet (writes made offline).
+  ///
+  /// Throws [NetworkException], like [_getDocsForDeletion], when neither can
+  /// answer: nothing is deleted then, rather than orphaning snapshots.
+  Future<Set<DocumentReference>> _valuationRefsForDeletion(
+    String investmentId,
+  ) async {
+    final refs = <DocumentReference>{};
+    var serverAnswered = false;
+    try {
+      final server = await _valuationsRef
+          .where('investmentId', isEqualTo: investmentId)
+          .get(const GetOptions(source: Source.server))
+          .timeout(_serverReadTimeout);
+      refs.addAll(server.docs.map((doc) => doc.reference));
+      serverAnswered = true;
+    } catch (_) {
+      // Offline or too slow: the cache is all there is.
+    }
+    try {
+      final cached = await _getDocsForDeletion(_valuationsRef, investmentId);
+      refs.addAll(cached.docs.map((doc) => doc.reference));
+    } catch (_) {
+      if (!serverAnswered) rethrow;
+    }
+    return refs;
   }
 
   // ============ ARCHIVED INVESTMENTS ============
@@ -371,27 +449,28 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   }
 
   @override
-  Future<void> updateArchivedInvestment(InvestmentEntity investment) async {
+  Future<void> updateArchivedInvestment(
+    InvestmentEntity investment, {
+    bool preserveCurrentValue = false,
+  }) async {
     await _executeWrite(
       () => _archivedInvestmentsRef
           .doc(investment.id)
-          .update(_investmentToFirestore(investment)),
+          .update(
+            _investmentToFirestore(
+              investment,
+              preserveCurrentValue: preserveCurrentValue,
+            ),
+          ),
     );
   }
 
   @override
-  Future<void> deleteArchivedInvestment(String id) async {
-    final cashFlows = await _getCashFlowDocsForDeletion(
-      _archivedCashFlowsRef,
-      id,
-    );
-    final batch = _firestore.batch();
-    for (final doc in cashFlows.docs) {
-      batch.delete(doc.reference);
-    }
-    batch.delete(_archivedInvestmentsRef.doc(id));
-    await _executeWrite(() => batch.commit());
-  }
+  Future<void> deleteArchivedInvestment(String id) => _deleteWithDependents(
+    investment: _archivedInvestmentsRef.doc(id),
+    cashFlowsRef: _archivedCashFlowsRef,
+    investmentId: id,
+  );
 
   // ============ ACTIVE CASH FLOWS ============
 
@@ -485,8 +564,21 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     for (final doc in snapshot.docs) _cashFlowFromFirestore(doc.data(), doc.id),
   ].where((cf) => StoredDate.isWithinDays(cf.date, firstDay, lastDay)).toList();
 
+  /// Refuses a cash flow built for a calculation only (its current value, the
+  /// start of a tracking period): a valuation is never a cash flow.
+  static void _requireStorable(CashFlowEntity cashFlow) {
+    if (TerminalValues.isEphemeralId(cashFlow.id)) {
+      throw ArgumentError.value(
+        'id',
+        'cashFlow.id',
+        'Is the id of a flow built for a calculation',
+      );
+    }
+  }
+
   @override
   Future<void> addCashFlow(CashFlowEntity cashFlow) async {
+    _requireStorable(cashFlow);
     await _executeWrite(
       () => _cashFlowsRef.doc(cashFlow.id).set(_cashFlowToFirestore(cashFlow)),
     );
@@ -494,6 +586,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   @override
   Future<void> updateCashFlow(CashFlowEntity cashFlow) async {
+    _requireStorable(cashFlow);
     await _executeWrite(
       () =>
           _cashFlowsRef.doc(cashFlow.id).update(_cashFlowToFirestore(cashFlow)),
@@ -546,6 +639,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     const batchLimit = 500;
     var investmentCount = 0;
     var cashFlowCount = 0;
+    cashFlows.forEach(_requireStorable);
 
     // Process investments in batches
     for (var i = 0; i < investments.length; i += batchLimit) {
@@ -611,9 +705,14 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       } on TimeoutException {
         // Continue without cash flows - they'll be orphaned but filtered out
       }
+      // Valuation snapshots are not best-effort: when they cannot be listed
+      // this throws before anything is deleted, so none is orphaned.
+      cashFlowDocsToDelete.addAll(
+        await _valuationRefsForDeletion(investmentId),
+      );
     }
 
-    // Delete cash flows in batches
+    // Delete cash flows (and valuation snapshots) in batches
     for (var i = 0; i < cashFlowDocsToDelete.length; i += batchLimit) {
       final batch = _firestore.batch();
       final end = (i + batchLimit < cashFlowDocsToDelete.length)
@@ -661,8 +760,14 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
           offsetAt: offsetAt,
         );
 
-  Map<String, dynamic> _investmentToFirestore(InvestmentEntity investment) {
-    return {
+  /// With [preserveCurrentValue] the current value pair is left out, so an
+  /// update keeps whatever is stored: the pair mirrors the latest valuation
+  /// snapshot and a stale copy must not overwrite it.
+  Map<String, dynamic> _investmentToFirestore(
+    InvestmentEntity investment, {
+    bool preserveCurrentValue = false,
+  }) {
+    final data = {
       'name': investment.name,
       'type': investment.type.name,
       'status': investment.status.name.toUpperCase(),
@@ -700,6 +805,11 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
           ? investment.customTypeLabel
           : null,
     };
+    if (preserveCurrentValue) {
+      data.remove('currentValue');
+      data.remove('currentValueDate');
+    }
+    return data;
   }
 
   InvestmentEntity _investmentFromFirestore(

@@ -3,10 +3,12 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
+import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/custom_type_label.dart';
+import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settings_repository.dart';
@@ -15,11 +17,13 @@ import 'package:inv_tracker/features/goals/domain/repositories/goal_repository.d
 import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/models/custom_type_catalog.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/custom_investment_type_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
+import 'package:inv_tracker/features/investment/domain/repositories/valuation_repository.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
 import 'package:inv_tracker/core/utils/file_signature_utils.dart';
 import 'package:uuid/uuid.dart';
@@ -50,6 +54,9 @@ class ZipImportResult {
   final int goalsImported;
   final int documentsImported;
   final bool fireSettingsImported;
+
+  /// Dated valuations written (not part of [totalImported]).
+  final int valuationsImported;
   final List<String> errors;
   final List<String> warnings;
 
@@ -59,6 +66,7 @@ class ZipImportResult {
     required this.goalsImported,
     required this.documentsImported,
     this.fireSettingsImported = false,
+    this.valuationsImported = 0,
     this.errors = const [],
     this.warnings = const [],
   });
@@ -80,6 +88,7 @@ class DataImportService {
   final DocumentRepository _documentRepository;
   final DocumentStorageService _documentStorageService;
   final FireSettingsRepository? _fireSettingsRepository;
+  final ValuationRepository? _valuationRepository;
   final CustomInvestmentTypeRepository? _customInvestmentTypeRepository;
   final PerformanceService _performanceService;
 
@@ -91,6 +100,7 @@ class DataImportService {
     required DocumentRepository documentRepository,
     required DocumentStorageService documentStorageService,
     FireSettingsRepository? fireSettingsRepository,
+    ValuationRepository? valuationRepository,
     CustomInvestmentTypeRepository? customInvestmentTypeRepository,
     required PerformanceService performanceService,
   }) : _investmentRepository = investmentRepository,
@@ -98,6 +108,7 @@ class DataImportService {
        _documentRepository = documentRepository,
        _documentStorageService = documentStorageService,
        _fireSettingsRepository = fireSettingsRepository,
+       _valuationRepository = valuationRepository,
        _customInvestmentTypeRepository = customInvestmentTypeRepository,
        _performanceService = performanceService;
 
@@ -220,9 +231,9 @@ class DataImportService {
           _valuationsWarning,
           warnings,
           damagedFiles,
-          (text) => _parseValuationsCsv(text, warnings, strict: isReplace),
+          (text) => _parseValuationsCsv(text, warnings),
         ) ??
-        const <(bool, String), _ImportedValuation>{};
+        <(bool, String), List<_ImportedValuation>>{};
     final cashflowsArchived = _readParsed(
       archive,
       'cashflows_archived.csv',
@@ -265,6 +276,11 @@ class DataImportService {
       // The file name only: not a row, a name, an amount or the exception.
       return _notImported('${damagedFiles.first} is damaged');
     }
+
+    // Dated valuations are attached to the investments created below (money
+    // rule 6). Each is taken by the investment it belongs to, so what is left
+    // has no cash flows (an opening baseline, say).
+    final snapshots = <InvestmentValuationSnapshot>[];
 
     // 4. If strategy is replace, delete all existing data first
     if (isReplace) {
@@ -309,6 +325,7 @@ class DataImportService {
         strategy: strategy,
         baseCurrency: baseCurrency,
         valuations: valuations,
+        snapshots: snapshots,
         customTypeRefs: investmentCustomTypes,
         customTypesByKey: customTypesByKey,
       );
@@ -327,6 +344,7 @@ class DataImportService {
         strategy: strategy,
         baseCurrency: baseCurrency,
         valuations: valuations,
+        snapshots: snapshots,
         customTypeRefs: investmentCustomTypes,
         customTypesByKey: customTypesByKey,
       );
@@ -335,6 +353,35 @@ class DataImportService {
       errors.addAll(result.errors);
       warnings.addAll(result.warnings);
       investmentNameToIdMap.addAll(result.investmentNameToIdMap);
+    }
+
+    // Investments with valuations and no cash flows, then every valuation.
+    final shells = await _importValuationOnlyInvestments(
+      valuations,
+      strategy: strategy,
+      baseCurrency: baseCurrency,
+      snapshots: snapshots,
+      warnings: warnings,
+    );
+    investmentsImported += shells.length;
+    investmentNameToIdMap.addAll(shells);
+    var valuationsImported = 0;
+    final valuationRepository = _valuationRepository;
+    if (valuationRepository != null && snapshots.isNotEmpty) {
+      // Replace has already deleted the account's data: a failed write must
+      // not stop the goals, documents and FIRE settings that follow. The
+      // investments keep the mirror they were written with.
+      try {
+        valuationsImported = await valuationRepository.importAll(snapshots);
+      } catch (e) {
+        // The type only: the message of a backend error can quote names and
+        // amounts (rule 7).
+        LoggerService.error(
+          'Could not save imported valuations',
+          metadata: {'error_type': e.runtimeType.toString()},
+        );
+        warnings.add('Dated values not imported: they could not be saved');
+      }
     }
 
     // Import goals (with investment name-to-ID mapping for linked investments)
@@ -439,6 +486,7 @@ class DataImportService {
         'goals': goalsImported,
         'documents': documentsImported,
         'fireSettings': fireSettingsImported,
+        'valuations': valuationsImported,
       },
     );
 
@@ -448,6 +496,7 @@ class DataImportService {
       goalsImported: goalsImported,
       documentsImported: documentsImported,
       fireSettingsImported: fireSettingsImported,
+      valuationsImported: valuationsImported,
       errors: errors,
       warnings: warnings,
     );
@@ -594,7 +643,8 @@ class DataImportService {
     required bool isArchived,
     required ImportStrategy strategy,
     required String baseCurrency,
-    Map<(bool, String), _ImportedValuation> valuations = const {},
+    required Map<(bool, String), List<_ImportedValuation>> valuations,
+    required List<InvestmentValuationSnapshot> snapshots,
     Map<(bool, String), _ImportedCustomTypeRef> customTypeRefs = const {},
     Map<String, CustomInvestmentType> customTypesByKey = const {},
   }) async {
@@ -633,6 +683,11 @@ class DataImportService {
       final investmentName = entry.key;
       final rows = entry.value;
 
+      // The valuations of this investment go with it, or are dropped with it.
+      final valuationRows =
+          valuations.remove((isArchived, investmentName.toLowerCase())) ??
+          const <_ImportedValuation>[];
+
       // Skip if merging and investment already exists
       if (strategy == ImportStrategy.merge &&
           existingInvestmentNames.contains(investmentName.toLowerCase())) {
@@ -653,15 +708,24 @@ class DataImportService {
         rows.map((r) => r.currency ?? baseCurrency),
         baseCurrency,
       );
-      var valuation = valuations[(isArchived, investmentName.toLowerCase())];
-      if (valuation != null && valuation.currency != currency) {
-        // A value is only meaningful in the investment's own currency.
-        warnings.add(
-          'Current value of "$investmentName" not imported: its currency '
-          'differs from the investment\'s',
-        );
-        valuation = null;
-      }
+      final routed = _routeSnapshots(
+        investmentId: investmentId,
+        name: investmentName,
+        currency: currency,
+        rows: valuationRows,
+        now: now,
+        warnings: warnings,
+        keepIds: strategy == ImportStrategy.replace,
+        takenIds: {for (final s in snapshots) s.id},
+      );
+      snapshots.addAll(routed);
+      // The currentValue pair mirrors the latest snapshot, whatever the
+      // feature flag says: it is what older versions and the old dialog read.
+      final mirror = ValuationSnapshotSelector.mirrorOf(
+        routed,
+        investmentId: investmentId,
+        currency: currency,
+      );
 
       final customType = _customTypeOf(
         customTypeRefs[(isArchived, investmentName.toLowerCase())],
@@ -681,8 +745,8 @@ class DataImportService {
           updatedAt: now,
           isArchived: isArchived,
           currency: currency,
-          currentValue: valuation?.value,
-          currentValueDate: valuation?.date,
+          currentValue: mirror?.amount,
+          currentValueDate: mirror?.effectiveDate,
           customTypeId: customType.id,
           customTypeLabel: customType.label,
         ),
@@ -731,24 +795,30 @@ class DataImportService {
     );
   }
 
-  /// Parses valuations.csv into values keyed by (archived, lowercase
-  /// investment name), the way cash flow rows name their investment. Bad
-  /// rows are skipped with a warning that holds no amount. Null if the file
-  /// as a whole cannot be read. A [strict] parse (Replace) also rejects a file
-  /// that is empty, or whose rows are all bad: it has nothing to restore,
-  /// like a goals.csv in the same state.
-  Map<(bool, String), _ImportedValuation>? _parseValuationsCsv(
+  /// A snapshot id the file may keep: what this app writes (UUIDs, Firestore
+  /// ids), and nothing that could address another path.
+  static final _snapshotIdPattern = RegExp(r'^[A-Za-z0-9_-]{1,64}$');
+
+  /// Parses valuations.csv into rows keyed by (archived, lowercase
+  /// investment name), the way cash flow rows name their investment. Files
+  /// from before the Snapshot ID, Kind, Source, Updated At, Investment Type
+  /// and Investment Status columns read as manual carrying values. A bad row
+  /// is skipped with a warning that holds no amount; an unknown kind or
+  /// source is never reinterpreted, and an estimate is never stored. Null if
+  /// the file is damaged: it cannot be read as a whole, is empty, or has bad
+  /// rows and no good one (nothing to restore, like a goals.csv in the same
+  /// state). Then no row warning is added: the caller reports the file alone.
+  Map<(bool, String), List<_ImportedValuation>>? _parseValuationsCsv(
     String content,
-    List<String> warnings, {
-    required bool strict,
-  }) {
+    List<String> warnings,
+  ) {
     final List<List<dynamic>> rows;
     try {
       rows = csv.decode(content);
     } catch (_) {
       return null;
     }
-    if (rows.isEmpty) return strict ? null : const {};
+    if (rows.isEmpty) return null;
 
     final header = [for (final h in rows.first) h.toString().trim()];
     final nameCol = header.indexOf('Investment Name');
@@ -759,20 +829,32 @@ class DataImportService {
     if ([nameCol, archivedCol, dateCol, valueCol, currencyCol].contains(-1)) {
       return null;
     }
+    final idCol = header.indexOf('Snapshot ID');
+    final kindCol = header.indexOf('Kind');
+    final sourceCol = header.indexOf('Source');
+    final updatedCol = header.indexOf('Updated At');
+    final typeCol = header.indexOf('Investment Type');
+    final statusCol = header.indexOf('Investment Status');
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final result = <(bool, String), _ImportedValuation>{};
-    var badRows = 0;
+    final result = <(bool, String), List<_ImportedValuation>>{};
+    final rowWarnings = <String>[];
     for (var i = 1; i < rows.length; i++) {
       final row = rows[i];
       String cell(int col) =>
-          col < row.length ? row[col].toString().trim() : '';
+          col >= 0 && col < row.length ? row[col].toString().trim() : '';
       final name = cell(nameCol);
       if (name.isEmpty) continue;
       final value = double.tryParse(cell(valueCol));
       final parsedDate = DateTime.tryParse(cell(dateCol));
       final currency = cell(currencyCol).toUpperCase();
+      final kind = cell(kindCol).isEmpty
+          ? ValuationKind.carryingValue
+          : ValuationKind.tryParse(cell(kindCol));
+      final provenance = cell(sourceCol).isEmpty
+          ? ValuationProvenance.manual
+          : ValuationProvenance.tryParse(cell(sourceCol));
       if (value == null ||
           !value.isFinite ||
           value < 0 ||
@@ -783,21 +865,215 @@ class DataImportService {
             parsedDate.month,
             parsedDate.day,
           ).isAfter(today) ||
-          currency.isEmpty) {
-        warnings.add('Current value of "$name" not imported: invalid row');
-        badRows++;
+          currency.isEmpty ||
+          kind == null ||
+          provenance == null ||
+          provenance == ValuationProvenance.estimate) {
+        rowWarnings.add('Current value of "$name" not imported: invalid row');
         continue;
       }
-      result[(
-        cell(archivedCol).toLowerCase() == 'true',
-        name.toLowerCase(),
-      )] = _ImportedValuation(
-        value: value,
-        date: DateTime(parsedDate.year, parsedDate.month, parsedDate.day),
-        currency: currency,
+      final type = cell(typeCol);
+      (result[(
+                cell(archivedCol).toLowerCase() == 'true',
+                name.toLowerCase(),
+              )] ??=
+              [])
+          .add(
+            _ImportedValuation(
+              name: name,
+              value: value,
+              date: DateTime(parsedDate.year, parsedDate.month, parsedDate.day),
+              currency: currency,
+              snapshotId: cell(idCol),
+              kind: kind,
+              provenance: provenance,
+              updatedAt: DateTime.tryParse(cell(updatedCol))?.toUtc(),
+              investmentType: type.isEmpty
+                  ? null
+                  : InvestmentType.fromString(type),
+              investmentStatus: cell(statusCol).isEmpty
+                  ? null
+                  : InvestmentStatus.fromString(cell(statusCol)),
+            ),
+          );
+    }
+    if (result.isEmpty && rowWarnings.isNotEmpty) return null;
+    warnings.addAll(rowWarnings);
+    return result;
+  }
+
+  /// The snapshots of the investment [investmentId], from the [rows] that
+  /// name it. Same-name investments collapse into one on import, so what
+  /// the app guarantees is checked again here: every row is in the
+  /// investment's currency, there is at most one opening baseline (the
+  /// earliest), and no more than the 100 live snapshots an investment keeps
+  /// (the oldest go first). Skipped rows are reported without amounts.
+  ///
+  /// Amounts are rounded to the currency here, so that the snapshot and the
+  /// investment's mirror of it hold the same figure. With [keepIds] (Replace,
+  /// when no investment is left whose snapshot an id could overwrite) a row
+  /// keeps the id of the file, unless it is unusable or in [takenIds] or
+  /// repeated; every other snapshot gets a new one.
+  List<InvestmentValuationSnapshot> _routeSnapshots({
+    required String investmentId,
+    required String name,
+    required String currency,
+    required List<_ImportedValuation> rows,
+    required DateTime now,
+    required List<String> warnings,
+    required bool keepIds,
+    required Set<String> takenIds,
+  }) {
+    final used = {...takenIds};
+    String idOf(_ImportedValuation row) {
+      final id = row.snapshotId;
+      return keepIds && _snapshotIdPattern.hasMatch(id) && used.add(id)
+          ? id
+          : _uuid.v4();
+    }
+
+    final ordered = [...rows]
+      ..sort((a, b) {
+        final byDate = a.date.compareTo(b.date);
+        if (byDate != 0) return byDate;
+        return (a.updatedAt ?? now).compareTo(b.updatedAt ?? now);
+      });
+    final accepted = <InvestmentValuationSnapshot>[];
+    var hasBaseline = false;
+    for (final row in ordered) {
+      if (row.currency != currency) {
+        // A value is only meaningful in the investment's own currency.
+        warnings.add(
+          'Current value of "$name" not imported: its currency differs from '
+          'the investment\'s',
+        );
+        continue;
+      }
+      if (row.provenance == ValuationProvenance.openingBaseline) {
+        if (hasBaseline) {
+          warnings.add(
+            'Opening value of "$name" not imported: the investment already '
+            'has one',
+          );
+          continue;
+        }
+        hasBaseline = true;
+      }
+      accepted.add(
+        InvestmentValuationSnapshot(
+          id: idOf(row),
+          investmentId: investmentId,
+          amount: MoneyPrecision.round(row.value, currencyCode: currency),
+          currency: currency,
+          effectiveDate: row.date,
+          kind: row.kind,
+          provenance: row.provenance,
+          createdAt: now,
+          updatedAt: row.updatedAt ?? now,
+        ),
       );
     }
-    return strict && result.isEmpty && badRows > 0 ? null : result;
+    final excess = accepted.length - ValuationSnapshotSelector.maxLiveSnapshots;
+    if (excess > 0) {
+      warnings.add(
+        'Older values of "$name" not imported: an investment keeps at most '
+        '${ValuationSnapshotSelector.maxLiveSnapshots}',
+      );
+      var toDrop = excess;
+      accepted.removeWhere((s) {
+        if (toDrop > 0 && !s.isOpeningBaseline) {
+          toDrop--;
+          return true;
+        }
+        return false;
+      });
+    }
+    return accepted;
+  }
+
+  /// Creates the investments that valuations name but no cash flow does (an
+  /// opening baseline has none), from the Investment Type and Investment
+  /// Status of their rows, and adds their snapshots. [valuations] holds the
+  /// rows no cash flow group took. Returns lowercase name to new id.
+  Future<Map<String, String>> _importValuationOnlyInvestments(
+    Map<(bool, String), List<_ImportedValuation>> valuations, {
+    required ImportStrategy strategy,
+    required String baseCurrency,
+    required List<InvestmentValuationSnapshot> snapshots,
+    required List<String> warnings,
+  }) async {
+    if (valuations.isEmpty) return const {};
+    var existingNames = <String>{};
+    if (strategy == ImportStrategy.merge) {
+      existingNames = {
+        for (final e in await _investmentRepository.getAllInvestments())
+          e.name.toLowerCase(),
+      };
+    }
+
+    final now = DateTime.now();
+    final investments = <InvestmentEntity>[];
+    final nameToId = <String, String>{};
+    for (final MapEntry(key: (isArchived, nameKey), value: rows)
+        in valuations.entries) {
+      final name = rows.first.name;
+      if (strategy == ImportStrategy.merge && existingNames.contains(nameKey)) {
+        warnings.add('Skipped "$name" - already exists');
+        continue;
+      }
+      final investmentId = _uuid.v4();
+      final currency = resolveSharedCurrency(
+        rows.map((r) => r.currency),
+        baseCurrency,
+      );
+      final routed = _routeSnapshots(
+        investmentId: investmentId,
+        name: name,
+        currency: currency,
+        rows: rows,
+        now: now,
+        warnings: warnings,
+        keepIds: strategy == ImportStrategy.replace,
+        takenIds: {for (final s in snapshots) s.id},
+      );
+      // Nothing usable is left for this investment: create nothing.
+      if (routed.isEmpty) continue;
+      snapshots.addAll(routed);
+      final mirror = ValuationSnapshotSelector.mirrorOf(
+        routed,
+        investmentId: investmentId,
+        currency: currency,
+      );
+      investments.add(
+        InvestmentEntity(
+          id: investmentId,
+          name: name,
+          type: rows.first.investmentType ?? InvestmentType.other,
+          status: rows.first.investmentStatus ?? InvestmentStatus.open,
+          createdAt: now,
+          updatedAt: now,
+          isArchived: isArchived,
+          currency: currency,
+          currentValue: mirror?.amount,
+          currentValueDate: mirror?.effectiveDate,
+        ),
+      );
+      nameToId[nameKey] = investmentId;
+    }
+    valuations.clear();
+
+    if (investments.isNotEmpty) {
+      await _investmentRepository.bulkImport(
+        investments: investments,
+        cashFlows: const [],
+      );
+      for (final inv in investments) {
+        if (inv.isArchived) {
+          await _investmentRepository.archiveInvestment(inv.id);
+        }
+      }
+    }
+    return nameToId;
   }
 
   /// Reads custom_types.json (see `DataExportService`): the reusable types
@@ -1099,16 +1375,36 @@ class DataImportService {
   }
 }
 
-/// A current value read from valuations.csv.
+/// A row of valuations.csv.
 class _ImportedValuation {
+  /// As written in the file; the key to the investment is its lowercase.
+  final String name;
   final double value;
   final DateTime date;
   final String currency;
 
+  /// The Snapshot ID column; blank in files from before it existed and for
+  /// a value an older app saved.
+  final String snapshotId;
+  final ValuationKind kind;
+  final ValuationProvenance provenance;
+  final DateTime? updatedAt;
+
+  /// For an investment that has no cash flows to take them from.
+  final InvestmentType? investmentType;
+  final InvestmentStatus? investmentStatus;
+
   const _ImportedValuation({
+    required this.name,
     required this.value,
     required this.date,
     required this.currency,
+    required this.snapshotId,
+    required this.kind,
+    required this.provenance,
+    this.updatedAt,
+    this.investmentType,
+    this.investmentStatus,
   });
 }
 

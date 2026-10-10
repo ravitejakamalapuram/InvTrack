@@ -33,6 +33,13 @@ void main() {
         expect(c.read(isReviewPromptEnabledProvider), isTrue);
       });
 
+      test('$build: dated valuations (#941) are off', () async {
+        final c = await _container(overridesAllowed: overridesAllowed);
+        expect(c.read(isValuationSnapshotsEnabledProvider), isFalse);
+        expect(FeatureFlag.valuationSnapshots.key, 'valuation_snapshots');
+        expect(FeatureFlag.valuationSnapshots.defaultEnabled, isFalse);
+      });
+
       test('$build: custom investment types (#936) stay hidden', () async {
         final c = await _container(overridesAllowed: overridesAllowed);
         expect(c.read(isCustomInvestmentTypesEnabledProvider), isFalse);
@@ -61,6 +68,7 @@ void main() {
       'feature_flag_income_guardian': true,
       'feature_flag_reports_tab': true,
       'feature_flag_portfolio_health_score': true,
+      'feature_flag_valuation_snapshots': true,
       'feature_flag_custom_investment_types': true,
     };
 
@@ -70,6 +78,7 @@ void main() {
       expect(c.read(isIncomeGuardianEnabledProvider), isFalse);
       expect(c.read(isReportsTabEnabledProvider), isFalse);
       expect(c.read(isPortfolioHealthEnabledProvider), isFalse);
+      expect(c.read(isValuationSnapshotsEnabledProvider), isFalse);
       expect(c.read(isCustomInvestmentTypesEnabledProvider), isFalse);
     });
 
@@ -95,6 +104,7 @@ void main() {
       expect(c.read(isIncomeGuardianEnabledProvider), isTrue);
       expect(c.read(isReportsTabEnabledProvider), isTrue);
       expect(c.read(isPortfolioHealthEnabledProvider), isTrue);
+      expect(c.read(isValuationSnapshotsEnabledProvider), isTrue);
       expect(c.read(isCustomInvestmentTypesEnabledProvider), isTrue);
     });
   });

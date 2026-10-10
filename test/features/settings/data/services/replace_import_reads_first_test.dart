@@ -13,14 +13,17 @@ import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_e
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
+import 'package:inv_tracker/features/investment/domain/repositories/valuation_repository.dart';
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../fire_number/data/repositories/mock_fire_settings_repository.dart';
 import '../../../goals/data/repositories/mock_goal_repository.dart';
 import '../../../investment/data/repositories/mock_investment_repository.dart';
+import '../../../investment/valuation/in_memory_valuation_repository.dart';
 
 class _PerformanceService extends Mock implements PerformanceService {
   @override
@@ -68,6 +71,46 @@ class _SpyInvestments extends FakeInvestmentRepository {
   }) {
     writes.add('bulkImport');
     return super.bulkImport(investments: investments, cashFlows: cashFlows);
+  }
+}
+
+// Dated values (#941) live in their own collection, so a stopped import must
+// leave that untouched too: every write goes into the same log.
+class _SpyValuations extends InMemoryValuationRepository {
+  _SpyValuations(this.writes);
+  final List<String> writes;
+
+  @override
+  Future<void> save(
+    InvestmentValuationSnapshot snapshot, {
+    required CompatMirror mirror,
+  }) {
+    writes.add('saveValuation');
+    return super.save(snapshot, mirror: mirror);
+  }
+
+  @override
+  Future<void> softDelete(
+    InvestmentValuationSnapshot snapshot, {
+    required CompatMirror mirror,
+  }) {
+    writes.add('softDeleteValuation');
+    return super.softDelete(snapshot, mirror: mirror);
+  }
+
+  @override
+  Future<void> restore(
+    InvestmentValuationSnapshot snapshot, {
+    required CompatMirror mirror,
+  }) {
+    writes.add('restoreValuation');
+    return super.restore(snapshot, mirror: mirror);
+  }
+
+  @override
+  Future<int> importAll(List<InvestmentValuationSnapshot> snapshots) {
+    writes.add('importValuations');
+    return super.importAll(snapshots);
   }
 }
 
@@ -151,6 +194,47 @@ final _validFiles = <String, String>{
 List<int> _invalidUtf8(String valid) => [...utf8.encode(valid), 0xFF, 0xFE];
 
 const _valuationsHeader = 'Investment Name,Archived,Date,Value,Currency\n';
+
+// valuations.csv as this app writes it since dated values (#941): one row per
+// dated value, with the snapshot columns.
+const _snapshotHeader =
+    'Investment Name,Archived,Date,Value,Currency,Snapshot ID,Kind,Source,'
+    'Updated At,Investment Type,Investment Status\n';
+
+String _snapshotRow({
+  String name = _activeName,
+  String currency = 'INR',
+  String kind = 'marketValue',
+  String source = 'manual',
+}) =>
+    '$name,false,2025-10-05,125000,$currency,snap-new,$kind,$source,'
+    '2025-10-06T09:30:00Z,gold,open\n';
+
+final _validSnapshots = '$_snapshotHeader${_snapshotRow()}';
+
+// The ways a valuations.csv with snapshot columns can be damaged. Rows with a
+// kind or source this app does not know are never reinterpreted, and an
+// estimate is never stored, so a file of nothing else has nothing to restore.
+final _damagedSnapshots = <String, List<int>>{
+  'not UTF-8': _invalidUtf8(_validSnapshots),
+  'header-less': utf8.encode(_snapshotRow()),
+  'missing its Currency column': utf8.encode(
+    'Investment Name,Archived,Date,Value,Snapshot ID,Kind,Source\n'
+    '$_activeName,false,2025-10-05,125000,snap-new,marketValue,manual\n',
+  ),
+  'only rows of an unknown kind': utf8.encode(
+    '$_snapshotHeader${_snapshotRow(kind: 'fairValue')}',
+  ),
+  'only rows of an unknown source': utf8.encode(
+    '$_snapshotHeader${_snapshotRow(source: 'bank-feed')}',
+  ),
+  'only estimated rows': utf8.encode(
+    '$_snapshotHeader${_snapshotRow(source: 'estimate')}',
+  ),
+  'only rows with no currency': utf8.encode(
+    '$_snapshotHeader${_snapshotRow(currency: '')}',
+  ),
+};
 
 // Each optional file with the ways it can be damaged. A header-only file is
 // not damaged: an account without goals exports exactly that.
@@ -283,6 +367,7 @@ void main() {
   late FakeInvestmentRepository investments;
   late FakeGoalRepository goals;
   late FakeFireSettingsRepository fireSettings;
+  late _SpyValuations valuations;
   late DataImportService service;
 
   // What the account holds before the import.
@@ -298,6 +383,19 @@ void main() {
   final existingGoals = [_goal('old-goal', 'Existing Goal')];
   final existingArchivedGoals = [
     _goal('old-agoal', 'Existing Archived Goal', archived: true),
+  ];
+  final existingSnapshots = [
+    InvestmentValuationSnapshot(
+      id: 'old-snap',
+      investmentId: 'old-active',
+      amount: 90000,
+      currency: 'INR',
+      effectiveDate: DateTime(2024, 6, 1),
+      kind: ValuationKind.marketValue,
+      provenance: ValuationProvenance.manual,
+      createdAt: DateTime(2024, 6, 1),
+      updatedAt: DateTime(2024, 6, 1),
+    ),
   ];
   final existingFire = FireSettingsEntity(
     id: 'existing',
@@ -322,17 +420,25 @@ void main() {
     goals = _SpyGoals(writes)
       ..seed(goals: existingGoals, archivedGoals: existingArchivedGoals);
     fireSettings = _SpyFireSettings(writes)..seed(existingFire);
+    valuations = _SpyValuations(writes);
+    for (final snapshot in existingSnapshots) {
+      valuations.docs[snapshot.id] = snapshot;
+    }
     service = DataImportService(
       investmentRepository: investments,
       goalRepository: goals,
       documentRepository: documents,
       documentStorageService: documentStorage,
       fireSettingsRepository: fireSettings,
+      valuationRepository: valuations,
       performanceService: _PerformanceService(),
     );
   });
 
-  tearDown(() => fireSettings.dispose());
+  tearDown(() {
+    fireSettings.dispose();
+    valuations.dispose();
+  });
 
   Future<ZipImportResult> importZip(
     Uint8List zip, [
@@ -347,6 +453,8 @@ void main() {
     expect(goals.goals, existingGoals);
     expect(goals.archivedGoals, existingArchivedGoals);
     expect(fireSettings.settings, same(existingFire));
+    expect(valuations.docs.values.toList(), existingSnapshots);
+    expect(valuations.mirrors, isEmpty);
     expect(writes, isEmpty, reason: 'nothing is written');
     verifyZeroInteractions(documents);
     verifyZeroInteractions(documentStorage);
@@ -439,9 +547,14 @@ void main() {
       'Merge: a backup without cashflows.csv still adds its goals',
       () async {
         // Merge deletes nothing, so the rest of the backup is still worth
-        // importing.
+        // importing. The value file is header-only here: a value row with no
+        // cash flows now creates an investment (#941), which is not what this
+        // test is about.
         final result = await importZip(
-          _backup({'cashflows.csv': null}),
+          _backup({
+            'cashflows.csv': null,
+            'valuations.csv': utf8.encode(_valuationsHeader),
+          }),
           ImportStrategy.merge,
         );
 
@@ -580,6 +693,103 @@ void main() {
     });
   });
 
+  group('dated values: a damaged valuations.csv with snapshot columns', () {
+    const valuationsWarning =
+        'Current values not imported: valuations.csv is invalid';
+
+    // Replace stops before it deletes anything, so the account's investments,
+    // cash flows, goals AND its dated values are exactly as they were.
+    for (final mode in _damagedSnapshots.entries) {
+      test('Replace: valuations.csv is ${mode.key}', () async {
+        final result = await importZip(_backup({'valuations.csv': mode.value}));
+
+        expectStoppedAsDamaged(result, 'valuations.csv');
+      });
+    }
+
+    // Merge deletes nothing: the file is skipped with one fixed warning that
+    // holds no investment name or amount, and the rest of the backup merges.
+    for (final mode in _damagedSnapshots.entries) {
+      test(
+        'Merge: valuations.csv is ${mode.key}, the rest still merges',
+        () async {
+          final result = await importZip(
+            _backup({'valuations.csv': mode.value}),
+            ImportStrategy.merge,
+          );
+
+          expect(result.errors, isEmpty);
+          expect(result.warnings, [valuationsWarning]);
+          expectNoUserTextIn(result.warnings);
+          expect(result.cashflowsImported, 2);
+          expect(result.goalsImported, 2);
+          expect(
+            investments.investments.map((i) => i.id),
+            contains('old-active'),
+          );
+          expect(
+            investments.investments.map((i) => i.name),
+            contains(_activeName),
+          );
+          expect(
+            investments.investments.every((i) => i.currentValue != 125000),
+            isTrue,
+          );
+          expect(valuations.docs.values.toList(), existingSnapshots);
+          expect(valuations.mirrors, isEmpty);
+        },
+      );
+    }
+
+    test('Replace: a file with the snapshot header and no rows is not '
+        'damaged', () async {
+      final result = await importZip(
+        _backup({'valuations.csv': utf8.encode(_snapshotHeader)}),
+      );
+
+      expect(result.errors, isEmpty);
+      expect(result.warnings, isEmpty);
+      expect(investments.investments.single.name, _activeName);
+      expect(investments.investments.single.currentValue, isNull);
+      expect(result.valuationsImported, 0);
+      expect(valuations.docs.keys, ['old-snap']);
+    });
+
+    test('Replace: one row of an unknown kind does not hide the readable '
+        'ones', () async {
+      final result = await importZip(
+        _backup({
+          'valuations.csv': utf8.encode(
+            '$_validSnapshots'
+            '${_snapshotRow(name: _archivedName, kind: 'fairValue')}',
+          ),
+        }),
+      );
+
+      expect(result.errors, isEmpty);
+      expect(result.warnings, hasLength(1));
+      expect(result.warnings.single, isNot(contains('125000')));
+      expect(result.valuationsImported, 1);
+      // The fake investment repository does not cascade, so the old snapshot
+      // is still there beside the one the file holds.
+      expect(valuations.docs.keys, ['old-snap', 'snap-new']);
+      expect(investments.investments.single.currentValue, 125000);
+    });
+
+    test('Replace: a readable file replaces the dated values', () async {
+      final result = await importZip(
+        _backup({'valuations.csv': utf8.encode(_validSnapshots)}),
+      );
+
+      expect(result.errors, isEmpty);
+      expect(result.warnings, isEmpty);
+      expect(result.valuationsImported, 1);
+      // The old snapshot went with its investment; the file's is kept by id.
+      expect(valuations.docs.keys, containsAll(['snap-new']));
+      expect(investments.investments.single.currentValue, 125000);
+    });
+  });
+
   group('Replace: a backup that is readable still replaces', () {
     test('Replace: a file with a header and no rows is not damaged', () async {
       // An account with no goals or archived investments exports exactly
@@ -641,6 +851,44 @@ void main() {
     });
   });
 
+  // CodeRabbit on PR 961: the dated values are written after Replace has
+  // wiped the account. A failed write must not stop the goals and the rest.
+  group('Replace: the dated values cannot be saved', () {
+    const warning = 'Dated values not imported: they could not be saved';
+
+    test(
+      'goals still import and one fixed warning says what is missing',
+      () async {
+        // A backend error can quote an investment and an amount.
+        valuations.failNextWrite = StateError(
+          'permission denied for $_activeName 125000',
+        );
+        final result = await importZip(_backup());
+
+        expect(result.errors, isEmpty);
+        expect(result.warnings, [warning]);
+        expectNoUserTextIn(result.warnings);
+        expect(result.investmentsImported, 2);
+        expect(result.cashflowsImported, 2);
+        expect(result.goalsImported, 2);
+        expect(goals.goals.map((g) => g.name), [_goalName]);
+        expect(goals.archivedGoals.map((g) => g.name), [_archivedGoalName]);
+        expect(investments.investments.single.name, _activeName);
+        // Only the snapshot the account had before: the backup's was not
+        // written (the fake does not cascade the wipe to snapshots).
+        expect(valuations.docs.keys, ['old-snap']);
+      },
+    );
+
+    test('Merge: the same failure also keeps importing', () async {
+      valuations.failNextWrite = StateError('quota');
+      final result = await importZip(_backup(), ImportStrategy.merge);
+
+      expect(result.warnings, contains(warning));
+      expect(result.goalsImported, 2);
+    });
+  });
+
   group('a readable backup imports exactly as before', () {
     test('Replace: valid backup', () async {
       final result = await importZip(_backup());
@@ -662,8 +910,13 @@ void main() {
     test(
       'Replace: only archived data (empty cashflows.csv) still replaces',
       () async {
+        // The value file holds no row for an active investment: one would
+        // create it without cash flows (#941), and this backup has none.
         final result = await importZip(
-          _backup({'cashflows.csv': utf8.encode(_cashflowsHeader)}),
+          _backup({
+            'cashflows.csv': utf8.encode(_cashflowsHeader),
+            'valuations.csv': utf8.encode(_valuationsHeader),
+          }),
         );
 
         expect(result.errors, isEmpty);

@@ -23,6 +23,7 @@ final dataImportServiceProvider = Provider<DataImportService?>((ref) {
   final documentRepository = ref.watch(documentRepositoryProvider);
   final documentStorageService = ref.watch(documentStorageServiceProvider);
   final fireSettingsRepository = ref.watch(fireSettingsRepositoryProvider);
+  final valuationRepository = ref.watch(valuationRepositoryProvider);
   final customInvestmentTypeRepository = ref.watch(
     customInvestmentTypeRepositoryProvider,
   );
@@ -34,6 +35,7 @@ final dataImportServiceProvider = Provider<DataImportService?>((ref) {
     documentRepository: documentRepository,
     documentStorageService: documentStorageService,
     fireSettingsRepository: fireSettingsRepository,
+    valuationRepository: valuationRepository,
     customInvestmentTypeRepository: customInvestmentTypeRepository,
     performanceService: performanceService,
   );

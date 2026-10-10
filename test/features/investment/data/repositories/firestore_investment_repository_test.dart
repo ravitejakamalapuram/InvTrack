@@ -76,6 +76,27 @@ void main() {
         .thenReturn(mockArchivedInvestmentsCollection);
     when(() => mockUserDoc.collection('archivedCashflows'))
         .thenReturn(mockArchivedCashFlowsCollection);
+    // Deleting an investment also lists its valuation snapshots (#941);
+    // this investment has none.
+    final mockValuationsCollection = MockCollectionReference();
+    final noSnapshotsQuery = MockQuery();
+    final noSnapshots = MockQuerySnapshot();
+    when(
+      () => mockUserDoc.collection('valuations'),
+    ).thenReturn(mockValuationsCollection);
+    when(
+      () => mockValuationsCollection.where(
+        'investmentId',
+        isEqualTo: testInvestmentId,
+      ),
+    ).thenReturn(noSnapshotsQuery);
+    when(
+      () => noSnapshotsQuery.get(const GetOptions(source: Source.cache)),
+    ).thenAnswer((_) async => noSnapshots);
+    when(
+      () => noSnapshotsQuery.get(const GetOptions(source: Source.server)),
+    ).thenAnswer((_) async => noSnapshots);
+    when(() => noSnapshots.docs).thenReturn([]);
 
     when(() => mockInvestmentsCollection.doc(testInvestmentId))
         .thenReturn(mockInvestmentDoc);

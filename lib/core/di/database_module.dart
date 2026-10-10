@@ -9,10 +9,12 @@ import 'package:inv_tracker/features/income_projection/domain/repositories/expec
 import 'package:inv_tracker/features/investment/data/repositories/firestore_custom_investment_type_repository.dart';
 import 'package:inv_tracker/features/investment/data/repositories/firestore_document_repository.dart';
 import 'package:inv_tracker/features/investment/data/repositories/firestore_investment_repository.dart';
+import 'package:inv_tracker/features/investment/data/repositories/firestore_valuation_repository.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/custom_investment_type_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
+import 'package:inv_tracker/features/investment/domain/repositories/valuation_repository.dart';
 import 'package:inv_tracker/features/settings/data/services/account_data_deletion_service.dart';
 import 'package:inv_tracker/features/settings/data/services/deletion_request_service.dart';
 import 'package:inv_tracker/features/settings/data/services/legacy_currency_backfill_service.dart';
@@ -57,6 +59,17 @@ final investmentRepositoryProvider = Provider<InvestmentRepository>((ref) {
     userId: user.id,
     baseCurrency: baseCurrencyReader(ref),
   );
+});
+
+/// Provider for the dated valuation repository using Firestore
+/// Throws AuthException.notAuthenticated if user is not authenticated
+final valuationRepositoryProvider = Provider<ValuationRepository>((ref) {
+  final firestore = ref.watch(firestoreProvider);
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) {
+    throw AuthException.notAuthenticated();
+  }
+  return FirestoreValuationRepository(firestore: firestore, userId: user.id);
 });
 
 /// Provider for the reusable custom investment type repository (#936)

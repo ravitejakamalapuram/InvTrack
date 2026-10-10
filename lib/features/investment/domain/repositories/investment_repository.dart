@@ -48,8 +48,16 @@ abstract class InvestmentRepository {
   /// Create a new investment
   Future<void> createInvestment(InvestmentEntity investment);
 
-  /// Update an existing investment
-  Future<void> updateInvestment(InvestmentEntity investment);
+  /// Update an existing investment.
+  ///
+  /// With [preserveCurrentValue] the stored current value and its date are
+  /// left as they are, whatever [investment] holds: while valuation snapshots
+  /// are on, that pair mirrors the latest snapshot, and an edit that read it
+  /// earlier must not write a stale copy back.
+  Future<void> updateInvestment(
+    InvestmentEntity investment, {
+    bool preserveCurrentValue = false,
+  });
 
   /// Close an investment
   Future<void> closeInvestment(String id);
@@ -91,8 +99,12 @@ abstract class InvestmentRepository {
   /// Get archived investment by ID
   Future<InvestmentEntity?> getArchivedInvestmentById(String id);
 
-  /// Update an archived investment
-  Future<void> updateArchivedInvestment(InvestmentEntity investment);
+  /// Update an archived investment (see [updateInvestment] for
+  /// [preserveCurrentValue])
+  Future<void> updateArchivedInvestment(
+    InvestmentEntity investment, {
+    bool preserveCurrentValue = false,
+  });
 
   /// Delete an archived investment permanently
   Future<void> deleteArchivedInvestment(String id);

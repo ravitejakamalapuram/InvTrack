@@ -6,6 +6,7 @@ import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/valuation_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'multi_currency_providers.g.dart';
@@ -181,6 +182,7 @@ Future<double> multiCurrencyPortfolioValue(Ref ref) async {
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
 /// - InvestmentStats.empty() when the investment has no active cash flows
+///   and no dated valuation (an opening baseline needs no cash flows)
 @riverpod
 Future<InvestmentStats> multiCurrencyInvestmentStats(
   Ref ref,
@@ -191,11 +193,12 @@ Future<InvestmentStats> multiCurrencyInvestmentStats(
     for (final cf in converted.snapshot.cashFlows)
       if (cf.investmentId == investmentId) cf,
   ];
-  if (cashFlows.isEmpty) return InvestmentStats.empty();
-  return calculateStats(
-    cashFlows,
-    terminalValues: converted.byInvestment[investmentId] ?? TerminalValues.none,
-  );
+  final terminalValues =
+      converted.byInvestment[investmentId] ?? TerminalValues.none;
+  if (cashFlows.isEmpty && terminalValues.flows.isEmpty) {
+    return InvestmentStats.empty();
+  }
+  return calculateStats(cashFlows, terminalValues: terminalValues);
 }
 
 /// The investment with [id] in [investments], or null.
@@ -227,7 +230,15 @@ Future<InvestmentStats> _convertedStats(
   List<CashFlowEntity> cashFlows, {
   required List<InvestmentEntity> investments,
 }) async {
-  if (cashFlows.isEmpty) {
+  // Dated valuations of the active investments: empty while the feature is
+  // off, and always for archived ones (money rule 9).
+  final snapshots = await dataOf(
+    ref.watch(valuationSnapshotsByInvestmentProvider),
+  );
+  final hasValuations = investments.any(
+    (i) => i.isOpen && (snapshots[i.id]?.isNotEmpty ?? false),
+  );
+  if (cashFlows.isEmpty && !hasValuations) {
     return InvestmentStats.empty();
   }
 
@@ -237,11 +248,13 @@ Future<InvestmentStats> _convertedStats(
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
   // Batch convert with deduplication (OPTIMIZED)
-  final convertedCashFlows = await engine.currency.batchConvert(
-    cashFlows: cashFlows,
-    baseCurrency: userBaseCurrency,
-    fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
-  );
+  final convertedCashFlows = cashFlows.isEmpty
+      ? const <CashFlowEntity>[]
+      : await engine.currency.batchConvert(
+          cashFlows: cashFlows,
+          baseCurrency: userBaseCurrency,
+          fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
+        );
   requireBaseCurrency(convertedCashFlows, userBaseCurrency);
 
   // Current values are converted like cash flows before anything is summed
@@ -250,6 +263,7 @@ Future<InvestmentStats> _convertedStats(
     investments: investments,
     cashFlows: cashFlows,
     asOf: ref.watch(valuationDateProvider),
+    snapshots: snapshots,
   );
   // A value with no rate at all counts as missing rather than show a
   // native amount under the base symbol.
@@ -309,11 +323,8 @@ Future<InvestmentStats> multiCurrencyGlobalStats(Ref ref) async {
   // show the new-user empty state to users who have data.
   final cashFlows = await dataOf(ref.watch(validCashFlowsProvider));
 
-  if (cashFlows.isEmpty) {
-    return InvestmentStats.empty();
-  }
-
   // Valid cash flows exist only once the active investments have loaded.
+  // With none, only dated valuations can give stats (_convertedStats).
   return _convertedStats(
     ref,
     cashFlows,
@@ -358,10 +369,7 @@ Future<InvestmentStats> multiCurrencyOpenStats(Ref ref) async {
     }
   }
 
-  if (openCashFlows.isEmpty) {
-    return InvestmentStats.empty();
-  }
-
+  // With no cash flows, only dated valuations can give stats.
   return _convertedStats(ref, openCashFlows, investments: investments);
 }
 
