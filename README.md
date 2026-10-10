@@ -157,6 +157,7 @@ lib/
 
 ### Tech Stack
 - **Framework**: Flutter (version pinned in `release.yaml`)
+- **Release version**: comes from the git release tag (`release.yaml` derives it); `version:` in `pubspec.yaml` is not the source
 - **State Management**: Riverpod
 - **Database**: Firebase Firestore (offline-first)
 - **Authentication**: Firebase Auth (Google Sign-In)

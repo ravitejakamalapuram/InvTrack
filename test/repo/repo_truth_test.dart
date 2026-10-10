@@ -43,6 +43,30 @@ Iterable<String> _relativeLinks(String markdown) sync* {
   }
 }
 
+/// Files directly inside [dir], or none when the directory does not exist
+/// (a removed folder must not make a scan throw).
+Iterable<File> _filesIn(String dir) {
+  final d = Directory(dir);
+  if (!d.existsSync()) return const <File>[];
+  return d.listSync().where((e) => e is! Directory).map((e) => File(e.path));
+}
+
+/// Every file or link under [dir] (recursive), skipping dependency and build
+/// folders. Callers that read content check `existsSync()` first.
+Iterable<File> _filesUnder(String dir) sync* {
+  final d = Directory(dir);
+  if (!d.existsSync()) return;
+  for (final e in d.listSync(recursive: true, followLinks: false)) {
+    // A symlink counts too: a link named after a deleted file must not hide it.
+    if (e is Directory) continue;
+    final parts = e.path.split(Platform.pathSeparator);
+    if (parts.contains('node_modules') || parts.contains('.dart_tool')) {
+      continue;
+    }
+    yield File(e.path);
+  }
+}
+
 void main() {
   group('licence', () {
     test('LICENSE exists, reserves all rights and grants no MIT licence', () {
@@ -334,10 +358,8 @@ void main() {
         File('README.md'),
         File('.coderabbit.yaml'),
         File('.github/PR_DESCRIPTION.md'),
-        ...Directory(
-          'scripts',
-        ).listSync().whereType<File>().where((f) => f.path.endsWith('.sh')),
-        ...Directory('.github/scripts').listSync().whereType<File>(),
+        ..._filesIn('scripts').where((f) => f.path.endsWith('.sh')),
+        ..._filesIn('.github/scripts'),
       ];
       final missing = <String>[];
       for (final source in sources) {
@@ -362,7 +384,7 @@ void main() {
     });
   });
 
-  group('app metadata and version source of truth', () {
+  group('app metadata and release version', () {
     test('app-metadata.json is gone (nothing reads it)', () {
       expect(File('app-metadata.json').existsSync(), isFalse);
     });
@@ -395,7 +417,7 @@ void main() {
       },
     );
 
-    test('pubspec.yaml is the only place that hard-codes the app version', () {
+    test('README and product.yaml do not hard-code the app version', () {
       final version = _pubspecVersion();
       final semver = version.split('+').first;
       for (final path in ['README.md', '.appforge/product.yaml']) {
@@ -403,7 +425,132 @@ void main() {
         expect(text, isNot(contains(version)), reason: path);
         expect(text, isNot(contains(semver)), reason: path);
       }
-      expect(_read('.appforge/product.yaml'), contains('pubspec.yaml'));
+    });
+
+    test('the release version comes from the git release tag', () {
+      // The claim is only true while release.yaml builds with the tag-derived
+      // values and not with the version in pubspec.yaml.
+      final release = _read('release.yaml');
+      expect(release, contains('--build-name "\$VERSION_NAME"'));
+      expect(release, contains('--build-number "\$VERSION_CODE"'));
+      expect(release, contains('vX.Y.Z tag'));
+
+      for (final path in ['README.md', '.appforge/product.yaml']) {
+        final sentence = _read(path)
+            .split('\n')
+            .where(
+              (l) =>
+                  l.contains('git release tag') &&
+                  l.contains('release.yaml') &&
+                  l.contains('pubspec.yaml'),
+            );
+        expect(sentence, isNotEmpty, reason: '$path must name the git tag');
+      }
+    });
+
+    test(
+      'nothing claims pubspec.yaml is the source of the release version',
+      () {
+        final claim = RegExp(
+          r'pubspec[^\n]*(source of truth|source in the repo|is the source)',
+          caseSensitive: false,
+        );
+        for (final path in [
+          'README.md',
+          '.appforge/product.yaml',
+          '.github/PR_DESCRIPTION.md',
+        ]) {
+          final offending = _read(path).split('\n').where(claim.hasMatch);
+          expect(offending, isEmpty, reason: path);
+        }
+      },
+    );
+  });
+
+  group('removed Jules crash-fix automation', () {
+    const gone = [
+      '.github/scripts/create-jules-sessions.sh',
+      '.github/scripts/monitor-jules-sessions.sh',
+      '.github/scripts/run-all-crash-fix.sh',
+      '.github/scripts/create-summary-issue.sh',
+      '.github/scripts/fetch-crashlytics-data.sh',
+      '.github/scripts/firebase-helper.js',
+      'docs/JULES_CRASH_FIX_AUTOMATION.md',
+      'docs/archive/JULES_CRASH_FIX_AUTOMATION.md',
+    ];
+
+    test('its scripts and guide are deleted', () {
+      final back = gone.where((p) => File(p).existsSync()).toList();
+      expect(back, isEmpty, reason: 'deleted files are back: $back');
+    });
+
+    test('no script or live doc named after Jules is added again', () {
+      final named = [
+        ..._filesUnder('.github'),
+        ..._filesUnder('scripts'),
+        ..._filesIn('docs'),
+      ].map((f) => f.path).where((p) => p.toLowerCase().contains('jules'));
+      expect(named, isEmpty, reason: named.join('\n'));
+    });
+
+    test('nothing live still points at the deleted files', () {
+      // Case-insensitive on purpose: a renamed copy must not slip through.
+      // Read as latin1 so a binary file in these folders cannot make it throw.
+      final pointer = RegExp(
+        r'create-jules-sessions|monitor-jules-sessions|run-all-crash-fix|'
+        r'create-summary-issue|fetch-crashlytics-data|firebase-helper|'
+        r'JULES_CRASH_FIX|jules-crash-fix|jules_sessions|JULES_API_KEY',
+        caseSensitive: false,
+      );
+      final sources = <File>[
+        ..._filesUnder('.github'),
+        ..._filesUnder('scripts'),
+        ..._filesIn('docs').where((f) => f.path.endsWith('.md')),
+        ..._filesUnder('.augment'),
+        File('README.md'),
+        File('CLAUDE.md'),
+        File('.coderabbit.yaml'),
+        File('.gitignore'),
+        File('release.yaml'),
+      ];
+      final stale = <String>[];
+      for (final f in sources) {
+        if (!f.existsSync()) continue;
+        final lines = f.readAsLinesSync(encoding: latin1);
+        for (var i = 0; i < lines.length; i++) {
+          if (pointer.hasMatch(lines[i])) stale.add('${f.path}:${i + 1}');
+        }
+      }
+      expect(stale, isEmpty, reason: stale.join('\n'));
+    });
+  });
+
+  group('developer name', () {
+    test('is spelled Raviteja Kamalapuram, never Ravi Teja', () {
+      final misspelt = RegExp(r'Ravi[\s_-]+Teja', caseSensitive: false);
+      final offenders = <String>[];
+      for (final f in [
+        File('README.md'),
+        File('LICENSE'),
+        File('pubspec.yaml'),
+        ..._filesUnder('.appforge'),
+        ..._filesUnder(
+          'lib',
+        ).where((f) => f.path.endsWith('.dart') || f.path.endsWith('.arb')),
+        ..._filesUnder(
+          'android/fastlane/metadata',
+        ).where((f) => f.path.endsWith('.txt')),
+      ]) {
+        if (f.existsSync() &&
+            misspelt.hasMatch(f.readAsStringSync(encoding: latin1))) {
+          offenders.add(f.path);
+        }
+      }
+      expect(offenders, isEmpty, reason: offenders.join('\n'));
+      expect(
+        _read('README.md'),
+        contains('**Developer**: Raviteja Kamalapuram'),
+      );
     });
   });
 }
