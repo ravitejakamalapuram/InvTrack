@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
@@ -6,6 +8,17 @@ import 'package:inv_tracker/features/investment/domain/entities/transaction_enti
 /// UI-specific extensions for Investment domain entities.
 /// Keeps domain entities framework-agnostic by moving Color and IconData here.
 /// Follows InvTrack Enterprise Rules #1.1 (Architecture - Layer Boundaries).
+
+/// The name to show for [investment]'s type (#936): the custom label of an
+/// Other investment that has one while the feature flag is on, otherwise the
+/// built-in type's name. The flag is read only for an investment that has a
+/// label. Grouping, filtering and the type breakdown keep using the built-in
+/// type, so they do not call this.
+String investmentTypeName(WidgetRef ref, InvestmentEntity investment) =>
+    investment.hasCustomTypeLabel &&
+        ref.watch(isCustomInvestmentTypesEnabledProvider)
+    ? investment.typeLabel
+    : investment.type.displayName;
 
 /// Extension providing UI-specific properties for [InvestmentType].
 extension InvestmentTypeUI on InvestmentType {
@@ -77,7 +90,6 @@ extension InvestmentTypeUI on InvestmentType {
     }
   }
 }
-
 
 /// Extension providing UI-specific properties for [RiskLevel].
 extension RiskLevelUI on RiskLevel {
@@ -156,7 +168,6 @@ extension IncomeFrequencyUI on IncomeFrequency {
   }
 }
 
-
 /// Extension providing UI-specific properties for [DocumentType].
 extension DocumentTypeUI on DocumentType {
   /// Icon representing this document type
@@ -196,7 +207,6 @@ extension DocumentTypeUI on DocumentType {
   }
 }
 
-
 /// Extension providing UI-specific properties for [CashFlowType].
 /// Moved from domain layer to maintain platform-agnostic domain (Rule 1.1).
 extension CashFlowTypeUI on CashFlowType {
@@ -228,4 +238,3 @@ extension CashFlowTypeUI on CashFlowType {
     }
   }
 }
-

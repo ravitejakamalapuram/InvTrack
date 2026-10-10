@@ -44,7 +44,14 @@ enum FeatureFlag {
   /// Play in-app review prompt after a first recorded INCOME or RETURN.
   /// - One-shot per install, gated on a genuine success moment
   /// - On by default (A42)
-  reviewPrompt('review_prompt', 'Play Review Prompt', defaultEnabled: true);
+  reviewPrompt('review_prompt', 'Play Review Prompt', defaultEnabled: true),
+
+  /// Reusable custom labels for investments of type Other (#936).
+  /// - Optional "Custom type" field on the investment form
+  /// - Saved labels come back as suggestions
+  /// - Off by default; saved labels are still exported, imported and deleted
+  ///   with the account while it is off
+  customInvestmentTypes('custom_investment_types', 'Custom Investment Types');
 
   const FeatureFlag(this.key, this.displayName, {this.defaultEnabled = false});
 
@@ -198,6 +205,16 @@ final isReviewPromptEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.reviewPrompt] ?? false,
+    ),
+  );
+});
+
+/// Convenience provider for checking if reusable custom investment types are
+/// enabled (#936)
+final isCustomInvestmentTypesEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagsProvider.select(
+      (flags) => flags[FeatureFlag.customInvestmentTypes] ?? false,
     ),
   );
 });

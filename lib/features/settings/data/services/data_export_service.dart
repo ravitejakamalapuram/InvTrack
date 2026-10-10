@@ -14,9 +14,11 @@ import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settin
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/repositories/goal_repository.dart';
 import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
+import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
+import 'package:inv_tracker/features/investment/domain/repositories/custom_investment_type_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
@@ -28,6 +30,11 @@ enum ExportFileType {
   goals,
   goalsArchived,
   valuations,
+
+  /// The account's reusable custom investment types and the custom type
+  /// label of each Other investment (#936), in one JSON file; written only
+  /// when there is something in it.
+  customTypes,
 }
 
 /// An export ZIP held in memory, with the number of records it was built
@@ -108,6 +115,7 @@ class DataExportService {
   final DocumentStorageService _documentStorageService;
   final FireSettingsRepository? _fireSettingsRepository;
   final ExpectedCashFlowRepository? _expectedCashFlowRepository;
+  final CustomInvestmentTypeRepository? _customInvestmentTypeRepository;
   final PerformanceService _performanceService;
 
   DataExportService({
@@ -117,6 +125,7 @@ class DataExportService {
     required DocumentStorageService documentStorageService,
     FireSettingsRepository? fireSettingsRepository,
     ExpectedCashFlowRepository? expectedCashFlowRepository,
+    CustomInvestmentTypeRepository? customInvestmentTypeRepository,
     required PerformanceService performanceService,
   }) : _investmentRepository = investmentRepository,
        _goalRepository = goalRepository,
@@ -124,6 +133,7 @@ class DataExportService {
        _documentStorageService = documentStorageService,
        _fireSettingsRepository = fireSettingsRepository,
        _expectedCashFlowRepository = expectedCashFlowRepository,
+       _customInvestmentTypeRepository = customInvestmentTypeRepository,
        _performanceService = performanceService;
 
   /// Export all user data as a ZIP file
@@ -207,10 +217,22 @@ class DataExportService {
       archived: archivedInvestments,
     );
 
+    // Custom types (#936): one file, only when there is something to write,
+    // so an account without any exports exactly what it did before. Not
+    // caught: a failure here must not give a backup that silently lacks them.
+    final customTypes = [...?await _customInvestmentTypeRepository?.getAll()]
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final customTypesJson = _generateCustomTypesJson(
+      types: customTypes,
+      active: investments,
+      archived: archivedInvestments,
+    );
+
     // 3. Create metadata JSON
     final metadata = _createMetadata(
       documents: allDocuments,
       investments: allInvestments,
+      hasCustomTypes: customTypesJson != null,
     );
 
     // 4. Create ZIP archive
@@ -248,6 +270,11 @@ class DataExportService {
       ArchiveFile('valuations.csv', valuationsBytes.length, valuationsBytes),
     );
 
+    if (customTypesJson != null) {
+      final bytes = utf8.encode(customTypesJson);
+      archive.addFile(ArchiveFile('custom_types.json', bytes.length, bytes));
+    }
+
     // Add metadata JSON
     final metadataBytes = utf8.encode(jsonEncode(metadata));
     archive.addFile(
@@ -268,10 +295,7 @@ class DataExportService {
       } else {
         LoggerService.debug(
           'Document not found or inaccessible during export',
-          metadata: {
-            'documentId': doc.id,
-            'investmentId': doc.investmentId,
-          },
+          metadata: {'documentId': doc.id, 'investmentId': doc.investmentId},
         );
         documentsFailed++;
       }
@@ -506,6 +530,49 @@ class DataExportService {
     return csv.encode(rows);
   }
 
+  /// Generate custom_types.json (#936): the account's reusable types and the
+  /// custom type label of each Other investment, or null if there is neither.
+  /// JSON, so a label needs no spreadsheet-formula protection and comes back
+  /// exactly. Ids are not exported: an import matches types by label, and
+  /// investments by (archived, name) like valuations.csv. `linked` says
+  /// whether the investment referred to a reusable type or carried a label
+  /// for itself only.
+  String? _generateCustomTypesJson({
+    required List<CustomInvestmentType> types,
+    required List<InvestmentEntity> active,
+    required List<InvestmentEntity> archived,
+  }) {
+    final links = <Map<String, Object>>[];
+    for (final (inv, isArchived) in [
+      for (final inv in active) (inv, false),
+      for (final inv in archived) (inv, true),
+    ]) {
+      final label = inv.customTypeLabel;
+      if (inv.type != InvestmentType.other ||
+          label == null ||
+          label.trim().isEmpty) {
+        continue;
+      }
+      links.add({
+        // Spelled as in cashflows.csv and valuations.csv, which an import
+        // matches the investment by.
+        'name': CsvUtils.sanitizeField(inv.name),
+        'archived': isArchived,
+        'label': label,
+        'linked': inv.customTypeId != null,
+      });
+    }
+    if (types.isEmpty && links.isEmpty) return null;
+    return jsonEncode({
+      'version': 1,
+      'types': [
+        for (final type in types)
+          {'label': type.label, 'removed': type.isRemoved},
+      ],
+      'investments': links,
+    });
+  }
+
   /// Converts CashFlowType to export string (reused from ExportService)
   String _typeToExportString(CashFlowType type) {
     switch (type) {
@@ -526,6 +593,7 @@ class DataExportService {
   Map<String, dynamic> _createMetadata({
     required List<DocumentEntity> documents,
     required List<InvestmentEntity> investments,
+    required bool hasCustomTypes,
   }) {
     // Create a lookup map for investment names
     final investmentIdToName = <String, String>{
@@ -547,6 +615,11 @@ class DataExportService {
           'type': ExportFileType.goalsArchived.name,
         },
         {'fileName': 'valuations.csv', 'type': ExportFileType.valuations.name},
+        if (hasCustomTypes)
+          {
+            'fileName': 'custom_types.json',
+            'type': ExportFileType.customTypes.name,
+          },
       ],
       'documents': documents.map((d) {
         return _documentToJson(d, investmentIdToName[d.investmentId] ?? '');

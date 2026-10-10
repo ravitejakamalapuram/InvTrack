@@ -10,11 +10,20 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Screen displaying help and frequently asked questions about using the app
 class HelpFaqScreen extends StatelessWidget {
-  const HelpFaqScreen({super.key, required this.showDeveloperFaq});
+  const HelpFaqScreen({
+    super.key,
+    required this.showDeveloperFaq,
+    this.showCustomTypesFaq = false,
+  });
 
   /// Whether to explain the developer tools. Callers pass
   /// developerToolsAvailableProvider, which is false in release builds.
   final bool showDeveloperFaq;
+
+  /// Whether to explain custom types for Other investments (#936). Callers
+  /// pass isCustomInvestmentTypesEnabledProvider, so the FAQ never describes
+  /// a feature the user cannot see.
+  final bool showCustomTypesFaq;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +63,12 @@ class HelpFaqScreen extends StatelessWidget {
               l10n.whatInvestmentTypesSupportedAnswer,
               isDark,
             ),
+            if (showCustomTypesFaq)
+              _buildFaqItem(
+                l10n.whatAreCustomTypes,
+                l10n.whatAreCustomTypesAnswer,
+                isDark,
+              ),
           ]),
           _buildSection(l10n.trackingReturns, [
             _buildFaqItem(

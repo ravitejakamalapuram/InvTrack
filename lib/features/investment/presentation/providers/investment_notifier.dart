@@ -14,11 +14,14 @@ import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/analytics_utils.dart';
 import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/utils/custom_type_label.dart';
 import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
+import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
+import 'package:inv_tracker/features/investment/domain/models/custom_type_catalog.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
 import 'package:uuid/uuid.dart';
@@ -56,13 +59,17 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     CompoundingFrequency? compoundingFrequency,
     // Multi-currency support
     String? currency,
+    // Text typed in the "Custom type" field of an investment of type Other
+    String? customTypeLabel,
   }) async {
     // Input validation
     _validateName(name);
     _validateNotes(notes);
+    _validateCustomTypeLabel(type, customTypeLabel);
 
     state = const AsyncValue.loading();
     try {
+      final customType = await _resolveCustomType(type, customTypeLabel);
       final investment = InvestmentEntity(
         id: const Uuid().v4(),
         name: name.trim(),
@@ -84,6 +91,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         compoundingFrequency: compoundingFrequency,
         // Multi-currency (defaults to the user's base currency)
         currency: currency ?? ref.read(currencyCodeProvider),
+        customTypeId: customType.id,
+        customTypeLabel: customType.label,
       );
 
       // Track performance of investment creation
@@ -149,10 +158,14 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     CompoundingFrequency? compoundingFrequency,
     // Multi-currency support
     String? currency,
+    // Text typed in the "Custom type" field of an investment of type Other;
+    // null or blank clears the custom type.
+    String? customTypeLabel,
   }) async {
     // Input validation
     _validateName(name);
     _validateNotes(notes);
+    _validateCustomTypeLabel(type, customTypeLabel);
 
     state = const AsyncValue.loading();
     try {
@@ -160,6 +173,11 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .read(investmentRepositoryProvider)
           .getInvestmentById(id);
       if (existing == null) throw DataException.notFound('Investment', id);
+      final customType = await _resolveCustomType(
+        type,
+        customTypeLabel,
+        existing: existing,
+      );
       // The current value is in the stored currency; it means nothing in
       // another one, so a currency change clears it (money rule 2).
       final keepsValue = currency == null || currency == existing.currency;
@@ -194,6 +212,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         // Not on the edit form: set through setCurrentValue only.
         currentValue: keepsValue ? existing.currentValue : null,
         currentValueDate: keepsValue ? existing.currentValueDate : null,
+        customTypeId: customType.id,
+        customTypeLabel: customType.label,
       );
       final repo = ref.read(investmentRepositoryProvider);
 
@@ -322,6 +342,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     currency: existing.currency,
     currentValue: value,
     currentValueDate: date,
+    customTypeId: existing.customTypeId,
+    customTypeLabel: existing.customTypeLabel,
   );
 
   /// Close an investment
@@ -707,10 +729,20 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         return null;
       }
 
+      // A merged Other investment keeps the custom type of the first source
+      // that has one.
+      final customTypeSource = finalType == InvestmentType.other
+          ? toMerge.where(
+              (i) =>
+                  i.type == InvestmentType.other && i.customTypeLabel != null,
+            )
+          : const <InvestmentEntity>[];
       final newInvestment = InvestmentEntity(
         id: newInvestmentId,
         name: newName,
         type: finalType,
+        customTypeId: customTypeSource.firstOrNull?.customTypeId,
+        customTypeLabel: customTypeSource.firstOrNull?.customTypeLabel,
         status: toMerge.any((i) => i.status == InvestmentStatus.open)
             ? InvestmentStatus.open
             : InvestmentStatus.closed,
@@ -857,6 +889,52 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         ValidationConstants.maxNotesLength,
       );
     }
+  }
+
+  /// Validates the "Custom type" text of an investment of type Other.
+  /// Throws [ValidationException] if it exceeds the maximum length.
+  void _validateCustomTypeLabel(InvestmentType type, String? label) {
+    if (type != InvestmentType.other) return;
+    if (CustomTypeLabel.exceedsMaxLength(CustomTypeLabel.clean(label))) {
+      throw ValidationException.tooLong(
+        'Custom type',
+        CustomTypeLabel.maxLength,
+      );
+    }
+  }
+
+  /// What [type] and the text typed in the "Custom type" field leave the
+  /// investment storing (#936): nothing for a built-in type or blank text;
+  /// otherwise a link to the matching active reusable type, or a label for
+  /// this investment only. [existing] is the stored investment on an edit:
+  /// text equal to its label keeps its link as it is. The saved types are
+  /// read only when there is text to match.
+  Future<CustomTypeLink> _resolveCustomType(
+    InvestmentType type,
+    String? typed, {
+    InvestmentEntity? existing,
+  }) async {
+    if (type != InvestmentType.other) return CustomTypeLink.none;
+    final label = CustomTypeLabel.clean(typed);
+    if (label.isEmpty) return CustomTypeLink.none;
+    final stored = existing?.type == InvestmentType.other ? existing : null;
+    final unchanged = stored?.customTypeLabel == label;
+    var saved = const <CustomInvestmentType>[];
+    if (!unchanged) {
+      try {
+        saved = await ref.read(customInvestmentTypeRepositoryProvider).getAll();
+      } catch (_) {
+        // The saved types cannot be read (offline with an empty cache, or a
+        // store error). The investment still saves, with the label for
+        // itself only: losing the link is better than refusing the save.
+      }
+    }
+    return CustomTypeCatalog.resolveForInvestment(
+      saved,
+      label,
+      existingId: stored?.customTypeId,
+      existingLabel: stored?.customTypeLabel,
+    );
   }
 
   // ============ Reminder Helpers ============

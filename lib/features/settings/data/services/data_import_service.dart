@@ -6,14 +6,18 @@ import 'package:csv/csv.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/utils/custom_type_label.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settings_repository.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/repositories/goal_repository.dart';
+import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
+import 'package:inv_tracker/features/investment/domain/models/custom_type_catalog.dart';
+import 'package:inv_tracker/features/investment/domain/repositories/custom_investment_type_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
@@ -30,6 +34,8 @@ const _cashflowsArchivedWarning =
 const _goalsWarning = 'Goals not imported: goals.csv is invalid';
 const _goalsArchivedWarning =
     'Archived goals not imported: goals_archived.csv is invalid';
+const _customTypesWarning =
+    'Custom types not imported: custom_types.json is invalid';
 
 /// Import strategy options
 enum ImportStrategy {
@@ -74,6 +80,7 @@ class DataImportService {
   final DocumentRepository _documentRepository;
   final DocumentStorageService _documentStorageService;
   final FireSettingsRepository? _fireSettingsRepository;
+  final CustomInvestmentTypeRepository? _customInvestmentTypeRepository;
   final PerformanceService _performanceService;
 
   static const _uuid = Uuid();
@@ -84,12 +91,14 @@ class DataImportService {
     required DocumentRepository documentRepository,
     required DocumentStorageService documentStorageService,
     FireSettingsRepository? fireSettingsRepository,
+    CustomInvestmentTypeRepository? customInvestmentTypeRepository,
     required PerformanceService performanceService,
   }) : _investmentRepository = investmentRepository,
        _goalRepository = goalRepository,
        _documentRepository = documentRepository,
        _documentStorageService = documentStorageService,
        _fireSettingsRepository = fireSettingsRepository,
+       _customInvestmentTypeRepository = customInvestmentTypeRepository,
        _performanceService = performanceService;
 
   /// Import data from a ZIP file.
@@ -244,6 +253,14 @@ class DataImportService {
     final fireSettings = _fireSettingsRepository == null
         ? null
         : _readFireSettings(archive, baseCurrency, warnings, damagedFiles);
+    final customTypes = _readParsed(
+      archive,
+      'custom_types.json',
+      _customTypesWarning,
+      warnings,
+      damagedFiles,
+      _parseCustomTypes,
+    );
     if (isReplace && damagedFiles.isNotEmpty) {
       // The file name only: not a row, a name, an amount or the exception.
       return _notImported('${damagedFiles.first} is damaged');
@@ -261,6 +278,29 @@ class DataImportService {
     int goalsImported = 0;
     final investmentNameToIdMap = <String, String>{};
 
+    // Reusable custom types (#936) first, so the investments below can link
+    // to them. Replace with the file replaces the account's own types (the
+    // old ones are deleted for good); without the file they stay. A damaged
+    // file never gets here: it stopped Replace above. If the types cannot be
+    // saved (Replace has already cleared the investments), the investments
+    // still import with their labels, unlinked.
+    var customTypesByKey = const <String, CustomInvestmentType>{};
+    if (customTypes != null) {
+      try {
+        if (strategy == ImportStrategy.replace) {
+          await _customInvestmentTypeRepository?.deleteAll();
+        }
+        customTypesByKey = await _importCustomTypes(
+          customTypes.types,
+          warnings,
+        );
+      } catch (e) {
+        warnings.add('Custom types not imported: they could not be saved');
+      }
+    }
+    final investmentCustomTypes =
+        customTypes?.links ?? const <(bool, String), _ImportedCustomTypeRef>{};
+
     // Import cashflows (active)
     if (cashflows != null) {
       final result = await _importCashflowsCsv(
@@ -269,6 +309,8 @@ class DataImportService {
         strategy: strategy,
         baseCurrency: baseCurrency,
         valuations: valuations,
+        customTypeRefs: investmentCustomTypes,
+        customTypesByKey: customTypesByKey,
       );
       investmentsImported += result.investmentsCreated;
       cashflowsImported += result.imported;
@@ -285,6 +327,8 @@ class DataImportService {
         strategy: strategy,
         baseCurrency: baseCurrency,
         valuations: valuations,
+        customTypeRefs: investmentCustomTypes,
+        customTypesByKey: customTypesByKey,
       );
       investmentsImported += result.investmentsCreated;
       cashflowsImported += result.imported;
@@ -551,6 +595,8 @@ class DataImportService {
     required ImportStrategy strategy,
     required String baseCurrency,
     Map<(bool, String), _ImportedValuation> valuations = const {},
+    Map<(bool, String), _ImportedCustomTypeRef> customTypeRefs = const {},
+    Map<String, CustomInvestmentType> customTypesByKey = const {},
   }) async {
     if (parseResult.validRows == 0) {
       return _CsvImportResult(
@@ -617,6 +663,14 @@ class DataImportService {
         valuation = null;
       }
 
+      final customType = _customTypeOf(
+        customTypeRefs[(isArchived, investmentName.toLowerCase())],
+        investmentName: investmentName,
+        type: investmentType,
+        typesByKey: customTypesByKey,
+        warnings: warnings,
+      );
+
       investments.add(
         InvestmentEntity(
           id: investmentId,
@@ -629,6 +683,8 @@ class DataImportService {
           currency: currency,
           currentValue: valuation?.value,
           currentValueDate: valuation?.date,
+          customTypeId: customType.id,
+          customTypeLabel: customType.label,
         ),
       );
 
@@ -742,6 +798,165 @@ class DataImportService {
       );
     }
     return strict && result.isEmpty && badRows > 0 ? null : result;
+  }
+
+  /// Reads custom_types.json (see `DataExportService`): the reusable types
+  /// and the custom type label of each Other investment, keyed by (archived,
+  /// lowercase investment name) the way valuations are. Null if the file is
+  /// damaged: not JSON, not an object, without the two lists the exporter
+  /// always writes, or with rows but none of them readable. A row of the wrong
+  /// shape among readable ones is skipped, and a file with empty lists has
+  /// nothing to restore but is not damaged.
+  _ImportedCustomTypes? _parseCustomTypes(String text) {
+    final json = jsonDecode(text);
+    if (json is! Map<String, dynamic>) return null;
+    final rawTypes = json['types'];
+    final rawLinks = json['investments'];
+    if (rawTypes is! List || rawLinks is! List) return null;
+
+    var badRows = 0;
+    final types = <_ImportedCustomType>[];
+    for (final row in rawTypes) {
+      final label = row is Map ? row['label'] : null;
+      if (row is! Map || label is! String || label.trim().isEmpty) {
+        badRows++;
+        continue;
+      }
+      types.add(
+        _ImportedCustomType(label: label, removed: row['removed'] == true),
+      );
+    }
+    final links = <(bool, String), _ImportedCustomTypeRef>{};
+    for (final row in rawLinks) {
+      final name = row is Map ? row['name'] : null;
+      final label = row is Map ? row['label'] : null;
+      if (row is! Map ||
+          name is! String ||
+          name.trim().isEmpty ||
+          label is! String ||
+          label.trim().isEmpty) {
+        badRows++;
+        continue;
+      }
+      links[(row['archived'] == true, name.trim().toLowerCase())] =
+          _ImportedCustomTypeRef(label: label, linked: row['linked'] == true);
+    }
+    if (types.isEmpty && links.isEmpty && badRows > 0) return null;
+    return _ImportedCustomTypes(types: types, links: links);
+  }
+
+  /// Saves the reusable types of an import and returns them by key. A type
+  /// the account already has (any case or spacing) is reused, never
+  /// duplicated; an active one in the file revives a removed one; a removed
+  /// one in the file is created removed, or left as the account has it. Types
+  /// over the limit of [CustomTypeLabel.maxActiveDefinitions] are skipped.
+  /// Without a repository there are no reusable types to save, and the
+  /// investments keep their labels without a link.
+  Future<Map<String, CustomInvestmentType>> _importCustomTypes(
+    List<_ImportedCustomType> imported,
+    List<String> warnings,
+  ) async {
+    final repository = _customInvestmentTypeRepository;
+    if (repository == null || imported.isEmpty) return const {};
+    var all = await repository.getAll();
+    final byKey = <String, CustomInvestmentType>{};
+    final now = DateTime.now();
+    var overLimit = 0;
+    var tooLong = 0;
+
+    for (final row in imported) {
+      final label = CustomTypeLabel.clean(row.label);
+      if (label.isEmpty) continue;
+      if (CustomTypeLabel.exceedsMaxLength(label)) {
+        tooLong++;
+        continue;
+      }
+      final key = CustomTypeLabel.keyOf(label);
+      CustomInvestmentType? result;
+      if (row.removed) {
+        result = all.where((d) => d.key == key).firstOrNull;
+        if (result == null) {
+          result = CustomInvestmentType(
+            id: _uuid.v4(),
+            label: label,
+            createdAt: now,
+            updatedAt: now,
+            removedAt: now,
+          );
+          await repository.put(result);
+          all = [...all, result];
+        }
+      } else {
+        final change = CustomTypeCatalog.save(
+          all,
+          label,
+          newId: _uuid.v4(),
+          now: now,
+        );
+        if (change.issue == CustomTypeIssue.atCapacity) {
+          overLimit++;
+          continue;
+        }
+        final write = change.write;
+        if (write != null) {
+          await repository.put(write);
+          all = [
+            for (final d in all)
+              if (d.id != write.id) d,
+            write,
+          ];
+        }
+        result = change.result;
+      }
+      if (result != null) byKey[key] = result;
+    }
+
+    // Counts only, like the other warnings about skipped rows.
+    if (tooLong > 0) {
+      warnings.add(
+        '$tooLong custom ${tooLong == 1 ? 'type' : 'types'} not imported: '
+        'longer than ${CustomTypeLabel.maxLength} characters',
+      );
+    }
+    if (overLimit > 0) {
+      warnings.add(
+        '$overLimit custom ${overLimit == 1 ? 'type' : 'types'} not '
+        'imported: an account holds at most '
+        '${CustomTypeLabel.maxActiveDefinitions}',
+      );
+    }
+    return byKey;
+  }
+
+  /// What an imported investment of [type] stores for its custom type: its
+  /// label, linked to the reusable type of that label when the file says it
+  /// was and the account has one. Only an investment of type Other has one.
+  CustomTypeLink _customTypeOf(
+    _ImportedCustomTypeRef? ref, {
+    required String investmentName,
+    required InvestmentType type,
+    required Map<String, CustomInvestmentType> typesByKey,
+    required List<String> warnings,
+  }) {
+    if (ref == null) return CustomTypeLink.none;
+    final label = CustomTypeLabel.clean(ref.label);
+    if (label.isEmpty) return CustomTypeLink.none;
+    if (type != InvestmentType.other) {
+      warnings.add(
+        'Custom type of "$investmentName" not imported: only an investment '
+        'of type Other has one',
+      );
+      return CustomTypeLink.none;
+    }
+    if (CustomTypeLabel.exceedsMaxLength(label)) {
+      warnings.add(
+        'Custom type of "$investmentName" not imported: longer than '
+        '${CustomTypeLabel.maxLength} characters',
+      );
+      return CustomTypeLink.none;
+    }
+    final linked = ref.linked ? typesByKey[CustomTypeLabel.keyOf(label)] : null;
+    return CustomTypeLink(id: linked?.id, label: label);
   }
 
   /// Import the goals of a parsed goals.csv or goals_archived.csv.
@@ -895,6 +1110,34 @@ class _ImportedValuation {
     required this.date,
     required this.currency,
   });
+}
+
+/// What custom_types.json holds.
+class _ImportedCustomTypes {
+  final List<_ImportedCustomType> types;
+
+  /// The custom type label of each investment, by (archived, lowercase name).
+  final Map<(bool, String), _ImportedCustomTypeRef> links;
+
+  const _ImportedCustomTypes({required this.types, required this.links});
+}
+
+/// A reusable custom type read from custom_types.json.
+class _ImportedCustomType {
+  final String label;
+  final bool removed;
+
+  const _ImportedCustomType({required this.label, required this.removed});
+}
+
+/// The custom type label of one investment, read from custom_types.json.
+class _ImportedCustomTypeRef {
+  final String label;
+
+  /// Whether the investment referred to a reusable type.
+  final bool linked;
+
+  const _ImportedCustomTypeRef({required this.label, required this.linked});
 }
 
 /// Internal result class for CSV import operations

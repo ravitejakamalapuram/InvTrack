@@ -65,6 +65,7 @@ class AccountDataDeletionService {
     'fireSettings',
     'profile',
     'exchangeRates',
+    'customInvestmentTypes',
   ];
 
   /// Per-user data cached in SharedPreferences (sample-data bookkeeping and

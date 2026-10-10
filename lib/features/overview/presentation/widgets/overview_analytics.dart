@@ -15,6 +15,7 @@ import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Monthly cash flow trend chart.
@@ -581,7 +582,12 @@ class RecentlyClosedCard extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               ...data.map(
-                (item) => _buildClosedItem(item, isDark, isPrivacyMode),
+                (item) => _buildClosedItem(
+                  item,
+                  isDark,
+                  isPrivacyMode,
+                  investmentTypeName(ref, item.investment),
+                ),
               ),
             ],
           ),
@@ -596,6 +602,7 @@ class RecentlyClosedCard extends ConsumerWidget {
     InvestmentWithStats item,
     bool isDark,
     bool isPrivacyMode,
+    String typeName,
   ) {
     final isProfit = item.stats.netCashFlow >= 0;
     // Undefined (null) XIRR shows no IRR line, never "0.0% IRR".
@@ -620,7 +627,7 @@ class RecentlyClosedCard extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  item.investment.type.displayName,
+                  typeName,
                   style: TextStyle(
                     fontSize: 11,
                     color: isDark ? Colors.white54 : Colors.grey,

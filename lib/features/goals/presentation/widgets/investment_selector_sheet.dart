@@ -166,7 +166,7 @@ class _InvestmentSelectorSheetState
                 });
               },
               title: Text(investment.name),
-              subtitle: Text(investment.type.displayName),
+              subtitle: Text(investmentTypeName(ref, investment)),
               secondary: Container(
                 width: 40,
                 height: 40,
