@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
+import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
 /// Where a current value comes from.
@@ -34,15 +36,66 @@ class InvestmentValuation {
   /// Annual rate (%) a [ValuationSource.accruedInterest] value accrued at.
   final double? rate;
 
+  /// What the value measures. A legacy value or an estimate is read as a
+  /// carrying value (or principal outstanding), so existing XIRR and MOIC do
+  /// not move.
+  final ValuationKind kind;
+
+  /// How the stored value was captured; null for a computed estimate, which
+  /// is not stored. [source] is where a calculated value came from: manual
+  /// for every stored provenance, accruedInterest or outstandingPrincipal
+  /// for an estimate.
+  final ValuationProvenance? provenance;
+
+  /// Whether the investment has a live opening baseline, even when a newer
+  /// snapshot won: its lifetime XIRR, MOIC and return are unknown.
+  final bool historyLimited;
+
+  /// The date of that opening baseline, when [historyLimited].
+  final DateTime? trackingStart;
+
+  /// Whether a cash flow is dated on or before the baseline: history was
+  /// added after the baseline, and the user may want to use it.
+  final bool historyReviewNeeded;
+
+  /// Principal flows (INVEST and RETURN) dated after a value that cash flows
+  /// cannot move (a market value): the value may be out of date.
+  final int staleFlowCount;
+
   const InvestmentValuation({
     required this.amount,
     required this.currency,
     required this.date,
     required this.source,
     this.rate,
+    this.kind = ValuationKind.carryingValue,
+    this.provenance,
+    this.historyLimited = false,
+    this.trackingStart,
+    this.historyReviewNeeded = false,
+    this.staleFlowCount = 0,
   });
 
   bool get isEstimate => source != ValuationSource.manual;
+
+  /// This value with the history flags set.
+  InvestmentValuation withHistory({
+    required bool limited,
+    required DateTime? start,
+    required bool reviewNeeded,
+  }) => InvestmentValuation(
+    amount: amount,
+    currency: currency,
+    date: date,
+    source: source,
+    rate: rate,
+    kind: kind,
+    provenance: provenance,
+    historyLimited: limited,
+    trackingStart: start,
+    historyReviewNeeded: reviewNeeded,
+    staleFlowCount: staleFlowCount,
+  );
 }
 
 /// The current values of a set of investments as terminal inflows (one
@@ -64,11 +117,17 @@ class TerminalValues {
   /// accruals at one rate; otherwise null.
   final double? rate;
 
+  /// Investments whose [flows] value is the only thing known about them
+  /// before tracking started. Their cash flows and values count in totals
+  /// and in the current value, but stay out of XIRR, MOIC and return.
+  final Set<String> limitedHistoryIds;
+
   const TerminalValues({
     this.flows = const [],
     this.missingValueCount = 0,
     this.isEstimate = false,
     this.rate,
+    this.limitedHistoryIds = const {},
   });
 
   static const none = TerminalValues();
@@ -86,8 +145,28 @@ class TerminalValues {
           missingValueCount + math.max(0, flows.length - converted.length),
       isEstimate: isEstimate,
       rate: rate,
+      limitedHistoryIds: limitedHistoryIds,
     );
   }
+}
+
+/// What clearing a snapshot does to the value shown.
+enum ClearImpactKind {
+  /// An earlier snapshot, dated [ClearValuationImpact.date], applies next.
+  earlierSnapshot,
+
+  /// The calculated estimate applies next.
+  estimate,
+
+  /// Nothing applies: the value, XIRR and MOIC become unavailable.
+  unavailable,
+}
+
+class ClearValuationImpact {
+  final ClearImpactKind kind;
+  final DateTime? date;
+
+  const ClearValuationImpact(this.kind, [this.date]);
 }
 
 /// Current values of open investments: the user's own value when there is
@@ -152,16 +231,36 @@ class CurrentValueCalculator {
   /// currency. So is a manual value dated before the first
   /// cash flow. [cashFlows] may include other investments'
   /// flows; only this investment's are used.
+  ///
+  /// [snapshots] are the dated valuations by investment id. An investment
+  /// with none of its own (live, in its currency) is valued exactly as
+  /// before. With some, the latest applicable one is the user's value (see
+  /// [ValuationSnapshotSelector]); it needs no cash flows at all, and an
+  /// opening baseline may precede the first one. Principal dated after it
+  /// carries it forward (INVEST plus, RETURN minus) when its kind rolls
+  /// forward; a market value is never moved, and the principal flows after
+  /// it are counted in [InvestmentValuation.staleFlowCount]. Income and fees
+  /// never move a value.
   static InvestmentValuation? valuationOf(
     InvestmentEntity investment,
     List<CashFlowEntity> cashFlows, {
     required DateTime asOf,
+    Map<String, List<InvestmentValuationSnapshot>>? snapshots,
   }) {
     if (!investment.isOpen) return null;
     final flows = [
       for (final cf in cashFlows)
         if (cf.investmentId == investment.id) cf,
     ];
+    final own = snapshots?[investment.id];
+    if (own != null &&
+        ValuationSnapshotSelector.hasLive(
+          own,
+          investmentId: investment.id,
+          currency: investment.currency,
+        )) {
+      return _snapshotValuation(investment, flows, own, _dateOnly(asOf));
+    }
     if (flows.isEmpty) return null;
 
     final today = _dateOnly(asOf);
@@ -174,7 +273,17 @@ class CurrentValueCalculator {
     if (_hasManualValue(investment)) {
       return _manualValuation(investment, flows, lastFlow);
     }
+    return _estimatedValuation(investment, flows, today, lastFlow);
+  }
 
+  /// The estimate for [investment] from its [flows] (not empty) and rate, or
+  /// null for a type or terms that cannot be estimated.
+  static InvestmentValuation? _estimatedValuation(
+    InvestmentEntity investment,
+    List<CashFlowEntity> flows,
+    DateTime today,
+    DateTime lastFlow,
+  ) {
     if (!estimableTypes.contains(investment.type)) return null;
     final currency = _sharedCurrency(flows.where(_isPrincipal));
     if (currency == null) return null;
@@ -227,17 +336,23 @@ class CurrentValueCalculator {
       currency: currency,
       date: date,
       source: ValuationSource.outstandingPrincipal,
+      kind: ValuationKind.principalOutstanding,
     );
   }
 
   /// Terminal values of [investments] as of [asOf]. Closed investments and
-  /// investments without cash flows get none. [cashFlows] are unconverted;
-  /// callers convert the returned flows to the base currency before adding
-  /// them to converted cash flows (money rule 2).
+  /// investments without cash flows or snapshots get none. [cashFlows] are
+  /// unconverted; callers convert the returned flows to the base currency
+  /// before adding them to converted cash flows (money rule 2).
+  ///
+  /// With [snapshots], an investment that has some is valued even with no
+  /// cash flows, and the ones with limited history (an opening baseline) are
+  /// listed in [TerminalValues.limitedHistoryIds].
   static TerminalValues terminalValues({
     required List<InvestmentEntity> investments,
     required List<CashFlowEntity> cashFlows,
     required DateTime asOf,
+    Map<String, List<InvestmentValuationSnapshot>>? snapshots,
   }) {
     final byInvestment = <String, List<CashFlowEntity>>{};
     for (final cf in cashFlows) {
@@ -248,12 +363,21 @@ class CurrentValueCalculator {
     var missing = 0;
     var isEstimate = false;
     final rates = <double?>{};
+    final limited = <String>{};
     for (final investment in investments) {
-      final own = byInvestment[investment.id];
-      if (own == null || own.isEmpty || !investment.isOpen) continue;
+      final own = byInvestment[investment.id] ?? const <CashFlowEntity>[];
+      final hasSnapshots = snapshots?[investment.id]?.isNotEmpty ?? false;
+      if (!investment.isOpen || (own.isEmpty && !hasSnapshots)) continue;
 
-      final valuation = valuationOf(investment, own, asOf: asOf);
+      final valuation = valuationOf(
+        investment,
+        own,
+        asOf: asOf,
+        snapshots: snapshots,
+      );
       if (valuation == null) {
+        // Nothing to judge without cash flows.
+        if (own.isEmpty) continue;
         var net = 0.0;
         for (final cf in own) {
           net += cf.signedAmount;
@@ -266,6 +390,7 @@ class CurrentValueCalculator {
       }
 
       isEstimate = isEstimate || valuation.isEstimate;
+      if (valuation.historyLimited) limited.add(investment.id);
       rates.add(
         valuation.source == ValuationSource.accruedInterest
             ? valuation.rate
@@ -289,6 +414,174 @@ class CurrentValueCalculator {
       missingValueCount: missing,
       isEstimate: isEstimate,
       rate: rates.length == 1 ? rates.single : null,
+      limitedHistoryIds: limited,
+    );
+  }
+
+  /// The kind a new snapshot of an investment of [type] starts as: lending
+  /// types are carried at what is owed, everything else is a market value
+  /// (which cash flows never move).
+  static ValuationKind defaultKind(InvestmentType type) =>
+      estimableTypes.contains(type)
+      ? ValuationKind.carryingValue
+      : ValuationKind.marketValue;
+
+  /// What clearing the snapshot [snapshotId] of [investment] would leave:
+  /// the earlier snapshot that then applies, the estimate, or nothing. The
+  /// confirmation shows this, so the widget holds no logic.
+  static ClearValuationImpact describeClear({
+    required InvestmentEntity investment,
+    required List<CashFlowEntity> cashFlows,
+    required List<InvestmentValuationSnapshot> snapshots,
+    required String snapshotId,
+    required DateTime asOf,
+  }) {
+    final remaining = [
+      for (final s in snapshots)
+        if (s.id != snapshotId) s,
+    ];
+    // The investment as the clear leaves it: its compat pair mirrors the
+    // snapshot that remains.
+    final mirror = ValuationSnapshotSelector.mirrorOf(
+      remaining,
+      investmentId: investment.id,
+      currency: investment.currency,
+    );
+    final after = _withCurrentValue(
+      investment,
+      mirror?.amount,
+      mirror?.effectiveDate,
+    );
+    final byInvestment = {investment.id: remaining};
+    final valuation = valuationOf(
+      after,
+      cashFlows,
+      asOf: asOf,
+      snapshots: byInvestment,
+    );
+    if (valuation == null) {
+      return const ClearValuationImpact(ClearImpactKind.unavailable);
+    }
+    if (valuation.isEstimate) {
+      return const ClearValuationImpact(ClearImpactKind.estimate);
+    }
+    final next = ValuationSnapshotSelector.select(
+      investment: after,
+      snapshots: remaining,
+      asOf: asOf,
+    );
+    return next == null
+        ? const ClearValuationImpact(ClearImpactKind.estimate)
+        : ClearValuationImpact(ClearImpactKind.earlierSnapshot, next.date);
+  }
+
+  /// [investment] with its current value replaced, including by null, which
+  /// copyWith cannot do. Only what valuing needs is read from the copy.
+  static InvestmentEntity _withCurrentValue(
+    InvestmentEntity investment,
+    double? value,
+    DateTime? date,
+  ) => InvestmentEntity(
+    id: investment.id,
+    name: investment.name,
+    type: investment.type,
+    status: investment.status,
+    createdAt: investment.createdAt,
+    closedAt: investment.closedAt,
+    updatedAt: investment.updatedAt,
+    maturityDate: investment.maturityDate,
+    incomeFrequency: investment.incomeFrequency,
+    isArchived: investment.isArchived,
+    startDate: investment.startDate,
+    expectedRate: investment.expectedRate,
+    tenureMonths: investment.tenureMonths,
+    interestPayoutMode: investment.interestPayoutMode,
+    compoundingFrequency: investment.compoundingFrequency,
+    currency: investment.currency,
+    currentValue: value,
+    currentValueDate: date,
+  );
+
+  /// The value of [investment] when it has live snapshots in its currency.
+  static InvestmentValuation? _snapshotValuation(
+    InvestmentEntity investment,
+    List<CashFlowEntity> flows,
+    List<InvestmentValuationSnapshot> snapshots,
+    DateTime today,
+  ) {
+    final winner = ValuationSnapshotSelector.select(
+      investment: investment,
+      snapshots: snapshots,
+      asOf: today,
+    );
+    final baseline = ValuationSnapshotSelector.openingBaseline(
+      snapshots,
+      investmentId: investment.id,
+      currency: investment.currency,
+    );
+    final startsOn = baseline == null
+        ? null
+        : _dateOnly(baseline.effectiveDate);
+    final reviewNeeded =
+        startsOn != null &&
+        flows.any((cf) => !_dateOnly(cf.date).isAfter(startsOn));
+
+    DateTime? lastFlow;
+    for (final cf in flows) {
+      final d = _dateOnly(cf.date);
+      if (lastFlow == null || d.isAfter(lastFlow)) lastFlow = d;
+    }
+
+    if (winner == null) {
+      // Nothing applies (not dated yet, or cleared by an older app): the
+      // estimate, if the type has one.
+      if (lastFlow == null) return null;
+      final estimate = _estimatedValuation(investment, flows, today, lastFlow);
+      return estimate?.withHistory(
+        limited: startsOn != null,
+        start: startsOn,
+        reviewNeeded: reviewNeeded,
+      );
+    }
+
+    final date = winner.date;
+    InvestmentValuation valuation({
+      required double amount,
+      required DateTime on,
+      int stale = 0,
+    }) => InvestmentValuation(
+      amount: amount,
+      currency: investment.currency,
+      date: on,
+      source: ValuationSource.manual,
+      kind: winner.kind,
+      provenance: winner.provenance,
+      historyLimited: startsOn != null,
+      trackingStart: startsOn,
+      historyReviewNeeded: reviewNeeded,
+      staleFlowCount: stale,
+    );
+
+    if (lastFlow == null) return valuation(amount: winner.amount, on: date);
+    // Only an opening baseline may precede the first cash flow: any other
+    // value cannot include principal not yet put in, and adding all of it
+    // would count the principal twice.
+    if (winner.provenance != ValuationProvenance.openingBaseline &&
+        flows.every((cf) => _dateOnly(cf.date).isAfter(date))) {
+      return null;
+    }
+    final later = [
+      for (final cf in flows)
+        if (_dateOnly(cf.date).isAfter(date) && _isPrincipal(cf)) cf,
+    ];
+    final on = lastFlow.isAfter(date) ? lastFlow : date;
+    if (!winner.kind.rollsForward) {
+      return valuation(amount: winner.amount, on: on, stale: later.length);
+    }
+    if (later.any((cf) => cf.currency != investment.currency)) return null;
+    return valuation(
+      amount: math.max(0, winner.amount + _principalChange(later)),
+      on: on,
     );
   }
 
@@ -323,6 +616,7 @@ class CurrentValueCalculator {
       currency: investment.currency,
       date: lastFlow.isAfter(date) ? lastFlow : date,
       source: ValuationSource.manual,
+      provenance: ValuationProvenance.manual,
     );
   }
 

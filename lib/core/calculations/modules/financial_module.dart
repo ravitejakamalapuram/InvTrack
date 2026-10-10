@@ -60,15 +60,29 @@ class FinancialCalculatorModule implements CalculationModule {
   /// [terminalValues] are the current values of the open investments among
   /// [cashFlows], already in the same currency. They are the terminal inflow
   /// of XIRR, MOIC and absolute return; invested, returned and net cash flow
-  /// stay cash-only.
+  /// stay cash-only. An investment may have a value and no cash flows (an
+  /// opening baseline): its value is then all there is to report.
+  ///
+  /// Investments in [TerminalValues.limitedHistoryIds] count in the cash-only
+  /// totals and in the current value, but their flows and values stay out of
+  /// XIRR, paid-in capital, MOIC and absolute return: their cost and dates
+  /// are unknown, so those would be fabricated. When nothing else is left,
+  /// [InvestmentStats.returnsKnown] is false.
   InvestmentStats calculateStats(
     List<ICashFlow> cashFlows, {
     bool includeXirr = true,
     TerminalValues terminalValues = TerminalValues.none,
   }) {
-    if (cashFlows.isEmpty) {
+    if (cashFlows.isEmpty && terminalValues.flows.isEmpty) {
       return InvestmentStats.empty();
     }
+
+    final limited = terminalValues.limitedHistoryIds;
+    // Limited investments that have a flow or a value in these stats.
+    final limitedSeen = <String>{};
+    // Cash flows that count towards performance (all of them, unless some
+    // investments have limited history).
+    final performanceFlows = limited.isEmpty ? cashFlows : <ICashFlow>[];
 
     // Single pass calculation for O(N) complexity
     double totalInvested = 0.0;
@@ -99,6 +113,13 @@ class FinancialCalculatorModule implements CalculationModule {
         totalReturned += cf.amount;
       }
 
+      if (limited.isNotEmpty) {
+        if (limited.contains(cf.investmentId)) {
+          limitedSeen.add(cf.investmentId);
+          continue;
+        }
+        performanceFlows.add(cf);
+      }
       if (includeXirr) {
         xirrDates!.add(cf.date);
         xirrAmounts!.add(cf.signedAmount);
@@ -108,11 +129,17 @@ class FinancialCalculatorModule implements CalculationModule {
     // Current values: the terminal inflow (money rule 4).
     double? currentValue;
     DateTime? currentValueDate;
+    var performanceValue = 0.0;
     for (final terminal in terminalValues.flows) {
       currentValue = (currentValue ?? 0) + terminal.amount;
       if (currentValueDate == null || terminal.date.isAfter(currentValueDate)) {
         currentValueDate = terminal.date;
       }
+      if (limited.contains(terminal.investmentId)) {
+        limitedSeen.add(terminal.investmentId);
+        continue;
+      }
+      performanceValue += terminal.amount;
       if (includeXirr && terminal.amount > 0) {
         xirrDates!.add(terminal.date);
         xirrAmounts!.add(terminal.amount);
@@ -135,10 +162,27 @@ class FinancialCalculatorModule implements CalculationModule {
 
     // MOIC and return % are on paid-in capital, so money reinvested from
     // earlier payouts is counted once on both sides: MOIC = (distributions
-    // + current value - reinvested) / paid-in (CALC-07).
-    final paidInCapital = calculatePaidInCapital(cashFlows);
-    final reinvested = totalInvested - paidInCapital;
-    final valueOnPaidIn = totalReturned + (currentValue ?? 0) - reinvested;
+    // + current value - reinvested) / paid-in (CALC-07). Only investments
+    // with known history take part.
+    final paidInCapital = calculatePaidInCapital(performanceFlows);
+    final double performanceInvested;
+    final double performanceReturned;
+    final double performanceCurrent;
+    if (limited.isEmpty) {
+      performanceInvested = totalInvested;
+      performanceReturned = totalReturned;
+      performanceCurrent = currentValue ?? 0;
+    } else {
+      performanceInvested = FinancialCalculator.roundMoney(
+        calculateTotalInvested(performanceFlows),
+      );
+      performanceReturned = FinancialCalculator.roundMoney(
+        calculateTotalReturned(performanceFlows),
+      );
+      performanceCurrent = performanceValue;
+    }
+    final reinvested = performanceInvested - paidInCapital;
+    final valueOnPaidIn = performanceReturned + performanceCurrent - reinvested;
     final absoluteReturn = calculateAbsoluteReturn(
       paidInCapital,
       valueOnPaidIn,
@@ -168,6 +212,8 @@ class FinancialCalculatorModule implements CalculationModule {
       currentValueIsEstimate: currentValue != null && terminalValues.isEstimate,
       currentValueRate: currentValue != null ? terminalValues.rate : null,
       missingValueCount: terminalValues.missingValueCount,
+      limitedHistoryCount: limitedSeen.length,
+      returnsKnown: limitedSeen.isEmpty || paidInCapital > 0,
     );
   }
 
@@ -185,6 +231,13 @@ class FinancialCalculatorModule implements CalculationModule {
     final grouped = <String, List<ICashFlow>>{};
     for (final cf in cashFlows) {
       (grouped[cf.investmentId] ??= []).add(cf);
+    }
+    // An investment with a value and no cash flows (an opening baseline) has
+    // stats of its own.
+    for (final entry in terminalValues.entries) {
+      if (entry.value.flows.isNotEmpty) {
+        grouped.putIfAbsent(entry.key, () => []);
+      }
     }
     return {
       for (final entry in grouped.entries)
