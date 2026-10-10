@@ -8,6 +8,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { countDocs, deleteUserData } from './delete.mjs';
 import { createGa4Deletion } from './ga4.mjs';
+import { safeErrorCode } from './safe-error.mjs';
 import { findInactiveGuests, findOrphans, loadRequests, STALE_MS } from './sweep.mjs';
 import { verifyUserGone } from './verify.mjs';
 
@@ -93,7 +94,7 @@ export async function runJob({
         }
         result.ok = true;
       } catch (e) {
-        result.error = e.code ?? e.message;
+        result.error = safeErrorCode(e);
       }
     }
   }

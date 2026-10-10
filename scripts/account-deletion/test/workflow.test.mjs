@@ -170,8 +170,12 @@ const rules = {
     const lines = ok.log.split('\n').filter((l) => l.includes(email));
     if (!same(lines, [`::add-mask::${email}`])) out.push(`the email must reach the log only as its own ::add-mask:: line, got ${JSON.stringify(lines)}`);
     if (ok.written.includes(email)) out.push('the email must not be written to GITHUB_OUTPUT');
+    // An ordinary address with a dot and a plus is still accepted.
+    if (runMode(doc, { dryRun: 'false', email: 'first.last+tag@example.co.in' }).status !== 0) out.push('an address with a dot and a plus must still be accepted');
+    // The runner percent-decodes ::add-mask:: data (%0A, %0D, %25), so an address holding a '%' would be masked as a
+    // different string than the one printed, and would not be masked at all. Emails do not need '%'.
     // A rejected value is never echoed, not even its later lines: an ::add-mask:: line only masks up to the newline.
-    for (const bad of ['two words@example.com', 'no-at-sign', 'a@b@c', 'a@b.com\nsecond-line', ' ']) {
+    for (const bad of ['two words@example.com', 'no-at-sign', 'a@b@c', 'a@b.com\nsecond-line', ' ', 'a%0Ab@example.com', 'a%25b@example.com', 'person@example.com%0D', 'person%@example.com', 'person@exam%ple.com']) {
       const r = runMode(doc, { dryRun: 'false', email: bad });
       if (r.status === 0 || r.written !== '') out.push(`an email input of ${JSON.stringify(bad)} must stop the run`);
       const parts = bad.split('\n').filter((p) => p.trim());
@@ -188,6 +192,26 @@ const rules = {
     const lines = text.split('\n').filter((l) => /^\s*(-\s+)?uses:/.test(l));
     if (lines.length !== uses.length) out.push('every uses: must be a step');
     for (const l of lines) if (!/@[0-9a-f]{40} # v\d+(\.\d+){0,2}$/.test(l)) out.push(`needs a version comment: ${l.trim()}`);
+    return out;
+  },
+
+  // The run and verify jobs hold a deletion-capable Google credential and run npm. Packages must come from the
+  // lockfile (npm ci) with no lifecycle scripts, in one npm step that runs before the cloud login.
+  lockedInstall(doc) {
+    const out = [];
+    for (const job of ['run', 'verify']) {
+      const steps = doc.jobs[job]?.steps ?? [];
+      const npm = steps.map((step, at) => ({ at, cmd: norm(step.run) })).filter(({ cmd }) => /\bnpm\b/.test(cmd));
+      if (npm.length !== 1) {
+        out.push(`job ${job} must install in exactly one npm step, found ${npm.length}`);
+        continue;
+      }
+      const { at, cmd } = npm[0];
+      if ((cmd.match(/\bnpm\b/g) ?? []).length !== 1 || !/^npm (--prefix \S+ )?ci( |$)/.test(cmd)) out.push(`job ${job} must run one npm ci, never npm install: ${cmd}`);
+      for (const flag of ['--omit=dev', '--ignore-scripts']) if (!cmd.split(' ').includes(flag)) out.push(`job ${job}: npm ci needs ${flag}`);
+      const loginAt = steps.findIndex((step) => step.uses?.startsWith('google-github-actions/auth'));
+      if (loginAt < 0 || at > loginAt) out.push(`job ${job} must install before the cloud login`);
+    }
     return out;
   },
 
@@ -251,6 +275,22 @@ describe('account-deletion workflow safety', () => {
   }
 });
 
+describe('the job installs only what the lockfile pins', () => {
+  it('has a lockfile (v3) that pins every package by integrity hash to the npm registry', () => {
+    const lock = JSON.parse(readFileSync(new URL('../package-lock.json', import.meta.url), 'utf8'));
+    assert.equal(lock.lockfileVersion, 3);
+    const loose = Object.entries(lock.packages).filter(([path, p]) => path !== '' && !p.link && (!p.integrity || !String(p.resolved).startsWith('https://registry.npmjs.org/')));
+    assert.deepEqual(loose.map(([path]) => path), []);
+  });
+
+  it('is installed with npm ci by the job tests too, never npm install', () => {
+    const tests = parse(readFileSync(new URL('../../../.github/workflows/deletion-job-tests.yml', import.meta.url), 'utf8'));
+    const cmds = Object.values(tests.jobs).flatMap((j) => (j.steps ?? []).map((s) => norm(s.run)).filter((c) => /\bnpm\b/.test(c)));
+    assert.ok(cmds.some((c) => /^npm ci( |$)/.test(c)), `no npm ci step in: ${JSON.stringify(cmds)}`);
+    assert.deepEqual(cmds.filter((c) => /\bnpm (install|i|add|update)\b/.test(c)), []);
+  });
+});
+
 describe('each rule can fail', () => {
   const clone = () => structuredClone(real);
   const swap = (text, from, to) => {
@@ -260,6 +300,7 @@ describe('each rule can fail', () => {
   const mode = (d) => stepById(d, 'mode');
   const deletion = (d) => stepById(d, 'deletion');
   const verifyStep = (d) => d.jobs.verify.steps.find((s) => s.name === 'Verify the run');
+  const npmStep = (d, job) => d.jobs[job].steps.find((s) => /\bnpm\b/.test(s.run ?? ''));
   const editMode = (from, to) => (d) => (mode(d).run = swap(mode(d).run, from, to));
 
   // [rule, what is broken, how to break a copy of the workflow, optionally how to break its raw text]
@@ -292,7 +333,8 @@ describe('each rule can fail', () => {
     ['modeScript', 'no cap validation', editMode('[[ "$MAX_PER_RUN" =~ ^[1-9][0-9]{0,3}$ ]] ||', 'true ||')],
     ['modeScript', 'no mask', editMode('echo "::add-mask::$REQUEST_EMAIL"', ':')],
     ['modeScript', 'a mask before the email is validated', (d) => (mode(d).run = swap(swap(mode(d).run, 'if [ -n "$REQUEST_EMAIL" ]; then', 'if [ -n "$REQUEST_EMAIL" ]; then\n  echo "::add-mask::$REQUEST_EMAIL"'), '  echo "::add-mask::$REQUEST_EMAIL"\nfi', 'fi'))],
-    ['modeScript', 'no email validation', editMode('if ! [[ "$REQUEST_EMAIL" =~ ^[^[:space:]@]+@[^[:space:]@]+$ ]]; then', 'if false; then')],
+    ['modeScript', 'no email validation', editMode('if ! [[ "$REQUEST_EMAIL" =~ ^[^[:space:]@%]+@[^[:space:]@%]+$ ]]; then', 'if false; then')],
+    ['modeScript', 'an email with a percent escape accepted', editMode('^[^[:space:]@%]+@[^[:space:]@%]+$', '^[^[:space:]@]+@[^[:space:]@]+$')],
     ['modeScript', 'the email written to the outputs', editMode('echo "live=$live" >> "$GITHUB_OUTPUT"', 'echo "live=$live" >> "$GITHUB_OUTPUT"; echo "e=$REQUEST_EMAIL" >> "$GITHUB_OUTPUT"')],
     ['noInputsInScripts', 'an input inside a script', (d) => (mode(d).run = 'echo "${{ inputs.max_per_run }}"')],
     ['requestEmailStaysPrivate', 'the email echoed into the step summary', (d) => (mode(d).run += '\necho "$REQUEST_EMAIL" >> "$GITHUB_STEP_SUMMARY"')],
@@ -301,6 +343,12 @@ describe('each rule can fail', () => {
     ['requestEmailStaysPrivate', 'the email read from the env again', editMode(`REQUEST_EMAIL=$(jq -r '.inputs.request_email // ""' "$GITHUB_EVENT_PATH")`, 'REQUEST_EMAIL="${REQUEST_EMAIL:-}"')],
     ['hardening', 'a running deletion that can be cancelled', (d) => (d.concurrency['cancel-in-progress'] = true)],
     ['pinnedActions', 'an unpinned action', (d) => (d.jobs.run.steps[0].uses = 'actions/checkout@v4')],
+    ['lockedInstall', 'npm install in the run job', (d) => (npmStep(d, 'run').run = swap(npmStep(d, 'run').run, ' ci ', ' install '))],
+    ['lockedInstall', 'npm install in the verify job', (d) => (npmStep(d, 'verify').run = swap(npmStep(d, 'verify').run, ' ci ', ' install '))],
+    ['lockedInstall', 'npm ci without --ignore-scripts', (d) => (npmStep(d, 'run').run = swap(npmStep(d, 'run').run, ' --ignore-scripts', ''))],
+    ['lockedInstall', 'npm ci without --omit=dev', (d) => (npmStep(d, 'verify').run = swap(npmStep(d, 'verify').run, ' --omit=dev', ''))],
+    ['lockedInstall', 'a second npm command in the same step', (d) => (npmStep(d, 'run').run += ' && npm install extra')],
+    ['lockedInstall', 'the install after the cloud login', (d) => d.jobs.verify.steps.push(d.jobs.verify.steps.splice(d.jobs.verify.steps.indexOf(npmStep(d, 'verify')), 1)[0])],
   ];
   for (const [rule, what, breakDoc, breakText] of unsafe) {
     it(`${rule} reports ${what}`, () => {

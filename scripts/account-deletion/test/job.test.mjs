@@ -6,11 +6,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { runJob, requestByEmail, hashUid } from '../run.mjs';
 import { verifyRun } from '../verify-run.mjs';
+import { verifyUserGone } from '../verify.mjs';
 import { deleteUserData } from '../delete.mjs';
 import { createGa4Deletion } from '../ga4.mjs';
 import { auth, authExists, db, DAY, exists, quiet, resetEmulators, seedRequest, seedUser, snapshot } from './helpers.mjs';
 
 const opts = (over = {}) => ({ db, auth, runId: 'run1', dryRun: false, log: quiet, ...over });
+// A made-up uid that is easy to search for in anything the job prints or writes.
+const LEAK_UID = 'leakcanary7Zq2';
 
 beforeEach(resetEmulators);
 
@@ -465,18 +468,21 @@ describe('independent verify job', () => {
 
 describe('run.mjs as the workflow starts it', () => {
   // Spawned for real, the way the workflow does it, so the GITHUB_OUTPUT it leaves behind is what the verify job sees.
-  const start = (extra = {}) => {
+  const start = (extra = {}, nodeArgs = []) => {
     const dir = mkdtempSync(join(tmpdir(), 'run-mjs-'));
     const outFile = join(dir, 'output');
+    const summaryFile = join(dir, 'summary');
     writeFileSync(outFile, '');
-    const r = spawnSync(process.execPath, [new URL('../run.mjs', import.meta.url).pathname], {
-      env: { ...process.env, DRY_RUN: 'false', GITHUB_RUN_ID: '777', GITHUB_RUN_ATTEMPT: '2', GCLOUD_PROJECT: 'demo-invtrack', GITHUB_OUTPUT: outFile, ...extra },
+    writeFileSync(summaryFile, '');
+    const r = spawnSync(process.execPath, [...nodeArgs, new URL('../run.mjs', import.meta.url).pathname], {
+      env: { ...process.env, DRY_RUN: 'false', GITHUB_RUN_ID: '777', GITHUB_RUN_ATTEMPT: '2', GCLOUD_PROJECT: 'demo-invtrack', GITHUB_OUTPUT: outFile, GITHUB_STEP_SUMMARY: summaryFile, ...extra },
       encoding: 'utf8',
       timeout: 60_000,
     });
     const output = readFileSync(outFile, 'utf8');
+    const summary = readFileSync(summaryFile, 'utf8');
     rmSync(dir, { recursive: true, force: true });
-    return { status: r.status, output, log: `${r.stdout}${r.stderr}` };
+    return { status: r.status, output, summary, log: `${r.stdout}${r.stderr}` };
   };
 
   it('hands the next job the run id and no uid', async () => {
@@ -496,5 +502,59 @@ describe('run.mjs as the workflow starts it', () => {
     const r = start({ FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:1' });
     assert.notEqual(r.status, 0, 'the run is meant to crash here');
     assert.equal(r.output, 'run_id=777-2\n');
+  });
+
+  // The step summary and the log of this job are public. A library error can be codeless and carry the uid in its
+  // message, so only a short code may be recorded (see safe-error.mjs). fault-auth.mjs makes one Auth call throw such an error.
+  const faulty = (method) =>
+    start({ FAULT_AUTH_METHOD: method }, ['--import', new URL('./fault-auth.mjs', import.meta.url).href]);
+  const assertNoUid = (r, uid) => {
+    assert.ok(!r.summary.includes(uid), `the uid reached the step summary:\n${r.summary}`);
+    assert.ok(!r.log.includes(uid), `the uid reached stdout or stderr:\n${r.log}`);
+  };
+
+  it('keeps the uid out of the summary, stdout and stderr when deleteUser throws a codeless error', async () => {
+    await seedUser(LEAK_UID);
+    await seedRequest(LEAK_UID, 2 * DAY);
+    const r = faulty('deleteUser');
+    assert.equal(r.status, 1, r.log);
+    assertNoUid(r, LEAK_UID);
+    assert.ok(r.summary.includes(`| ${hashUid(LEAK_UID)} | request | - | - | - | error |`), r.summary);
+  });
+
+  it('keeps the uid out of the summary, stdout and stderr when the Auth lookup in the verifier throws a codeless error', async () => {
+    await seedUser(LEAK_UID);
+    await seedRequest(LEAK_UID, 2 * DAY);
+    const r = faulty('getUser');
+    assert.equal(r.status, 1, r.log);
+    assertNoUid(r, LEAK_UID);
+    assert.ok(r.summary.includes('auth lookup failed: error'), r.summary);
+  });
+});
+
+describe('error text recorded for a failed account', () => {
+  it('records only a safe code, never the message of an error that holds the uid', async () => {
+    await seedRequest(LEAK_UID, 2 * DAY);
+    const deleter = async ({ uid }) => {
+      throw new Error(`could not delete ${uid}`);
+    };
+    const out = await runJob(opts({ deleter }));
+    assert.equal(out.results[0].error, 'error');
+    assert.ok(!JSON.stringify(out).includes(LEAK_UID));
+  });
+
+  it('keeps a short error code', async () => {
+    await seedRequest(LEAK_UID, 2 * DAY);
+    const deleter = async () => {
+      throw Object.assign(new Error('x'), { code: 'auth/internal-error' });
+    };
+    const out = await runJob(opts({ deleter }));
+    assert.equal(out.results[0].error, 'auth/internal-error');
+  });
+
+  it('the verifier reports a failed Auth lookup by code only', async () => {
+    const lookup = (e) => verifyUserGone({ db, auth: { getUser: async () => { throw e; } }, uid: LEAK_UID });
+    assert.deepEqual((await lookup(new Error(`lookup of ${LEAK_UID} failed`))).problems, ['auth lookup failed: error']);
+    assert.deepEqual((await lookup(Object.assign(new Error('x'), { code: 'auth/internal-error' }))).problems, ['auth lookup failed: auth/internal-error']);
   });
 });

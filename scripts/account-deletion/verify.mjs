@@ -1,5 +1,6 @@
 // Read-back verifier. Deliberately shares no code or state with delete.mjs: it re-reads the
 // real stores and reports every mismatch. Problem texts never contain the raw uid.
+import { safeErrorCode } from './safe-error.mjs';
 
 async function countRefs(ref) {
   let n = 0;
@@ -30,7 +31,7 @@ export async function verifyUserGone({ db, auth, uid }) {
     problems.push('auth user still exists');
   } catch (e) {
     if (e.code !== 'auth/user-not-found') {
-      problems.push(`auth lookup failed: ${e.code ?? e.message}`);
+      problems.push(`auth lookup failed: ${safeErrorCode(e)}`);
     }
   }
 
