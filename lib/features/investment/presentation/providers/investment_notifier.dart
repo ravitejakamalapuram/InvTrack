@@ -5,6 +5,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
+import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
@@ -25,6 +26,7 @@ import 'package:inv_tracker/features/investment/domain/entities/custom_investmen
 import 'package:inv_tracker/features/investment/domain/models/custom_type_catalog.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/valuation_notifier.dart';
 import 'package:uuid/uuid.dart';
@@ -908,6 +910,26 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     );
   }
 
+  /// The live dated valuations of [investmentId], keyed by its id, or null
+  /// while the feature is off (it is then valued exactly as before).
+  ///
+  /// One awaited server-first read per saved INCOME or RETURN, and only while
+  /// the feature is on. INV-11 (A26) moves the milestone check to cached
+  /// provider state, or off the save path, and this read goes with it.
+  Future<Map<String, List<InvestmentValuationSnapshot>>?>
+  _liveValuationSnapshotsOf(String investmentId) async {
+    if (!ref.read(valuationSnapshotsActiveProvider)) return null;
+    final snapshots = await ref
+        .read(valuationRepositoryProvider)
+        .getByInvestment(investmentId);
+    return {
+      investmentId: [
+        for (final s in snapshots)
+          if (s.isLive) s,
+      ],
+    };
+  }
+
   /// The live dated valuations by investment id, or null while the feature
   /// is off: goal progress then values investments exactly as before.
   Future<Map<String, List<InvestmentValuationSnapshot>>?>
@@ -1128,6 +1150,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   // ============ Milestone Helpers ============
 
   /// Check for milestone achievements after adding a cash flow
+  ///
+  /// The MOIC is the one the screens show: the shared calculation's, on
+  /// paid-in capital, from the cash flows and the current value of an open
+  /// investment, all in the base currency (money rules 2, 3 and 4).
   Future<void> _checkMilestoneAfterCashFlow(String investmentId) async {
     try {
       final investment = await ref
@@ -1139,7 +1165,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .read(investmentRepositoryProvider)
           .getCashFlowsByInvestment(investmentId);
 
-      // Totals in the base currency: raw sums of mixed currencies would fire
+      // Stats in the base currency: raw sums of mixed currencies would fire
       // false milestones and be shown under the wrong symbol. Without a
       // converter (signed out) there is no milestone to show. If a rate is
       // unavailable, throwError skips the check until the next cash flow;
@@ -1152,10 +1178,33 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         baseCurrency: baseCurrency,
         fallbackStrategy: ConversionFallbackStrategy.throwError,
       );
+
+      // An open investment is also worth what it is worth today. Its value is
+      // worked out from the unconverted flows, then converted like them.
+      final values = CurrentValueCalculator.terminalValues(
+        investments: [investment],
+        cashFlows: cashFlows,
+        asOf: ref.read(valuationDateProvider),
+        snapshots: await _liveValuationSnapshotsOf(investmentId),
+      );
+      final convertedValues = values.flows.isEmpty
+          ? values
+          : values.withConvertedFlows(
+              await engine.currency.batchConvert(
+                cashFlows: values.flows,
+                baseCurrency: baseCurrency,
+                fallbackStrategy: ConversionFallbackStrategy.throwError,
+              ),
+            );
+
       final stats = engine.financial.calculateStats(
         converted,
         includeXirr: false,
+        terminalValues: convertedValues,
       );
+      // No current value, or no known cost, means no MOIC: nothing to
+      // announce.
+      if (stats.needsCurrentValue || !stats.returnsKnown) return;
 
       // Check for milestone notification
       await ref
@@ -1163,8 +1212,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .checkAndShowMilestone(
             investmentId: investmentId,
             investmentName: investment.name,
-            totalInvested: stats.totalInvested,
-            totalReturned: stats.totalReturned,
+            moic: stats.moic,
+            gain: stats.gain,
             currency: baseCurrency,
           );
     } catch (e) {

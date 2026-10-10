@@ -70,8 +70,8 @@ class FakeNotificationService implements NotificationService {
   Future<void> checkAndShowMilestone({
     required String investmentId,
     required String investmentName,
-    required double totalInvested,
-    required double totalReturned,
+    required double moic,
+    required double gain,
     String currency = 'INR',
   }) async {
     shownMilestones.add(investmentId);
