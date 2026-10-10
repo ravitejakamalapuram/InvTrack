@@ -132,14 +132,24 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               ),
               onPressed: () => Navigator.of(context).pop(),
             ),
-            title: Text(
-              widget.investment.name,
-              style: AppTypography.body.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+            // The expanded header below already shows the name, so the bar
+            // carries it only once that header has scrolled away (#942). The
+            // heading semantics are set by hand: the app bar would otherwise
+            // mark the title as a heading even while it is empty.
+            excludeHeaderSemantics: true,
+            title: _CollapsedAppBarTitle(
+              child: Semantics(
+                header: true,
+                child: Text(
+                  widget.investment.name,
+                  style: AppTypography.body.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
             actions: [
               IconButton(
@@ -199,14 +209,27 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    widget.investment.name,
-                                    style: AppTypography.h3.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
+                                  Semantics(
+                                    header: true,
+                                    // Names the screen for screen readers,
+                                    // as the app bar title did, except on
+                                    // Apple platforms (same as AppBar).
+                                    namesRoute: switch (Theme.of(
+                                      context,
+                                    ).platform) {
+                                      TargetPlatform.iOS ||
+                                      TargetPlatform.macOS => null,
+                                      _ => true,
+                                    },
+                                    child: Text(
+                                      widget.investment.name,
+                                      style: AppTypography.h3.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 6),
                                   Row(
@@ -983,5 +1006,31 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
         }
       }
     }
+  }
+}
+
+/// Shows [child] in the pinned app bar only once the expanded header, which
+/// carries the same text, has mostly scrolled under the toolbar. While the
+/// header is showing it builds nothing, so the text exists once on screen and
+/// in the semantics tree.
+class _CollapsedAppBarTitle extends StatelessWidget {
+  const _CollapsedAppBarTitle({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = context
+        .dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
+    if (settings == null) return child;
+    final range = settings.maxExtent - settings.minExtent;
+    if (range <= 0) return child;
+    // 0 when fully expanded, 1 when fully collapsed.
+    final collapsed =
+        1 - ((settings.currentExtent - settings.minExtent) / range);
+    // Fade in over the second half, as the header's own name fades out.
+    final opacity = ((collapsed - 0.5) * 2).clamp(0.0, 1.0);
+    if (opacity == 0) return const SizedBox.shrink();
+    return Opacity(opacity: opacity, child: child);
   }
 }
