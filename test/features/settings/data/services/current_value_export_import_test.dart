@@ -203,12 +203,17 @@ void main() {
         'cashflows.csv',
         'Date,Investment Name,Type,Amount,Currency,Notes,Investment Type,'
             'Investment Status\n'
-            '2025-10-01,SGB 2031,INVEST,100000,INR,,gold,open\n',
+            '2025-10-01,SGB 2031,INVEST,100000,INR,,gold,open\n'
+            '2025-10-02,Plot in Pune,INVEST,500000,INR,,property,open\n',
       );
+      // Replace stops when valuations.csv has no readable row at all, so the
+      // file keeps one valid row: the future-dated row is a row-level problem
+      // in a file that can still be read.
       add(
         'valuations.csv',
         'Investment Name,Archived,Date,Value,Currency\n'
-            'SGB 2031,false,2999-01-01,125000,INR\n',
+            'SGB 2031,false,2999-01-01,125000,INR\n'
+            'Plot in Pune,false,2025-10-05,600000,INR\n',
       );
 
       final result = await importService.importFromZip(
@@ -217,9 +222,14 @@ void main() {
         baseCurrency: 'INR',
       );
 
-      final sgb = (await repo.getAllInvestments()).single;
+      final active = await repo.getAllInvestments();
+      final sgb = active.singleWhere((i) => i.name == 'SGB 2031');
       expect(sgb.currentValue, isNull);
       expect(sgb.currentValueDate, isNull);
+      expect(
+        active.singleWhere((i) => i.name == 'Plot in Pune').currentValue,
+        600000,
+      );
       expect(
         result.warnings,
         contains('Current value of "SGB 2031" not imported: invalid row'),
