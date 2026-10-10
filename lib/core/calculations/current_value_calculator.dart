@@ -18,6 +18,9 @@ enum ValuationSource {
 
 /// A dated current value of one investment, in [currency].
 class InvestmentValuation {
+  /// Not rounded: it is an input to XIRR, MOIC and return %. Round to the
+  /// currency's minor unit (`MoneyPrecision`) only when a value is stored or
+  /// shown.
   final double amount;
 
   /// Currency of [amount]: the investment's for a manual value, the
