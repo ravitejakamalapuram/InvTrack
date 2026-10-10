@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
+import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
@@ -551,6 +552,101 @@ void main() {
         date: day,
       );
       await expectRejected(() => notifier().rebase(manual.id));
+    });
+  });
+
+  // CodeRabbit on PR 961: a write gives its snapshot the server's update time,
+  // which makes it the newest of its day. The mirror must name the snapshot a
+  // reader will select after the write, not the one selected before it.
+  group('the mirror follows the server time of the write', () {
+    final older = DateTime.utc(2026, 3, 1);
+    final newer = DateTime.utc(2026, 4, 1);
+
+    // Two values on one day: 'b' is the newest now, 'a' the older.
+    InvestmentValuationSnapshot twin(
+      String id,
+      double amount,
+      DateTime updatedAt, {
+      ValuationProvenance provenance = ValuationProvenance.manual,
+    }) => testSnapshot(
+      id,
+      investmentId: 'gold',
+      amount: amount,
+      date: day,
+      updatedAt: updatedAt,
+      provenance: provenance,
+    );
+
+    /// What a reader selects from the documents as stored after the write.
+    void expectMirrorIsStoredLatest(double amount) {
+      final stored = ValuationSnapshotSelector.mirrorOf(
+        live(),
+        investmentId: 'gold',
+        currency: 'INR',
+      );
+      expect(stored?.amount, amount, reason: 'the stored latest');
+      expect(valuations.mirrors['gold']!.value, amount);
+      expect(valuations.mirrors['gold']!.date, day);
+    }
+
+    setUp(() {
+      valuations.serverTime = DateTime.utc(2026, 9, 1);
+      valuations.docs['b'] = twin('b', 200, newer);
+    });
+
+    test('editing the older of two same-day values', () async {
+      valuations.docs['a'] = twin('a', 100, older);
+      await notifier().editValuation(snapshotId: 'a', amount: 150);
+      expectMirrorIsStoredLatest(150);
+    });
+
+    test('replacing a same-day value', () async {
+      valuations.docs
+        ..clear()
+        ..['a'] = twin('a', 100, older)
+        ..['b'] = twin('b', 200, newer);
+      await notifier().setValuation(
+        investmentId: 'gold',
+        amount: 175,
+        date: day,
+        replaceSameDay: true,
+      );
+      expect(valuations.docs, hasLength(2));
+      expectMirrorIsStoredLatest(175);
+    });
+
+    test(
+      'confirming a baseline that shares its day with a newer value',
+      () async {
+        valuations.docs['a'] = twin(
+          'a',
+          100,
+          older,
+          provenance: ValuationProvenance.openingBaseline,
+        );
+        investments.seed(
+          cashFlows: [
+            testFlow(
+              'gold',
+              CashFlowType.invest,
+              90,
+              DateTime(day.year - 1, 5, 1),
+            ),
+          ],
+        );
+        await notifier().rebase('a');
+        expectMirrorIsStoredLatest(100);
+      },
+    );
+
+    test('Undo of a clear brings back the value the server will rank '
+        'newest', () async {
+      valuations.docs['a'] = twin('a', 100, older);
+      await notifier().clearValuation('a');
+      expect(valuations.mirrors['gold']!.value, 200);
+
+      expect(await notifier().undoClear(), isTrue);
+      expectMirrorIsStoredLatest(100);
     });
   });
 

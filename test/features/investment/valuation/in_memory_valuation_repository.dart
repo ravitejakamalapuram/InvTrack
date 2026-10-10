@@ -22,6 +22,14 @@ class InMemoryValuationRepository implements ValuationRepository {
   /// Makes the next write throw, applying nothing (an atomic batch).
   Object? failNextWrite;
 
+  /// When set, save, softDelete and restore store the document with this
+  /// update time, as Firestore's server timestamp does. Left null, a write
+  /// stores the snapshot as given.
+  DateTime? serverTime;
+
+  InvestmentValuationSnapshot _stamped(InvestmentValuationSnapshot s) =>
+      serverTime == null ? s : s.copyWith(updatedAt: serverTime);
+
   void _applyMirror(CompatMirror mirror) {
     mirrors[mirror.investmentId] = (value: mirror.value, date: mirror.date);
   }
@@ -67,7 +75,7 @@ class InMemoryValuationRepository implements ValuationRepository {
     required CompatMirror mirror,
   }) async {
     _checkFailure();
-    docs[snapshot.id] = snapshot;
+    docs[snapshot.id] = _stamped(snapshot);
     _applyMirror(mirror);
     log.add('save:${snapshot.id}');
     _emit();
@@ -79,7 +87,7 @@ class InMemoryValuationRepository implements ValuationRepository {
     required CompatMirror mirror,
   }) async {
     _checkFailure();
-    docs[snapshot.id] = snapshot.copyWith(deletedAt: DateTime.now());
+    docs[snapshot.id] = _stamped(snapshot.copyWith(deletedAt: DateTime.now()));
     _applyMirror(mirror);
     log.add('softDelete:${snapshot.id}');
     _emit();
@@ -91,7 +99,7 @@ class InMemoryValuationRepository implements ValuationRepository {
     required CompatMirror mirror,
   }) async {
     _checkFailure();
-    docs[snapshot.id] = snapshot.copyWith(clearDeletedAt: true);
+    docs[snapshot.id] = _stamped(snapshot.copyWith(clearDeletedAt: true));
     _applyMirror(mirror);
     log.add('restore:${snapshot.id}');
     _emit();

@@ -244,7 +244,7 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
       }
       await _repository.restore(
         restored,
-        mirror: _mirrorOf(investment, [...all, restored]),
+        mirror: _mirrorOf(investment, [...all, _pending(restored)]),
       );
       _written(restored);
       return true;
@@ -309,11 +309,17 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
     final all = [
       for (final s in others)
         if (s.id != snapshot.id) s,
-      snapshot,
+      _pending(snapshot),
     ];
     await _repository.save(snapshot, mirror: _mirrorOf(investment, all));
     _written(snapshot);
   }
+
+  /// [snapshot] as the selector must rank it for the mirror: the write gives
+  /// it the server's update time, which makes it the newest of its day, so
+  /// its old in-memory update time must not count.
+  InvestmentValuationSnapshot _pending(InvestmentValuationSnapshot snapshot) =>
+      snapshot.copyWith(clearUpdatedAt: true);
 
   /// The mirror for an investment whose live snapshots are [snapshots].
   CompatMirror _mirrorOf(

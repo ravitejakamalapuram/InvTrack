@@ -98,7 +98,9 @@ class InvestmentValuationSnapshot {
       provenance == ValuationProvenance.openingBaseline;
 
   /// A copy with the given fields replaced. [clearDeletedAt] restores a
-  /// cleared snapshot, which a null [deletedAt] cannot express.
+  /// cleared snapshot, which a null [deletedAt] cannot express. [clearUpdatedAt]
+  /// makes it a write still on its way (a null update time), which a null
+  /// [updatedAt] cannot express.
   InvestmentValuationSnapshot copyWith({
     double? amount,
     DateTime? effectiveDate,
@@ -107,6 +109,7 @@ class InvestmentValuationSnapshot {
     DateTime? updatedAt,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
+    bool clearUpdatedAt = false,
   }) => InvestmentValuationSnapshot(
     id: id,
     investmentId: investmentId,
@@ -116,7 +119,7 @@ class InvestmentValuationSnapshot {
     kind: kind ?? this.kind,
     provenance: provenance ?? this.provenance,
     createdAt: createdAt,
-    updatedAt: updatedAt ?? this.updatedAt,
+    updatedAt: clearUpdatedAt ? null : (updatedAt ?? this.updatedAt),
     deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
   );
 
