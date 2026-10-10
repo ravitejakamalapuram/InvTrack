@@ -408,6 +408,23 @@ void main() {
       expect(valuations.mirrors['gold']!.value, 200);
     });
 
+    test('clearing the latest value reports a failure in the state', () async {
+      // CodeRabbit on PR 961: the lookup ran outside the guarded action.
+      await expectLater(
+        () => notifier().clearLatestValuation('nope'),
+        throwsA(isA<DataException>()),
+      );
+      expect(container.read(valuationNotifierProvider).hasError, isTrue);
+    });
+
+    test('clearing the latest value of an investment with none is false and '
+        'no error', () async {
+      expect(await notifier().clearLatestValuation('gold'), isFalse);
+      final state = container.read(valuationNotifierProvider);
+      expect(state.hasError, isFalse);
+      expect(state.isLoading, isFalse);
+    });
+
     test('a snapshot is not deleted for good', () async {
       final saved = await notifier().setValuation(
         investmentId: 'gold',

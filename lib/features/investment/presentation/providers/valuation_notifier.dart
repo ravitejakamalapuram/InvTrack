@@ -204,7 +204,7 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
 
   /// Clears the snapshot the investment's value comes from: its latest live
   /// one in its own currency. Returns false when it has none.
-  Future<bool> clearLatestValuation(String investmentId) async {
+  Future<bool> clearLatestValuation(String investmentId) => _run(() async {
     final investment = await ref
         .read(investmentRepositoryProvider)
         .getInvestmentById(investmentId);
@@ -218,9 +218,9 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
       currency: investment.currency,
     );
     if (latest == null) return false;
-    await _run(() => _clear(latest, own));
+    await _clear(latest, own);
     return true;
-  }
+  });
 
   /// Brings back the snapshot cleared last, if the investment still takes
   /// it. Returns whether there was anything to bring back.
