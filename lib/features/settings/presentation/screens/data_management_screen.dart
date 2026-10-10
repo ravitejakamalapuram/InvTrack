@@ -387,27 +387,28 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
             ),
           );
         } else if (importResult.warnings.isNotEmpty) {
-          // Part of the backup was skipped (a damaged optional file). Replace
-          // has already deleted what that file would have replaced, so this
-          // must not read as plain success. Count only: the warning texts
-          // hold investment and goal names (rules 7 and 8).
+          // Part of the backup was skipped: a damaged optional file or a
+          // duplicate in Merge, or a save that failed in Replace after it had
+          // deleted the old data (a damaged file stops Replace before that).
+          // This must not read as plain success. Count only: the warning
+          // texts hold investment and goal names (rules 7 and 8).
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               // Dark text: the theme's snackbar text is light in the light
               // theme, which is unreadable on the amber background.
+              // The snackbar's own semantics node merges the two lines into one
+              // announcement (a test pins the label).
               content: DefaultTextStyle.merge(
                 style: const TextStyle(color: AppColors.neutral900Light),
-                child: MergeSemantics(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.importedWithWarnings(importResult.warnings.length),
-                      ),
-                      Text(l10n.importedWithWarningsHint),
-                    ],
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.importedWithWarnings(importResult.warnings.length),
+                    ),
+                    Text(l10n.importedWithWarningsHint),
+                  ],
                 ),
               ),
               backgroundColor: AppColors.warningLight,

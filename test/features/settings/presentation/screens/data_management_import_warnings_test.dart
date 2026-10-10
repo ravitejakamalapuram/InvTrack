@@ -205,6 +205,41 @@ void main() {
     }
   });
 
+  testWidgets('shows for 8 seconds, so it is not missed', (tester) async {
+    await importZip(
+      tester,
+      _result(warnings: const ['Dated values not imported: invalid']),
+    );
+
+    expect(
+      tester.widget<SnackBar>(find.byType(SnackBar)).duration,
+      const Duration(seconds: 8),
+    );
+  });
+
+  // A Merge adds one 'Skipped ... already exists' warning per duplicate, so
+  // re-importing a backup shows this snackbar. Deliberate for now: the count
+  // cannot tell a duplicate from a damaged file until warnings have kinds.
+  testWidgets('a Merge that only skipped duplicates shows the count, never '
+      'their names', (tester) async {
+    await importZip(
+      tester,
+      _result(
+        warnings: const [
+          'Skipped "Alpha Bond" - already exists',
+          'Skipped goal "Retirement" - already exists',
+        ],
+      ),
+    );
+
+    expect(snackBarTexts(tester), [
+      'Imported with 2 warnings',
+      'Some items in the backup were not imported.',
+    ]);
+    expect(find.textContaining('Alpha'), findsNothing);
+    expect(find.textContaining('Retirement'), findsNothing);
+  });
+
   testWidgets('one warning is singular', (tester) async {
     await importZip(
       tester,
@@ -215,11 +250,16 @@ void main() {
     expect(find.textContaining('1 warnings'), findsNothing);
   });
 
-  testWidgets('Replace says so too, because it deleted what the skipped file '
-      'would have replaced', (tester) async {
+  // A damaged file stops Replace before anything is deleted (an error, not a
+  // warning). Replace warnings come from saves that fail after the delete.
+  testWidgets('Replace says so too, when a save fails after the delete', (
+    tester,
+  ) async {
     await importZip(
       tester,
-      _result(warnings: const ['Archived goals not imported: invalid']),
+      _result(
+        warnings: const ['Dated values not imported: they could not be saved'],
+      ),
       strategy: ImportStrategy.replace,
     );
 
@@ -237,7 +277,9 @@ void main() {
     expect(find.textContaining('warning'), findsNothing);
   });
 
-  testWidgets('privacy mode: the message holds no names, file names or '
+  // The screen does not read privacy mode here: the guarantee is that warning
+  // texts are never rendered, so there is nothing for privacy mode to hide.
+  testWidgets('privacy mode on: the message holds no names, file names or '
       'amounts', (tester) async {
     final semantics = tester.ensureSemantics();
     await importZip(
