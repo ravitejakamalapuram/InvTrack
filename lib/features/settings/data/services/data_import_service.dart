@@ -159,6 +159,15 @@ class DataImportService {
       );
     }
 
+    // Custom types (#936) are read before anything is deleted: an unreadable
+    // file is skipped with a warning (never with label text) and the cash
+    // flows import without labels, instead of failing a Replace after it has
+    // cleared the account.
+    final customTypesFile = archive.findFile('custom_types.json');
+    final customTypes = customTypesFile == null
+        ? null
+        : _parseCustomTypes(customTypesFile.content as List<int>, warnings);
+
     // 3. If strategy is replace, delete all existing data first
     if (strategy == ImportStrategy.replace) {
       await _deleteAllExistingData();
@@ -182,34 +191,27 @@ class DataImportService {
           );
 
     // Reusable custom types (#936) first, so the investments below can link
-    // to them. Replace keeps the account's own types, like its FIRE settings:
-    // they are a preference, not investment data, and the file may lack them.
-    // If they cannot be saved (Replace has already cleared the investments),
-    // the investments still import with their labels, unlinked.
-    final customTypesFile = archive.findFile('custom_types.csv');
+    // to them. Replace with a readable file replaces the account's own types
+    // (the old ones are deleted for good); without the file, or with an
+    // unreadable one, they stay. If they cannot be saved (Replace has already
+    // cleared the investments), the investments still import with their
+    // labels, unlinked.
     var customTypesByKey = const <String, CustomInvestmentType>{};
-    if (customTypesFile != null) {
+    if (customTypes != null) {
       try {
+        if (strategy == ImportStrategy.replace) {
+          await _customInvestmentTypeRepository?.deleteAll();
+        }
         customTypesByKey = await _importCustomTypes(
-          _parseCustomTypesCsv(
-            utf8.decode(customTypesFile.content as List<int>),
-            warnings,
-          ),
+          customTypes.types,
           warnings,
         );
       } catch (e) {
         warnings.add('Custom types not imported: they could not be saved');
       }
     }
-    final investmentCustomTypesFile = archive.findFile(
-      'investment_custom_types.csv',
-    );
-    final investmentCustomTypes = investmentCustomTypesFile == null
-        ? const <(bool, String), _ImportedCustomTypeRef>{}
-        : _parseInvestmentCustomTypesCsv(
-            utf8.decode(investmentCustomTypesFile.content as List<int>),
-            warnings,
-          );
+    final investmentCustomTypes =
+        customTypes?.links ?? const <(bool, String), _ImportedCustomTypeRef>{};
 
     // Import cashflows (active)
     final cashflowsFile = archive.findFile('cashflows.csv');
@@ -638,88 +640,51 @@ class DataImportService {
     return result;
   }
 
-  /// Reads the rows of a CSV file whose header holds every one of [columns];
-  /// null if it is unreadable or lacks one. Cells come back trimmed.
-  List<Map<String, String>>? _readCsvRows(
-    String content,
-    List<String> columns,
+  /// Reads custom_types.json (see `DataExportService`): the reusable types
+  /// and the custom type label of each Other investment, keyed by (archived,
+  /// lowercase investment name) the way valuations are. Null, with one
+  /// warning that holds no label text, if the file is not readable JSON of
+  /// the expected shape. A row of the wrong shape is skipped.
+  _ImportedCustomTypes? _parseCustomTypes(
+    List<int> bytes,
+    List<String> warnings,
   ) {
-    final List<List<dynamic>> rows;
+    Object? json;
     try {
-      rows = csv.decode(content);
-    } catch (e) {
+      json = jsonDecode(utf8.decode(bytes));
+    } catch (_) {
+      json = null;
+    }
+    if (json is! Map<String, dynamic>) {
+      warnings.add('Custom types not imported: custom_types.json is invalid');
       return null;
     }
-    if (rows.isEmpty) return const [];
-    final header = [for (final h in rows.first) h.toString().trim()];
-    if (columns.any((c) => !header.contains(c))) return null;
-    return [
-      for (final row in rows.skip(1))
-        {
-          for (final column in columns)
-            column: header.indexOf(column) < row.length
-                ? row[header.indexOf(column)].toString().trim()
-                : '',
-        },
-    ];
-  }
-
-  /// Undoes the quote [CsvUtils.sanitizeField] puts before a text that a
-  /// spreadsheet could take for a formula.
-  static String _unsanitize(String cell) =>
-      RegExp(r"^'\s*[=+\-@]").hasMatch(cell) ? cell.substring(1) : cell;
-
-  /// Parses custom_types.csv (Label, Removed) into rows, skipping blank ones.
-  List<_ImportedCustomType> _parseCustomTypesCsv(
-    String content,
-    List<String> warnings,
-  ) {
-    final rows = _readCsvRows(content, const ['Label', 'Removed']);
-    if (rows == null) {
-      warnings.add('Custom types not imported: custom_types.csv is invalid');
-      return const [];
+    final types = <_ImportedCustomType>[];
+    final rawTypes = json['types'];
+    if (rawTypes is List) {
+      for (final row in rawTypes) {
+        if (row is! Map) continue;
+        final label = row['label'];
+        if (label is! String || label.trim().isEmpty) continue;
+        types.add(
+          _ImportedCustomType(label: label, removed: row['removed'] == true),
+        );
+      }
     }
-    return [
-      for (final row in rows)
-        if (row['Label']!.isNotEmpty)
-          _ImportedCustomType(
-            label: _unsanitize(row['Label']!),
-            removed: row['Removed']!.toLowerCase() == 'true',
-          ),
-    ];
-  }
-
-  /// Parses investment_custom_types.csv into labels keyed by (archived,
-  /// lowercase investment name), the way valuations are.
-  Map<(bool, String), _ImportedCustomTypeRef> _parseInvestmentCustomTypesCsv(
-    String content,
-    List<String> warnings,
-  ) {
-    final rows = _readCsvRows(content, const [
-      'Investment Name',
-      'Archived',
-      'Custom Type',
-      'Linked',
-    ]);
-    if (rows == null) {
-      warnings.add(
-        'Custom types of investments not imported: '
-        'investment_custom_types.csv is invalid',
-      );
-      return const {};
+    final links = <(bool, String), _ImportedCustomTypeRef>{};
+    final rawLinks = json['investments'];
+    if (rawLinks is List) {
+      for (final row in rawLinks) {
+        if (row is! Map) continue;
+        final name = row['name'];
+        final label = row['label'];
+        if (name is! String || name.trim().isEmpty) continue;
+        if (label is! String || label.trim().isEmpty) continue;
+        links[(row['archived'] == true, name.trim().toLowerCase())] =
+            _ImportedCustomTypeRef(label: label, linked: row['linked'] == true);
+      }
     }
-    return {
-      for (final row in rows)
-        if (row['Investment Name']!.isNotEmpty &&
-            row['Custom Type']!.isNotEmpty)
-          (
-            row['Archived']!.toLowerCase() == 'true',
-            row['Investment Name']!.toLowerCase(),
-          ): _ImportedCustomTypeRef(
-            label: _unsanitize(row['Custom Type']!),
-            linked: row['Linked']!.toLowerCase() == 'true',
-          ),
-    };
+    return _ImportedCustomTypes(types: types, links: links);
   }
 
   /// Saves the reusable types of an import and returns them by key. A type
@@ -945,7 +910,9 @@ class DataImportService {
     // Security: Validate file signature to prevent extension spoofing
     // and malicious file uploads during ZIP import.
     if (!FileSignatureUtils.validateFileSignature(uint8Bytes, fileName)) {
-      throw Exception('Security: File signature validation failed for $fileName');
+      throw Exception(
+        'Security: File signature validation failed for $fileName',
+      );
     }
 
     // Save the file to local storage
@@ -991,7 +958,17 @@ class _ImportedValuation {
   });
 }
 
-/// A reusable custom type read from custom_types.csv.
+/// What custom_types.json holds.
+class _ImportedCustomTypes {
+  final List<_ImportedCustomType> types;
+
+  /// The custom type label of each investment, by (archived, lowercase name).
+  final Map<(bool, String), _ImportedCustomTypeRef> links;
+
+  const _ImportedCustomTypes({required this.types, required this.links});
+}
+
+/// A reusable custom type read from custom_types.json.
 class _ImportedCustomType {
   final String label;
   final bool removed;
@@ -999,8 +976,7 @@ class _ImportedCustomType {
   const _ImportedCustomType({required this.label, required this.removed});
 }
 
-/// The custom type label of one investment, read from
-/// investment_custom_types.csv.
+/// The custom type label of one investment, read from custom_types.json.
 class _ImportedCustomTypeRef {
   final String label;
 

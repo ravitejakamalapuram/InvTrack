@@ -31,6 +31,16 @@ class FakeCustomInvestmentTypeRepository
   @override
   Future<List<CustomInvestmentType>> getAll() async => _snapshot();
 
+  /// How many times every definition was deleted, for Replace assertions.
+  int deleteAlls = 0;
+
+  @override
+  Future<void> deleteAll() async {
+    deleteAlls++;
+    _defs.clear();
+    _subject.add(_snapshot());
+  }
+
   @override
   Future<void> put(CustomInvestmentType type) async {
     writes++;

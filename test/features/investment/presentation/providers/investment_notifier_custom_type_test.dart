@@ -3,16 +3,21 @@
 // a built-in type, a link to a reusable type when the text matches an active
 // one, otherwise a label for that investment only. The built-in type stays
 // Other and nothing else about the investment changes.
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/custom_investment_type_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_notifier.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../data/repositories/fake_custom_investment_type_repository.dart';
 import '../../data/repositories/mock_investment_repository.dart';
@@ -27,6 +32,15 @@ CustomInvestmentType _def(String id, String label, {DateTime? removedAt}) =>
       updatedAt: DateTime.utc(2026, 1, 1),
       removedAt: removedAt,
     );
+
+class _MockFirebaseCrashlytics extends Mock implements FirebaseCrashlytics {}
+
+/// A type store that cannot be reached.
+class _UnreachableTypes extends FakeCustomInvestmentTypeRepository {
+  @override
+  Future<List<CustomInvestmentType>> getAll() async =>
+      throw StateError('unreachable');
+}
 
 void main() {
   late FakeInvestmentRepository investments;
@@ -121,6 +135,33 @@ void main() {
         expect(inv.customTypeLabel, 'rare stamps');
       },
     );
+
+    test('saved types that cannot be read do not block the save: the label '
+        'is kept for this investment only', () async {
+      investments = FakeInvestmentRepository();
+      container.dispose();
+      container = ProviderContainer(
+        overrides: [
+          investmentRepositoryProvider.overrideWithValue(investments),
+          customInvestmentTypeRepositoryProvider.overrideWithValue(
+            _UnreachableTypes(),
+          ),
+          analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
+          notificationServiceProvider.overrideWithValue(
+            FakeNotificationService(),
+          ),
+          isAuthenticatedProvider.overrideWithValue(true),
+          currencyCodeProvider.overrideWithValue('INR'),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final inv = await add(label: 'Rare   Stamps');
+
+      expect(inv.customTypeId, isNull);
+      expect(inv.customTypeLabel, 'Rare Stamps');
+      expect(investments.investments.single, inv);
+    });
 
     test('a built-in type never keeps a custom label', () async {
       final inv = await add(type: InvestmentType.bonds, label: 'Rare Stamps');
@@ -248,6 +289,57 @@ void main() {
       expect(stored.customTypeLabel, isNull);
     });
 
+    test('editing a closed investment keeps its custom type', () async {
+      build([_def('c1', 'Stamps')]);
+      final inv = InvestmentEntity(
+        id: 'inv-1',
+        name: 'Stamp album',
+        type: InvestmentType.other,
+        status: InvestmentStatus.closed,
+        closedAt: DateTime(2026, 6, 1),
+        createdAt: DateTime(2026, 1, 1),
+        updatedAt: DateTime(2026, 1, 1),
+        currency: 'INR',
+        customTypeId: 'c1',
+        customTypeLabel: 'Stamps',
+      );
+      investments.seed(investments: [inv]);
+
+      await edit(inv, label: 'Stamps', name: 'Stamp album 2');
+
+      final stored = investments.investments.single;
+      expect(stored.name, 'Stamp album 2');
+      expect(stored.status, InvestmentStatus.closed);
+      expect(stored.customTypeId, 'c1');
+      expect(stored.customTypeLabel, 'Stamps');
+    });
+
+    test('editing an archived investment keeps its custom type', () async {
+      build([_def('c1', 'Stamps')]);
+      final inv = InvestmentEntity(
+        id: 'inv-1',
+        name: 'Stamp album',
+        type: InvestmentType.other,
+        status: InvestmentStatus.open,
+        isArchived: true,
+        createdAt: DateTime(2026, 1, 1),
+        updatedAt: DateTime(2026, 1, 1),
+        currency: 'INR',
+        customTypeId: 'c1',
+        customTypeLabel: 'Stamps',
+      );
+      investments.seed(archivedInvestments: [inv]);
+
+      await edit(inv, label: 'Stamps', name: 'Stamp album 2');
+
+      final stored = investments.archivedInvestments.single;
+      expect(stored.name, 'Stamp album 2');
+      expect(stored.isArchived, isTrue);
+      expect(stored.customTypeId, 'c1');
+      expect(stored.customTypeLabel, 'Stamps');
+      expect(investments.investments, isEmpty);
+    });
+
     test('setting the current value keeps the custom type', () async {
       final inv = seed(id: 'c1', label: 'Stamps');
 
@@ -261,6 +353,133 @@ void main() {
       final stored = investments.investments.single;
       expect(stored.customTypeId, 'c1');
       expect(stored.customTypeLabel, 'Stamps');
+    });
+  });
+
+  group('privacy: a label is never reported', () {
+    // Unlikely to occur in any other text.
+    const marker = 'ZqxSecretHobby';
+    late _MockFirebaseCrashlytics firebase;
+
+    setUpAll(() {
+      registerFallbackValue(StackTrace.empty);
+      registerFallbackValue(const <Object>[]);
+    });
+
+    setUp(() {
+      firebase = _MockFirebaseCrashlytics();
+      when(
+        () => firebase.recordError(
+          any(),
+          any(),
+          reason: any(named: 'reason'),
+          fatal: any(named: 'fatal'),
+          information: any(named: 'information'),
+        ),
+      ).thenAnswer((_) async {});
+      // Tests run with kDebugMode == true, so reporting needs the override.
+      CrashlyticsService.enableInDebugMode = true;
+      LoggerService.crashlyticsServiceForTesting = CrashlyticsService(
+        debugModeEnabled: true,
+        crashlytics: firebase,
+      );
+    });
+
+    tearDown(() {
+      CrashlyticsService.enableInDebugMode = false;
+      LoggerService.crashlyticsServiceForTesting = null;
+    });
+
+    /// Everything handed to Crashlytics so far: an error and a reason per
+    /// report.
+    List<Object?> reported() => verify(
+      () => firebase.recordError(
+        captureAny(),
+        any(),
+        reason: captureAny(named: 'reason'),
+        fatal: any(named: 'fatal'),
+        information: any(named: 'information'),
+      ),
+    ).captured;
+
+    test('the exception for a label that is too long does not contain it, '
+        'and a developer-chosen metadata key cannot carry it', () async {
+      ValidationException? refused;
+      Object? error;
+      StackTrace? stack;
+      try {
+        await add(label: '$marker${'y' * 40}');
+      } on ValidationException catch (e, st) {
+        refused = e;
+        error = e;
+        stack = st;
+      }
+
+      expect(refused, isNotNull);
+      for (final text in [
+        refused!.userMessage,
+        refused.technicalMessage,
+        refused.toString(),
+      ]) {
+        expect(text, isNot(contains(marker)));
+      }
+
+      // Logged the way the app logs a failure: whatever metadata a future
+      // change adds, the Crashlytics reason keeps only allowlisted keys.
+      final metadata = {
+        'investmentType': 'other',
+        'customTypeLabel': marker,
+        'label': marker,
+      };
+      expect(
+        LoggerService.crashlyticsReason('Failed to save investment', metadata),
+        isNot(contains(marker)),
+      );
+      LoggerService.error(
+        'Failed to save investment',
+        error: error,
+        stackTrace: stack,
+        metadata: metadata,
+      );
+      LoggerService.error(
+        'Failed to save investment',
+        error: StateError('store error'),
+        metadata: metadata,
+      );
+      await pumpEventQueue(); // reports are sent without being awaited
+      final sent = reported();
+      expect(
+        sent,
+        hasLength(2),
+        reason: 'one report, for the store error: validation is not reported',
+      );
+      expect(sent.last, 'Failed to save investment', reason: 'no metadata');
+      expect('$sent', isNot(contains(marker)));
+    });
+
+    test('saving, renaming and removing a type reports nothing with the '
+        'label', () async {
+      build([_def('c1', 'Wine')]);
+      final typeNotifier = container.read(
+        customInvestmentTypeNotifierProvider.notifier,
+      );
+
+      await add(label: marker);
+      final saved = (await typeNotifier.save(marker)).result!;
+      await typeNotifier.save('wine'); // already saved
+      await typeNotifier.rename(saved.id, 'Wine'); // refused: taken
+      await typeNotifier.rename(saved.id, '${marker}2');
+      await typeNotifier.remove(saved.id);
+
+      verifyNever(
+        () => firebase.recordError(
+          any(),
+          any(),
+          reason: any(named: 'reason'),
+          fatal: any(named: 'fatal'),
+          information: any(named: 'information'),
+        ),
+      );
     });
   });
 

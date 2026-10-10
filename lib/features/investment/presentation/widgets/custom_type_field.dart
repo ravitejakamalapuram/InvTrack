@@ -22,6 +22,14 @@ class CustomTypeField extends ConsumerWidget {
 
   final TextEditingController controller;
 
+  /// Fills the field with a saved type's [label].
+  void _use(String label) {
+    controller.value = TextEditingValue(
+      text: label,
+      selection: TextSelection.collapsed(offset: label.length),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
@@ -62,20 +70,16 @@ class CustomTypeField extends ConsumerWidget {
             runSpacing: AppSpacing.xs,
             children: [
               for (final type in saved)
+                // excludeSemantics hides the chip's own tap action, so the
+                // wrapper carries it for screen readers and Switch Access.
                 Semantics(
                   button: true,
                   label: l10n.customTypeUseSemantics(type.label),
+                  onTap: () => _use(type.label),
                   excludeSemantics: true,
                   child: ActionChip(
                     label: Text(type.label),
-                    onPressed: () {
-                      controller.value = TextEditingValue(
-                        text: type.label,
-                        selection: TextSelection.collapsed(
-                          offset: type.label.length,
-                        ),
-                      );
-                    },
+                    onPressed: () => _use(type.label),
                   ),
                 ),
             ],

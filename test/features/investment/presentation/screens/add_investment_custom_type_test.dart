@@ -3,6 +3,7 @@
 // one is an explicit action; what the form sends the notifier is the text
 // typed, and blank text means today's behaviour.
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -240,6 +241,28 @@ void main() {
         tester.widget<EditableText>(customTypeInput()).controller.text,
         'Wine',
       );
+    });
+
+    testWidgets('a screen reader or Switch Access can use one: the chip has a '
+        'tap action', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, saved: [_def('a', 'Art Prints'), _def('b', 'Wine')]);
+      await selectType(tester, 'Other');
+
+      final node = tester.getSemantics(
+        find.bySemanticsLabel('Use saved type Wine'),
+      );
+      expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+
+      // The semantics tap, not a pointer tap: what TalkBack sends.
+      tester.semantics.tap(find.semantics.byLabel('Use saved type Wine'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<EditableText>(customTypeInput()).controller.text,
+        'Wine',
+      );
+      handle.dispose();
     });
 
     testWidgets('none saved: no suggestions heading', (tester) async {

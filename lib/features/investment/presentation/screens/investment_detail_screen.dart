@@ -78,13 +78,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencyFormat = ref.watch(currencyFormatProvider);
     final isClosed = widget.investment.status == InvestmentStatus.closed;
-    // An Other investment shows its custom label (#936). The flag is read
-    // only for an investment that has one.
-    final typeName =
-        widget.investment.hasCustomTypeLabel &&
-            ref.watch(isCustomInvestmentTypesEnabledProvider)
-        ? widget.investment.typeLabel
-        : widget.investment.type.displayName;
+    final typeName = investmentTypeName(ref, widget.investment);
     final isPrivacyMode = ref.watch(privacyModeProvider);
     // The Upcoming (expected income) tab is hidden with Income Guardian, as
     // nothing generates expected cash flows yet (A42).

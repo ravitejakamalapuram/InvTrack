@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/utils/custom_type_label.dart';
 import 'package:inv_tracker/core/utils/stored_date.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
@@ -107,7 +108,9 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
     // If pagination cursor provided, start after that document
     if (startAfterInvestmentId != null) {
-      final startAfterDoc = await _investmentsRef.doc(startAfterInvestmentId).get();
+      final startAfterDoc = await _investmentsRef
+          .doc(startAfterInvestmentId)
+          .get();
       if (startAfterDoc.exists) {
         query = query.startAfterDocument(startAfterDoc);
       }
@@ -689,8 +692,13 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
           ? Timestamp.fromDate(investment.currentValueDate!)
           : null,
       // Custom type (#936); null when none, so an edit clears a stored one.
-      'customTypeId': investment.customTypeId,
-      'customTypeLabel': investment.customTypeLabel,
+      // Only an investment of type Other has one.
+      'customTypeId': investment.type == InvestmentType.other
+          ? investment.customTypeId
+          : null,
+      'customTypeLabel': investment.type == InvestmentType.other
+          ? investment.customTypeLabel
+          : null,
     };
   }
 
@@ -710,10 +718,18 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     required String baseCurrency,
     UtcOffsetAt? offsetAt,
   }) {
+    final type = InvestmentType.fromString(data['type'] as String);
+    // Only an investment of type Other has a custom type (#936); an older
+    // build can leave a stale one behind after the type is changed, and a
+    // label of another build is cleaned and cut like one typed here.
+    final isOther = type == InvestmentType.other;
+    final customTypeLabel = isOther
+        ? CustomTypeLabel.fromStorage(data['customTypeLabel'])
+        : '';
     return InvestmentEntity(
       id: id,
       name: data['name'] as String,
-      type: InvestmentType.fromString(data['type'] as String),
+      type: type,
       status: InvestmentStatus.fromString(data['status'] as String),
       notes: data['notes'] as String?,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
@@ -751,8 +767,8 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
           ? (data['currentValueDate'] as Timestamp?)?.toDate()
           : null,
       // Documents saved before custom types (#936) have neither field.
-      customTypeId: _nonBlank(data['customTypeId']),
-      customTypeLabel: _nonBlank(data['customTypeLabel']),
+      customTypeId: isOther ? _nonBlank(data['customTypeId']) : null,
+      customTypeLabel: customTypeLabel.isEmpty ? null : customTypeLabel,
     );
   }
 

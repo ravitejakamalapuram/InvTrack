@@ -1,8 +1,10 @@
 // #936: reusable custom investment types must survive export -> import
 // (CLAUDE.md rule 6): the types themselves, the label each Other investment
-// carries, and which investments were linked to a type. This is also the
-// path the guest merge takes. A ZIP from before custom types imports as
-// before, and an account with none exports the same files as before.
+// carries, and which investments were linked to a type, all in one
+// custom_types.json. This is also the path the guest merge takes. A ZIP from
+// before custom types imports as before, an account with none exports the
+// same files as before, and an unreadable file never costs the account its
+// investments: it is read before anything is deleted.
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -47,6 +49,9 @@ class _FailingTypes implements CustomInvestmentTypeRepository {
 
   @override
   Future<void> put(CustomInvestmentType type) async => throw _failure();
+
+  @override
+  Future<void> deleteAll() async => throw _failure();
 
   static StateError _failure() => StateError('unreachable');
 }
@@ -101,6 +106,24 @@ Uint8List _zip(Map<String, String> files) {
   files.forEach(add);
   return Uint8List.fromList(ZipEncoder().encode(zip)!);
 }
+
+/// The custom_types.json of a backup.
+String _json({
+  List<Map<String, Object?>> types = const [],
+  List<Map<String, Object?>> investments = const [],
+}) => jsonEncode({'version': 1, 'types': types, 'investments': investments});
+
+Map<String, Object?> _type(String label, {bool removed = false}) => {
+  'label': label,
+  'removed': removed,
+};
+
+Map<String, Object?> _link(
+  String name,
+  String label, {
+  bool archived = false,
+  bool linked = false,
+}) => {'name': name, 'archived': archived, 'label': label, 'linked': linked};
 
 const _cashFlowsHeader =
     'Date,Investment Name,Type,Amount,Currency,Notes,Investment Type,'
@@ -210,6 +233,46 @@ void main() {
     expect(archived.customTypeId, byLabel['Stamps']!.id);
   });
 
+  test('the file is one custom_types.json and the metadata lists it', () async {
+    investments.seed(
+      investments: [_inv('a', 'Album', customTypeLabel: 'Stamps')],
+      cashFlows: [_invest('a')],
+    );
+    types = FakeCustomInvestmentTypeRepository([_def('c1', 'Stamps')]);
+    build(investmentRepo: investments, typeRepo: types);
+
+    final zip = ZipDecoder().decodeBytes(
+      (await exportService.exportAsZipBytes()).bytes,
+    );
+
+    final names = zip.files.map((f) => f.name);
+    expect(names, contains('custom_types.json'));
+    expect(names, isNot(contains('custom_types.csv')));
+    expect(names, isNot(contains('investment_custom_types.csv')));
+    final file =
+        jsonDecode(
+              utf8.decode(
+                zip.findFile('custom_types.json')!.content as List<int>,
+              ),
+            )
+            as Map<String, dynamic>;
+    expect(file['types'], [
+      {'label': 'Stamps', 'removed': false},
+    ]);
+    expect(file['investments'], [
+      {'name': 'Album', 'archived': false, 'label': 'Stamps', 'linked': false},
+    ]);
+    final metadata =
+        jsonDecode(
+              utf8.decode(zip.findFile('metadata.json')!.content as List<int>),
+            )
+            as Map<String, dynamic>;
+    expect(
+      (metadata['files'] as List).map((f) => (f as Map)['fileName']),
+      contains('custom_types.json'),
+    );
+  });
+
   test(
     'an account with no custom types exports the same files as before',
     () async {
@@ -221,8 +284,7 @@ void main() {
       final bytes = (await exportService.exportAsZipBytes()).bytes;
 
       final names = ZipDecoder().decodeBytes(bytes).files.map((f) => f.name);
-      expect(names, isNot(contains('custom_types.csv')));
-      expect(names, isNot(contains('investment_custom_types.csv')));
+      expect(names, isNot(contains('custom_types.json')));
     },
   );
 
@@ -244,6 +306,7 @@ void main() {
     expect(album.customTypeLabel, isNull);
     expect(types.definitions.map((d) => d.label), ['Wine']);
     expect(types.writes, 0);
+    expect(types.deleteAlls, 0, reason: 'no file: the types are left alone');
   });
 
   test('merge reuses a type with the same label in any case', () async {
@@ -254,21 +317,48 @@ void main() {
       _zip({
         'cashflows.csv':
             '${_cashFlowsHeader}2025-10-01,Album,INVEST,100000,INR,,other,open\n',
-        'custom_types.csv': 'Label,Removed\nStamps,false\n',
-        'investment_custom_types.csv':
-            'Investment Name,Archived,Custom Type,Linked\nAlbum,false,Stamps,true\n',
+        'custom_types.json': _json(
+          types: [_type('Stamps')],
+          investments: [_link('Album', 'Stamps', linked: true)],
+        ),
       }),
       strategy: ImportStrategy.merge,
     );
 
     expect(types.definitions, hasLength(1));
     expect(types.definitions.single.id, 'mine');
+    expect(types.deleteAlls, 0, reason: 'merge never deletes');
     final album = await imported('Album');
     expect(album.customTypeId, 'mine');
     expect(album.customTypeLabel, 'Stamps');
   });
 
-  test('replace keeps the types the account already has', () async {
+  test('replace with the file wipes the account\'s old types first', () async {
+    types = FakeCustomInvestmentTypeRepository([
+      _def('w', 'Wine'),
+      _def('o', 'Old', removed: true),
+    ]);
+    build(investmentRepo: investments, typeRepo: types);
+
+    await import(
+      _zip({
+        'cashflows.csv':
+            '${_cashFlowsHeader}2025-10-01,Album,INVEST,100000,INR,,other,open\n',
+        'custom_types.json': _json(
+          types: [_type('Stamps')],
+          investments: [_link('Album', 'Stamps', linked: true)],
+        ),
+      }),
+    );
+
+    expect(types.deleteAlls, 1);
+    expect(types.definitions.map((d) => d.label), ['Stamps']);
+    final album = await imported('Album');
+    expect(album.customTypeLabel, 'Stamps');
+    expect(album.customTypeId, types.definitions.single.id);
+  });
+
+  test('replace with a ZIP that has no such file leaves the types', () async {
     types = FakeCustomInvestmentTypeRepository([_def('w', 'Wine')]);
     build(investmentRepo: investments, typeRepo: types);
 
@@ -276,14 +366,11 @@ void main() {
       _zip({
         'cashflows.csv':
             '${_cashFlowsHeader}2025-10-01,Album,INVEST,100000,INR,,other,open\n',
-        'custom_types.csv': 'Label,Removed\nStamps,false\n',
-        'investment_custom_types.csv':
-            'Investment Name,Archived,Custom Type,Linked\nAlbum,false,Stamps,true\n',
       }),
     );
 
-    expect(types.definitions.map((d) => d.label).toSet(), {'Wine', 'Stamps'});
-    expect((await imported('Album')).customTypeLabel, 'Stamps');
+    expect(types.definitions.map((d) => d.label), ['Wine']);
+    expect(types.deleteAlls, 0);
   });
 
   test('a removed type in the file does not come back as a suggestion', () async {
@@ -294,7 +381,9 @@ void main() {
       _zip({
         'cashflows.csv':
             '${_cashFlowsHeader}2025-10-01,Album,INVEST,100000,INR,,other,open\n',
-        'custom_types.csv': 'Label,Removed\nStamps,true\nwine,true\n',
+        'custom_types.json': _json(
+          types: [_type('Stamps', removed: true), _type('wine', removed: true)],
+        ),
       }),
       strategy: ImportStrategy.merge,
     );
@@ -315,8 +404,7 @@ void main() {
       _zip({
         'cashflows.csv':
             '${_cashFlowsHeader}2025-10-01,Album,INVEST,100000,INR,,other,open\n',
-        'investment_custom_types.csv':
-            'Investment Name,Archived,Custom Type,Linked\nAlbum,false,Stamps,false\n',
+        'custom_types.json': _json(investments: [_link('Album', 'Stamps')]),
       }),
       strategy: ImportStrategy.merge,
     );
@@ -335,10 +423,9 @@ void main() {
               '$_cashFlowsHeader'
               '2025-10-01,Bond,INVEST,100000,INR,,bonds,open\n'
               '2025-10-01,Album,INVEST,100000,INR,,other,open\n',
-          'investment_custom_types.csv':
-              'Investment Name,Archived,Custom Type,Linked\n'
-              'Bond,false,Stamps,false\n'
-              'Album,false,${'x' * 41},false\n',
+          'custom_types.json': _json(
+            investments: [_link('Bond', 'Stamps'), _link('Album', 'x' * 41)],
+          ),
         }),
       );
 
@@ -354,10 +441,12 @@ void main() {
   );
 
   test('types beyond the limit of 50 are skipped with a warning', () async {
-    final rows = [for (var i = 0; i < 52; i++) 'Type $i,false'].join('\n');
-
     final result = await import(
-      _zip({'custom_types.csv': 'Label,Removed\n$rows\n'}),
+      _zip({
+        'custom_types.json': _json(
+          types: [for (var i = 0; i < 52; i++) _type('Type $i')],
+        ),
+      }),
     );
 
     expect(types.definitions.where((d) => !d.isRemoved), hasLength(50));
@@ -367,32 +456,182 @@ void main() {
   });
 
   test(
-    'a label that starts like a formula survives the CSV protection',
+    'labels that look like a formula, quotes or commas round-trip exactly',
     () async {
+      const labels = [
+        '=SUM(A1)',
+        "'=x",
+        '+1 plan',
+        '-Gold',
+        '@home',
+        'Art, "prints"',
+      ];
       investments.seed(
         investments: [
-          _inv('a', 'Album', customTypeId: 'c1', customTypeLabel: '=Stamps'),
+          for (var i = 0; i < labels.length; i++)
+            _inv(
+              'i$i',
+              'Item $i',
+              customTypeId: 'c$i',
+              customTypeLabel: labels[i],
+            ),
         ],
-        cashFlows: [_invest('a')],
+        cashFlows: [for (var i = 0; i < labels.length; i++) _invest('i$i')],
       );
-      types = FakeCustomInvestmentTypeRepository([_def('c1', '=Stamps')]);
+      types = FakeCustomInvestmentTypeRepository([
+        for (var i = 0; i < labels.length; i++) _def('c$i', labels[i]),
+      ]);
       build(investmentRepo: investments, typeRepo: types);
       final bytes = (await exportService.exportAsZipBytes()).bytes;
-      final csvText = utf8.decode(
-        ZipDecoder().decodeBytes(bytes).findFile('custom_types.csv')!.content
-            as List<int>,
-      );
-      expect(csvText, contains("'=Stamps"));
 
       investments.reset();
       types = FakeCustomInvestmentTypeRepository();
       build(investmentRepo: investments, typeRepo: types);
-      await import(bytes);
+      final result = await import(bytes);
 
-      expect(types.definitions.single.label, '=Stamps');
-      expect((await imported('Album')).customTypeLabel, '=Stamps');
+      expect(result.warnings, isEmpty);
+      expect(types.definitions.map((d) => d.label).toSet(), labels.toSet());
+      for (var i = 0; i < labels.length; i++) {
+        expect((await imported('Item $i')).customTypeLabel, labels[i]);
+      }
     },
   );
+
+  test(
+    'an investment whose name starts like a formula keeps its label',
+    () async {
+      investments.seed(
+        investments: [_inv('a', '=Album', customTypeLabel: 'Stamps')],
+        cashFlows: [_invest('a')],
+      );
+      build(investmentRepo: investments, typeRepo: types);
+      final bytes = (await exportService.exportAsZipBytes()).bytes;
+
+      investments.reset();
+      build(investmentRepo: investments, typeRepo: types);
+      final result = await import(bytes);
+
+      expect(result.warnings, isEmpty);
+      expect(
+        (await investments.getAllInvestments()).single.customTypeLabel,
+        'Stamps',
+      );
+    },
+  );
+
+  group('an unreadable custom_types.json', () {
+    // The label is in the file so the warnings can be checked for it.
+    const secret = 'Secret Hobby';
+
+    Future<ZipImportResult> importBroken(
+      List<int> fileBytes, {
+      ImportStrategy strategy = ImportStrategy.replace,
+    }) {
+      final zip = Archive();
+      void add(String name, List<int> data) =>
+          zip.addFile(ArchiveFile(name, data.length, data));
+      add('metadata.json', utf8.encode(jsonEncode({'documents': []})));
+      add(
+        'cashflows.csv',
+        utf8.encode(
+          '${_cashFlowsHeader}2025-10-01,Album,INVEST,100000,INR,,other,open\n',
+        ),
+      );
+      add('custom_types.json', fileBytes);
+      return importService.importFromZip(
+        Uint8List.fromList(ZipEncoder().encode(zip)!),
+        strategy,
+        baseCurrency: 'INR',
+      );
+    }
+
+    void expectCashFlowsImportedAndLabelsDropped(ZipImportResult result) {
+      expect(result.errors, isEmpty);
+      expect(result.investmentsImported, 1);
+      expect(result.cashflowsImported, 1);
+      expect(result.warnings, hasLength(1));
+      expect(result.warnings.single, isNot(contains(secret)));
+      expect(result.warnings.single, contains('custom_types.json'));
+    }
+
+    test('invalid UTF-8 imports the cash flows, with one warning and no label '
+        'text', () async {
+      investments.seed(
+        investments: [_inv('old', 'Old one')],
+        cashFlows: [_invest('old')],
+      );
+      types = FakeCustomInvestmentTypeRepository([_def('w', 'Wine')]);
+      build(investmentRepo: investments, typeRepo: types);
+
+      final result = await importBroken([
+        ...utf8.encode('{"types":[{"label":"$secret"'),
+        0xFF, 0xFE, 0xC3, 0x28, //
+      ]);
+
+      expectCashFlowsImportedAndLabelsDropped(result);
+      final names = (await investments.getAllInvestments()).map((i) => i.name);
+      expect(names, ['Album'], reason: 'Replace still replaced the data');
+      expect(
+        types.definitions.map((d) => d.label),
+        ['Wine'],
+        reason: 'the types are untouched, not wiped',
+      );
+      expect(types.deleteAlls, 0);
+      expect((await imported('Album')).customTypeLabel, isNull);
+    });
+
+    test('JSON that does not parse', () async {
+      final result = await importBroken(
+        utf8.encode('{"types":[{"label":"$secret"'),
+      );
+
+      expectCashFlowsImportedAndLabelsDropped(result);
+      expect(types.deleteAlls, 0);
+    });
+
+    test('JSON of the wrong shape', () async {
+      final result = await importBroken(utf8.encode('["$secret"]'));
+
+      expectCashFlowsImportedAndLabelsDropped(result);
+      expect(types.deleteAlls, 0);
+    });
+
+    test('merge too', () async {
+      final result = await importBroken([
+        0xFF,
+        0xFE,
+        0xC3,
+        0x28,
+      ], strategy: ImportStrategy.merge);
+
+      expectCashFlowsImportedAndLabelsDropped(result);
+    });
+
+    test('a row of the wrong shape is skipped, the others import', () async {
+      final result = await importBroken(
+        utf8.encode(
+          jsonEncode({
+            'types': [
+              'not an object',
+              {'label': 42},
+              {'removed': true},
+              _type('Stamps'),
+            ],
+            'investments': [
+              7,
+              {'name': 'Album'},
+              _link('Album', 'Stamps', linked: true),
+            ],
+          }),
+        ),
+      );
+
+      expect(result.errors, isEmpty);
+      expect(result.warnings, isEmpty);
+      expect(types.definitions.map((d) => d.label), ['Stamps']);
+      expect((await imported('Album')).customTypeLabel, 'Stamps');
+    });
+  });
 
   test('if the types cannot be saved, the investments still import with their '
       'labels, unlinked, and the user is told', () async {
@@ -409,9 +648,10 @@ void main() {
       _zip({
         'cashflows.csv':
             '${_cashFlowsHeader}2025-10-01,Album,INVEST,100000,INR,,other,open\n',
-        'custom_types.csv': 'Label,Removed\nStamps,false\n',
-        'investment_custom_types.csv':
-            'Investment Name,Archived,Custom Type,Linked\nAlbum,false,Stamps,true\n',
+        'custom_types.json': _json(
+          types: [_type('Stamps')],
+          investments: [_link('Album', 'Stamps', linked: true)],
+        ),
       }),
       ImportStrategy.replace,
       baseCurrency: 'INR',
@@ -440,9 +680,10 @@ void main() {
       _zip({
         'cashflows.csv':
             '${_cashFlowsHeader}2025-10-01,Album,INVEST,100000,INR,,other,open\n',
-        'custom_types.csv': 'Label,Removed\nStamps,false\n',
-        'investment_custom_types.csv':
-            'Investment Name,Archived,Custom Type,Linked\nAlbum,false,Stamps,true\n',
+        'custom_types.json': _json(
+          types: [_type('Stamps')],
+          investments: [_link('Album', 'Stamps', linked: true)],
+        ),
       }),
       ImportStrategy.replace,
       baseCurrency: 'INR',

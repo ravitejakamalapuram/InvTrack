@@ -4,7 +4,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
@@ -48,14 +47,7 @@ class InvestmentCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final typeColor = investment.type.color;
-    // An Other investment shows its custom label (#936); every other type,
-    // and every investment while the flag is off, shows the built-in name.
-    // The flag is read only for an investment that has a label.
-    final typeName =
-        investment.hasCustomTypeLabel &&
-            ref.watch(isCustomInvestmentTypesEnabledProvider)
-        ? investment.typeLabel
-        : investment.type.displayName;
+    final typeName = investmentTypeName(ref, investment);
     final isClosed = investment.status == InvestmentStatus.closed;
     final currencySymbol = ref.watch(currencySymbolProvider);
     final currencyFormat = ref.watch(currencyFormatProvider);
@@ -739,7 +731,10 @@ class _InvestmentBottomStrip extends StatelessWidget {
           children: [
             Text(
               AppLocalizations.of(context).addedRelative(
-                AppDateUtils.formatRelative(investment.createdAt, relativeTo: referenceDate),
+                AppDateUtils.formatRelative(
+                  investment.createdAt,
+                  relativeTo: referenceDate,
+                ),
               ),
               style: AppTypography.small.copyWith(
                 color: isDark

@@ -6669,5 +6669,13 @@
   "customTypeErrorGeneric": "Could not save the type. Try again.",
   "@customTypeErrorGeneric": {
     "description": "Error when saving a custom type failed (#936)"
+  },
+  "whatAreCustomTypes": "Can I give an Other investment a more specific type?",
+  "@whatAreCustomTypes": {
+    "description": "Help & FAQ question about custom types for Other investments; shown only while the feature is on (#936)"
+  },
+  "whatAreCustomTypesAnswer": "Yes. When an investment''s type is Other, add a Custom type such as Art prints or Vintage cars. Tap Save as reusable type to get it as a suggestion next time. A custom type is only a name: it does not change how the investment is calculated, and filters and reports still count it as Other. Renaming or removing a saved type never changes the investments that already use it.",
+  "@whatAreCustomTypesAnswer": {
+    "description": "Help & FAQ answer about custom types for Other investments (#936)"
   }
 }

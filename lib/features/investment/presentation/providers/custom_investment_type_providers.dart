@@ -18,10 +18,20 @@ final customInvestmentTypesProvider =
 
 /// The active types to suggest when Other is selected: one per label,
 /// whatever its case or spacing, ordered by label.
+///
+/// Nothing is suggested while the types are loading, and that includes a
+/// reload because the signed-in user changed: the previous account's types
+/// must not show to the next one.
 final customTypeSuggestionsProvider = Provider<List<CustomInvestmentType>>((
   ref,
 ) {
-  final all = ref.watch(customInvestmentTypesProvider).value ?? const [];
+  final all = ref
+      .watch(customInvestmentTypesProvider)
+      .when(
+        data: (all) => all,
+        loading: () => const <CustomInvestmentType>[],
+        error: (_, _) => const <CustomInvestmentType>[],
+      );
   return CustomTypeCatalog.suggestions(all);
 });
 

@@ -159,6 +159,61 @@ void main() {
     expect(blank.typeLabel, 'Other');
   });
 
+  group('stored text is normalised on the way in and out', () {
+    Map<String, dynamic> doc({
+      required String type,
+      String? id = 'c1',
+      String? label,
+    }) => {
+      'name': 'Stamp album',
+      'type': type,
+      'status': 'OPEN',
+      'createdAt': Timestamp.fromDate(DateTime.utc(2025, 1, 1)),
+      'currency': 'INR',
+      'customTypeId': id,
+      'customTypeLabel': label,
+    };
+
+    test('padded, spaced and invisible characters are cleaned on read', () {
+      final read = _read(doc(type: 'other', label: '  Art \n  Prints\u200B '));
+      expect(read.customTypeLabel, 'Art Prints');
+      expect(read.customTypeId, 'c1');
+    });
+
+    test('a label over 40 characters is cut to 40 on read', () {
+      // 45 characters, the last of them an emoji that counts as one.
+      final read = _read(doc(type: 'other', label: '${'a' * 44}🎨'));
+      expect(read.customTypeLabel, 'a' * 40);
+
+      final emoji = _read(doc(type: 'other', label: '${'a' * 39}🎨🎨🎨'));
+      expect(emoji.customTypeLabel, '${'a' * 39}🎨');
+    });
+
+    test('a stale label on a built-in type reads as no custom type', () {
+      // An older client can change the type and leave the label behind.
+      final read = _read(doc(type: 'bonds', label: 'Stamps'));
+      expect(read.type, InvestmentType.bonds);
+      expect(read.customTypeLabel, isNull);
+      expect(read.customTypeId, isNull);
+    });
+
+    test('a built-in type is written without a custom type', () async {
+      final written = await writtenByUpdate(
+        _stamps(id: 'c1', label: 'Stamps').copyWith(type: InvestmentType.bonds),
+      );
+      expect(written.containsKey('customTypeId'), isTrue);
+      expect(written.containsKey('customTypeLabel'), isTrue);
+      expect(written['customTypeId'], isNull);
+      expect(written['customTypeLabel'], isNull);
+    });
+
+    test('an Other investment is still written with both fields', () async {
+      final written = await writtenByUpdate(_stamps(id: 'c1', label: 'Stamps'));
+      expect(written['customTypeId'], 'c1');
+      expect(written['customTypeLabel'], 'Stamps');
+    });
+  });
+
   group('archive and restore', () {
     late _RecordingBatch batch;
     late _MockCollection archived;

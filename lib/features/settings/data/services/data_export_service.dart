@@ -31,13 +31,10 @@ enum ExportFileType {
   goalsArchived,
   valuations,
 
-  /// The account's reusable custom investment types (#936); written only when
-  /// there are any.
+  /// The account's reusable custom investment types and the custom type
+  /// label of each Other investment (#936), in one JSON file; written only
+  /// when there is something in it.
   customTypes,
-
-  /// The custom type label of each Other investment (#936); written only when
-  /// any has one.
-  investmentCustomTypes,
 }
 
 /// An export ZIP held in memory, with the number of records it was built
@@ -220,16 +217,13 @@ class DataExportService {
       archived: archivedInvestments,
     );
 
-    // Custom types (#936): files only when there is something to write, so
-    // an account without any exports exactly what it did before. Not caught:
-    // a failure here must not give a backup that silently lacks them.
-    final customTypes = [
-      ...?await _customInvestmentTypeRepository?.getAll(),
-    ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    final customTypesCsv = customTypes.isEmpty
-        ? null
-        : _generateCustomTypesCsv(customTypes);
-    final investmentCustomTypesCsv = _generateInvestmentCustomTypesCsv(
+    // Custom types (#936): one file, only when there is something to write,
+    // so an account without any exports exactly what it did before. Not
+    // caught: a failure here must not give a backup that silently lacks them.
+    final customTypes = [...?await _customInvestmentTypeRepository?.getAll()]
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final customTypesJson = _generateCustomTypesJson(
+      types: customTypes,
       active: investments,
       archived: archivedInvestments,
     );
@@ -238,8 +232,7 @@ class DataExportService {
     final metadata = _createMetadata(
       documents: allDocuments,
       investments: allInvestments,
-      hasCustomTypes: customTypesCsv != null,
-      hasInvestmentCustomTypes: investmentCustomTypesCsv != null,
+      hasCustomTypes: customTypesJson != null,
     );
 
     // 4. Create ZIP archive
@@ -277,13 +270,9 @@ class DataExportService {
       ArchiveFile('valuations.csv', valuationsBytes.length, valuationsBytes),
     );
 
-    for (final (name, content) in [
-      ('custom_types.csv', customTypesCsv),
-      ('investment_custom_types.csv', investmentCustomTypesCsv),
-    ]) {
-      if (content == null) continue;
-      final bytes = utf8.encode(content);
-      archive.addFile(ArchiveFile(name, bytes.length, bytes));
+    if (customTypesJson != null) {
+      final bytes = utf8.encode(customTypesJson);
+      archive.addFile(ArchiveFile('custom_types.json', bytes.length, bytes));
     }
 
     // Add metadata JSON
@@ -306,10 +295,7 @@ class DataExportService {
       } else {
         LoggerService.debug(
           'Document not found or inaccessible during export',
-          metadata: {
-            'documentId': doc.id,
-            'investmentId': doc.investmentId,
-          },
+          metadata: {'documentId': doc.id, 'investmentId': doc.investmentId},
         );
         documentsFailed++;
       }
@@ -544,29 +530,19 @@ class DataExportService {
     return csv.encode(rows);
   }
 
-  /// Generate CSV for the account's reusable custom types (#936).
-  /// Format: Label, Removed. Ids are not exported: an import matches types by
-  /// label.
-  String _generateCustomTypesCsv(List<CustomInvestmentType> types) {
-    final rows = <List<dynamic>>[
-      ['Label', 'Removed'],
-      for (final type in types)
-        [CsvUtils.sanitizeField(type.label), type.isRemoved],
-    ];
-    return csv.encode(rows);
-  }
-
-  /// Generate CSV for the custom type label of each Other investment (#936),
-  /// or null if none has one. Format: Investment Name, Archived, Custom Type,
-  /// Linked (whether it referred to a reusable type or was a label for that
-  /// investment only).
-  String? _generateInvestmentCustomTypesCsv({
+  /// Generate custom_types.json (#936): the account's reusable types and the
+  /// custom type label of each Other investment, or null if there is neither.
+  /// JSON, so a label needs no spreadsheet-formula protection and comes back
+  /// exactly. Ids are not exported: an import matches types by label, and
+  /// investments by (archived, name) like valuations.csv. `linked` says
+  /// whether the investment referred to a reusable type or carried a label
+  /// for itself only.
+  String? _generateCustomTypesJson({
+    required List<CustomInvestmentType> types,
     required List<InvestmentEntity> active,
     required List<InvestmentEntity> archived,
   }) {
-    final rows = <List<dynamic>>[
-      ['Investment Name', 'Archived', 'Custom Type', 'Linked'],
-    ];
+    final links = <Map<String, Object>>[];
     for (final (inv, isArchived) in [
       for (final inv in active) (inv, false),
       for (final inv in archived) (inv, true),
@@ -577,14 +553,24 @@ class DataExportService {
           label.trim().isEmpty) {
         continue;
       }
-      rows.add([
-        CsvUtils.sanitizeField(inv.name),
-        isArchived,
-        CsvUtils.sanitizeField(label),
-        inv.customTypeId != null,
-      ]);
+      links.add({
+        // Spelled as in cashflows.csv and valuations.csv, which an import
+        // matches the investment by.
+        'name': CsvUtils.sanitizeField(inv.name),
+        'archived': isArchived,
+        'label': label,
+        'linked': inv.customTypeId != null,
+      });
     }
-    return rows.length == 1 ? null : csv.encode(rows);
+    if (types.isEmpty && links.isEmpty) return null;
+    return jsonEncode({
+      'version': 1,
+      'types': [
+        for (final type in types)
+          {'label': type.label, 'removed': type.isRemoved},
+      ],
+      'investments': links,
+    });
   }
 
   /// Converts CashFlowType to export string (reused from ExportService)
@@ -608,7 +594,6 @@ class DataExportService {
     required List<DocumentEntity> documents,
     required List<InvestmentEntity> investments,
     required bool hasCustomTypes,
-    required bool hasInvestmentCustomTypes,
   }) {
     // Create a lookup map for investment names
     final investmentIdToName = <String, String>{
@@ -632,13 +617,8 @@ class DataExportService {
         {'fileName': 'valuations.csv', 'type': ExportFileType.valuations.name},
         if (hasCustomTypes)
           {
-            'fileName': 'custom_types.csv',
+            'fileName': 'custom_types.json',
             'type': ExportFileType.customTypes.name,
-          },
-        if (hasInvestmentCustomTypes)
-          {
-            'fileName': 'investment_custom_types.csv',
-            'type': ExportFileType.investmentCustomTypes.name,
           },
       ],
       'documents': documents.map((d) {

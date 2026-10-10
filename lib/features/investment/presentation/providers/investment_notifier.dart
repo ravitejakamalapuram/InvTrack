@@ -885,9 +885,16 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     if (label.isEmpty) return CustomTypeLink.none;
     final stored = existing?.type == InvestmentType.other ? existing : null;
     final unchanged = stored?.customTypeLabel == label;
-    final saved = unchanged
-        ? const <CustomInvestmentType>[]
-        : await ref.read(customInvestmentTypeRepositoryProvider).getAll();
+    var saved = const <CustomInvestmentType>[];
+    if (!unchanged) {
+      try {
+        saved = await ref.read(customInvestmentTypeRepositoryProvider).getAll();
+      } catch (_) {
+        // The saved types cannot be read (offline with an empty cache, or a
+        // store error). The investment still saves, with the label for
+        // itself only: losing the link is better than refusing the save.
+      }
+    }
     return CustomTypeCatalog.resolveForInvestment(
       saved,
       label,

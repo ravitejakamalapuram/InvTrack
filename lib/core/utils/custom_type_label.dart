@@ -43,6 +43,17 @@ abstract final class CustomTypeLabel {
         .trim();
   }
 
+  /// A label read back from storage: [clean]ed and, if another build stored
+  /// one over [maxLength], cut to it. Never used for what the user types,
+  /// which is refused when too long, not cut. Empty when [raw] is not text or
+  /// is blank.
+  static String fromStorage(Object? raw) {
+    if (raw is! String) return '';
+    final cleaned = clean(raw);
+    if (!exceedsMaxLength(cleaned)) return cleaned;
+    return cleaned.characters.take(maxLength).toString().trim();
+  }
+
   /// The comparison key of a [clean]ed label: lower-cased with Dart's
   /// locale-independent `toLowerCase`, so it is the same on every device.
   static String keyOf(String cleaned) => cleaned.toLowerCase();

@@ -15,4 +15,9 @@ abstract class CustomInvestmentTypeRepository {
 
   /// Creates or replaces the definition with [type]'s id.
   Future<void> put(CustomInvestmentType type);
+
+  /// Deletes every definition, removed ones included, for good. Only a
+  /// Replace import that brings its own types calls it; removing a type in
+  /// the app is soft and never reaches here.
+  Future<void> deleteAll();
 }

@@ -96,7 +96,7 @@ void main() {
       'createdAt': Timestamp.fromDate(_created),
       'updatedAt': Timestamp.fromDate(_updated),
       'removedAt': Timestamp.fromDate(_removed),
-    }, 'c1');
+    }, 'c1')!;
     expect(
       def,
       CustomInvestmentType(
@@ -114,7 +114,7 @@ void main() {
     final def = FirestoreCustomInvestmentTypeRepository.fromFirestore({
       'label': 'Stamps',
       'createdAt': Timestamp.fromDate(_created),
-    }, 'c1');
+    }, 'c1')!;
     expect(def.updatedAt, _created.toLocal());
     expect(def.removedAt, isNull);
   });
@@ -144,4 +144,74 @@ void main() {
     expect(all.map((d) => d.id), ['c1', 'c2']);
     expect(all.map((d) => d.isRemoved), [false, true]);
   });
+
+  test('getAll skips a malformed definition and lists the rest', () async {
+    when(() => types.get()).thenAnswer(
+      (_) async => querySnapshot(
+        fromCache: false,
+        docs: {
+          'bad1': {'label': 42, 'createdAt': Timestamp.fromDate(_created)},
+          'bad2': {'createdAt': Timestamp.fromDate(_created)},
+          'bad3': {'label': '   ', 'createdAt': Timestamp.fromDate(_created)},
+          'c1': {'label': 'Stamps', 'createdAt': Timestamp.fromDate(_created)},
+          'late': {'label': 'Wine', 'createdAt': 'yesterday'},
+        },
+      ),
+    );
+
+    final all = await repository.getAll();
+
+    expect(all.map((d) => d.id), ['c1', 'late']);
+    expect(all.map((d) => d.label), ['Stamps', 'Wine']);
+  });
+
+  test('watchAll skips a malformed definition too', () async {
+    final query = querySnapshot(
+      fromCache: false,
+      docs: {
+        'bad': {'label': 42, 'createdAt': Timestamp.fromDate(_created)},
+        'c1': {'label': 'Stamps', 'createdAt': Timestamp.fromDate(_created)},
+      },
+    );
+    when(() => types.snapshots()).thenAnswer((_) => Stream.value(query));
+
+    final all = await repository.watchAll().first;
+
+    expect(all.map((d) => d.id), ['c1']);
+  });
+
+  test('a label is cleaned and cut on read', () {
+    final def = FirestoreCustomInvestmentTypeRepository.fromFirestore({
+      'label': '  Art   Prints ${'x' * 60}',
+      'createdAt': Timestamp.fromDate(_created),
+    }, 'c1')!;
+    expect(def.label, 'Art Prints ${'x' * 29}');
+  });
+
+  test(
+    'deleteAll deletes every document for good, a malformed one too',
+    () async {
+      final badDoc = _MockDoc();
+      when(() => types.doc('bad')).thenReturn(badDoc);
+      when(() => doc.delete()).thenAnswer((_) async {});
+      when(() => badDoc.delete()).thenAnswer((_) async {});
+      when(() => types.get()).thenAnswer(
+        (_) async => querySnapshot(
+          fromCache: false,
+          docs: {
+            'c1': {
+              'label': 'Stamps',
+              'createdAt': Timestamp.fromDate(_created),
+            },
+            'bad': {'label': 42},
+          },
+        ),
+      );
+
+      await repository.deleteAll();
+
+      verify(() => doc.delete()).called(1);
+      verify(() => badDoc.delete()).called(1);
+    },
+  );
 }
