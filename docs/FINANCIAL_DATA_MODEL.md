@@ -16,16 +16,16 @@ Status: **target contract and migration guide**. This document distinguishes wha
 
 | Concept | Canonical owner | Contract |
 |---|---|---|
-| Investment identity and lifecycle | `InvestmentEntity` | Stable ID, built-in `InvestmentType`, open/closed status, archived state, created/updated timestamps and descriptive metadata. |
+| Investment identity and lifecycle | `InvestmentEntity` | Stable ID, built-in `InvestmentType`, open/closed status, archived state, the investment's own `currency` (its primary/display currency; `currentValue` is stated in it), created/updated timestamps and descriptive metadata. |
 | Existing fixed-income terms | `InvestmentEntity` compatibility fields | Current flat fields (`expectedRate`, `compoundingFrequency`, `interestPayoutMode`, `startDate`, `tenureMonths`, `maturityDate`, `incomeFrequency`) remain readable. New typed terms should be introduced through an adapter, not an untyped map or big-bang schema rewrite. |
-| Actual transactions | `CashFlowEntity` | One actual amount, currency, date, type, investment ID and optional note. Optional principal/earnings/tax/fee breakdowns describe this same transaction; they are not extra transactions. |
+| Actual transactions | `CashFlowEntity` | Today: one actual amount, currency, date, type, investment ID and optional note; it has no principal/earnings/tax/fee breakdown fields. Target (not implemented): optional principal/earnings/tax/fee breakdowns would describe this same transaction; they would not be extra transactions. |
 | Current value today (compatibility) | `InvestmentEntity.currentValue/currentValueDate` | Existing manual value and date remain the compatibility read/write path until all consumers have migrated. Keep amount and currency aligned. |
 | Calculated valuation | `CurrentValueCalculator` / `InvestmentValuation` | Current code's `InvestmentValuation` is an in-memory calculation result with amount, currency, date, source and optional rate. `TerminalValues` creates ephemeral calculation flows; IDs prefixed `current-value:` must never be persisted. This is not yet a durable valuation-history entity. |
 | Future dated valuation history | Target `InvestmentValuationSnapshot` | Separate persisted entity with stable snapshot ID, investment ID, effective date, amount, currency, value kind, provenance/source and estimated/manual state. Read the latest applicable snapshot as of a date; never sum snapshots. Introduce incrementally under #941/#946. |
 | Forecast payments | `ExpectedCashFlowEntity` | Expected amount and currency, expected date, prediction source/status, and optional matched actual cash-flow ID. Expected schedule is not a second ledger. |
 | Reusable custom category | Target account-scoped custom type definition | Stable definition ID and normalized label; built-in type remains `other`. A label must not activate calculation, tax, maturity, or valuation rules. Existing investments need a display-label fallback if a definition is renamed/archived/missing. |
 | Quantity-based position | Target quantity/price metadata under #946 | Quantity and unit are not money. Price-per-unit has its own currency and effective date. Total value derives from quantity × price under #945 precision rules. |
-| Receipt allocation | Target optional transaction breakdown under #940/#947 | Principal, earnings, gross, withholding, fees and net are attributes of a single transaction. Define exact reconciliation rules before adding UI or changing metrics. |
+| Receipt allocation | Target optional transaction breakdown under #940/#947 | Principal, earnings, gross, withholding, fees and net are attributes of a single transaction. Define exact reconciliation rules before adding UI or changing metrics. Open decision, tracked by #940/#947 and not decided here: once a receipt breakdown exists, whether `CashFlowEntity.amount` is the gross or the net figure. |
 
 ## Relationships
 
@@ -83,6 +83,8 @@ The diagram includes target entities to clarify ownership; the snapshot, typed t
 | Legacy documents | Missing new fields and legacy flat fields still deserialize and round-trip without lost values. |
 | Lifecycle/portability | Archive/restore, backup/restore, export/import, offline edits, account switching and deletion preserve relationships and account isolation. |
 | Privacy telemetry | Analytics/Crashlytics contain no financial amount, note, custom label, transaction description, file name or path. |
+| Privacy mode | With privacy mode on, every new amount is hidden in the UI, in semantics labels, in notifications and in share text. |
+| Archived investments | Archived investments stay out of totals, goals and FIRE, and the UI says so wherever it matters. |
 | Consumer consistency | Overview, detail, reports, goals and FIRE agree with the central calculation output for the same state. |
 
 ## Ownership and dependencies
@@ -90,4 +92,4 @@ The diagram includes target entities to clarify ownership; the snapshot, typed t
 - #944 owns this contract and the migration map.
 - #945 owns precision/rounding behavior.
 - #936 custom type definitions, #937 fixed-income terms, #938 expected/actual reconciliation, #939 reminders, #940 principal/earnings components, #941 dated/opening valuations, #946 quantity/unit-price positions, and #947 receipt allocations must follow this contract.
-- Reuse #754's current-value calculation foundation, #761's FD/RD projector and #759's historical FX policy. Do not create parallel calculation engines or notification schedulers.
+- Reuse #754's current-value calculation foundation, #761's FD/RD projector and #759's historical FX policy (#759 is still open, so that policy is pending and not yet available to rely on). Do not create parallel calculation engines or notification schedulers.
