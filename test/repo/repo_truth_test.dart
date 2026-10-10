@@ -271,23 +271,28 @@ void main() {
       );
     });
 
-    test(
-      'product.yaml says the deletion job runs only if a workflow runs it',
-      () {
-        final runsJob = Directory('.github/workflows')
-            .listSync()
-            .whereType<File>()
-            .any((f) => f.readAsStringSync().contains('run.mjs'));
-        final product = _read('.appforge/product.yaml');
-        if (!runsJob && product.contains('scripts/account-deletion')) {
-          expect(
-            product,
-            contains('workflow that runs it is not merged yet'),
-            reason: 'no workflow runs scripts/account-deletion/run.mjs',
-          );
-        }
-      },
-    );
+    test('product.yaml says whether a workflow runs the deletion job', () {
+      final runsJob = Directory('.github/workflows')
+          .listSync()
+          .whereType<File>()
+          .any((f) => f.readAsStringSync().contains('run.mjs'));
+      final product = _read('.appforge/product.yaml');
+      if (!runsJob && product.contains('scripts/account-deletion')) {
+        expect(
+          product,
+          contains('workflow that runs it is not merged yet'),
+          reason: 'no workflow runs scripts/account-deletion/run.mjs',
+        );
+      }
+      if (runsJob) {
+        expect(
+          product,
+          isNot(contains('not merged yet')),
+          reason: 'a workflow runs scripts/account-deletion/run.mjs',
+        );
+        expect(product, contains('ACCOUNT_DELETION_SCHEDULE_ENABLED'));
+      }
+    });
 
     test('README and product.yaml do not hard-code the app version', () {
       final version = _pubspecVersion();
