@@ -152,6 +152,7 @@ void main() {
           riskLevel: from.riskLevel,
           compoundingFrequency: from.compoundingFrequency,
           currency: from.currency,
+          customTypeLabel: from.customTypeLabel,
         );
     return fakeRepository.investments.single;
   }
