@@ -106,7 +106,7 @@ jobs:
           SWEEP_INACTIVE_GUESTS: ${{ inputs.sweep_inactive_guests_days || '0' }}
           # Masked by the mode step above, so this step's header prints ***.
           REQUEST_EMAIL: ${{ inputs.request_email }}
-          GA4_PROPERTY_ID: ${{ vars.GA4_PROPERTY_ID }} # only read once the Analytics deletion step is on main
+          GA4_PROPERTY_ID: ${{ vars.GA4_PROPERTY_ID }} # numeric property ID, not a secret; unset skips the Analytics request with a warning
         run: node scripts/account-deletion/run.mjs
 
   verify:

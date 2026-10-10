@@ -26,6 +26,7 @@ export async function seedUser(uid, { guest = false } = {}) {
   await db.doc(`users/${uid}/investments/i1`).set({ name: 'x' });
   await db.doc(`users/${uid}/investments/i1/notes/n1`).set({ text: 'nested' });
   await db.doc(`users/${uid}/fireSettings/settings`).set({ a: 1 });
+  await db.doc(`users/${uid}/valuations/v1`).set({ investmentId: 'i1', amount: 1, currency: 'INR' });
 }
 
 export const seedRequest = (uid, ageMs, now = new Date()) =>

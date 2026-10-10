@@ -102,7 +102,8 @@ class PortfolioHealthCalculator {
 
   /// Stats, with one XIRR, over the merged cash flows and current values of
   /// every active investment (CALC-02), or null when there are none or the
-  /// return of any of them is unknown.
+  /// return of any of them is unknown. Investments with limited history are
+  /// left out of that return (see [FinancialCalculatorModule.calculateStats]).
   ///
   /// Averaging per-investment XIRRs ignores timing and amounts, so the
   /// portfolio's flows are solved together, like the Overview's XIRR. An
@@ -117,6 +118,9 @@ class PortfolioHealthCalculator {
   ) {
     final included = <String>{};
     final open = <String>{};
+    // Investments with limited history (an opening baseline) count in the
+    // totals but have no lifetime return to judge.
+    final limited = <String>{};
     for (final investment in investments) {
       final stat = stats[investment.id];
       if (investment.isArchived || stat == null || stat.totalInvested <= 0) {
@@ -132,7 +136,12 @@ class PortfolioHealthCalculator {
         return null;
       }
       included.add(investment.id);
-      if (investment.isOpen) open.add(investment.id);
+      if (investment.isOpen) {
+        open.add(investment.id);
+        limited.addAll(
+          terminalValues[investment.id]?.limitedHistoryIds ?? const {},
+        );
+      }
     }
     if (included.isEmpty) return null;
 
@@ -144,11 +153,15 @@ class PortfolioHealthCalculator {
     // all in its cash flows.
     final values = TerminalValues(
       flows: [for (final id in open) ...?terminalValues[id]?.flows],
+      limitedHistoryIds: limited,
     );
-    return FinancialCalculatorModule().calculateStats(
+    final portfolio = FinancialCalculatorModule().calculateStats(
       flows,
       terminalValues: values,
     );
+    // Nothing but limited history left: there is no return to score, and a
+    // zero MOIC would read as a total loss.
+    return portfolio.returnsKnown ? portfolio : null;
   }
 
   /// Component 1: Returns Performance (30% weight)
@@ -225,6 +238,13 @@ class PortfolioHealthCalculator {
     );
   }
 
+  /// What an investment weighs in the mix and in the maturity ratio: the
+  /// money put in, or, for one with limited history (an opening baseline, so
+  /// its cost is unknown or only part of it is on record), its current value.
+  static double _weight(InvestmentStats stat) => stat.limitedHistoryCount > 0
+      ? (stat.currentValue ?? 0)
+      : stat.totalInvested;
+
   /// Component 2: Diversification (25% weight)
   /// Score based on Herfindahl index (concentration)
   static ComponentScore _calculateDiversificationScore(
@@ -241,7 +261,7 @@ class PortfolioHealthCalculator {
       );
     }
 
-    // Calculate Herfindahl index using investment values (totalInvested) by type
+    // Calculate Herfindahl index using investment values (_weight) by type
     final typeValues = <InvestmentType, double>{};
     double totalValue = 0.0;
 
@@ -249,10 +269,10 @@ class PortfolioHealthCalculator {
     for (final inv in investments) {
       if (!inv.isArchived) {
         final stat = stats[inv.id];
-        if (stat != null && stat.totalInvested > 0) {
-          typeValues[inv.type] =
-              (typeValues[inv.type] ?? 0.0) + stat.totalInvested;
-          totalValue += stat.totalInvested;
+        final weight = stat == null ? 0.0 : _weight(stat);
+        if (weight > 0) {
+          typeValues[inv.type] = (typeValues[inv.type] ?? 0.0) + weight;
+          totalValue += weight;
         }
       }
     }
@@ -332,15 +352,16 @@ class PortfolioHealthCalculator {
     for (final inv in investments) {
       if (!inv.isArchived && inv.status == InvestmentStatus.open) {
         final stat = stats[inv.id];
-        if (stat != null && stat.totalInvested > 0) {
-          totalActiveValue += stat.totalInvested;
+        final weight = stat == null ? 0.0 : _weight(stat);
+        if (weight > 0) {
+          totalActiveValue += weight;
 
           final maturity = inv.calculatedMaturityDate;
           if (maturity != null &&
               maturity.isAfter(now) &&
               (maturity.isBefore(next90Days) ||
                   maturity.isAtSameMomentAs(next90Days))) {
-            maturingSoonValue += stat.totalInvested;
+            maturingSoonValue += weight;
             maturingSoonCount++;
           }
         }

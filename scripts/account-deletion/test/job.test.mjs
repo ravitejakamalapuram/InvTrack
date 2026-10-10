@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { runJob, requestByEmail, hashUid } from '../run.mjs';
 import { verifyRun } from '../verify-run.mjs';
 import { deleteUserData } from '../delete.mjs';
+import { createGa4Deletion } from '../ga4.mjs';
 import { auth, authExists, db, DAY, exists, quiet, resetEmulators, seedRequest, seedUser, snapshot } from './helpers.mjs';
 
 const opts = (over = {}) => ({ db, auth, runId: 'run1', dryRun: false, log: quiet, ...over });
@@ -25,7 +26,7 @@ describe('deletion run', () => {
     const audit = await db.doc(`deletionAudit/run1-${hashUid('u1')}`).get();
     assert.equal(audit.get('verified'), true);
     assert.equal(audit.get('outcome'), 'deleted');
-    assert.equal(audit.get('docsDeleted'), 3);
+    assert.equal(audit.get('docsDeleted'), 4);
     assert.equal(audit.get('authDeleted'), true);
     assert.ok(!JSON.stringify(audit.data()).includes('u1@example.com'));
     assert.ok(!JSON.stringify(audit.data()).includes('"u1"'));
@@ -56,7 +57,7 @@ describe('deletion run', () => {
     await seedRequest('u1', 2 * DAY);
     const out = await runJob(opts({ dryRun: true }));
     assert.equal(out.exitCode, 0);
-    assert.equal(out.results[0].docsToDelete, 3);
+    assert.equal(out.results[0].docsToDelete, 4);
     assert.equal(await exists('users/u1/investments/i1'), true);
     assert.equal(await authExists('u1'), true);
     assert.equal(await exists('deletionRequests/u1'), true);
@@ -162,6 +163,178 @@ describe('deletion run', () => {
   });
 });
 
+describe('Google Analytics user deletion (A102)', () => {
+  const PROPERTY = '123456789';
+  /** A GA client that records every uid it is asked about. */
+  const spy = (impl = async () => ({ outcome: 'requested', status: 200 })) => {
+    const uids = [];
+    return {
+      uids,
+      ga4: async (uid) => {
+        uids.push(uid);
+        return impl(uid);
+      },
+    };
+  };
+  const auditOf = async (uid, runId = 'run1') => (await db.doc(`deletionAudit/${runId}-${hashUid(uid)}`).get()).data();
+
+  it('live run asks once per processed uid and records the outcome without the uid', async () => {
+    await seedUser('u1');
+    await seedUser('u2');
+    await seedRequest('u1', 2 * DAY);
+    await seedRequest('u2', 2 * DAY);
+    const { uids, ga4 } = spy();
+    const out = await runJob(opts({ ga4 }));
+    assert.equal(out.exitCode, 0);
+    assert.deepEqual([...uids].sort(), ['u1', 'u2']);
+    const audit = await auditOf('u1');
+    assert.equal(audit.ga4, 'requested');
+    assert.equal(audit.ga4Status, 200);
+    assert.ok(!JSON.stringify(audit).includes('"u1"'));
+    assert.equal(await authExists('u1'), false);
+  });
+
+  it('sends the USER_ID request through the real client with the configured property', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    const calls = [];
+    const request = async (o) => {
+      calls.push(o.data);
+      return { status: 200 };
+    };
+    await runJob(opts({ ga4: createGa4Deletion({ propertyId: PROPERTY, request }) }));
+    assert.deepEqual(calls, [
+      { kind: 'analytics#userDeletionRequest', id: { type: 'USER_ID', userId: 'u1' }, propertyId: PROPERTY },
+    ]);
+  });
+
+  it('dry run makes zero calls and writes nothing', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    const { uids, ga4 } = spy();
+    await runJob(opts({ dryRun: true, ga4 }));
+    assert.deepEqual(uids, []);
+    assert.equal((await db.collection('deletionAudit').get()).size, 0);
+  });
+
+  it('a failed request never blocks the deletion, is recorded as failed and keeps the request for a retry', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    const lines = [];
+    const { ga4 } = spy(async () => ({ outcome: 'failed', status: 403 }));
+    const out = await runJob(opts({ ga4, log: (l) => lines.push(l) }));
+    assert.equal(out.exitCode, 0, 'the run still succeeds');
+    assert.equal(out.ga4Failed, 1);
+    assert.equal(await authExists('u1'), false);
+    assert.deepEqual(await snapshot('users/u1'), {});
+    // The request is the only memory of the uid, so it stays until Analytics has been asked.
+    assert.equal(await exists('deletionRequests/u1'), true);
+    const audit = await auditOf('u1');
+    assert.equal(audit.verified, true);
+    assert.equal(audit.ga4, 'failed');
+    assert.equal(audit.ga4Status, 403);
+    assert.ok(lines.some((l) => /Analytics/.test(l) && /failed/.test(l)));
+    assert.ok(lines.every((l) => !l.includes('u1')), 'no log line names the uid');
+  });
+
+  it('a client that throws still cannot block the deletion', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    const lines = [];
+    const { ga4 } = spy(async () => {
+      throw new Error('boom for u1');
+    });
+    const out = await runJob(opts({ ga4, log: (l) => lines.push(l) }));
+    assert.equal(out.exitCode, 0);
+    assert.equal(await authExists('u1'), false);
+    assert.equal((await auditOf('u1')).ga4, 'failed');
+    assert.equal(await exists('deletionRequests/u1'), true, 'kept for a retry');
+    assert.ok(lines.every((l) => !l.includes('u1')));
+  });
+
+  it('the next run asks again, then removes the request once Analytics has been asked', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    const first = spy(async () => ({ outcome: 'failed', status: 429 }));
+    await runJob(opts({ ga4: first.ga4 }));
+    assert.equal(await exists('deletionRequests/u1'), true);
+
+    const second = spy();
+    const out = await runJob(opts({ runId: 'run2', ga4: second.ga4 }));
+    assert.equal(out.exitCode, 0);
+    assert.deepEqual(second.uids, ['u1'], 'asked again');
+    assert.equal(await exists('deletionRequests/u1'), false, 'removed after a successful request');
+    assert.equal((await auditOf('u1', 'run2')).ga4, 'requested');
+    assert.equal(await authExists('u1'), false, 'the account data stays deleted');
+  });
+
+  it('a request that keeps failing is not dropped and fails the run once it is over 3 days old', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 4 * DAY);
+    const { ga4 } = spy(async () => ({ outcome: 'failed', status: 403 }));
+    const out = await runJob(opts({ ga4, log: quiet }));
+    assert.equal(out.stale, 1);
+    assert.equal(out.exitCode, 1);
+    assert.equal(await exists('deletionRequests/u1'), true);
+  });
+
+  it('a live run without a property warns once with a count, never with a uid, and still removes the request', async () => {
+    await seedUser('u1');
+    await seedUser('u2');
+    await seedRequest('u1', 2 * DAY);
+    await seedRequest('u2', 2 * DAY);
+    const lines = [];
+    const out = await runJob(opts({ ga4: createGa4Deletion({}), log: (l) => lines.push(l) }));
+    assert.equal(out.exitCode, 0);
+    assert.equal(out.ga4NotConfigured, 2);
+    const warnings = lines.filter((l) => /not configured/i.test(l));
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /GA4_PROPERTY_ID/);
+    assert.match(warnings[0], /2 account/);
+    assert.ok(lines.every((l) => !l.includes('u1') && !l.includes('u2')));
+    assert.equal(await exists('deletionRequests/u1'), false);
+  });
+
+  it('a dry run does not warn about a missing property', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    const lines = [];
+    const out = await runJob(opts({ dryRun: true, ga4: createGa4Deletion({}), log: (l) => lines.push(l) }));
+    assert.equal(out.ga4NotConfigured, 0);
+    assert.ok(lines.every((l) => !/not configured/i.test(l)));
+  });
+
+  it('with no property configured it records not-configured and makes no call', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    const calls = [];
+    const request = async (o) => calls.push(o);
+    const out = await runJob(opts({ ga4: createGa4Deletion({ propertyId: undefined, request }) }));
+    assert.equal(out.exitCode, 0);
+    assert.equal(calls.length, 0);
+    assert.equal((await auditOf('u1')).ga4, 'not-configured');
+  });
+
+  it('without a client option the audit says not-configured', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    await runJob(opts());
+    assert.equal((await auditOf('u1')).ga4, 'not-configured');
+  });
+
+  it('is not called when the deleter itself fails', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    const { uids, ga4 } = spy();
+    const failing = async () => {
+      throw new Error('boom');
+    };
+    const out = await runJob(opts({ ga4, deleter: failing }));
+    assert.equal(out.exitCode, 1);
+    assert.deepEqual(uids, []);
+  });
+});
+
 describe('verifier must fail when deletion is incomplete (mutation tests)', () => {
   it('flags a nested document the deleter left behind', async () => {
     await seedUser('u1');
@@ -202,6 +375,34 @@ describe('independent verify job', () => {
     const v = await verifyRun({ db, auth, runId: 'run1' });
     assert.deepEqual(v.problems, []);
     assert.equal(v.ok, true);
+  });
+
+  it('reads audit records that carry both the run id and an Analytics outcome, whatever the outcome', async () => {
+    const outcomes = {
+      u1: { outcome: 'requested', status: 200 },
+      u2: { outcome: 'failed', status: 403 },
+      u3: { outcome: 'not-configured', status: null },
+    };
+    const ga4 = async (uid) => outcomes[uid];
+    for (const uid of ['u1', 'u2', 'u3']) {
+      await seedUser(uid);
+      await seedRequest(uid, 1.5 * DAY); // past the 24 h window, inside cooling + 1 day
+    }
+    const out = await runJob(opts({ ga4 }));
+    assert.equal(out.exitCode, 0);
+    for (const [uid, ga4Outcome] of [['u1', 'requested'], ['u2', 'failed'], ['u3', 'not-configured']]) {
+      const audit = await db.doc(`deletionAudit/run1-${hashUid(uid)}`).get();
+      assert.equal(audit.get('runId'), 'run1');
+      assert.equal(audit.get('ga4'), ga4Outcome);
+    }
+    assert.equal(await exists('deletionRequests/u2'), true, 'a failed Analytics request keeps the request for a retry');
+    const clean = await verifyRun({ db, auth, runId: 'run1' });
+    assert.deepEqual(clean.problems, []);
+    // The account whose Analytics request failed is still found by its hash.
+    await seedUser('u2');
+    const back = await verifyRun({ db, auth, runId: 'run1' });
+    assert.ok(back.problems.some((p) => p.includes(hashUid('u2')) && /auth user still exists/.test(p)), back.problems.join('\n'));
+    assert.ok(!back.problems.some((p) => p.includes(hashUid('u1')) || p.includes(hashUid('u3'))), back.problems.join('\n'));
   });
 
   it('finds an account that came back, by hash, without being given any uid', async () => {

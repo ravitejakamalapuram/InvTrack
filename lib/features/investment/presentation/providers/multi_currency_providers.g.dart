@@ -404,6 +404,7 @@ String _$multiCurrencyPortfolioValueHash() =>
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
 /// - InvestmentStats.empty() when the investment has no active cash flows
+///   and no dated valuation (an opening baseline needs no cash flows)
 
 @ProviderFor(multiCurrencyInvestmentStats)
 const multiCurrencyInvestmentStatsProvider =
@@ -421,6 +422,7 @@ const multiCurrencyInvestmentStatsProvider =
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
 /// - InvestmentStats.empty() when the investment has no active cash flows
+///   and no dated valuation (an opening baseline needs no cash flows)
 
 final class MultiCurrencyInvestmentStatsProvider
     extends
@@ -442,6 +444,7 @@ final class MultiCurrencyInvestmentStatsProvider
   /// **Returns:**
   /// - InvestmentStats with amounts in user's base currency
   /// - InvestmentStats.empty() when the investment has no active cash flows
+  ///   and no dated valuation (an opening baseline needs no cash flows)
   const MultiCurrencyInvestmentStatsProvider._({
     required MultiCurrencyInvestmentStatsFamily super.from,
     required String super.argument,
@@ -488,7 +491,7 @@ final class MultiCurrencyInvestmentStatsProvider
 }
 
 String _$multiCurrencyInvestmentStatsHash() =>
-    r'a04d7f58432839534f73fc2e83e43cc642635bb8';
+    r'8ef746b0d5429de6ac4c5c5a6378e2f96218160a';
 
 /// Stats for one active investment, in the user's base currency.
 ///
@@ -502,6 +505,7 @@ String _$multiCurrencyInvestmentStatsHash() =>
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
 /// - InvestmentStats.empty() when the investment has no active cash flows
+///   and no dated valuation (an opening baseline needs no cash flows)
 
 final class MultiCurrencyInvestmentStatsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<InvestmentStats>, String> {
@@ -526,6 +530,7 @@ final class MultiCurrencyInvestmentStatsFamily extends $Family
   /// **Returns:**
   /// - InvestmentStats with amounts in user's base currency
   /// - InvestmentStats.empty() when the investment has no active cash flows
+  ///   and no dated valuation (an opening baseline needs no cash flows)
 
   MultiCurrencyInvestmentStatsProvider call(String investmentId) =>
       MultiCurrencyInvestmentStatsProvider._(
@@ -613,7 +618,7 @@ final class MultiCurrencyArchivedInvestmentStatsProvider
 }
 
 String _$multiCurrencyArchivedInvestmentStatsHash() =>
-    r'c3772b96c3060d27f2b14cb8de6e9b5cced3895f';
+    r'016899a762c820d1fd3dd8963e1d7f84f443fbd3';
 
 /// Stats for one archived investment, in the user's base currency.
 ///
@@ -718,7 +723,7 @@ final class MultiCurrencyGlobalStatsProvider
 }
 
 String _$multiCurrencyGlobalStatsHash() =>
-    r'32d9b455c83f269b562d86bad577791915f970ae';
+    r'd83158387cb314810e51a0500bb3334586637d8f';
 
 /// Provider for multi-currency open investments stats
 ///
@@ -781,7 +786,7 @@ final class MultiCurrencyOpenStatsProvider
 }
 
 String _$multiCurrencyOpenStatsHash() =>
-    r'2b21740a86501fab3999fc3277d5111a08b74e58';
+    r'1134ec7bd704e381c9a040a149770f8f41d6e42b';
 
 /// Provider for multi-currency closed investments stats
 ///
@@ -844,4 +849,4 @@ final class MultiCurrencyClosedStatsProvider
 }
 
 String _$multiCurrencyClosedStatsHash() =>
-    r'c11b90231b7635ce0ed067e9d687974298227028';
+    r'73d935acc4466dbb180201afbd8dd4b2795d911f';

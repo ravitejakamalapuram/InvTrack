@@ -51,7 +51,7 @@ data_collection:
   sensitive: [financial_holdings_and_amounts, personal_info_name_email_age_locale]
   third_party: [firebase_google, admob_dormant]
   retention: { firestore: "until account deletion (see known gaps below)", local_attachments: "until account deletion or app data clear" }
-  deletion: "In-app: Settings > Data & Account > Delete Account; a required web deletion link exists but per FINDINGS.md is not yet published"
+  deletion: "In-app: Settings > Data & Account > Delete Account; on the web, at hostedAccountDeletionUrl (legal_content.dart, https://ravitejakamalapuram.github.io/delete/invtrack.html), the APP-333 page where a Google sign-in writes deletionRequests/{uid} and can withdraw it, linked from About and Help & FAQ; the page is live once the Pages repo merges APP-333 (its PR #6)"
 security_classification: high
 release_channel: default
 current_version: "3.70.18+274"

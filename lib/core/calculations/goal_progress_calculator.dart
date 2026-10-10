@@ -5,6 +5,7 @@ import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
 /// Goal progress: the single implementation every goal screen, alert and
@@ -261,7 +262,8 @@ class GoalProgressCalculator {
   ///
   /// Archived investments are left out. Throws a
   /// [CurrencyConversionException] rather than count an amount that could
-  /// not be converted.
+  /// not be converted. [snapshots] are the dated valuations by investment id
+  /// (see [CurrentValueCalculator.terminalValues]).
   static Future<GoalProgress> calculateMultiCurrency({
     required GoalEntity goal,
     required List<InvestmentEntity> allInvestments,
@@ -271,6 +273,7 @@ class GoalProgressCalculator {
     ConversionFallbackStrategy fallbackStrategy =
         ConversionFallbackStrategy.useLastKnown,
     DateTime? asOf,
+    Map<String, List<InvestmentValuationSnapshot>>? snapshots,
   }) async {
     final now = asOf ?? DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -303,6 +306,7 @@ class GoalProgressCalculator {
           investments: [inv],
           cashFlows: flows,
           asOf: today,
+          snapshots: snapshots,
         ),
     };
     final valueFlows = [for (final v in values.values) ...v.flows];
