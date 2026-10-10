@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -37,6 +36,10 @@ class OrphanedExpectedCashFlowCleanupService {
   /// Deletes per batch (the Firestore limit is 500).
   static const int _batchSize = 450;
 
+  /// Investments checked on the server at the same time. Each one is two
+  /// reads.
+  static const int _checkChunkSize = 50;
+
   final FirebaseFirestore _firestore;
   final String _userId;
   final SharedPreferences _prefs;
@@ -46,26 +49,42 @@ class OrphanedExpectedCashFlowCleanupService {
 
   /// Every SharedPreferences key this service keeps for [userId]. Removed on
   /// account deletion.
-  static List<String> prefsKeysFor(String userId) => [_doneKeyFor(userId)];
+  static List<String> prefsKeysFor(String userId) => [
+    _requestedKeyFor(userId),
+    _completedKeyFor(userId),
+  ];
 
-  static String _doneKeyFor(String userId) =>
-      'expected_payments_orphan_cleanup_done_$userId';
+  // Two counters, so a sweep asked for during a run is not lost: a run
+  // records the request number it started with, never a later one.
+  static String _requestedKeyFor(String userId) =>
+      'expected_payments_orphan_sweep_requested_$userId';
 
-  /// Makes the next [runOnce] of [userId] sweep again, even if one finished.
+  static String _completedKeyFor(String userId) =>
+      'expected_payments_orphan_sweep_completed_$userId';
+
+  /// The first sweep is always owed: request 1, nothing completed yet.
+  static int _requestedOf(SharedPreferences prefs, String userId) =>
+      prefs.getInt(_requestedKeyFor(userId)) ?? 1;
+
+  static int _completedOf(SharedPreferences prefs, String userId) =>
+      prefs.getInt(_completedKeyFor(userId)) ?? 0;
+
+  /// Makes [runOnce] of [userId] sweep again, even if one finished, or is
+  /// running now.
   ///
   /// Asked for when an investment was deleted without the server saying which
   /// expected payments it had (offline with an empty cache): those payments
   /// stay on the server and only a new sweep can remove them.
   static Future<void> requestSweep(SharedPreferences prefs, String userId) =>
-      prefs.remove(_doneKeyFor(userId));
+      prefs.setInt(_requestedKeyFor(userId), _requestedOf(prefs, userId) + 1);
 
-  String get _doneKey => _doneKeyFor(_userId);
-
-  /// Whether the cleanup finished for this user.
-  bool get isComplete => _prefs.getBool(_doneKey) ?? false;
+  /// Whether the cleanup finished for this user, for the latest request.
+  bool get isComplete =>
+      _completedOf(_prefs, _userId) >= _requestedOf(_prefs, _userId);
 
   /// Runs [cleanup] once per user. Returns true when it is complete, false
-  /// when it failed (the next call retries). Never throws.
+  /// when it failed or a newer sweep was asked for meanwhile (the next call
+  /// runs again). Never throws.
   Future<bool> runOnce() {
     if (isComplete) return Future.value(true);
     return _running ??= _runGuarded().whenComplete(() {
@@ -76,7 +95,7 @@ class OrphanedExpectedCashFlowCleanupService {
   Future<bool> _runGuarded() async {
     try {
       await cleanup();
-      return true;
+      return isComplete;
     } catch (e) {
       LoggerService.warn(
         'Expected payment cleanup did not finish; will retry',
@@ -87,11 +106,13 @@ class OrphanedExpectedCashFlowCleanupService {
   }
 
   /// Deletes the orphaned payments and returns how many. Throws if a read or
-  /// a delete fails, and then nothing is recorded, so the next call starts
-  /// again; batches that already went through stay deleted, which is safe,
-  /// because the orphans are found afresh. Completion is recorded only after
-  /// every batch went through.
+  /// a delete fails or is not confirmed by the server in time, and then
+  /// nothing is recorded, so the next call starts again; batches that already
+  /// went through stay deleted, which is safe, because the orphans are found
+  /// afresh. Completion is recorded only after every batch was confirmed, and
+  /// only for the request that was current when this started.
   Future<int> cleanup() async {
+    final requested = _requestedOf(_prefs, _userId);
     final userDoc = _firestore.collection('users').doc(_userId);
     final payments = await userDoc
         .collection('expectedCashFlows')
@@ -107,10 +128,21 @@ class OrphanedExpectedCashFlowCleanupService {
 
     // One fresh read per investment, after the payments were read, so an
     // investment created or moved between archive and active meanwhile is
-    // still found.
-    final exists = await Future.wait([
-      for (final id in byInvestment.keys) _investmentExists(userDoc, id),
-    ]).timeout(_readTimeout);
+    // still found. A chunk at a time, so many investments do not start
+    // hundreds of reads at once under one timeout.
+    final ids = byInvestment.keys.toList();
+    final exists = <bool>[];
+    for (var i = 0; i < ids.length; i += _checkChunkSize) {
+      exists.addAll(
+        await Future.wait([
+          for (final id in ids.sublist(
+            i,
+            math.min(i + _checkChunkSize, ids.length),
+          ))
+            _investmentExists(userDoc, id),
+        ]).timeout(_readTimeout),
+      );
+    }
     final orphans = <DocumentReference>[];
     var index = 0;
     for (final refs in byInvestment.values) {
@@ -125,15 +157,15 @@ class OrphanedExpectedCashFlowCleanupService {
       )) {
         batch.delete(ref);
       }
-      try {
-        await batch.commit().timeout(_writeTimeout);
-      } on TimeoutException {
-        // Queued locally while offline, and sent when back online, like every
-        // other write in the app.
-      }
+      // A timeout is not swallowed: until the server confirms, the sweep is
+      // not done. The write stays queued; deleting it again later is harmless.
+      await batch.commit().timeout(_writeTimeout);
     }
 
-    await _prefs.setBool(_doneKey, true);
+    await _prefs.setInt(
+      _completedKeyFor(_userId),
+      math.max(_completedOf(_prefs, _userId), requested),
+    );
     // Counts only: never ids, names or amounts (CLAUDE.md rule 7).
     LoggerService.info(
       'Expected payment cleanup finished',

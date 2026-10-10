@@ -288,8 +288,10 @@ void main() {
           'usd_tag_repair_resolved_${FakeUserTree.uid}': true,
           'usd_tag_repair_backup_${FakeUserTree.uid}': '[]',
           'usd_tag_repair_resolved_other-user': true,
-          'expected_payments_orphan_cleanup_done_${FakeUserTree.uid}': true,
-          'expected_payments_orphan_cleanup_done_other-user': true,
+          'expected_payments_orphan_sweep_requested_${FakeUserTree.uid}': 2,
+          'expected_payments_orphan_sweep_completed_${FakeUserTree.uid}': 1,
+          'expected_payments_orphan_sweep_requested_other-user': 2,
+          'expected_payments_orphan_sweep_completed_other-user': 1,
         });
         final prefs = await SharedPreferences.getInstance();
         final tree = FakeUserTree({'investments': 1});
@@ -323,16 +325,26 @@ void main() {
           expect(prefs.containsKey(k), isFalse, reason: k);
         }
         expect(prefs.getBool('usd_tag_repair_resolved_other-user'), isTrue);
-        // #917: the orphaned-expected-payments sweep flag goes too.
+        // #917: the orphaned-expected-payments sweep counters go too.
         expect(
           prefs.containsKey(
-            'expected_payments_orphan_cleanup_done_${FakeUserTree.uid}',
+            'expected_payments_orphan_sweep_requested_${FakeUserTree.uid}',
           ),
           isFalse,
         );
         expect(
-          prefs.getBool('expected_payments_orphan_cleanup_done_other-user'),
-          isTrue,
+          prefs.containsKey(
+            'expected_payments_orphan_sweep_completed_${FakeUserTree.uid}',
+          ),
+          isFalse,
+        );
+        expect(
+          prefs.getInt('expected_payments_orphan_sweep_requested_other-user'),
+          2,
+        );
+        expect(
+          prefs.getInt('expected_payments_orphan_sweep_completed_other-user'),
+          1,
         );
       },
     );

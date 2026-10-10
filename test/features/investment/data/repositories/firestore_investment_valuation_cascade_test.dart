@@ -650,11 +650,13 @@ void main() {
       );
     });
 
-    test('the repository the app builds clears the user\'s sweep flag, and '
-        'no one else\'s', () async {
+    test('the repository the app builds asks for a new sweep for the user, '
+        'and no one else', () async {
       SharedPreferences.setMockInitialValues({
-        'expected_payments_orphan_cleanup_done_$uid': true,
-        'expected_payments_orphan_cleanup_done_other-user': true,
+        'expected_payments_orphan_sweep_requested_$uid': 1,
+        'expected_payments_orphan_sweep_completed_$uid': 1,
+        'expected_payments_orphan_sweep_requested_other-user': 1,
+        'expected_payments_orphan_sweep_completed_other-user': 1,
       });
       final prefs = await SharedPreferences.getInstance();
       final container = ProviderContainer(
@@ -675,13 +677,11 @@ void main() {
 
       await container.read(investmentRepositoryProvider).deleteInvestment(id);
 
+      expect(prefs.getInt('expected_payments_orphan_sweep_requested_$uid'), 2);
+      expect(prefs.getInt('expected_payments_orphan_sweep_completed_$uid'), 1);
       expect(
-        prefs.containsKey('expected_payments_orphan_cleanup_done_$uid'),
-        isFalse,
-      );
-      expect(
-        prefs.getBool('expected_payments_orphan_cleanup_done_other-user'),
-        isTrue,
+        prefs.getInt('expected_payments_orphan_sweep_requested_other-user'),
+        1,
       );
     });
   });
