@@ -114,15 +114,27 @@ abstract final class ValuationSnapshotSelector {
   /// The live opening baseline of the investment in [currency], or null. A
   /// second one can only come from two devices writing at once; the newest
   /// is used.
+  ///
+  /// With [asOf], a baseline dated after that day has not started yet and is
+  /// not returned, like [select] leaves out a snapshot dated after it. Readers
+  /// that value or measure as of a day pass it; checks that only ask whether
+  /// the investment already has a baseline (at most one) do not.
   static InvestmentValuationSnapshot? openingBaseline(
     Iterable<InvestmentValuationSnapshot> snapshots, {
     required String investmentId,
     required String currency,
-  }) => _latest(
-    snapshots.where(
-      (s) => s.isOpeningBaseline && applies(s, investmentId, currency),
-    ),
-  );
+    DateTime? asOf,
+  }) {
+    final today = asOf == null ? null : _dateOnly(asOf);
+    return _latest(
+      snapshots.where(
+        (s) =>
+            s.isOpeningBaseline &&
+            applies(s, investmentId, currency) &&
+            (today == null || !_dateOnly(s.effectiveDate).isAfter(today)),
+      ),
+    );
+  }
 
   /// The snapshot the investment's `currentValue` pair must mirror: the
   /// latest live snapshot in [currency], whatever its date, or null.

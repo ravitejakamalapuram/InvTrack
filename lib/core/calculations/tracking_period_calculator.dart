@@ -111,10 +111,14 @@ abstract final class TrackingPeriodCalculator {
     required List<InvestmentValuationSnapshot> snapshots,
     required DateTime asOf,
   }) {
+    // A baseline dated after the as-of day has not started: there is no period
+    // yet, and an end value dated before it would end the period before it
+    // began.
     final baseline = ValuationSnapshotSelector.openingBaseline(
       snapshots,
       investmentId: investment.id,
       currency: investment.currency,
+      asOf: asOf,
     );
     if (baseline == null) {
       return const TrackingPeriod(state: TrackingPeriodState.notStarted);
@@ -192,7 +196,9 @@ abstract final class TrackingPeriodCalculator {
       flows: flows,
       terminal: terminal,
     );
-    return period.days == 0
+    // No elapsed time, and never an end before the start: no figures.
+    final days = period.days;
+    return days != null && days <= 0
         ? TrackingPeriod(
             state: TrackingPeriodState.noElapsedTime,
             start: start,

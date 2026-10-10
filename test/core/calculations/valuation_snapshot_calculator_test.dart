@@ -677,6 +677,50 @@ void main() {
     });
   });
 
+  // A baseline dated after the as-of day has not started: it is not the
+  // history that is missing, so it does not limit history, set a tracking
+  // start or ask for a review (the tracking period reads it the same way).
+  group('an opening baseline dated after the as-of day', () {
+    final future = _baseline(500000, DateTime(2026, 12, 1));
+    final manual = testSnapshot(
+      'm',
+      amount: 120000,
+      date: DateTime(2026, 7, 1),
+    );
+    final flows = [
+      testFlow('i1', CashFlowType.invest, 100000, DateTime(2026, 2, 1)),
+    ];
+
+    test('does not limit history', () {
+      // _today is 2026-10-02.
+      final v = _valuation(investment, flows, [future, manual])!;
+      expect(v.amount, 120000.00);
+      expect(v.date, DateTime(2026, 7, 1));
+      expect(v.historyLimited, isFalse);
+      expect(v.trackingStart, isNull);
+      expect(v.historyReviewNeeded, isFalse);
+
+      final t = CurrentValueCalculator.terminalValues(
+        investments: [investment],
+        cashFlows: flows,
+        asOf: _today,
+        snapshots: _by([future, manual]),
+      );
+      expect(t.limitedHistoryIds, isEmpty);
+    });
+
+    test('limits it from its own day', () {
+      final v = _valuation(investment, flows, [
+        future,
+        manual,
+      ], asOf: DateTime(2026, 12, 1))!;
+      expect(v.amount, 500000.00);
+      expect(v.historyLimited, isTrue);
+      expect(v.trackingStart, DateTime(2026, 12, 1));
+      expect(v.historyReviewNeeded, isTrue);
+    });
+  });
+
   group('the latest applicable snapshot is used (plan test 5)', () {
     final jan = testSnapshot('a', amount: 400000, date: DateTime(2026, 1, 1));
     final jun = testSnapshot('b', amount: 450000, date: DateTime(2026, 6, 1));

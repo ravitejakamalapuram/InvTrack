@@ -590,6 +590,7 @@ class CurrentValueCalculator {
       snapshots,
       investmentId: investment.id,
       currency: investment.currency,
+      asOf: today,
     );
     final startsOn = baseline == null
         ? null

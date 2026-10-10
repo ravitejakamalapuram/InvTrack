@@ -283,6 +283,47 @@ void main() {
       );
     });
 
+    test('openingBaseline given an as-of day ignores a baseline after it', () {
+      final base = testSnapshot(
+        'b',
+        amount: 5,
+        date: DateTime(2026, 12, 1),
+        provenance: ValuationProvenance.openingBaseline,
+      );
+      ValuationSnapshotSelector.openingBaseline(
+        [base],
+        investmentId: 'i1',
+        currency: 'INR',
+      );
+      // Without a day any live baseline counts: there is at most one.
+      expect(
+        ValuationSnapshotSelector.openingBaseline(
+          [base],
+          investmentId: 'i1',
+          currency: 'INR',
+        )!.id,
+        'b',
+      );
+      expect(
+        ValuationSnapshotSelector.openingBaseline(
+          [base],
+          investmentId: 'i1',
+          currency: 'INR',
+          asOf: DateTime(2026, 11, 30, 23),
+        ),
+        isNull,
+      );
+      expect(
+        ValuationSnapshotSelector.openingBaseline(
+          [base],
+          investmentId: 'i1',
+          currency: 'INR',
+          asOf: DateTime(2026, 12, 1, 9),
+        )!.id,
+        'b',
+      );
+    });
+
     test('mirrorOf is the latest live snapshot in the currency, or null', () {
       final a = testSnapshot('a', amount: 1, date: DateTime(2026, 1, 1));
       final b = testSnapshot('b', amount: 2, date: DateTime(2026, 5, 1));

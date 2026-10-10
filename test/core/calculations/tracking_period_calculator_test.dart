@@ -266,6 +266,34 @@ void main() {
     });
   });
 
+  // CodeRabbit on PR 961: openingBaseline does not look at the date. A
+  // baseline dated after the as-of day has not started, whatever the end value.
+  group('a baseline dated after the as-of day', () {
+    final future = _baseline(500000, DateTime(2026, 12, 1));
+    final earlier = testSnapshot(
+      'jul',
+      amount: 530000,
+      date: DateTime(2026, 7, 1),
+    );
+
+    test('has not started: no period, no figures', () {
+      // _today is 2026-10-02; the end value is dated before the baseline.
+      final period = _build([future, earlier]);
+      expect(period.state, TrackingPeriodState.notStarted);
+      expect(period.start, isNull);
+      expect(period.terminal, isNull);
+      expect(period.flows, isEmpty);
+      expect(TrackingPeriodCalculator.stats(period), isNull);
+    });
+
+    test('starts on its day: nothing has elapsed yet', () {
+      final period = _build([future, earlier], asOf: DateTime(2026, 12, 1));
+      expect(period.state, TrackingPeriodState.noElapsedTime);
+      expect(period.start, DateTime(2026, 12, 1));
+      expect(TrackingPeriodCalculator.stats(period), isNull);
+    });
+  });
+
   group('conversion', () {
     test('withConverted replaces the flows and the end value', () {
       final baseline = _baseline(500000, DateTime(2026, 1, 1));
