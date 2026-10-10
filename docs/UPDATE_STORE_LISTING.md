@@ -14,7 +14,8 @@ service-account key and no longer exists.
    - `title.txt` (max 30 chars), `short_description.txt` (max 80), `full_description.txt` (max 4,000)
    - `images/phoneScreenshots/*.png`: 2 to 8 images, aspect ratio at most 2:1, 24-bit PNG or JPEG
      with no alpha channel. Order is by file name. Generate them with
-     `integration_test/flows/store_screenshots_test.dart`, then pad to 1080x1920.
+     `STORE_SCREENSHOTS_DIR=android/fastlane/metadata/android/en-US/images/phoneScreenshots flutter test test/store_screenshots/store_screenshots_test.dart`
+     (no emulator; see `integration_test/README.md`), which writes 1080x1920 images ready to commit.
 2. The PR check (`ci.yml` → release-platform `app-ci`) validates the listing against Play's rules.
 3. After the merge, run **Actions → listing → Run workflow** with `dry_run: true` and read the
    summary. Then run it again with `dry_run: false`.

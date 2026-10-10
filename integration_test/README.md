@@ -111,6 +111,10 @@ await settings.takeScreenshot('settings_main');
 
 Screenshots are uploaded as artifacts in CI.
 
+### Play Store screenshots without an emulator
+
+The five Play phone screenshots (`android/fastlane/metadata/android/en-US/images/phoneScreenshots/play_01..05`) can be regenerated with plain `flutter test`, on any machine, from the demo portfolio in `integration_test/mocks/store_demo_data.dart` (the same data `flows/store_screenshots_test.dart` uses on a device): `STORE_SCREENSHOTS_DIR=android/fastlane/metadata/android/en-US/images/phoneScreenshots flutter test test/store_screenshots/store_screenshots_test.dart`. It runs the real app at 1080x1920 (411.43x731.43 dp at 2.625), checks each scene (no loading or error state, no unloaded font, privacy mode shows no amount in text or semantics) and writes 24-bit PNGs without alpha, the format the Play listing check wants. It needs an emoji font for the goal icons (Noto Color Emoji; set `STORE_SCREENSHOTS_EMOJI_FONT` if it is not in a standard path). Without `STORE_SCREENSHOTS_DIR` it renders and checks the scenes but writes nothing, which is what the normal test run does (`--exclude-tags=store-screenshots` skips it). Dates in the images count back from the day it runs, and the Overview header shows whatever the app shows then, so regenerate after UI changes. Uploading the images to Play stays manual (the `listing` workflow).
+
 ## CI/CD Integration
 
 Tests run automatically on every PR via GitHub Actions:
