@@ -9,12 +9,14 @@ on:
       - 'scripts/account-deletion/**'
       - 'firestore.rules'
       - '.github/workflows/deletion-job-tests.yml'
+      - '.github/workflows/account-deletion.yml'
   push:
     branches: [main]
     paths:
       - 'scripts/account-deletion/**'
       - 'firestore.rules'
       - '.github/workflows/deletion-job-tests.yml'
+      - '.github/workflows/account-deletion.yml'
   workflow_dispatch: {}
 
 concurrency:
