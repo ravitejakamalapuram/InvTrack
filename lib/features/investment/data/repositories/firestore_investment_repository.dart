@@ -688,6 +688,9 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       'currentValueDate': investment.currentValueDate != null
           ? Timestamp.fromDate(investment.currentValueDate!)
           : null,
+      // Custom type (#936); null when none, so an edit clears a stored one.
+      'customTypeId': investment.customTypeId,
+      'customTypeLabel': investment.customTypeLabel,
     };
   }
 
@@ -747,7 +750,16 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       currentValueDate: data['currentValue'] != null
           ? (data['currentValueDate'] as Timestamp?)?.toDate()
           : null,
+      // Documents saved before custom types (#936) have neither field.
+      customTypeId: _nonBlank(data['customTypeId']),
+      customTypeLabel: _nonBlank(data['customTypeLabel']),
     );
+  }
+
+  /// [value] as text, or null when it is missing or blank.
+  static String? _nonBlank(Object? value) {
+    if (value is! String || value.trim().isEmpty) return null;
+    return value;
   }
 
   Map<String, dynamic> _cashFlowToFirestore(CashFlowEntity cashFlow) {

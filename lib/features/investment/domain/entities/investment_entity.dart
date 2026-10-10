@@ -321,6 +321,18 @@ class InvestmentEntity {
   /// Date-only date of [currentValue]; set whenever [currentValue] is.
   final DateTime? currentValueDate;
 
+  /// Id of the reusable custom type this investment refers to (#936). Only an
+  /// investment of type [InvestmentType.other] has one, and not every custom
+  /// label has one: a label used on this investment only has just
+  /// [customTypeLabel]. It is a name for the investment and never selects a
+  /// calculation, payout, tax or valuation rule.
+  final String? customTypeId;
+
+  /// This investment's own copy of its custom type's label (#936). Renaming or
+  /// removing the reusable type leaves it unchanged. Null for no custom type,
+  /// which shows as Other.
+  final String? customTypeLabel;
+
   const InvestmentEntity({
     required this.id,
     required this.name,
@@ -345,7 +357,20 @@ class InvestmentEntity {
     this.currency = 'USD', // Default for backward compatibility
     this.currentValue,
     this.currentValueDate,
+    this.customTypeId,
+    this.customTypeLabel,
   });
+
+  /// The name to show for this investment's type: its custom label when it is
+  /// of type Other and has one, otherwise the built-in type's name. Grouping
+  /// and filtering keep using [type].
+  String get typeLabel {
+    final label = customTypeLabel?.trim();
+    if (type == InvestmentType.other && label != null && label.isNotEmpty) {
+      return label;
+    }
+    return type.displayName;
+  }
 
   bool get isOpen => status == InvestmentStatus.open;
   bool get isClosed => status == InvestmentStatus.closed;
@@ -411,6 +436,8 @@ class InvestmentEntity {
     String? currency,
     double? currentValue,
     DateTime? currentValueDate,
+    String? customTypeId,
+    String? customTypeLabel,
   }) {
     return InvestmentEntity(
       id: id ?? this.id,
@@ -436,6 +463,8 @@ class InvestmentEntity {
       currency: currency ?? this.currency,
       currentValue: currentValue ?? this.currentValue,
       currentValueDate: currentValueDate ?? this.currentValueDate,
+      customTypeId: customTypeId ?? this.customTypeId,
+      customTypeLabel: customTypeLabel ?? this.customTypeLabel,
     );
   }
 
@@ -465,7 +494,9 @@ class InvestmentEntity {
         other.compoundingFrequency == compoundingFrequency &&
         other.currency == currency &&
         other.currentValue == currentValue &&
-        other.currentValueDate == currentValueDate;
+        other.currentValueDate == currentValueDate &&
+        other.customTypeId == customTypeId &&
+        other.customTypeLabel == customTypeLabel;
   }
 
   @override
@@ -494,6 +525,8 @@ class InvestmentEntity {
       currency,
       currentValue,
       currentValueDate,
+      customTypeId,
+      customTypeLabel,
     ]);
   }
 }

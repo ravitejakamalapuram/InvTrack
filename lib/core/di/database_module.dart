@@ -6,9 +6,11 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/income_projection/data/repositories/firestore_expected_cash_flow_repository.dart';
 import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
+import 'package:inv_tracker/features/investment/data/repositories/firestore_custom_investment_type_repository.dart';
 import 'package:inv_tracker/features/investment/data/repositories/firestore_document_repository.dart';
 import 'package:inv_tracker/features/investment/data/repositories/firestore_investment_repository.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
+import 'package:inv_tracker/features/investment/domain/repositories/custom_investment_type_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 import 'package:inv_tracker/features/settings/data/services/account_data_deletion_service.dart';
@@ -56,6 +58,21 @@ final investmentRepositoryProvider = Provider<InvestmentRepository>((ref) {
     baseCurrency: baseCurrencyReader(ref),
   );
 });
+
+/// Provider for the reusable custom investment type repository (#936)
+/// Throws AuthException.notAuthenticated if user is not authenticated
+final customInvestmentTypeRepositoryProvider =
+    Provider<CustomInvestmentTypeRepository>((ref) {
+      final firestore = ref.watch(firestoreProvider);
+      final user = ref.watch(authStateProvider).value;
+      if (user == null) {
+        throw AuthException.notAuthenticated();
+      }
+      return FirestoreCustomInvestmentTypeRepository(
+        firestore: firestore,
+        userId: user.id,
+      );
+    });
 
 /// Provider for the document repository using Firestore
 /// Throws AuthException.notAuthenticated if user is not authenticated

@@ -193,6 +193,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         // Not on the edit form: set through setCurrentValue only.
         currentValue: keepsValue ? existing.currentValue : null,
         currentValueDate: keepsValue ? existing.currentValueDate : null,
+        // Not on the edit form yet (#936): kept as stored.
+        customTypeId: existing.customTypeId,
+        customTypeLabel: existing.customTypeLabel,
       );
       final repo = ref.read(investmentRepositoryProvider);
 
@@ -319,6 +322,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     currency: existing.currency,
     currentValue: value,
     currentValueDate: date,
+    customTypeId: existing.customTypeId,
+    customTypeLabel: existing.customTypeLabel,
   );
 
   /// Close an investment

@@ -65,8 +65,9 @@ abstract final class CustomTypeCatalog {
     required DateTime now,
   }) {
     final label = CustomTypeLabel.clean(raw);
-    if (label.isEmpty)
+    if (label.isEmpty) {
       return const CustomTypeChange.refused(CustomTypeIssue.blank);
+    }
     if (CustomTypeLabel.exceedsMaxLength(label)) {
       return const CustomTypeChange.refused(CustomTypeIssue.tooLong);
     }
@@ -108,8 +109,9 @@ abstract final class CustomTypeCatalog {
       return const CustomTypeChange.refused(CustomTypeIssue.notFound);
     }
     final label = CustomTypeLabel.clean(raw);
-    if (label.isEmpty)
+    if (label.isEmpty) {
       return const CustomTypeChange.refused(CustomTypeIssue.blank);
+    }
     if (CustomTypeLabel.exceedsMaxLength(label)) {
       return const CustomTypeChange.refused(CustomTypeIssue.tooLong);
     }
