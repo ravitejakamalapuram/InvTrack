@@ -17,6 +17,7 @@ InvTrack is a Flutter + Firebase (Firestore, Auth, Analytics, Crashlytics) Andro
 Follow `.augment/rules/invtrack_rules.md`: layer boundaries, Riverpod patterns, offline-first Firestore, localisation, accessibility, privacy mode and analytics privacy. Read the sections that apply to your change. Where that file and this one disagree, this file wins, because it records later decisions.
 
 - Feature flags: build a new feature behind a `FeatureFlag` as the rules say. Shipping it means changing the flag's default in code in a release PR. Production behaviour must never depend on the hidden debug menu.
+- Skills: whenever you write or change code, also use the Engineering plugin skills that fit the step: `engineering:architecture` or `engineering:system-design` before building a feature, `engineering:testing-strategy` before writing its tests, `engineering:debug` for a bug, and `engineering:code-review` before a PR is ready. Use the blocks skills for design: `design-with-blocks` to design a new feature and `review-with-blocks` to review that design. Give the same instruction to every subagent that writes code. If a plugin is not installed, follow the same steps by hand.
 
 ## Money and data rules
 

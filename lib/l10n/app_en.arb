@@ -6542,5 +6542,15 @@
   "incomeGuardianSettingsSubtitle": "Automated income tracking and payment alerts",
   "@incomeGuardianSettingsSubtitle": {
     "description": "Subtitle of the Income Guardian tile in Settings"
+  },
+  "cashFlowAmountRoundsToZero": "This amount rounds to zero in {currency}. Enter a larger amount.",
+  "@cashFlowAmountRoundsToZero": {
+    "description": "Add or edit cash flow: validation error for a positive amount that is smaller than the smallest unit of the selected currency, so it would be saved as zero",
+    "placeholders": {
+      "currency": {
+        "type": "String",
+        "example": "JPY"
+      }
+    }
   }
 }

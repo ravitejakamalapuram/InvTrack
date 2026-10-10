@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_notifier.dart';
@@ -61,6 +62,50 @@ void main() {
       expect(repo.cashFlows.single.currency, 'INR');
     });
 
+    test('addCashFlow rounds using the selected currency precision', () async {
+      await notifier().addCashFlow(
+        investmentId: 'inv-1',
+        type: CashFlowType.income,
+        amount: 1.005,
+        date: DateTime(2024, 1, 15),
+        currency: 'INR',
+      );
+
+      expect(repo.cashFlows.single.amount, 1.01);
+    });
+
+    test('rejects non-finite cash-flow amounts before persistence', () async {
+      for (final amount in [double.nan, double.infinity]) {
+        await expectLater(
+          notifier().addCashFlow(
+            investmentId: 'inv-1',
+            type: CashFlowType.income,
+            amount: amount,
+            date: DateTime(2024, 1, 15),
+            currency: 'INR',
+          ),
+          throwsA(isA<ValidationException>()),
+        );
+      }
+
+      expect(repo.cashFlows, isEmpty);
+    });
+
+    test('rejects a positive amount that rounds to zero minor units', () async {
+      await expectLater(
+        notifier().addCashFlow(
+          investmentId: 'inv-1',
+          type: CashFlowType.income,
+          amount: 0.4,
+          date: DateTime(2024, 1, 15),
+          currency: 'JPY',
+        ),
+        throwsA(isA<ValidationException>()),
+      );
+
+      expect(repo.cashFlows, isEmpty);
+    });
+
     test('updateCashFlow without a currency uses the base currency', () async {
       await repo.addCashFlow(
         CashFlowEntity(
@@ -85,6 +130,134 @@ void main() {
 
       expect(repo.cashFlows.single.currency, 'INR');
     });
+
+    test(
+      'updateCashFlow rounds zero-decimal currencies to whole units',
+      () async {
+        await repo.addCashFlow(
+          CashFlowEntity(
+            id: 'jpy-flow',
+            investmentId: 'inv-1',
+            type: CashFlowType.income,
+            amount: 100,
+            date: DateTime(2024, 1, 15),
+            createdAt: DateTime(2024, 1, 15),
+            currency: 'JPY',
+          ),
+        );
+
+        await notifier().updateCashFlow(
+          id: 'jpy-flow',
+          investmentId: 'inv-1',
+          type: CashFlowType.income,
+          amount: 125.6,
+          date: DateTime(2024, 1, 15),
+          createdAt: DateTime(2024, 1, 15),
+          currency: 'JPY',
+        );
+
+        expect(repo.cashFlows.single.amount, 126);
+        expect(repo.cashFlows.single.currency, 'JPY');
+      },
+    );
+
+    group('updateCashFlow validation keeps the stored cash flow', () {
+      setUp(() async {
+        await repo.addCashFlow(
+          CashFlowEntity(
+            id: 'jpy-flow',
+            investmentId: 'inv-1',
+            type: CashFlowType.income,
+            amount: 100,
+            date: DateTime(2024, 1, 15),
+            createdAt: DateTime(2024, 1, 15),
+            currency: 'JPY',
+          ),
+        );
+      });
+
+      Future<void> update(double amount) => notifier().updateCashFlow(
+        id: 'jpy-flow',
+        investmentId: 'inv-1',
+        type: CashFlowType.income,
+        amount: amount,
+        date: DateTime(2024, 1, 15),
+        createdAt: DateTime(2024, 1, 15),
+        currency: 'JPY',
+      );
+
+      test(
+        'rejects a positive amount that rounds to zero minor units',
+        () async {
+          await expectLater(update(0.4), throwsA(isA<ValidationException>()));
+
+          expect(repo.cashFlows.single.amount, 100);
+        },
+      );
+
+      test('rejects non-finite amounts', () async {
+        for (final amount in [double.nan, double.infinity]) {
+          await expectLater(
+            update(amount),
+            throwsA(isA<ValidationException>()),
+          );
+        }
+
+        expect(repo.cashFlows.single.amount, 100);
+      });
+    });
+  });
+
+  // Stored data can carry a blank currency. It must fail visibly with a
+  // ValidationException (money rule 1), never default to USD or the base
+  // currency, and never leak MoneyPrecision's ArgumentError to the screen.
+  group('a blank currency is rejected, not defaulted', () {
+    CashFlowEntity stored() => CashFlowEntity(
+      id: 'cf-1',
+      investmentId: 'inv-1',
+      type: CashFlowType.invest,
+      amount: 50000,
+      date: DateTime(2024, 1, 15),
+      createdAt: DateTime(2024, 1, 15),
+      currency: 'INR',
+    );
+
+    for (final blank in ['', '   ']) {
+      test('addCashFlow rejects currency "$blank"', () async {
+        await expectLater(
+          notifier().addCashFlow(
+            investmentId: 'inv-1',
+            type: CashFlowType.invest,
+            amount: 100,
+            date: DateTime(2024, 1, 15),
+            currency: blank,
+          ),
+          throwsA(isA<ValidationException>()),
+        );
+
+        expect(repo.cashFlows, isEmpty);
+      });
+
+      test('updateCashFlow rejects currency "$blank"', () async {
+        await repo.addCashFlow(stored());
+
+        await expectLater(
+          notifier().updateCashFlow(
+            id: 'cf-1',
+            investmentId: 'inv-1',
+            type: CashFlowType.invest,
+            amount: 100,
+            date: DateTime(2024, 1, 15),
+            createdAt: DateTime(2024, 1, 15),
+            currency: blank,
+          ),
+          throwsA(isA<ValidationException>()),
+        );
+
+        expect(repo.cashFlows.single.amount, 50000);
+        expect(repo.cashFlows.single.currency, 'INR');
+      });
+    }
   });
 
   group('mergeInvestments', () {
