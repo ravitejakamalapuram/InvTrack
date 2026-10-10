@@ -222,7 +222,7 @@ class DataImportService {
           _valuationsWarning,
           warnings,
           damagedFiles,
-          (text) => _parseValuationsCsv(text, warnings, strict: isReplace),
+          (text) => _parseValuationsCsv(text, warnings),
         ) ??
         <(bool, String), List<_ImportedValuation>>{};
     final cashflowsArchived = _readParsed(
@@ -736,21 +736,20 @@ class DataImportService {
   /// and Investment Status columns read as manual carrying values. A bad row
   /// is skipped with a warning that holds no amount; an unknown kind or
   /// source is never reinterpreted, and an estimate is never stored. Null if
-  /// the file as a whole cannot be read. A [strict] parse (Replace) also
-  /// rejects a file that is empty, or whose rows are all bad: it has nothing
-  /// to restore, like a goals.csv in the same state.
+  /// the file is damaged: it cannot be read as a whole, is empty, or has bad
+  /// rows and no good one (nothing to restore, like a goals.csv in the same
+  /// state). Then no row warning is added: the caller reports the file alone.
   Map<(bool, String), List<_ImportedValuation>>? _parseValuationsCsv(
     String content,
-    List<String> warnings, {
-    required bool strict,
-  }) {
+    List<String> warnings,
+  ) {
     final List<List<dynamic>> rows;
     try {
       rows = csv.decode(content);
     } catch (_) {
       return null;
     }
-    if (rows.isEmpty) return strict ? null : {};
+    if (rows.isEmpty) return null;
 
     final header = [for (final h in rows.first) h.toString().trim()];
     final nameCol = header.indexOf('Investment Name');
@@ -771,7 +770,7 @@ class DataImportService {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final result = <(bool, String), List<_ImportedValuation>>{};
-    var badRows = 0;
+    final rowWarnings = <String>[];
     for (var i = 1; i < rows.length; i++) {
       final row = rows[i];
       String cell(int col) =>
@@ -801,8 +800,7 @@ class DataImportService {
           kind == null ||
           provenance == null ||
           provenance == ValuationProvenance.estimate) {
-        warnings.add('Current value of "$name" not imported: invalid row');
-        badRows++;
+        rowWarnings.add('Current value of "$name" not imported: invalid row');
         continue;
       }
       final type = cell(typeCol);
@@ -830,7 +828,9 @@ class DataImportService {
             ),
           );
     }
-    return strict && result.isEmpty && badRows > 0 ? null : result;
+    if (result.isEmpty && rowWarnings.isNotEmpty) return null;
+    warnings.addAll(rowWarnings);
+    return result;
   }
 
   /// The snapshots of the investment [investmentId], from the [rows] that

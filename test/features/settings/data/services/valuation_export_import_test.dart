@@ -517,12 +517,16 @@ void main() {
   });
 
   group('rows that cannot be trusted are skipped (plan test 15)', () {
-    Future<ZipImportResult> importRows(String rows) => importZip(
+    Future<ZipImportResult> importRows(
+      String rows, {
+      ImportStrategy strategy = ImportStrategy.replace,
+    }) => importZip(
       _zip({
         'cashflows.csv':
             '${_cashFlowsHeader}2025-10-01,SGB 2031,INVEST,100000,INR,,gold,open\n',
         'valuations.csv': '$_newHeader$rows',
       }),
+      strategy: strategy,
     );
 
     test('with warnings that hold no amount', () async {
@@ -575,24 +579,78 @@ void main() {
       expect(result.warnings, isNotEmpty);
     });
 
-    test('a blank currency never reaches money rounding', () async {
+    // A file with nothing usable in it is damaged (#956): Merge skips it with
+    // one warning, Replace stops before it deletes anything.
+    const damaged =
+        'Backup not imported: valuations.csv is damaged. Your existing data '
+        'was not changed.';
+    const skipped = 'Current values not imported: valuations.csv is invalid';
+    const blankCurrency =
+        'SGB 2031,false,2026-01-01,100,,,carryingValue,manual,,gold,open\n';
+    final noHeader = _zip({
+      'cashflows.csv':
+          '${_cashFlowsHeader}2025-10-01,SGB 2031,INVEST,100000,INR,,gold,open\n',
+      'valuations.csv': 'Name,Value\nSGB 2031,5\n',
+    });
+
+    // What the account holds before a Replace that must not touch it.
+    void seedAccount() {
+      repo.seed(investments: [testInvestment('kept')]);
+      valuations.docs['kept-snap'] = testSnapshot(
+        'kept-snap',
+        investmentId: 'kept',
+        amount: 100,
+        date: DateTime(2026, 1, 1),
+      );
+    }
+
+    void expectAccountKept() {
+      expect(repo.investments.map((i) => i.id), ['kept']);
+      expect(valuations.docs.keys, ['kept-snap']);
+      expect(valuations.log, isEmpty);
+    }
+
+    test('a blank currency never reaches money rounding (Merge)', () async {
       final result = await importRows(
-        'SGB 2031,false,2026-01-01,100,,,carryingValue,manual,,gold,open\n',
+        blankCurrency,
+        strategy: ImportStrategy.merge,
       );
       expect(result.errors, isEmpty);
+      expect(result.warnings, [skipped]);
       expect(await imported(), isEmpty);
     });
 
-    test('a file with no usable header leaves the values out', () async {
+    test('a blank currency stops a Replace', () async {
+      seedAccount();
       final result = await importZip(
         _zip({
           'cashflows.csv':
               '${_cashFlowsHeader}2025-10-01,SGB 2031,INVEST,100000,INR,,gold,open\n',
-          'valuations.csv': 'Name,Value\nSGB 2031,5\n',
+          'valuations.csv': '$_newHeader$blankCurrency',
         }),
       );
-      expect(result.warnings, isNotEmpty);
-      expect(await imported(), isEmpty);
+      expect(result.errors, [damaged]);
+      expectAccountKept();
+    });
+
+    test(
+      'a file with no usable header leaves the values out (Merge)',
+      () async {
+        final result = await importZip(
+          noHeader,
+          strategy: ImportStrategy.merge,
+        );
+        expect(result.errors, isEmpty);
+        expect(result.warnings, [skipped]);
+        expect(await imported(), isEmpty);
+      },
+    );
+
+    test('a file with no usable header stops a Replace', () async {
+      seedAccount();
+      final result = await importZip(noHeader);
+      expect(result.errors, [damaged]);
+      expectAccountKept();
     });
   });
 
