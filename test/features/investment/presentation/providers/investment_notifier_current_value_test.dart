@@ -73,17 +73,37 @@ void main() {
     expect(saved.currentValueDate, DateTime(2026, 10, 1));
   });
 
-  test('rounds a current value to the investment currency minor unit', () async {
-    repo.seed(investments: [_gold(currency: 'JPY')]);
+  test(
+    'rounds a current value to the investment currency minor unit',
+    () async {
+      repo.seed(investments: [_gold(currency: 'JPY')]);
+
+      await notifier.setCurrentValue(
+        id: 'gold',
+        value: 125.6,
+        date: DateTime(2026, 10, 1),
+      );
+
+      final saved = (await repo.getInvestmentById('gold'))!;
+      expect(saved.currentValue, 126, reason: 'JPY has zero minor-unit digits');
+    },
+  );
+
+  test('rounds a three-decimal currency to the thousandth', () async {
+    repo.seed(investments: [_gold(currency: 'KWD')]);
 
     await notifier.setCurrentValue(
       id: 'gold',
-      value: 125.6,
+      value: 1.2345,
       date: DateTime(2026, 10, 1),
     );
 
     final saved = (await repo.getInvestmentById('gold'))!;
-    expect(saved.currentValue, 126, reason: 'JPY has zero minor-unit digits');
+    expect(
+      saved.currentValue,
+      1.235,
+      reason: 'KWD has three minor-unit digits',
+    );
   });
 
   test('clearing the value removes it', () async {

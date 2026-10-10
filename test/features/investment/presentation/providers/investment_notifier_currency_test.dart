@@ -131,31 +131,80 @@ void main() {
       expect(repo.cashFlows.single.currency, 'INR');
     });
 
-    test('updateCashFlow rounds zero-decimal currencies to whole units', () async {
-      await repo.addCashFlow(
-        CashFlowEntity(
+    test(
+      'updateCashFlow rounds zero-decimal currencies to whole units',
+      () async {
+        await repo.addCashFlow(
+          CashFlowEntity(
+            id: 'jpy-flow',
+            investmentId: 'inv-1',
+            type: CashFlowType.income,
+            amount: 100,
+            date: DateTime(2024, 1, 15),
+            createdAt: DateTime(2024, 1, 15),
+            currency: 'JPY',
+          ),
+        );
+
+        await notifier().updateCashFlow(
           id: 'jpy-flow',
           investmentId: 'inv-1',
           type: CashFlowType.income,
-          amount: 100,
+          amount: 125.6,
           date: DateTime(2024, 1, 15),
           createdAt: DateTime(2024, 1, 15),
           currency: 'JPY',
-        ),
-      );
+        );
 
-      await notifier().updateCashFlow(
+        expect(repo.cashFlows.single.amount, 126);
+        expect(repo.cashFlows.single.currency, 'JPY');
+      },
+    );
+
+    group('updateCashFlow validation keeps the stored cash flow', () {
+      setUp(() async {
+        await repo.addCashFlow(
+          CashFlowEntity(
+            id: 'jpy-flow',
+            investmentId: 'inv-1',
+            type: CashFlowType.income,
+            amount: 100,
+            date: DateTime(2024, 1, 15),
+            createdAt: DateTime(2024, 1, 15),
+            currency: 'JPY',
+          ),
+        );
+      });
+
+      Future<void> update(double amount) => notifier().updateCashFlow(
         id: 'jpy-flow',
         investmentId: 'inv-1',
         type: CashFlowType.income,
-        amount: 125.6,
+        amount: amount,
         date: DateTime(2024, 1, 15),
         createdAt: DateTime(2024, 1, 15),
         currency: 'JPY',
       );
 
-      expect(repo.cashFlows.single.amount, 126);
-      expect(repo.cashFlows.single.currency, 'JPY');
+      test(
+        'rejects a positive amount that rounds to zero minor units',
+        () async {
+          await expectLater(update(0.4), throwsA(isA<ValidationException>()));
+
+          expect(repo.cashFlows.single.amount, 100);
+        },
+      );
+
+      test('rejects non-finite amounts', () async {
+        for (final amount in [double.nan, double.infinity]) {
+          await expectLater(
+            update(amount),
+            throwsA(isA<ValidationException>()),
+          );
+        }
+
+        expect(repo.cashFlows.single.amount, 100);
+      });
     });
   });
 

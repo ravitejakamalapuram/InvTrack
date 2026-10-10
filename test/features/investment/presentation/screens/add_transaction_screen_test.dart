@@ -107,4 +107,65 @@ void main() {
       expect(find.textContaining('₹'), findsNothing);
     });
   });
+
+  // The preview must show what will be stored: the amount rounded to the
+  // currency's minor unit (JPY none, INR two), not always two decimals.
+  group('AddTransactionScreen preview precision', () {
+    InvestmentEntity investment(String id, String currency) => InvestmentEntity(
+      id: id,
+      name: 'Deal $currency',
+      type: InvestmentType.bonds,
+      status: InvestmentStatus.open,
+      createdAt: DateTime(2024, 1, 1),
+      updatedAt: DateTime(2024, 1, 1),
+      currency: currency,
+    );
+
+    Future<void> enterAmount(
+      WidgetTester tester, {
+      required String currency,
+      required String text,
+    }) async {
+      tester.view.physicalSize = const Size(1080, 4000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final id = 'inv-$currency';
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currencyCodeProvider.overrideWithValue('INR'),
+            investmentByIdProvider(
+              id,
+            ).overrideWith((ref) async => investment(id, currency)),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AddTransactionScreen(investmentId: id),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Amount').first,
+        text,
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a JPY amount previews as whole yen', (tester) async {
+      await enterAmount(tester, currency: 'JPY', text: '125.6');
+
+      expect(find.text('-¥126'), findsOneWidget);
+      expect(find.text('-¥125.60'), findsNothing);
+    });
+
+    testWidgets('an INR amount previews rounded half away from zero', (
+      tester,
+    ) async {
+      await enterAmount(tester, currency: 'INR', text: '1.005');
+
+      expect(find.text('-₹1.01'), findsOneWidget);
+    });
+  });
 }

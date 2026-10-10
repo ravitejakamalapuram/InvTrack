@@ -527,7 +527,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     // Input validation
     _validateAmount(amount);
     _validateNotes(notes);
-    final flowCurrency = currency ?? ref.read(currencyCodeProvider);
+    final String flowCurrency = currency ?? ref.read(currencyCodeProvider);
     final roundedAmount = MoneyPrecision.round(
       amount,
       currencyCode: flowCurrency,
@@ -587,7 +587,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     // Input validation
     _validateAmount(amount);
     _validateNotes(notes);
-    final flowCurrency = currency ?? ref.read(currencyCodeProvider);
+    final String flowCurrency = currency ?? ref.read(currencyCodeProvider);
     final roundedAmount = MoneyPrecision.round(
       amount,
       currencyCode: flowCurrency,

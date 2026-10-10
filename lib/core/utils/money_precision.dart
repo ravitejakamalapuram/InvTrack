@@ -45,7 +45,11 @@ class MoneyPrecision {
   static int fractionDigitsFor(String currencyCode) {
     final code = currencyCode.trim().toUpperCase();
     if (code.isEmpty) {
-      throw ArgumentError.value(currencyCode, 'currencyCode', 'Must not be empty');
+      throw ArgumentError.value(
+        currencyCode,
+        'currencyCode',
+        'Must not be empty',
+      );
     }
     if (_zeroFractionCurrencies.contains(code)) return 0;
     if (_threeFractionCurrencies.contains(code)) return 3;
@@ -59,6 +63,10 @@ class MoneyPrecision {
   ///
   /// Do not use this for intermediate interest/compounding steps. Round at
   /// defined input, persistence, reconciliation, or output boundaries only.
+  ///
+  /// Throws [ArgumentError] for a non-finite [amount] or a blank
+  /// [currencyCode], so validate both first. Pure calculators must not call
+  /// this: stored data can be bad, and a calculator must never throw on it.
   static double round(double amount, {required String currencyCode}) {
     if (!amount.isFinite) {
       throw ArgumentError.value(amount, 'amount', 'Must be finite');
@@ -73,9 +81,7 @@ class MoneyPrecision {
         : 0;
     final coefficientParts = coefficient.split('.');
     final whole = coefficientParts.first;
-    final fraction = coefficientParts.length == 2
-        ? coefficientParts.last
-        : '';
+    final fraction = coefficientParts.length == 2 ? coefficientParts.last : '';
     final digits = BigInt.parse('$whole$fraction');
     final decimalPlaces = fraction.length - exponent;
     final shift = fractionDigits - decimalPlaces;

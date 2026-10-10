@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
@@ -19,6 +18,9 @@ enum ValuationSource {
 
 /// A dated current value of one investment, in [currency].
 class InvestmentValuation {
+  /// Not rounded: it is an input to XIRR, MOIC and return %. Round to the
+  /// currency's minor unit (`MoneyPrecision`) only when a value is stored or
+  /// shown.
   final double amount;
 
   /// Currency of [amount]: the investment's for a manual value, the
@@ -212,10 +214,7 @@ class CurrentValueCalculator {
         amount += cf.type == CashFlowType.invest ? grown : -grown;
       }
       return InvestmentValuation(
-        amount: MoneyPrecision.round(
-          math.max(0, amount),
-          currencyCode: currency,
-        ),
+        amount: math.max(0, amount),
         currency: currency,
         date: date,
         source: ValuationSource.accruedInterest,
@@ -224,10 +223,7 @@ class CurrentValueCalculator {
     }
 
     return InvestmentValuation(
-      amount: MoneyPrecision.round(
-        math.max(0, _principalChange(flows)),
-        currencyCode: currency,
-      ),
+      amount: math.max(0, _principalChange(flows)),
       currency: currency,
       date: date,
       source: ValuationSource.outstandingPrincipal,
@@ -323,10 +319,7 @@ class CurrentValueCalculator {
     ];
     if (later.any((cf) => cf.currency != investment.currency)) return null;
     return InvestmentValuation(
-      amount: MoneyPrecision.round(
-        math.max(0, investment.currentValue! + _principalChange(later)),
-        currencyCode: investment.currency,
-      ),
+      amount: math.max(0, investment.currentValue! + _principalChange(later)),
       currency: investment.currency,
       date: lastFlow.isAfter(date) ? lastFlow : date,
       source: ValuationSource.manual,

@@ -190,7 +190,9 @@ void main() {
   });
 
   group('Estimated current value', () {
-    test('manual valuation rounds using the investment currency precision', () {
+    // Valuations are metric inputs (XIRR, MOIC, return %): rounding to the
+    // minor unit happens when a value is stored or shown, never here.
+    test('a manual valuation is passed on to the metrics unrounded', () {
       final jpyGold = _investment(
         'jpy-gold',
         InvestmentType.gold,
@@ -208,8 +210,78 @@ void main() {
         ),
       ], asOf: _today)!;
 
-      expect(valuation.amount, 126);
+      expect(valuation.amount, closeTo(125.6, 1e-6));
       expect(valuation.currency, 'JPY');
+    });
+
+    test('an accrued valuation keeps its fractional minor units', () {
+      final valuation = CurrentValueCalculator.valuationOf(_fdS1, [
+        _flow('s1', CashFlowType.invest, 100000, DateTime(2025, 10, 2)),
+      ], asOf: _today)!;
+
+      expect(valuation.amount, closeTo(107185.903129, 1e-6));
+    });
+
+    test('an outstanding-principal valuation is not rounded', () {
+      final p2p = _investment('jpy-p2p', InvestmentType.p2pLending);
+      final valuation = CurrentValueCalculator.valuationOf(p2p, [
+        _flow(
+          'jpy-p2p',
+          CashFlowType.invest,
+          100.4,
+          DateTime(2026, 1, 1),
+          currency: 'JPY',
+        ),
+      ], asOf: _today)!;
+
+      expect(valuation.amount, closeTo(100.4, 1e-6));
+    });
+
+    test('bad stored data never makes a calculator throw', () {
+      final p2p = _investment('bad-p2p', InvestmentType.p2pLending);
+      final fd = _investment(
+        'bad-fd',
+        InvestmentType.fixedDeposit,
+        rate: 7,
+        compounding: CompoundingFrequency.quarterly,
+        payout: InterestPayoutMode.cumulative,
+      );
+      final badFlows = [
+        for (final (id, amount, currency) in [
+          ('bad-p2p', double.nan, 'INR'),
+          ('bad-p2p', double.infinity, 'INR'),
+          ('bad-p2p', 100.0, ''),
+          ('bad-fd', double.nan, 'INR'),
+          ('bad-fd', 100000.0, ' '),
+        ])
+          _flow(
+            id,
+            CashFlowType.invest,
+            amount,
+            DateTime(2026, 1, 1),
+            currency: currency,
+          ),
+      ];
+
+      for (final flow in badFlows) {
+        final investment = flow.investmentId == 'bad-fd' ? fd : p2p;
+        expect(
+          () => CurrentValueCalculator.valuationOf(investment, [
+            flow,
+          ], asOf: _today),
+          returnsNormally,
+          reason: '${flow.investmentId} ${flow.amount} "${flow.currency}"',
+        );
+        expect(
+          () => CurrentValueCalculator.terminalValues(
+            investments: [investment],
+            cashFlows: [flow],
+            asOf: _today,
+          ),
+          returnsNormally,
+          reason: '${flow.investmentId} ${flow.amount} "${flow.currency}"',
+        );
+      }
     });
 
     test('₹1,00,000 @7% quarterly accrues by actual/365 days', () {

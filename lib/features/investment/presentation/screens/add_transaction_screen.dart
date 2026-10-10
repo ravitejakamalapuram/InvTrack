@@ -16,6 +16,7 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
+import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
 import 'package:inv_tracker/core/widgets/currency_selector.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
@@ -437,15 +438,24 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         ListenableBuilder(
                           listenable: _amountController,
                           builder: (context, _) {
-                            final amount =
+                            final typed =
                                 double.tryParse(_amountController.text) ?? 0;
-                            // Format with prefix and proper currency formatting
+                            // Show the amount as it will be stored: rounded
+                            // to the currency's minor unit, not always 2 dp.
+                            final amount = typed.isFinite
+                                ? MoneyPrecision.round(
+                                    typed,
+                                    currencyCode: _selectedCurrency,
+                                  )
+                                : 0.0;
                             final prefix = _selectedType.isOutflow ? '-' : '+';
                             final formattedAmount = formatCurrency(
                               amount,
                               currencySymbol,
                               currencyLocale,
-                              decimalDigits: 2,
+                              decimalDigits: MoneyPrecision.fractionDigitsFor(
+                                _selectedCurrency,
+                              ),
                             );
                             final color = _selectedType.isOutflow
                                 ? (isDark
