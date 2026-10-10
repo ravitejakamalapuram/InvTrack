@@ -49,7 +49,7 @@ See [LOCALIZATION.md](docs/LOCALIZATION.md) for detailed documentation.
 - **Retirement Planning** - Track progress towards early retirement with realistic goals
 
 ### 🔔 Smart Notifications
-- Investment milestones (10x, 50x, 100x returns)
+- Investment milestones (1.5x, 2x, 3x, 5x, 10x of invested capital)
 - Goal progress alerts (25%, 50%, 75%, 100%)
 - Stale investment warnings
 - Goal at-risk notifications
@@ -127,7 +127,7 @@ Seeing the source does not grant a licence to use it (see [License](#-license)).
 
 ## 📱 Get the App
 
-InvTrack is live on Google Play: [play.google.com/store/apps/details?id=com.invtracker.inv_tracker](https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker). The listing has the current screenshots.
+InvTrack is live on Google Play: [play.google.com/store/apps/details?id=com.invtracker.inv_tracker](https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker).
 
 ---
 
@@ -197,7 +197,7 @@ flutter test integration_test/app_test.dart
 ```
 
 **Test Stats:**
-- ✅ More than 3,000 automated tests run on every pull request (`flutter test --exclude-tags=golden`)
+- ✅ Thousands of automated tests run on every pull request (`flutter test --exclude-tags=golden`)
 - ✅ Static analysis runs in CI with warnings treated as errors (`flutter analyze --fatal-warnings`)
 - ✅ Golden tests for theme and widgets run only in the nightly workflow ([`nightly.yml`](.github/workflows/nightly.yml)), not on pull requests
 - ✅ Critical integration flows run nightly on an Android emulator

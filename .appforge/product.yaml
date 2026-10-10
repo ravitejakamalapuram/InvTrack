@@ -65,8 +65,9 @@ notes: |
     Firestore; there is no Sheets integration). Until the corrected text is published, the live
     policy may understate data collection.
   - Account deletion: the in-app request wipes the account's Firestore collections (including
-    expectedCashFlows and document metadata) and this device's local data, and the processing
-    job in scripts/account-deletion finishes it server-side (AccountDataDeletionService).
+    expectedCashFlows and document metadata) and this device's local data
+    (AccountDataDeletionService). The processing job in scripts/account-deletion is written and
+    tested, but the workflow that runs it is not merged yet, so do not rely on it for deletions.
   - Only the app-lock PIN is encrypted (PBKDF2); Firestore data itself is not additionally
     encrypted at the app layer (relies on Firebase's transport/at-rest encryption).
   - AdMob code is present but dormant in release builds (SDK never started, test ad unit IDs,

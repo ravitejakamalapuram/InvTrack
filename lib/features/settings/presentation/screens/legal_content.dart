@@ -34,13 +34,13 @@ Last updated: September 27, 2026
    By using our mobile application, you agree to be bound by these Terms of Service.
 
 2. **Intellectual Property**
-   The Service and its original content, features, and functionality are the exclusive property of InvTracker.
+   The Service and its original content, features, and functionality are the exclusive property of InvTrack.
 
 3. **Disclaimer**
    Your use of the Service is at your sole risk. The Service is provided on an "AS IS" and "AS AVAILABLE" basis without warranties of any kind.
 
 4. **Investment Advice**
-   InvTracker is a tracking tool only. We do not provide financial, investment, or tax advice. Always consult with qualified professionals.
+   InvTrack is a tracking tool only. We do not provide financial, investment, or tax advice. Always consult with qualified professionals.
 
 5. **Governing Law**
    These Terms shall be governed by the laws of India.

@@ -13,14 +13,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 String _read(String path) => File(path).readAsStringSync();
 
-/// Dart files under lib/ that may still say "InvTracker" in a string until the
-/// privacy PR (review/a102-privacy-deletion) rewrites the legal text.
-const _legalTextOwnedByPrivacyPr = {
-  'lib/features/settings/presentation/screens/legal_content.dart',
-};
-
-/// ARB keys that may still say "InvTracker" until the privacy PR rewrites them.
-const _arbKeysOwnedByPrivacyPr = {'privacyPolicyBody'};
+/// True when [text] spells the old app name in any quoting or case. The class
+/// name `InvTrackerApp` is allowed (users never see it). Lower-case
+/// `invtracker` alone is not matched: it is part of the package id and the
+/// support domain.
+bool _mentionsOldAppName(String text) =>
+    RegExp(r'InvTracker(?!App\b)').hasMatch(text) ||
+    RegExp(r'Inv(?:estment)?\s+Tracker', caseSensitive: false).hasMatch(text);
 
 String _pubspecVersion() {
   final match = RegExp(
@@ -87,13 +86,49 @@ void main() {
 
     test('says golden tests run in the nightly job, not in PR checks', () {
       final readme = _read('README.md');
-      final golden = RegExp(r'golden', caseSensitive: false).allMatches(readme);
-      expect(golden, isNotEmpty);
-      expect(readme.toLowerCase(), contains('nightly'));
+      // The claim is only true while nightly.yml really runs them.
+      expect(
+        _read('.github/workflows/nightly.yml'),
+        contains('flutter test --tags golden'),
+      );
+      final claim = readme
+          .split('\n')
+          .where((l) => RegExp(r'golden', caseSensitive: false).hasMatch(l))
+          .where((l) => l.contains('nightly.yml') && l.contains('not on pull'));
+      expect(claim, isNotEmpty, reason: 'README golden-tests claim');
     });
 
-    test('does not quote a stale unit-test count', () {
-      expect(_read('README.md'), isNot(contains('868')));
+    test('does not quote a test count that will go stale', () {
+      final readme = _read('README.md');
+      expect(readme, isNot(contains('868')));
+      final counts = RegExp(
+        r'\d[\d,]*\+?\s+(?:automated\s+|unit\s+)?tests',
+        caseSensitive: false,
+      ).allMatches(readme).map((m) => m.group(0));
+      expect(counts, isEmpty, reason: 'hard-coded test count in README');
+    });
+
+    test('milestone notifications in the feature list match the app', () {
+      final source = _read(
+        'lib/core/notifications/handlers/investment_notification_handler.dart',
+      );
+      final constant = RegExp(
+        r'standardMilestones\s*=\s*\[([^\]]*)\]',
+      ).firstMatch(source);
+      expect(constant, isNotNull, reason: 'standardMilestones moved');
+      final inApp = [
+        for (final s in constant!.group(1)!.split(','))
+          if (s.trim().isNotEmpty) double.parse(s.trim()),
+      ];
+      final line = RegExp(
+        r'Investment milestones \(([^)]*)\)',
+      ).firstMatch(_read('README.md'));
+      expect(line, isNotNull, reason: 'README has no milestones line');
+      final inReadme = [
+        for (final m in RegExp(r'(\d+(?:\.\d+)?)x').allMatches(line!.group(1)!))
+          double.parse(m.group(1)!),
+      ];
+      expect(inReadme, inApp);
     });
 
     test('every relative link resolves to a file or folder', () {
@@ -137,6 +172,34 @@ void main() {
         expect(metadata, isNot(contains('platform: $platform')));
       }
     });
+
+    test('firebase.json configures android and ios only', () {
+      final flutter =
+          (jsonDecode(_read('firebase.json'))
+                  as Map<String, dynamic>)['flutter']
+              as Map<String, dynamic>;
+      final platforms = flutter['platforms'] as Map<String, dynamic>;
+      final dart = platforms['dart'] as Map<String, dynamic>;
+      final configurations = [
+        for (final file in dart.values)
+          ...((file as Map<String, dynamic>)['configurations']
+                  as Map<String, dynamic>)
+              .keys,
+      ];
+      expect(
+        [...platforms.keys.where((k) => k != 'dart'), ...configurations]
+          ..sort(),
+        ['android', 'android', 'ios', 'ios'],
+        reason: 'firebase.json still names a removed platform',
+      );
+    });
+
+    test('.gitleaks.toml no longer allowlists files of removed platforms', () {
+      final gitleaks = _read('.gitleaks.toml');
+      for (final folder in ['macos/', 'windows/', 'web/', 'linux/']) {
+        expect(gitleaks, isNot(contains(folder)), reason: folder);
+      }
+    });
   });
 
   group('one name: InvTrack', () {
@@ -178,36 +241,60 @@ void main() {
       for (final entity in Directory('lib').listSync(recursive: true)) {
         if (entity is! File || !entity.path.endsWith('.dart')) continue;
         final path = entity.path.replaceAll(r'\', '/');
-        if (path.startsWith('lib/l10n/generated/') ||
-            _legalTextOwnedByPrivacyPr.contains(path)) {
-          continue;
-        }
+        if (path.startsWith('lib/l10n/generated/')) continue;
         final lines = entity.readAsLinesSync();
         for (var i = 0; i < lines.length; i++) {
           final line = lines[i];
           if (line.trimLeft().startsWith('//')) continue;
-          // InvTrackerApp is a class name, not text a user sees.
-          if (RegExp(r'InvTracker(?!App\b)').hasMatch(line) ||
-              line.contains("'Investment Tracker'")) {
-            offenders.add('$path:${i + 1}');
+          if (_mentionsOldAppName(line)) offenders.add('$path:${i + 1}');
+        }
+      }
+      expect(offenders, isEmpty, reason: 'old app name in $offenders');
+    });
+
+    test('no localised string says the old app name', () {
+      final offenders = <String>[];
+      for (final entity in Directory('lib/l10n').listSync()) {
+        if (entity is! File || !entity.path.endsWith('.arb')) continue;
+        final arb =
+            jsonDecode(entity.readAsStringSync()) as Map<String, dynamic>;
+        for (final entry in arb.entries) {
+          final value = entry.value;
+          if (!entry.key.startsWith('@') &&
+              value is String &&
+              _mentionsOldAppName(value)) {
+            offenders.add('${entity.path}: ${entry.key}');
           }
         }
       }
       expect(offenders, isEmpty, reason: 'old app name in $offenders');
     });
 
-    test('no localised string says InvTracker', () {
-      final arb =
-          jsonDecode(_read('lib/l10n/app_en.arb')) as Map<String, dynamic>;
-      final offenders = [
-        for (final entry in arb.entries)
-          if (!entry.key.startsWith('@') &&
-              !_arbKeysOwnedByPrivacyPr.contains(entry.key) &&
-              entry.value is String &&
-              (entry.value as String).contains('InvTracker'))
-            entry.key,
-      ];
-      expect(offenders, isEmpty, reason: 'old app name in $offenders');
+    test('the old-name check catches every spelling and spares the rest', () {
+      for (final text in [
+        "'InvTracker'",
+        '"InvTracker"',
+        "'Investment Tracker'",
+        '"Investment Tracker"',
+        "'Welcome to Investment Tracker'",
+        "'Inv Tracker'",
+        "'investment tracker'",
+        "'INVESTMENT TRACKER'",
+        'InvTracker is a tracking tool only.',
+      ]) {
+        expect(_mentionsOldAppName(text), isTrue, reason: text);
+      }
+      for (final text in [
+        "'InvTrack'",
+        'class InvTrackerApp extends ConsumerWidget {',
+        'const InvTrackerApp()',
+        'support@invtracker.app',
+        'com.invtracker.inv_tracker',
+        "import 'package:inv_tracker/main.dart';",
+        'investment tracking for alternative assets',
+      ]) {
+        expect(_mentionsOldAppName(text), isFalse, reason: text);
+      }
     });
   });
 
@@ -289,6 +376,24 @@ void main() {
         isNot(contains('expectedCashFlows and document metadata are not')),
       );
     });
+
+    test(
+      'product.yaml says the deletion job runs only if a workflow runs it',
+      () {
+        final runsJob = Directory('.github/workflows')
+            .listSync()
+            .whereType<File>()
+            .any((f) => f.readAsStringSync().contains('run.mjs'));
+        final product = _read('.appforge/product.yaml');
+        if (!runsJob && product.contains('scripts/account-deletion')) {
+          expect(
+            product,
+            contains('workflow that runs it is not merged yet'),
+            reason: 'no workflow runs scripts/account-deletion/run.mjs',
+          );
+        }
+      },
+    );
 
     test('pubspec.yaml is the only place that hard-codes the app version', () {
       final version = _pubspecVersion();
