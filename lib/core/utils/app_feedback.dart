@@ -72,16 +72,25 @@ class AppFeedback {
     );
   }
 
-  /// Show a confirmation dialog for destructive actions
+  /// Show a confirmation dialog for destructive actions.
+  ///
+  /// [details] is shown under [message], for example what the action changes.
   static Future<bool> showConfirmDialog({
     required BuildContext context,
     required String title,
     required String message,
+    Widget? details,
     String confirmText = 'Delete',
     String cancelText = 'Cancel',
     bool isDestructive = true,
   }) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final messageText = Text(
+      message,
+      style: AppTypography.body.copyWith(
+        color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+      ),
+    );
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -96,14 +105,15 @@ class AppFeedback {
             color: isDark ? Colors.white : AppColors.neutral900Light,
           ),
         ),
-        content: Text(
-          message,
-          style: AppTypography.body.copyWith(
-            color: isDark
-                ? AppColors.neutral400Dark
-                : AppColors.neutral500Light,
-          ),
-        ),
+        content: details == null
+            ? messageText
+            : SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [messageText, const SizedBox(height: 16), details],
+                ),
+              ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

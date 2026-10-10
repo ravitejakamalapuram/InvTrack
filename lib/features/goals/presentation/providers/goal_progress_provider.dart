@@ -157,6 +157,79 @@ final multiCurrencyAllGoalsProgressProvider =
       return [for (final p in progress) ?p];
     }, retry: _noRetry);
 
+/// What archiving an investment does to one goal: its progress with the
+/// investment and without it.
+class GoalArchiveImpact {
+  final GoalEntity goal;
+  final GoalProgress before;
+  final GoalProgress after;
+
+  const GoalArchiveImpact({
+    required this.goal,
+    required this.before,
+    required this.after,
+  });
+}
+
+/// The active goals whose progress changes when [investmentId] is archived
+/// (money rule 9: archived investments are not counted), so that the archive
+/// dialog can say so before the user confirms.
+///
+/// Both sides come from [GoalProgressCalculator], with and without the
+/// investment, so they match the goal screens. A goal the investment does
+/// not feed, for example because it is closed, is not listed. A goal whose
+/// target has no exchange rate is left out, like in
+/// [multiCurrencyAllGoalsProgressProvider].
+final archiveGoalImpactProvider =
+    FutureProvider.family<List<GoalArchiveImpact>, String>((
+      ref,
+      investmentId,
+    ) async {
+      final goalsAsync = ref.watch(activeGoalsProvider);
+      final inputsAsync = ref.watch(goalPortfolioInputsProvider);
+
+      final goals = await dataOf(goalsAsync);
+      final inputs = await dataOf(inputsAsync);
+      if (!inputs.investments.any((inv) => inv.id == investmentId)) {
+        return const [];
+      }
+      final without = GoalPortfolioInputs(
+        investments: [
+          for (final inv in inputs.investments)
+            if (inv.id != investmentId) inv,
+        ],
+        cashFlows: inputs.cashFlows,
+        terminalValues: inputs.terminalValues,
+        baseCurrency: inputs.baseCurrency,
+        asOf: inputs.asOf,
+      );
+
+      final impacts = await Future.wait([
+        for (final goal in goals)
+          Future.wait([
+                _progressOf(goal, inputs, goals, _currencyOf(ref)),
+                _progressOf(goal, without, goals, _currencyOf(ref)),
+              ])
+              .then<GoalArchiveImpact?>(
+                // To the paisa: floating-point noise is not a change.
+                (both) =>
+                    (both[0].currentAmount - both[1].currentAmount).abs() <
+                        0.005
+                    ? null
+                    : GoalArchiveImpact(
+                        goal: goal,
+                        before: both[0],
+                        after: both[1],
+                      ),
+              )
+              .catchError(
+                (Object _) => null,
+                test: (e) => e is CurrencyConversionException,
+              ),
+      ]);
+      return [for (final impact in impacts) ?impact];
+    }, retry: _noRetry);
+
 /// An investment a goal tracks, as listed on the goal details screen.
 class LinkedGoalInvestment {
   final InvestmentEntity investment;

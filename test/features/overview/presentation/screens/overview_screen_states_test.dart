@@ -253,6 +253,53 @@ void main() {
   );
 
   testWidgets(
+    'an account whose investments are all archived sees why the totals are '
+    'empty, not the first-run onboarding (A17)',
+    (tester) async {
+      await _pumpOverview(
+        tester,
+        analytics: analytics,
+        investments: () => Stream.value(const []),
+        cashFlows: () => Stream.value(const []),
+        archivedInvestments: () => Stream.value([_investment]),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(OverviewEmptyState), findsNothing);
+      expect(find.text('All your investments are archived'), findsOneWidget);
+      expect(
+        find.text(
+          'Overview totals, goals and FIRE leave archived investments out, '
+          'so they show nothing for now. Your archived investments are '
+          'still in the Investments tab.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('View investments'), findsOneWidget);
+      // The hero says what it leaves out.
+      expect(find.text('Excludes 1 archived investment'), findsOneWidget);
+      expect(_emptyStateEvents(analytics), 0);
+    },
+  );
+
+  testWidgets(
+    'a new account still sees the onboarding and no all-archived card',
+    (tester) async {
+      await _pumpOverview(
+        tester,
+        analytics: analytics,
+        investments: () => Stream.value(const []),
+        cashFlows: () => Stream.value(const []),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(OverviewEmptyState), findsOneWidget);
+      expect(find.text('All your investments are archived'), findsNothing);
+      expect(find.textContaining('Excludes'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'when archived investments fail to load, an empty account shows the retry '
     'message, and Retry loads them again',
     (tester) async {
