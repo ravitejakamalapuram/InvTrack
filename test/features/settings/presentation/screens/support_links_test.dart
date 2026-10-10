@@ -254,6 +254,74 @@ void main() {
       expect(launched, [_canonicalDeletionUrl]);
     });
 
+    // Screen readers: both entry points are buttons named after the link and
+    // say that they open the browser, so nobody is surprised by leaving the app.
+    testWidgets('About tile is a button that says it opens the browser', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            packageInfoProvider.overrideWith((ref) async => packageInfo),
+          ],
+          child: _localized(const AboutScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(AboutScreen)),
+      );
+      final tile = find.widgetWithText(ListTile, l10n.deleteAccountOnTheWeb);
+      await tester.scrollUntilVisible(
+        tile,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(l10n.opensInBrowser, 'Opens in your browser');
+      expect(
+        tester.getSemantics(tile),
+        containsSemantics(
+          label: l10n.deleteAccountOnTheWeb,
+          hint: l10n.opensInBrowser,
+          isButton: true,
+          hasTapAction: true,
+        ),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('Help & FAQ link is a button that says it opens the browser', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        _localized(const HelpFaqScreen(showDeveloperFaq: true)),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(HelpFaqScreen)),
+      );
+      final link = find.byKey(const Key('delete_account_web_link'));
+      await tester.scrollUntilVisible(
+        link,
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(
+        tester.getSemantics(link),
+        containsSemantics(
+          label: l10n.deleteAccountOnTheWeb,
+          hint: l10n.opensInBrowser,
+          isButton: true,
+          hasTapAction: true,
+        ),
+      );
+      semantics.dispose();
+    });
+
     testWidgets('Help & FAQ shows the support constant', (tester) async {
       await tester.pumpWidget(
         _localized(const HelpFaqScreen(showDeveloperFaq: true)),

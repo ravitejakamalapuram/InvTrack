@@ -8,6 +8,18 @@ import 'package:inv_tracker/features/settings/presentation/screens/legal_content
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
+/// Hand-written Dart files under lib/ with their text, paths as `lib/...`.
+List<({String path, String source})> _libDartFiles() => [
+  for (final file in Directory('lib').listSync(recursive: true))
+    if (file is File &&
+        file.path.endsWith('.dart') &&
+        !file.path.contains('${Platform.pathSeparator}generated'))
+      (
+        path: file.path.replaceAll(Platform.pathSeparator, '/'),
+        source: file.readAsStringSync(),
+      ),
+];
+
 void main() {
   late String privacyPolicyContent;
 
@@ -116,6 +128,68 @@ void main() {
       }
     });
 
+    // The fixed list above can drift from the build. This one reads
+    // pubspec.yaml: any Google or Firebase SDK that ships must be named here
+    // (and so in the policy) before the test passes.
+    test('names every Google and Firebase SDK that ships in the build', () {
+      const named = {
+        'firebase_auth': 'Firebase Authentication',
+        'cloud_firestore': 'Cloud Firestore',
+        'firebase_analytics': 'Analytics',
+        'firebase_crashlytics': 'Crashlytics',
+        'firebase_performance': 'Performance Monitoring',
+        'google_sign_in': 'Google Sign-In',
+        'google_fonts': 'Google Fonts',
+        'google_mobile_ads': 'Google Mobile Ads',
+        'in_app_update': 'in-app update',
+        'in_app_review': 'review prompt',
+      };
+      // Plumbing with no data flow of its own.
+      const plumbing = {'firebase_core'};
+      final pubspec = File('pubspec.yaml').readAsStringSync();
+      final runtime = pubspec.substring(
+        pubspec.indexOf('\ndependencies:'),
+        pubspec.indexOf('\ndev_dependencies:'),
+      );
+      final shipped = RegExp(
+        r'^  ((?:firebase_|google_|cloud_|in_app_)\w+):',
+        multiLine: true,
+      ).allMatches(runtime).map((m) => m[1]!).toSet();
+      expect(
+        shipped.difference({...named.keys, ...plumbing}),
+        isEmpty,
+        reason: 'an SDK ships that the privacy policy does not name',
+      );
+      expect(
+        named.keys.toSet().difference(shipped),
+        isEmpty,
+        reason: 'the policy names an SDK that no longer ships: update this map',
+      );
+      for (final phrase in named.values) {
+        expect(privacyPolicyContent, contains(phrase));
+      }
+    });
+
+    test('says the ads library and advertising ID permission are present', () {
+      expect(privacyPolicyContent, contains('The app shows no ads.'));
+      expect(privacyPolicyContent, contains('Google Mobile Ads'));
+      expect(privacyPolicyContent, contains('advertising ID'));
+      final manifest = File(
+        'android/app/src/main/AndroidManifest.xml',
+      ).readAsStringSync();
+      expect(manifest, contains('com.google.android.gms.permission.AD_ID'));
+    });
+
+    test('says who shows the app-rating prompt', () {
+      expect(
+        privacyPolicyContent,
+        contains(
+          'Google Play shows and handles the review prompt; the app is not '
+          'told whether you left a review.',
+        ),
+      );
+    });
+
     test('names every exchange-rate host the currency service calls', () {
       final source = File(
         'lib/core/services/currency_conversion_service.dart',
@@ -158,12 +232,21 @@ void main() {
     });
 
     test('says what happens to analytics and crash data after deletion', () {
+      // True whether or not the deletion job asks Google Analytics to delete
+      // the events (it needs GA4_PROPERTY_ID and a scheduled live run), so
+      // the policy must not promise that request.
       expect(
         privacyPolicyContent,
         contains(
-          'We also ask Google Analytics to delete the events tied to your '
-          'user ID; Google carries this out on its own schedule.',
+          'Analytics events tied to your user ID are deleted automatically at '
+          'the end of Google\'s retention period. We may also ask Google to '
+          'delete them sooner; Google carries out any such request on its own '
+          'schedule.',
         ),
+      );
+      expect(
+        privacyPolicyContent,
+        isNot(contains('We also ask Google Analytics')),
       );
       expect(
         privacyPolicyContent,
@@ -199,47 +282,84 @@ void main() {
       expect(privacyPolicyContent, contains(supportEmailAddress));
     });
 
+    // The next two tests are heuristics: they catch the usual ways the
+    // statement would stop being true, not every possible way. They list what
+    // is allowed instead of what is forbidden, so a new call site fails until
+    // someone has read it and updated the policy.
     test('says plainly that analytics and crash reports cannot be turned '
         'off, for as long as that is true', () {
       expect(
         privacyPolicyContent,
         contains('There is currently no switch to turn off'),
       );
-      // The day a switch exists, the withdrawal text must change with it.
-      final switches = <String>[];
-      for (final file in Directory('lib').listSync(recursive: true)) {
-        if (file is! File || !file.path.endsWith('.dart')) continue;
-        if (file.path.contains('${Platform.pathSeparator}generated')) continue;
-        if (RegExp(
-          r'set(Analytics|Crashlytics|Performance)CollectionEnabled\((?!\s*(?:true|shouldEnable)\b)',
-        ).hasMatch(file.readAsStringSync())) {
-          switches.add(file.path);
+
+      // 1. Every call that changes collection or consent is known.
+      final call = RegExp(
+        r'\b(set(?:Analytics|Crashlytics|Performance)CollectionEnabled|setConsent)\s*\(\s*([^)]*?)\s*\)',
+      );
+      final calls = <String>[];
+      for (final file in _libDartFiles()) {
+        for (final m in call.allMatches(file.source)) {
+          calls.add('${file.path}: ${m[1]}(${m[2]})');
         }
       }
+      const crashlyticsFile = 'lib/core/analytics/crashlytics_service.dart';
+      const performanceFile = 'lib/core/performance/performance_service.dart';
       expect(
-        switches,
+        calls..sort(),
+        [
+          '$crashlyticsFile: setCrashlyticsCollectionEnabled(shouldEnable)',
+          '$crashlyticsFile: setCrashlyticsCollectionEnabled(shouldEnable)',
+          '$performanceFile: setPerformanceCollectionEnabled(true)',
+        ],
+        reason:
+            'a collection or consent call changed: update the withdrawal text',
+      );
+
+      // 2. shouldEnable is the debug-build rule, which is always true in a
+      // release build, and never a stored choice.
+      final crashlytics = File(crashlyticsFile).readAsStringSync();
+      final rules = RegExp(
+        r'shouldEnable\s*=\s*([^;]+);',
+      ).allMatches(crashlytics).map((m) => m[1]!.trim()).toList();
+      expect(rules, hasLength(2));
+      expect(rules, everyElement(startsWith('!kDebugMode ||')));
+
+      // 3. No platform-level collection switch in the manifest.
+      final manifest = File(
+        'android/app/src/main/AndroidManifest.xml',
+      ).readAsStringSync();
+      expect(
+        RegExp(
+          r'firebase_\w+_collection_(?:enabled|deactivated)|google_analytics_\w+',
+        ).allMatches(manifest).map((m) => m[0]).toList(),
         isEmpty,
-        reason: 'a collection switch exists: update the withdrawal text',
+        reason: 'a manifest collection flag exists: update the withdrawal text',
       );
     });
 
-    test('says the app shows no ads, for as long as no screen shows one', () {
+    test('says the app shows no ads, for as long as only the ads layer '
+        'knows about ads', () {
       expect(privacyPolicyContent, contains('The app shows no ads.'));
-      final screens = <String>[];
-      for (final file in Directory('lib').listSync(recursive: true)) {
-        if (file is! File || !file.path.endsWith('.dart')) continue;
-        final path = file.path;
-        if (path.contains(
-              '${Platform.pathSeparator}ads${Platform.pathSeparator}',
-            ) ||
-            path.endsWith('native_ad_widget.dart')) {
-          continue;
-        }
-        if (file.readAsStringSync().contains('NativeAdWidget(')) {
-          screens.add(path);
-        }
-      }
-      expect(screens, isEmpty);
+      const adsLayer = {
+        'lib/core/ads/ad_placement_strategy.dart',
+        'lib/core/ads/ad_provider.dart',
+        'lib/core/ads/ad_service.dart',
+        'lib/core/widgets/native_ad_widget.dart',
+      };
+      final outsiders = [
+        for (final file in _libDartFiles())
+          if (!adsLayer.contains(file.path) &&
+              RegExp(
+                r'google_mobile_ads|core/ads/|NativeAd|AdService|MobileAds|adServiceProvider',
+              ).hasMatch(file.source))
+            file.path,
+      ];
+      expect(
+        outsiders,
+        isEmpty,
+        reason: 'a file outside the ads layer uses ads: update the ads text',
+      );
     });
   });
 

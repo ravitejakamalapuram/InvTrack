@@ -379,12 +379,15 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                     termsOfServiceContent,
                   ),
                 ),
-                SettingsNavTile(
-                  icon: Icons.delete_outline,
-                  iconColor: Colors.red,
-                  title: l10n.deleteAccountOnTheWeb,
-                  trailing: const Icon(Icons.open_in_new, size: 20),
-                  onTap: openAccountDeletionPage,
+                Semantics(
+                  hint: l10n.opensInBrowser,
+                  child: SettingsNavTile(
+                    icon: Icons.delete_outline,
+                    iconColor: Colors.red,
+                    title: l10n.deleteAccountOnTheWeb,
+                    trailing: const Icon(Icons.open_in_new, size: 20),
+                    onTap: openAccountDeletionPage,
+                  ),
                 ),
               ],
             ),

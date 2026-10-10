@@ -25,11 +25,17 @@ class DeleteAccountWebLink extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Center(
-      child: TextButton.icon(
-        key: const Key('delete_account_web_link'),
-        icon: const Icon(Icons.open_in_new),
-        label: Text(l10n.deleteAccountOnTheWeb),
-        onPressed: openAccountDeletionPage,
+      // One node for a screen reader: the button, its name and the hint.
+      child: MergeSemantics(
+        child: Semantics(
+          hint: l10n.opensInBrowser,
+          child: TextButton.icon(
+            key: const Key('delete_account_web_link'),
+            icon: const Icon(Icons.open_in_new),
+            label: Text(l10n.deleteAccountOnTheWeb),
+            onPressed: openAccountDeletionPage,
+          ),
+        ),
       ),
     );
   }
