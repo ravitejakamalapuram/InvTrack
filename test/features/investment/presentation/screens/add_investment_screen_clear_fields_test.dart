@@ -43,6 +43,7 @@ class _RecordingNotifier extends InvestmentNotifier {
     RiskLevel? riskLevel,
     CompoundingFrequency? compoundingFrequency,
     String? currency,
+    String? customTypeLabel,
   }) async {
     saved.add(
       _SavedEdit({

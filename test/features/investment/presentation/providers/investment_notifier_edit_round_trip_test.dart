@@ -38,7 +38,8 @@ class _MockDoc extends Mock
 final _everyField = InvestmentEntity(
   id: 'inv-fd',
   name: 'Test Bank FD',
-  type: InvestmentType.fixedDeposit,
+  // Other, because only an investment of type Other keeps a custom type.
+  type: InvestmentType.other,
   status: InvestmentStatus.open,
   notes: 'n',
   createdAt: DateTime(2026, 4, 1, 9, 30),
@@ -56,6 +57,8 @@ final _everyField = InvestmentEntity(
   currency: 'INR',
   currentValue: 105000.00,
   currentValueDate: DateTime(2026, 9, 30),
+  customTypeId: 'type-1',
+  customTypeLabel: 'Test Label',
 );
 
 /// Only the required fields; everything else at its default.
@@ -149,6 +152,7 @@ void main() {
           riskLevel: from.riskLevel,
           compoundingFrequency: from.compoundingFrequency,
           currency: from.currency,
+          customTypeLabel: from.customTypeLabel,
         );
     return fakeRepository.investments.single;
   }

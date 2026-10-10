@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/calculations/investment_projector.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/mixins/screen_animation_mixin.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -24,6 +25,7 @@ import 'package:inv_tracker/features/investment/domain/models/investment_form_co
 import 'package:inv_tracker/features/investment/domain/models/investment_template.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/custom_type_field.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/template_selector.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -52,6 +54,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _notesController;
+  late TextEditingController _customTypeController;
   late TextEditingController _platformController;
   late TextEditingController _expectedRateController;
   late TextEditingController _tenureController;
@@ -91,6 +94,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     final investment = widget.investmentToEdit;
     _nameController = TextEditingController(text: investment?.name ?? '');
     _notesController = TextEditingController(text: investment?.notes ?? '');
+    _customTypeController = TextEditingController(
+      text: investment?.customTypeLabel ?? '',
+    );
     _selectedType = investment?.type ?? InvestmentType.p2pLending;
     _maturityDate = investment?.maturityDate;
     _incomeFrequency = investment?.incomeFrequency;
@@ -234,6 +240,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
 
     _nameController.dispose();
     _notesController.dispose();
+    _customTypeController.dispose();
     _platformController.dispose();
     _expectedRateController.dispose();
     _tenureController.dispose();
@@ -271,6 +278,19 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         _maturityDateAutoCalculated = false; // User manually set the date
       });
     }
+  }
+
+  /// The text to send as the investment's custom type (#936): what is typed
+  /// in the field, null when it is blank or the type is not Other. While the
+  /// feature is off the field is hidden, and an edit sends back the label the
+  /// investment already has, so saving it never loses one.
+  String? _customTypeForSave() {
+    if (_selectedType != InvestmentType.other) return null;
+    if (!ref.read(isCustomInvestmentTypesEnabledProvider)) {
+      return widget.investmentToEdit?.customTypeLabel;
+    }
+    final typed = _customTypeController.text.trim();
+    return typed.isEmpty ? null : typed;
   }
 
   Future<void> _submit() async {
@@ -313,6 +333,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               compoundingFrequency: _compoundingFrequency,
               // Multi-currency
               currency: _selectedCurrency,
+              customTypeLabel: _customTypeForSave(),
             );
       } else {
         await ref
@@ -334,6 +355,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               compoundingFrequency: _compoundingFrequency,
               // Multi-currency
               currency: _selectedCurrency,
+              customTypeLabel: _customTypeForSave(),
             );
 
         // Track enhanced fields usage for new investments
@@ -389,6 +411,10 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // The flag is read only while Other is selected.
+    final showCustomType =
+        _selectedType == InvestmentType.other &&
+        ref.watch(isCustomInvestmentTypesEnabledProvider);
 
     return Scaffold(
       backgroundColor: isDark
@@ -476,6 +502,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                       ),
 
                       SizedBox(height: AppSpacing.sectionSpacing),
+
+                      // Optional custom type, for type Other only (#936)
+                      if (showCustomType) ...[
+                        CustomTypeField(controller: _customTypeController),
+                        SizedBox(height: AppSpacing.sectionSpacing),
+                      ],
 
                       // Name Field
                       AppTextField(

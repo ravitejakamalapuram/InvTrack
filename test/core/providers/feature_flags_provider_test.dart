@@ -40,6 +40,16 @@ void main() {
         expect(FeatureFlag.valuationSnapshots.defaultEnabled, isFalse);
       });
 
+      test('$build: custom investment types (#936) stay hidden', () async {
+        final c = await _container(overridesAllowed: overridesAllowed);
+        expect(c.read(isCustomInvestmentTypesEnabledProvider), isFalse);
+        expect(FeatureFlag.customInvestmentTypes.defaultEnabled, isFalse);
+        expect(
+          FeatureFlag.customInvestmentTypes.key,
+          'custom_investment_types',
+        );
+      });
+
       test(
         '$build: Income Guardian, Reports and Health Score stay hidden',
         () async {
@@ -59,6 +69,7 @@ void main() {
       'feature_flag_reports_tab': true,
       'feature_flag_portfolio_health_score': true,
       'feature_flag_valuation_snapshots': true,
+      'feature_flag_custom_investment_types': true,
     };
 
     test('release ignores them and uses the code defaults', () async {
@@ -68,6 +79,7 @@ void main() {
       expect(c.read(isReportsTabEnabledProvider), isFalse);
       expect(c.read(isPortfolioHealthEnabledProvider), isFalse);
       expect(c.read(isValuationSnapshotsEnabledProvider), isFalse);
+      expect(c.read(isCustomInvestmentTypesEnabledProvider), isFalse);
     });
 
     test('release ignores a toggle too', () async {
@@ -77,8 +89,12 @@ void main() {
           .setEnabled(FeatureFlag.incomeGuardian, true);
       await c
           .read(featureFlagsProvider.notifier)
+          .setEnabled(FeatureFlag.customInvestmentTypes, true);
+      await c
+          .read(featureFlagsProvider.notifier)
           .toggle(FeatureFlag.reviewPrompt);
       expect(c.read(isIncomeGuardianEnabledProvider), isFalse);
+      expect(c.read(isCustomInvestmentTypesEnabledProvider), isFalse);
       expect(c.read(isReviewPromptEnabledProvider), isTrue);
     });
 
@@ -89,6 +105,7 @@ void main() {
       expect(c.read(isReportsTabEnabledProvider), isTrue);
       expect(c.read(isPortfolioHealthEnabledProvider), isTrue);
       expect(c.read(isValuationSnapshotsEnabledProvider), isTrue);
+      expect(c.read(isCustomInvestmentTypesEnabledProvider), isTrue);
     });
   });
 }

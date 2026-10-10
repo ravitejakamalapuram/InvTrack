@@ -51,7 +51,14 @@ enum FeatureFlag {
   /// - Opening baselines for investments without history
   /// - Off until the screens ship; flag off reads and writes the single
   ///   current value exactly as before
-  valuationSnapshots('valuation_snapshots', 'Dated Valuations');
+  valuationSnapshots('valuation_snapshots', 'Dated Valuations'),
+
+  /// Reusable custom labels for investments of type Other (#936).
+  /// - Optional "Custom type" field on the investment form
+  /// - Saved labels come back as suggestions
+  /// - Off by default; saved labels are still exported, imported and deleted
+  ///   with the account while it is off
+  customInvestmentTypes('custom_investment_types', 'Custom Investment Types');
 
   const FeatureFlag(this.key, this.displayName, {this.defaultEnabled = false});
 
@@ -214,6 +221,16 @@ final isValuationSnapshotsEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.valuationSnapshots] ?? false,
+    ),
+  );
+});
+
+/// Convenience provider for checking if reusable custom investment types are
+/// enabled (#936)
+final isCustomInvestmentTypesEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagsProvider.select(
+      (flags) => flags[FeatureFlag.customInvestmentTypes] ?? false,
     ),
   );
 });

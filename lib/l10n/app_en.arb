@@ -6563,6 +6563,173 @@
   "@incomeGuardianSettingsSubtitle": {
     "description": "Subtitle of the Income Guardian tile in Settings"
   },
+
+  "customInvestmentTypesFeature": "Custom Investment Types",
+  "@customInvestmentTypesFeature": {
+    "description": "Debug Settings: title of the toggle for reusable custom labels on Other investments (#936)"
+  },
+  "customInvestmentTypesFeatureSubtitle": "Reusable labels for investments of type Other",
+  "@customInvestmentTypesFeatureSubtitle": {
+    "description": "Debug Settings: subtitle of the custom investment types toggle (#936)"
+  },
+  "customInvestmentTypesFeatureEnabled": "Custom investment types enabled",
+  "@customInvestmentTypesFeatureEnabled": {
+    "description": "Debug Settings: snackbar after turning custom investment types on (#936)"
+  },
+  "customInvestmentTypesFeatureDisabled": "Custom investment types disabled",
+  "@customInvestmentTypesFeatureDisabled": {
+    "description": "Debug Settings: snackbar after turning custom investment types off (#936)"
+  },
+  "customTypeFieldLabel": "Custom type (optional)",
+  "@customTypeFieldLabel": {
+    "description": "Label of the optional custom type field on the investment form, shown for type Other (#936)"
+  },
+  "customTypeFieldHint": "e.g. Art prints, Vintage cars",
+  "@customTypeFieldHint": {
+    "description": "Hint of the custom type field (#936)"
+  },
+  "customTypeFieldHelper": "Names this investment more specifically. It does not change how it is calculated.",
+  "@customTypeFieldHelper": {
+    "description": "Helper text under the custom type field: a custom type is only a name (#936)"
+  },
+  "customTypeSavedTypesHeading": "Saved types",
+  "@customTypeSavedTypesHeading": {
+    "description": "Heading above the saved custom types offered as suggestions (#936)"
+  },
+  "customTypeUseSemantics": "Use saved type {label}",
+  "@customTypeUseSemantics": {
+    "description": "Screen reader label of a saved custom type suggestion; tapping it fills the field (#936)",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Art Prints"
+      }
+    }
+  },
+  "customTypeSaveAction": "Save as reusable type",
+  "@customTypeSaveAction": {
+    "description": "Button that saves the typed custom type so it is suggested next time (#936)"
+  },
+  "customTypeSaved": "Saved \"{label}\" as a reusable type",
+  "@customTypeSaved": {
+    "description": "Snackbar after the user saves a custom type (#936)",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Art Prints"
+      }
+    }
+  },
+  "customTypeAlreadySaved": "This type is already saved",
+  "@customTypeAlreadySaved": {
+    "description": "Shown under the custom type field when its text matches a saved type (#936)"
+  },
+  "customTypeLimitReached": "You can save up to {count} reusable types. The label still applies to this investment.",
+  "@customTypeLimitReached": {
+    "description": "Shown when the account already has the maximum number of saved custom types (#936)",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "50"
+      }
+    }
+  },
+  "customTypeManageAction": "Manage saved types",
+  "@customTypeManageAction": {
+    "description": "Button that opens the list of saved custom types (#936)"
+  },
+  "customTypeManageTitle": "Saved types",
+  "@customTypeManageTitle": {
+    "description": "Title of the sheet that lists saved custom types (#936)"
+  },
+  "customTypeManageNote": "Renaming or removing a saved type does not change investments that already use it.",
+  "@customTypeManageNote": {
+    "description": "Note in the saved custom types sheet: investments keep their own label (#936)"
+  },
+  "customTypeManageEmpty": "No saved types yet",
+  "@customTypeManageEmpty": {
+    "description": "Shown in the saved custom types sheet when none is left (#936)"
+  },
+  "customTypeRenameTooltip": "Rename {label}",
+  "@customTypeRenameTooltip": {
+    "description": "Tooltip and screen reader label of the rename button of a saved custom type (#936)",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Art Prints"
+      }
+    }
+  },
+  "customTypeRemoveTooltip": "Remove {label}",
+  "@customTypeRemoveTooltip": {
+    "description": "Tooltip and screen reader label of the remove button of a saved custom type (#936)",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Art Prints"
+      }
+    }
+  },
+  "customTypeNameLabel": "Name",
+  "@customTypeNameLabel": {
+    "description": "Label of the name field in the rename dialog of a saved custom type (#936)"
+  },
+  "customTypeRenameTitle": "Rename saved type",
+  "@customTypeRenameTitle": {
+    "description": "Title of the dialog that renames a saved custom type (#936)"
+  },
+  "customTypeRenameConfirm": "Rename",
+  "@customTypeRenameConfirm": {
+    "description": "Confirm button of the rename dialog for a saved custom type (#936)"
+  },
+  "customTypeRemoveTitle": "Remove saved type?",
+  "@customTypeRemoveTitle": {
+    "description": "Title of the confirmation before removing a saved custom type (#936)"
+  },
+  "customTypeRemoveMessage": "\"{label}\" will no longer be suggested. Investments that use it keep their label.",
+  "@customTypeRemoveMessage": {
+    "description": "Confirmation text before removing a saved custom type (#936)",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Art Prints"
+      }
+    }
+  },
+  "customTypeRemoveConfirm": "Remove",
+  "@customTypeRemoveConfirm": {
+    "description": "Confirm button of the remove confirmation for a saved custom type (#936)"
+  },
+  "customTypeErrorBlank": "Enter a name",
+  "@customTypeErrorBlank": {
+    "description": "Error when a custom type name is blank (#936)"
+  },
+  "customTypeErrorTooLong": "Use {count} characters or fewer",
+  "@customTypeErrorTooLong": {
+    "description": "Error when a custom type name is too long (#936)",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "40"
+      }
+    }
+  },
+  "customTypeErrorDuplicate": "You already have a saved type with that name",
+  "@customTypeErrorDuplicate": {
+    "description": "Error when a custom type name is already taken, in any case or spacing (#936)"
+  },
+  "customTypeErrorGeneric": "Could not save the type. Try again.",
+  "@customTypeErrorGeneric": {
+    "description": "Error when saving a custom type failed (#936)"
+  },
+  "whatAreCustomTypes": "Can I give an Other investment a more specific type?",
+  "@whatAreCustomTypes": {
+    "description": "Help & FAQ question about custom types for Other investments; shown only while the feature is on (#936)"
+  },
+  "whatAreCustomTypesAnswer": "Yes. When an investment''s type is Other, add a Custom type such as Art prints or Vintage cars. Tap Save as reusable type to get it as a suggestion next time. A custom type is only a name: it does not change how the investment is calculated, and filters and reports still count it as Other. Renaming or removing a saved type never changes the investments that already use it.",
+  "@whatAreCustomTypesAnswer": {
+    "description": "Help & FAQ answer about custom types for Other investments (#936)"
+  },
   "cashFlowAmountRoundsToZero": "This amount rounds to zero in {currency}. Enter a larger amount.",
   "@cashFlowAmountRoundsToZero": {
     "description": "Add or edit cash flow: validation error for a positive amount that is smaller than the smallest unit of the selected currency, so it would be saved as zero",

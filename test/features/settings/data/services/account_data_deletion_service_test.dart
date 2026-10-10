@@ -159,6 +159,8 @@ void main() {
         'profile',
         'exchangeRates',
         'valuations',
+        // #936: reusable custom investment types.
+        'customInvestmentTypes',
       ]),
     );
   });

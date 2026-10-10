@@ -47,6 +47,7 @@ class InvestmentCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final typeColor = investment.type.color;
+    final typeName = investmentTypeName(ref, investment);
     final isClosed = investment.status == InvestmentStatus.closed;
     final currencySymbol = ref.watch(currencySymbolProvider);
     final currencyFormat = ref.watch(currencyFormatProvider);
@@ -94,7 +95,7 @@ class InvestmentCard extends ConsumerWidget {
 
         return AccessibilityUtils.investmentCardLabel(
           name: investment.name,
-          type: investment.type.displayName,
+          type: typeName,
           currentValue: stats.netCashFlow,
           // Null while XIRR is loading or undefined: the label leaves it out
           returnPercent: returnPercent,
@@ -117,7 +118,7 @@ class InvestmentCard extends ConsumerWidget {
         );
       },
       orElse: () =>
-          '${isClosed ? "Closed" : "Open"} investment: ${investment.name}, Type: ${investment.type.displayName}',
+          '${isClosed ? "Closed" : "Open"} investment: ${investment.name}, Type: $typeName',
     );
 
     final semanticLabel = isSelectionMode
@@ -161,6 +162,7 @@ class InvestmentCard extends ConsumerWidget {
                   Expanded(
                     child: _InvestmentInfo(
                       investment: investment,
+                      typeName: typeName,
                       isDark: isDark,
                       typeColor: typeColor,
                       isClosed: isClosed,
@@ -240,6 +242,7 @@ class _TypeIcon extends StatelessWidget {
 /// Extracted widget for name and type info to avoid rebuilds during selection toggling.
 class _InvestmentInfo extends StatelessWidget {
   final InvestmentEntity investment;
+  final String typeName;
   final bool isDark;
   final Color typeColor;
   final bool isClosed;
@@ -247,6 +250,7 @@ class _InvestmentInfo extends StatelessWidget {
 
   const _InvestmentInfo({
     required this.investment,
+    required this.typeName,
     required this.isDark,
     required this.typeColor,
     required this.isClosed,
@@ -284,7 +288,7 @@ class _InvestmentInfo extends StatelessWidget {
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                investment.type.displayName,
+                typeName,
                 style: AppTypography.small.copyWith(
                   color: typeColor,
                   fontWeight: FontWeight.w500,
@@ -727,7 +731,10 @@ class _InvestmentBottomStrip extends StatelessWidget {
           children: [
             Text(
               AppLocalizations.of(context).addedRelative(
-                AppDateUtils.formatRelative(investment.createdAt, relativeTo: referenceDate),
+                AppDateUtils.formatRelative(
+                  investment.createdAt,
+                  relativeTo: referenceDate,
+                ),
               ),
               style: AppTypography.small.copyWith(
                 color: isDark

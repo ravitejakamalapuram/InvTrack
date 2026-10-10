@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/package_info_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -482,6 +483,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       MaterialPageRoute(
         builder: (context) => HelpFaqScreen(
           showDeveloperFaq: ref.read(developerToolsAvailableProvider),
+          showCustomTypesFaq: ref.read(isCustomInvestmentTypesEnabledProvider),
         ),
       ),
     );

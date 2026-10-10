@@ -24,6 +24,9 @@ final dataExportServiceProvider = Provider<DataExportService?>((ref) {
     expectedCashFlowRepositoryProvider,
   );
   final valuationRepository = ref.watch(valuationRepositoryProvider);
+  final customInvestmentTypeRepository = ref.watch(
+    customInvestmentTypeRepositoryProvider,
+  );
   final performanceService = ref.watch(performanceServiceProvider);
 
   return DataExportService(
@@ -34,6 +37,7 @@ final dataExportServiceProvider = Provider<DataExportService?>((ref) {
     fireSettingsRepository: fireSettingsRepository,
     expectedCashFlowRepository: expectedCashFlowRepository,
     valuationRepository: valuationRepository,
+    customInvestmentTypeRepository: customInvestmentTypeRepository,
     performanceService: performanceService,
   );
 });

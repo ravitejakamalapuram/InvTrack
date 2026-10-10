@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_enums.dart';
 
@@ -155,6 +156,12 @@ final filteredInvestmentsProvider = Provider.autoDispose<AsyncValue<List<Investm
       final filtered = <InvestmentEntity>[];
       final hasSearch = listState.searchQuery.isNotEmpty;
       final query = hasSearch ? listState.searchQuery.toLowerCase() : '';
+      // Custom labels (#936) are searched while the flag is on. The flag is
+      // read only when a search could match one.
+      final searchCustomTypes =
+          hasSearch &&
+          investments.any((inv) => inv.hasCustomTypeLabel) &&
+          ref.watch(isCustomInvestmentTypesEnabledProvider);
 
       for (final inv in investments) {
         // Apply status filter (only for active investments)
@@ -175,7 +182,10 @@ final filteredInvestmentsProvider = Provider.autoDispose<AsyncValue<List<Investm
         // Apply search filter
         if (hasSearch &&
             !inv.name.toLowerCase().contains(query) &&
-            !inv.type.displayName.toLowerCase().contains(query)) {
+            !inv.type.displayName.toLowerCase().contains(query) &&
+            // An Other investment is also found by its custom label (#936).
+            !(searchCustomTypes &&
+                inv.typeLabel.toLowerCase().contains(query))) {
           continue;
         }
 
