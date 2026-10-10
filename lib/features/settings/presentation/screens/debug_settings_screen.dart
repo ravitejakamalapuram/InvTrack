@@ -157,7 +157,11 @@ class DebugSettingsScreen extends ConsumerWidget {
                   .toggle(FeatureFlag.portfolioHealthScore);
 
               // Verify the toggle succeeded
-              final newState = ref.read(featureFlagsProvider)[FeatureFlag.portfolioHealthScore] ?? false;
+              final newState =
+                  ref.read(
+                    featureFlagsProvider,
+                  )[FeatureFlag.portfolioHealthScore] ??
+                  false;
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -193,7 +197,9 @@ class DebugSettingsScreen extends ConsumerWidget {
                   .toggle(FeatureFlag.reportsTab);
 
               // Verify the toggle succeeded
-              final newState = ref.read(featureFlagsProvider)[FeatureFlag.reportsTab] ?? false;
+              final newState =
+                  ref.read(featureFlagsProvider)[FeatureFlag.reportsTab] ??
+                  false;
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -229,7 +235,9 @@ class DebugSettingsScreen extends ConsumerWidget {
                   .toggle(FeatureFlag.incomeGuardian);
 
               // Verify the toggle succeeded
-              final newState = ref.read(featureFlagsProvider)[FeatureFlag.incomeGuardian] ?? false;
+              final newState =
+                  ref.read(featureFlagsProvider)[FeatureFlag.incomeGuardian] ??
+                  false;
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -263,6 +271,45 @@ class DebugSettingsScreen extends ConsumerWidget {
               await ref
                   .read(featureFlagsProvider.notifier)
                   .toggle(FeatureFlag.reviewPrompt);
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
+            }
+          },
+        ),
+
+        // Dated valuations feature flag (#941)
+        SettingsToggleTile(
+          icon: Icons.event_note,
+          iconColor: Colors.teal,
+          title: l10n.valuationSnapshotsFeature,
+          subtitle: l10n.valuationSnapshotsSubtitle,
+          value: featureFlags[FeatureFlag.valuationSnapshots] ?? false,
+          onChanged: (value) async {
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.valuationSnapshots);
+
+              final newState =
+                  ref.read(
+                    featureFlagsProvider,
+                  )[FeatureFlag.valuationSnapshots] ??
+                  false;
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      newState
+                          ? l10n.valuationSnapshotsEnabled
+                          : l10n.valuationSnapshotsDisabled,
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
             } catch (e, stackTrace) {
               if (context.mounted) {
                 ErrorHandler.handle(e, stackTrace, context: context);
@@ -452,7 +499,8 @@ class DebugSettingsScreen extends ConsumerWidget {
                   child: CircularProgressIndicator(),
                 ),
               ),
-              error: (error, stack) => Text(l10n.errorOccurred(error.toString())),
+              error: (error, stack) =>
+                  Text(l10n.errorOccurred(error.toString())),
             ),
             actions: [
               TextButton(
@@ -483,7 +531,4 @@ class DebugSettingsScreen extends ConsumerWidget {
       ),
     );
   }
-
-
-
 }

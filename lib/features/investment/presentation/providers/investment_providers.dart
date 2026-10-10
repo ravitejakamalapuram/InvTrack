@@ -4,8 +4,10 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
 // Re-export entities for convenience
@@ -96,11 +98,38 @@ final allCashFlowsStreamProvider = StreamProvider<List<CashFlowEntity>>((ref) {
   return ref.watch(investmentRepositoryProvider).watchAllCashFlows();
 });
 
+// ============ VALUATION SNAPSHOT STREAM PROVIDERS ============
+
+/// Whether dated valuations are on, as the data providers read it. A flag
+/// that cannot be read (its storage is not available, as in a test that does
+/// not set it up) is off, so the single current value is read and written as
+/// it always was.
+final valuationSnapshotsActiveProvider = Provider<bool>((ref) {
+  try {
+    return ref.watch(isValuationSnapshotsEnabledProvider);
+  } catch (_) {
+    return false;
+  }
+});
+
+/// Watch every valuation snapshot of the user, cleared ones included.
+/// Reads nothing, and opens no listener, when the feature is off or nobody is
+/// signed in.
+final allValuationSnapshotsProvider =
+    StreamProvider<List<InvestmentValuationSnapshot>>((ref) {
+      if (!ref.watch(valuationSnapshotsActiveProvider)) {
+        return Stream.value(const []);
+      }
+      if (!ref.watch(isAuthenticatedProvider)) return Stream.value(const []);
+      return ref.watch(valuationRepositoryProvider).watchAll();
+    });
+
 /// Re-subscribes to the base portfolio streams; all derived stats follow.
 /// Used by Retry actions and pull-to-refresh after a load error.
 void reloadPortfolio(WidgetRef ref) {
   ref.invalidate(allInvestmentsProvider);
   ref.invalidate(allCashFlowsStreamProvider);
+  ref.invalidate(allValuationSnapshotsProvider);
   ref.invalidate(archivedInvestmentsProvider);
   ref.invalidate(hasNoInvestmentsProvider);
 }
@@ -120,7 +149,9 @@ final cashFlowsInDateRangeProvider = StreamProvider.autoDispose
         return Stream.value([]);
       }
       // Let errors propagate to UI - server-side filtering by date
-      return ref.watch(investmentRepositoryProvider).watchCashFlowsInDateRange(
+      return ref
+          .watch(investmentRepositoryProvider)
+          .watchCashFlowsInDateRange(
             startDate: dateRange.start,
             endDate: dateRange.end,
           );

@@ -47,6 +47,16 @@ class FirestoreValuationRepository implements ValuationRepository {
       _valuationsRef.snapshots().map(_readAll);
 
   @override
+  Stream<List<InvestmentValuationSnapshot>> watchServerConfirmed() =>
+      _valuationsRef
+          .snapshots(includeMetadataChanges: true)
+          .where(
+            (query) =>
+                !query.metadata.isFromCache && !query.metadata.hasPendingWrites,
+          )
+          .map(_readAll);
+
+  @override
   Future<List<InvestmentValuationSnapshot>> getAll() async =>
       _readAll(await _valuationsRef.get());
 

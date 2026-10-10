@@ -77,6 +77,28 @@ class FakeAnalyticsService implements AnalyticsService {
   }
 
   @override
+  Future<void> logValuationSet({
+    required String kind,
+    required String provenance,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.valuationSet,
+      parameters: {'kind': kind, 'provenance': provenance},
+    );
+  }
+
+  @override
+  Future<void> logValuationCleared({
+    required String kind,
+    required String provenance,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.valuationCleared,
+      parameters: {'kind': kind, 'provenance': provenance},
+    );
+  }
+
+  @override
   Future<void> logCashFlowAdded({
     required String flowType,
     required String amountRange,
@@ -445,10 +467,7 @@ class FakeAnalyticsService implements AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.reportMetricTooltipViewed,
-      parameters: {
-        'metric_name': metricName,
-        'report_type': reportType,
-      },
+      parameters: {'metric_name': metricName, 'report_type': reportType},
     );
   }
 
@@ -461,10 +480,7 @@ class FakeAnalyticsService implements AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.portfolioHealthViewed,
-      parameters: {
-        'score_tier': scoreTier,
-        'score_range': scoreRange,
-      },
+      parameters: {'score_tier': scoreTier, 'score_range': scoreRange},
     );
   }
 
@@ -475,10 +491,7 @@ class FakeAnalyticsService implements AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.portfolioHealthDetailsOpened,
-      parameters: {
-        'score_tier': scoreTier,
-        'score_range': scoreRange,
-      },
+      parameters: {'score_tier': scoreTier, 'score_range': scoreRange},
     );
   }
 
@@ -519,10 +532,7 @@ class FakeAnalyticsService implements AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.healthScoreShared,
-      parameters: {
-        'score_tier': scoreTier,
-        'share_method': shareMethod,
-      },
+      parameters: {'score_tier': scoreTier, 'share_method': shareMethod},
     );
   }
 }

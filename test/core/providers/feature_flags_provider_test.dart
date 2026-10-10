@@ -33,6 +33,13 @@ void main() {
         expect(c.read(isReviewPromptEnabledProvider), isTrue);
       });
 
+      test('$build: dated valuations (#941) are off', () async {
+        final c = await _container(overridesAllowed: overridesAllowed);
+        expect(c.read(isValuationSnapshotsEnabledProvider), isFalse);
+        expect(FeatureFlag.valuationSnapshots.key, 'valuation_snapshots');
+        expect(FeatureFlag.valuationSnapshots.defaultEnabled, isFalse);
+      });
+
       test(
         '$build: Income Guardian, Reports and Health Score stay hidden',
         () async {
@@ -51,6 +58,7 @@ void main() {
       'feature_flag_income_guardian': true,
       'feature_flag_reports_tab': true,
       'feature_flag_portfolio_health_score': true,
+      'feature_flag_valuation_snapshots': true,
     };
 
     test('release ignores them and uses the code defaults', () async {
@@ -59,6 +67,7 @@ void main() {
       expect(c.read(isIncomeGuardianEnabledProvider), isFalse);
       expect(c.read(isReportsTabEnabledProvider), isFalse);
       expect(c.read(isPortfolioHealthEnabledProvider), isFalse);
+      expect(c.read(isValuationSnapshotsEnabledProvider), isFalse);
     });
 
     test('release ignores a toggle too', () async {
@@ -79,6 +88,7 @@ void main() {
       expect(c.read(isIncomeGuardianEnabledProvider), isTrue);
       expect(c.read(isReportsTabEnabledProvider), isTrue);
       expect(c.read(isPortfolioHealthEnabledProvider), isTrue);
+      expect(c.read(isValuationSnapshotsEnabledProvider), isTrue);
     });
   });
 }

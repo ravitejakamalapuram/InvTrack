@@ -50,6 +50,17 @@ class InMemoryValuationRepository implements ValuationRepository {
   Future<List<InvestmentValuationSnapshot>> getAll() async =>
       docs.values.toList();
 
+  final _server =
+      StreamController<List<InvestmentValuationSnapshot>>.broadcast();
+
+  /// What the server confirms, as a test says it.
+  void emitServer(List<InvestmentValuationSnapshot> snapshots) =>
+      _server.add(snapshots);
+
+  @override
+  Stream<List<InvestmentValuationSnapshot>> watchServerConfirmed() =>
+      _server.stream;
+
   @override
   Future<void> save(
     InvestmentValuationSnapshot snapshot, {
@@ -97,5 +108,8 @@ class InMemoryValuationRepository implements ValuationRepository {
     return snapshots.length;
   }
 
-  void dispose() => _controller.close();
+  void dispose() {
+    _controller.close();
+    _server.close();
+  }
 }

@@ -105,7 +105,10 @@ class FakeInvestmentRepository implements InvestmentRepository {
   }
 
   @override
-  Future<void> updateInvestment(InvestmentEntity investment) async {
+  Future<void> updateInvestment(
+    InvestmentEntity investment, {
+    bool preserveCurrentValue = false,
+  }) async {
     final index = _investments.indexWhere((i) => i.id == investment.id);
     if (index >= 0) {
       _investments[index] = investment;
@@ -211,7 +214,10 @@ class FakeInvestmentRepository implements InvestmentRepository {
   }
 
   @override
-  Future<void> updateArchivedInvestment(InvestmentEntity investment) async {
+  Future<void> updateArchivedInvestment(
+    InvestmentEntity investment, {
+    bool preserveCurrentValue = false,
+  }) async {
     final index = _archivedInvestments.indexWhere((i) => i.id == investment.id);
     if (index >= 0) {
       _archivedInvestments[index] = investment;

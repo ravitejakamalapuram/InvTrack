@@ -102,7 +102,8 @@ class PortfolioHealthCalculator {
 
   /// Stats, with one XIRR, over the merged cash flows and current values of
   /// every active investment (CALC-02), or null when there are none or the
-  /// return of any of them is unknown.
+  /// return of any of them is unknown. Investments with limited history are
+  /// left out of that return (see [FinancialCalculatorModule.calculateStats]).
   ///
   /// Averaging per-investment XIRRs ignores timing and amounts, so the
   /// portfolio's flows are solved together, like the Overview's XIRR. An
@@ -117,6 +118,9 @@ class PortfolioHealthCalculator {
   ) {
     final included = <String>{};
     final open = <String>{};
+    // Investments with limited history (an opening baseline) count in the
+    // totals but have no lifetime return to judge.
+    final limited = <String>{};
     for (final investment in investments) {
       final stat = stats[investment.id];
       if (investment.isArchived || stat == null || stat.totalInvested <= 0) {
@@ -132,7 +136,12 @@ class PortfolioHealthCalculator {
         return null;
       }
       included.add(investment.id);
-      if (investment.isOpen) open.add(investment.id);
+      if (investment.isOpen) {
+        open.add(investment.id);
+        limited.addAll(
+          terminalValues[investment.id]?.limitedHistoryIds ?? const {},
+        );
+      }
     }
     if (included.isEmpty) return null;
 
@@ -144,11 +153,15 @@ class PortfolioHealthCalculator {
     // all in its cash flows.
     final values = TerminalValues(
       flows: [for (final id in open) ...?terminalValues[id]?.flows],
+      limitedHistoryIds: limited,
     );
-    return FinancialCalculatorModule().calculateStats(
+    final portfolio = FinancialCalculatorModule().calculateStats(
       flows,
       terminalValues: values,
     );
+    // Nothing but limited history left: there is no return to score, and a
+    // zero MOIC would read as a total loss.
+    return portfolio.returnsKnown ? portfolio : null;
   }
 
   /// Component 1: Returns Performance (30% weight)
@@ -567,8 +580,7 @@ class PortfolioHealthCalculator {
       }
 
       // Check for stale investments (no activity in 6+ months)
-      final cashFlows =
-          cashFlowsByInvestmentId[inv.id] ?? const <ICashFlow>[];
+      final cashFlows = cashFlowsByInvestmentId[inv.id] ?? const <ICashFlow>[];
       if (cashFlows.isNotEmpty) {
         // Optimization: Replace .map().reduce() with a standard loop
         var lastActivity = cashFlows.first.date;

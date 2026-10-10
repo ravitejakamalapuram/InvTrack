@@ -41,6 +41,12 @@ abstract class ValuationRepository {
 
   Future<List<InvestmentValuationSnapshot>> getAll();
 
+  /// Every snapshot as the server has it: only states that come from the
+  /// server and have no write of this device still pending. A snapshot that
+  /// differs from what this device last wrote means another device's write
+  /// won (the last write to reach the server wins).
+  Stream<List<InvestmentValuationSnapshot>> watchServerConfirmed();
+
   /// Writes [snapshot] (a new one or an edit) and [mirror] in one batch.
   Future<void> save(
     InvestmentValuationSnapshot snapshot, {

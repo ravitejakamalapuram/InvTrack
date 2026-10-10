@@ -4,6 +4,8 @@
 // that cannot be trusted is ignored rather than reinterpreted.
 //
 // ignore_for_file: subtype_of_sealed_class
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/utils/stored_date.dart';
@@ -54,6 +56,8 @@ class _RecordingBatch implements WriteBatch {
 
 class _MockQuerySnapshot extends Mock
     implements QuerySnapshot<Map<String, dynamic>> {}
+
+class _MockMetadata extends Mock implements SnapshotMetadata {}
 
 class _MockQueryDoc extends Mock
     implements QueryDocumentSnapshot<Map<String, dynamic>> {}
@@ -455,6 +459,54 @@ void main() {
       final all = await repository.getAll();
       expect(all.map((s) => s.id), ['good']);
     });
+  });
+
+  group('server-confirmed state', () {
+    QuerySnapshot<Map<String, dynamic>> query({
+      required bool fromCache,
+      required bool pending,
+      required String id,
+    }) {
+      final metadata = _MockMetadata();
+      when(() => metadata.isFromCache).thenReturn(fromCache);
+      when(() => metadata.hasPendingWrites).thenReturn(pending);
+      final doc = _MockQueryDoc();
+      when(() => doc.id).thenReturn(id);
+      when(() => doc.data()).thenReturn(
+        FirestoreValuationRepository.snapshotToFirestore(snapshot)
+          ..['updatedAt'] = Timestamp.fromDate(DateTime.utc(2026, 1, 2)),
+      );
+      final result = _MockQuerySnapshot();
+      when(() => result.metadata).thenReturn(metadata);
+      when(() => result.docs).thenReturn([doc]);
+      return result;
+    }
+
+    test(
+      'only states from the server with no pending write get through',
+      () async {
+        final controller =
+            StreamController<QuerySnapshot<Map<String, dynamic>>>();
+        addTearDown(controller.close);
+        when(
+          () => valuations.snapshots(includeMetadataChanges: true),
+        ).thenAnswer((_) => controller.stream);
+
+        final seen = <String>[];
+        final sub = repository.watchServerConfirmed().listen(
+          (all) => seen.addAll(all.map((s) => s.id)),
+        );
+        addTearDown(sub.cancel);
+
+        controller
+          ..add(query(fromCache: true, pending: false, id: 'cache'))
+          ..add(query(fromCache: false, pending: true, id: 'pending'))
+          ..add(query(fromCache: false, pending: false, id: 'server'));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(seen, ['server']);
+      },
+    );
   });
 
   test('StoredDate is the date format of the collection', () {

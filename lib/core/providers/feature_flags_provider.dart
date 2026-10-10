@@ -44,7 +44,14 @@ enum FeatureFlag {
   /// Play in-app review prompt after a first recorded INCOME or RETURN.
   /// - One-shot per install, gated on a genuine success moment
   /// - On by default (A42)
-  reviewPrompt('review_prompt', 'Play Review Prompt', defaultEnabled: true);
+  reviewPrompt('review_prompt', 'Play Review Prompt', defaultEnabled: true),
+
+  /// Dated valuations of open investments (#941).
+  /// - Snapshots in users/{uid}/valuations, mirrored into currentValue
+  /// - Opening baselines for investments without history
+  /// - Off until the screens ship; flag off reads and writes the single
+  ///   current value exactly as before
+  valuationSnapshots('valuation_snapshots', 'Dated Valuations');
 
   const FeatureFlag(this.key, this.displayName, {this.defaultEnabled = false});
 
@@ -198,6 +205,15 @@ final isReviewPromptEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.reviewPrompt] ?? false,
+    ),
+  );
+});
+
+/// Convenience provider for checking if dated valuations are enabled
+final isValuationSnapshotsEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagsProvider.select(
+      (flags) => flags[FeatureFlag.valuationSnapshots] ?? false,
     ),
   );
 });
