@@ -117,13 +117,14 @@ class DataImportService {
     try {
       // Security: Enable CRC verification to protect against malformed or corrupted ZIP file extraction.
       archive = ZipDecoder().decodeBytes(zipBytes, verify: true);
-    } catch (e) {
+    } catch (_) {
       return ZipImportResult(
         investmentsImported: 0,
         cashflowsImported: 0,
         goalsImported: 0,
         documentsImported: 0,
-        errors: ['Invalid ZIP file: $e'],
+        // The exception can quote the file, so it is left out (rule 7).
+        errors: ['Invalid ZIP file'],
       );
     }
 
@@ -146,13 +147,15 @@ class DataImportService {
     try {
       metadata = jsonDecode(utf8.decode(metadataFile.content as List<int>));
       documentsList = metadata['documents'] as List<dynamic>? ?? [];
-    } catch (e) {
+    } catch (_) {
       return ZipImportResult(
         investmentsImported: 0,
         cashflowsImported: 0,
         goalsImported: 0,
         documentsImported: 0,
-        errors: ['Failed to parse metadata.json: $e'],
+        // The exception quotes the text it could not parse: document and
+        // investment names (rule 7).
+        errors: ['Failed to parse metadata.json'],
       );
     }
 
@@ -167,7 +170,12 @@ class DataImportService {
     } catch (_) {
       return _notImported('cashflows.csv could not be read');
     }
-    if (strategy == ImportStrategy.replace && cashflowsCsv != null) {
+    if (strategy == ImportStrategy.replace) {
+      // The exporter always writes cashflows.csv, so a backup without it is
+      // damaged or edited. Merge deletes nothing and imports the rest.
+      if (cashflowsCsv == null) {
+        return _notImported('cashflows.csv is missing');
+      }
       final parsed = _parseBackupCashflows(cashflowsCsv, baseCurrency);
       if (parsed.validRows == 0 && parsed.errors.isNotEmpty) {
         return _notImported('cashflows.csv has no readable rows');

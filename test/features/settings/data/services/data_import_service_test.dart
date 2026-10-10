@@ -401,8 +401,10 @@ Archived Goal,targetAmount,25000
         updatedAt: DateTime(2025, 1, 1),
       );
 
+      // Replace needs cashflows.csv, which every real backup holds.
       Uint8List backupWithFireSettings() => createZipArchive({
         'metadata.json': '{"version":"1.0","files":[]}',
+        'cashflows.csv': 'Date,Investment Name,Type,Amount\n',
         'fire_settings.json':
             '{"monthlyExpenses":30000,"currentAge":25,"targetFireAge":45}',
       });

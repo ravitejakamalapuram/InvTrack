@@ -42,6 +42,7 @@ const _activeName = 'SGB 2031';
 const _archivedName = 'Old Bond';
 const _goalName = 'Retirement Fund';
 const _archivedGoalName = 'Archived Goal';
+const _documentName = 'Salary Slip.pdf';
 
 final _validFiles = <String, String>{
   'metadata.json': jsonEncode({'version': '1.0', 'documents': []}),
@@ -194,6 +195,7 @@ void main() {
       _archivedName,
       _goalName,
       _archivedGoalName,
+      _documentName,
       '100000',
       '125000',
       '50000',
@@ -210,6 +212,9 @@ void main() {
     const noRows =
         'Backup not imported: cashflows.csv has no readable rows. Your '
         'existing data was not changed.';
+    const missing =
+        'Backup not imported: cashflows.csv is missing. Your existing data '
+        'was not changed.';
 
     test('Replace: cashflows.csv is not UTF-8', () async {
       final result = await importZip(
@@ -242,6 +247,34 @@ void main() {
       expectAccountUntouched();
     });
 
+    test('Replace: cashflows.csv is missing from the backup', () async {
+      // The exporter always writes cashflows.csv, so a backup without it is
+      // damaged or edited. It holds the investments: do not wipe for it.
+      final result = await importZip(_backup({'cashflows.csv': null}));
+
+      expect(result.errors, [missing]);
+      expect(result.totalImported, 0);
+      expectAccountUntouched();
+    });
+
+    test(
+      'Merge: a backup without cashflows.csv still adds its goals',
+      () async {
+        // Merge deletes nothing, so the rest of the backup is still worth
+        // importing.
+        final result = await importZip(
+          _backup({'cashflows.csv': null}),
+          ImportStrategy.merge,
+        );
+
+        expect(result.errors, isEmpty);
+        expect(result.goalsImported, 2);
+        expect(goals.goals.map((g) => g.name), contains('Existing Goal'));
+        expect(goals.goals.map((g) => g.name), contains(_goalName));
+        expect(investments.investments, existingInvestments);
+      },
+    );
+
     test('Replace: metadata.json lists documents in the wrong shape', () async {
       final result = await importZip(
         _backup({
@@ -249,11 +282,45 @@ void main() {
         }),
       );
 
-      expect(result.errors, hasLength(1));
-      expect(result.errors.single, startsWith('Failed to parse metadata.json'));
+      expect(result.errors, ['Failed to parse metadata.json']);
       expect(result.totalImported, 0);
       expectAccountUntouched();
     });
+
+    test(
+      'Replace: a cut-off metadata.json is not quoted in the error',
+      () async {
+        // jsonDecode's FormatException repeats the text it could not parse
+        // (rule 7), so the error must not carry it.
+        final result = await importZip(
+          _backup({
+            'metadata.json': utf8.encode(
+              '{"documents":[{"investmentName":"$_activeName",'
+              '"fileName":"$_documentName"',
+            ),
+          }),
+        );
+
+        expect(result.errors, ['Failed to parse metadata.json']);
+        expectNoUserTextIn(result.errors);
+        expect(result.totalImported, 0);
+        expectAccountUntouched();
+      },
+    );
+
+    test(
+      'Replace: bytes that are not a ZIP leave the error content-free',
+      () async {
+        final result = await importZip(
+          Uint8List.fromList(utf8.encode('$_activeName is not a zip file')),
+        );
+
+        expect(result.errors, ['Invalid ZIP file']);
+        expectNoUserTextIn(result.errors);
+        expect(result.totalImported, 0);
+        expectAccountUntouched();
+      },
+    );
   });
 
   group('an optional file that cannot be read is skipped with a warning', () {
