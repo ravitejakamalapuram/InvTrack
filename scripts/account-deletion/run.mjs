@@ -7,6 +7,7 @@ import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { countDocs, deleteUserData } from './delete.mjs';
+import { createGa4Deletion } from './ga4.mjs';
 import { findInactiveGuests, findOrphans, loadRequests, STALE_MS } from './sweep.mjs';
 import { verifyUserGone } from './verify.mjs';
 
@@ -23,6 +24,8 @@ export async function runJob({
   sweepGuestsDays = 0,
   deleter = deleteUserData,
   verifier = verifyUserGone,
+  // Asks Google Analytics to delete the events tied to this uid (ga4.mjs). Without a property ID it does nothing.
+  ga4 = createGa4Deletion({}),
   log = console.log,
 }) {
   const { due, fresh, malformed } = await loadRequests(db, now);
@@ -59,6 +62,10 @@ export async function runJob({
           continue;
         }
         const { docsDeleted, authDeleted } = await deleter({ db, auth, uid });
+        // After the data is gone, and whatever happens next: a failed request is only recorded, never retried
+        // here and never allowed to block or undo the deletion.
+        const analytics = await askGoogleAnalytics(ga4, uid);
+        result.ga4 = analytics.outcome;
         const check = await verifier({ db, auth, uid });
         result.docsDeleted = docsDeleted;
         result.authDeleted = authDeleted;
@@ -71,6 +78,8 @@ export async function runJob({
           docsDeleted,
           authDeleted,
           verified: check.ok,
+          ga4: analytics.outcome,
+          ga4Status: analytics.status ?? null,
           outcome: docsDeleted === 0 && !authDeleted ? 'nothing-to-delete' : 'deleted',
           completedAt: FieldValue.serverTimestamp(),
         });
@@ -90,6 +99,9 @@ export async function runJob({
   const stale = pending.filter((r) => now.getTime() - r.requestedAt.getTime() > STALE_MS).length;
   if (stale > 0) log(`ALERT: ${stale} request(s) older than 3 days are still pending.`);
 
+  const ga4Failed = results.filter((r) => r.ga4 === 'failed').length;
+  if (ga4Failed > 0) log(`WARNING: the Google Analytics deletion request failed for ${ga4Failed} account(s); see deletionAudit.`);
+
   const failed = results.filter((r) => !r.ok).length;
   const exitCode = refused ? 2 : failed > 0 || stale > 0 ? 1 : 0;
   const processedUids = dryRun ? [] : [...candidates.keys()].filter((_, i) => results[i]?.ok);
@@ -106,7 +118,17 @@ export async function runJob({
       completedAt: FieldValue.serverTimestamp(),
     });
   }
-  return { exitCode, refused, results, processedUids, stale };
+  return { exitCode, refused, results, processedUids, stale, ga4Failed };
+}
+
+/** Never throws: any error, including one from a custom client, becomes outcome 'failed' without its message. */
+async function askGoogleAnalytics(ga4, uid) {
+  try {
+    const res = await ga4(uid);
+    return { outcome: res?.outcome ?? 'failed', status: res?.status ?? null };
+  } catch {
+    return { outcome: 'failed', status: null };
+  }
 }
 
 /** Operator email fallback: turns an email into a normal queue entry. Deletes nothing. */
@@ -124,9 +146,10 @@ export async function requestByEmail({ db, auth, email, dryRun = true, log = con
 
 function summary(out) {
   const rows = out.results.map(
-    (r) => `| ${r.uidHash} | ${r.source} | ${r.docsDeleted ?? r.docsToDelete ?? '-'} | ${r.verified ?? '-'} | ${r.ok ? 'ok' : (r.error ?? (r.problems ?? []).join('; ')) || 'FAILED'} |`,
+    (r) => `| ${r.uidHash} | ${r.source} | ${r.docsDeleted ?? r.docsToDelete ?? '-'} | ${r.verified ?? '-'} | ${r.ga4 ?? '-'} | ${r.ok ? 'ok' : (r.error ?? (r.problems ?? []).join('; ')) || 'FAILED'} |`,
   );
-  return ['## Account deletion', '', '| uid hash | source | docs | verified | result |', '|---|---|---|---|---|', ...rows, ''].join('\n');
+  const header = '| uid hash | source | docs | verified | analytics | result |';
+  return ['## Account deletion', '', header, '|---|---|---|---|---|---|', ...rows, ''].join('\n');
 }
 
 async function main() {
@@ -151,6 +174,7 @@ async function main() {
     force: env.FORCE === 'true',
     maxPerRun: Number(env.MAX_PER_RUN || 25),
     sweepGuestsDays: Number(env.SWEEP_INACTIVE_GUESTS || 0),
+    ga4: createGa4Deletion({ propertyId: env.GA4_PROPERTY_ID }),
   });
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, summary(out));
   if (env.GITHUB_OUTPUT) {
