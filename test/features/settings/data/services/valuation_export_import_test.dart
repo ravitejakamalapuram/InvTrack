@@ -9,6 +9,7 @@ import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
+import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
@@ -340,24 +341,67 @@ void main() {
       expect(active.currentValueDate, DateTime(2026, 6, 1));
     });
 
-    test('snapshot ids are new, so an import cannot overwrite another '
-        'investment\'s snapshot', () async {
+    test('Replace restores the ids in the file (plan test 15)', () async {
       final bytes = (await export()).bytes;
-      final before = valuations.docs.keys.toSet();
-      await importZip(bytes, strategy: ImportStrategy.merge);
-      // Merge skips an investment that already exists: its snapshots are
-      // untouched and none is attached to it.
+      wipe();
+
+      await importZip(bytes);
+
+      // Live snapshots only: the cleared one (g4) is not exported.
+      expect(valuations.docs.keys.toSet(), {'g1', 'g2', 'g3', 'o1'});
+      final active = (await repo.getAllInvestments()).single;
       expect(
         {
           for (final s in valuations.docs.values)
-            if (s.investmentId == 'gold') s.id,
+            if (s.investmentId == active.id) s.id,
         },
-        {'g1', 'g2', 'g3', 'g4'},
+        {'g1', 'g2', 'g3'},
+      );
+    });
+
+    test('a repeated or unusable id gets a new one', () async {
+      wipe();
+      final result = await importZip(
+        _zip({
+          'cashflows.csv':
+              '${_cashFlowsHeader}2025-10-01,SGB 2031,INVEST,100000,INR,,gold,open\n',
+          'valuations.csv':
+              '$_newHeader'
+              'SGB 2031,false,2026-01-01,100,INR,dup,carryingValue,manual,,gold,open\n'
+              'SGB 2031,false,2026-02-01,200,INR,dup,carryingValue,manual,,gold,open\n'
+              'SGB 2031,false,2026-03-01,300,INR,../other,carryingValue,manual,,gold,open\n'
+              'SGB 2031,false,2026-04-01,400,INR,,carryingValue,manual,,gold,open\n',
+        }),
       );
 
-      wipe();
-      await importZip(bytes);
-      expect(valuations.docs.keys.toSet().intersection(before), isEmpty);
+      expect(result.errors, isEmpty);
+      final ids = [for (final s in await imported()) s.id];
+      expect(ids, hasLength(4));
+      expect(ids.toSet(), hasLength(4));
+      expect(ids, contains('dup'));
+      expect(ids.where((id) => id.contains('/') || id.isEmpty), isEmpty);
+    });
+
+    test('Merge mints new ids, so a renamed investment keeps its own '
+        'snapshots', () async {
+      final bytes = (await export()).bytes;
+      final before = valuations.docs.keys.toSet();
+      // Renamed since the backup: its name is no longer in the account, so
+      // the file's investment of that name is imported as a new one.
+      repo
+        ..reset()
+        ..seed(
+          investments: [testInvestment('gold').copyWith(name: 'SGB renamed')],
+        );
+
+      await importZip(bytes, strategy: ImportStrategy.merge);
+
+      expect(valuations.docs['g1']!.investmentId, 'gold');
+      expect(valuations.docs['g2']!.investmentId, 'gold');
+      expect(valuations.docs['g3']!.investmentId, 'gold');
+      final added = valuations.docs.keys.toSet().difference(before);
+      expect(added, isNotEmpty);
+      expect(added.intersection({'g1', 'g2', 'g3', 'g4', 'o1'}), isEmpty);
     });
   });
 
@@ -387,6 +431,25 @@ void main() {
       expect(rows[1][6], 'carryingValue');
       expect(rows[1][7], 'manual');
       expect(rows[1][8], isEmpty);
+    });
+
+    test('the legacy row\'s date is the day it was saved on, in any time '
+        'zone', () async {
+      // Firestore hands the stored UTC midnight back as a local instant.
+      // Under TZ=America/New_York this reads 30 Sep 19:00.
+      final read = DateTime.utc(2026, 10, 1).toLocal();
+      repo.seed(
+        investments: [
+          testInvestment(
+            'gold',
+            compatValue: 125000,
+            compatDate: read,
+          ).copyWith(name: 'SGB 2031'),
+        ],
+        cashFlows: [_invest('gold')],
+      );
+      final rows = valuationRows((await export()).bytes);
+      expect(rows[1][2], '2026-10-01');
     });
 
     test('a value an older app edited after the snapshots is exported last, '
@@ -530,6 +593,80 @@ void main() {
       );
       expect(result.warnings, isNotEmpty);
       expect(await imported(), isEmpty);
+    });
+  });
+
+  group('amounts are rounded once (money rule 5)', () {
+    test('the mirror holds the amount the snapshot is stored with', () async {
+      // 500000.005 is rounded to the paisa when stored; a mirror left at
+      // 500000.005 would differ from the snapshot and win over it.
+      final result = await importZip(
+        _zip({
+          'cashflows.csv':
+              '${_cashFlowsHeader}2025-10-01,SGB 2031,INVEST,100000,INR,,gold,open\n',
+          'valuations.csv':
+              '$_newHeader'
+              'SGB 2031,false,2026-01-01,500000.005,INR,,marketValue,manual,2026-01-02T09:30:00Z,gold,open\n',
+        }),
+      );
+
+      expect(result.errors, isEmpty);
+      final rounded = MoneyPrecision.round(500000.005, currencyCode: 'INR');
+      expect(rounded, 500000.01);
+      final snapshot = (await imported()).single;
+      final investment = (await repo.getAllInvestments()).single;
+      expect(snapshot.amount, rounded);
+      expect(investment.currentValue, rounded);
+      expect(investment.currentValueDate, snapshot.effectiveDate);
+    });
+
+    test('also for an investment with no cash flows', () async {
+      await importZip(
+        _zip({
+          'cashflows.csv': _cashFlowsHeader,
+          'valuations.csv':
+              '$_newHeader'
+              'Plot in Pune,false,2026-01-01,500000.005,INR,,marketValue,manual,,other,open\n',
+        }),
+      );
+
+      final rounded = MoneyPrecision.round(500000.005, currencyCode: 'INR');
+      expect((await imported()).single.amount, rounded);
+      expect((await repo.getAllInvestments()).single.currentValue, rounded);
+    });
+  });
+
+  group('a valuations.csv that cannot be read', () {
+    test('stops a Replace before anything is deleted', () async {
+      repo.seed(
+        investments: [testInvestment('keep').copyWith(name: 'Keep me')],
+        cashFlows: [_invest('keep')],
+      );
+      final zip = Archive();
+      void add(String name, List<int> data) =>
+          zip.addFile(ArchiveFile(name, data.length, data));
+      add(
+        'metadata.json',
+        utf8.encode(jsonEncode({'version': '1.0', 'documents': []})),
+      );
+      add(
+        'cashflows.csv',
+        utf8.encode(
+          '${_cashFlowsHeader}2025-10-01,SGB 2031,INVEST,100000,INR,,gold,open\n',
+        ),
+      );
+      // Not valid UTF-8.
+      add('valuations.csv', [0xFF, 0xFE, 0xFA, 0x80]);
+
+      final result = await importZip(
+        Uint8List.fromList(ZipEncoder().encode(zip)!),
+      );
+
+      expect(result.errors, isNotEmpty);
+      expect(result.investmentsImported, 0);
+      expect(result.cashflowsImported, 0);
+      expect((await repo.getAllInvestments()).map((i) => i.id), ['keep']);
+      expect(repo.cashFlows, hasLength(1));
     });
   });
 

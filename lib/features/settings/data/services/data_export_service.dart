@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/core/utils/csv_utils.dart';
+import 'package:inv_tracker/core/utils/stored_date.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -294,7 +295,10 @@ class DataExportService {
       } else {
         LoggerService.debug(
           'Document not found or inaccessible during export',
-          metadata: {'documentId': doc.id, 'investmentId': doc.investmentId},
+          metadata: {
+            'documentId': doc.id,
+            'investmentId': doc.investmentId,
+          },
         );
         documentsFailed++;
       }
@@ -507,7 +511,8 @@ class DataExportService {
   ///
   /// The first five columns are the ones older versions read, which keep the
   /// last row per investment: so each investment's rows go oldest first and
-  /// the newest comes last. The Type and Status columns let an import create
+  /// the newest comes last. A Replace import restores the Snapshot IDs; a
+  /// Merge gives its snapshots new ones. The Type and Status columns let an import create
   /// an investment that has no cash flows. Estimated values are not stored,
   /// so they are not exported.
   String _generateValuationsCsv({
@@ -587,7 +592,8 @@ class DataExportService {
     if (own.isEmpty || (shown?.isCompat ?? false)) {
       rows.add(
         _ValuationRow(
-          date: date,
+          // The day the pair was saved on, as the selector reads it.
+          date: StoredDate.fromStorage(date),
           value: value,
           currency: inv.currency,
           kind: ValuationKind.carryingValue,

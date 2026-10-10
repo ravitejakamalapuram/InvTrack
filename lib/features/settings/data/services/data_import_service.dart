@@ -7,6 +7,7 @@ import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settings_repository.dart';
@@ -162,6 +163,31 @@ class DataImportService {
       );
     }
 
+    // Dated valuations the user entered, attached to the investments created
+    // below (money rule 6). Each is taken by the investment it belongs to,
+    // so what is left has no cash flows (an opening baseline, say). Read
+    // before anything is deleted: a file that cannot be read stops a
+    // Replace with the existing data still in place.
+    final valuationsFile = archive.findFile('valuations.csv');
+    final Map<(bool, String), List<_ImportedValuation>> valuations;
+    try {
+      valuations = valuationsFile == null
+          ? {}
+          : _parseValuationsCsv(
+              utf8.decode(valuationsFile.content as List<int>),
+              warnings,
+            );
+    } on FormatException catch (e) {
+      return ZipImportResult(
+        investmentsImported: 0,
+        cashflowsImported: 0,
+        goalsImported: 0,
+        documentsImported: 0,
+        errors: ['Failed to read valuations.csv: ${e.message}'],
+      );
+    }
+    final snapshots = <InvestmentValuationSnapshot>[];
+
     // 3. If strategy is replace, delete all existing data first
     if (strategy == ImportStrategy.replace) {
       await _deleteAllExistingData();
@@ -173,18 +199,6 @@ class DataImportService {
     int cashflowsImported = 0;
     int goalsImported = 0;
     final investmentNameToIdMap = <String, String>{};
-
-    // Dated valuations the user entered, attached to the investments created
-    // below (money rule 6). Each is taken by the investment it belongs to,
-    // so what is left has no cash flows (an opening baseline, say).
-    final valuationsFile = archive.findFile('valuations.csv');
-    final valuations = valuationsFile == null
-        ? <(bool, String), List<_ImportedValuation>>{}
-        : _parseValuationsCsv(
-            utf8.decode(valuationsFile.content as List<int>),
-            warnings,
-          );
-    final snapshots = <InvestmentValuationSnapshot>[];
 
     // Import cashflows (active)
     final cashflowsFile = archive.findFile('cashflows.csv');
@@ -497,6 +511,8 @@ class DataImportService {
         rows: valuationRows,
         now: now,
         warnings: warnings,
+        keepIds: strategy == ImportStrategy.replace,
+        takenIds: {for (final s in snapshots) s.id},
       );
       snapshots.addAll(routed);
       // The currentValue pair mirrors the latest snapshot, whatever the
@@ -565,6 +581,10 @@ class DataImportService {
     );
   }
 
+  /// A snapshot id the file may keep: what this app writes (UUIDs, Firestore
+  /// ids), and nothing that could address another path.
+  static final _snapshotIdPattern = RegExp(r'^[A-Za-z0-9_-]{1,64}$');
+
   /// Parses valuations.csv into rows keyed by (archived, lowercase
   /// investment name), the way cash flow rows name their investment. Files
   /// from before the Snapshot ID, Kind, Source, Updated At, Investment Type
@@ -594,6 +614,7 @@ class DataImportService {
       warnings.add('Current values not imported: valuations.csv is invalid');
       return {};
     }
+    final idCol = header.indexOf('Snapshot ID');
     final kindCol = header.indexOf('Kind');
     final sourceCol = header.indexOf('Source');
     final updatedCol = header.indexOf('Updated At');
@@ -647,6 +668,7 @@ class DataImportService {
               value: value,
               date: DateTime(parsedDate.year, parsedDate.month, parsedDate.day),
               currency: currency,
+              snapshotId: cell(idCol),
               kind: kind,
               provenance: provenance,
               updatedAt: DateTime.tryParse(cell(updatedCol))?.toUtc(),
@@ -668,6 +690,12 @@ class DataImportService {
   /// investment's currency, there is at most one opening baseline (the
   /// earliest), and no more than the 100 live snapshots an investment keeps
   /// (the oldest go first). Skipped rows are reported without amounts.
+  ///
+  /// Amounts are rounded to the currency here, so that the snapshot and the
+  /// investment's mirror of it hold the same figure. With [keepIds] (Replace,
+  /// when no investment is left whose snapshot an id could overwrite) a row
+  /// keeps the id of the file, unless it is unusable or in [takenIds] or
+  /// repeated; every other snapshot gets a new one.
   List<InvestmentValuationSnapshot> _routeSnapshots({
     required String investmentId,
     required String name,
@@ -675,7 +703,17 @@ class DataImportService {
     required List<_ImportedValuation> rows,
     required DateTime now,
     required List<String> warnings,
+    required bool keepIds,
+    required Set<String> takenIds,
   }) {
+    final used = {...takenIds};
+    String idOf(_ImportedValuation row) {
+      final id = row.snapshotId;
+      return keepIds && _snapshotIdPattern.hasMatch(id) && used.add(id)
+          ? id
+          : _uuid.v4();
+    }
+
     final ordered = [...rows]
       ..sort((a, b) {
         final byDate = a.date.compareTo(b.date);
@@ -705,11 +743,9 @@ class DataImportService {
       }
       accepted.add(
         InvestmentValuationSnapshot(
-          // New ids, so that restoring a file into an account that already
-          // holds some of them cannot overwrite another investment's.
-          id: _uuid.v4(),
+          id: idOf(row),
           investmentId: investmentId,
-          amount: row.value,
+          amount: MoneyPrecision.round(row.value, currencyCode: currency),
           currency: currency,
           effectiveDate: row.date,
           kind: row.kind,
@@ -779,6 +815,8 @@ class DataImportService {
         rows: rows,
         now: now,
         warnings: warnings,
+        keepIds: strategy == ImportStrategy.replace,
+        takenIds: {for (final s in snapshots) s.id},
       );
       // Nothing usable is left for this investment: create nothing.
       if (routed.isEmpty) continue;
@@ -929,9 +967,7 @@ class DataImportService {
     // Security: Validate file signature to prevent extension spoofing
     // and malicious file uploads during ZIP import.
     if (!FileSignatureUtils.validateFileSignature(uint8Bytes, fileName)) {
-      throw Exception(
-        'Security: File signature validation failed for $fileName',
-      );
+      throw Exception('Security: File signature validation failed for $fileName');
     }
 
     // Save the file to local storage
@@ -971,6 +1007,10 @@ class _ImportedValuation {
   final double value;
   final DateTime date;
   final String currency;
+
+  /// The Snapshot ID column; blank in files from before it existed and for
+  /// a value an older app saved.
+  final String snapshotId;
   final ValuationKind kind;
   final ValuationProvenance provenance;
   final DateTime? updatedAt;
@@ -984,6 +1024,7 @@ class _ImportedValuation {
     required this.value,
     required this.date,
     required this.currency,
+    required this.snapshotId,
     required this.kind,
     required this.provenance,
     this.updatedAt,
