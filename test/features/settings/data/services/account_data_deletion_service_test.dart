@@ -158,6 +158,7 @@ void main() {
         'fireSettings',
         'profile',
         'exchangeRates',
+        'valuations',
       ]),
     );
   });
@@ -168,7 +169,7 @@ void main() {
       final tree = FakeUserTree({
         for (final c in AccountDataDeletionService.userCollections) c: 3,
       });
-      expect(tree.totalRemaining, 36);
+      expect(tree.totalRemaining, 39);
 
       await build(tree).deleteAllServerData();
 

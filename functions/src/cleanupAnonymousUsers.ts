@@ -97,6 +97,10 @@ export const cleanupOldAnonymousUsers = functions.pubsub
  * - profile
  * - exchangeRates
  * - healthScores
+ * - valuations
+ *
+ * Keep this list equal to AccountDataDeletionService.userCollections in the
+ * app; a Dart test compares the two.
  */
 const MAX_RETRY_ATTEMPTS = 3;
 
@@ -160,6 +164,7 @@ async function deleteUserData(userId: string): Promise<void> {
     'profile',
     'exchangeRates',
     'healthScores', // Week 2: Portfolio Health Score snapshots
+    'valuations', // Dated valuation snapshots of investments
   ];
 
   const PAGE_SIZE = 500;
