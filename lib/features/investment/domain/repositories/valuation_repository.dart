@@ -76,8 +76,11 @@ abstract class ValuationRepository {
 
   /// Writes imported snapshots as given (their update time included, so that
   /// same-day ties survive) in chunks, and returns how many were written. A
-  /// chunk holds whole investments, so when one fails after earlier ones
-  /// committed, an investment has all of its snapshots or none. The caller
-  /// writes the investments' mirrors.
+  /// chunk holds whole investments whenever an investment fits in one, so
+  /// when a chunk fails after earlier ones committed, such an investment has
+  /// all of its snapshots or none. An investment with more snapshots than one
+  /// chunk holds (the app writes at most 100; only an edited file can have
+  /// more) gets chunks of its own, and a failure can leave part of it
+  /// written. The caller writes the investments' mirrors.
   Future<int> importAll(List<InvestmentValuationSnapshot> snapshots);
 }
