@@ -14,9 +14,11 @@ import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settin
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/repositories/goal_repository.dart';
 import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
+import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
+import 'package:inv_tracker/features/investment/domain/repositories/custom_investment_type_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
@@ -28,6 +30,14 @@ enum ExportFileType {
   goals,
   goalsArchived,
   valuations,
+
+  /// The account's reusable custom investment types (#936); written only when
+  /// there are any.
+  customTypes,
+
+  /// The custom type label of each Other investment (#936); written only when
+  /// any has one.
+  investmentCustomTypes,
 }
 
 /// An export ZIP held in memory, with the number of records it was built
@@ -108,6 +118,7 @@ class DataExportService {
   final DocumentStorageService _documentStorageService;
   final FireSettingsRepository? _fireSettingsRepository;
   final ExpectedCashFlowRepository? _expectedCashFlowRepository;
+  final CustomInvestmentTypeRepository? _customInvestmentTypeRepository;
   final PerformanceService _performanceService;
 
   DataExportService({
@@ -117,6 +128,7 @@ class DataExportService {
     required DocumentStorageService documentStorageService,
     FireSettingsRepository? fireSettingsRepository,
     ExpectedCashFlowRepository? expectedCashFlowRepository,
+    CustomInvestmentTypeRepository? customInvestmentTypeRepository,
     required PerformanceService performanceService,
   }) : _investmentRepository = investmentRepository,
        _goalRepository = goalRepository,
@@ -124,6 +136,7 @@ class DataExportService {
        _documentStorageService = documentStorageService,
        _fireSettingsRepository = fireSettingsRepository,
        _expectedCashFlowRepository = expectedCashFlowRepository,
+       _customInvestmentTypeRepository = customInvestmentTypeRepository,
        _performanceService = performanceService;
 
   /// Export all user data as a ZIP file
@@ -207,10 +220,26 @@ class DataExportService {
       archived: archivedInvestments,
     );
 
+    // Custom types (#936): files only when there is something to write, so
+    // an account without any exports exactly what it did before. Not caught:
+    // a failure here must not give a backup that silently lacks them.
+    final customTypes = [
+      ...?await _customInvestmentTypeRepository?.getAll(),
+    ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final customTypesCsv = customTypes.isEmpty
+        ? null
+        : _generateCustomTypesCsv(customTypes);
+    final investmentCustomTypesCsv = _generateInvestmentCustomTypesCsv(
+      active: investments,
+      archived: archivedInvestments,
+    );
+
     // 3. Create metadata JSON
     final metadata = _createMetadata(
       documents: allDocuments,
       investments: allInvestments,
+      hasCustomTypes: customTypesCsv != null,
+      hasInvestmentCustomTypes: investmentCustomTypesCsv != null,
     );
 
     // 4. Create ZIP archive
@@ -247,6 +276,15 @@ class DataExportService {
     archive.addFile(
       ArchiveFile('valuations.csv', valuationsBytes.length, valuationsBytes),
     );
+
+    for (final (name, content) in [
+      ('custom_types.csv', customTypesCsv),
+      ('investment_custom_types.csv', investmentCustomTypesCsv),
+    ]) {
+      if (content == null) continue;
+      final bytes = utf8.encode(content);
+      archive.addFile(ArchiveFile(name, bytes.length, bytes));
+    }
 
     // Add metadata JSON
     final metadataBytes = utf8.encode(jsonEncode(metadata));
@@ -506,6 +544,49 @@ class DataExportService {
     return csv.encode(rows);
   }
 
+  /// Generate CSV for the account's reusable custom types (#936).
+  /// Format: Label, Removed. Ids are not exported: an import matches types by
+  /// label.
+  String _generateCustomTypesCsv(List<CustomInvestmentType> types) {
+    final rows = <List<dynamic>>[
+      ['Label', 'Removed'],
+      for (final type in types)
+        [CsvUtils.sanitizeField(type.label), type.isRemoved],
+    ];
+    return csv.encode(rows);
+  }
+
+  /// Generate CSV for the custom type label of each Other investment (#936),
+  /// or null if none has one. Format: Investment Name, Archived, Custom Type,
+  /// Linked (whether it referred to a reusable type or was a label for that
+  /// investment only).
+  String? _generateInvestmentCustomTypesCsv({
+    required List<InvestmentEntity> active,
+    required List<InvestmentEntity> archived,
+  }) {
+    final rows = <List<dynamic>>[
+      ['Investment Name', 'Archived', 'Custom Type', 'Linked'],
+    ];
+    for (final (inv, isArchived) in [
+      for (final inv in active) (inv, false),
+      for (final inv in archived) (inv, true),
+    ]) {
+      final label = inv.customTypeLabel;
+      if (inv.type != InvestmentType.other ||
+          label == null ||
+          label.trim().isEmpty) {
+        continue;
+      }
+      rows.add([
+        CsvUtils.sanitizeField(inv.name),
+        isArchived,
+        CsvUtils.sanitizeField(label),
+        inv.customTypeId != null,
+      ]);
+    }
+    return rows.length == 1 ? null : csv.encode(rows);
+  }
+
   /// Converts CashFlowType to export string (reused from ExportService)
   String _typeToExportString(CashFlowType type) {
     switch (type) {
@@ -526,6 +607,8 @@ class DataExportService {
   Map<String, dynamic> _createMetadata({
     required List<DocumentEntity> documents,
     required List<InvestmentEntity> investments,
+    required bool hasCustomTypes,
+    required bool hasInvestmentCustomTypes,
   }) {
     // Create a lookup map for investment names
     final investmentIdToName = <String, String>{
@@ -547,6 +630,16 @@ class DataExportService {
           'type': ExportFileType.goalsArchived.name,
         },
         {'fileName': 'valuations.csv', 'type': ExportFileType.valuations.name},
+        if (hasCustomTypes)
+          {
+            'fileName': 'custom_types.csv',
+            'type': ExportFileType.customTypes.name,
+          },
+        if (hasInvestmentCustomTypes)
+          {
+            'fileName': 'investment_custom_types.csv',
+            'type': ExportFileType.investmentCustomTypes.name,
+          },
       ],
       'documents': documents.map((d) {
         return _documentToJson(d, investmentIdToName[d.investmentId] ?? '');
