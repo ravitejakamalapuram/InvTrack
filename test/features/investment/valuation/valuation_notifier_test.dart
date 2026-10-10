@@ -472,15 +472,28 @@ void main() {
   });
 
   group('rebase (plan test 9)', () {
+    final baselineDay = DateTime(day.year, 1, 1);
+
+    Future<InvestmentValuationSnapshot> baselineOn(DateTime on) =>
+        notifier().setValuation(
+          investmentId: 'gold',
+          amount: 500000,
+          date: on,
+          openingBaseline: true,
+        );
+
     test(
       'confirming the full history relabels the baseline as manual',
       () async {
-        final baseline = await notifier().setValuation(
-          investmentId: 'gold',
-          amount: 500000,
-          date: DateTime(day.year, 1, 1),
-          openingBaseline: true,
+        // The history was entered after the baseline: a flow before it.
+        final history = testFlow(
+          'gold',
+          CashFlowType.invest,
+          400000,
+          DateTime(day.year - 1, 5, 1),
         );
+        investments.seed(cashFlows: [history]);
+        final baseline = await baselineOn(baselineDay);
         final rebased = await notifier().rebase(baseline.id);
 
         expect(rebased.provenance, ValuationProvenance.manual);
@@ -488,9 +501,48 @@ void main() {
         expect(rebased.amount, 500000);
         expect(rebased.effectiveDate, baseline.effectiveDate);
         expect(valuations.docs, hasLength(1));
-        expect(investments.cashFlows, isEmpty);
+        // No cash flow is written or removed.
+        expect(investments.cashFlows, [history]);
       },
     );
+
+    test('a flow on the baseline day is history too', () async {
+      investments.seed(
+        cashFlows: [testFlow('gold', CashFlowType.invest, 400000, baselineDay)],
+      );
+      final baseline = await baselineOn(baselineDay);
+      final rebased = await notifier().rebase(baseline.id);
+      expect(rebased.provenance, ValuationProvenance.manual);
+    });
+
+    test('with no cash flows there is no history to confirm', () async {
+      // Rebasing would turn a value with an unknown cost into pure gain.
+      final baseline = await baselineOn(baselineDay);
+      await expectRejected(() => notifier().rebase(baseline.id));
+      expect(
+        valuations.docs[baseline.id]!.provenance,
+        ValuationProvenance.openingBaseline,
+      );
+    });
+
+    test('flows dated only after the baseline are not its history', () async {
+      investments.seed(
+        cashFlows: [
+          testFlow(
+            'gold',
+            CashFlowType.income,
+            100,
+            baselineDay.add(const Duration(days: 1)),
+          ),
+        ],
+      );
+      final baseline = await baselineOn(baselineDay);
+      await expectRejected(() => notifier().rebase(baseline.id));
+      expect(
+        valuations.docs[baseline.id]!.provenance,
+        ValuationProvenance.openingBaseline,
+      );
+    });
 
     test('only a baseline can be rebased', () async {
       final manual = await notifier().setValuation(
@@ -505,6 +557,13 @@ void main() {
   group('nothing built for a calculation is stored (AC11)', () {
     test('no write holds a current-value: or tracking-start: id, or a cash '
         'flow', () async {
+      final history = testFlow(
+        'gold',
+        CashFlowType.invest,
+        400000,
+        day.subtract(const Duration(days: 400)),
+      );
+      investments.seed(cashFlows: [history]);
       final baseline = await notifier().setValuation(
         investmentId: 'gold',
         amount: 500000,
@@ -524,7 +583,8 @@ void main() {
       for (final id in valuations.docs.keys) {
         expect(TerminalValues.isEphemeralId(id), isFalse, reason: id);
       }
-      expect(investments.cashFlows, isEmpty);
+      // Only the one flow seeded above: nothing was added.
+      expect(investments.cashFlows, [history]);
       expect(investments.archivedCashFlows, isEmpty);
     });
   });
@@ -610,6 +670,44 @@ void main() {
         isEmpty,
         reason: 'one notice per overwrite, not a repeat of the same one',
       );
+    });
+
+    test('a snapshot this device cleared that the server still holds live is '
+        'reported', () async {
+      final sub = container.listen(valuationConflictsProvider, (_, _) {});
+      addTearDown(sub.close);
+      final saved = await notifier().setValuation(
+        investmentId: 'gold',
+        amount: 100,
+        date: day,
+      );
+      await notifier().clearValuation(saved.id);
+
+      // The server confirms the clear: no notice.
+      valuations.emitServer([saved.copyWith(deletedAt: DateTime.now())]);
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(valuationConflictsProvider), isEmpty);
+
+      // Another device edited it after the clear and won.
+      valuations.emitServer([saved]);
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(valuationConflictsProvider), {saved.id});
+    });
+
+    test('a snapshot this device wrote that the server holds cleared is '
+        'reported', () async {
+      final sub = container.listen(valuationConflictsProvider, (_, _) {});
+      addTearDown(sub.close);
+      final saved = await notifier().setValuation(
+        investmentId: 'gold',
+        amount: 100,
+        date: day,
+      );
+
+      // Another device cleared it and won.
+      valuations.emitServer([saved.copyWith(deletedAt: DateTime.now())]);
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(valuationConflictsProvider), {saved.id});
     });
 
     test('a snapshot this session did not write is never reported', () async {

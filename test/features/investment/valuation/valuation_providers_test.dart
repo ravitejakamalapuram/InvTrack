@@ -63,6 +63,19 @@ void main() {
     expect(repo.watchCount, 0);
   });
 
+  test('the flag off gives the by-investment view at once, before any stream '
+      'has emitted', () {
+    final c = container(enabled: false);
+
+    // Read synchronously: with the guard gone it would be loading until the
+    // investments and snapshots streams arrive.
+    final byInvestment = c.read(valuationSnapshotsByInvestmentProvider);
+    expect(byInvestment.isLoading, isFalse);
+    expect(byInvestment.hasValue, isTrue);
+    expect(byInvestment.requireValue, isEmpty);
+    expect(c.read(investmentValuationSnapshotsProvider('i1')), isEmpty);
+  });
+
   test('signed out opens no listener', () async {
     repo.docs['a'] = live;
     final c = container(signedIn: false);

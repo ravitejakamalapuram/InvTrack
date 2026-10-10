@@ -253,7 +253,9 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
 
   /// Confirms that the full history is now entered: an opening baseline
   /// becomes a plain value. The snapshot is kept, no cash flow is written or
-  /// removed, and lifetime metrics start.
+  /// removed, and lifetime metrics start. Needs at least one cash flow dated
+  /// on or before the baseline day, otherwise there is no history to confirm
+  /// and [ValidationException] is thrown.
   Future<InvestmentValuationSnapshot> rebase(String snapshotId) async {
     return _run(() async {
       final current = await _liveSnapshot(snapshotId);
@@ -264,6 +266,19 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
         );
       }
       final investment = await _writableInvestment(current.investmentId);
+      // Lifetime metrics start from the history, so there must be some: with
+      // no cash flow on or before the baseline day, the value would read as
+      // pure gain.
+      final baselineDay = _dateOnly(current.effectiveDate);
+      final flows = await ref
+          .read(investmentRepositoryProvider)
+          .getCashFlowsByInvestment(investment.id);
+      if (!flows.any((cf) => !_dateOnly(cf.date).isAfter(baselineDay))) {
+        throw _rejected(
+          'Add the cash flows from before this opening value first.',
+          'rebase with no cash flow on or before the baseline',
+        );
+      }
       final rebased = current.copyWith(provenance: ValuationProvenance.manual);
       await _save(investment, rebased, await _liveSnapshotsOf(investment.id));
       return rebased;

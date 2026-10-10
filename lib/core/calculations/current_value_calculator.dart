@@ -355,8 +355,9 @@ class CurrentValueCalculator {
   /// before adding them to converted cash flows (money rule 2).
   ///
   /// With [snapshots], an investment that has some is valued even with no
-  /// cash flows, and the ones with limited history (an opening baseline) are
-  /// listed in [TerminalValues.limitedHistoryIds].
+  /// cash flows. The ones with limited history (an opening baseline) and the
+  /// ones with no cash flows at all are listed in
+  /// [TerminalValues.limitedHistoryIds].
   static TerminalValues terminalValues({
     required List<InvestmentEntity> investments,
     required List<CashFlowEntity> cashFlows,
@@ -399,7 +400,10 @@ class CurrentValueCalculator {
       }
 
       isEstimate = isEstimate || valuation.isEstimate;
-      if (valuation.historyLimited) limited.add(investment.id);
+      // A value with no cash flows at all (an opening baseline or a plain
+      // snapshot) has no known cost or dates either: counting it as pure
+      // gain would be a made-up return (money rule 4).
+      if (valuation.historyLimited || own.isEmpty) limited.add(investment.id);
       rates.add(
         valuation.source == ValuationSource.accruedInterest
             ? valuation.rate

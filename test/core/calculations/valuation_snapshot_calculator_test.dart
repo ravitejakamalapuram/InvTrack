@@ -424,6 +424,84 @@ void main() {
     },
   );
 
+  group('a plain snapshot with no cash flows (money rule 4)', () {
+    // A put in 1,00,000 and it is worth 1,00,000 (1.0x). B has no cash flows
+    // and a plain (not opening baseline) snapshot of 1,00,000: its cost is
+    // unknown, so it must not read as 1,00,000 of pure gain.
+    final a = testInvestment('a');
+    final b = testInvestment('b');
+    final aFlows = [
+      testFlow('a', CashFlowType.invest, 100000, DateTime(2025, 10, 2)),
+    ];
+    final aSnapshot = testSnapshot(
+      'sa',
+      investmentId: 'a',
+      amount: 100000,
+      date: _today,
+      kind: ValuationKind.marketValue,
+    );
+    final bSnapshot = testSnapshot(
+      'sb',
+      investmentId: 'b',
+      amount: 100000,
+      date: _today,
+      kind: ValuationKind.marketValue,
+    );
+    final snapshots = {
+      'a': [aSnapshot],
+      'b': [bSnapshot],
+    };
+
+    TerminalValues terminal(List<InvestmentEntity> investments) =>
+        CurrentValueCalculator.terminalValues(
+          investments: investments,
+          cashFlows: aFlows,
+          asOf: _today,
+          snapshots: snapshots,
+        );
+
+    test('its investment is listed as having limited history', () {
+      expect(terminal([a, b]).limitedHistoryIds, {'b'});
+    });
+
+    test('the portfolio keeps the return of the investment with history', () {
+      final alone = module.calculateStats(
+        aFlows,
+        terminalValues: terminal([a]),
+      );
+      expect(alone.moic, closeTo(1.0, 1e-9));
+      expect(alone.absoluteReturn, closeTo(0.0, 1e-9));
+      expect(alone.xirr, closeTo(0.0, 1e-6));
+
+      final both = module.calculateStats(
+        aFlows,
+        terminalValues: terminal([a, b]),
+      );
+      expect(both.moic, closeTo(1.0, 1e-9));
+      expect(both.absoluteReturn, closeTo(0.0, 1e-9));
+      expect(both.xirr, closeTo(0.0, 1e-6));
+      expect(both.returnsKnown, isTrue);
+      // Its value still counts as the portfolio's value.
+      expect(both.currentValue, 200000.00);
+      expect(both.limitedHistoryCount, 1);
+    });
+
+    test('on its own its returns are unknown, not 0x or 0%', () {
+      final stats = module.calculateStats(
+        const [],
+        terminalValues: CurrentValueCalculator.terminalValues(
+          investments: [b],
+          cashFlows: const [],
+          asOf: _today,
+          snapshots: snapshots,
+        ),
+      );
+      expect(stats.currentValue, 100000.00);
+      expect(stats.returnsKnown, isFalse);
+      expect(stats.xirr, isNull);
+    });
+  });
+
   group('history added after a baseline (plan test 9)', () {
     final baseline = _baseline(500000, DateTime(2026, 1, 1));
     final history = [
