@@ -44,7 +44,7 @@ flutter analyze --no-fatal-infos
 - ✅ **Tests Written:** 23 tests across 4 layers (100% pass rate)
 - ✅ Beta detection method has unit tests (version_check_provider_test.dart)
 - ✅ Version comparison logic has tests (app_version_entity_test.dart)
-- ✅ See docs/TEST_COVERAGE_SUMMARY.md for details
+- ✅ See docs/archive/TEST_COVERAGE_SUMMARY.md for details
 
 ### 2.3 Naming ✅
 - ✅ Files: `snake_case.dart` (all files follow this)
@@ -294,11 +294,11 @@ lib/features/app_update/
 ### 2. Create Firestore Documents (One-Time Setup)
 - Create `app_config/version_info` in Firebase Console
 - Create `app_config/version_info_beta` in Firebase Console
-- See docs/TWO_TRACK_VERSION_SYSTEM.md for structure
+- See docs/archive/TWO_TRACK_VERSION_SYSTEM.md for structure
 
 **Total: 23 tests, 100% pass rate** ✅
 
-See `docs/TEST_COVERAGE_SUMMARY.md` for details.
+See `docs/archive/TEST_COVERAGE_SUMMARY.md` for details.
 
 ---
 

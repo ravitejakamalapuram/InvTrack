@@ -210,47 +210,35 @@ flutter test --coverage
 
 ## 📚 Documentation
 
-- **[Product Roadmap](docs/PRODUCT_ROADMAP.md)** - Feature roadmap and vision
-- **[PRD](docs/InvTracker_PRD.md)** - Product Requirements Document
-- **[Bulk Import Guide](docs/BULK_IMPORT_GUIDE.md)** - CSV import instructions
+- **[Review action plan](docs/review-2026-10/ACTION_PLAN.md)** and **[findings](docs/review-2026-10/FINDINGS.md)** - The current plan of record (October 2026 review)
+- **[Financial data model](docs/FINANCIAL_DATA_MODEL.md)** - Ledger, valuation and currency rules
+- **[Currency conversion architecture](docs/CURRENCY_CONVERSION_ARCHITECTURE.md)** - How cash flows are converted to your base currency
+- **[Localization](docs/LOCALIZATION.md)** and **[currency localization guide](docs/CURRENCY_LOCALIZATION_GUIDE.md)** - Number, date and currency formatting
+- **[Notifications](docs/NOTIFICATIONS_KT.md)** - How the notification system works
 - **[FIRE Number Guide](docs/fire-number-kt.md)** - FIRE calculator documentation
-- **[TODO](TODO.md)** - Technical debt and improvement backlog
+- **[Bulk Import Guide](docs/BULK_IMPORT_GUIDE.md)** - CSV import instructions
+- **[Accessibility](docs/ACCESSIBILITY.md)** - Accessibility guidance
+- **[Store listing runbook](docs/UPDATE_STORE_LISTING.md)** and **[CI/CD workflows](.github/workflows/README.md)** - Releasing and the Play listing
+- **[Archive](docs/archive/)** - Older status reports, specs and plans. They are kept for history and may not describe the current code.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these guidelines:
+Please open an [issue](https://github.com/ravitejakamalapuram/InvTrack/issues) before sending a pull request. All rights are reserved (see [License](#-license)), so code contributions are accepted only after the owner agrees to them.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Follow the coding standards in `.augment/rules/invtrack_rules.md`
-4. Write tests for new features
-5. Ensure all tests pass (`flutter test`)
-6. Run static analysis (`flutter analyze`)
-7. Commit your changes (`git commit -m 'feat: Add amazing feature'`)
-8. Push to the branch (`git push origin feature/amazing-feature`)
-9. Open a Pull Request
+Development workflow:
+
+1. Create a feature branch (`git checkout -b feature/amazing-feature`)
+2. Follow the coding standards in `CLAUDE.md` and `.augment/rules/invtrack_rules.md`
+3. Write tests for new features
+4. Run static analysis (`flutter analyze --fatal-warnings --no-fatal-infos`) and the tests (`flutter test --exclude-tags=golden`)
+5. Commit with a conventional-commit message (`git commit -m 'feat: add amazing feature'`); release notes are generated from these
+6. Push the branch and open a Pull Request
 
 ### 🤖 AI-Powered Code Review
 
-InvTrack uses **CodeRabbit AI** for automated code reviews (FREE for open source!):
-
-- ✅ **Auto-fix tools**: Localization, privacy, accessibility, architecture checks
-- ✅ **Generate unit tests**: AI-generated test cases for new code
-- ✅ **Smart suggestions**: Context-aware code improvements
-- ✅ **Knowledge base**: Learns from InvTrack's rules and documentation
-
-**See [CODERABBIT_FEATURES.md](docs/CODERABBIT_FEATURES.md) for full guide**
-
-### Code Quality Standards
-- Zero analyzer errors/warnings
-- All tests passing (≥60% coverage)
-- Cyclomatic complexity <15 per 100 lines
-- Proper error handling with `AppException` hierarchy
-- Accessibility compliance (WCAG)
-- Security best practices (OWASP MASVS)
-- Clean Architecture layer boundaries enforced
+Pull requests are reviewed with **CodeRabbit** (configured in [`.coderabbit.yaml`](.coderabbit.yaml)). Reviews are not automatic: ask for one by commenting `@coderabbitai review` on the pull request.
 
 ---
 

@@ -249,7 +249,7 @@ AppDateUtils.formatByPattern(date, settings.dateFormatPattern)
 
 ## Resources
 
-- [Full Documentation](LOCALIZATION.md)
+- [Full Documentation](../LOCALIZATION.md)
 - [Migration Guide](LOCALIZATION_MIGRATION.md)
 - [Implementation Summary](../IMPLEMENTATION_SUMMARY.md)
 

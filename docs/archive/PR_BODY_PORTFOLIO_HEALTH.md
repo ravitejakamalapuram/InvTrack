@@ -274,8 +274,8 @@ Feature enabled/disabled (persisted)
 ## 📖 **Related Documentation**
 
 - `docs/research/MBA_LEVEL_INNOVATION_ANALYSIS.md` - Market analysis + 10 feature ideas
-- `docs/CODE_REVIEW_PORTFOLIO_HEALTH.md` - Comprehensive code review
-- `docs/INNOVATION_SUMMARY.md` - Executive summary
+- `docs/archive/CODE_REVIEW_PORTFOLIO_HEALTH.md` - Comprehensive code review
+- `docs/archive/INNOVATION_SUMMARY.md` - Executive summary
 - `TODO.md` - Updated strategic vision + roadmap
 
 ---

@@ -19,7 +19,7 @@ InvTrack uses Firebase Crashlytics for crash reporting and monitoring with two a
 4. Creates pull requests automatically
 5. You review and merge the PRs
 
-📖 **Full Guide:** See [JULES_CRASH_FIX_AUTOMATION.md](./JULES_CRASH_FIX_AUTOMATION.md)
+📖 **Full Guide:** See [JULES_CRASH_FIX_AUTOMATION.md](../JULES_CRASH_FIX_AUTOMATION.md)
 
 **Benefits:**
 - Proactive fixing without manual intervention
@@ -39,7 +39,7 @@ For monitoring crashes directly:
 2. **Firebase MCP Tools** (AI-assisted debugging)
    - Use Firebase CLI with MCP (Model Context Protocol)
    - Query crash data conversationally with AI
-   - See `docs/FIREBASE_CRASHLYTICS_MCP_SETUP.md` for details
+   - See `docs/archive/FIREBASE_CRASHLYTICS_MCP_SETUP.md` for details
 
 ## Monitoring Crashes
 
@@ -105,10 +105,10 @@ When crashes are detected:
 
 | File | Purpose |
 |------|---------|
-| `docs/CRASHLYTICS_AUTOMATION.md` | This documentation |
+| `docs/archive/CRASHLYTICS_AUTOMATION.md` | This documentation |
 | `docs/JULES_CRASH_FIX_AUTOMATION.md` | **NEW:** Jules AI automated crash fixing |
-| `docs/FIREBASE_CRASHLYTICS_MCP_SETUP.md` | Firebase MCP tools setup |
-| `docs/CRASHLYTICS_MCP_QUICKSTART.md` | Quick start guide for MCP tools |
+| `docs/archive/FIREBASE_CRASHLYTICS_MCP_SETUP.md` | Firebase MCP tools setup |
+| `docs/archive/CRASHLYTICS_MCP_QUICKSTART.md` | Quick start guide for MCP tools |
 
 ---
 
@@ -175,7 +175,7 @@ Set up alerts to notify you when:
 
 Want automated crash fixing? Follow these steps:
 
-1. **Read the full guide:** [JULES_CRASH_FIX_AUTOMATION.md](./JULES_CRASH_FIX_AUTOMATION.md)
+1. **Read the full guide:** [JULES_CRASH_FIX_AUTOMATION.md](../JULES_CRASH_FIX_AUTOMATION.md)
 2. **Generate Jules API key:** https://jules.google.com/settings
 3. **Connect your repository:** https://jules.google.com
 4. **Configure GitHub secrets** (see guide for details)
