@@ -62,8 +62,8 @@ export async function runJob({
           continue;
         }
         const { docsDeleted, authDeleted } = await deleter({ db, auth, uid });
-        // After the data is gone, and whatever happens next: a failed request is only recorded, never retried
-        // here and never allowed to block or undo the deletion.
+        // After the data is gone, and whatever happens next: a failed request never blocks or undoes the
+        // deletion. Its deletionRequests doc stays (below) so the next run asks Google Analytics again.
         const analytics = await askGoogleAnalytics(ga4, uid);
         result.ga4 = analytics.outcome;
         const check = await verifier({ db, auth, uid });
@@ -84,7 +84,9 @@ export async function runJob({
           completedAt: FieldValue.serverTimestamp(),
         });
         if (!check.ok) continue;
-        if (c.hasRequest) {
+        // The request is the only record of this uid once the account is gone, so a failed Analytics request
+        // keeps it for a retry. 'not-configured' is an operator choice (no GA4_PROPERTY_ID) and is warned about.
+        if (c.hasRequest && analytics.outcome !== 'failed') {
           await db.collection('deletionRequests').doc(uid).delete();
           removedRequests.add(uid);
         }
@@ -100,7 +102,19 @@ export async function runJob({
   if (stale > 0) log(`ALERT: ${stale} request(s) older than 3 days are still pending.`);
 
   const ga4Failed = results.filter((r) => r.ga4 === 'failed').length;
-  if (ga4Failed > 0) log(`WARNING: the Google Analytics deletion request failed for ${ga4Failed} account(s); see deletionAudit.`);
+  if (ga4Failed > 0) {
+    log(
+      `WARNING: the Google Analytics deletion request failed for ${ga4Failed} account(s); see deletionAudit. ` +
+        'Accounts that came from a request are asked again on the next run; others cannot be.',
+    );
+  }
+  const ga4NotConfigured = results.filter((r) => r.ga4 === 'not-configured').length;
+  if (ga4NotConfigured > 0) {
+    log(
+      `WARNING: Google Analytics deletion is not configured (GA4_PROPERTY_ID is unset or not a number): ` +
+        `${ga4NotConfigured} account(s) were deleted without an Analytics request, and it cannot be replayed later.`,
+    );
+  }
 
   const failed = results.filter((r) => !r.ok).length;
   const exitCode = refused ? 2 : failed > 0 || stale > 0 ? 1 : 0;
@@ -118,7 +132,7 @@ export async function runJob({
       completedAt: FieldValue.serverTimestamp(),
     });
   }
-  return { exitCode, refused, results, processedUids, stale, ga4Failed };
+  return { exitCode, refused, results, processedUids, stale, ga4Failed, ga4NotConfigured };
 }
 
 /** Never throws: any error, including one from a custom client, becomes outcome 'failed' without its message. */
