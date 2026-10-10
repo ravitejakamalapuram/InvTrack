@@ -5,6 +5,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
@@ -461,6 +462,33 @@ void main() {
         date: day,
       );
       await expectRejected(() => notifier().rebase(manual.id));
+    });
+  });
+
+  group('nothing built for a calculation is stored (AC11)', () {
+    test('no write holds a current-value: or tracking-start: id, or a cash '
+        'flow', () async {
+      final baseline = await notifier().setValuation(
+        investmentId: 'gold',
+        amount: 500000,
+        date: day.subtract(const Duration(days: 200)),
+        openingBaseline: true,
+      );
+      final later = await notifier().setValuation(
+        investmentId: 'gold',
+        amount: 530000,
+        date: day,
+      );
+      await notifier().editValuation(snapshotId: later.id, amount: 540000);
+      await notifier().rebase(baseline.id);
+      await notifier().clearValuation(later.id);
+      await notifier().undoClear();
+
+      for (final id in valuations.docs.keys) {
+        expect(TerminalValues.isEphemeralId(id), isFalse, reason: id);
+      }
+      expect(investments.cashFlows, isEmpty);
+      expect(investments.archivedCashFlows, isEmpty);
     });
   });
 

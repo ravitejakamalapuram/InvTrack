@@ -135,6 +135,15 @@ class TerminalValues {
   /// Prefix of the ids of [flows], which are never stored.
   static const idPrefix = 'current-value:';
 
+  /// Prefix of the id of the in-memory start flow of a tracking-period
+  /// return, which is never stored either.
+  static const trackingStartIdPrefix = 'tracking-start:';
+
+  /// Whether [id] names a flow built for a calculation only. Repositories
+  /// refuse to store one: a valuation is a position, never a cash flow.
+  static bool isEphemeralId(String id) =>
+      id.startsWith(idPrefix) || id.startsWith(trackingStartIdPrefix);
+
   /// The same values with [flows] replaced, e.g. by their converted copies.
   /// Values the conversion dropped count as missing, so they can never pass
   /// as a loss.

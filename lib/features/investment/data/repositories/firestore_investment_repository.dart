@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/utils/stored_date.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -528,8 +529,21 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     for (final doc in snapshot.docs) _cashFlowFromFirestore(doc.data(), doc.id),
   ].where((cf) => StoredDate.isWithinDays(cf.date, firstDay, lastDay)).toList();
 
+  /// Refuses a cash flow built for a calculation only (its current value, the
+  /// start of a tracking period): a valuation is never a cash flow.
+  static void _requireStorable(CashFlowEntity cashFlow) {
+    if (TerminalValues.isEphemeralId(cashFlow.id)) {
+      throw ArgumentError.value(
+        'id',
+        'cashFlow.id',
+        'Is the id of a flow built for a calculation',
+      );
+    }
+  }
+
   @override
   Future<void> addCashFlow(CashFlowEntity cashFlow) async {
+    _requireStorable(cashFlow);
     await _executeWrite(
       () => _cashFlowsRef.doc(cashFlow.id).set(_cashFlowToFirestore(cashFlow)),
     );
@@ -537,6 +551,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   @override
   Future<void> updateCashFlow(CashFlowEntity cashFlow) async {
+    _requireStorable(cashFlow);
     await _executeWrite(
       () =>
           _cashFlowsRef.doc(cashFlow.id).update(_cashFlowToFirestore(cashFlow)),
@@ -589,6 +604,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     const batchLimit = 500;
     var investmentCount = 0;
     var cashFlowCount = 0;
+    cashFlows.forEach(_requireStorable);
 
     // Process investments in batches
     for (var i = 0; i < investments.length; i += batchLimit) {

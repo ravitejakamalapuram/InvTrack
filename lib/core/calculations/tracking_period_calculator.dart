@@ -97,7 +97,7 @@ class TrackingPeriod {
 /// ever persisted.
 abstract final class TrackingPeriodCalculator {
   /// Prefix of the id of the start flow, which is never stored.
-  static const startIdPrefix = 'tracking-start:';
+  static const startIdPrefix = TerminalValues.trackingStartIdPrefix;
 
   /// The tracking period of [investment] as of [asOf]: the baseline's value
   /// on its day as the start, the cash flows dated after that day, and as

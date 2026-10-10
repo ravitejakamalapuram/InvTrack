@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/core/utils/stored_date.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
@@ -104,22 +105,25 @@ class FirestoreValuationRepository implements ValuationRepository {
 
   @override
   Future<int> importAll(List<InvestmentValuationSnapshot> snapshots) async {
-    var written = 0;
-    for (var i = 0; i < snapshots.length; i += _importBatchSize) {
-      final end = (i + _importBatchSize < snapshots.length)
+    // Every document is built first, so an invalid one writes nothing.
+    final documents = [
+      for (final snapshot in snapshots)
+        (
+          id: snapshot.id,
+          data: snapshotToFirestore(snapshot, keepUpdatedAt: true),
+        ),
+    ];
+    for (var i = 0; i < documents.length; i += _importBatchSize) {
+      final end = (i + _importBatchSize < documents.length)
           ? i + _importBatchSize
-          : snapshots.length;
+          : documents.length;
       final batch = _firestore.batch();
-      for (final snapshot in snapshots.sublist(i, end)) {
-        batch.set(
-          _valuationsRef.doc(snapshot.id),
-          snapshotToFirestore(snapshot, keepUpdatedAt: true),
-        );
-        written++;
+      for (final document in documents.sublist(i, end)) {
+        batch.set(_valuationsRef.doc(document.id), document.data);
       }
       await _executeWrite(() => batch.commit());
     }
-    return written;
+    return documents.length;
   }
 
   List<InvestmentValuationSnapshot> _readAll(
@@ -149,6 +153,14 @@ class FirestoreValuationRepository implements ValuationRepository {
         'amount',
         'amount',
         'Must be finite and not negative',
+      );
+    }
+    if (TerminalValues.isEphemeralId(snapshot.id)) {
+      // A calculation's flow, never a stored snapshot.
+      throw ArgumentError.value(
+        'id',
+        'id',
+        'Is the id of a flow built for a calculation',
       );
     }
     if (snapshot.provenance == ValuationProvenance.estimate) {
