@@ -11,18 +11,25 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 const String hostedPrivacyPolicyUrl =
     'https://ravitejakamalapuram.github.io/privacy/invtrack.html';
 
+/// The web page (APP-333) where anyone with a Google account, with or without
+/// the app, can ask for their account to be deleted, and withdraw the request
+/// (A104). Play Console's Data safety form shows the same address.
+const String hostedAccountDeletionUrl =
+    'https://ravitejakamalapuram.github.io/delete/invtrack.html';
+
 /// The one support address shown anywhere in the app.
 const String supportEmailAddress = 'support@invtracker.app';
 
 /// Date the privacy policy last changed.
-final DateTime privacyPolicyLastUpdated = DateTime(2026, 10, 4);
+final DateTime privacyPolicyLastUpdated = DateTime(2026, 10, 10);
 
 /// The in-app privacy policy, from the ARB file, with the support address,
-/// hosted URL and date (formatted for [l10n]'s locale) filled in.
+/// hosted URLs and date (formatted for [l10n]'s locale) filled in.
 String privacyPolicyText(AppLocalizations l10n) => l10n.privacyPolicyBody(
   DateFormat.yMMMMd(l10n.localeName).format(privacyPolicyLastUpdated),
   supportEmailAddress,
   hostedPrivacyPolicyUrl,
+  hostedAccountDeletionUrl,
 );
 
 const String termsOfServiceContent = '''
