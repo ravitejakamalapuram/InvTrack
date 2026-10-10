@@ -1,5 +1,8 @@
 // #956: a Replace import must read the whole backup before it deletes
 // anything. One unreadable file used to throw after the account was wiped.
+// And when any file in the backup is damaged, Replace stops with an error
+// and changes nothing: the settings screen never shows warnings (#959), so
+// skipping the file would delete the matching data without a word.
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -32,6 +35,87 @@ class _PerformanceService extends Mock implements PerformanceService {
 class _DocumentRepository extends Mock implements DocumentRepository {}
 
 class _DocumentStorageService extends Mock implements DocumentStorageService {}
+
+// The repositories below log every write the import can make, so a stopped
+// import can show that nothing was written at all, not even data that was
+// deleted and put back.
+class _SpyInvestments extends FakeInvestmentRepository {
+  _SpyInvestments(this.writes);
+  final List<String> writes;
+
+  @override
+  Future<void> deleteInvestment(String id) {
+    writes.add('deleteInvestment');
+    return super.deleteInvestment(id);
+  }
+
+  @override
+  Future<void> deleteArchivedInvestment(String id) {
+    writes.add('deleteArchivedInvestment');
+    return super.deleteArchivedInvestment(id);
+  }
+
+  @override
+  Future<void> archiveInvestment(String id) {
+    writes.add('archiveInvestment');
+    return super.archiveInvestment(id);
+  }
+
+  @override
+  Future<({int investments, int cashFlows})> bulkImport({
+    required List<InvestmentEntity> investments,
+    required List<CashFlowEntity> cashFlows,
+  }) {
+    writes.add('bulkImport');
+    return super.bulkImport(investments: investments, cashFlows: cashFlows);
+  }
+}
+
+class _SpyGoals extends FakeGoalRepository {
+  _SpyGoals(this.writes);
+  final List<String> writes;
+
+  @override
+  Future<void> createGoal(GoalEntity goal) {
+    writes.add('createGoal');
+    return super.createGoal(goal);
+  }
+
+  @override
+  Future<void> archiveGoal(String id) {
+    writes.add('archiveGoal');
+    return super.archiveGoal(id);
+  }
+
+  @override
+  Future<void> deleteGoal(String id) {
+    writes.add('deleteGoal');
+    return super.deleteGoal(id);
+  }
+
+  @override
+  Future<void> deleteArchivedGoal(String id) {
+    writes.add('deleteArchivedGoal');
+    return super.deleteArchivedGoal(id);
+  }
+}
+
+class _SpyFireSettings extends FakeFireSettingsRepository {
+  _SpyFireSettings(this.writes);
+  final List<String> writes;
+
+  @override
+  Future<void> saveSettings(FireSettingsEntity settings) {
+    writes.add('saveSettings');
+    return super.saveSettings(settings);
+  }
+
+  @override
+  Future<void> deleteSettings() {
+    writes.add('deleteSettings');
+    return super.deleteSettings();
+  }
+}
 
 const _cashflowsHeader =
     'Date,Investment Name,Type,Amount,Currency,Notes,Investment Type,'
@@ -66,6 +150,71 @@ final _validFiles = <String, String>{
 /// A valid file followed by a byte that is not UTF-8.
 List<int> _invalidUtf8(String valid) => [...utf8.encode(valid), 0xFF, 0xFE];
 
+const _valuationsHeader = 'Investment Name,Archived,Date,Value,Currency\n';
+
+// Each optional file with the ways it can be damaged. A header-only file is
+// not damaged: an account without goals exports exactly that.
+final _damaged = <String, Map<String, List<int>>>{
+  'valuations.csv': {
+    'not UTF-8': _invalidUtf8(_validFiles['valuations.csv']!),
+    'header-less': utf8.encode('$_activeName,false,2025-10-05,125000,INR\n'),
+    'missing columns': utf8.encode('Name,Value\n$_activeName,125000\n'),
+    'garbage': utf8.encode('this,is,not\na,backup,file\n'),
+    'only unreadable rows': utf8.encode(
+      '$_valuationsHeader$_activeName,false,2025-10-05,not-a-number,INR\n',
+    ),
+    'only a future-dated row': utf8.encode(
+      '$_valuationsHeader$_activeName,false,2999-01-01,125000,INR\n',
+    ),
+    'empty': const <int>[],
+  },
+  'cashflows_archived.csv': {
+    'not UTF-8': _invalidUtf8(_validFiles['cashflows_archived.csv']!),
+    'header-less': utf8.encode(
+      '2025-09-01,$_archivedName,INVEST,50000,INR,,bonds,open\n',
+    ),
+    'missing columns': utf8.encode(
+      'When,What,Kind,Sum\n2025-09-01,$_archivedName,INVEST,50000\n',
+    ),
+    'only unreadable rows': utf8.encode(
+      '$_cashflowsHeader'
+      '2025-09-01,$_archivedName,INVEST,not-a-number,INR,,bonds,open\n',
+    ),
+    'empty': const <int>[],
+  },
+  'goals.csv': {
+    'not UTF-8': _invalidUtf8(_validFiles['goals.csv']!),
+    'header-less': utf8.encode('$_goalName,targetAmount,1000000\n'),
+    'missing columns': utf8.encode(
+      'Title,Kind,Goal\n$_goalName,targetAmount,1000000\n',
+    ),
+    'only unreadable rows': utf8.encode(
+      'Name,Type,Target Amount\n$_goalName,targetAmount,a-lot\n',
+    ),
+    'empty': const <int>[],
+  },
+  'goals_archived.csv': {
+    'not UTF-8': _invalidUtf8(_validFiles['goals_archived.csv']!),
+    'header-less': utf8.encode('$_archivedGoalName,targetAmount,25000\n'),
+    'missing columns': utf8.encode(
+      'Title,Kind,Goal\n$_archivedGoalName,targetAmount,25000\n',
+    ),
+    'only unreadable rows': utf8.encode(
+      'Name,Type,Target Amount\n$_archivedGoalName,targetAmount,little\n',
+    ),
+    'empty': const <int>[],
+  },
+  'fire_settings.json': {
+    'not UTF-8': _invalidUtf8(
+      '{"monthlyExpenses":30000,"currentAge":25,"targetFireAge":45}',
+    ),
+    'cut off': utf8.encode('{"monthlyExpenses":30000,"currentAge":2'),
+    'not an object': utf8.encode('[30000,25,45]'),
+    'missing its required fields': utf8.encode('{}'),
+    'empty': const <int>[],
+  },
+};
+
 Uint8List _zip(Map<String, List<int>> files) {
   final zip = Archive();
   for (final entry in files.entries) {
@@ -90,15 +239,18 @@ Uint8List _backup([Map<String, List<int>?> overrides = const {}]) {
   return _zip(files);
 }
 
-InvestmentEntity _investment(String id, String name) => InvestmentEntity(
-  id: id,
-  name: name,
-  type: InvestmentType.fixedDeposit,
-  status: InvestmentStatus.open,
-  createdAt: DateTime(2024, 1, 1),
-  updatedAt: DateTime(2024, 1, 1),
-  currency: 'INR',
-);
+InvestmentEntity _investment(String id, String name, {double? value}) =>
+    InvestmentEntity(
+      id: id,
+      name: name,
+      type: InvestmentType.fixedDeposit,
+      status: InvestmentStatus.open,
+      createdAt: DateTime(2024, 1, 1),
+      updatedAt: DateTime(2024, 1, 1),
+      currency: 'INR',
+      currentValue: value,
+      currentValueDate: value == null ? null : DateTime(2024, 6, 1),
+    );
 
 CashFlowEntity _cashFlow(String id, String investmentId) => CashFlowEntity(
   id: id,
@@ -125,16 +277,22 @@ GoalEntity _goal(String id, String name, {bool archived = false}) => GoalEntity(
 );
 
 void main() {
+  late List<String> writes;
+  late _DocumentRepository documents;
+  late _DocumentStorageService documentStorage;
   late FakeInvestmentRepository investments;
   late FakeGoalRepository goals;
   late FakeFireSettingsRepository fireSettings;
   late DataImportService service;
 
   // What the account holds before the import.
-  final existingInvestments = [_investment('old-active', 'Existing FD')];
+  // Both kinds hold a current value: a stopped import must keep them.
+  final existingInvestments = [
+    _investment('old-active', 'Existing FD', value: 90000),
+  ];
   final existingCashFlows = [_cashFlow('old-cf', 'old-active')];
   final existingArchivedInvestments = [
-    _investment('old-archived', 'Existing Archived'),
+    _investment('old-archived', 'Existing Archived', value: 40000),
   ];
   final existingArchivedCashFlows = [_cashFlow('old-acf', 'old-archived')];
   final existingGoals = [_goal('old-goal', 'Existing Goal')];
@@ -151,21 +309,24 @@ void main() {
   );
 
   setUp(() {
-    investments = FakeInvestmentRepository()
+    writes = [];
+    documents = _DocumentRepository();
+    documentStorage = _DocumentStorageService();
+    investments = _SpyInvestments(writes)
       ..seed(
         investments: existingInvestments,
         cashFlows: existingCashFlows,
         archivedInvestments: existingArchivedInvestments,
         archivedCashFlows: existingArchivedCashFlows,
       );
-    goals = FakeGoalRepository()
+    goals = _SpyGoals(writes)
       ..seed(goals: existingGoals, archivedGoals: existingArchivedGoals);
-    fireSettings = FakeFireSettingsRepository()..seed(existingFire);
+    fireSettings = _SpyFireSettings(writes)..seed(existingFire);
     service = DataImportService(
       investmentRepository: investments,
       goalRepository: goals,
-      documentRepository: _DocumentRepository(),
-      documentStorageService: _DocumentStorageService(),
+      documentRepository: documents,
+      documentStorageService: documentStorage,
       fireSettingsRepository: fireSettings,
       performanceService: _PerformanceService(),
     );
@@ -186,6 +347,9 @@ void main() {
     expect(goals.goals, existingGoals);
     expect(goals.archivedGoals, existingArchivedGoals);
     expect(fireSettings.settings, same(existingFire));
+    expect(writes, isEmpty, reason: 'nothing is written');
+    verifyZeroInteractions(documents);
+    verifyZeroInteractions(documentStorage);
   }
 
   void expectNoUserTextIn(Iterable<String> messages) {
@@ -205,11 +369,18 @@ void main() {
     }
   }
 
-  void expectRestReplaced(ZipImportResult result) {
-    expect(result.errors, isEmpty);
-    expect(investments.investments.map((i) => i.name), contains(_activeName));
-    expect(investments.investments.map((i) => i.id), isNot(['old-active']));
-    expect(investments.cashFlows.map((c) => c.amount), [100000]);
+  /// Replace stopped because [file] is damaged: one fixed error, no row
+  /// contents or names, and the account exactly as it was.
+  void expectStoppedAsDamaged(ZipImportResult result, String file) {
+    final error =
+        'Backup not imported: $file is damaged. Your existing data was not '
+        'changed.';
+    expect(result.errors, [error]);
+    expect(result.warnings, isEmpty);
+    expect(result.totalImported, 0);
+    expect(result.fireSettingsImported, isFalse);
+    expectNoUserTextIn(result.errors);
+    expectAccountUntouched();
   }
 
   group('a required file that cannot be read stops the import first', () {
@@ -330,90 +501,11 @@ void main() {
     );
   });
 
-  group('an optional file that cannot be read is skipped with a warning', () {
-    // Replace still replaces everything else; the warning names the file
-    // kind only, never an investment, goal or amount (rule 7).
-    test('valuations.csv is not UTF-8', () async {
-      final result = await importZip(
-        _backup({
-          'valuations.csv': _invalidUtf8(_validFiles['valuations.csv']!),
-        }),
-      );
-
-      expectRestReplaced(result);
-      expect(result.warnings, [
-        'Current values not imported: valuations.csv is invalid',
-      ]);
-      expectNoUserTextIn(result.warnings);
-      expect(investments.investments.single.currentValue, isNull);
-      expect(result.goalsImported, 2);
-    });
-
-    test('cashflows_archived.csv is not UTF-8', () async {
-      final result = await importZip(
-        _backup({
-          'cashflows_archived.csv': _invalidUtf8(
-            _validFiles['cashflows_archived.csv']!,
-          ),
-        }),
-      );
-
-      expectRestReplaced(result);
-      expect(result.warnings, [
-        'Archived cash flows not imported: cashflows_archived.csv is invalid',
-      ]);
-      expectNoUserTextIn(result.warnings);
-      expect(investments.archivedInvestments, isEmpty);
-      expect(result.goalsImported, 2);
-    });
-
-    test('goals.csv is not UTF-8', () async {
-      final result = await importZip(
-        _backup({'goals.csv': _invalidUtf8(_validFiles['goals.csv']!)}),
-      );
-
-      expectRestReplaced(result);
-      expect(result.warnings, ['Goals not imported: goals.csv is invalid']);
-      expectNoUserTextIn(result.warnings);
-      expect(goals.goals, isEmpty);
-      expect(goals.archivedGoals.map((g) => g.name), [_archivedGoalName]);
-    });
-
-    test('goals_archived.csv is not UTF-8', () async {
-      final result = await importZip(
-        _backup({
-          'goals_archived.csv': _invalidUtf8(
-            _validFiles['goals_archived.csv']!,
-          ),
-        }),
-      );
-
-      expectRestReplaced(result);
-      expect(result.warnings, [
-        'Archived goals not imported: goals_archived.csv is invalid',
-      ]);
-      expectNoUserTextIn(result.warnings);
-      expect(goals.goals.map((g) => g.name), [_goalName]);
-      expect(goals.archivedGoals, isEmpty);
-    });
-
-    test('fire_settings.json is not UTF-8', () async {
-      final result = await importZip(
-        _backup({
-          'fire_settings.json': _invalidUtf8(
-            '{"monthlyExpenses":30000,"currentAge":25,"targetFireAge":45}',
-          ),
-        }),
-      );
-
-      expectRestReplaced(result);
-      expect(result.warnings, [
-        'FIRE settings not imported: fire_settings.json is invalid',
-      ]);
-      expectNoUserTextIn(result.warnings);
-      expect(result.fireSettingsImported, isFalse);
-      expect(fireSettings.settings, same(existingFire));
-    });
+  group('Merge: a damaged optional file is skipped with a warning', () {
+    // Merge deletes nothing, so the rest of the backup is still worth
+    // importing. The warning names the file kind only, never an investment,
+    // goal or amount (rule 7).
+    const goalsWarning = 'Goals not imported: goals.csv is invalid';
 
     test(
       'Merge: goals.csv is not UTF-8, the cash flows still import',
@@ -433,105 +525,6 @@ void main() {
         expect(goals.goals, existingGoals);
       },
     );
-  });
-
-  group('an optional file that is readable but damaged is skipped too', () {
-    // Header-less, wrong columns or only unreadable rows: nothing in the file
-    // can be restored. It is judged before Replace deletes anything and
-    // skipped with one fixed warning. The parser's own messages are left out
-    // because they quote the file (rule 7).
-    const cashflowsWarning =
-        'Archived cash flows not imported: cashflows_archived.csv is invalid';
-    const goalsWarning = 'Goals not imported: goals.csv is invalid';
-    const archivedGoalsWarning =
-        'Archived goals not imported: goals_archived.csv is invalid';
-    const valuationsWarning =
-        'Current values not imported: valuations.csv is invalid';
-
-    // file -> warning, and the damaged contents to try.
-    final cases = <String, ({String warning, Map<String, String> damaged})>{
-      'cashflows_archived.csv': (
-        warning: cashflowsWarning,
-        damaged: {
-          'header-less':
-              '2025-09-01,$_archivedName,INVEST,50000,INR,,bonds,open\n',
-          'wrong columns':
-              'When,What,Kind,Sum\n2025-09-01,$_archivedName,INVEST,50000\n',
-          'only unreadable rows':
-              '$_cashflowsHeader'
-              '2025-09-01,$_archivedName,INVEST,not-a-number,INR,,bonds,open\n',
-        },
-      ),
-      'goals.csv': (
-        warning: goalsWarning,
-        damaged: {
-          'header-less': '$_goalName,targetAmount,1000000\n',
-          'wrong columns': 'Title,Kind,Goal\n$_goalName,targetAmount,1000000\n',
-          'only unreadable rows':
-              'Name,Type,Target Amount\n$_goalName,targetAmount,a-lot\n',
-        },
-      ),
-      'goals_archived.csv': (
-        warning: archivedGoalsWarning,
-        damaged: {
-          'header-less': '$_archivedGoalName,targetAmount,25000\n',
-          'wrong columns':
-              'Title,Kind,Goal\n$_archivedGoalName,targetAmount,25000\n',
-          'only unreadable rows':
-              'Name,Type,Target Amount\n$_archivedGoalName,targetAmount,little\n',
-        },
-      ),
-      'valuations.csv': (
-        warning: valuationsWarning,
-        damaged: {
-          'header-less': '$_activeName,false,2025-10-05,125000,INR\n',
-          'wrong columns': 'Name,Value\n$_activeName,125000\n',
-          'garbage': 'this,is,not\na,backup,file\n',
-        },
-      ),
-    };
-
-    // What the account holds once the damaged file's data is left out and the
-    // rest is replaced.
-    void expectOnlyThatFileMissing(String file, ZipImportResult result) {
-      expectRestReplaced(result);
-      final goalNames = goals.goals.map((g) => g.name).toList();
-      final archivedGoalNames = goals.archivedGoals.map((g) => g.name).toList();
-      expect(
-        goalNames,
-        file == 'goals.csv' ? isEmpty : [_goalName],
-        reason: 'goals',
-      );
-      expect(
-        archivedGoalNames,
-        file == 'goals_archived.csv' ? isEmpty : [_archivedGoalName],
-        reason: 'archived goals',
-      );
-      expect(
-        investments.archivedInvestments.map((i) => i.name),
-        file == 'cashflows_archived.csv' ? isEmpty : [_archivedName],
-        reason: 'archived investments',
-      );
-      expect(
-        investments.investments.single.currentValue,
-        file == 'valuations.csv' ? isNull : 125000,
-        reason: 'current value',
-      );
-    }
-
-    for (final entry in cases.entries) {
-      for (final damaged in entry.value.damaged.entries) {
-        test('Replace: ${entry.key} is ${damaged.key}', () async {
-          final result = await importZip(
-            _backup({entry.key: utf8.encode(damaged.value)}),
-          );
-
-          expect(result.warnings, [entry.value.warning]);
-          expectNoUserTextIn(result.warnings);
-          expectOnlyThatFileMissing(entry.key, result);
-        });
-      }
-    }
 
     test('Merge: goals.csv is header-less, the rest still merges', () async {
       final result = await importZip(
@@ -547,7 +540,47 @@ void main() {
       expect(investments.investments.map((i) => i.id), contains('old-active'));
       expect(goals.goals, existingGoals);
     });
+  });
 
+  group('Replace: a damaged optional file stops the import first', () {
+    // Each optional file below is damaged in turn while every other file in
+    // the backup is fine. The settings screen never shows warnings (#959), so
+    // skipping the file would silently delete the account's matching data
+    // (all its goals, say). Replace stops before it deletes anything, and the
+    // error names the file only, never what is in it (rule 7).
+    for (final file in _damaged.entries) {
+      for (final mode in file.value.entries) {
+        test('Replace: ${file.key} is ${mode.key}', () async {
+          final result = await importZip(_backup({file.key: mode.value}));
+
+          expectStoppedAsDamaged(result, file.key);
+        });
+      }
+    }
+
+    test('Replace: several damaged files still stop it', () async {
+      final result = await importZip(
+        _backup({
+          'valuations.csv': utf8.encode('Name,Value\n$_activeName,125000\n'),
+          'goals.csv': _invalidUtf8(_validFiles['goals.csv']!),
+          'fire_settings.json': utf8.encode('{}'),
+        }),
+      );
+
+      expect(result.errors, hasLength(1));
+      expect(result.errors.single, startsWith('Backup not imported: '));
+      expect(
+        result.errors.single,
+        endsWith(' is damaged. Your existing data was not changed.'),
+      );
+      expect(result.warnings, isEmpty);
+      expect(result.totalImported, 0);
+      expectNoUserTextIn(result.errors);
+      expectAccountUntouched();
+    });
+  });
+
+  group('Replace: a backup that is readable still replaces', () {
     test('Replace: a file with a header and no rows is not damaged', () async {
       // An account with no goals or archived investments exports exactly
       // this, and replacing it empties the matching data without a warning.
@@ -588,6 +621,24 @@ void main() {
         expect(goals.goals.map((g) => g.name), [_goalName]);
       },
     );
+
+    test('Replace: one unreadable valuation row keeps the readable ones, '
+        'with a row warning', () async {
+      final result = await importZip(
+        _backup({
+          'valuations.csv': utf8.encode(
+            'Investment Name,Archived,Date,Value,Currency\n'
+            '$_activeName,false,2025-10-05,125000,INR\n'
+            '$_archivedName,true,2025-10-05,not-a-number,INR\n',
+          ),
+        }),
+      );
+
+      expect(result.errors, isEmpty);
+      expect(result.warnings, hasLength(1));
+      expect(investments.investments.single.currentValue, 125000);
+      expect(investments.archivedInvestments.single.currentValue, isNull);
+    });
   });
 
   group('a readable backup imports exactly as before', () {

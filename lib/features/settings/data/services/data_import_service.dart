@@ -20,8 +20,9 @@ import 'package:inv_tracker/features/investment/data/services/document_storage_s
 import 'package:inv_tracker/core/utils/file_signature_utils.dart';
 import 'package:uuid/uuid.dart';
 
-// What an optional backup file that cannot be used adds to the warnings. They
-// name the file kind only, never an investment, goal or amount (rule 7).
+// What an optional backup file that cannot be used adds to the warnings of a
+// Merge import (a Replace import stops instead). They name the file kind only,
+// never an investment, goal or amount (rule 7).
 const _valuationsWarning =
     'Current values not imported: valuations.csv is invalid';
 const _cashflowsArchivedWarning =
@@ -95,6 +96,10 @@ class DataImportService {
   ///
   /// Rows, investments and goals with no currency (backups made before
   /// multi-currency support) take [baseCurrency], the user's base currency.
+  ///
+  /// If any file in the backup is damaged, [ImportStrategy.replace] returns an
+  /// error that names the file and changes nothing. [ImportStrategy.merge]
+  /// skips that file with a warning and imports the rest.
   Future<ZipImportResult> importFromZip(
     Uint8List zipBytes,
     ImportStrategy strategy, {
@@ -172,9 +177,14 @@ class DataImportService {
     // 3. Read and parse every file the import uses BEFORE anything is deleted
     // (#956). Replace used to delete first, so a file that could not be read
     // or parsed failed after the account was wiped. Now cashflows.csv, which
-    // holds the investments, must be readable or nothing changes; every other
-    // file is skipped with a warning that holds no name or amount (rule 7).
-    // Each file is parsed once, here, and the result is imported below.
+    // holds the investments, must be readable or nothing changes. Any other
+    // damaged file stops Replace too: the settings screen shows no warnings
+    // (#959), so skipping it would delete the matching data (all the goals,
+    // say) without a word. Merge deletes nothing, so it skips a damaged file
+    // with a warning that holds no name or amount (rule 7) and imports the
+    // rest. Each file is parsed once, here, and the result is imported below.
+    final isReplace = strategy == ImportStrategy.replace;
+    final damagedFiles = <String>[];
     final String? cashflowsCsv;
     try {
       cashflowsCsv = _readText(archive, 'cashflows.csv');
@@ -184,7 +194,7 @@ class DataImportService {
     final cashflows = cashflowsCsv == null
         ? null
         : _parseBackupCashflows(cashflowsCsv, baseCurrency);
-    if (strategy == ImportStrategy.replace) {
+    if (isReplace) {
       // The exporter always writes cashflows.csv, so a backup without it is
       // damaged or edited. Merge deletes nothing and imports the rest.
       if (cashflows == null) {
@@ -200,7 +210,8 @@ class DataImportService {
           'valuations.csv',
           _valuationsWarning,
           warnings,
-          (text) => _parseValuationsCsv(text, warnings),
+          damagedFiles,
+          (text) => _parseValuationsCsv(text, warnings, strict: isReplace),
         ) ??
         const <(bool, String), _ImportedValuation>{};
     final cashflowsArchived = _readParsed(
@@ -208,6 +219,7 @@ class DataImportService {
       'cashflows_archived.csv',
       _cashflowsArchivedWarning,
       warnings,
+      damagedFiles,
       (text) {
         final parsed = _parseBackupCashflows(text, baseCurrency);
         return _isDamaged(parsed.validRows, parsed.errors) ? null : parsed;
@@ -218,6 +230,7 @@ class DataImportService {
       'goals.csv',
       _goalsWarning,
       warnings,
+      damagedFiles,
       (text) => _parseGoals(text, baseCurrency),
     );
     final goalsArchived = _readParsed(
@@ -225,14 +238,19 @@ class DataImportService {
       'goals_archived.csv',
       _goalsArchivedWarning,
       warnings,
+      damagedFiles,
       (text) => _parseGoals(text, baseCurrency),
     );
     final fireSettings = _fireSettingsRepository == null
         ? null
-        : _readFireSettings(archive, baseCurrency, warnings);
+        : _readFireSettings(archive, baseCurrency, warnings, damagedFiles);
+    if (isReplace && damagedFiles.isNotEmpty) {
+      // The file name only: not a row, a name, an amount or the exception.
+      return _notImported('${damagedFiles.first} is damaged');
+    }
 
     // 4. If strategy is replace, delete all existing data first
-    if (strategy == ImportStrategy.replace) {
+    if (isReplace) {
       await _deleteAllExistingData();
     }
 
@@ -413,13 +431,15 @@ class DataImportService {
 
   /// [name] read and parsed by [parse], or null if the backup has no such
   /// file. A file that cannot be read, or that [parse] rejects by returning
-  /// null, is skipped with [warning]; the error itself is left out because it
-  /// can quote the file.
+  /// null, is damaged: [name] is added to [damagedFiles] and [warning] to
+  /// [warnings] (shown by Merge, which skips the file). The error itself is
+  /// left out because it can quote the file.
   T? _readParsed<T extends Object>(
     Archive archive,
     String name,
     String warning,
     List<String> warnings,
+    List<String> damagedFiles,
     T? Function(String text) parse,
   ) {
     try {
@@ -428,8 +448,9 @@ class DataImportService {
       final parsed = parse(text);
       if (parsed != null) return parsed;
     } catch (_) {
-      // Skipped below, with the same warning.
+      // Damaged, as below.
     }
+    damagedFiles.add(name);
     warnings.add(warning);
     return null;
   }
@@ -446,11 +467,13 @@ class DataImportService {
       validRows == 0 && errors.isNotEmpty;
 
   /// The FIRE settings in the backup, or null if there are none or they
-  /// cannot be read (one warning, without the file's content).
+  /// cannot be read (the file is added to [damagedFiles], with one warning
+  /// that holds none of the file's content).
   FireSettingsEntity? _readFireSettings(
     Archive archive,
     String baseCurrency,
     List<String> warnings,
+    List<String> damagedFiles,
   ) {
     try {
       final text = _readText(archive, 'fire_settings.json');
@@ -467,6 +490,7 @@ class DataImportService {
         updatedAt: DateTime.now(),
       );
     } catch (_) {
+      damagedFiles.add('fire_settings.json');
       warnings.add('FIRE settings not imported: fire_settings.json is invalid');
       return null;
     }
@@ -654,18 +678,21 @@ class DataImportService {
   /// Parses valuations.csv into values keyed by (archived, lowercase
   /// investment name), the way cash flow rows name their investment. Bad
   /// rows are skipped with a warning that holds no amount. Null if the file
-  /// as a whole cannot be read.
+  /// as a whole cannot be read. A [strict] parse (Replace) also rejects a file
+  /// that is empty, or whose rows are all bad: it has nothing to restore,
+  /// like a goals.csv in the same state.
   Map<(bool, String), _ImportedValuation>? _parseValuationsCsv(
     String content,
-    List<String> warnings,
-  ) {
+    List<String> warnings, {
+    required bool strict,
+  }) {
     final List<List<dynamic>> rows;
     try {
       rows = csv.decode(content);
     } catch (_) {
       return null;
     }
-    if (rows.isEmpty) return const {};
+    if (rows.isEmpty) return strict ? null : const {};
 
     final header = [for (final h in rows.first) h.toString().trim()];
     final nameCol = header.indexOf('Investment Name');
@@ -680,6 +707,7 @@ class DataImportService {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final result = <(bool, String), _ImportedValuation>{};
+    var badRows = 0;
     for (var i = 1; i < rows.length; i++) {
       final row = rows[i];
       String cell(int col) =>
@@ -701,6 +729,7 @@ class DataImportService {
           ).isAfter(today) ||
           currency.isEmpty) {
         warnings.add('Current value of "$name" not imported: invalid row');
+        badRows++;
         continue;
       }
       result[(
@@ -712,7 +741,7 @@ class DataImportService {
         currency: currency,
       );
     }
-    return result;
+    return strict && result.isEmpty && badRows > 0 ? null : result;
   }
 
   /// Import the goals of a parsed goals.csv or goals_archived.csv.
