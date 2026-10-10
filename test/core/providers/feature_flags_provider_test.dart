@@ -33,6 +33,16 @@ void main() {
         expect(c.read(isReviewPromptEnabledProvider), isTrue);
       });
 
+      test('$build: custom investment types (#936) stay hidden', () async {
+        final c = await _container(overridesAllowed: overridesAllowed);
+        expect(c.read(isCustomInvestmentTypesEnabledProvider), isFalse);
+        expect(FeatureFlag.customInvestmentTypes.defaultEnabled, isFalse);
+        expect(
+          FeatureFlag.customInvestmentTypes.key,
+          'custom_investment_types',
+        );
+      });
+
       test(
         '$build: Income Guardian, Reports and Health Score stay hidden',
         () async {
