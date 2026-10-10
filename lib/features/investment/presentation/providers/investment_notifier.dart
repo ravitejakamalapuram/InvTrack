@@ -15,6 +15,7 @@ import 'package:inv_tracker/core/utils/analytics_utils.dart';
 import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/custom_type_label.dart';
+import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
@@ -266,8 +267,6 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     if (day.isAfter(DateTime(now.year, now.month, now.day))) {
       throw ValidationException.invalidDate(date);
     }
-    // Money is kept to the paisa.
-    final rounded = (value * 100).roundToDouble() / 100;
     await _writeCurrentValue(id, (existing) {
       if (!existing.isOpen) {
         throw ValidationException(
@@ -275,6 +274,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           technicalMessage: 'setCurrentValue on a closed investment',
         );
       }
+      final rounded = MoneyPrecision.round(
+        value,
+        currencyCode: _requireCurrency(existing.currency),
+      );
       return _withCurrentValue(existing, rounded, day);
     });
   }
@@ -534,7 +537,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   }
 
   /// Add a cash flow to an investment.
-  /// Throws [ValidationException] if amount is not positive.
+  /// Throws [ValidationException] if amount is not positive (or rounds
+  /// to zero in its currency) or the currency is blank.
   Future<void> addCashFlow({
     required String investmentId,
     required CashFlowType type,
@@ -546,6 +550,14 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     // Input validation
     _validateAmount(amount);
     _validateNotes(notes);
+    final String flowCurrency = _requireCurrency(
+      currency ?? ref.read(currencyCodeProvider),
+    );
+    final roundedAmount = MoneyPrecision.round(
+      amount,
+      currencyCode: flowCurrency,
+    );
+    _validateAmount(roundedAmount);
 
     state = const AsyncValue.loading();
     try {
@@ -553,11 +565,11 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         id: const Uuid().v4(),
         investmentId: investmentId,
         type: type,
-        amount: amount,
+        amount: roundedAmount,
         date: date,
         notes: notes?.trim(),
         createdAt: DateTime.now(),
-        currency: currency ?? ref.read(currencyCodeProvider),
+        currency: flowCurrency,
       );
       await ref.read(investmentRepositoryProvider).addCashFlow(cashFlow);
 
@@ -566,7 +578,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .read(analyticsServiceProvider)
           .logCashFlowAdded(
             flowType: type.name,
-            amountRange: getAmountRange(amount),
+            amountRange: getAmountRange(roundedAmount),
           );
 
       // Check for milestone achievements after adding return cash flows
@@ -586,7 +598,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   }
 
   /// Update a cash flow.
-  /// Throws [ValidationException] if amount is not positive.
+  /// Throws [ValidationException] if amount is not positive (or rounds
+  /// to zero in its currency) or the currency is blank.
   Future<void> updateCashFlow({
     required String id,
     required String investmentId,
@@ -600,6 +613,14 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     // Input validation
     _validateAmount(amount);
     _validateNotes(notes);
+    final String flowCurrency = _requireCurrency(
+      currency ?? ref.read(currencyCodeProvider),
+    );
+    final roundedAmount = MoneyPrecision.round(
+      amount,
+      currencyCode: flowCurrency,
+    );
+    _validateAmount(roundedAmount);
 
     state = const AsyncValue.loading();
     try {
@@ -607,11 +628,11 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         id: id,
         investmentId: investmentId,
         type: type,
-        amount: amount,
+        amount: roundedAmount,
         date: date,
         notes: notes?.trim(),
         createdAt: createdAt,
-        currency: currency ?? ref.read(currencyCodeProvider),
+        currency: flowCurrency,
       );
       await ref.read(investmentRepositoryProvider).updateCashFlow(cashFlow);
 
@@ -837,10 +858,23 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
+  /// Returns [currency] if it is not blank. Stored data can carry a blank
+  /// currency; it fails visibly here and is never defaulted (money rule 1).
+  /// Throws [ValidationException] for a blank currency.
+  String _requireCurrency(String currency) {
+    if (currency.trim().isEmpty) {
+      throw ValidationException(
+        userMessage: 'Choose a currency for this amount.',
+        technicalMessage: 'Validation failed: currency is blank',
+      );
+    }
+    return currency;
+  }
+
   /// Validates amount for cash flows.
   /// Throws [ValidationException] if amount is not positive.
   void _validateAmount(double amount) {
-    if (amount <= 0) {
+    if (!amount.isFinite || amount <= 0) {
       throw ValidationException.invalidAmount(amount);
     }
   }
