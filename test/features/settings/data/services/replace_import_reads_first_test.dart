@@ -205,6 +205,13 @@ void main() {
     }
   }
 
+  void expectRestReplaced(ZipImportResult result) {
+    expect(result.errors, isEmpty);
+    expect(investments.investments.map((i) => i.name), contains(_activeName));
+    expect(investments.investments.map((i) => i.id), isNot(['old-active']));
+    expect(investments.cashFlows.map((c) => c.amount), [100000]);
+  }
+
   group('a required file that cannot be read stops the import first', () {
     const notRead =
         'Backup not imported: cashflows.csv could not be read. Your existing '
@@ -326,13 +333,6 @@ void main() {
   group('an optional file that cannot be read is skipped with a warning', () {
     // Replace still replaces everything else; the warning names the file
     // kind only, never an investment, goal or amount (rule 7).
-    void expectRestReplaced(ZipImportResult result) {
-      expect(result.errors, isEmpty);
-      expect(investments.investments.map((i) => i.name), contains(_activeName));
-      expect(investments.investments.map((i) => i.id), isNot(['old-active']));
-      expect(investments.cashFlows.map((c) => c.amount), [100000]);
-    }
-
     test('valuations.csv is not UTF-8', () async {
       final result = await importZip(
         _backup({
@@ -431,6 +431,161 @@ void main() {
           contains('old-active'),
         );
         expect(goals.goals, existingGoals);
+      },
+    );
+  });
+
+  group('an optional file that is readable but damaged is skipped too', () {
+    // Header-less, wrong columns or only unreadable rows: nothing in the file
+    // can be restored. It is judged before Replace deletes anything and
+    // skipped with one fixed warning. The parser's own messages are left out
+    // because they quote the file (rule 7).
+    const cashflowsWarning =
+        'Archived cash flows not imported: cashflows_archived.csv is invalid';
+    const goalsWarning = 'Goals not imported: goals.csv is invalid';
+    const archivedGoalsWarning =
+        'Archived goals not imported: goals_archived.csv is invalid';
+    const valuationsWarning =
+        'Current values not imported: valuations.csv is invalid';
+
+    // file -> warning, and the damaged contents to try.
+    final cases = <String, ({String warning, Map<String, String> damaged})>{
+      'cashflows_archived.csv': (
+        warning: cashflowsWarning,
+        damaged: {
+          'header-less':
+              '2025-09-01,$_archivedName,INVEST,50000,INR,,bonds,open\n',
+          'wrong columns':
+              'When,What,Kind,Sum\n2025-09-01,$_archivedName,INVEST,50000\n',
+          'only unreadable rows':
+              '$_cashflowsHeader'
+              '2025-09-01,$_archivedName,INVEST,not-a-number,INR,,bonds,open\n',
+        },
+      ),
+      'goals.csv': (
+        warning: goalsWarning,
+        damaged: {
+          'header-less': '$_goalName,targetAmount,1000000\n',
+          'wrong columns': 'Title,Kind,Goal\n$_goalName,targetAmount,1000000\n',
+          'only unreadable rows':
+              'Name,Type,Target Amount\n$_goalName,targetAmount,a-lot\n',
+        },
+      ),
+      'goals_archived.csv': (
+        warning: archivedGoalsWarning,
+        damaged: {
+          'header-less': '$_archivedGoalName,targetAmount,25000\n',
+          'wrong columns':
+              'Title,Kind,Goal\n$_archivedGoalName,targetAmount,25000\n',
+          'only unreadable rows':
+              'Name,Type,Target Amount\n$_archivedGoalName,targetAmount,little\n',
+        },
+      ),
+      'valuations.csv': (
+        warning: valuationsWarning,
+        damaged: {
+          'header-less': '$_activeName,false,2025-10-05,125000,INR\n',
+          'wrong columns': 'Name,Value\n$_activeName,125000\n',
+          'garbage': 'this,is,not\na,backup,file\n',
+        },
+      ),
+    };
+
+    // What the account holds once the damaged file's data is left out and the
+    // rest is replaced.
+    void expectOnlyThatFileMissing(String file, ZipImportResult result) {
+      expectRestReplaced(result);
+      final goalNames = goals.goals.map((g) => g.name).toList();
+      final archivedGoalNames = goals.archivedGoals.map((g) => g.name).toList();
+      expect(
+        goalNames,
+        file == 'goals.csv' ? isEmpty : [_goalName],
+        reason: 'goals',
+      );
+      expect(
+        archivedGoalNames,
+        file == 'goals_archived.csv' ? isEmpty : [_archivedGoalName],
+        reason: 'archived goals',
+      );
+      expect(
+        investments.archivedInvestments.map((i) => i.name),
+        file == 'cashflows_archived.csv' ? isEmpty : [_archivedName],
+        reason: 'archived investments',
+      );
+      expect(
+        investments.investments.single.currentValue,
+        file == 'valuations.csv' ? isNull : 125000,
+        reason: 'current value',
+      );
+    }
+
+    for (final entry in cases.entries) {
+      for (final damaged in entry.value.damaged.entries) {
+        test('Replace: ${entry.key} is ${damaged.key}', () async {
+          final result = await importZip(
+            _backup({entry.key: utf8.encode(damaged.value)}),
+          );
+
+          expect(result.warnings, [entry.value.warning]);
+          expectNoUserTextIn(result.warnings);
+          expectOnlyThatFileMissing(entry.key, result);
+        });
+      }
+    }
+
+    test('Merge: goals.csv is header-less, the rest still merges', () async {
+      final result = await importZip(
+        _backup({
+          'goals.csv': utf8.encode('$_goalName,targetAmount,1000000\n'),
+        }),
+        ImportStrategy.merge,
+      );
+
+      expect(result.errors, isEmpty);
+      expect(result.warnings, [goalsWarning]);
+      expect(result.cashflowsImported, 2);
+      expect(investments.investments.map((i) => i.id), contains('old-active'));
+      expect(goals.goals, existingGoals);
+    });
+
+    test('Replace: a file with a header and no rows is not damaged', () async {
+      // An account with no goals or archived investments exports exactly
+      // this, and replacing it empties the matching data without a warning.
+      final result = await importZip(
+        _backup({
+          'cashflows_archived.csv': utf8.encode(_cashflowsHeader),
+          'goals.csv': utf8.encode('Name,Type,Target Amount\n'),
+          'goals_archived.csv': utf8.encode('Name,Type,Target Amount\n'),
+          'valuations.csv': utf8.encode(
+            'Investment Name,Archived,Date,Value,Currency\n',
+          ),
+        }),
+      );
+
+      expect(result.errors, isEmpty);
+      expect(result.warnings, isEmpty);
+      expect(investments.archivedInvestments, isEmpty);
+      expect(goals.goals, isEmpty);
+      expect(goals.archivedGoals, isEmpty);
+      expect(investments.investments.single.currentValue, isNull);
+    });
+
+    test(
+      'Replace: one unreadable row does not hide the readable ones',
+      () async {
+        final result = await importZip(
+          _backup({
+            'goals.csv': utf8.encode(
+              'Name,Type,Target Amount\n'
+              '$_goalName,targetAmount,1000000\n'
+              'Broken,targetAmount,a-lot\n',
+            ),
+          }),
+        );
+
+        expect(result.warnings, isEmpty);
+        expect(result.errors, hasLength(1));
+        expect(goals.goals.map((g) => g.name), [_goalName]);
       },
     );
   });

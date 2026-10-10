@@ -20,6 +20,16 @@ import 'package:inv_tracker/features/investment/data/services/document_storage_s
 import 'package:inv_tracker/core/utils/file_signature_utils.dart';
 import 'package:uuid/uuid.dart';
 
+// What an optional backup file that cannot be used adds to the warnings. They
+// name the file kind only, never an investment, goal or amount (rule 7).
+const _valuationsWarning =
+    'Current values not imported: valuations.csv is invalid';
+const _cashflowsArchivedWarning =
+    'Archived cash flows not imported: cashflows_archived.csv is invalid';
+const _goalsWarning = 'Goals not imported: goals.csv is invalid';
+const _goalsArchivedWarning =
+    'Archived goals not imported: goals_archived.csv is invalid';
+
 /// Import strategy options
 enum ImportStrategy {
   merge, // Add to existing data (skip duplicates by investment name)
@@ -159,51 +169,63 @@ class DataImportService {
       );
     }
 
-    // 3. Read every file the import uses BEFORE anything is deleted (#956).
-    // Replace used to delete first, so a file that could not be read threw
-    // after the account was wiped. Now cashflows.csv, which holds the
-    // investments, must be readable or nothing changes; every other file is
-    // skipped with a warning that holds no name or amount (rule 7).
+    // 3. Read and parse every file the import uses BEFORE anything is deleted
+    // (#956). Replace used to delete first, so a file that could not be read
+    // or parsed failed after the account was wiped. Now cashflows.csv, which
+    // holds the investments, must be readable or nothing changes; every other
+    // file is skipped with a warning that holds no name or amount (rule 7).
+    // Each file is parsed once, here, and the result is imported below.
     final String? cashflowsCsv;
     try {
       cashflowsCsv = _readText(archive, 'cashflows.csv');
     } catch (_) {
       return _notImported('cashflows.csv could not be read');
     }
+    final cashflows = cashflowsCsv == null
+        ? null
+        : _parseBackupCashflows(cashflowsCsv, baseCurrency);
     if (strategy == ImportStrategy.replace) {
       // The exporter always writes cashflows.csv, so a backup without it is
       // damaged or edited. Merge deletes nothing and imports the rest.
-      if (cashflowsCsv == null) {
+      if (cashflows == null) {
         return _notImported('cashflows.csv is missing');
       }
-      final parsed = _parseBackupCashflows(cashflowsCsv, baseCurrency);
-      if (parsed.validRows == 0 && parsed.errors.isNotEmpty) {
+      if (_isDamaged(cashflows.validRows, cashflows.errors)) {
         return _notImported('cashflows.csv has no readable rows');
       }
     }
-    final valuationsCsv = _readOptionalText(
-      archive,
-      'valuations.csv',
-      'Current values not imported: valuations.csv is invalid',
-      warnings,
-    );
-    final cashflowsArchivedCsv = _readOptionalText(
+    final valuations =
+        _readParsed(
+          archive,
+          'valuations.csv',
+          _valuationsWarning,
+          warnings,
+          (text) => _parseValuationsCsv(text, warnings),
+        ) ??
+        const <(bool, String), _ImportedValuation>{};
+    final cashflowsArchived = _readParsed(
       archive,
       'cashflows_archived.csv',
-      'Archived cash flows not imported: cashflows_archived.csv is invalid',
+      _cashflowsArchivedWarning,
       warnings,
+      (text) {
+        final parsed = _parseBackupCashflows(text, baseCurrency);
+        return _isDamaged(parsed.validRows, parsed.errors) ? null : parsed;
+      },
     );
-    final goalsCsv = _readOptionalText(
+    final goals = _readParsed(
       archive,
       'goals.csv',
-      'Goals not imported: goals.csv is invalid',
+      _goalsWarning,
       warnings,
+      (text) => _parseGoals(text, baseCurrency),
     );
-    final goalsArchivedCsv = _readOptionalText(
+    final goalsArchived = _readParsed(
       archive,
       'goals_archived.csv',
-      'Archived goals not imported: goals_archived.csv is invalid',
+      _goalsArchivedWarning,
       warnings,
+      (text) => _parseGoals(text, baseCurrency),
     );
     final fireSettings = _fireSettingsRepository == null
         ? null
@@ -214,23 +236,17 @@ class DataImportService {
       await _deleteAllExistingData();
     }
 
-    // 5. Parse and import CSV files
+    // 5. Import the parsed files
     // Import cashflows first and collect investment name-to-ID mapping
     int investmentsImported = 0;
     int cashflowsImported = 0;
     int goalsImported = 0;
     final investmentNameToIdMap = <String, String>{};
 
-    // Current values the user entered, attached to the investments created
-    // below (money rule 6).
-    final valuations = valuationsCsv == null
-        ? const <(bool, String), _ImportedValuation>{}
-        : _parseValuationsCsv(valuationsCsv, warnings);
-
     // Import cashflows (active)
-    if (cashflowsCsv != null) {
+    if (cashflows != null) {
       final result = await _importCashflowsCsv(
-        cashflowsCsv,
+        cashflows,
         isArchived: false,
         strategy: strategy,
         baseCurrency: baseCurrency,
@@ -244,9 +260,9 @@ class DataImportService {
     }
 
     // Import archived cashflows
-    if (cashflowsArchivedCsv != null) {
+    if (cashflowsArchived != null) {
       final result = await _importCashflowsCsv(
-        cashflowsArchivedCsv,
+        cashflowsArchived,
         isArchived: true,
         strategy: strategy,
         baseCurrency: baseCurrency,
@@ -260,9 +276,9 @@ class DataImportService {
     }
 
     // Import goals (with investment name-to-ID mapping for linked investments)
-    if (goalsCsv != null) {
+    if (goals != null) {
       final result = await _importGoalsCsv(
-        goalsCsv,
+        goals,
         isArchived: false,
         strategy: strategy,
         investmentNameToIdMap: investmentNameToIdMap,
@@ -274,9 +290,9 @@ class DataImportService {
     }
 
     // Import archived goals
-    if (goalsArchivedCsv != null) {
+    if (goalsArchived != null) {
       final result = await _importGoalsCsv(
-        goalsArchivedCsv,
+        goalsArchived,
         isArchived: true,
         strategy: strategy,
         investmentNameToIdMap: investmentNameToIdMap,
@@ -395,21 +411,39 @@ class DataImportService {
     return file == null ? null : utf8.decode(file.content as List<int>);
   }
 
-  /// Like [_readText], but a file that cannot be read is skipped with
-  /// [warning]. The error itself is left out: it can quote the file.
-  String? _readOptionalText(
+  /// [name] read and parsed by [parse], or null if the backup has no such
+  /// file. A file that cannot be read, or that [parse] rejects by returning
+  /// null, is skipped with [warning]; the error itself is left out because it
+  /// can quote the file.
+  T? _readParsed<T extends Object>(
     Archive archive,
     String name,
     String warning,
     List<String> warnings,
+    T? Function(String text) parse,
   ) {
     try {
-      return _readText(archive, name);
+      final text = _readText(archive, name);
+      if (text == null) return null;
+      final parsed = parse(text);
+      if (parsed != null) return parsed;
     } catch (_) {
-      warnings.add(warning);
-      return null;
+      // Skipped below, with the same warning.
     }
+    warnings.add(warning);
+    return null;
   }
+
+  /// The goals in a goals.csv or goals_archived.csv, or null if it is damaged.
+  ParsedGoalsResult? _parseGoals(String text, String baseCurrency) {
+    final parsed = GoalsCsvParser.parseString(text, baseCurrency: baseCurrency);
+    return _isDamaged(parsed.validRows, parsed.errors) ? null : parsed;
+  }
+
+  /// Whether a parsed CSV has nothing to restore: no valid row, and at least
+  /// one error (a header-only file has neither and is just empty).
+  bool _isDamaged(int validRows, List<String> errors) =>
+      validRows == 0 && errors.isNotEmpty;
 
   /// The FIRE settings in the backup, or null if there are none or they
   /// cannot be read (one warning, without the file's content).
@@ -485,16 +519,15 @@ class DataImportService {
     }
   }
 
-  /// Import cashflows from CSV content
-  /// Reuses SimpleCsvParser from bulk import
+  /// Import the cash flows of a parsed cashflows.csv or
+  /// cashflows_archived.csv.
   Future<_CsvImportResult> _importCashflowsCsv(
-    String csvContent, {
+    ParsedCsvResult parseResult, {
     required bool isArchived,
     required ImportStrategy strategy,
     required String baseCurrency,
     Map<(bool, String), _ImportedValuation> valuations = const {},
   }) async {
-    final parseResult = _parseBackupCashflows(csvContent, baseCurrency);
     if (parseResult.validRows == 0) {
       return _CsvImportResult(
         imported: 0,
@@ -620,17 +653,17 @@ class DataImportService {
 
   /// Parses valuations.csv into values keyed by (archived, lowercase
   /// investment name), the way cash flow rows name their investment. Bad
-  /// rows are skipped with a warning that holds no amount.
-  Map<(bool, String), _ImportedValuation> _parseValuationsCsv(
+  /// rows are skipped with a warning that holds no amount. Null if the file
+  /// as a whole cannot be read.
+  Map<(bool, String), _ImportedValuation>? _parseValuationsCsv(
     String content,
     List<String> warnings,
   ) {
     final List<List<dynamic>> rows;
     try {
       rows = csv.decode(content);
-    } catch (e) {
-      warnings.add('Current values not imported: valuations.csv is invalid');
-      return const {};
+    } catch (_) {
+      return null;
     }
     if (rows.isEmpty) return const {};
 
@@ -641,8 +674,7 @@ class DataImportService {
     final valueCol = header.indexOf('Value');
     final currencyCol = header.indexOf('Currency');
     if ([nameCol, archivedCol, dateCol, valueCol, currencyCol].contains(-1)) {
-      warnings.add('Current values not imported: valuations.csv is invalid');
-      return const {};
+      return null;
     }
 
     final now = DateTime.now();
@@ -683,18 +715,14 @@ class DataImportService {
     return result;
   }
 
-  /// Import goals from CSV content
+  /// Import the goals of a parsed goals.csv or goals_archived.csv.
   Future<_CsvImportResult> _importGoalsCsv(
-    String csvContent, {
+    ParsedGoalsResult parseResult, {
     required bool isArchived,
     required ImportStrategy strategy,
     required Map<String, String> investmentNameToIdMap,
     required String baseCurrency,
   }) async {
-    final parseResult = GoalsCsvParser.parseString(
-      csvContent,
-      baseCurrency: baseCurrency,
-    );
     if (parseResult.validRows == 0) {
       return _CsvImportResult(
         imported: 0,
