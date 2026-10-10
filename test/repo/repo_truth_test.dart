@@ -2,8 +2,9 @@
 /// file checks (no Flutter bindings) so they also run on a bare checkout.
 ///
 /// Each group names the claim it guards. A failure means the repo again says
-/// something its files do not back up (a licence that does not exist, a
-/// platform that is not built, a name the app does not use).
+/// something its files do not back up (a licence that does not exist, a name
+/// the app does not use). The claims about removed platforms are in
+/// platforms_test.dart and the ones about docs/ are in docs_archive_test.dart.
 library;
 
 import 'dart:convert';
@@ -41,14 +42,6 @@ Iterable<String> _relativeLinks(String markdown) sync* {
     }
     yield target.split('#').first;
   }
-}
-
-/// Files directly inside [dir], or none when the directory does not exist
-/// (a removed folder must not make a scan throw).
-Iterable<File> _filesIn(String dir) {
-  final d = Directory(dir);
-  if (!d.existsSync()) return const <File>[];
-  return d.listSync().where((e) => e is! Directory).map((e) => File(e.path));
 }
 
 /// Every file or link under [dir] (recursive), skipping dependency and build
@@ -167,65 +160,6 @@ void main() {
     });
   });
 
-  group('unused platforms', () {
-    for (final folder in ['web', 'macos', 'windows', 'linux']) {
-      test('$folder/ is gone', () {
-        expect(Directory(folder).existsSync(), isFalse);
-      });
-    }
-
-    test('android/ and ios/ are kept (iOS is deferred, not dropped)', () {
-      expect(Directory('android').existsSync(), isTrue);
-      expect(Directory('ios').existsSync(), isTrue);
-    });
-
-    test('launcher icons are configured for android and ios only', () {
-      final pubspec = _read('pubspec.yaml');
-      for (final platform in ['web', 'windows', 'macos']) {
-        expect(
-          RegExp('^  $platform:', multiLine: true).hasMatch(pubspec),
-          isFalse,
-          reason: 'flutter_launcher_icons still has a $platform block',
-        );
-      }
-    });
-
-    test('.metadata does not list the removed platforms', () {
-      final metadata = _read('.metadata');
-      for (final platform in ['linux', 'macos', 'web', 'windows']) {
-        expect(metadata, isNot(contains('platform: $platform')));
-      }
-    });
-
-    test('firebase.json configures android and ios only', () {
-      final flutter =
-          (jsonDecode(_read('firebase.json'))
-                  as Map<String, dynamic>)['flutter']
-              as Map<String, dynamic>;
-      final platforms = flutter['platforms'] as Map<String, dynamic>;
-      final dart = platforms['dart'] as Map<String, dynamic>;
-      final configurations = [
-        for (final file in dart.values)
-          ...((file as Map<String, dynamic>)['configurations']
-                  as Map<String, dynamic>)
-              .keys,
-      ];
-      expect(
-        [...platforms.keys.where((k) => k != 'dart'), ...configurations]
-          ..sort(),
-        ['android', 'android', 'ios', 'ios'],
-        reason: 'firebase.json still names a removed platform',
-      );
-    });
-
-    test('.gitleaks.toml no longer allowlists files of removed platforms', () {
-      final gitleaks = _read('.gitleaks.toml');
-      for (final folder in ['macos/', 'windows/', 'web/', 'linux/']) {
-        expect(gitleaks, isNot(contains(folder)), reason: folder);
-      }
-    });
-  });
-
   group('one name: InvTrack', () {
     test('Android launcher label is InvTrack', () {
       expect(
@@ -319,68 +253,6 @@ void main() {
       ]) {
         expect(_mentionsOldAppName(text), isFalse, reason: text);
       }
-    });
-  });
-
-  group('docs', () {
-    test('docs/ has fewer than 15 top-level files', () {
-      final files = Directory('docs')
-          .listSync()
-          .whereType<File>()
-          .map((f) => f.path.split(Platform.pathSeparator).last)
-          .toList();
-      expect(files.length, lessThan(15), reason: files.join(', '));
-    });
-
-    test('status reports live in docs/archive and the review stays put', () {
-      expect(Directory('docs/archive').existsSync(), isTrue);
-      expect(File('docs/review-2026-10/ACTION_PLAN.md').existsSync(), isTrue);
-      expect(File('docs/review-2026-10/FINDINGS.md').existsSync(), isTrue);
-    });
-
-    test('living docs do not link to files that are not there', () {
-      final broken = <String>[];
-      for (final entity in Directory('docs').listSync()) {
-        if (entity is! File || !entity.path.endsWith('.md')) continue;
-        for (final link in _relativeLinks(entity.readAsStringSync())) {
-          if (link.isEmpty) continue;
-          final target = File('docs/$link');
-          if (!target.existsSync() && !Directory('docs/$link').existsSync()) {
-            broken.add('${entity.path} -> $link');
-          }
-        }
-      }
-      expect(broken, isEmpty, reason: broken.join('\n'));
-    });
-
-    test('README, scripts and CodeRabbit config only cite docs that exist', () {
-      final sources = <File>[
-        File('README.md'),
-        File('.coderabbit.yaml'),
-        File('.github/PR_DESCRIPTION.md'),
-        ..._filesIn('scripts').where((f) => f.path.endsWith('.sh')),
-        ..._filesIn('.github/scripts'),
-      ];
-      final missing = <String>[];
-      for (final source in sources) {
-        for (final line in source.readAsLinesSync()) {
-          // A path inside a URL (https://.../docs/...) is not ours to check.
-          for (final m in RegExp(
-            r'(?<!https?://\S*)docs/[A-Za-z0-9_\-./]*\.(?:md|csv)',
-          ).allMatches(line)) {
-            if (!File(m.group(0)!).existsSync()) {
-              missing.add('${source.path}: ${m.group(0)}');
-            }
-          }
-        }
-      }
-      expect(missing, isEmpty, reason: missing.join('\n'));
-    });
-
-    test('CodeRabbit is not fed the retired technical spec', () {
-      final config = _read('.coderabbit.yaml');
-      expect(config, isNot(contains('InvTracker_TechSpec')));
-      expect(config, isNot(contains('InvTracker_PRD')));
     });
   });
 
@@ -484,11 +356,10 @@ void main() {
       expect(back, isEmpty, reason: 'deleted files are back: $back');
     });
 
-    test('no script or live doc named after Jules is added again', () {
+    test('no script named after Jules is added again', () {
       final named = [
         ..._filesUnder('.github'),
         ..._filesUnder('scripts'),
-        ..._filesIn('docs'),
       ].map((f) => f.path).where((p) => p.toLowerCase().contains('jules'));
       expect(named, isEmpty, reason: named.join('\n'));
     });
@@ -496,6 +367,7 @@ void main() {
     test('nothing live still points at the deleted files', () {
       // Case-insensitive on purpose: a renamed copy must not slip through.
       // Read as latin1 so a binary file in these folders cannot make it throw.
+      // The docs/ folder is checked the same way in docs_archive_test.dart.
       final pointer = RegExp(
         r'create-jules-sessions|monitor-jules-sessions|run-all-crash-fix|'
         r'create-summary-issue|fetch-crashlytics-data|firebase-helper|'
@@ -505,7 +377,6 @@ void main() {
       final sources = <File>[
         ..._filesUnder('.github'),
         ..._filesUnder('scripts'),
-        ..._filesIn('docs').where((f) => f.path.endsWith('.md')),
         ..._filesUnder('.augment'),
         File('README.md'),
         File('CLAUDE.md'),

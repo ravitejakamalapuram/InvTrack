@@ -15,6 +15,7 @@ paths = [
     
     # CocoaPods lock files (contain dependency checksums, not secrets)
     '''ios/Podfile\.lock''',
+    '''macos/Podfile\.lock''',
     
     # Generated/build files
     '''\.dart_tool/''',

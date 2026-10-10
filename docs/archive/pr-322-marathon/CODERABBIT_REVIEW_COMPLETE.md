@@ -61,7 +61,7 @@ After an intensive marathon session spanning **8 commits** and **~8 hours**, all
 
 ### **Deferred to V2** (1/1 - Justified)
 36. ⏳ Domain localization → **Documented as V2 work**
-    - See: `docs/archive/DOMAIN_LOCALIZATION_DECISION.md`
+    - See: `docs/DOMAIN_LOCALIZATION_DECISION.md`
     - Reason: Breaking API change, UI already 100% localized
     - Priority: Medium (post-V1 launch)
 

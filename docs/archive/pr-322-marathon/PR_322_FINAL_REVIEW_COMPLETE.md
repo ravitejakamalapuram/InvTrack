@@ -43,7 +43,7 @@ Verified against all InvTrack Enterprise Rules:
 - ✅ Privacy (Score is derivative metric, no raw data)
 - ✅ Multi-Currency (Uses pre-converted amounts)
 
-**Document**: `docs/archive/COMPREHENSIVE_REVIEW_2026_04_09.md`
+**Document**: `docs/COMPREHENSIVE_REVIEW_2026_04_09.md`
 
 ---
 
@@ -65,7 +65,7 @@ Added Portfolio Health Score section with 5 FAQ entries:
 ### **4. File Organization (Rule 10.4)**
 **Status**: ✅ Compliant
 
-- ✅ Moved `TODO.md` → `docs/archive/ROADMAP.md`
+- ✅ Moved `TODO.md` → `docs/ROADMAP.md`
 - ✅ Removed build artifact: `android/build/reports/problems/problems-report.html`
 - ✅ Deleted temporary docs: `TODO_REMAINING_WORK.md`, `CONTEXT_HANDOFF_SUMMARY.md`
 - ✅ Only `README.md` and `CHANGELOG.md` in root
@@ -170,11 +170,11 @@ Added Portfolio Health Score section with 5 FAQ entries:
 ## 📚 **DOCUMENTATION**
 
 ### **Created/Updated**
-- ✅ `docs/archive/COMPREHENSIVE_REVIEW_2026_04_09.md` - Full compliance review
-- ✅ `docs/archive/CODERABBIT_FIXES_2026_04_09.md` - CodeRabbit fixes log
+- ✅ `docs/COMPREHENSIVE_REVIEW_2026_04_09.md` - Full compliance review
+- ✅ `docs/CODERABBIT_FIXES_2026_04_09.md` - CodeRabbit fixes log
 - ✅ `docs/PR_322_FINAL_REVIEW_COMPLETE.md` - This document
-- ✅ `docs/archive/ROADMAP.md` - Strategic planning (moved from root)
-- ✅ `docs/archive/DOMAIN_LOCALIZATION_DECISION.md` - V2 deferral justification
+- ✅ `docs/ROADMAP.md` - Strategic planning (moved from root)
+- ✅ `docs/DOMAIN_LOCALIZATION_DECISION.md` - V2 deferral justification
 
 ### **Archived**
 - ✅ Deleted: `docs/TODO_REMAINING_WORK.md` (temporary handoff)
