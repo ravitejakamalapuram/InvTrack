@@ -77,6 +77,28 @@ class FakeAnalyticsService implements AnalyticsService {
   }
 
   @override
+  Future<void> logValuationSet({
+    required String kind,
+    required String provenance,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.valuationSet,
+      parameters: {'kind': kind, 'provenance': provenance},
+    );
+  }
+
+  @override
+  Future<void> logValuationCleared({
+    required String kind,
+    required String provenance,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.valuationCleared,
+      parameters: {'kind': kind, 'provenance': provenance},
+    );
+  }
+
+  @override
   Future<void> logCashFlowAdded({
     required String flowType,
     required String amountRange,

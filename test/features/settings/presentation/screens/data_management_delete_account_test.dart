@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -7,7 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/app/user_identity_sync.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
@@ -29,6 +32,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class MockAuthRepository extends Mock implements AuthRepository {}
 
 class MockAnalyticsService extends Mock implements AnalyticsService {}
+
+class MockCrashlyticsService extends Mock implements CrashlyticsService {}
 
 class MockDeletionRequestService extends Mock
     implements DeletionRequestService {}
@@ -159,13 +164,19 @@ void main() {
   Future<AppLocalizations> pumpScreen(
     WidgetTester tester, {
     UserEntity signedInUser = user,
+    Stream<UserEntity?>? authStream,
+    MockCrashlyticsService? crashlytics,
   }) async {
     await tester.binding.setSurfaceSize(const Size(800, 2400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          authStateProvider.overrideWith((ref) => Stream.value(signedInUser)),
+          authStateProvider.overrideWith(
+            (ref) => authStream ?? Stream.value(signedInUser),
+          ),
+          if (crashlytics != null)
+            crashlyticsServiceProvider.overrideWithValue(crashlytics),
           authRepositoryProvider.overrideWithValue(auth),
           googleSignInInitializedProvider.overrideWith(
             (ref) async => calls.add('init'),
@@ -178,10 +189,18 @@ void main() {
           guestBackupStoreProvider.overrideWithValue(guestBackups),
           dataExportServiceProvider.overrideWithValue(export),
         ],
-        child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: DataManagementScreen(),
+        // The app root watches the identity sync; do the same when a test
+        // passes a Crashlytics mock, so the real listener runs.
+        child: Consumer(
+          builder: (context, ref, child) {
+            if (crashlytics != null) ref.watch(userIdentitySyncProvider);
+            return child!;
+          },
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: DataManagementScreen(),
+          ),
         ),
       ),
     );
@@ -567,6 +586,91 @@ void main() {
       expect(find.textContaining('Sign in failed'), findsNothing);
       expect(inDialog(find.text('Delete Everything')), findsOneWidget);
       expectNothingFiledOrDeleted();
+    });
+  });
+  // A102: after Delete Account, no crash report from this device may carry the
+  // deleted UID. The one listener (userIdentitySyncProvider) clears both IDs
+  // when the auth state empties; these tests run it for real, so a deletion
+  // path that signs out but leaves an ID behind fails here.
+  group('user IDs after Delete Account (A102)', () {
+    late StreamController<UserEntity?> authStream;
+    late MockCrashlyticsService crashlytics;
+
+    setUp(() {
+      authStream = StreamController<UserEntity?>()..add(user);
+      addTearDown(authStream.close);
+      crashlytics = MockCrashlyticsService();
+      when(() => crashlytics.setUserIdentifier(any())).thenAnswer((_) async {});
+      when(() => crashlytics.clearUserIdentifier()).thenAnswer((_) async {});
+      // Signing out empties the auth state, as Firebase does.
+      when(() => auth.signOut()).thenAnswer((_) async {
+        calls.add('signOut');
+        authStream.add(null);
+      });
+      when(() => auth.reauthenticateWithGoogle()).thenAnswer((_) async {
+        calls.add('reauth');
+        reauthenticated = true;
+        return true;
+      });
+    });
+
+    testWidgets('a deleted account clears the Crashlytics identifier and '
+        'the Analytics user ID once', (tester) async {
+      final l10n = await pumpScreen(
+        tester,
+        authStream: authStream.stream,
+        crashlytics: crashlytics,
+      );
+      verify(() => crashlytics.setUserIdentifier('uid-1')).called(1);
+      verifyNever(() => crashlytics.clearUserIdentifier());
+
+      await confirmDeletion(tester, l10n);
+
+      expect(find.text('Account deleted successfully'), findsOneWidget);
+      verify(() => crashlytics.clearUserIdentifier()).called(1);
+      verify(() => analytics.setUserId(null)).called(1);
+      verifyNever(() => crashlytics.setUserIdentifier(''));
+    });
+
+    testWidgets('a deletion left to the server job also signs out, so it '
+        'clears the IDs once', (tester) async {
+      when(() => auth.reauthenticateWithGoogle()).thenAnswer((_) async {
+        calls.add('reauth');
+        throw AuthException(technicalMessage: 'GoogleSignInException: unknown');
+      });
+      final l10n = await pumpScreen(
+        tester,
+        authStream: authStream.stream,
+        crashlytics: crashlytics,
+      );
+
+      await confirmDeletion(tester, l10n);
+
+      expect(find.text(_scheduledText), findsOneWidget);
+      verify(() => crashlytics.clearUserIdentifier()).called(1);
+      verify(() => analytics.setUserId(null)).called(1);
+    });
+
+    testWidgets('a request that is only queued keeps the user signed in, '
+        'so the IDs stay', (tester) async {
+      when(() => auth.reauthenticateWithGoogle()).thenAnswer((_) async {
+        calls.add('reauth');
+        throw AuthException(technicalMessage: 'GoogleSignInException: unknown');
+      });
+      when(() => requests.requestDeletion()).thenAnswer((_) async => false);
+      when(
+        () => requests.requestStatus(),
+      ).thenAnswer((_) async => DeletionRequestStatus.pending);
+      final l10n = await pumpScreen(
+        tester,
+        authStream: authStream.stream,
+        crashlytics: crashlytics,
+      );
+
+      await confirmDeletion(tester, l10n);
+
+      verifyNever(() => crashlytics.clearUserIdentifier());
+      verifyNever(() => analytics.setUserId(null));
     });
   });
 }

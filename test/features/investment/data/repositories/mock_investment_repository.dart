@@ -118,12 +118,47 @@ class FakeInvestmentRepository implements InvestmentRepository {
   }
 
   @override
-  Future<void> updateInvestment(InvestmentEntity investment) async {
+  Future<void> updateInvestment(
+    InvestmentEntity investment, {
+    bool preserveCurrentValue = false,
+  }) async {
     final index = _investments.indexWhere((i) => i.id == investment.id);
     if (index >= 0) {
-      _investments[index] = investment;
+      _investments[index] = preserveCurrentValue
+          ? _keepingCurrentValue(_investments[index], investment)
+          : investment;
     }
   }
+
+  /// [updated] with the current value pair of [stored], as the real
+  /// repository leaves it when told to preserve it.
+  static InvestmentEntity _keepingCurrentValue(
+    InvestmentEntity stored,
+    InvestmentEntity updated,
+  ) => InvestmentEntity(
+    id: updated.id,
+    name: updated.name,
+    type: updated.type,
+    status: updated.status,
+    notes: updated.notes,
+    createdAt: updated.createdAt,
+    closedAt: updated.closedAt,
+    updatedAt: updated.updatedAt,
+    maturityDate: updated.maturityDate,
+    incomeFrequency: updated.incomeFrequency,
+    isArchived: updated.isArchived,
+    startDate: updated.startDate,
+    expectedRate: updated.expectedRate,
+    tenureMonths: updated.tenureMonths,
+    platform: updated.platform,
+    interestPayoutMode: updated.interestPayoutMode,
+    autoRenewal: updated.autoRenewal,
+    riskLevel: updated.riskLevel,
+    compoundingFrequency: updated.compoundingFrequency,
+    currency: updated.currency,
+    currentValue: stored.currentValue,
+    currentValueDate: stored.currentValueDate,
+  );
 
   @override
   Future<void> closeInvestment(String id) async {
@@ -222,10 +257,15 @@ class FakeInvestmentRepository implements InvestmentRepository {
   }
 
   @override
-  Future<void> updateArchivedInvestment(InvestmentEntity investment) async {
+  Future<void> updateArchivedInvestment(
+    InvestmentEntity investment, {
+    bool preserveCurrentValue = false,
+  }) async {
     final index = _archivedInvestments.indexWhere((i) => i.id == investment.id);
     if (index >= 0) {
-      _archivedInvestments[index] = investment;
+      _archivedInvestments[index] = preserveCurrentValue
+          ? _keepingCurrentValue(_archivedInvestments[index], investment)
+          : investment;
     }
   }
 

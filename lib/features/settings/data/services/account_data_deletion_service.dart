@@ -65,6 +65,7 @@ class AccountDataDeletionService {
     'fireSettings',
     'profile',
     'exchangeRates',
+    'valuations',
     'customInvestmentTypes',
   ];
 

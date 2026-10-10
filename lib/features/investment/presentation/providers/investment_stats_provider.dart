@@ -17,10 +17,12 @@ import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
+import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/valuation_providers.dart';
 
 // Re-export stats entities
 export 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
@@ -221,17 +223,26 @@ final convertedTerminalValuesProvider = FutureProvider<ConvertedTerminalValues>(
     final investments = ref.watch(activeInvestmentsProvider).value ?? const [];
     final asOf = ref.watch(valuationDateProvider);
 
+    // Dated valuations by investment id: empty while the feature is off.
+    final snapshots = await dataOf(
+      ref.watch(valuationSnapshotsByInvestmentProvider),
+    );
+
     final flowsByInvestment = <String, List<CashFlowEntity>>{};
     for (final cf in snapshot.source) {
       flowsByInvestment.putIfAbsent(cf.investmentId, () => []).add(cf);
     }
+    // Every active investment that has cash flows or a dated valuation: an
+    // opening baseline needs no cash flows to be valued.
     final values = <String, TerminalValues>{
       for (final inv in investments)
-        if (flowsByInvestment[inv.id] case final flows?)
+        if (flowsByInvestment[inv.id] != null ||
+            (snapshots[inv.id]?.isNotEmpty ?? false))
           inv.id: CurrentValueCalculator.terminalValues(
             investments: [inv],
-            cashFlows: flows,
+            cashFlows: flowsByInvestment[inv.id] ?? const [],
             asOf: asOf,
+            snapshots: snapshots,
           ),
     };
 
@@ -364,11 +375,22 @@ final activeInvestmentXirrResultMapProvider =
         return {};
       }
 
+      // Investments with limited history have no lifetime XIRR: it would be
+      // fabricated from a baseline with no cost or date. Their id is left out,
+      // which reads as undefined.
+      final limited = <String>{
+        for (final value in converted.byInvestment.values)
+          ...value.limitedHistoryIds,
+      };
+
       // Each terminal value carries its investment's id, so it joins that
       // investment's group in _calculateAllXirrs.
       final flows = [
-        ...cashFlows,
-        for (final value in converted.byInvestment.values) ...value.flows,
+        for (final cf in [
+          ...cashFlows,
+          for (final value in converted.byInvestment.values) ...value.flows,
+        ])
+          if (!limited.contains(cf.investmentId)) cf,
       ];
 
       // Track performance of bulk XIRR calculation

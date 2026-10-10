@@ -158,6 +158,7 @@ void main() {
         'fireSettings',
         'profile',
         'exchangeRates',
+        'valuations',
         // #936: reusable custom investment types.
         'customInvestmentTypes',
       ]),
@@ -170,7 +171,7 @@ void main() {
       final tree = FakeUserTree({
         for (final c in AccountDataDeletionService.userCollections) c: 3,
       });
-      expect(tree.totalRemaining, 39);
+      expect(tree.totalRemaining, 42);
 
       await build(tree).deleteAllServerData();
 

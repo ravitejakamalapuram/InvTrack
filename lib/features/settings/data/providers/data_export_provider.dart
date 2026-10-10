@@ -23,6 +23,7 @@ final dataExportServiceProvider = Provider<DataExportService?>((ref) {
   final expectedCashFlowRepository = ref.watch(
     expectedCashFlowRepositoryProvider,
   );
+  final valuationRepository = ref.watch(valuationRepositoryProvider);
   final customInvestmentTypeRepository = ref.watch(
     customInvestmentTypeRepositoryProvider,
   );
@@ -35,6 +36,7 @@ final dataExportServiceProvider = Provider<DataExportService?>((ref) {
     documentStorageService: documentStorageService,
     fireSettingsRepository: fireSettingsRepository,
     expectedCashFlowRepository: expectedCashFlowRepository,
+    valuationRepository: valuationRepository,
     customInvestmentTypeRepository: customInvestmentTypeRepository,
     performanceService: performanceService,
   );

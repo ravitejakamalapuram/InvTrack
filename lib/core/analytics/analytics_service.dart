@@ -131,6 +131,8 @@ class AnalyticsEvents {
   static const String investmentClosed = 'investment_closed';
   static const String investmentReopened = 'investment_reopened';
   static const String investmentArchived = 'investment_archived';
+  static const String valuationSet = 'valuation_set';
+  static const String valuationCleared = 'valuation_cleared';
   static const String investmentUnarchived = 'investment_unarchived';
   static const String investmentDeleted = 'investment_deleted';
 
@@ -458,6 +460,34 @@ class AnalyticsService {
     await logEvent(
       name: AnalyticsEvents.investmentCreated,
       parameters: {'investment_type': investmentType, 'has_notes': hasNotes},
+    );
+  }
+
+  /// Log a dated valuation set or edited (#941).
+  ///
+  /// ## Privacy
+  ///
+  /// Only the kind (`marketValue`, `carryingValue`, `principalOutstanding`)
+  /// and the provenance (`manual`, `openingBaseline`, `import`): never an
+  /// amount, a bucket, a date, a name or an id.
+  Future<void> logValuationSet({
+    required String kind,
+    required String provenance,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.valuationSet,
+      parameters: {'kind': kind, 'provenance': provenance},
+    );
+  }
+
+  /// Log a dated valuation cleared (#941). Same privacy as [logValuationSet].
+  Future<void> logValuationCleared({
+    required String kind,
+    required String provenance,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.valuationCleared,
+      parameters: {'kind': kind, 'provenance': provenance},
     );
   }
 

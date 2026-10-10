@@ -51,7 +51,7 @@ data_collection:
   sensitive: [financial_holdings_and_amounts, personal_info_name_email_age_locale]
   third_party: [firebase_google, admob_dormant]
   retention: { firestore: "until account deletion", local_attachments: "until account deletion or app data clear" }
-  deletion: "In-app: Settings > Data & Account > Delete Account; the public web deletion page is tracked in docs/review-2026-10/FINDINGS.md"
+  deletion: "In-app: Settings > Data & Account > Delete Account; on the web, at hostedAccountDeletionUrl (legal_content.dart, https://ravitejakamalapuram.github.io/delete/invtrack.html), the APP-333 page where a Google sign-in writes deletionRequests/{uid} and can withdraw it, linked from About and Help & FAQ; the page is live once the Pages repo merges APP-333 (its PR #6)"
 security_classification: high
 release_channel: default
 # The release version comes from the git release tag (release.yaml derives it), not from `version:` in pubspec.yaml. Do not copy it here.

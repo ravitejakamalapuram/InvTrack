@@ -5,6 +5,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
+import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
@@ -23,7 +24,9 @@ import 'package:inv_tracker/features/goals/presentation/providers/goals_provider
 import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
 import 'package:inv_tracker/features/investment/domain/models/custom_type_catalog.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/valuation_notifier.dart';
 import 'package:uuid/uuid.dart';
 
 // ============ INVESTMENT NOTIFIER (ACTIONS) ============
@@ -179,8 +182,15 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         existing: existing,
       );
       // The current value is in the stored currency; it means nothing in
-      // another one, so a currency change clears it (money rule 2).
-      final keepsValue = currency == null || currency == existing.currency;
+      // another one, so a currency change clears it (money rule 2), unless
+      // dated valuations in the new currency are on record: the pair then
+      // mirrors the latest of them, like every other write of it. Left null,
+      // it would read as a value cleared by an older app, and hide them.
+      final newCurrency = currency ?? existing.currency;
+      final keepsValue = newCurrency == existing.currency;
+      final mirror = keepsValue
+          ? null
+          : await _mirrorInCurrency(existing.id, newCurrency);
 
       // Built explicitly, not with copyWith: the edit form sends every
       // optional field, and null means the user cleared it. copyWith would
@@ -208,23 +218,36 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         riskLevel: riskLevel,
         compoundingFrequency: compoundingFrequency,
         // Multi-currency: no currency from the form keeps the stored one
-        currency: currency ?? existing.currency,
+        currency: newCurrency,
         // Not on the edit form: set through setCurrentValue only.
-        currentValue: keepsValue ? existing.currentValue : null,
-        currentValueDate: keepsValue ? existing.currentValueDate : null,
+        currentValue: keepsValue ? existing.currentValue : mirror?.amount,
+        currentValueDate: keepsValue
+            ? existing.currentValueDate
+            : mirror?.effectiveDate,
         customTypeId: customType.id,
         customTypeLabel: customType.label,
       );
       final repo = ref.read(investmentRepositoryProvider);
+      // With dated valuations on, the pair mirrors the latest snapshot and is
+      // written with it: an edit that read it earlier must not send it back
+      // (a currency change still clears it, above).
+      final preserveValue =
+          keepsValue && ref.read(valuationSnapshotsActiveProvider);
 
       // Track performance of investment update
       await ref.read(performanceServiceProvider).trackOperation(
         'investment_update',
         () async {
           if (existing.isArchived) {
-            await repo.updateArchivedInvestment(updated);
+            await repo.updateArchivedInvestment(
+              updated,
+              preserveCurrentValue: preserveValue,
+            );
           } else {
-            await repo.updateInvestment(updated);
+            await repo.updateInvestment(
+              updated,
+              preserveCurrentValue: preserveValue,
+            );
           }
         },
         attributes: {
@@ -267,6 +290,21 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     if (day.isAfter(DateTime(now.year, now.month, now.day))) {
       throw ValidationException.invalidDate(date);
     }
+    if (ref.read(valuationSnapshotsActiveProvider)) {
+      // Dated valuations are on: the value is a snapshot, and the pair is
+      // written with it.
+      await _viaValuations(
+        () => ref
+            .read(valuationNotifierProvider.notifier)
+            .setValuation(
+              investmentId: id,
+              amount: value,
+              date: day,
+              replaceSameDay: true,
+            ),
+      );
+      return;
+    }
     await _writeCurrentValue(id, (existing) {
       if (!existing.isOpen) {
         throw ValidationException(
@@ -284,10 +322,34 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
   /// Removes the user's current value, so the estimate (if any) applies.
   Future<void> clearCurrentValue(String id) async {
+    if (ref.read(valuationSnapshotsActiveProvider)) {
+      // The latest snapshot is the value shown; a value only the pair holds
+      // (no snapshot yet) is cleared the old way, below.
+      var cleared = false;
+      await _viaValuations(() async {
+        cleared = await ref
+            .read(valuationNotifierProvider.notifier)
+            .clearLatestValuation(id);
+      });
+      if (cleared) return;
+    }
     await _writeCurrentValue(
       id,
       (existing) => _withCurrentValue(existing, null, null),
     );
+  }
+
+  /// Runs a dated valuation write on behalf of the old entry points.
+  Future<void> _viaValuations(Future<void> Function() write) async {
+    state = const AsyncValue.loading();
+    try {
+      await write();
+      _invalidateAll();
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
   }
 
   Future<void> _writeCurrentValue(
@@ -831,6 +893,33 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
+  /// The latest live dated valuation of [investmentId] in [currency], or null
+  /// when there is none or the feature is off.
+  Future<InvestmentValuationSnapshot?> _mirrorInCurrency(
+    String investmentId,
+    String currency,
+  ) async {
+    if (!ref.read(valuationSnapshotsActiveProvider)) return null;
+    // mirrorOf leaves out the cleared ones.
+    return ValuationSnapshotSelector.mirrorOf(
+      await ref.read(valuationRepositoryProvider).getByInvestment(investmentId),
+      investmentId: investmentId,
+      currency: currency,
+    );
+  }
+
+  /// The live dated valuations by investment id, or null while the feature
+  /// is off: goal progress then values investments exactly as before.
+  Future<Map<String, List<InvestmentValuationSnapshot>>?>
+  _valuationSnapshotsByInvestment() async {
+    if (!ref.read(valuationSnapshotsActiveProvider)) return null;
+    final byInvestment = <String, List<InvestmentValuationSnapshot>>{};
+    for (final s in await ref.read(valuationRepositoryProvider).getAll()) {
+      if (s.isLive) byInvestment.putIfAbsent(s.investmentId, () => []).add(s);
+    }
+    return byInvestment;
+  }
+
   // Note: With stream-based architecture, manual invalidation is largely unnecessary.
   // Firestore streams auto-update, and derived providers reactively recompute.
   // This method is kept for edge cases (e.g., forcing refresh after error recovery).
@@ -1116,6 +1205,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       // use unconverted amounts; other goals are still checked.
       final batchConverter = ref.read(batchCurrencyConverterProvider);
       final baseCurrency = ref.read(currencyCodeProvider);
+      final snapshots = await _valuationSnapshotsByInvestment();
 
       // Check each goal for milestone achievements and alerts
       for (final goal in goals) {
@@ -1145,6 +1235,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             batchConverter: batchConverter,
             baseCurrency: baseCurrency,
             fallbackStrategy: ConversionFallbackStrategy.throwError,
+            snapshots: snapshots,
           );
           targetInBase = await GoalProgressCalculator.targetInBaseCurrency(
             goal: goal,
@@ -1160,6 +1251,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
                 batchConverter: batchConverter,
                 baseCurrency: baseCurrency,
                 fallbackStrategy: ConversionFallbackStrategy.throwError,
+                snapshots: snapshots,
               )).progressPercent;
         } on CurrencyConversionException {
           continue;

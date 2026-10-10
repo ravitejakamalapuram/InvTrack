@@ -279,13 +279,9 @@ int _compareInvestments(
         statsB?.totalReturned ?? 0,
       );
     case InvestmentSort.returnPercentDesc:
-      comparison = (statsB?.absoluteReturn ?? 0).compareTo(
-        statsA?.absoluteReturn ?? 0,
-      );
+      comparison = _compareReturnPercent(statsA, statsB, descending: true);
     case InvestmentSort.returnPercentAsc:
-      comparison = (statsA?.absoluteReturn ?? 0).compareTo(
-        statsB?.absoluteReturn ?? 0,
-      );
+      comparison = _compareReturnPercent(statsA, statsB, descending: false);
     case InvestmentSort.xirrDesc:
       comparison = _compareXirr(statsA?.xirr, statsB?.xirr, descending: true);
     case InvestmentSort.xirrAsc:
@@ -323,6 +319,25 @@ int _compareInvestments(
     comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
   }
   return comparison;
+}
+
+/// Orders investments by return percent. An investment whose returns are
+/// not known (limited history) sorts last in both directions; it is never
+/// ranked as 0%.
+int _compareReturnPercent(
+  InvestmentStats? a,
+  InvestmentStats? b, {
+  required bool descending,
+}) {
+  final knownA = a?.returnsKnown ?? true;
+  final knownB = b?.returnsKnown ?? true;
+  if (!knownA || !knownB) {
+    if (knownA == knownB) return 0;
+    return knownA ? -1 : 1;
+  }
+  final x = a?.absoluteReturn ?? 0;
+  final y = b?.absoluteReturn ?? 0;
+  return descending ? y.compareTo(x) : x.compareTo(y);
 }
 
 /// Orders investments by XIRR. An undefined XIRR (null: no current value,

@@ -46,6 +46,13 @@ enum FeatureFlag {
   /// - On by default (A42)
   reviewPrompt('review_prompt', 'Play Review Prompt', defaultEnabled: true),
 
+  /// Dated valuations of open investments (#941).
+  /// - Snapshots in users/{uid}/valuations, mirrored into currentValue
+  /// - Opening baselines for investments without history
+  /// - Off until the screens ship; flag off reads and writes the single
+  ///   current value exactly as before
+  valuationSnapshots('valuation_snapshots', 'Dated Valuations'),
+
   /// Reusable custom labels for investments of type Other (#936).
   /// - Optional "Custom type" field on the investment form
   /// - Saved labels come back as suggestions
@@ -205,6 +212,15 @@ final isReviewPromptEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.reviewPrompt] ?? false,
+    ),
+  );
+});
+
+/// Convenience provider for checking if dated valuations are enabled
+final isValuationSnapshotsEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagsProvider.select(
+      (flags) => flags[FeatureFlag.valuationSnapshots] ?? false,
     ),
   );
 });
