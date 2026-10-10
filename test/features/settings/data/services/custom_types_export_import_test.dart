@@ -519,6 +519,69 @@ void main() {
     },
   );
 
+  // The CSV parser trims every cell, so cashflows.csv and valuations.csv
+  // name an investment without its spaces. custom_types.json keeps the name
+  // as typed, so the link is found only if its key is trimmed the same way.
+  group('an investment name with spaces around it', () {
+    test('keeps its custom label through a round trip', () async {
+      investments.seed(
+        investments: [
+          _inv('a', 'Album ', customTypeId: 'c1', customTypeLabel: 'Stamps'),
+          _inv('b', ' Cellar', customTypeLabel: 'Wine'),
+        ],
+        cashFlows: [_invest('a'), _invest('b')],
+        archivedInvestments: [
+          _inv('e', '  Old album  ', customTypeLabel: 'Coins'),
+        ],
+        archivedCashFlows: [_invest('e')],
+      );
+      types = FakeCustomInvestmentTypeRepository([_def('c1', 'Stamps')]);
+      build(investmentRepo: investments, typeRepo: types);
+      final bytes = (await exportService.exportAsZipBytes()).bytes;
+
+      investments.reset();
+      types = FakeCustomInvestmentTypeRepository();
+      build(investmentRepo: investments, typeRepo: types);
+      final result = await import(bytes);
+
+      expect(result.errors, isEmpty);
+      expect(result.warnings, isEmpty);
+      final album = await imported('Album');
+      expect(album.customTypeLabel, 'Stamps');
+      expect(album.customTypeId, types.definitions.single.id);
+      expect((await imported('Cellar')).customTypeLabel, 'Wine');
+      final archived =
+          (await investments.watchArchivedInvestments().first).single;
+      expect(archived.name, 'Old album');
+      expect(archived.customTypeLabel, 'Coins');
+    });
+
+    test('is linked whatever spaces and case the two files use', () async {
+      final result = await import(
+        _zip({
+          'cashflows.csv':
+              '$_cashFlowsHeader'
+              '2025-10-01,"  Album ",INVEST,100000,INR,,other,open\n'
+              '2025-10-01,Cellar   ,INVEST,100000,INR,,other,open\n',
+          'custom_types.json': _json(
+            types: [_type('Stamps')],
+            investments: [
+              _link('Album  ', 'Stamps', linked: true),
+              _link('   CELLAR', 'Wine'),
+            ],
+          ),
+        }),
+      );
+
+      expect(result.errors, isEmpty);
+      expect(result.warnings, isEmpty);
+      final album = await imported('Album');
+      expect(album.customTypeLabel, 'Stamps');
+      expect(album.customTypeId, types.definitions.single.id);
+      expect((await imported('Cellar')).customTypeLabel, 'Wine');
+    });
+  });
+
   group('an unreadable custom_types.json', () {
     // The label is in the file so the warnings can be checked for it.
     const secret = 'Secret Hobby';
