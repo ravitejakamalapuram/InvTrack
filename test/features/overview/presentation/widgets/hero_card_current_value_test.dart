@@ -215,9 +215,7 @@ void main() {
     expect(_netAmount, findsOneWidget);
     expect(
       tester.getRect(_netAmount).bottom,
-      lessThanOrEqualTo(
-        tester.getRect(find.text('Awaiting current value')).top,
-      ),
+      lessThan(tester.getRect(find.text('Awaiting current value')).top),
     );
     // No fake loss next to an open investment without a value.
     expect(find.textContaining('%'), findsNothing);
@@ -235,7 +233,7 @@ void main() {
     expect(find.text('-₹5 L'), findsOneWidget);
     expect(
       tester.getRect(_netAmount).bottom,
-      lessThanOrEqualTo(tester.getRect(find.text('Awaiting first payout')).top),
+      lessThan(tester.getRect(find.text('Awaiting first payout')).top),
     );
     // XIRR is a dash, not 0% or -100%.
     expect(find.text('—'), findsOneWidget);
