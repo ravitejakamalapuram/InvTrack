@@ -912,6 +912,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
   /// The live dated valuations of [investmentId], keyed by its id, or null
   /// while the feature is off (it is then valued exactly as before).
+  ///
+  /// One awaited server-first read per saved INCOME or RETURN, and only while
+  /// the feature is on. INV-11 (A26) moves the milestone check to cached
+  /// provider state, or off the save path, and this read goes with it.
   Future<Map<String, List<InvestmentValuationSnapshot>>?>
   _liveValuationSnapshotsOf(String investmentId) async {
     if (!ref.read(valuationSnapshotsActiveProvider)) return null;

@@ -338,9 +338,61 @@ void main() {
       expect(valuations.getAllCount, 0);
     });
 
-    test('an open holding with no value yet has no MOIC', () async {
-      // Gold bought for ₹1,00,000 with ₹40,000 back is still out of pocket,
-      // and nothing says what it is worth: the screens show "—".
+    test('a USD value for an INR user is converted before it counts', () async {
+      // $1,000 in, $300 income and a value of $1,300, at 83 INR: paid in
+      // ₹83,000, MOIC = (₹24,900 + ₹1,07,900) / ₹83,000 = 1.6. Adding the
+      // value as 1,300 rupees would give 0.3x and no notification.
+      repo.seed(
+        investments: [
+          investment(
+            'usd',
+            currency: 'USD',
+            currentValue: 1300,
+            currentValueDate: DateTime(2025, 6, 1),
+          ),
+        ],
+        cashFlows: [
+          flow(
+            'a',
+            'usd',
+            CashFlowType.invest,
+            1000,
+            DateTime(2025, 1, 1),
+            currency: 'USD',
+          ),
+        ],
+      );
+
+      await addReturn(
+        containerFor('INR'),
+        'usd',
+        300,
+        DateTime(2025, 7, 1),
+        type: CashFlowType.income,
+        currency: 'USD',
+      );
+
+      final shown = plugin.shownNotifications.single;
+      expect(shown.title, contains('1.5x'));
+      // Gain: ₹24,900 income + ₹1,07,900 value - ₹83,000 invested.
+      expect(shown.body, contains('₹49,800.00'));
+    });
+
+    test('a sale after the market value leaves no value, so no MOIC', () async {
+      // Gold bought for ₹1,00,000 and valued at ₹1,20,000 on 2025-06-01, then
+      // ₹1,60,000 is taken out. A market value is never moved by a sale, so the
+      // holding has no value until the user records a newer one and the
+      // screens show "—". The cash alone is 1.6x, which would announce 1.5x
+      // for a return nobody knows.
+      final valuations = InMemoryValuationRepository();
+      addTearDown(valuations.dispose);
+      valuations.docs['v1'] = testSnapshot(
+        'v1',
+        investmentId: 'gold',
+        amount: 120000,
+        date: DateTime(2025, 6, 1),
+        kind: ValuationKind.marketValue,
+      );
       repo.seed(
         investments: [investment('gold', type: InvestmentType.gold)],
         cashFlows: [
@@ -349,14 +401,53 @@ void main() {
       );
 
       await addReturn(
-        containerFor('INR'),
+        containerFor('INR', valuations: valuations),
         'gold',
-        40000,
-        DateTime(2025, 7, 1),
-        type: CashFlowType.income,
+        160000,
+        DateTime(2025, 9, 1),
       );
 
       expect(plugin.shownNotifications, isEmpty);
+    });
+
+    test('a market value recorded after the sale counts again', () async {
+      // Same sale, then the user values what is left at ₹20,000 on
+      // 2025-10-01: MOIC = (1,60,000 + 20,000) / 1,00,000 = 1.8, so the 1.5x
+      // milestone is announced. This is the control for the test above.
+      final valuations = InMemoryValuationRepository();
+      addTearDown(valuations.dispose);
+      valuations.docs['v1'] = testSnapshot(
+        'v1',
+        investmentId: 'gold',
+        amount: 120000,
+        date: DateTime(2025, 6, 1),
+        kind: ValuationKind.marketValue,
+      );
+      valuations.docs['v2'] = testSnapshot(
+        'v2',
+        investmentId: 'gold',
+        amount: 20000,
+        date: DateTime(2025, 10, 1),
+        kind: ValuationKind.marketValue,
+      );
+      repo.seed(
+        investments: [investment('gold', type: InvestmentType.gold)],
+        cashFlows: [
+          flow('a', 'gold', CashFlowType.invest, 100000, DateTime(2025, 1, 1)),
+        ],
+      );
+
+      await addReturn(
+        containerFor('INR', valuations: valuations),
+        'gold',
+        160000,
+        DateTime(2025, 9, 1),
+      );
+
+      final shown = plugin.shownNotifications.single;
+      expect(shown.title, contains('1.5x'));
+      // Gain: 1,60,000 back + 20,000 value - 1,00,000 invested.
+      expect(shown.body, contains('₹80,000.00'));
     });
 
     test(

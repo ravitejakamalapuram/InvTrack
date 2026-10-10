@@ -190,7 +190,13 @@ class InvestmentStats {
 
   /// What the holder has made so far: [netCashFlow] plus the [currentValue]
   /// of what is still open, to the paisa. Money paid out and put back in
-  /// changes neither, so it equals ([moic] - 1) x [paidInCapital].
+  /// changes neither, so it equals ([moic] - 1) x [paidInCapital] when
+  /// [limitedHistoryCount] is 0.
+  ///
+  /// With limited-history holdings it does not: their whole opening value
+  /// counts here as gain, which [moic] leaves out as a made-up return (money
+  /// rule 4). Only use it where [returnsKnown] is true and no such holding
+  /// is in the stats, as for a single investment.
   double get gain =>
       FinancialCalculator.roundMoney(netCashFlow + (currentValue ?? 0));
 
