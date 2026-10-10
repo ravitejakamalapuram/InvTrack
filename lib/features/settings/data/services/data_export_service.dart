@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
+import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/core/utils/csv_utils.dart';
@@ -15,9 +16,11 @@ import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/repositories/goal_repository.dart';
 import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
+import 'package:inv_tracker/features/investment/domain/repositories/valuation_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
 
@@ -63,9 +66,9 @@ class ZipExport {
   /// [investmentHasDetailsNotInExport]); an import recreates them without.
   final int investmentsWithDetailsNotInExport;
 
-  /// Investments with no cash flows. The ZIP holds investments only as cash
-  /// flow rows, so it does not hold these at all (nor can an import attach
-  /// their documents to them).
+  /// Investments with neither cash flows nor a valuation. The ZIP holds an
+  /// investment only as cash flow rows or valuation rows, so it does not hold
+  /// these at all (nor can an import attach their documents to them).
   final int investmentsNotInExport;
 
   /// Expected cash flows, which the ZIP does not carry at all; null if they
@@ -108,6 +111,7 @@ class DataExportService {
   final DocumentStorageService _documentStorageService;
   final FireSettingsRepository? _fireSettingsRepository;
   final ExpectedCashFlowRepository? _expectedCashFlowRepository;
+  final ValuationRepository? _valuationRepository;
   final PerformanceService _performanceService;
 
   DataExportService({
@@ -117,6 +121,7 @@ class DataExportService {
     required DocumentStorageService documentStorageService,
     FireSettingsRepository? fireSettingsRepository,
     ExpectedCashFlowRepository? expectedCashFlowRepository,
+    ValuationRepository? valuationRepository,
     required PerformanceService performanceService,
   }) : _investmentRepository = investmentRepository,
        _goalRepository = goalRepository,
@@ -124,6 +129,7 @@ class DataExportService {
        _documentStorageService = documentStorageService,
        _fireSettingsRepository = fireSettingsRepository,
        _expectedCashFlowRepository = expectedCashFlowRepository,
+       _valuationRepository = valuationRepository,
        _performanceService = performanceService;
 
   /// Export all user data as a ZIP file
@@ -149,18 +155,34 @@ class DataExportService {
     final archivedInvestments = await _investmentRepository
         .watchArchivedInvestments()
         .first;
+    // Dated valuations: the live ones, by investment. Cleared ones are
+    // tombstones and are not exported.
+    final snapshotsByInvestment = <String, List<InvestmentValuationSnapshot>>{};
+    for (final snapshot
+        in await _valuationRepository?.getAll() ??
+            const <InvestmentValuationSnapshot>[]) {
+      if (snapshot.isLive) {
+        snapshotsByInvestment
+            .putIfAbsent(snapshot.investmentId, () => [])
+            .add(snapshot);
+      }
+    }
 
     // Separate active and archived cashflows
     final activeCashFlows = <_CashFlowWithInvestment>[];
     final archivedCashFlows = <_CashFlowWithInvestment>[];
-    // The ZIP holds an investment only as its cash flow rows.
+    // The ZIP holds an investment only as its cash flow rows or its
+    // valuation rows.
     var investmentsWithoutCashFlows = 0;
 
     for (final inv in investments) {
       final cashFlows = await _investmentRepository.getCashFlowsByInvestment(
         inv.id,
       );
-      if (cashFlows.isEmpty) investmentsWithoutCashFlows++;
+      if (cashFlows.isEmpty &&
+          _valuationRowsOf(inv, snapshotsByInvestment).isEmpty) {
+        investmentsWithoutCashFlows++;
+      }
       for (final cf in cashFlows) {
         activeCashFlows.add(_CashFlowWithInvestment(cf, inv));
       }
@@ -169,7 +191,10 @@ class DataExportService {
     for (final inv in archivedInvestments) {
       final cashFlows = await _investmentRepository
           .getArchivedCashFlowsByInvestment(inv.id);
-      if (cashFlows.isEmpty) investmentsWithoutCashFlows++;
+      if (cashFlows.isEmpty &&
+          _valuationRowsOf(inv, snapshotsByInvestment).isEmpty) {
+        investmentsWithoutCashFlows++;
+      }
       for (final cf in cashFlows) {
         archivedCashFlows.add(_CashFlowWithInvestment(cf, inv));
       }
@@ -205,6 +230,7 @@ class DataExportService {
     final valuationsCsv = _generateValuationsCsv(
       active: investments,
       archived: archivedInvestments,
+      snapshots: snapshotsByInvestment,
     );
 
     // 3. Create metadata JSON
@@ -268,10 +294,7 @@ class DataExportService {
       } else {
         LoggerService.debug(
           'Document not found or inaccessible during export',
-          metadata: {
-            'documentId': doc.id,
-            'investmentId': doc.investmentId,
-          },
+          metadata: {'documentId': doc.id, 'investmentId': doc.investmentId},
         );
         documentsFailed++;
       }
@@ -478,32 +501,101 @@ class DataExportService {
     return csv.encode(rows);
   }
 
-  /// Generate CSV for the current values users entered (money rule 6).
-  /// Format: Investment Name, Archived, Date, Value, Currency. Estimated
-  /// values are not stored, so they are not exported.
+  /// Generate CSV for the dated valuations users entered (money rule 6).
+  /// Format: Investment Name, Archived, Date, Value, Currency, Snapshot ID,
+  /// Kind, Source, Updated At, Investment Type, Investment Status.
+  ///
+  /// The first five columns are the ones older versions read, which keep the
+  /// last row per investment: so each investment's rows go oldest first and
+  /// the newest comes last. The Type and Status columns let an import create
+  /// an investment that has no cash flows. Estimated values are not stored,
+  /// so they are not exported.
   String _generateValuationsCsv({
     required List<InvestmentEntity> active,
     required List<InvestmentEntity> archived,
+    required Map<String, List<InvestmentValuationSnapshot>> snapshots,
   }) {
     final rows = <List<dynamic>>[
-      ['Investment Name', 'Archived', 'Date', 'Value', 'Currency'],
+      [
+        'Investment Name',
+        'Archived',
+        'Date',
+        'Value',
+        'Currency',
+        'Snapshot ID',
+        'Kind',
+        'Source',
+        'Updated At',
+        'Investment Type',
+        'Investment Status',
+      ],
     ];
     for (final (inv, isArchived) in [
       for (final inv in active) (inv, false),
       for (final inv in archived) (inv, true),
     ]) {
-      final value = inv.currentValue;
-      final date = inv.currentValueDate;
-      if (value == null || date == null) continue;
-      rows.add([
-        CsvUtils.sanitizeField(inv.name),
-        isArchived,
-        date.toIso8601String().split('T').first,
-        value,
-        inv.currency,
-      ]);
+      for (final row in _valuationRowsOf(inv, snapshots)) {
+        rows.add([
+          CsvUtils.sanitizeField(inv.name),
+          isArchived,
+          row.date.toIso8601String().split('T').first,
+          row.value,
+          row.currency,
+          row.snapshotId ?? '',
+          row.kind.name,
+          row.provenance.storageName,
+          row.updatedAt?.toUtc().toIso8601String() ?? '',
+          inv.type.name,
+          inv.status.name,
+        ]);
+      }
     }
     return csv.encode(rows);
+  }
+
+  /// The valuation rows of [inv], oldest first: its live snapshots, then the
+  /// value its `currentValue` pair holds when that is what the app shows (an
+  /// older app version wrote it after the snapshots), or when there are no
+  /// snapshots at all (a value from before dated valuations, exported as the
+  /// single row it always was).
+  List<_ValuationRow> _valuationRowsOf(
+    InvestmentEntity inv,
+    Map<String, List<InvestmentValuationSnapshot>> snapshots,
+  ) {
+    final own = [...?snapshots[inv.id]]
+      ..sort(ValuationSnapshotSelector.compare);
+    final rows = [
+      for (final s in own)
+        _ValuationRow(
+          date: s.effectiveDate,
+          value: s.amount,
+          currency: s.currency,
+          snapshotId: s.id,
+          kind: s.kind,
+          provenance: s.provenance,
+          updatedAt: s.updatedAt ?? DateTime.now(),
+        ),
+    ];
+    final value = inv.currentValue;
+    final date = inv.currentValueDate;
+    if (value == null || date == null) return rows;
+    final shown = ValuationSnapshotSelector.select(
+      investment: inv,
+      snapshots: own,
+      asOf: DateTime.now(),
+    );
+    if (own.isEmpty || (shown?.isCompat ?? false)) {
+      rows.add(
+        _ValuationRow(
+          date: date,
+          value: value,
+          currency: inv.currency,
+          kind: ValuationKind.carryingValue,
+          provenance: ValuationProvenance.manual,
+        ),
+      );
+    }
+    return rows;
   }
 
   /// Converts CashFlowType to export string (reused from ExportService)
@@ -574,6 +666,29 @@ class DataExportService {
       'zipPath': 'documents/${doc.investmentId}/$safeFileName',
     };
   }
+}
+
+/// One row of valuations.csv, before it is written.
+class _ValuationRow {
+  final DateTime date;
+  final double value;
+  final String currency;
+
+  /// Null for a legacy value, which has no snapshot.
+  final String? snapshotId;
+  final ValuationKind kind;
+  final ValuationProvenance provenance;
+  final DateTime? updatedAt;
+
+  const _ValuationRow({
+    required this.date,
+    required this.value,
+    required this.currency,
+    this.snapshotId,
+    required this.kind,
+    required this.provenance,
+    this.updatedAt,
+  });
 }
 
 /// Helper class to hold cashflow with its investment
