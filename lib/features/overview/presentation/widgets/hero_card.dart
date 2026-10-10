@@ -294,50 +294,63 @@ class HeroCardContent extends ConsumerWidget {
         ? Colors.greenAccent
         : Colors.redAccent;
 
+    final value = PrivacyMask(
+      child: CompactAmountText(
+        key: const ValueKey('hero-net-cash-flow'),
+        amount: netPosition,
+        compactText: currencyFormat.formatSmart(netPosition),
+        currencySymbol: currencyFormat.currencySymbol,
+        locale: currencyFormat.locale,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 36,
+          fontWeight: FontWeight.bold,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+
+    final badge = AnimatedOpacity(
+      duration: const Duration(milliseconds: 200),
+      opacity: isPrivacyMode ? 0.0 : 1.0,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: badgeColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          status ??
+              '${stats.absoluteReturn >= 0 ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}%',
+          style: TextStyle(
+            color: badgeTextColor,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+
+    // Status text is descriptive, not a metric. Keep it below the amount so
+    // a long localized "Awaiting current value" label can never squeeze the
+    // primary net-cash-flow figure out of the row on narrow screens.
+    if (status != null) {
+      return SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [value, const SizedBox(height: 6), badge],
+        ),
+      );
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
       children: [
-        Flexible(
-          child: PrivacyMask(
-            child: CompactAmountText(
-              amount: netPosition,
-              compactText: currencyFormat.formatSmart(netPosition),
-              currencySymbol: currencyFormat.currencySymbol,
-              locale: currencyFormat.locale,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ),
-        if (stats.hasData) ...[
-          const SizedBox(width: 10),
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
-            opacity: isPrivacyMode ? 0.0 : 1.0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: badgeColor,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                status ??
-                    '${stats.absoluteReturn >= 0 ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}%',
-                style: TextStyle(
-                  color: badgeTextColor,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ),
-        ],
+        Flexible(child: value),
+        if (stats.hasData) ...[const SizedBox(width: 10), badge],
       ],
     );
   }
@@ -362,8 +375,11 @@ class HeroCardContent extends ConsumerWidget {
       spacing: 16,
       runSpacing: 8,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
+        // Wraps, so "in" drops below "out" when large text leaves no room.
+        Wrap(
+          spacing: 16,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             // Cash Out with up arrow
             _buildCashFlowStat(
@@ -373,7 +389,6 @@ class HeroCardContent extends ConsumerWidget {
               label: 'out',
               isPrivacyMode: isPrivacyMode,
             ),
-            const SizedBox(width: 16),
             // Cash In with down arrow
             _buildCashFlowStat(
               icon: Icons.arrow_downward_rounded,
@@ -436,7 +451,10 @@ class HeroCardContent extends ConsumerWidget {
     final baseCurrency = ref.watch(currencyCodeProvider);
     final currencySymbol = getCurrencySymbol(baseCurrency);
 
+    // Expanded, so the base-currency disclosure wraps onto a second line
+    // instead of overflowing or being cut off.
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
           Icons.info_outline,
@@ -444,12 +462,14 @@ class HeroCardContent extends ConsumerWidget {
           color: Colors.white.withValues(alpha: 0.4),
         ),
         const SizedBox(width: 4),
-        Text(
-          'All amounts shown in $currencySymbol ($baseCurrency)',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
-            fontSize: 10,
-            fontStyle: FontStyle.italic,
+        Expanded(
+          child: Text(
+            'All amounts shown in $currencySymbol ($baseCurrency)',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.5),
+              fontSize: 10,
+              fontStyle: FontStyle.italic,
+            ),
           ),
         ),
       ],
@@ -468,26 +488,33 @@ class HeroCardContent extends ConsumerWidget {
       children: [
         Icon(icon, color: Colors.white.withValues(alpha: 0.8), size: 14),
         const SizedBox(width: 4),
-        isPrivacyMode
-            ? MaskedAmountText(
-                text: value,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+        // Flexible, so one very large amount shrinks instead of overflowing.
+        Flexible(
+          child: isPrivacyMode
+              ? MaskedAmountText(
+                  text: value,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                )
+              : CompactAmountText(
+                  amount: amount,
+                  compactText: value,
+                  currencySymbol: currencyFormat.currencySymbol,
+                  locale: currencyFormat.locale,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              )
-            : CompactAmountText(
-                amount: amount,
-                compactText: value,
-                currencySymbol: currencyFormat.currencySymbol,
-                locale: currencyFormat.locale,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+        ),
         const SizedBox(width: 3),
         Text(
           label,
