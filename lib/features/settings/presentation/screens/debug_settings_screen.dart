@@ -251,6 +251,44 @@ class DebugSettingsScreen extends ConsumerWidget {
           },
         ),
 
+        // Reusable custom labels for Other investments (#936)
+        SettingsToggleTile(
+          icon: Icons.label_outline_rounded,
+          iconColor: AppColors.primaryLight,
+          title: l10n.customInvestmentTypesFeature,
+          subtitle: l10n.customInvestmentTypesFeatureSubtitle,
+          value: featureFlags[FeatureFlag.customInvestmentTypes] ?? false,
+          onChanged: (value) async {
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.customInvestmentTypes);
+
+              final newState =
+                  ref.read(featureFlagsProvider)[FeatureFlag
+                      .customInvestmentTypes] ??
+                  false;
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      newState
+                          ? l10n.customInvestmentTypesFeatureEnabled
+                          : l10n.customInvestmentTypesFeatureDisabled,
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
+            }
+          },
+        ),
+
         // Play review prompt feature flag
         SettingsToggleTile(
           icon: Icons.star_outline,

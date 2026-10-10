@@ -361,16 +361,16 @@ class InvestmentEntity {
     this.customTypeLabel,
   });
 
+  /// Whether this is an investment of type Other with a custom label (#936).
+  bool get hasCustomTypeLabel =>
+      type == InvestmentType.other &&
+      (customTypeLabel?.trim().isNotEmpty ?? false);
+
   /// The name to show for this investment's type: its custom label when it is
   /// of type Other and has one, otherwise the built-in type's name. Grouping
   /// and filtering keep using [type].
-  String get typeLabel {
-    final label = customTypeLabel?.trim();
-    if (type == InvestmentType.other && label != null && label.isNotEmpty) {
-      return label;
-    }
-    return type.displayName;
-  }
+  String get typeLabel =>
+      hasCustomTypeLabel ? customTypeLabel!.trim() : type.displayName;
 
   bool get isOpen => status == InvestmentStatus.open;
   bool get isClosed => status == InvestmentStatus.closed;

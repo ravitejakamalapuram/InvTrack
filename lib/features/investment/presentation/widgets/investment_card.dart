@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
@@ -47,6 +48,14 @@ class InvestmentCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final typeColor = investment.type.color;
+    // An Other investment shows its custom label (#936); every other type,
+    // and every investment while the flag is off, shows the built-in name.
+    // The flag is read only for an investment that has a label.
+    final typeName =
+        investment.hasCustomTypeLabel &&
+            ref.watch(isCustomInvestmentTypesEnabledProvider)
+        ? investment.typeLabel
+        : investment.type.displayName;
     final isClosed = investment.status == InvestmentStatus.closed;
     final currencySymbol = ref.watch(currencySymbolProvider);
     final currencyFormat = ref.watch(currencyFormatProvider);
@@ -94,7 +103,7 @@ class InvestmentCard extends ConsumerWidget {
 
         return AccessibilityUtils.investmentCardLabel(
           name: investment.name,
-          type: investment.type.displayName,
+          type: typeName,
           currentValue: stats.netCashFlow,
           // Null while XIRR is loading or undefined: the label leaves it out
           returnPercent: returnPercent,
@@ -117,7 +126,7 @@ class InvestmentCard extends ConsumerWidget {
         );
       },
       orElse: () =>
-          '${isClosed ? "Closed" : "Open"} investment: ${investment.name}, Type: ${investment.type.displayName}',
+          '${isClosed ? "Closed" : "Open"} investment: ${investment.name}, Type: $typeName',
     );
 
     final semanticLabel = isSelectionMode
@@ -161,6 +170,7 @@ class InvestmentCard extends ConsumerWidget {
                   Expanded(
                     child: _InvestmentInfo(
                       investment: investment,
+                      typeName: typeName,
                       isDark: isDark,
                       typeColor: typeColor,
                       isClosed: isClosed,
@@ -240,6 +250,7 @@ class _TypeIcon extends StatelessWidget {
 /// Extracted widget for name and type info to avoid rebuilds during selection toggling.
 class _InvestmentInfo extends StatelessWidget {
   final InvestmentEntity investment;
+  final String typeName;
   final bool isDark;
   final Color typeColor;
   final bool isClosed;
@@ -247,6 +258,7 @@ class _InvestmentInfo extends StatelessWidget {
 
   const _InvestmentInfo({
     required this.investment,
+    required this.typeName,
     required this.isDark,
     required this.typeColor,
     required this.isClosed,
@@ -284,7 +296,7 @@ class _InvestmentInfo extends StatelessWidget {
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                investment.type.displayName,
+                typeName,
                 style: AppTypography.small.copyWith(
                   color: typeColor,
                   fontWeight: FontWeight.w500,
