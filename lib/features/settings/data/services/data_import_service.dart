@@ -140,8 +140,12 @@ class DataImportService {
     }
 
     Map<String, dynamic> metadata;
+    // Read here, so a metadata.json of the wrong shape fails before Replace
+    // deletes anything.
+    List<dynamic> documentsList;
     try {
       metadata = jsonDecode(utf8.decode(metadataFile.content as List<int>));
+      documentsList = metadata['documents'] as List<dynamic>? ?? [];
     } catch (e) {
       return ZipImportResult(
         investmentsImported: 0,
@@ -152,12 +156,57 @@ class DataImportService {
       );
     }
 
-    // 3. If strategy is replace, delete all existing data first
+    // 3. Read every file the import uses BEFORE anything is deleted (#956).
+    // Replace used to delete first, so a file that could not be read threw
+    // after the account was wiped. Now cashflows.csv, which holds the
+    // investments, must be readable or nothing changes; every other file is
+    // skipped with a warning that holds no name or amount (rule 7).
+    final String? cashflowsCsv;
+    try {
+      cashflowsCsv = _readText(archive, 'cashflows.csv');
+    } catch (_) {
+      return _notImported('cashflows.csv could not be read');
+    }
+    if (strategy == ImportStrategy.replace && cashflowsCsv != null) {
+      final parsed = _parseBackupCashflows(cashflowsCsv, baseCurrency);
+      if (parsed.validRows == 0 && parsed.errors.isNotEmpty) {
+        return _notImported('cashflows.csv has no readable rows');
+      }
+    }
+    final valuationsCsv = _readOptionalText(
+      archive,
+      'valuations.csv',
+      'Current values not imported: valuations.csv is invalid',
+      warnings,
+    );
+    final cashflowsArchivedCsv = _readOptionalText(
+      archive,
+      'cashflows_archived.csv',
+      'Archived cash flows not imported: cashflows_archived.csv is invalid',
+      warnings,
+    );
+    final goalsCsv = _readOptionalText(
+      archive,
+      'goals.csv',
+      'Goals not imported: goals.csv is invalid',
+      warnings,
+    );
+    final goalsArchivedCsv = _readOptionalText(
+      archive,
+      'goals_archived.csv',
+      'Archived goals not imported: goals_archived.csv is invalid',
+      warnings,
+    );
+    final fireSettings = _fireSettingsRepository == null
+        ? null
+        : _readFireSettings(archive, baseCurrency, warnings);
+
+    // 4. If strategy is replace, delete all existing data first
     if (strategy == ImportStrategy.replace) {
       await _deleteAllExistingData();
     }
 
-    // 4. Parse and import CSV files
+    // 5. Parse and import CSV files
     // Import cashflows first and collect investment name-to-ID mapping
     int investmentsImported = 0;
     int cashflowsImported = 0;
@@ -166,19 +215,14 @@ class DataImportService {
 
     // Current values the user entered, attached to the investments created
     // below (money rule 6).
-    final valuationsFile = archive.findFile('valuations.csv');
-    final valuations = valuationsFile == null
+    final valuations = valuationsCsv == null
         ? const <(bool, String), _ImportedValuation>{}
-        : _parseValuationsCsv(
-            utf8.decode(valuationsFile.content as List<int>),
-            warnings,
-          );
+        : _parseValuationsCsv(valuationsCsv, warnings);
 
     // Import cashflows (active)
-    final cashflowsFile = archive.findFile('cashflows.csv');
-    if (cashflowsFile != null) {
+    if (cashflowsCsv != null) {
       final result = await _importCashflowsCsv(
-        utf8.decode(cashflowsFile.content as List<int>),
+        cashflowsCsv,
         isArchived: false,
         strategy: strategy,
         baseCurrency: baseCurrency,
@@ -192,10 +236,9 @@ class DataImportService {
     }
 
     // Import archived cashflows
-    final cashflowsArchivedFile = archive.findFile('cashflows_archived.csv');
-    if (cashflowsArchivedFile != null) {
+    if (cashflowsArchivedCsv != null) {
       final result = await _importCashflowsCsv(
-        utf8.decode(cashflowsArchivedFile.content as List<int>),
+        cashflowsArchivedCsv,
         isArchived: true,
         strategy: strategy,
         baseCurrency: baseCurrency,
@@ -209,10 +252,9 @@ class DataImportService {
     }
 
     // Import goals (with investment name-to-ID mapping for linked investments)
-    final goalsFile = archive.findFile('goals.csv');
-    if (goalsFile != null) {
+    if (goalsCsv != null) {
       final result = await _importGoalsCsv(
-        utf8.decode(goalsFile.content as List<int>),
+        goalsCsv,
         isArchived: false,
         strategy: strategy,
         investmentNameToIdMap: investmentNameToIdMap,
@@ -224,10 +266,9 @@ class DataImportService {
     }
 
     // Import archived goals
-    final goalsArchivedFile = archive.findFile('goals_archived.csv');
-    if (goalsArchivedFile != null) {
+    if (goalsArchivedCsv != null) {
       final result = await _importGoalsCsv(
-        utf8.decode(goalsArchivedFile.content as List<int>),
+        goalsArchivedCsv,
         isArchived: true,
         strategy: strategy,
         investmentNameToIdMap: investmentNameToIdMap,
@@ -238,9 +279,8 @@ class DataImportService {
       warnings.addAll(result.warnings);
     }
 
-    // 5. Import documents
+    // 6. Import documents
     int documentsImported = 0;
-    final documentsList = metadata['documents'] as List<dynamic>? ?? [];
     for (final docMeta in documentsList) {
       try {
         final zipPath = docMeta['zipPath'] as String;
@@ -281,46 +321,27 @@ class DataImportService {
       }
     }
 
-    // 6. Import FIRE settings if available (Rule 18: Data Lifecycle)
+    // 7. Import FIRE settings if available (Rule 18: Data Lifecycle)
     bool fireSettingsImported = false;
-    if (_fireSettingsRepository != null) {
-      final fireSettingsFile = archive.findFile('fire_settings.json');
-      if (fireSettingsFile != null) {
-        try {
-          // Merge must not overwrite settings the account already has: FIRE
-          // amounts carry no currency, and the guest merge imports into the
-          // user's main account without asking.
-          if (strategy == ImportStrategy.merge &&
-              await _fireSettingsRepository.getSettings() != null) {
-            throw const _ExistingFireSettings();
-          }
-          final fireSettingsJson =
-              jsonDecode(utf8.decode(fireSettingsFile.content as List<int>))
-                  as Map<String, dynamic>;
-
-          final imported = FireSettingsEntity.fromJson(
-            fireSettingsJson,
-            fallbackId: _uuid.v4(),
-            defaultIsSetupComplete: true,
-          );
-          // Amounts exported before they had a currency take the base
-          // currency, like rows, investments and goals without one.
-          final fireSettings = imported.copyWith(
-            currency: imported.currency ?? baseCurrency,
-            updatedAt: DateTime.now(),
-          );
-
-          await _fireSettingsRepository.saveSettings(fireSettings);
-          fireSettingsImported = true;
-          LoggerService.info('FIRE settings imported successfully');
-        } on _ExistingFireSettings {
-          warnings.add(
-            'FIRE settings not imported: this account already has FIRE '
-            'settings',
-          );
-        } catch (e) {
-          warnings.add('Failed to import FIRE settings: $e');
+    if (_fireSettingsRepository != null && fireSettings != null) {
+      try {
+        // Merge must not overwrite settings the account already has: FIRE
+        // amounts carry no currency, and the guest merge imports into the
+        // user's main account without asking.
+        if (strategy == ImportStrategy.merge &&
+            await _fireSettingsRepository.getSettings() != null) {
+          throw const _ExistingFireSettings();
         }
+        await _fireSettingsRepository.saveSettings(fireSettings);
+        fireSettingsImported = true;
+        LoggerService.info('FIRE settings imported successfully');
+      } on _ExistingFireSettings {
+        warnings.add(
+          'FIRE settings not imported: this account already has FIRE '
+          'settings',
+        );
+      } catch (e) {
+        warnings.add('Failed to import FIRE settings: $e');
       }
     }
 
@@ -347,6 +368,82 @@ class DataImportService {
   }
 
   // ============ Private Helper Methods ============
+
+  /// The result of an import that stopped before it changed anything.
+  ZipImportResult _notImported(String reason) => ZipImportResult(
+    investmentsImported: 0,
+    cashflowsImported: 0,
+    goalsImported: 0,
+    documentsImported: 0,
+    errors: [
+      'Backup not imported: $reason. Your existing data was not changed.',
+    ],
+  );
+
+  /// The text of [name] in the backup: null if the backup has no such file.
+  /// Throws if the file is not valid UTF-8.
+  String? _readText(Archive archive, String name) {
+    final file = archive.findFile(name);
+    return file == null ? null : utf8.decode(file.content as List<int>);
+  }
+
+  /// Like [_readText], but a file that cannot be read is skipped with
+  /// [warning]. The error itself is left out: it can quote the file.
+  String? _readOptionalText(
+    Archive archive,
+    String name,
+    String warning,
+    List<String> warnings,
+  ) {
+    try {
+      return _readText(archive, name);
+    } catch (_) {
+      warnings.add(warning);
+      return null;
+    }
+  }
+
+  /// The FIRE settings in the backup, or null if there are none or they
+  /// cannot be read (one warning, without the file's content).
+  FireSettingsEntity? _readFireSettings(
+    Archive archive,
+    String baseCurrency,
+    List<String> warnings,
+  ) {
+    try {
+      final text = _readText(archive, 'fire_settings.json');
+      if (text == null) return null;
+      final imported = FireSettingsEntity.fromJson(
+        jsonDecode(text) as Map<String, dynamic>,
+        fallbackId: _uuid.v4(),
+        defaultIsSetupComplete: true,
+      );
+      // Amounts exported before they had a currency take the base
+      // currency, like rows, investments and goals without one.
+      return imported.copyWith(
+        currency: imported.currency ?? baseCurrency,
+        updatedAt: DateTime.now(),
+      );
+    } catch (_) {
+      warnings.add('FIRE settings not imported: fire_settings.json is invalid');
+      return null;
+    }
+  }
+
+  /// Reads cashflows.csv or cashflows_archived.csv. The app wrote this file,
+  /// so restore what it holds: rows that a bulk import now rejects (old
+  /// dates, stored codes) must not be lost, as Replace has already deleted
+  /// the existing data.
+  ParsedCsvResult _parseBackupCashflows(
+    String csvContent,
+    String baseCurrency,
+  ) {
+    return SimpleCsvParser.parseString(
+      csvContent,
+      baseCurrency: baseCurrency,
+      fromBackup: true,
+    );
+  }
 
   /// Delete all existing data (for replace strategy)
   ///
@@ -389,14 +486,7 @@ class DataImportService {
     required String baseCurrency,
     Map<(bool, String), _ImportedValuation> valuations = const {},
   }) async {
-    // The app wrote this file, so restore what it holds: rows that a bulk
-    // import now rejects (old dates, stored codes) must not be lost, as
-    // Replace has already deleted the existing data.
-    final parseResult = SimpleCsvParser.parseString(
-      csvContent,
-      baseCurrency: baseCurrency,
-      fromBackup: true,
-    );
+    final parseResult = _parseBackupCashflows(csvContent, baseCurrency);
     if (parseResult.validRows == 0) {
       return _CsvImportResult(
         imported: 0,
@@ -694,7 +784,9 @@ class DataImportService {
     // Security: Validate file signature to prevent extension spoofing
     // and malicious file uploads during ZIP import.
     if (!FileSignatureUtils.validateFileSignature(uint8Bytes, fileName)) {
-      throw Exception('Security: File signature validation failed for $fileName');
+      throw Exception(
+        'Security: File signature validation failed for $fileName',
+      );
     }
 
     // Save the file to local storage
