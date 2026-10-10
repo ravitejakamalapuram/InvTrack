@@ -60,6 +60,45 @@ List<String> _captureLaunchedUrls() {
   return launched;
 }
 
+/// Makes the platform answer every launch with [launched], or fail with an
+/// exception whose text must never reach the screen. Returns the clipboard
+/// text, which stays null until the app copies something.
+ValueNotifier<String?> _mockLauncherAndClipboard({
+  bool launched = true,
+  bool throws = false,
+}) {
+  final clipboard = ValueNotifier<String?>(null);
+  final messenger =
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+  messenger.setMockMethodCallHandler(
+    const MethodChannel('plugins.flutter.io/url_launcher'),
+    (call) async {
+      if (throws) {
+        throw PlatformException(code: 'ERROR', message: _secretDetail);
+      }
+      return launched;
+    },
+  );
+  messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+    if (call.method == 'Clipboard.setData') {
+      clipboard.value = (call.arguments as Map)['text'] as String?;
+    }
+    return null;
+  });
+  addTearDown(() {
+    messenger.setMockMethodCallHandler(
+      const MethodChannel('plugins.flutter.io/url_launcher'),
+      null,
+    );
+    messenger.setMockMethodCallHandler(SystemChannels.platform, null);
+  });
+  return clipboard;
+}
+
+const _secretDetail = 'internal-launcher-detail';
+const _copiedMessage =
+    'Could not open the browser. Link copied to clipboard: $_canonicalDeletionUrl';
+
 void main() {
   group('canonical contact values', () {
     test('policy URL and support email have the canonical values', () {
@@ -336,5 +375,87 @@ void main() {
       );
       expect(finder, findsOneWidget);
     });
+
+    // No browser can open the page: launchUrl answers false or throws. The
+    // tap must not do nothing: the address goes to the clipboard and a
+    // snackbar says so. The exception text is never shown.
+    final entryPoints = <String, Future<void> Function(WidgetTester)>{
+      'About': (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              packageInfoProvider.overrideWith((ref) async => packageInfo),
+            ],
+            child: _localized(const AboutScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(AboutScreen)),
+        );
+        final tile = find.text(l10n.deleteAccountOnTheWeb);
+        await tester.scrollUntilVisible(
+          tile,
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(tile);
+        await tester.pumpAndSettle();
+      },
+      'Help & FAQ': (tester) async {
+        await tester.pumpWidget(
+          _localized(const HelpFaqScreen(showDeveloperFaq: true)),
+        );
+        await tester.pumpAndSettle();
+        final link = find.byKey(const Key('delete_account_web_link'));
+        await tester.scrollUntilVisible(
+          link,
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(link);
+        await tester.pumpAndSettle();
+      },
+    };
+
+    for (final entry in entryPoints.entries) {
+      for (final failure in ['returns false', 'throws']) {
+        testWidgets(
+          '${entry.key}: when the browser launch $failure, the address is '
+          'copied and a snackbar says so',
+          (tester) async {
+            final semantics = tester.ensureSemantics();
+            final clipboard = _mockLauncherAndClipboard(
+              launched: false,
+              throws: failure == 'throws',
+            );
+
+            await entry.value(tester);
+
+            expect(clipboard.value, _canonicalDeletionUrl);
+            expect(find.text(_copiedMessage), findsOneWidget);
+            expect(find.textContaining(_secretDetail), findsNothing);
+            expect(
+              tester.getSemantics(find.text(_copiedMessage)),
+              containsSemantics(label: _copiedMessage),
+            );
+            semantics.dispose();
+          },
+        );
+      }
+
+      testWidgets(
+        '${entry.key}: when the browser opens, nothing is copied and no '
+        'snackbar shows',
+        (tester) async {
+          final clipboard = _mockLauncherAndClipboard();
+
+          await entry.value(tester);
+
+          expect(clipboard.value, isNull);
+          expect(find.byType(SnackBar), findsNothing);
+        },
+      );
+    }
   });
 }

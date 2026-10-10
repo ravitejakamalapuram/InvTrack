@@ -1,20 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_content.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Opens the web page where anyone, with or without the app, can ask for
 /// their account to be deleted. Shared by About and Help & FAQ so the address
-/// comes from [hostedAccountDeletionUrl] only.
-Future<void> openAccountDeletionPage() async {
+/// comes from [hostedAccountDeletionUrl] only. Returns false when no browser
+/// opened it. The exception is dropped on purpose: its text is not logged.
+Future<bool> openAccountDeletionPage() async {
   try {
-    await launchUrl(
+    return await launchUrl(
       Uri.parse(hostedAccountDeletionUrl),
       mode: LaunchMode.externalApplication,
     );
   } catch (_) {
-    // No browser to open it with. The address is also in the privacy policy.
+    return false;
   }
+}
+
+/// Opens the page, or when no browser can, copies the address to the clipboard
+/// and says so, as About does for the support email.
+Future<void> openAccountDeletionPageOrCopyLink(BuildContext context) async {
+  final l10n = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  if (await openAccountDeletionPage()) return;
+  await Clipboard.setData(const ClipboardData(text: hostedAccountDeletionUrl));
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text(
+        l10n.accountDeletionLinkCopiedMessage(hostedAccountDeletionUrl),
+      ),
+      action: SnackBarAction(label: l10n.ok, onPressed: () {}),
+    ),
+  );
 }
 
 /// "Delete your account on the web" link for Help & FAQ.
@@ -33,7 +52,7 @@ class DeleteAccountWebLink extends StatelessWidget {
             key: const Key('delete_account_web_link'),
             icon: const Icon(Icons.open_in_new),
             label: Text(l10n.deleteAccountOnTheWeb),
-            onPressed: openAccountDeletionPage,
+            onPressed: () => openAccountDeletionPageOrCopyLink(context),
           ),
         ),
       ),

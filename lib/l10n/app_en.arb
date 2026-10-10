@@ -523,6 +523,16 @@
     "description": "Link on the About and Help & FAQ screens that opens the web page (APP-333) where anyone with a Google account, with or without the app, can ask for their account to be deleted (hostedAccountDeletionUrl)"
   },
 
+  "accountDeletionLinkCopiedMessage": "Could not open the browser. Link copied to clipboard: {url}",
+  "@accountDeletionLinkCopiedMessage": {
+    "description": "Snackbar on the About and Help & FAQ screens when no browser can open the web account-deletion page, so its address (hostedAccountDeletionUrl) was copied to the clipboard instead",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+
   "opensInBrowser": "Opens in your browser",
   "@opensInBrowser": {
     "description": "Screen-reader hint for a link that leaves the app and opens a web page in the browser"

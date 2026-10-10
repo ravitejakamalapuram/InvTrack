@@ -386,7 +386,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                     iconColor: Colors.red,
                     title: l10n.deleteAccountOnTheWeb,
                     trailing: const Icon(Icons.open_in_new, size: 20),
-                    onTap: openAccountDeletionPage,
+                    onTap: () => openAccountDeletionPageOrCopyLink(context),
                   ),
                 ),
               ],
