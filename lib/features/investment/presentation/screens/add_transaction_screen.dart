@@ -80,11 +80,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     // Pre-fill if editing
     if (widget.cashFlowToEdit != null) {
       final cf = widget.cashFlowToEdit!;
-      _amountController.text = cf.amount.toStringAsFixed(2);
+      _selectedCurrency = cf.currency;
+      // In the currency's own precision: a whole yen is "126", not "126.00".
+      _amountController.text = cf.amount.toStringAsFixed(
+        MoneyPrecision.fractionDigitsFor(
+          _displayCurrency(ref.read(currencyCodeProvider)),
+        ),
+      );
       _notesController.text = cf.notes ?? '';
       _selectedDate = cf.date;
       _selectedType = cf.type;
-      _selectedCurrency = cf.currency;
     } else {
       // New cash flows default to the investment's currency, applied in
       // build() once the investment loads; the base currency until then.
@@ -98,6 +103,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
     initScreenAnimation();
   }
+
+  /// The currency amounts are rounded and shown in. A stored cash flow with a
+  /// blank currency falls back to [baseCurrency] for display only; saving it
+  /// still fails in the notifier, so it is never silently re-stamped.
+  String _displayCurrency(String baseCurrency) =>
+      _selectedCurrency.trim().isEmpty ? baseCurrency : _selectedCurrency;
 
   @override
   void dispose() {
@@ -223,8 +234,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       if (investmentCurrency != null) _selectedCurrency = investmentCurrency;
     }
     // The amount is entered in the selected currency, so show its symbol
-    final currencySymbol = getCurrencySymbol(_selectedCurrency);
-    final currencyLocale = getCurrencyLocale(_selectedCurrency);
+    final displayCurrency = _displayCurrency(ref.watch(currencyCodeProvider));
+    final currencySymbol = getCurrencySymbol(displayCurrency);
+    final currencyLocale = getCurrencyLocale(displayCurrency);
 
     return Scaffold(
       backgroundColor: isDark
@@ -379,6 +391,15 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                   final parsed = double.tryParse(value);
                   if (parsed == null) return 'Invalid amount';
                   if (parsed <= 0) return 'Must be positive';
+                  // A sub-unit amount (JPY 0.4) is saved as zero, which the
+                  // notifier rejects; say so here instead of failing later.
+                  if (MoneyPrecision.round(
+                        parsed,
+                        currencyCode: displayCurrency,
+                      ) <=
+                      0) {
+                    return l10n.cashFlowAmountRoundsToZero(displayCurrency);
+                  }
                   return null;
                 },
               ),
@@ -445,7 +466,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                             final amount = typed.isFinite
                                 ? MoneyPrecision.round(
                                     typed,
-                                    currencyCode: _selectedCurrency,
+                                    currencyCode: displayCurrency,
                                   )
                                 : 0.0;
                             final prefix = _selectedType.isOutflow ? '-' : '+';
@@ -454,7 +475,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                               currencySymbol,
                               currencyLocale,
                               decimalDigits: MoneyPrecision.fractionDigitsFor(
-                                _selectedCurrency,
+                                displayCurrency,
                               ),
                             );
                             final color = _selectedType.isOutflow

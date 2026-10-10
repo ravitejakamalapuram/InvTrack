@@ -193,4 +193,25 @@ void main() {
     expect(saved.currentValue, isNull);
     expect(saved.currentValueDate, isNull);
   });
+
+  test(
+    'rejects a current value for an investment with a blank currency',
+    () async {
+      // Stored data can carry a blank currency; it must fail visibly (money
+      // rule 1) rather than leak MoneyPrecision's ArgumentError.
+      repo.seed(investments: [_gold(currency: '')]);
+
+      await expectLater(
+        notifier.setCurrentValue(
+          id: 'gold',
+          value: 125000,
+          date: DateTime(2026, 10, 1),
+        ),
+        throwsA(isA<ValidationException>()),
+      );
+
+      final saved = (await repo.getInvestmentById('gold'))!;
+      expect(saved.currentValue, isNull);
+    },
+  );
 }

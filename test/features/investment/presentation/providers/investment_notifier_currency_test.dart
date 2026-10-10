@@ -208,6 +208,58 @@ void main() {
     });
   });
 
+  // Stored data can carry a blank currency. It must fail visibly with a
+  // ValidationException (money rule 1), never default to USD or the base
+  // currency, and never leak MoneyPrecision's ArgumentError to the screen.
+  group('a blank currency is rejected, not defaulted', () {
+    CashFlowEntity stored() => CashFlowEntity(
+      id: 'cf-1',
+      investmentId: 'inv-1',
+      type: CashFlowType.invest,
+      amount: 50000,
+      date: DateTime(2024, 1, 15),
+      createdAt: DateTime(2024, 1, 15),
+      currency: 'INR',
+    );
+
+    for (final blank in ['', '   ']) {
+      test('addCashFlow rejects currency "$blank"', () async {
+        await expectLater(
+          notifier().addCashFlow(
+            investmentId: 'inv-1',
+            type: CashFlowType.invest,
+            amount: 100,
+            date: DateTime(2024, 1, 15),
+            currency: blank,
+          ),
+          throwsA(isA<ValidationException>()),
+        );
+
+        expect(repo.cashFlows, isEmpty);
+      });
+
+      test('updateCashFlow rejects currency "$blank"', () async {
+        await repo.addCashFlow(stored());
+
+        await expectLater(
+          notifier().updateCashFlow(
+            id: 'cf-1',
+            investmentId: 'inv-1',
+            type: CashFlowType.invest,
+            amount: 100,
+            date: DateTime(2024, 1, 15),
+            createdAt: DateTime(2024, 1, 15),
+            currency: blank,
+          ),
+          throwsA(isA<ValidationException>()),
+        );
+
+        expect(repo.cashFlows.single.amount, 50000);
+        expect(repo.cashFlows.single.currency, 'INR');
+      });
+    }
+  });
+
   group('mergeInvestments', () {
     Future<void> merge(List<String> ids, String name) {
       // The app always has a screen listening to the investments stream;

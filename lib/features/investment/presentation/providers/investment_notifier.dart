@@ -256,7 +256,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       }
       final rounded = MoneyPrecision.round(
         value,
-        currencyCode: existing.currency,
+        currencyCode: _requireCurrency(existing.currency),
       );
       return _withCurrentValue(existing, rounded, day);
     });
@@ -515,7 +515,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   }
 
   /// Add a cash flow to an investment.
-  /// Throws [ValidationException] if amount is not positive.
+  /// Throws [ValidationException] if amount is not positive (or rounds
+  /// to zero in its currency) or the currency is blank.
   Future<void> addCashFlow({
     required String investmentId,
     required CashFlowType type,
@@ -527,7 +528,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     // Input validation
     _validateAmount(amount);
     _validateNotes(notes);
-    final String flowCurrency = currency ?? ref.read(currencyCodeProvider);
+    final String flowCurrency = _requireCurrency(
+      currency ?? ref.read(currencyCodeProvider),
+    );
     final roundedAmount = MoneyPrecision.round(
       amount,
       currencyCode: flowCurrency,
@@ -573,7 +576,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   }
 
   /// Update a cash flow.
-  /// Throws [ValidationException] if amount is not positive.
+  /// Throws [ValidationException] if amount is not positive (or rounds
+  /// to zero in its currency) or the currency is blank.
   Future<void> updateCashFlow({
     required String id,
     required String investmentId,
@@ -587,7 +591,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     // Input validation
     _validateAmount(amount);
     _validateNotes(notes);
-    final String flowCurrency = currency ?? ref.read(currencyCodeProvider);
+    final String flowCurrency = _requireCurrency(
+      currency ?? ref.read(currencyCodeProvider),
+    );
     final roundedAmount = MoneyPrecision.round(
       amount,
       currencyCode: flowCurrency,
@@ -818,6 +824,19 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         ValidationConstants.maxNameLength,
       );
     }
+  }
+
+  /// Returns [currency] if it is not blank. Stored data can carry a blank
+  /// currency; it fails visibly here and is never defaulted (money rule 1).
+  /// Throws [ValidationException] for a blank currency.
+  String _requireCurrency(String currency) {
+    if (currency.trim().isEmpty) {
+      throw ValidationException(
+        userMessage: 'Choose a currency for this amount.',
+        technicalMessage: 'Validation failed: currency is blank',
+      );
+    }
+    return currency;
   }
 
   /// Validates amount for cash flows.
