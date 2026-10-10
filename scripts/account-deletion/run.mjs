@@ -8,6 +8,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { countDocs, deleteUserData } from './delete.mjs';
 import { createGa4Deletion } from './ga4.mjs';
+import { safeErrorCode } from './safe-error.mjs';
 import { findInactiveGuests, findOrphans, loadRequests, STALE_MS } from './sweep.mjs';
 import { verifyUserGone } from './verify.mjs';
 
@@ -72,6 +73,7 @@ export async function runJob({
         result.verified = check.ok;
         result.problems = check.problems;
         await db.collection('deletionAudit').doc(`${runId}-${uidHash}`).set({
+          runId,
           uidHash,
           source: c.source,
           requestedAt: c.requestedAt,
@@ -92,7 +94,7 @@ export async function runJob({
         }
         result.ok = true;
       } catch (e) {
-        result.error = e.code ?? e.message;
+        result.error = safeErrorCode(e);
       }
     }
   }
@@ -118,21 +120,20 @@ export async function runJob({
 
   const failed = results.filter((r) => !r.ok).length;
   const exitCode = refused ? 2 : failed > 0 || stale > 0 ? 1 : 0;
-  const processedUids = dryRun ? [] : [...candidates.keys()].filter((_, i) => results[i]?.ok);
 
   if (!dryRun) {
     await db.collection('deletionRuns').doc(runId).set({
       runId,
       refused,
       candidates: candidates.size,
-      processed: processedUids.length,
+      processed: results.filter((r) => r.ok).length,
       failed,
       staleRequests: stale,
       ok: exitCode === 0,
       completedAt: FieldValue.serverTimestamp(),
     });
   }
-  return { exitCode, refused, results, processedUids, stale, ga4Failed, ga4NotConfigured };
+  return { exitCode, refused, results, stale, ga4Failed, ga4NotConfigured };
 }
 
 /** Never throws: any error, including one from a custom client, becomes outcome 'failed' without its message. */
@@ -173,6 +174,9 @@ async function main() {
   const auth = getAuth();
   const dryRun = env.DRY_RUN !== 'false';
   const runId = `${env.GITHUB_RUN_ID ?? Date.now()}-${env.GITHUB_RUN_ATTEMPT ?? 1}`;
+  // Announced first, before anything is deleted, so the verify job still runs if this job dies part-way. It is the
+  // only thing handed on: the accounts are found again by their hashed audit records, never by uid.
+  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `run_id=${runId}\n`);
 
   if (env.REQUEST_EMAIL) {
     const { created } = await requestByEmail({ db, auth, email: env.REQUEST_EMAIL, dryRun });
@@ -191,9 +195,6 @@ async function main() {
     ga4: createGa4Deletion({ propertyId: env.GA4_PROPERTY_ID }),
   });
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, summary(out));
-  if (env.GITHUB_OUTPUT) {
-    appendFileSync(env.GITHUB_OUTPUT, `run_id=${runId}\nuids=${out.processedUids.join(',')}\n`);
-  }
   return out.exitCode;
 }
 
@@ -201,7 +202,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   main().then(
     (code) => process.exit(code),
     (e) => {
-      console.error(e);
+      // This log is public and an error message can hold a uid or an email, so only a short code is printed.
+      console.error(`account-deletion run failed (${safeErrorCode(e)}); details are withheld because this log is public.`);
       process.exit(1);
     },
   );
