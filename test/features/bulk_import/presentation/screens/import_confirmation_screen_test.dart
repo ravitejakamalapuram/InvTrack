@@ -101,6 +101,7 @@ void main() {
     List<InvestmentEntity> archivedInvestments = const [],
     List<CashFlowEntity> archivedCashFlows = const [],
     Stream<List<CashFlowEntity>> Function()? cashFlowStream,
+    Stream<List<InvestmentEntity>> Function()? investmentStream,
   }) async {
     notifier = _CapturingInvestmentNotifier(failure: failure);
     await tester.pumpWidget(
@@ -109,7 +110,8 @@ void main() {
           currencyCodeProvider.overrideWithValue('INR'),
           privacyModeProvider.overrideWith(() => _Privacy(privacy)),
           allInvestmentsProvider.overrideWith(
-            (ref) => Stream.value(existingInvestments),
+            (ref) =>
+                investmentStream?.call() ?? Stream.value(existingInvestments),
           ),
           allCashFlowsStreamProvider.overrideWith(
             (ref) => cashFlowStream?.call() ?? Stream.value(existingCashFlows),
@@ -529,7 +531,7 @@ void main() {
 
         expect(find.text(_l10n.importLikelyDuplicates(2)), findsOneWidget);
         expect(
-          find.text(_l10n.importAmbiguousInvestmentMatches),
+          find.text(_l10n.importAmbiguousMatches(1, 'Bhive Investment')),
           findsOneWidget,
         );
         expect(find.text(_l10n.importAddsToExisting), findsNothing);
@@ -617,6 +619,201 @@ void main() {
         );
       },
     );
+
+    // ---- Several active investments share the file's name (fail closed) ----
+    final holderA = bhive.copyWith(id: 'bhive-a');
+    final holderB = bhive.copyWith(id: 'bhive-b');
+    CashFlowEntity savedIn(InvestmentEntity holder) =>
+        savedInvest.copyWith(id: 'cf-${holder.id}', investmentId: holder.id);
+    ParsedCashFlowRow bhiveRow(int rowNumber, DateTime date, double amount) =>
+        ParsedCashFlowRow(
+          rowNumber: rowNumber,
+          date: date,
+          investmentName: 'Bhive Investment',
+          type: CashFlowType.invest,
+          amount: amount,
+          currency: 'INR',
+        );
+    // Row 2 is the cash flow the holders already have; row 3 is new.
+    final savedAndNew = ParsedCsvResult(
+      rows: [
+        bhiveRow(2, DateTime(2024, 1, 15), 100000),
+        bhiveRow(3, DateTime(2024, 2, 15), 300000),
+      ],
+      errors: const [],
+      totalRows: 2,
+      validRows: 2,
+    );
+    GradientButton importButton(WidgetTester tester) =>
+        tester.widget<GradientButton>(find.byType(GradientButton));
+    final ambiguousWarning = _l10n.importAmbiguousMatches(
+      1,
+      'Bhive Investment',
+    );
+
+    testWidgets('two same-name investments holding the identical cash flow '
+        'pause import', (tester) async {
+      await pumpScreen(
+        tester,
+        result: savedAndNew,
+        existingInvestments: [holderA, holderB],
+        existingCashFlows: [savedIn(holderA), savedIn(holderB)],
+      );
+
+      expect(importButton(tester).onPressed, isNull);
+      expect(find.text(ambiguousWarning), findsOneWidget);
+      await tester.tap(find.text('Bhive Investment'));
+      await tester.pumpAndSettle();
+      expect(find.text(_l10n.importAddsToExisting), findsNothing);
+      expect(notifier.bulkImportCalls, 0);
+    });
+
+    testWidgets('the identical-cash-flow collision stays paused when '
+        'skipping duplicates is off', (tester) async {
+      await pumpScreen(
+        tester,
+        result: savedAndNew,
+        existingInvestments: [holderA, holderB],
+        existingCashFlows: [savedIn(holderA), savedIn(holderB)],
+      );
+      await tester.tap(find.text(_l10n.importSkipDuplicates));
+      await tester.pumpAndSettle();
+
+      expect(importButton(tester).onPressed, isNull);
+      expect(find.text(ambiguousWarning), findsOneWidget);
+      expect(notifier.bulkImportCalls, 0);
+    });
+
+    testWidgets('one duplicate hit is still ambiguous while two active '
+        'investments carry the name', (tester) async {
+      // Deliberate: the rows could belong to either investment, so a single
+      // hit in one of them is not enough to choose it.
+      await pumpScreen(
+        tester,
+        result: savedAndNew,
+        existingInvestments: [holderA, holderB],
+        existingCashFlows: [savedIn(holderA)],
+      );
+
+      expect(importButton(tester).onPressed, isNull);
+      expect(find.text(ambiguousWarning), findsOneWidget);
+      await tester.tap(find.text('Bhive Investment'));
+      await tester.pumpAndSettle();
+      expect(find.text(_l10n.importAddsToExisting), findsNothing);
+    });
+
+    testWidgets('a name two investments share is fine when no row matches '
+        'a saved cash flow', (tester) async {
+      // Deliberate: with no duplicate hit nothing is added to an existing
+      // investment, so there is nothing to route; the rows become a new one.
+      await pumpScreen(
+        tester,
+        result: savedAndNew,
+        existingInvestments: [holderA, holderB],
+      );
+
+      expect(find.text(ambiguousWarning), findsNothing);
+      expect(importButton(tester).onPressed, isNotNull);
+
+      await tester.tap(find.text(_l10n.importAllButton));
+      await tester.pumpAndSettle();
+      expect(notifier.investments.map((i) => i.name), ['Bhive Investment']);
+      expect(
+        notifier.investments.single.id,
+        isNot(anyOf('bhive-a', 'bhive-b')),
+      );
+      expect(notifier.cashFlows, hasLength(2));
+    });
+
+    testWidgets('the warning and the card name the paused investment and the '
+        'header counts leave it out', (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await pumpScreen(
+          tester,
+          result: ParsedCsvResult(
+            rows: [
+              ...savedAndNew.rows,
+              ParsedCashFlowRow(
+                rowNumber: 4,
+                date: DateTime(2024, 3, 1),
+                investmentName: 'HDFC FD',
+                type: CashFlowType.invest,
+                amount: 50000,
+                currency: 'INR',
+              ),
+            ],
+            errors: const [],
+            totalRows: 3,
+            validRows: 3,
+          ),
+          existingInvestments: [holderA, holderB],
+          existingCashFlows: [savedIn(holderA), savedIn(holderB)],
+        );
+
+        expect(find.text(_l10n.importPausedTitle), findsOneWidget);
+        expect(find.text(_l10n.readyToImport), findsNothing);
+        // Only the HDFC FD row is left to write; Bhive is paused.
+        expect(
+          find.text(
+            _l10n.importCountsSummary(
+              _l10n.importInvestmentCount(1),
+              _l10n.importCashFlowCount(1),
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(ambiguousWarning), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(RegExp('Bhive Investment matches more than')),
+          findsOneWidget,
+        );
+        // Only the paused investment's card carries the note.
+        expect(find.text(_l10n.importAmbiguousCardNote), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.widgetWithText(ExpansionTile, 'Bhive Investment'),
+            matching: find.text(_l10n.importAmbiguousCardNote),
+          ),
+          findsOneWidget,
+        );
+      } finally {
+        semantics.dispose();
+      }
+    });
+
+    testWidgets('a tap that was already on its way when the data turned '
+        'ambiguous writes nothing', (tester) async {
+      final later = StreamController<List<InvestmentEntity>>();
+      addTearDown(later.close);
+      await pumpScreen(
+        tester,
+        result: savedAndNew,
+        existingCashFlows: [savedIn(holderA)],
+        investmentStream: () async* {
+          yield [holderA];
+          yield* later.stream;
+        },
+      );
+      expect(importButton(tester).onPressed, isNotNull);
+      final tapInFlight = importButton(tester).onPressed!;
+
+      // A second investment with the same name arrives, and the screen
+      // rebuilds with Import off.
+      later.add([holderA, holderB]);
+      await tester.pumpAndSettle();
+      expect(importButton(tester).onPressed, isNull);
+      expect(find.text(ambiguousWarning), findsOneWidget);
+
+      tapInFlight();
+      await tester.pumpAndSettle();
+
+      expect(
+        notifier.bulkImportCalls,
+        0,
+        reason: 'the guard in _importAll must stop a stale tap',
+      );
+    });
 
     testWidgets('the header counts only what Import will write', (
       tester,
