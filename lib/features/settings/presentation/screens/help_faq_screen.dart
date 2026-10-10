@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/features/settings/presentation/screens/account_deletion_page.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_content.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/delete_account_web_link.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -205,7 +206,9 @@ class HelpFaqScreen extends StatelessWidget {
               ),
             ]),
           SizedBox(height: AppSpacing.md),
-          const DeleteAccountWebLink(),
+          DeleteAccountWebLink(
+            onPressed: () => openAccountDeletionPageOrCopyLink(context),
+          ),
           SizedBox(height: AppSpacing.md),
           Center(
             child: Text(
