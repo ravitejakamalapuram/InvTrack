@@ -285,7 +285,9 @@ class DebugSettingsScreen extends ConsumerWidget {
                   .toggle(FeatureFlag.valuationSnapshots);
 
               final newState =
-                  ref.read(featureFlagsProvider)[FeatureFlag.valuationSnapshots] ??
+                  ref.read(
+                    featureFlagsProvider,
+                  )[FeatureFlag.valuationSnapshots] ??
                   false;
 
               if (context.mounted) {

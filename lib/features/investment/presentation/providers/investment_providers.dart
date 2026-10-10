@@ -149,9 +149,7 @@ final cashFlowsInDateRangeProvider = StreamProvider.autoDispose
         return Stream.value([]);
       }
       // Let errors propagate to UI - server-side filtering by date
-      return ref
-          .watch(investmentRepositoryProvider)
-          .watchCashFlowsInDateRange(
+      return ref.watch(investmentRepositoryProvider).watchCashFlowsInDateRange(
             startDate: dateRange.start,
             endDate: dateRange.end,
           );
