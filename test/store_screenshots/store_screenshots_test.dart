@@ -10,6 +10,10 @@
 //   STORE_SCREENSHOTS_DIR=android/fastlane/metadata/android/en-US/images/phoneScreenshots \
 //     flutter test test/store_screenshots/store_screenshots_test.dart
 //
+// The app's Plus Jakarta Sans files are not usable fonts yet, so the images
+// fall back to Roboto for the headings. The generator refuses to write files
+// that way unless STORE_SCREENSHOTS_ALLOW_FONT_FALLBACK=1 is set.
+//
 // Uploading to Play stays manual (listing.yml).
 @Tags(['store-screenshots'])
 library;
@@ -45,6 +49,12 @@ void main() {
             'goal icons are emoji; install Noto Color Emoji or set '
             '$storeScreenshotsEmojiFontVar',
       );
+      // Roboto in place of an app font would go into the images silently.
+      final fontProblem = fontFallbackProblem(
+        fonts,
+        allowFallback: storeScreenshotsAllowFontFallback,
+      );
+      if (fontProblem != null) fail(fontProblem);
     }
 
     final demo = StoreDemoData.build(DateTime.now());
@@ -66,13 +76,17 @@ void main() {
         isNotEmpty,
         reason: 'the control: the amount check must see amounts when they show',
       );
-      expect(find.text('XIRR'), findsOneWidget);
+      // The hero, goals and FIRE cards are all in the picture, and a card that
+      // failed to load can vanish without an error message.
+      expectOverviewCards(tester, demo);
       await captureScene(tester, 'play_04_overview');
 
       // 05 Privacy mode: the same screen with every amount hidden.
       await nav.tap(find.byType(PrivacyToggleButton).first);
       await expectSceneReady(tester, 'play_05_privacy_mode');
       expect(amountsOnScreen(tester), isEmpty);
+      // Hiding amounts must not hide the cards themselves.
+      expectOverviewCards(tester, demo);
       await captureScene(tester, 'play_05_privacy_mode');
       await nav.tap(find.byType(PrivacyToggleButton).first);
 
@@ -88,6 +102,9 @@ void main() {
       await nav.goToInvestments();
       await expectSceneReady(tester, 'play_01_investments_list');
       // Open and closed positions both exist, and the first cards are loaded.
+      // expectSceneReady has already checked that no negative amount is in
+      // the frame: open investments show a negative net cash flow, so they
+      // must stay below the first screen.
       expect(find.text('Open'), findsOneWidget);
       expect(find.text('UTI Nifty 50 Index'), findsOneWidget);
       expect(find.text('HDFC Bank FD'), findsOneWidget);

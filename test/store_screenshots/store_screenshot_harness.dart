@@ -14,8 +14,12 @@ import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/providers/connectivity_provider.dart';
 import 'package:inv_tracker/core/providers/in_app_update_provider.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
+import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
+import 'package:inv_tracker/core/widgets/premium_animations.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/income_guardian_service_providers.dart';
+import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 import '../../integration_test/mocks/fake_fire_settings_repository.dart';
 import '../../integration_test/mocks/store_demo_data.dart';
@@ -25,6 +29,8 @@ import 'rgb_png.dart';
 
 const storeScreenshotsDirVar = 'STORE_SCREENSHOTS_DIR';
 const storeScreenshotsEmojiFontVar = 'STORE_SCREENSHOTS_EMOJI_FONT';
+const storeScreenshotsAllowFontFallbackVar =
+    'STORE_SCREENSHOTS_ALLOW_FONT_FALLBACK';
 
 /// Play phone screenshot size in physical pixels, and the pixel ratio that
 /// makes it a 411.43 x 731.43 dp phone.
@@ -40,6 +46,11 @@ String? get storeScreenshotsDir {
   final dir = Platform.environment[storeScreenshotsDirVar]?.trim();
   return dir == null || dir.isEmpty ? null : dir;
 }
+
+/// True when the person running the generator has said that Roboto may stand
+/// in for an app font in the files it writes.
+bool get storeScreenshotsAllowFontFallback =>
+    Platform.environment[storeScreenshotsAllowFontFallbackVar] == '1';
 
 class StoreScreenshotFonts {
   const StoreScreenshotFonts({
@@ -64,6 +75,9 @@ class StoreScreenshotFonts {
 }
 
 const _emojiFamily = 'NotoColorEmoji';
+
+/// Which fonts the images are set in, for the line printed per file.
+String _fontSummary = 'bundled fonts';
 
 // google_fonts loads Inter and Plus Jakarta Sans lazily and asynchronously from
 // assets/fonts. Ask for every weight the theme uses before the first frame, so
@@ -128,9 +142,12 @@ Future<StoreScreenshotFonts> loadStoreScreenshotFonts(
   if (fallback.isNotEmpty) {
     debugPrint(
       'store screenshots: no usable font file for ${fallback.join(', ')}; '
-      'using Roboto, which is what a device falls back to.',
+      'using Roboto in their place.',
     );
   }
+  _fontSummary = fallback.isEmpty
+      ? 'bundled fonts'
+      : 'Roboto in place of ${fallback.join(', ')}';
   return StoreScreenshotFonts(
     fallbackFamilies: fallback,
     testFontFamilies: stillTest,
@@ -276,21 +293,147 @@ Future<void> _settle(WidgetTester tester) async {
 /// Fails when the screen is not in the state a store image should show.
 Future<void> expectSceneReady(WidgetTester tester, String scene) async {
   await _settle(tester);
-  expect(
-    find.byType(CircularProgressIndicator),
-    findsNothing,
-    reason: '$scene is still loading',
-  );
-  expect(find.text('Retry'), findsNothing, reason: '$scene shows an error');
-  expect(
-    find.byType(ErrorWidget),
-    findsNothing,
-    reason: '$scene has a build error',
-  );
+  expectNoLoadingOrError(tester, scene);
   expect(
     _familiesInTestFont(tester),
     isEmpty,
     reason: '$scene has text in a font that was not loaded',
+  );
+  expect(
+    negativeAmountsOnScreen(tester),
+    isEmpty,
+    reason:
+        '$scene shows a negative amount, and nothing resembling a loss may '
+        'be on a store image',
+  );
+}
+
+/// Fails when the screen still loads or shows an error.
+///
+/// It looks for the app's own loading widgets and error states: by type, by
+/// icon and by the localised strings, so a copy change cannot hide them. Some
+/// states cannot be found this way: a card that disappears on an error, or
+/// that loads as plain grey boxes (the FIRE card, the goals card). Those are
+/// caught by checking that the cards a scene is about are present, as
+/// [expectOverviewCards] does.
+void expectNoLoadingOrError(WidgetTester tester, String scene) {
+  final l10n = _l10n(tester);
+  final loading = <String, Finder>{
+    'a spinner': find.byType(CircularProgressIndicator),
+    // A bar with a value is progress (the goals, the FIRE card), not loading.
+    'an endless progress bar': find.byWidgetPredicate(
+      (widget) => widget is LinearProgressIndicator && widget.value == null,
+    ),
+    'the hero card skeleton': find.byType(HeroCardSkeleton),
+    'the loading hero card': find.byType(LoadingHeroCard),
+    'the quick stats skeleton': find.byType(QuickStatsSkeleton),
+    'a section card skeleton': find.byType(SectionCardSkeleton),
+    'an investment card skeleton': find.byType(InvestmentCardSkeleton),
+    'the investment list skeleton': find.byType(InvestmentListSkeleton),
+    'a cash flow card skeleton': find.byType(CashFlowCardSkeleton),
+    'the stats cards skeleton': find.byType(StatsCardsSkeleton),
+    // Every skeleton above shimmers; this catches the ones added later.
+    'a shimmering placeholder': find.byType(ShimmerEffect),
+  };
+  for (final entry in loading.entries) {
+    expect(
+      entry.value,
+      findsNothing,
+      reason: '$scene is still loading: ${entry.key} is on screen',
+    );
+  }
+
+  final errors = <String, Finder>{
+    'a build error': find.byType(ErrorWidget),
+    'an error icon': find.byIcon(Icons.error_outline),
+    'a rounded error icon': find.byIcon(Icons.error_outline_rounded),
+    'an offline icon': find.byIcon(Icons.cloud_off_rounded),
+    'the text "${l10n.retry}"': find.text(l10n.retry),
+    'the text "${l10n.failedToLoadData}"': find.text(l10n.failedToLoadData),
+    'the text "${l10n.overviewLoadErrorTitle}"': find.text(
+      l10n.overviewLoadErrorTitle,
+    ),
+    'the text "${l10n.failedToLoadGoals}"': find.text(l10n.failedToLoadGoals),
+    'the text "${l10n.fireProgressLoadError}"': find.text(
+      l10n.fireProgressLoadError,
+    ),
+  };
+  for (final entry in errors.entries) {
+    expect(
+      entry.value,
+      findsNothing,
+      reason: '$scene shows an error: ${entry.key} is on screen',
+    );
+  }
+}
+
+/// The strings of the running app, read the way the screens read them.
+AppLocalizations _l10n(WidgetTester tester) {
+  final scaffold = find.byType(Scaffold);
+  expect(
+    scaffold,
+    findsWidgets,
+    reason: 'the checks read the localised strings through a Scaffold',
+  );
+  return AppLocalizations.of(tester.element(scaffold.first));
+}
+
+/// A minus sign (hyphen, minus or en dash) that starts a number or a rupee
+/// amount. A sign that follows a letter or digit is a range or a name, as in
+/// "2024-25".
+final _negativeAmountPattern = RegExp(r'(?<!\w)[-−–]\s?₹|(?<!\w)[-−–]\d');
+
+/// Text inside the frame that shows a negative amount. Text that is hidden or
+/// that lies below the fold (laid out, but not in the picture) is skipped.
+List<String> negativeAmountsOnScreen(WidgetTester tester) {
+  final frame =
+      Offset.zero & (tester.view.physicalSize / tester.view.devicePixelRatio);
+  final found = <String>[];
+  void visit(RenderObject object) {
+    if (object is RenderParagraph && object.hasSize && !_isHidden(object)) {
+      final text = object.text.toPlainText();
+      final box = object.localToGlobal(Offset.zero) & object.size;
+      if (_negativeAmountPattern.hasMatch(text) && box.overlaps(frame)) {
+        found.add(text);
+      }
+    }
+    object.visitChildren(visit);
+  }
+
+  visit(tester.binding.renderViews.first);
+  return found;
+}
+
+/// Why the fonts in [fonts] must not go into a published image, or null.
+/// A device shows the app's own fonts, so Roboto in their place is only fine
+/// when the person generating the images has chosen that.
+String? fontFallbackProblem(
+  StoreScreenshotFonts fonts, {
+  required bool allowFallback,
+}) {
+  if (fonts.fallbackFamilies.isEmpty || allowFallback) return null;
+  return '${fonts.fallbackFamilies.join(', ')} have no usable font file, so '
+      'the images would be set in Roboto, not in the app font. Fix the font '
+      'files, or set $storeScreenshotsAllowFontFallbackVar=1 to write the '
+      'images with Roboto on purpose.';
+}
+
+/// Fails unless the Overview shows what the Overview scene is about: the hero
+/// card, a goal from [demo] and the FIRE progress card. A card that failed to
+/// load can vanish, or show grey boxes, without any error text, so each one is
+/// checked by what it shows.
+void expectOverviewCards(WidgetTester tester, StoreDemoData demo) {
+  final l10n = _l10n(tester);
+  expect(find.text('XIRR'), findsOneWidget, reason: 'the hero card is missing');
+  expect(
+    demo.goals.any((goal) => find.text(goal.name).evaluate().isNotEmpty),
+    isTrue,
+    reason: 'no goal of the demo data is on the Overview',
+  );
+  expect(
+    find.text(l10n.fireProgressTitle),
+    findsOneWidget,
+    reason: 'the FIRE progress card is missing',
   );
 }
 
@@ -409,7 +552,8 @@ Future<void> captureScene(WidgetTester tester, String name) async {
     await File('$dir/$name.png').writeAsBytes(png);
   });
   debugPrint(
-    'store screenshots: wrote $dir/$name.png (${png.length ~/ 1024} KB)',
+    'store screenshots: wrote $dir/$name.png (${png.length ~/ 1024} KB; '
+    'fonts: $_fontSummary)',
   );
 }
 
