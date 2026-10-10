@@ -18,7 +18,12 @@ void main() {
   group('unused platforms', () {
     for (final folder in ['web', 'macos', 'windows', 'linux']) {
       test('$folder/ is gone', () {
-        expect(Directory(folder).existsSync(), isFalse);
+        // Not Directory.existsSync(): it follows links, so a dangling link or
+        // a plain file named like the folder would pass falsely.
+        expect(
+          FileSystemEntity.typeSync(folder, followLinks: false),
+          FileSystemEntityType.notFound,
+        );
       });
     }
 
