@@ -23,6 +23,7 @@ import 'package:inv_tracker/features/investment/domain/entities/investment_valua
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
+import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/services/portfolio_health_calculator.dart';
 
 import '../../../mocks/mock_currency_conversion_service.dart';
@@ -312,6 +313,101 @@ void main() {
       expect(score, isNotNull);
       // The returns component judges the FD alone: 7.19% against 6%.
       expect(score!.returnsPerformance.score, closeTo(64.74, 0.01));
+    });
+  });
+
+  group('the health score weighs a baseline by its value', () {
+    // A 5,00,000 opening baseline with no cash flows next to the FD of
+    // 1,00,000. Its cost is unknown, so its value is what it weighs.
+    PortfolioHealthScore? score(
+      List<InvestmentEntity> investments, {
+      List<CashFlowEntity> flows = const [],
+      List<InvestmentValuationSnapshot>? baselines,
+    }) {
+      final allFlows = [..._fdFlows, ...flows];
+      final snapshots = {
+        for (final s in baselines ?? [_baseline()]) s.investmentId: [s],
+      };
+      final byInvestment = {
+        for (final inv in investments)
+          inv.id: CurrentValueCalculator.terminalValues(
+            investments: [inv],
+            cashFlows: allFlows,
+            asOf: _today,
+            snapshots: snapshots,
+          ),
+      };
+      final stats = FinancialCalculatorModule().calculateStatsByInvestment(
+        allFlows,
+        includeXirr: false,
+        terminalValues: byInvestment,
+      );
+      return PortfolioHealthCalculator.calculate(
+        investments: investments,
+        investmentStats: stats,
+        allCashFlows: allFlows,
+        goalProgress: const [],
+        terminalValues: byInvestment,
+        asOf: _today,
+      );
+    }
+
+    test('diversification counts it as 5/6 of the portfolio', () {
+      final result = score([_fd, _gold])!;
+      // Shares 1/6 and 5/6: HHI = 26/36, score = 100 - (26/36 - 0.2) * 125.
+      expect(result.diversification.score, closeTo(34.7222, 0.0001));
+      expect(result.diversification.description, '2 investment types');
+    });
+
+    test('liquidity counts it when it matures within 90 days', () {
+      final maturing = _gold.copyWith(maturityDate: DateTime(2026, 11, 1));
+      final result = score([_fd, maturing])!;
+      // 5,00,000 of 6,00,000 matures soon: more than 40%.
+      expect(result.liquidity.description, '83% maturing in 90 days');
+      expect(result.liquidity.score, 40);
+    });
+
+    test('without it the FD alone would be the whole portfolio', () {
+      final result = score([_fd])!;
+      expect(result.diversification.score, 0);
+    });
+
+    test('limited history only (a flow after the baseline) has no score, '
+        'not a neutral returns score', () {
+      final topUp = testFlow(
+        'gold',
+        CashFlowType.invest,
+        50000,
+        DateTime(2026, 10, 1),
+      );
+      final allFlows = [topUp];
+      final byInvestment = {
+        'gold': CurrentValueCalculator.terminalValues(
+          investments: [_gold],
+          cashFlows: allFlows,
+          asOf: _today,
+          snapshots: {
+            'gold': [_baseline()],
+          },
+        ),
+      };
+      final stats = FinancialCalculatorModule().calculateStatsByInvestment(
+        allFlows,
+        includeXirr: false,
+        terminalValues: byInvestment,
+      );
+      expect(stats['gold']!.returnsKnown, isFalse);
+      expect(
+        PortfolioHealthCalculator.calculate(
+          investments: [_gold],
+          investmentStats: stats,
+          allCashFlows: allFlows,
+          goalProgress: const [],
+          terminalValues: byInvestment,
+          asOf: _today,
+        ),
+        isNull,
+      );
     });
   });
 

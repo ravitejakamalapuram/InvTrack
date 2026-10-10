@@ -238,6 +238,13 @@ class PortfolioHealthCalculator {
     );
   }
 
+  /// What an investment weighs in the mix and in the maturity ratio: the
+  /// money put in, or, for one with limited history (an opening baseline, so
+  /// its cost is unknown or only part of it is on record), its current value.
+  static double _weight(InvestmentStats stat) => stat.limitedHistoryCount > 0
+      ? (stat.currentValue ?? 0)
+      : stat.totalInvested;
+
   /// Component 2: Diversification (25% weight)
   /// Score based on Herfindahl index (concentration)
   static ComponentScore _calculateDiversificationScore(
@@ -254,7 +261,7 @@ class PortfolioHealthCalculator {
       );
     }
 
-    // Calculate Herfindahl index using investment values (totalInvested) by type
+    // Calculate Herfindahl index using investment values (_weight) by type
     final typeValues = <InvestmentType, double>{};
     double totalValue = 0.0;
 
@@ -262,10 +269,10 @@ class PortfolioHealthCalculator {
     for (final inv in investments) {
       if (!inv.isArchived) {
         final stat = stats[inv.id];
-        if (stat != null && stat.totalInvested > 0) {
-          typeValues[inv.type] =
-              (typeValues[inv.type] ?? 0.0) + stat.totalInvested;
-          totalValue += stat.totalInvested;
+        final weight = stat == null ? 0.0 : _weight(stat);
+        if (weight > 0) {
+          typeValues[inv.type] = (typeValues[inv.type] ?? 0.0) + weight;
+          totalValue += weight;
         }
       }
     }
@@ -345,15 +352,16 @@ class PortfolioHealthCalculator {
     for (final inv in investments) {
       if (!inv.isArchived && inv.status == InvestmentStatus.open) {
         final stat = stats[inv.id];
-        if (stat != null && stat.totalInvested > 0) {
-          totalActiveValue += stat.totalInvested;
+        final weight = stat == null ? 0.0 : _weight(stat);
+        if (weight > 0) {
+          totalActiveValue += weight;
 
           final maturity = inv.calculatedMaturityDate;
           if (maturity != null &&
               maturity.isAfter(now) &&
               (maturity.isBefore(next90Days) ||
                   maturity.isAtSameMomentAs(next90Days))) {
-            maturingSoonValue += stat.totalInvested;
+            maturingSoonValue += weight;
             maturingSoonCount++;
           }
         }
@@ -580,7 +588,8 @@ class PortfolioHealthCalculator {
       }
 
       // Check for stale investments (no activity in 6+ months)
-      final cashFlows = cashFlowsByInvestmentId[inv.id] ?? const <ICashFlow>[];
+      final cashFlows =
+          cashFlowsByInvestmentId[inv.id] ?? const <ICashFlow>[];
       if (cashFlows.isNotEmpty) {
         // Optimization: Replace .map().reduce() with a standard loop
         var lastActivity = cashFlows.first.date;
