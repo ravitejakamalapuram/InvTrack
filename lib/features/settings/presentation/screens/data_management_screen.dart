@@ -386,6 +386,34 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
               backgroundColor: Colors.orange,
             ),
           );
+        } else if (importResult.warnings.isNotEmpty) {
+          // Part of the backup was skipped (a damaged optional file). Replace
+          // has already deleted what that file would have replaced, so this
+          // must not read as plain success. Count only: the warning texts
+          // hold investment and goal names (rules 7 and 8).
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              // Dark text: the theme's snackbar text is light in the light
+              // theme, which is unreadable on the amber background.
+              content: DefaultTextStyle.merge(
+                style: const TextStyle(color: AppColors.neutral900Light),
+                child: MergeSemantics(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.importedWithWarnings(importResult.warnings.length),
+                      ),
+                      Text(l10n.importedWithWarningsHint),
+                    ],
+                  ),
+                ),
+              ),
+              backgroundColor: AppColors.warningLight,
+              duration: const Duration(seconds: 8),
+            ),
+          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
