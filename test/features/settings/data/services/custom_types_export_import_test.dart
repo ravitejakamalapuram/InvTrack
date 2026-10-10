@@ -3,8 +3,10 @@
 // carries, and which investments were linked to a type, all in one
 // custom_types.json. This is also the path the guest merge takes. A ZIP from
 // before custom types imports as before, an account with none exports the
-// same files as before, and an unreadable file never costs the account its
-// investments: it is read before anything is deleted.
+// same files as before, and a damaged file is found before anything is
+// deleted: Replace stops with an error and changes nothing, Merge skips the
+// file with a warning (#956; every kind of damage is in
+// replace_import_custom_types_damaged_test.dart).
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -584,9 +586,12 @@ void main() {
     });
   });
 
-  group('an unreadable custom_types.json', () {
-    // The label is in the file so the warnings can be checked for it.
+  group('a damaged custom_types.json', () {
+    // The label is in the file so the messages can be checked for it.
     const secret = 'Secret Hobby';
+    const stopped =
+        'Backup not imported: custom_types.json is damaged. Your existing '
+        'data was not changed.';
 
     Future<ZipImportResult> importBroken(
       List<int> fileBytes, {
@@ -610,66 +615,81 @@ void main() {
       );
     }
 
-    void expectCashFlowsImportedAndLabelsDropped(ZipImportResult result) {
-      expect(result.errors, isEmpty);
-      expect(result.investmentsImported, 1);
-      expect(result.cashflowsImported, 1);
-      expect(result.warnings, hasLength(1));
-      expect(result.warnings.single, isNot(contains(secret)));
-      expect(result.warnings.single, contains('custom_types.json'));
-    }
-
-    test('invalid UTF-8 imports the cash flows, with one warning and no label '
-        'text', () async {
-      investments.seed(
-        investments: [_inv('old', 'Old one')],
-        cashFlows: [_invest('old')],
-      );
-      types = FakeCustomInvestmentTypeRepository([_def('w', 'Wine')]);
-      build(investmentRepo: investments, typeRepo: types);
-
-      final result = await importBroken([
-        ...utf8.encode('{"types":[{"label":"$secret"'),
-        0xFF, 0xFE, 0xC3, 0x28, //
-      ]);
-
-      expectCashFlowsImportedAndLabelsDropped(result);
+    /// Replace stopped: one fixed error, no label text, and the account (its
+    /// investments and its reusable types) exactly as it was.
+    Future<void> expectReplaceStopped(ZipImportResult result) async {
+      expect(result.errors, [stopped]);
+      expect(result.errors.single, isNot(contains(secret)));
+      expect(result.warnings, isEmpty);
+      expect(result.totalImported, 0);
       final names = (await investments.getAllInvestments()).map((i) => i.name);
-      expect(names, ['Album'], reason: 'Replace still replaced the data');
+      expect(names, ['Old one'], reason: 'Replace changed nothing');
       expect(
         types.definitions.map((d) => d.label),
         ['Wine'],
         reason: 'the types are untouched, not wiped',
       );
       expect(types.deleteAlls, 0);
-      expect((await imported('Album')).customTypeLabel, isNull);
-    });
+      expect(types.writes, 0);
+    }
 
-    test('JSON that does not parse', () async {
-      final result = await importBroken(
-        utf8.encode('{"types":[{"label":"$secret"'),
+    void seedAccount() {
+      investments.seed(
+        investments: [_inv('old', 'Old one')],
+        cashFlows: [_invest('old')],
       );
+      types = FakeCustomInvestmentTypeRepository([_def('w', 'Wine')]);
+      build(investmentRepo: investments, typeRepo: types);
+    }
 
-      expectCashFlowsImportedAndLabelsDropped(result);
-      expect(types.deleteAlls, 0);
-    });
+    test('Replace: invalid UTF-8 stops it, nothing changes', () async {
+      seedAccount();
 
-    test('JSON of the wrong shape', () async {
-      final result = await importBroken(utf8.encode('["$secret"]'));
-
-      expectCashFlowsImportedAndLabelsDropped(result);
-      expect(types.deleteAlls, 0);
-    });
-
-    test('merge too', () async {
       final result = await importBroken([
-        0xFF,
-        0xFE,
-        0xC3,
-        0x28,
+        ...utf8.encode('{"types":[{"label":"$secret"'),
+        0xFF, 0xFE, 0xC3, 0x28, //
+      ]);
+
+      await expectReplaceStopped(result);
+    });
+
+    test('Replace: JSON that does not parse', () async {
+      seedAccount();
+
+      await expectReplaceStopped(
+        await importBroken(utf8.encode('{"types":[{"label":"$secret"')),
+      );
+    });
+
+    test('Replace: JSON of the wrong shape', () async {
+      seedAccount();
+
+      await expectReplaceStopped(
+        await importBroken(utf8.encode('["$secret"]')),
+      );
+    });
+
+    test('Merge: skipped with one warning and no label text, the cash flows '
+        'import', () async {
+      seedAccount();
+
+      final result = await importBroken([
+        ...utf8.encode('{"types":[{"label":"$secret"'),
+        0xFF, 0xFE, 0xC3, 0x28, //
       ], strategy: ImportStrategy.merge);
 
-      expectCashFlowsImportedAndLabelsDropped(result);
+      expect(result.errors, isEmpty);
+      expect(result.warnings, [
+        'Custom types not imported: custom_types.json is invalid',
+      ]);
+      expect(result.warnings.single, isNot(contains(secret)));
+      expect(result.investmentsImported, 1);
+      expect(result.cashflowsImported, 1);
+      final names = (await investments.getAllInvestments()).map((i) => i.name);
+      expect(names, unorderedEquals(['Old one', 'Album']));
+      expect(types.definitions.map((d) => d.label), ['Wine']);
+      expect(types.deleteAlls, 0);
+      expect((await imported('Album')).customTypeLabel, isNull);
     });
 
     test('a row of the wrong shape is skipped, the others import', () async {

@@ -34,6 +34,8 @@ const _cashflowsArchivedWarning =
 const _goalsWarning = 'Goals not imported: goals.csv is invalid';
 const _goalsArchivedWarning =
     'Archived goals not imported: goals_archived.csv is invalid';
+const _customTypesWarning =
+    'Custom types not imported: custom_types.json is invalid';
 
 /// Import strategy options
 enum ImportStrategy {
@@ -251,14 +253,14 @@ class DataImportService {
     final fireSettings = _fireSettingsRepository == null
         ? null
         : _readFireSettings(archive, baseCurrency, warnings, damagedFiles);
-    // Custom types (#936) are read before anything is deleted: an unreadable
-    // file is skipped with a warning (never with label text) and the cash
-    // flows import without labels, instead of failing a Replace after it has
-    // cleared the account.
-    final customTypesFile = archive.findFile('custom_types.json');
-    final customTypes = customTypesFile == null
-        ? null
-        : _parseCustomTypes(customTypesFile.content as List<int>, warnings);
+    final customTypes = _readParsed(
+      archive,
+      'custom_types.json',
+      _customTypesWarning,
+      warnings,
+      damagedFiles,
+      _parseCustomTypes,
+    );
     if (isReplace && damagedFiles.isNotEmpty) {
       // The file name only: not a row, a name, an amount or the exception.
       return _notImported('${damagedFiles.first} is damaged');
@@ -277,11 +279,11 @@ class DataImportService {
     final investmentNameToIdMap = <String, String>{};
 
     // Reusable custom types (#936) first, so the investments below can link
-    // to them. Replace with a readable file replaces the account's own types
-    // (the old ones are deleted for good); without the file, or with an
-    // unreadable one, they stay. If they cannot be saved (Replace has already
-    // cleared the investments), the investments still import with their
-    // labels, unlinked.
+    // to them. Replace with the file replaces the account's own types (the
+    // old ones are deleted for good); without the file they stay. A damaged
+    // file never gets here: it stopped Replace above. If the types cannot be
+    // saved (Replace has already cleared the investments), the investments
+    // still import with their labels, unlinked.
     var customTypesByKey = const <String, CustomInvestmentType>{};
     if (customTypes != null) {
       try {
@@ -800,48 +802,46 @@ class DataImportService {
 
   /// Reads custom_types.json (see `DataExportService`): the reusable types
   /// and the custom type label of each Other investment, keyed by (archived,
-  /// lowercase investment name) the way valuations are. Null, with one
-  /// warning that holds no label text, if the file is not readable JSON of
-  /// the expected shape. A row of the wrong shape is skipped.
-  _ImportedCustomTypes? _parseCustomTypes(
-    List<int> bytes,
-    List<String> warnings,
-  ) {
-    Object? json;
-    try {
-      json = jsonDecode(utf8.decode(bytes));
-    } catch (_) {
-      json = null;
-    }
-    if (json is! Map<String, dynamic>) {
-      warnings.add('Custom types not imported: custom_types.json is invalid');
-      return null;
-    }
-    final types = <_ImportedCustomType>[];
+  /// lowercase investment name) the way valuations are. Null if the file is
+  /// damaged: not JSON, not an object, without the two lists the exporter
+  /// always writes, or with rows but none of them readable. A row of the wrong
+  /// shape among readable ones is skipped, and a file with empty lists has
+  /// nothing to restore but is not damaged.
+  _ImportedCustomTypes? _parseCustomTypes(String text) {
+    final json = jsonDecode(text);
+    if (json is! Map<String, dynamic>) return null;
     final rawTypes = json['types'];
-    if (rawTypes is List) {
-      for (final row in rawTypes) {
-        if (row is! Map) continue;
-        final label = row['label'];
-        if (label is! String || label.trim().isEmpty) continue;
-        types.add(
-          _ImportedCustomType(label: label, removed: row['removed'] == true),
-        );
+    final rawLinks = json['investments'];
+    if (rawTypes is! List || rawLinks is! List) return null;
+
+    var badRows = 0;
+    final types = <_ImportedCustomType>[];
+    for (final row in rawTypes) {
+      final label = row is Map ? row['label'] : null;
+      if (row is! Map || label is! String || label.trim().isEmpty) {
+        badRows++;
+        continue;
       }
+      types.add(
+        _ImportedCustomType(label: label, removed: row['removed'] == true),
+      );
     }
     final links = <(bool, String), _ImportedCustomTypeRef>{};
-    final rawLinks = json['investments'];
-    if (rawLinks is List) {
-      for (final row in rawLinks) {
-        if (row is! Map) continue;
-        final name = row['name'];
-        final label = row['label'];
-        if (name is! String || name.trim().isEmpty) continue;
-        if (label is! String || label.trim().isEmpty) continue;
-        links[(row['archived'] == true, name.trim().toLowerCase())] =
-            _ImportedCustomTypeRef(label: label, linked: row['linked'] == true);
+    for (final row in rawLinks) {
+      final name = row is Map ? row['name'] : null;
+      final label = row is Map ? row['label'] : null;
+      if (row is! Map ||
+          name is! String ||
+          name.trim().isEmpty ||
+          label is! String ||
+          label.trim().isEmpty) {
+        badRows++;
+        continue;
       }
+      links[(row['archived'] == true, name.trim().toLowerCase())] =
+          _ImportedCustomTypeRef(label: label, linked: row['linked'] == true);
     }
+    if (types.isEmpty && links.isEmpty && badRows > 0) return null;
     return _ImportedCustomTypes(types: types, links: links);
   }
 
