@@ -23,12 +23,17 @@ class InMemoryValuationRepository implements ValuationRepository {
   Object? failNextWrite;
 
   /// When set, save, softDelete and restore store the document with this
-  /// update time, as Firestore's server timestamp does. Left null, a write
-  /// stores the snapshot as given.
+  /// update time, as Firestore's server timestamp does, and the next write is
+  /// stamped a second later: writes reach the server in order. Left null, a
+  /// write stores the snapshot as given.
   DateTime? serverTime;
 
-  InvestmentValuationSnapshot _stamped(InvestmentValuationSnapshot s) =>
-      serverTime == null ? s : s.copyWith(updatedAt: serverTime);
+  InvestmentValuationSnapshot _stamped(InvestmentValuationSnapshot s) {
+    final at = serverTime;
+    if (at == null) return s;
+    serverTime = at.add(const Duration(seconds: 1));
+    return s.copyWith(updatedAt: at);
+  }
 
   void _applyMirror(CompatMirror mirror) {
     mirrors[mirror.investmentId] = (value: mirror.value, date: mirror.date);

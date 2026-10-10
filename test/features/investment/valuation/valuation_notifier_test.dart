@@ -650,6 +650,131 @@ void main() {
     });
   });
 
+  // Follow-up to the CodeRabbit finding on the mirror: when the snapshots
+  // ranked for the mirror hold more than one with no update time, the tie was
+  // broken by id, while the server orders them by when they were written. The
+  // write of the action is always the last.
+  group('the mirror ranks the write after earlier unconfirmed ones', () {
+    final older = DateTime.utc(2026, 3, 1);
+
+    setUp(() => valuations.serverTime = DateTime.utc(2026, 9, 1));
+
+    test('a legacy value adopted by the same action is older than the new '
+        'value', () async {
+      // Both ids are random: over many rounds the adopted one outranks the
+      // new one by id about half the time, so a wrong tie-break shows.
+      for (var i = 0; i < 64; i++) {
+        final id = 'legacy$i';
+        investments.seed(
+          investments: [
+            testInvestment(id, compatValue: 125000, compatDate: day),
+          ],
+        );
+        await notifier().setValuation(
+          investmentId: id,
+          amount: 130000,
+          date: day,
+        );
+        // The adopted value reaches the server first, then the new one.
+        expect(
+          valuations.mirrors[id]!.value,
+          130000,
+          reason: 'round $i, adopted legacy value vs the new one',
+        );
+        final stored = ValuationSnapshotSelector.mirrorOf(
+          live(id),
+          investmentId: id,
+          currency: 'INR',
+        );
+        expect(stored?.amount, 130000, reason: 'round $i, as stored');
+      }
+    });
+
+    test('a new value is newer than an earlier same-day write that has not '
+        'reached the server', () async {
+      // 'zzz' outranks any generated id, so an id tie-break picks it.
+      valuations.docs['zzz'] = testSnapshot(
+        'zzz',
+        investmentId: 'gold',
+        amount: 100,
+        date: day,
+        pending: true,
+      );
+      await notifier().setValuation(
+        investmentId: 'gold',
+        amount: 200,
+        date: day,
+      );
+      expect(valuations.mirrors['gold']!.value, 200);
+    });
+
+    test('an edit is newer than an unconfirmed same-day write', () async {
+      valuations.docs['aaa'] = testSnapshot(
+        'aaa',
+        investmentId: 'gold',
+        amount: 100,
+        date: day,
+        updatedAt: older,
+      );
+      valuations.docs['zzz'] = testSnapshot(
+        'zzz',
+        investmentId: 'gold',
+        amount: 300,
+        date: day,
+        pending: true,
+      );
+      await notifier().editValuation(snapshotId: 'aaa', amount: 150);
+      expect(valuations.mirrors['gold']!.value, 150);
+    });
+
+    test('Undo is newer than an unconfirmed same-day write', () async {
+      valuations.docs['aaa'] = testSnapshot(
+        'aaa',
+        investmentId: 'gold',
+        amount: 100,
+        date: day,
+        updatedAt: older,
+      );
+      valuations.docs['zzz'] = testSnapshot(
+        'zzz',
+        investmentId: 'gold',
+        amount: 300,
+        date: day,
+        pending: true,
+      );
+      await notifier().clearValuation('aaa');
+      expect(valuations.mirrors['gold']!.value, 300);
+      expect(await notifier().undoClear(), isTrue);
+      expect(valuations.mirrors['gold']!.value, 100);
+    });
+
+    test('an unconfirmed write is still newer than a confirmed one of the same '
+        'day', () async {
+      valuations.docs['aaa'] = testSnapshot(
+        'aaa',
+        investmentId: 'gold',
+        amount: 100,
+        date: day,
+        updatedAt: older,
+      );
+      valuations.docs['bbb'] = testSnapshot(
+        'bbb',
+        investmentId: 'gold',
+        amount: 120,
+        date: day,
+        pending: true,
+      );
+      // A different day, so the write cannot decide the mirror: the newest
+      // of the same day (bbb, unconfirmed) must.
+      await notifier().setValuation(
+        investmentId: 'gold',
+        amount: 50,
+        date: day.subtract(const Duration(days: 3)),
+      );
+      expect(valuations.mirrors['gold']!.value, 120);
+    });
+  });
+
   // CodeRabbit on PR 961: an action read the whole collection several times.
   // It reads what it needs once: one investment's snapshots where the
   // investment is known, the collection once where only a snapshot id is.

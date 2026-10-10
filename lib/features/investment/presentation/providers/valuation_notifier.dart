@@ -254,7 +254,7 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
       }
       await _repository.restore(
         restored,
-        mirror: _mirrorOf(investment, [...all, _pending(restored)]),
+        mirror: _mirrorOf(investment, _withWrite(all, restored)),
       );
       _written(restored);
       return true;
@@ -317,20 +317,43 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
     InvestmentValuationSnapshot snapshot,
     List<InvestmentValuationSnapshot> others,
   ) async {
-    final all = [
-      for (final s in others)
-        if (s.id != snapshot.id) s,
-      _pending(snapshot),
-    ];
-    await _repository.save(snapshot, mirror: _mirrorOf(investment, all));
+    await _repository.save(
+      snapshot,
+      mirror: _mirrorOf(investment, _withWrite(others, snapshot)),
+    );
     _written(snapshot);
   }
 
-  /// [snapshot] as the selector must rank it for the mirror: the write gives
-  /// it the server's update time, which makes it the newest of its day, so
-  /// its old in-memory update time must not count.
-  InvestmentValuationSnapshot _pending(InvestmentValuationSnapshot snapshot) =>
-      snapshot.copyWith(clearUpdatedAt: true);
+  /// [others] and [written] as the selector will rank them once the write has
+  /// its server timestamp, for the mirror of that write. The write is the
+  /// newest of its day, so it counts as pending (no update time), however old
+  /// its in-memory copy is. A snapshot of [others] with no update time is an
+  /// earlier write that has not reached the server, or the legacy value
+  /// adopted a moment ago: it is older than [written], though both read as
+  /// pending, and would otherwise be ranked by id. It stays newer than every
+  /// confirmed snapshot.
+  List<InvestmentValuationSnapshot> _withWrite(
+    List<InvestmentValuationSnapshot> others,
+    InvestmentValuationSnapshot written,
+  ) {
+    DateTime? latestConfirmed;
+    for (final s in others) {
+      final at = s.updatedAt;
+      if (at != null &&
+          (latestConfirmed == null || at.isAfter(latestConfirmed))) {
+        latestConfirmed = at;
+      }
+    }
+    final unconfirmed = (latestConfirmed ?? DateTime.utc(1970)).add(
+      const Duration(milliseconds: 1),
+    );
+    return [
+      for (final s in others)
+        if (s.id != written.id)
+          s.updatedAt == null ? s.copyWith(updatedAt: unconfirmed) : s,
+      written.copyWith(clearUpdatedAt: true),
+    ];
+  }
 
   /// The mirror for an investment whose live snapshots are [snapshots].
   CompatMirror _mirrorOf(
