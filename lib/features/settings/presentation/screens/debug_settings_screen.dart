@@ -157,11 +157,7 @@ class DebugSettingsScreen extends ConsumerWidget {
                   .toggle(FeatureFlag.portfolioHealthScore);
 
               // Verify the toggle succeeded
-              final newState =
-                  ref.read(
-                    featureFlagsProvider,
-                  )[FeatureFlag.portfolioHealthScore] ??
-                  false;
+              final newState = ref.read(featureFlagsProvider)[FeatureFlag.portfolioHealthScore] ?? false;
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -197,9 +193,7 @@ class DebugSettingsScreen extends ConsumerWidget {
                   .toggle(FeatureFlag.reportsTab);
 
               // Verify the toggle succeeded
-              final newState =
-                  ref.read(featureFlagsProvider)[FeatureFlag.reportsTab] ??
-                  false;
+              final newState = ref.read(featureFlagsProvider)[FeatureFlag.reportsTab] ?? false;
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -235,9 +229,7 @@ class DebugSettingsScreen extends ConsumerWidget {
                   .toggle(FeatureFlag.incomeGuardian);
 
               // Verify the toggle succeeded
-              final newState =
-                  ref.read(featureFlagsProvider)[FeatureFlag.incomeGuardian] ??
-                  false;
+              final newState = ref.read(featureFlagsProvider)[FeatureFlag.incomeGuardian] ?? false;
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -293,9 +285,7 @@ class DebugSettingsScreen extends ConsumerWidget {
                   .toggle(FeatureFlag.valuationSnapshots);
 
               final newState =
-                  ref.read(
-                    featureFlagsProvider,
-                  )[FeatureFlag.valuationSnapshots] ??
+                  ref.read(featureFlagsProvider)[FeatureFlag.valuationSnapshots] ??
                   false;
 
               if (context.mounted) {
@@ -499,8 +489,7 @@ class DebugSettingsScreen extends ConsumerWidget {
                   child: CircularProgressIndicator(),
                 ),
               ),
-              error: (error, stack) =>
-                  Text(l10n.errorOccurred(error.toString())),
+              error: (error, stack) => Text(l10n.errorOccurred(error.toString())),
             ),
             actions: [
               TextButton(
@@ -531,4 +520,7 @@ class DebugSettingsScreen extends ConsumerWidget {
       ),
     );
   }
+
+
+
 }

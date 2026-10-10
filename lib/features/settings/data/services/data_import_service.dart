@@ -812,8 +812,9 @@ class DataImportService {
         cashFlows: const [],
       );
       for (final inv in investments) {
-        if (inv.isArchived)
+        if (inv.isArchived) {
           await _investmentRepository.archiveInvestment(inv.id);
+        }
       }
     }
     return nameToId;

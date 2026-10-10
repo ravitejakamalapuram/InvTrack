@@ -99,23 +99,22 @@ final documentStorageServiceProvider = Provider<DocumentStorageService>((ref) {
 
 /// Provider for the expected cash flow repository using Firestore
 /// Throws AuthException.notAuthenticated if user is not authenticated
-final expectedCashFlowRepositoryProvider = Provider<ExpectedCashFlowRepository>(
-  (ref) {
-    final firestore = ref.watch(firestoreProvider);
-    final authState = ref.watch(authStateProvider);
+final expectedCashFlowRepositoryProvider =
+    Provider<ExpectedCashFlowRepository>((ref) {
+  final firestore = ref.watch(firestoreProvider);
+  final authState = ref.watch(authStateProvider);
 
-    final user = authState.value;
-    if (user == null) {
-      throw AuthException.notAuthenticated();
-    }
+  final user = authState.value;
+  if (user == null) {
+    throw AuthException.notAuthenticated();
+  }
 
-    return FirestoreExpectedCashFlowRepository(
-      firestore: firestore,
-      userId: user.id,
-      baseCurrency: baseCurrencyReader(ref),
-    );
-  },
-);
+  return FirestoreExpectedCashFlowRepository(
+    firestore: firestore,
+    userId: user.id,
+    baseCurrency: baseCurrencyReader(ref),
+  );
+});
 
 /// Provider for the server-confirmed account data deletion service.
 /// Throws AuthException.notAuthenticated if user is not authenticated.
