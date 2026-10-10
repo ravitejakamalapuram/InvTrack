@@ -5,6 +5,10 @@
 // deleteArchivedInvestment and bulkDelete throw, deleting nothing, rather
 // than orphan them when they cannot tell which exist.
 //
+// #917: the same holds for the investment's expected payments
+// (users/{uid}/expectedCashFlows), which no listener keeps cached while
+// Income Guardian is off.
+//
 // ignore_for_file: subtype_of_sealed_class
 import 'dart:async';
 
@@ -47,6 +51,7 @@ QuerySnapshot<Map<String, dynamic>> _snapshotOf(List<_MockDoc> refs) {
 void main() {
   const uid = 'user-1';
   const id = 'inv-1';
+  const otherId = 'inv-2';
   late _MockFirestore firestore;
   late Map<String, _MockCollection> collections;
   late Map<String, _MockDoc> investmentDocs;
@@ -116,6 +121,7 @@ void main() {
         'archivedInvestments',
         'archivedCashflows',
         'valuations',
+        'expectedCashFlows',
       ])
         name: _MockCollection(),
     };
@@ -128,10 +134,16 @@ void main() {
       when(() => userDoc.collection(name)).thenReturn(collection);
     });
     for (final name in ['investments', 'archivedInvestments']) {
-      when(() => collections[name]!.doc(id)).thenAnswer(
-        (_) => investmentDocs.putIfAbsent('$name/$id', _MockDoc.new),
-      );
+      for (final investmentId in [id, otherId]) {
+        when(() => collections[name]!.doc(investmentId)).thenAnswer(
+          (_) =>
+              investmentDocs.putIfAbsent('$name/$investmentId', _MockDoc.new),
+        );
+      }
     }
+    // Unless a test says otherwise, the investment has no expected payments.
+    stubDocs('expectedCashFlows', id, []);
+    stubDocs('expectedCashFlows', otherId, []);
     when(() => firestore.batch()).thenAnswer((_) {
       final batch = _MockBatch();
       final deleted = <DocumentReference>[];
@@ -347,6 +359,161 @@ void main() {
     test('throws, deleting nothing, when snapshots cannot be listed', () async {
       stubDocs('cashflows', id, []);
       stubUnreadable('valuations', id);
+
+      await expectLater(
+        () => repository.bulkDelete([id]),
+        throwsA(isA<NetworkException>()),
+      );
+      expect(batches, isEmpty);
+    });
+  });
+
+  // #917: an investment's expected payments go with it, in the same batches.
+  group('expected payments', () {
+    setUp(() {
+      // Nothing else belongs to the investment unless a test says so.
+      for (final collection in [
+        'cashflows',
+        'archivedCashflows',
+        'valuations',
+      ]) {
+        stubDocs(collection, id, []);
+      }
+    });
+
+    test('deleteInvestment deletes them with the cash flows, snapshots and '
+        'the investment in one batch', () async {
+      final cf = _MockDoc();
+      final snapshot = _MockDoc();
+      final payment1 = _MockDoc();
+      final payment2 = _MockDoc();
+      stubDocs('cashflows', id, [cf]);
+      stubDocs('valuations', id, [snapshot]);
+      stubDocs('expectedCashFlows', id, [payment1, payment2]);
+
+      await repository.deleteInvestment(id);
+
+      expect(batches, hasLength(1));
+      expect(
+        deletedPerBatch.single,
+        containsAll([cf, snapshot, payment1, payment2]),
+      );
+      expect(
+        deletedPerBatch.single,
+        contains(investmentDocs['investments/$id']),
+      );
+      expect(deletedPerBatch.single, hasLength(5));
+    });
+
+    test('deleteInvestment deletes payments only the server holds, and a '
+        'payment written offline once', () async {
+      final remote = _MockDoc();
+      final pending = _MockDoc();
+      stubDocs(
+        'expectedCashFlows',
+        id,
+        [pending, remote],
+        serverRefs: [remote],
+      );
+
+      await repository.deleteInvestment(id);
+
+      final all = deletedPerBatch.expand((d) => d).toList();
+      expect(all.where((d) => d == remote), hasLength(1));
+      expect(all.where((d) => d == pending), hasLength(1));
+    });
+
+    test('deleteInvestment deletes payments the server holds when the cache '
+        'is empty', () async {
+      final remote = _MockDoc();
+      stubDocs('expectedCashFlows', id, [], serverRefs: [remote]);
+
+      await repository.deleteInvestment(id);
+
+      expect(deletedPerBatch.expand((d) => d), contains(remote));
+    });
+
+    test('deleteInvestment throws, deleting nothing, when payments cannot be '
+        'listed', () async {
+      stubUnreadable('expectedCashFlows', id);
+
+      await expectLater(
+        () => repository.deleteInvestment(id),
+        throwsA(isA<NetworkException>()),
+      );
+      expect(batches, isEmpty);
+    });
+
+    test('deleteInvestment keeps every batch within the limit and removes '
+        'the investment last', () async {
+      stubDocs('cashflows', id, [for (var i = 0; i < 300; i++) _MockDoc()]);
+      stubDocs('expectedCashFlows', id, [
+        for (var i = 0; i < 300; i++) _MockDoc(),
+      ]);
+
+      await repository.deleteInvestment(id);
+
+      for (final deleted in deletedPerBatch) {
+        expect(deleted.length, lessThanOrEqualTo(450));
+      }
+      final all = deletedPerBatch.expand((d) => d).toList();
+      expect(all, hasLength(601));
+      expect(all.last, investmentDocs['investments/$id']);
+    });
+
+    test('deleteArchivedInvestment deletes them with the archived cash '
+        'flows and the investment', () async {
+      final cf = _MockDoc();
+      final payment = _MockDoc();
+      final remote = _MockDoc();
+      stubDocs('archivedCashflows', id, [cf]);
+      stubDocs('expectedCashFlows', id, [payment], serverRefs: [remote]);
+
+      await repository.deleteArchivedInvestment(id);
+
+      expect(batches, hasLength(1));
+      expect(deletedPerBatch.single, containsAll([cf, payment, remote]));
+      expect(
+        deletedPerBatch.single,
+        contains(investmentDocs['archivedInvestments/$id']),
+      );
+    });
+
+    test('deleteArchivedInvestment throws, deleting nothing, when payments '
+        'cannot be listed', () async {
+      stubDocs('archivedCashflows', id, []);
+      stubUnreadable('expectedCashFlows', id);
+
+      await expectLater(
+        () => repository.deleteArchivedInvestment(id),
+        throwsA(isA<NetworkException>()),
+      );
+      expect(batches, isEmpty);
+    });
+
+    test('bulkDelete deletes the payments of every investment', () async {
+      final payment1 = _MockDoc();
+      final payment2 = _MockDoc();
+      stubDocs('cashflows', id, []);
+      stubDocs('cashflows', otherId, []);
+      stubDocs('valuations', id, []);
+      stubDocs('valuations', otherId, []);
+      stubDocs('expectedCashFlows', id, [payment1]);
+      stubDocs('expectedCashFlows', otherId, [], serverRefs: [payment2]);
+
+      expect(await repository.bulkDelete([id, otherId]), 2);
+
+      final all = deletedPerBatch.expand((d) => d).toList();
+      expect(all, containsAll([payment1, payment2]));
+      expect(all, contains(investmentDocs['investments/$id']));
+      expect(all, contains(investmentDocs['investments/$otherId']));
+    });
+
+    test('bulkDelete throws, deleting nothing, when payments cannot be '
+        'listed', () async {
+      stubDocs('cashflows', id, []);
+      stubDocs('valuations', id, []);
+      stubUnreadable('expectedCashFlows', id);
 
       await expectLater(
         () => repository.bulkDelete([id]),

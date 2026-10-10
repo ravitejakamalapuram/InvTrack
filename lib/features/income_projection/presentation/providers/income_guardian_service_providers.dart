@@ -1,15 +1,22 @@
 /// Income Guardian service providers for background monitoring and sync
 library;
 
+import 'dart:async';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
+import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/core/notifications/handlers/income_guardian_notification_handler.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/income_projection/data/services/income_guardian_monitor_service.dart';
 import 'package:inv_tracker/features/income_projection/data/services/income_guardian_sync_service.dart';
+import 'package:inv_tracker/features/income_projection/data/services/orphaned_expected_cash_flow_cleanup_service.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/income_guardian_settings_provider.dart';
 
 // ============ FLUTTER LOCAL NOTIFICATIONS PLUGIN ============
@@ -79,6 +86,24 @@ final incomeGuardianSyncServiceProvider = Provider<IncomeGuardianSyncService>((r
   );
 });
 
+// ============ ORPHANED EXPECTED PAYMENT CLEANUP ============
+
+/// Provider for the one-off removal of expected payments whose investment no
+/// longer exists (#917).
+/// Throws AuthException.notAuthenticated if user is not authenticated.
+final orphanedExpectedCashFlowCleanupServiceProvider =
+    Provider<OrphanedExpectedCashFlowCleanupService>((ref) {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) {
+    throw AuthException.notAuthenticated();
+  }
+  return OrphanedExpectedCashFlowCleanupService(
+    firestore: ref.watch(firestoreProvider),
+    userId: user.id,
+    prefs: ref.watch(sharedPreferencesProvider),
+  );
+});
+
 // ============ SERVICE INITIALIZATION ============
 
 /// Provider to initialize Income Guardian services
@@ -89,22 +114,48 @@ final incomeGuardianSyncServiceProvider = Provider<IncomeGuardianSyncService>((r
 /// Nothing starts while [FeatureFlag.incomeGuardian] is off: the feature is
 /// hidden, and the sync would otherwise query Firestore once per INCOME cash
 /// flow on every launch. Turning the flag off stops running services.
+///
+/// Expected payments of investments that were deleted are removed first (#917;
+/// once per user, and a failed attempt does not keep the services from
+/// starting), so that nothing reminds the user of a payment for an investment
+/// that no longer exists.
 final incomeGuardianServiceInitializerProvider = Provider<void>((ref) {
   if (!ref.watch(isIncomeGuardianEnabledProvider)) return;
 
   // Get services
+  final cleanup = ref.watch(orphanedExpectedCashFlowCleanupServiceProvider);
   final monitorService = ref.watch(incomeGuardianMonitorServiceProvider);
   final syncService = ref.watch(incomeGuardianSyncServiceProvider);
 
-  // Start monitoring for notifications
-  monitorService.startMonitoring();
-
-  // Start background sync for auto-matching
-  syncService.startSync();
+  var disposed = false;
+  var started = false;
 
   // Cleanup on dispose
   ref.onDispose(() {
+    disposed = true;
+    if (!started) return;
     monitorService.stopMonitoring();
     syncService.stopSync();
   });
+
+  unawaited(() async {
+    try {
+      await cleanup.runOnce();
+      // The flag was turned off, or the user changed, while it ran.
+      if (disposed || !ref.read(isIncomeGuardianEnabledProvider)) return;
+      started = true;
+
+      // Start monitoring for notifications
+      monitorService.startMonitoring();
+
+      // Start background sync for auto-matching
+      syncService.startSync();
+    } catch (e) {
+      LoggerService.error(
+        'Error starting Income Guardian services',
+        error: e,
+        metadata: {'service': 'IncomeGuardianServiceInitializer'},
+      );
+    }
+  }());
 });
