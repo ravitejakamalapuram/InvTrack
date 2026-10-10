@@ -1,12 +1,20 @@
 import { beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { runJob, requestByEmail, hashUid } from '../run.mjs';
 import { verifyRun } from '../verify-run.mjs';
+import { verifyUserGone } from '../verify.mjs';
 import { deleteUserData } from '../delete.mjs';
 import { createGa4Deletion } from '../ga4.mjs';
 import { auth, authExists, db, DAY, exists, quiet, resetEmulators, seedRequest, seedUser, snapshot } from './helpers.mjs';
 
 const opts = (over = {}) => ({ db, auth, runId: 'run1', dryRun: false, log: quiet, ...over });
+// A made-up uid that is easy to search for in anything the job prints or writes.
+const LEAK_UID = 'leakcanary7Zq2';
+const LEAK_EMAIL = 'leak.canary7zq2@example.org';
 
 beforeEach(resetEmulators);
 
@@ -349,6 +357,15 @@ describe('verifier must fail when deletion is incomplete (mutation tests)', () =
     assert.equal((await db.doc(`deletionAudit/run1-${hashUid('u1')}`).get()).get('verified'), false);
   });
 
+  it('reports leftover subcollections by count, never by their user-chosen names', async () => {
+    await seedUser('u1');
+    await db.doc('users/u1/canaryCollection7Zq/d1').set({ x: 1 });
+    const v = await verifyUserGone({ db, auth, uid: 'u1' });
+    assert.ok(!JSON.stringify(v.problems).includes('canaryCollection7Zq'), JSON.stringify(v.problems));
+    assert.ok(!JSON.stringify(v.problems).includes('investments'), JSON.stringify(v.problems));
+    assert.ok(v.problems.includes('4 subcollection(s) still exist'), JSON.stringify(v.problems));
+  });
+
   it('flags an Auth user that still exists', async () => {
     await seedUser('u1');
     await seedRequest('u1', 2 * DAY);
@@ -361,34 +378,234 @@ describe('verifier must fail when deletion is incomplete (mutation tests)', () =
 });
 
 describe('independent verify job', () => {
+  // The verify job is given the run id and nothing else: no uid ever leaves the run job, because a step's env is
+  // printed in a public log. It finds the run's accounts through the hashed deletionAudit records.
   it('passes after a clean run', async () => {
     await seedUser('u1');
+    await seedUser('u2'); // not part of the run: must never be flagged
     await seedRequest('u1', 2 * DAY);
-    const out = await runJob(opts());
-    const v = await verifyRun({ db, auth, runId: 'run1', uids: out.processedUids });
+    await runJob(opts());
+    const v = await verifyRun({ db, auth, runId: 'run1' });
     assert.deepEqual(v.problems, []);
     assert.equal(v.ok, true);
   });
 
-  it('fails when data or the Auth user of a processed uid is back, an orphan exists, or the run record is missing', async () => {
+  it('reads audit records that carry both the run id and an Analytics outcome, whatever the outcome', async () => {
+    const outcomes = {
+      u1: { outcome: 'requested', status: 200 },
+      u2: { outcome: 'failed', status: 403 },
+      u3: { outcome: 'not-configured', status: null },
+    };
+    const ga4 = async (uid) => outcomes[uid];
+    for (const uid of ['u1', 'u2', 'u3']) {
+      await seedUser(uid);
+      await seedRequest(uid, 1.5 * DAY); // past the 24 h window, inside cooling + 1 day
+    }
+    const out = await runJob(opts({ ga4 }));
+    assert.equal(out.exitCode, 0);
+    for (const [uid, ga4Outcome] of [['u1', 'requested'], ['u2', 'failed'], ['u3', 'not-configured']]) {
+      const audit = await db.doc(`deletionAudit/run1-${hashUid(uid)}`).get();
+      assert.equal(audit.get('runId'), 'run1');
+      assert.equal(audit.get('ga4'), ga4Outcome);
+    }
+    assert.equal(await exists('deletionRequests/u2'), true, 'a failed Analytics request keeps the request for a retry');
+    const clean = await verifyRun({ db, auth, runId: 'run1' });
+    assert.deepEqual(clean.problems, []);
+    // The account whose Analytics request failed is still found by its hash.
+    await seedUser('u2');
+    const back = await verifyRun({ db, auth, runId: 'run1' });
+    assert.ok(back.problems.some((p) => p.includes(hashUid('u2')) && /auth user still exists/.test(p)), back.problems.join('\n'));
+    assert.ok(!back.problems.some((p) => p.includes(hashUid('u1')) || p.includes(hashUid('u3'))), back.problems.join('\n'));
+  });
+
+  it('finds an account that came back, by hash, without being given any uid', async () => {
     await seedUser('u1');
     await seedRequest('u1', 2 * DAY);
-    const out = await runJob(opts());
+    await runJob(opts());
     await seedUser('u1'); // resurrect it after the run reported success
-    const v = await verifyRun({ db, auth, runId: 'run1', uids: out.processedUids });
+    const v = await verifyRun({ db, auth, runId: 'run1' });
     assert.equal(v.ok, false);
-    assert.ok(v.problems.some((p) => /auth user still exists/.test(p)));
+    assert.ok(v.problems.some((p) => p.includes(hashUid('u1')) && /auth user still exists/.test(p)), v.problems.join('\n'));
+    assert.ok(v.problems.some((p) => p.includes(hashUid('u1')) && /users data still exists/.test(p)), v.problems.join('\n'));
+    assert.ok(!v.problems.join('\n').includes('u1@example.com'));
+    assert.ok(!v.problems.join('\n').replaceAll(hashUid('u1'), '').includes('u1'), 'problem text must hold the hash, never the uid');
+  });
 
+  it('finds data that came back after the Auth user stayed gone', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    await runJob(opts());
+    await db.doc('users/u1/investments/i9').set({ x: 1 }); // a stale client wrote again
+    const v = await verifyRun({ db, auth, runId: 'run1' });
+    assert.ok(v.problems.some((p) => p.includes(hashUid('u1')) && /users data still exists/.test(p)), v.problems.join('\n'));
+  });
+
+  it('still re-checks the accounts of a run that has no run record (it failed part-way)', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    await runJob(opts());
+    await db.doc('deletionRuns/run1').delete();
+    await seedUser('u1');
+    const v = await verifyRun({ db, auth, runId: 'run1' });
+    assert.ok(v.problems.some((p) => /missing/.test(p)));
+    assert.ok(v.problems.some((p) => /auth user still exists/.test(p)));
+  });
+
+  it('does not flag accounts of another run', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    await runJob(opts({ runId: 'run0' }));
+    await seedUser('u1');
+    await db.doc('deletionRuns/run1').set({ refused: false });
+    const v = await verifyRun({ db, auth, runId: 'run1' });
+    assert.ok(!v.problems.some((p) => /still exists/.test(p)), v.problems.join('\n'));
+  });
+
+  it('fails when an orphan exists or the run record is missing', async () => {
     await db.doc('users/orphan/investments/i1').set({ x: 1 });
-    const v2 = await verifyRun({ db, auth, runId: 'missing-run', uids: [] });
-    assert.ok(v2.problems.some((p) => /orphaned/.test(p)));
-    assert.ok(v2.problems.some((p) => /missing/.test(p)));
+    const v = await verifyRun({ db, auth, runId: 'missing-run' });
+    assert.ok(v.problems.some((p) => /orphaned/.test(p)));
+    assert.ok(v.problems.some((p) => /missing/.test(p)));
   });
 
   it('fails on a request older than cooling + 1 day', async () => {
     await db.doc('deletionRuns/run1').set({ refused: false });
     await seedRequest('old', 3 * DAY);
-    const v = await verifyRun({ db, auth, runId: 'run1', uids: [] });
+    const v = await verifyRun({ db, auth, runId: 'run1' });
     assert.ok(v.problems.some((p) => /older than cooling/.test(p)));
+  });
+});
+
+describe('run.mjs as the workflow starts it', () => {
+  // Spawned for real, the way the workflow does it, so the GITHUB_OUTPUT it leaves behind is what the verify job sees.
+  const start = (extra = {}, nodeArgs = [], script = 'run.mjs') => {
+    const dir = mkdtempSync(join(tmpdir(), 'run-mjs-'));
+    const outFile = join(dir, 'output');
+    const summaryFile = join(dir, 'summary');
+    writeFileSync(outFile, '');
+    writeFileSync(summaryFile, '');
+    const r = spawnSync(process.execPath, [...nodeArgs, new URL(`../${script}`, import.meta.url).pathname], {
+      env: { ...process.env, DRY_RUN: 'false', GITHUB_RUN_ID: '777', GITHUB_RUN_ATTEMPT: '2', GCLOUD_PROJECT: 'demo-invtrack', GITHUB_OUTPUT: outFile, GITHUB_STEP_SUMMARY: summaryFile, ...extra },
+      encoding: 'utf8',
+      timeout: 60_000,
+    });
+    const output = readFileSync(outFile, 'utf8');
+    const summary = readFileSync(summaryFile, 'utf8');
+    rmSync(dir, { recursive: true, force: true });
+    return { status: r.status, output, summary, log: `${r.stdout}${r.stderr}` };
+  };
+
+  it('hands the next job the run id and no uid', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    const r = start();
+    assert.equal(r.status, 0, r.log);
+    assert.equal(r.output, 'run_id=777-2\n');
+    assert.equal(await authExists('u1'), false);
+    assert.equal((await db.doc(`deletionAudit/777-2-${hashUid('u1')}`).get()).exists, true);
+  });
+
+  it('announces the run id before it touches anything, so verify still runs when the job crashes', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    // The Auth emulator is unreachable, so the run dies on its first Auth call.
+    const r = start({ FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:1' });
+    assert.notEqual(r.status, 0, 'the run is meant to crash here');
+    assert.equal(r.output, 'run_id=777-2\n');
+  });
+
+  // The step summary and the log of this job are public. A library error can be codeless and carry the uid in its
+  // message, so only a short code may be recorded (see safe-error.mjs). fault-auth.mjs makes one Auth call throw such an error.
+  const faulty = (method) =>
+    start({ FAULT_AUTH_METHOD: method }, ['--import', new URL('./fault-auth.mjs', import.meta.url).href]);
+  const assertNoUid = (r, uid) => {
+    assert.ok(!r.summary.includes(uid), `the uid reached the step summary:\n${r.summary}`);
+    assert.ok(!r.log.includes(uid), `the uid reached stdout or stderr:\n${r.log}`);
+  };
+
+  it('keeps the uid out of the summary, stdout and stderr when deleteUser throws a codeless error', async () => {
+    await seedUser(LEAK_UID);
+    await seedRequest(LEAK_UID, 2 * DAY);
+    const r = faulty('deleteUser');
+    assert.equal(r.status, 1, r.log);
+    assertNoUid(r, LEAK_UID);
+    assert.ok(r.summary.includes(`| ${hashUid(LEAK_UID)} | request | - | - | - | error |`), r.summary);
+  });
+
+  it('keeps the uid out of the summary, stdout and stderr when the Auth lookup in the verifier throws a codeless error', async () => {
+    await seedUser(LEAK_UID);
+    await seedRequest(LEAK_UID, 2 * DAY);
+    const r = faulty('getUser');
+    assert.equal(r.status, 1, r.log);
+    assertNoUid(r, LEAK_UID);
+    assert.ok(r.summary.includes('auth lookup failed: error'), r.summary);
+  });
+
+  // Errors outside the per-uid loop reach the top-level handler. It must print a fixed message and a safe code, never
+  // the error, whose message can hold a uid or an email.
+  const planted = { FAULT_AUTH_UID: LEAK_UID, FAULT_AUTH_EMAIL: LEAK_EMAIL };
+  const faultyAt = (method, extra = {}, script = 'run.mjs') =>
+    start({ FAULT_AUTH_METHOD: method, ...planted, ...extra }, ['--import', new URL('./fault-auth.mjs', import.meta.url).href], script);
+  const assertNothingPlanted = (r) => {
+    for (const value of [LEAK_UID, LEAK_EMAIL]) {
+      assert.ok(!r.log.includes(value), `a planted value reached stdout or stderr:\n${r.log}`);
+      assert.ok(!r.summary.includes(value), `a planted value reached the step summary:\n${r.summary}`);
+    }
+    assert.notEqual(r.status, 0, r.log);
+  };
+
+  it('keeps the uid and email out of the log when the orphan scan (Auth.getUsers) throws a codeless error', async () => {
+    await seedUser(LEAK_UID);
+    const r = faultyAt('getUsers');
+    assertNothingPlanted(r);
+    assert.match(r.log, /\(error\)/, 'the failure is still reported, by code only');
+  });
+
+  it('keeps the uid and email out of the log when the email request (Auth.getUserByEmail) throws a codeless error', async () => {
+    const r = faultyAt('getUserByEmail', { REQUEST_EMAIL: LEAK_EMAIL });
+    assertNothingPlanted(r);
+    assert.match(r.log, /\(error\)/);
+    assert.equal(await exists(`deletionRequests/${LEAK_UID}`), false);
+  });
+
+  it('keeps the uid and email out of the log when verify-run (Auth.listUsers) throws a codeless error', async () => {
+    await db.doc(`deletionAudit/777-2-${hashUid(LEAK_UID)}`).set({ runId: '777-2', uidHash: hashUid(LEAK_UID) });
+    const r = faultyAt('listUsers', { RUN_ID: '777-2' }, 'verify-run.mjs');
+    assertNothingPlanted(r);
+    assert.match(r.log, /\(error\)/);
+  });
+
+  it('keeps the uid and email out of the log when verify-run reaches the orphan scan (Auth.getUsers) and it throws', async () => {
+    await seedUser(LEAK_UID);
+    const r = faultyAt('getUsers', { RUN_ID: '777-2' }, 'verify-run.mjs');
+    assertNothingPlanted(r);
+    assert.match(r.log, /\(error\)/);
+  });
+});
+
+describe('error text recorded for a failed account', () => {
+  it('records only a safe code, never the message of an error that holds the uid', async () => {
+    await seedRequest(LEAK_UID, 2 * DAY);
+    const deleter = async ({ uid }) => {
+      throw new Error(`could not delete ${uid}`);
+    };
+    const out = await runJob(opts({ deleter }));
+    assert.equal(out.results[0].error, 'error');
+    assert.ok(!JSON.stringify(out).includes(LEAK_UID));
+  });
+
+  it('keeps a short error code', async () => {
+    await seedRequest(LEAK_UID, 2 * DAY);
+    const deleter = async () => {
+      throw Object.assign(new Error('x'), { code: 'auth/internal-error' });
+    };
+    const out = await runJob(opts({ deleter }));
+    assert.equal(out.results[0].error, 'auth/internal-error');
+  });
+
+  it('the verifier reports a failed Auth lookup by code only', async () => {
+    const lookup = (e) => verifyUserGone({ db, auth: { getUser: async () => { throw e; } }, uid: LEAK_UID });
+    assert.deepEqual((await lookup(new Error(`lookup of ${LEAK_UID} failed`))).problems, ['auth lookup failed: error']);
+    assert.deepEqual((await lookup(Object.assign(new Error('x'), { code: 'auth/internal-error' }))).problems, ['auth lookup failed: auth/internal-error']);
   });
 });
