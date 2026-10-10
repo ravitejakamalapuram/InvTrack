@@ -14,6 +14,7 @@ import { auth, authExists, db, DAY, exists, quiet, resetEmulators, seedRequest, 
 const opts = (over = {}) => ({ db, auth, runId: 'run1', dryRun: false, log: quiet, ...over });
 // A made-up uid that is easy to search for in anything the job prints or writes.
 const LEAK_UID = 'leakcanary7Zq2';
+const LEAK_EMAIL = 'leak.canary7zq2@example.org';
 
 beforeEach(resetEmulators);
 
@@ -356,6 +357,15 @@ describe('verifier must fail when deletion is incomplete (mutation tests)', () =
     assert.equal((await db.doc(`deletionAudit/run1-${hashUid('u1')}`).get()).get('verified'), false);
   });
 
+  it('reports leftover subcollections by count, never by their user-chosen names', async () => {
+    await seedUser('u1');
+    await db.doc('users/u1/canaryCollection7Zq/d1').set({ x: 1 });
+    const v = await verifyUserGone({ db, auth, uid: 'u1' });
+    assert.ok(!JSON.stringify(v.problems).includes('canaryCollection7Zq'), JSON.stringify(v.problems));
+    assert.ok(!JSON.stringify(v.problems).includes('investments'), JSON.stringify(v.problems));
+    assert.ok(v.problems.includes('4 subcollection(s) still exist'), JSON.stringify(v.problems));
+  });
+
   it('flags an Auth user that still exists', async () => {
     await seedUser('u1');
     await seedRequest('u1', 2 * DAY);
@@ -468,13 +478,13 @@ describe('independent verify job', () => {
 
 describe('run.mjs as the workflow starts it', () => {
   // Spawned for real, the way the workflow does it, so the GITHUB_OUTPUT it leaves behind is what the verify job sees.
-  const start = (extra = {}, nodeArgs = []) => {
+  const start = (extra = {}, nodeArgs = [], script = 'run.mjs') => {
     const dir = mkdtempSync(join(tmpdir(), 'run-mjs-'));
     const outFile = join(dir, 'output');
     const summaryFile = join(dir, 'summary');
     writeFileSync(outFile, '');
     writeFileSync(summaryFile, '');
-    const r = spawnSync(process.execPath, [...nodeArgs, new URL('../run.mjs', import.meta.url).pathname], {
+    const r = spawnSync(process.execPath, [...nodeArgs, new URL(`../${script}`, import.meta.url).pathname], {
       env: { ...process.env, DRY_RUN: 'false', GITHUB_RUN_ID: '777', GITHUB_RUN_ATTEMPT: '2', GCLOUD_PROJECT: 'demo-invtrack', GITHUB_OUTPUT: outFile, GITHUB_STEP_SUMMARY: summaryFile, ...extra },
       encoding: 'utf8',
       timeout: 60_000,
@@ -529,6 +539,47 @@ describe('run.mjs as the workflow starts it', () => {
     assert.equal(r.status, 1, r.log);
     assertNoUid(r, LEAK_UID);
     assert.ok(r.summary.includes('auth lookup failed: error'), r.summary);
+  });
+
+  // Errors outside the per-uid loop reach the top-level handler. It must print a fixed message and a safe code, never
+  // the error, whose message can hold a uid or an email.
+  const planted = { FAULT_AUTH_UID: LEAK_UID, FAULT_AUTH_EMAIL: LEAK_EMAIL };
+  const faultyAt = (method, extra = {}, script = 'run.mjs') =>
+    start({ FAULT_AUTH_METHOD: method, ...planted, ...extra }, ['--import', new URL('./fault-auth.mjs', import.meta.url).href], script);
+  const assertNothingPlanted = (r) => {
+    for (const value of [LEAK_UID, LEAK_EMAIL]) {
+      assert.ok(!r.log.includes(value), `a planted value reached stdout or stderr:\n${r.log}`);
+      assert.ok(!r.summary.includes(value), `a planted value reached the step summary:\n${r.summary}`);
+    }
+    assert.notEqual(r.status, 0, r.log);
+  };
+
+  it('keeps the uid and email out of the log when the orphan scan (Auth.getUsers) throws a codeless error', async () => {
+    await seedUser(LEAK_UID);
+    const r = faultyAt('getUsers');
+    assertNothingPlanted(r);
+    assert.match(r.log, /\(error\)/, 'the failure is still reported, by code only');
+  });
+
+  it('keeps the uid and email out of the log when the email request (Auth.getUserByEmail) throws a codeless error', async () => {
+    const r = faultyAt('getUserByEmail', { REQUEST_EMAIL: LEAK_EMAIL });
+    assertNothingPlanted(r);
+    assert.match(r.log, /\(error\)/);
+    assert.equal(await exists(`deletionRequests/${LEAK_UID}`), false);
+  });
+
+  it('keeps the uid and email out of the log when verify-run (Auth.listUsers) throws a codeless error', async () => {
+    await db.doc(`deletionAudit/777-2-${hashUid(LEAK_UID)}`).set({ runId: '777-2', uidHash: hashUid(LEAK_UID) });
+    const r = faultyAt('listUsers', { RUN_ID: '777-2' }, 'verify-run.mjs');
+    assertNothingPlanted(r);
+    assert.match(r.log, /\(error\)/);
+  });
+
+  it('keeps the uid and email out of the log when verify-run reaches the orphan scan (Auth.getUsers) and it throws', async () => {
+    await seedUser(LEAK_UID);
+    const r = faultyAt('getUsers', { RUN_ID: '777-2' }, 'verify-run.mjs');
+    assertNothingPlanted(r);
+    assert.match(r.log, /\(error\)/);
   });
 });
 

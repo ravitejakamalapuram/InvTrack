@@ -202,7 +202,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   main().then(
     (code) => process.exit(code),
     (e) => {
-      console.error(e);
+      // This log is public and an error message can hold a uid or an email, so only a short code is printed.
+      console.error(`account-deletion run failed (${safeErrorCode(e)}); details are withheld because this log is public.`);
       process.exit(1);
     },
   );

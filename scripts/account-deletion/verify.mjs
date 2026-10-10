@@ -20,7 +20,8 @@ export async function verifyUserGone({ db, auth, uid }) {
 
   const collections = await ref.listCollections();
   if (collections.length > 0) {
-    problems.push(`subcollections still exist: ${collections.map((c) => c.id).join(', ')}`);
+    // A count, not the names: subcollection names under users/<uid> can be user-chosen, and this text reaches a public summary.
+    problems.push(`${collections.length} subcollection(s) still exist`);
   }
 
   const remaining = await countRefs(ref);

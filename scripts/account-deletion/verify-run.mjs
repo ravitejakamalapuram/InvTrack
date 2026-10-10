@@ -7,6 +7,7 @@ import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { hashUid } from './run.mjs';
+import { safeErrorCode } from './safe-error.mjs';
 import { COOLING_MS, findOrphans } from './sweep.mjs';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -62,7 +63,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   main().then(
     (code) => process.exit(code),
     (e) => {
-      console.error(e);
+      // This log is public and an error message can hold a uid or an email, so only a short code is printed.
+      console.error(`verify could not finish (${safeErrorCode(e)}); details are withheld because this log is public.`);
       process.exit(1);
     },
   );
