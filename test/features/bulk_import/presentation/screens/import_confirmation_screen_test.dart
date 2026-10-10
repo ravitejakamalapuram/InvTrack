@@ -799,6 +799,24 @@ void main() {
       }
     });
 
+    testWidgets('no empty counts line while every group is paused', (
+      tester,
+    ) async {
+      await pumpScreen(
+        tester,
+        result: savedAndNew,
+        existingInvestments: [holderA, holderB],
+        existingCashFlows: [savedIn(holderA), savedIn(holderB)],
+      );
+
+      expect(find.text(_l10n.importPausedTitle), findsOneWidget);
+      expect(find.text(ambiguousWarning), findsOneWidget);
+      expect(
+        find.textContaining('will import once the pause is resolved'),
+        findsNothing,
+      );
+    });
+
     testWidgets('a tap that was already on its way when the data turned '
         'ambiguous writes nothing', (tester) async {
       final later = StreamController<List<InvestmentEntity>>();

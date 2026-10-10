@@ -373,16 +373,22 @@ class _ImportConfirmationScreenState
                       : l10n.importPausedTitle,
                   style: AppTypography.h3,
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  (pausedNames.isEmpty
-                      ? l10n.importCountsSummary
-                      : l10n.importPausedCountsSummary)(
-                    l10n.importInvestmentCount(newInvestmentCount),
-                    l10n.importCashFlowCount(cashFlowCount),
+                // With every group paused there is nothing else to import, so
+                // "0 investments • 0 cash flows will import…" would mislead.
+                if (pausedNames.isEmpty ||
+                    newInvestmentCount > 0 ||
+                    cashFlowCount > 0) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    (pausedNames.isEmpty
+                        ? l10n.importCountsSummary
+                        : l10n.importPausedCountsSummary)(
+                      l10n.importInvestmentCount(newInvestmentCount),
+                      l10n.importCashFlowCount(cashFlowCount),
+                    ),
+                    style: AppTypography.body,
                   ),
-                  style: AppTypography.body,
-                ),
+                ],
                 if (widget.parseResult.hasErrors) ...[
                   const SizedBox(height: AppSpacing.xs),
                   Text(
