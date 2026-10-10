@@ -8,7 +8,7 @@ Server-side deletion of InvTrack account data (Firestore `users/{uid}` tree + Fi
 2. **Orphan sweep**: uids from `collection('users').listDocuments()` (the parent doc is never written, so `.get()` would be empty) that `auth.getUsers()` reports as not found.
 3. **Guest sweep** (off unless `SWEEP_INACTIVE_GUESTS=<days>`, workflow input `sweep_inactive_guests_days`): Auth users with no linked provider and no activity for that many days.
 4. **Cap**: more than `max_per_run` (25) candidates and no `force` -> nothing is deleted, `deletionRuns/{runId}` gets `refused: true`, exit 2.
-5. **Per uid**: `recursiveDelete(users/{uid})` -> `auth.deleteUser` -> `verify.mjs` -> `deletionAudit/{runId}-{sha256(uid)[:16]}` (no raw uid, no email) -> delete the request **last**. A crash or a failed verify leaves the request for the next run.
+5. **Per uid**: `recursiveDelete(users/{uid})` -> `auth.deleteUser` -> `verify.mjs` -> `deletionAudit/{runId}-{sha256(uid)[:16]}` (the run id and the hash; no raw uid, no email) -> delete the request **last**. A crash or a failed verify leaves the request for the next run.
 6. **Alert**: a request still pending after 3 days fails the run (the page promises 7 days).
 7. `dry_run` (default **true**) prints the plan and writes nothing: no audit, no run record, no deletes.
 
@@ -19,11 +19,11 @@ Exit codes: 0 ok, 1 failure (verify mismatch, error, stale request), 2 refused b
 ## Verification
 
 - `verify.mjs`: per uid, `users/{uid}` absent, no subcollections, zero document paths below it, and `auth.getUser` -> `user-not-found`. Shares no code with `delete.mjs`.
-- `verify-run.mjs` (workflow job `verify`, fresh process): re-checks every processed uid, that `deletionRuns/{runId}` exists with `refused: false`, that the orphan sweep finds 0, and that no request older than cooling + 1 day remains.
+- `verify-run.mjs` (workflow job `verify`, fresh process): takes the run id only. It reads that run's `deletionAudit` records (hashes), lists the `users/` documents and the Auth users that exist now and fails if the hash of any of them is in the run's set (an account or its data came back); that `deletionRuns/{runId}` exists with `refused: false`; that the orphan sweep finds 0; and that no request older than cooling + 1 day remains. The Auth listing costs one call per 1,000 accounts and is skipped when the run deleted nothing.
 - Any failure fails the run; the `notify` job opens **one** issue labelled `account-deletion` (a comment is added if one is already open).
 - Tests prove the verifier can fail: a deleter that leaves a nested doc behind and a deleter whose `auth.deleteUser` is a no-op must both be reported as mismatches.
 
-The processed uids travel from `run` to `verify` as a job output (the accounts no longer exist anywhere); the step summary and audit use hashes only.
+No uid leaves the `run` job: not as a job output, not in a step `env:`, not in the step summary. A step's `env:` is printed at the top of its log, this repository is public, and the app sets the Analytics user ID to the Firebase uid, so a uid there would be world-readable. `run.mjs` hands on the run id only, and writes it before it deletes anything, so `verify` still runs (and reads the audit) when `run` fails part-way. A cancelled run is not checked by `verify`.
 
 ## Tests
 
@@ -48,13 +48,14 @@ The provider only accepts `ravitejakamalapuram/InvTrack` on `refs/heads/main`: r
 
 How the workflow behaves:
 
-- Three jobs. `run` authenticates keylessly and runs `run.mjs`. `verify` starts a fresh job with `verify-run.mjs` for a live run (it is skipped for a dry run, an email request or a skipped run). `notify` runs when either fails and opens one issue labelled `account-deletion`, or comments on the open one. The issue holds a link to the run and the job results, never a uid, email or name.
+- Three jobs. `run` authenticates keylessly and runs `run.mjs`. `verify` starts a fresh job with `verify-run.mjs` for a live run (it is skipped for a dry run, an email request, a skipped run or a cancelled run). `notify` runs when either fails and opens one issue labelled `account-deletion`, or comments on the open one. The issue holds a link to the run and the job results, never a uid, email or name.
 - Only `refs/heads/main` runs it. Only one run at a time, and a running deletion is never cancelled.
 - A manual run is a dry run unless `dry_run` is unticked; the schedule is always live. `sweep_inactive_guests_days` and `max_per_run` must be whole numbers or the run stops before it touches anything. `force` is false on the schedule.
-- `request_email` is masked and never printed or put in the step summary. GitHub itself stores dispatch inputs with the run record and the job cannot hide that, so use the in-app request where you can and this input only as a fallback.
+- `request_email` is read from the event file in the first step, checked to be one address and masked before anything else runs; later steps that receive it print `***`. It is never put in the step summary or an output. It is not hidden everywhere: GitHub shows dispatch inputs on the run page and stores them with the run record, and the job cannot hide that, so use the in-app request where you can and this input only as a fallback.
+- Re-running a manually dispatched run does nothing (the `run` job is skipped unless it is the first attempt): a re-run would replay the old inputs, such as `dry_run` unticked or `force`, on the old commit with production credentials. Dispatch a new run instead. A re-run of a scheduled run is allowed, because a schedule is never forced and works from the current queue.
 - Dependencies are installed with `npm install --omit=dev --ignore-scripts` and there is no lockfile yet, so versions float inside their ranges.
 - If the repository is public and sees no activity for 60 days, GitHub pauses scheduled workflows. The 3-day stale-request alert lives in the job, so it cannot fire while the schedule is paused: look at the Actions tab after a quiet period.
-- `test/workflow.test.mjs` fails if one of these guards is removed (top-level `permissions: {}`, the schedule gate, `dry_run` defaulting to true, every action pinned to a SHA, no `inputs.*` inside a script, the email kept out of logs). It needs no emulator: `node --test test/workflow.test.mjs`.
+- `test/workflow.test.mjs` fails if one of these guards is removed or weakened: top-level `permissions: {}`; the exact `if:` of the `run` and `verify` jobs (main only, the schedule variable, first attempt only for a dispatch); the whole env of the mode, deletion and verify steps (cap, sweep, `force`, `dry_run`); a daily cron; no uid in a job output or env; every action pinned to a SHA; no `inputs.*` inside a script; and the email kept out of logs. It also runs the real mode-step script for a table of inputs (only an explicit `false` is live, an email request is never live, bad numbers and bad emails stop the run, the email is masked and never echoed). Each rule has a deliberately broken copy that must fail it. It needs no emulator, only bash and jq: `node --test test/workflow.test.mjs`.
 
 ## Not included (follow-ups)
 

@@ -6,6 +6,8 @@ name: account-deletion
 # - Daily schedule: live, but only once the repo variable ACCOUNT_DELETION_SCHEDULE_ENABLED is 'true'.
 # - Manual run: a dry run unless dry_run is unticked.
 # - Main only: the Workload Identity provider accepts this repository on refs/heads/main and nothing else.
+# - No re-runs of a manual dispatch: a re-run replays its old inputs on its old commit, with production credentials.
+#   Dispatch a new run instead. A re-run of a scheduled run is fine: a schedule is never forced.
 on:
   schedule:
     - cron: '41 20 * * *' # 20:41 UTC = 02:11 IST, off the hour on purpose
@@ -45,7 +47,8 @@ jobs:
     if: >-
       github.ref == 'refs/heads/main' &&
       github.repository == 'ravitejakamalapuram/InvTrack' &&
-      (github.event_name != 'schedule' || vars.ACCOUNT_DELETION_SCHEDULE_ENABLED == 'true')
+      (github.event_name != 'schedule' || vars.ACCOUNT_DELETION_SCHEDULE_ENABLED == 'true') &&
+      (github.event_name == 'schedule' || github.run_attempt == '1')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -54,7 +57,6 @@ jobs:
     outputs:
       live: ${{ steps.mode.outputs.live }}
       run_id: ${{ steps.deletion.outputs.run_id }}
-      uids: ${{ steps.deletion.outputs.uids }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -69,13 +71,19 @@ jobs:
           DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || inputs.dry_run }}
           MAX_PER_RUN: ${{ inputs.max_per_run || '25' }}
           SWEEP_DAYS: ${{ inputs.sweep_inactive_guests_days || '0' }}
-          REQUEST_EMAIL: ${{ inputs.request_email }}
         run: |
-          [[ "$SWEEP_DAYS" =~ ^[0-9]{1,4}$ ]] || { echo "::error::sweep_inactive_guests_days must be a whole number (0 = off)"; exit 1; }
-          [[ "$MAX_PER_RUN" =~ ^[1-9][0-9]{0,3}$ ]] || { echo "::error::max_per_run must be a whole number from 1 to 9999"; exit 1; }
+          # The email is read from the event file, never from env: a step prints its env in the log before its first
+          # command runs, so a mask registered by the same step would come too late. A rejected value is never echoed.
+          REQUEST_EMAIL=$(jq -r '.inputs.request_email // ""' "$GITHUB_EVENT_PATH")
           if [ -n "$REQUEST_EMAIL" ]; then
+            if ! [[ "$REQUEST_EMAIL" =~ ^[^[:space:]@]+@[^[:space:]@]+$ ]]; then
+              echo "::error::The email input must be one address"
+              exit 1
+            fi
             echo "::add-mask::$REQUEST_EMAIL"
           fi
+          [[ "$SWEEP_DAYS" =~ ^[0-9]{1,4}$ ]] || { echo "::error::sweep_inactive_guests_days must be a whole number (0 = off)"; exit 1; }
+          [[ "$MAX_PER_RUN" =~ ^[1-9][0-9]{0,3}$ ]] || { echo "::error::max_per_run must be a whole number from 1 to 9999"; exit 1; }
           # Anything other than an explicit 'false' is a dry run.
           if [ "$DRY_RUN" = "false" ]; then dry_run=false; else dry_run=true; fi
           if [ "$dry_run" = "false" ] && [ -z "$REQUEST_EMAIL" ]; then live=true; else live=false; fi
@@ -96,6 +104,7 @@ jobs:
           FORCE: ${{ github.event_name == 'schedule' && 'false' || inputs.force }}
           MAX_PER_RUN: ${{ inputs.max_per_run || '25' }}
           SWEEP_INACTIVE_GUESTS: ${{ inputs.sweep_inactive_guests_days || '0' }}
+          # Masked by the mode step above, so this step's header prints ***.
           REQUEST_EMAIL: ${{ inputs.request_email }}
           GA4_PROPERTY_ID: ${{ vars.GA4_PROPERTY_ID }} # only read once the Analytics deletion step is on main
         run: node scripts/account-deletion/run.mjs
@@ -103,8 +112,9 @@ jobs:
   verify:
     name: verify
     needs: run
-    # always() so this also checks a run that deleted some accounts and then failed. The result test keeps it
-    # off for a skipped or cancelled run; live and run_id keep it off for a dry run or an email request.
+    # always() so this also checks a run that failed part-way: run.mjs announces run_id before it deletes anything,
+    # and this job finds the run's accounts through its hashed audit records. The result test keeps it off for a
+    # skipped or cancelled run; live and run_id keep it off for a dry run or an email request.
     if: >-
       always() &&
       github.ref == 'refs/heads/main' &&
@@ -134,8 +144,6 @@ jobs:
       - name: Verify the run
         env:
           RUN_ID: ${{ needs.run.outputs.run_id }}
-          # Accounts that no longer exist anywhere, so the ids are safe to pass on.
-          UIDS: ${{ needs.run.outputs.uids }}
         run: node scripts/account-deletion/verify-run.mjs
 
   notify:

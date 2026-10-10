@@ -1,5 +1,9 @@
 import { beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { runJob, requestByEmail, hashUid } from '../run.mjs';
 import { verifyRun } from '../verify-run.mjs';
 import { deleteUserData } from '../delete.mjs';
@@ -188,34 +192,108 @@ describe('verifier must fail when deletion is incomplete (mutation tests)', () =
 });
 
 describe('independent verify job', () => {
+  // The verify job is given the run id and nothing else: no uid ever leaves the run job, because a step's env is
+  // printed in a public log. It finds the run's accounts through the hashed deletionAudit records.
   it('passes after a clean run', async () => {
     await seedUser('u1');
+    await seedUser('u2'); // not part of the run: must never be flagged
     await seedRequest('u1', 2 * DAY);
-    const out = await runJob(opts());
-    const v = await verifyRun({ db, auth, runId: 'run1', uids: out.processedUids });
+    await runJob(opts());
+    const v = await verifyRun({ db, auth, runId: 'run1' });
     assert.deepEqual(v.problems, []);
     assert.equal(v.ok, true);
   });
 
-  it('fails when data or the Auth user of a processed uid is back, an orphan exists, or the run record is missing', async () => {
+  it('finds an account that came back, by hash, without being given any uid', async () => {
     await seedUser('u1');
     await seedRequest('u1', 2 * DAY);
-    const out = await runJob(opts());
+    await runJob(opts());
     await seedUser('u1'); // resurrect it after the run reported success
-    const v = await verifyRun({ db, auth, runId: 'run1', uids: out.processedUids });
+    const v = await verifyRun({ db, auth, runId: 'run1' });
     assert.equal(v.ok, false);
-    assert.ok(v.problems.some((p) => /auth user still exists/.test(p)));
+    assert.ok(v.problems.some((p) => p.includes(hashUid('u1')) && /auth user still exists/.test(p)), v.problems.join('\n'));
+    assert.ok(v.problems.some((p) => p.includes(hashUid('u1')) && /users data still exists/.test(p)), v.problems.join('\n'));
+    assert.ok(!v.problems.join('\n').includes('u1@example.com'));
+    assert.ok(!v.problems.join('\n').replaceAll(hashUid('u1'), '').includes('u1'), 'problem text must hold the hash, never the uid');
+  });
 
+  it('finds data that came back after the Auth user stayed gone', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    await runJob(opts());
+    await db.doc('users/u1/investments/i9').set({ x: 1 }); // a stale client wrote again
+    const v = await verifyRun({ db, auth, runId: 'run1' });
+    assert.ok(v.problems.some((p) => p.includes(hashUid('u1')) && /users data still exists/.test(p)), v.problems.join('\n'));
+  });
+
+  it('still re-checks the accounts of a run that has no run record (it failed part-way)', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    await runJob(opts());
+    await db.doc('deletionRuns/run1').delete();
+    await seedUser('u1');
+    const v = await verifyRun({ db, auth, runId: 'run1' });
+    assert.ok(v.problems.some((p) => /missing/.test(p)));
+    assert.ok(v.problems.some((p) => /auth user still exists/.test(p)));
+  });
+
+  it('does not flag accounts of another run', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    await runJob(opts({ runId: 'run0' }));
+    await seedUser('u1');
+    await db.doc('deletionRuns/run1').set({ refused: false });
+    const v = await verifyRun({ db, auth, runId: 'run1' });
+    assert.ok(!v.problems.some((p) => /still exists/.test(p)), v.problems.join('\n'));
+  });
+
+  it('fails when an orphan exists or the run record is missing', async () => {
     await db.doc('users/orphan/investments/i1').set({ x: 1 });
-    const v2 = await verifyRun({ db, auth, runId: 'missing-run', uids: [] });
-    assert.ok(v2.problems.some((p) => /orphaned/.test(p)));
-    assert.ok(v2.problems.some((p) => /missing/.test(p)));
+    const v = await verifyRun({ db, auth, runId: 'missing-run' });
+    assert.ok(v.problems.some((p) => /orphaned/.test(p)));
+    assert.ok(v.problems.some((p) => /missing/.test(p)));
   });
 
   it('fails on a request older than cooling + 1 day', async () => {
     await db.doc('deletionRuns/run1').set({ refused: false });
     await seedRequest('old', 3 * DAY);
-    const v = await verifyRun({ db, auth, runId: 'run1', uids: [] });
+    const v = await verifyRun({ db, auth, runId: 'run1' });
     assert.ok(v.problems.some((p) => /older than cooling/.test(p)));
+  });
+});
+
+describe('run.mjs as the workflow starts it', () => {
+  // Spawned for real, the way the workflow does it, so the GITHUB_OUTPUT it leaves behind is what the verify job sees.
+  const start = (extra = {}) => {
+    const dir = mkdtempSync(join(tmpdir(), 'run-mjs-'));
+    const outFile = join(dir, 'output');
+    writeFileSync(outFile, '');
+    const r = spawnSync(process.execPath, [new URL('../run.mjs', import.meta.url).pathname], {
+      env: { ...process.env, DRY_RUN: 'false', GITHUB_RUN_ID: '777', GITHUB_RUN_ATTEMPT: '2', GCLOUD_PROJECT: 'demo-invtrack', GITHUB_OUTPUT: outFile, ...extra },
+      encoding: 'utf8',
+      timeout: 60_000,
+    });
+    const output = readFileSync(outFile, 'utf8');
+    rmSync(dir, { recursive: true, force: true });
+    return { status: r.status, output, log: `${r.stdout}${r.stderr}` };
+  };
+
+  it('hands the next job the run id and no uid', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    const r = start();
+    assert.equal(r.status, 0, r.log);
+    assert.equal(r.output, 'run_id=777-2\n');
+    assert.equal(await authExists('u1'), false);
+    assert.equal((await db.doc(`deletionAudit/777-2-${hashUid('u1')}`).get()).exists, true);
+  });
+
+  it('announces the run id before it touches anything, so verify still runs when the job crashes', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY);
+    // The Auth emulator is unreachable, so the run dies on its first Auth call.
+    const r = start({ FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:1' });
+    assert.notEqual(r.status, 0, 'the run is meant to crash here');
+    assert.equal(r.output, 'run_id=777-2\n');
   });
 });

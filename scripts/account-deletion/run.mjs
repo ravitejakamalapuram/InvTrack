@@ -65,6 +65,7 @@ export async function runJob({
         result.verified = check.ok;
         result.problems = check.problems;
         await db.collection('deletionAudit').doc(`${runId}-${uidHash}`).set({
+          runId,
           uidHash,
           source: c.source,
           requestedAt: c.requestedAt,
@@ -92,21 +93,20 @@ export async function runJob({
 
   const failed = results.filter((r) => !r.ok).length;
   const exitCode = refused ? 2 : failed > 0 || stale > 0 ? 1 : 0;
-  const processedUids = dryRun ? [] : [...candidates.keys()].filter((_, i) => results[i]?.ok);
 
   if (!dryRun) {
     await db.collection('deletionRuns').doc(runId).set({
       runId,
       refused,
       candidates: candidates.size,
-      processed: processedUids.length,
+      processed: results.filter((r) => r.ok).length,
       failed,
       staleRequests: stale,
       ok: exitCode === 0,
       completedAt: FieldValue.serverTimestamp(),
     });
   }
-  return { exitCode, refused, results, processedUids, stale };
+  return { exitCode, refused, results, stale };
 }
 
 /** Operator email fallback: turns an email into a normal queue entry. Deletes nothing. */
@@ -136,6 +136,9 @@ async function main() {
   const auth = getAuth();
   const dryRun = env.DRY_RUN !== 'false';
   const runId = `${env.GITHUB_RUN_ID ?? Date.now()}-${env.GITHUB_RUN_ATTEMPT ?? 1}`;
+  // Announced first, before anything is deleted, so the verify job still runs if this job dies part-way. It is the
+  // only thing handed on: the accounts are found again by their hashed audit records, never by uid.
+  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `run_id=${runId}\n`);
 
   if (env.REQUEST_EMAIL) {
     const { created } = await requestByEmail({ db, auth, email: env.REQUEST_EMAIL, dryRun });
@@ -153,9 +156,6 @@ async function main() {
     sweepGuestsDays: Number(env.SWEEP_INACTIVE_GUESTS || 0),
   });
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, summary(out));
-  if (env.GITHUB_OUTPUT) {
-    appendFileSync(env.GITHUB_OUTPUT, `run_id=${runId}\nuids=${out.processedUids.join(',')}\n`);
-  }
   return out.exitCode;
 }
 
