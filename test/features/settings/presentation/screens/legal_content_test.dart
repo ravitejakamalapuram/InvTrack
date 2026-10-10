@@ -75,7 +75,7 @@ void main() {
   });
 
   test('privacy policy says plainly who can read stored data', () {
-    expect(privacyPolicyContent, contains('Last updated: October 4, 2026'));
+    expect(privacyPolicyContent, contains('Last updated: October 10, 2026'));
     expect(
       privacyPolicyContent,
       contains(
@@ -89,6 +89,158 @@ void main() {
         'not use it for advertising.',
       ),
     );
+  });
+
+  // A39 (minimal part) and A102: the policy names who processes the data,
+  // why, where it is stored, how long it is kept, how to use your rights and
+  // whom to ask. Every sentence is backed by code; the PR lists the evidence.
+  group('privacy policy facts', () {
+    test('was last updated on 10 October 2026', () {
+      expect(privacyPolicyLastUpdated, DateTime(2026, 10, 10));
+    });
+
+    test('names every processor the app calls', () {
+      for (final name in [
+        'Firebase Authentication',
+        'Cloud Firestore',
+        'Analytics',
+        'Crashlytics',
+        'Performance Monitoring',
+        'Google Sign-In',
+        'Google Fonts',
+        'Google Play',
+        'api.frankfurter.dev',
+        'api.exchangerate-api.com',
+      ]) {
+        expect(privacyPolicyContent, contains(name));
+      }
+    });
+
+    test('names every exchange-rate host the currency service calls', () {
+      final source = File(
+        'lib/core/services/currency_conversion_service.dart',
+      ).readAsStringSync();
+      final hosts = RegExp(
+        r"_(?:primary|fallback)ApiBaseUrl\s*=\s*'https://([\w.-]+)",
+      ).allMatches(source).map((m) => m[1]!).toList();
+      expect(hosts, hasLength(2));
+      for (final host in hosts) {
+        expect(privacyPolicyContent, contains(host));
+      }
+    });
+
+    test('says what the exchange-rate services are sent', () {
+      expect(
+        privacyPolicyContent,
+        contains('It sends only currency codes and dates'),
+      );
+    });
+
+    test('says the data may be stored outside India', () {
+      expect(privacyPolicyContent, contains('outside India'));
+    });
+
+    test('says how long records, analytics and crash reports are kept', () {
+      expect(
+        privacyPolicyContent,
+        contains(
+          'Your records stay until you delete them or delete your account.',
+        ),
+      );
+      expect(
+        privacyPolicyContent,
+        contains(
+          'Analytics events and crash reports are kept by Google for its own '
+          'retention period for each service, and are then deleted '
+          'automatically.',
+        ),
+      );
+    });
+
+    test('says what happens to analytics and crash data after deletion', () {
+      expect(
+        privacyPolicyContent,
+        contains(
+          'We also ask Google Analytics to delete the events tied to your '
+          'user ID; Google carries this out on its own schedule.',
+        ),
+      );
+      expect(
+        privacyPolicyContent,
+        contains(
+          'We cannot delete individual crash reports. They are deleted '
+          'automatically at the end of the Crashlytics retention period.',
+        ),
+      );
+      expect(
+        privacyPolicyContent,
+        contains(
+          'Once you are signed out, new crash and analytics reports from '
+          'this device no longer carry your user ID.',
+        ),
+      );
+    });
+
+    test('tells you where in the app to export, correct and delete', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        privacyPolicyContent,
+        contains('Settings > ${l10n.dataAndAccount} > Export as CSV'),
+      );
+      expect(
+        privacyPolicyContent,
+        contains('Settings > ${l10n.dataAndAccount} > ${l10n.deleteAccount}'),
+      );
+      expect(privacyPolicyContent, contains('edit any record in the app'));
+    });
+
+    test('points to the web deletion page and the support email', () {
+      expect(privacyPolicyContent, contains(hostedAccountDeletionUrl));
+      expect(privacyPolicyContent, contains(supportEmailAddress));
+    });
+
+    test('says plainly that analytics and crash reports cannot be turned '
+        'off, for as long as that is true', () {
+      expect(
+        privacyPolicyContent,
+        contains('There is currently no switch to turn off'),
+      );
+      // The day a switch exists, the withdrawal text must change with it.
+      final switches = <String>[];
+      for (final file in Directory('lib').listSync(recursive: true)) {
+        if (file is! File || !file.path.endsWith('.dart')) continue;
+        if (file.path.contains('${Platform.pathSeparator}generated')) continue;
+        if (RegExp(
+          r'set(Analytics|Crashlytics|Performance)CollectionEnabled\((?!\s*(?:true|shouldEnable)\b)',
+        ).hasMatch(file.readAsStringSync())) {
+          switches.add(file.path);
+        }
+      }
+      expect(
+        switches,
+        isEmpty,
+        reason: 'a collection switch exists: update the withdrawal text',
+      );
+    });
+
+    test('says the app shows no ads, for as long as no screen shows one', () {
+      expect(privacyPolicyContent, contains('The app shows no ads.'));
+      final screens = <String>[];
+      for (final file in Directory('lib').listSync(recursive: true)) {
+        if (file is! File || !file.path.endsWith('.dart')) continue;
+        final path = file.path;
+        if (path.contains(
+              '${Platform.pathSeparator}ads${Platform.pathSeparator}',
+            ) ||
+            path.endsWith('native_ad_widget.dart')) {
+          continue;
+        }
+        if (file.readAsStringSync().contains('NativeAdWidget(')) {
+          screens.add(path);
+        }
+      }
+      expect(screens, isEmpty);
+    });
   });
 
   testWidgets('LegalScreen shows hosted-policy link when provided', (

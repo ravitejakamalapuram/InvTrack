@@ -18,6 +18,7 @@ import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/help_faq_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_content.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/delete_account_web_link.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -377,6 +378,13 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                     l10n.termsOfService,
                     termsOfServiceContent,
                   ),
+                ),
+                SettingsNavTile(
+                  icon: Icons.delete_outline,
+                  iconColor: Colors.red,
+                  title: l10n.deleteAccountOnTheWeb,
+                  trailing: const Icon(Icons.open_in_new, size: 20),
+                  onTap: openAccountDeletionPage,
                 ),
               ],
             ),
