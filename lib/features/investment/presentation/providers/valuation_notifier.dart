@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/utils/money_precision.dart';
+import 'package:inv_tracker/core/utils/stored_date.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/valuation_repository.dart';
@@ -221,6 +222,26 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
       final investment = await _writableInvestment(undo.snapshot.investmentId);
       final all = await _liveSnapshotsOf(investment.id);
       final restored = undo.snapshot;
+      // What was cleared may have been replaced since: the limits still hold.
+      if (restored.isOpeningBaseline &&
+          ValuationSnapshotSelector.openingBaseline(
+                all,
+                investmentId: investment.id,
+                currency: investment.currency,
+              ) !=
+              null) {
+        throw _rejected(
+          'This investment already has an opening value.',
+          'undo would add a second opening baseline',
+        );
+      }
+      if (all.length >= ValuationSnapshotSelector.maxLiveSnapshots) {
+        throw _rejected(
+          'This investment has the most dated values it can hold '
+              '(${ValuationSnapshotSelector.maxLiveSnapshots}).',
+          'undo would pass the live snapshot limit',
+        );
+      }
       await _repository.restore(
         restored,
         mirror: _mirrorOf(investment, [...all, restored]),
@@ -355,7 +376,7 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
       investmentId: investment.id,
       amount: _rounded(value, investment.currency),
       currency: investment.currency,
-      effectiveDate: _dateOnly(date),
+      effectiveDate: StoredDate.fromStorage(date),
       kind: ValuationKind.carryingValue,
       provenance: ValuationProvenance.manual,
       createdAt: DateTime.now(),

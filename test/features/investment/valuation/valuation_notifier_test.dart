@@ -417,6 +417,43 @@ void main() {
       expect(valuations.docs, contains(saved.id));
     });
 
+    test('Undo cannot bring back a second opening baseline', () async {
+      final first = await notifier().setValuation(
+        investmentId: 'gold',
+        amount: 100,
+        date: day.subtract(const Duration(days: 30)),
+        openingBaseline: true,
+      );
+      await notifier().clearValuation(first.id);
+      await notifier().setValuation(
+        investmentId: 'gold',
+        amount: 200,
+        date: day,
+        openingBaseline: true,
+      );
+      await expectRejected(() => notifier().undoClear());
+      expect(valuations.docs[first.id]!.isLive, isFalse);
+    });
+
+    test('Undo cannot go past the limit of 100 live snapshots', () async {
+      final saved = await notifier().setValuation(
+        investmentId: 'gold',
+        amount: 1,
+        date: day,
+      );
+      await notifier().clearValuation(saved.id);
+      for (var i = 0; i < 100; i++) {
+        valuations.docs['s$i'] = testSnapshot(
+          's$i',
+          investmentId: 'gold',
+          amount: 1,
+          date: DateTime(2020).add(Duration(days: i)),
+        );
+      }
+      await expectRejected(() => notifier().undoClear());
+      expect(live(), hasLength(100));
+    });
+
     test('rejects clearing on a closed or archived investment', () async {
       final saved = await notifier().setValuation(
         investmentId: 'gold',
