@@ -214,6 +214,58 @@ void main() {
     });
   });
 
+  // Owner decision on #941 (2026-10-10): a buy or a sale after the latest
+  // market value leaves no usable end value, so there is no period to report
+  // until a newer value is recorded.
+  group('a market value followed by a buy or a sale', () {
+    final baseline = _baseline(500000, DateTime(2026, 1, 1));
+    final market = testSnapshot(
+      'jul',
+      amount: 530000,
+      date: DateTime(2026, 7, 1),
+      kind: ValuationKind.marketValue,
+    );
+    final buy = testFlow(
+      'i1',
+      CashFlowType.invest,
+      50000,
+      DateTime(2026, 8, 1),
+    );
+
+    test('asks for a newer value and has no figures', () {
+      final period = _build([baseline, market], flows: [buy]);
+      expect(period.state, TrackingPeriodState.needsNewerValue);
+      expect(period.start, DateTime(2026, 1, 1));
+      expect(period.terminal, isNull);
+      expect(TrackingPeriodCalculator.stats(period), isNull);
+    });
+
+    test('INCOME after the value does not ask for one', () {
+      final income = testFlow(
+        'i1',
+        CashFlowType.income,
+        1000,
+        DateTime(2026, 8, 1),
+      );
+      final period = _build([baseline, market], flows: [income]);
+      expect(period.state, TrackingPeriodState.ready);
+      expect(period.terminal!.amount, 530000.00);
+    });
+
+    test('a newer value after the buy brings the period back', () {
+      final newer = testSnapshot(
+        'sep',
+        amount: 575000,
+        date: DateTime(2026, 9, 1),
+        kind: ValuationKind.marketValue,
+      );
+      final period = _build([baseline, market, newer], flows: [buy]);
+      expect(period.state, TrackingPeriodState.ready);
+      expect(period.end, DateTime(2026, 9, 1));
+      expect(period.terminal!.amount, 575000.00);
+    });
+  });
+
   group('conversion', () {
     test('withConverted replaces the flows and the end value', () {
       final baseline = _baseline(500000, DateTime(2026, 1, 1));

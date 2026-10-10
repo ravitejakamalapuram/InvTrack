@@ -59,7 +59,8 @@ class InvestmentValuation {
   final bool historyReviewNeeded;
 
   /// Principal flows (INVEST and RETURN) dated after a value that cash flows
-  /// cannot move (a market value): the value may be out of date.
+  /// cannot move (a market value). With any, the value is out of date: see
+  /// [needsNewerValue].
   final int staleFlowCount;
 
   const InvestmentValuation({
@@ -77,6 +78,10 @@ class InvestmentValuation {
   });
 
   bool get isEstimate => source != ValuationSource.manual;
+
+  /// Whether principal was put in or taken out after a market value, which
+  /// cash flows cannot move: the value is out of date.
+  bool get needsNewerValue => staleFlowCount > 0;
 
   /// This value with the history flags set.
   InvestmentValuation withHistory({
@@ -122,12 +127,18 @@ class TerminalValues {
   /// and in the current value, but stay out of XIRR, MOIC and return.
   final Set<String> limitedHistoryIds;
 
+  /// Investments whose latest market value is older than a buy or a sale.
+  /// They have no value in [flows] and are counted in [missingValueCount]
+  /// until the user records a newer one.
+  final Set<String> needsNewerValueIds;
+
   const TerminalValues({
     this.flows = const [],
     this.missingValueCount = 0,
     this.isEstimate = false,
     this.rate,
     this.limitedHistoryIds = const {},
+    this.needsNewerValueIds = const {},
   });
 
   static const none = TerminalValues();
@@ -155,6 +166,7 @@ class TerminalValues {
       isEstimate: isEstimate,
       rate: rate,
       limitedHistoryIds: limitedHistoryIds,
+      needsNewerValueIds: needsNewerValueIds,
     );
   }
 }
@@ -247,10 +259,48 @@ class CurrentValueCalculator {
   /// [ValuationSnapshotSelector]); it needs no cash flows at all, and an
   /// opening baseline may precede the first one. Principal dated after it
   /// carries it forward (INVEST plus, RETURN minus) when its kind rolls
-  /// forward; a market value is never moved, and the principal flows after
-  /// it are counted in [InvestmentValuation.staleFlowCount]. Income and fees
+  /// forward. A market value is never moved: INVEST or RETURN dated after
+  /// it leaves the investment with no value (owner decision on #941), because
+  /// cash flows cannot establish a new price. It is then missing until the
+  /// user records a newer one, for every consumer of this method. Use
+  /// [staleValuationOf] to read the value that went stale. Income and fees
   /// never move a value.
   static InvestmentValuation? valuationOf(
+    InvestmentEntity investment,
+    List<CashFlowEntity> cashFlows, {
+    required DateTime asOf,
+    Map<String, List<InvestmentValuationSnapshot>>? snapshots,
+  }) {
+    final valuation = _valuationOf(
+      investment,
+      cashFlows,
+      asOf: asOf,
+      snapshots: snapshots,
+    );
+    return valuation != null && valuation.needsNewerValue ? null : valuation;
+  }
+
+  /// The market value of [investment] that a buy or a sale has made out of
+  /// date, or null when its value is not stale. It keeps the date of the
+  /// value itself, not that of the last cash flow. For the screens that ask
+  /// the user for a newer one. Same inputs as [valuationOf].
+  static InvestmentValuation? staleValuationOf(
+    InvestmentEntity investment,
+    List<CashFlowEntity> cashFlows, {
+    required DateTime asOf,
+    Map<String, List<InvestmentValuationSnapshot>>? snapshots,
+  }) {
+    final valuation = _valuationOf(
+      investment,
+      cashFlows,
+      asOf: asOf,
+      snapshots: snapshots,
+    );
+    return valuation != null && valuation.needsNewerValue ? valuation : null;
+  }
+
+  /// The value as [valuationOf] finds it, a stale one included.
+  static InvestmentValuation? _valuationOf(
     InvestmentEntity investment,
     List<CashFlowEntity> cashFlows, {
     required DateTime asOf,
@@ -374,17 +424,25 @@ class CurrentValueCalculator {
     var isEstimate = false;
     final rates = <double?>{};
     final limited = <String>{};
+    final needsNewer = <String>{};
     for (final investment in investments) {
       final own = byInvestment[investment.id] ?? const <CashFlowEntity>[];
       final hasSnapshots = snapshots?[investment.id]?.isNotEmpty ?? false;
       if (!investment.isOpen || (own.isEmpty && !hasSnapshots)) continue;
 
-      final valuation = valuationOf(
+      final valuation = _valuationOf(
         investment,
         own,
         asOf: asOf,
         snapshots: snapshots,
       );
+      if (valuation != null && valuation.needsNewerValue) {
+        // A buy or a sale after its market value: no value, whatever the
+        // net cash flow, until the user records a newer one.
+        missing++;
+        needsNewer.add(investment.id);
+        continue;
+      }
       if (valuation == null) {
         // Nothing to judge without cash flows.
         if (own.isEmpty) continue;
@@ -428,6 +486,7 @@ class CurrentValueCalculator {
       isEstimate: isEstimate,
       rate: rates.length == 1 ? rates.single : null,
       limitedHistoryIds: limited,
+      needsNewerValueIds: needsNewer,
     );
   }
 
@@ -592,7 +651,13 @@ class CurrentValueCalculator {
     ];
     final on = lastFlow.isAfter(date) ? lastFlow : date;
     if (!winner.kind.rollsForward) {
-      return valuation(amount: winner.amount, on: on, stale: later.length);
+      // With principal after it the value is stale and keeps its own date;
+      // with only income or fees after it, it stands as of the last flow.
+      return valuation(
+        amount: winner.amount,
+        on: later.isEmpty ? on : date,
+        stale: later.length,
+      );
     }
     if (later.any((cf) => cf.currency != investment.currency)) return null;
     return valuation(

@@ -13,8 +13,9 @@ enum TrackingPeriodState {
   /// No live opening baseline.
   notStarted,
 
-  /// The baseline is a market value and nothing newer has been entered:
-  /// cash flows cannot establish a new price.
+  /// The latest value is a market value that a buy or a sale has made out of
+  /// date, or the baseline itself with nothing newer entered: cash flows
+  /// cannot establish a new price.
   needsNewerValue,
 
   /// There is an end value in no usable form: principal in another currency
@@ -146,8 +147,18 @@ abstract final class TrackingPeriodCalculator {
       snapshots: byInvestment,
     );
     if (valuation == null) {
+      // A buy or a sale after the latest market value: only a newer value
+      // can end the period.
+      final stale = CurrentValueCalculator.staleValuationOf(
+        investment,
+        own,
+        asOf: asOf,
+        snapshots: byInvestment,
+      );
       return TrackingPeriod(
-        state: TrackingPeriodState.valueUnavailable,
+        state: stale != null
+            ? TrackingPeriodState.needsNewerValue
+            : TrackingPeriodState.valueUnavailable,
         start: start,
       );
     }

@@ -46,6 +46,20 @@ InvestmentValuation? _valuation(
   snapshots: _by(snapshots),
 );
 
+/// The market value a buy or a sale has made out of date (see the group
+/// "a market value followed by a buy or a sale").
+InvestmentValuation? _stale(
+  InvestmentEntity investment,
+  List<CashFlowEntity> flows,
+  List<InvestmentValuationSnapshot> snapshots, {
+  DateTime? asOf,
+}) => CurrentValueCalculator.staleValuationOf(
+  investment,
+  flows,
+  asOf: asOf ?? _today,
+  snapshots: _by(snapshots),
+);
+
 void main() {
   final investment = testInvestment('i1');
   final module = FinancialCalculatorModule();
@@ -216,46 +230,352 @@ void main() {
       expect(v.amount, 490000.00);
     });
 
-    test('a market value is not moved by cash flows and says it may be '
-        'out of date', () {
-      final v = _valuation(investment, flows, [
-        _baseline(500000, date, kind: ValuationKind.marketValue),
-      ])!;
+    test('a market value is not moved by cash flows: a buy or a sale after '
+        'it leaves no value (owner decision, #941)', () {
+      final market = _baseline(500000, date, kind: ValuationKind.marketValue);
+      expect(_valuation(investment, flows, [market]), isNull);
+      final v = _stale(investment, flows, [market])!;
       expect(v.amount, 500000.00);
       expect(v.kind, ValuationKind.marketValue);
+      expect(v.date, date);
       // INVEST and RETURN happened after it; INCOME is not counted.
       expect(v.staleFlowCount, 2);
     });
 
     test('gold: later INVEST and INCOME do not invent a price', () {
       final gold = testInvestment('i1', type: InvestmentType.gold);
-      final v = _valuation(
-        gold,
-        [
-          testFlow('i1', CashFlowType.invest, 10000, DateTime(2026, 3, 1)),
-          testFlow('i1', CashFlowType.income, 500, DateTime(2026, 4, 1)),
-        ],
-        [_baseline(500000, date, kind: ValuationKind.marketValue)],
-      )!;
+      final gFlows = [
+        testFlow('i1', CashFlowType.invest, 10000, DateTime(2026, 3, 1)),
+        testFlow('i1', CashFlowType.income, 500, DateTime(2026, 4, 1)),
+      ];
+      final market = _baseline(500000, date, kind: ValuationKind.marketValue);
+      // The INVEST makes the old price unusable; it is not moved to 510000.
+      expect(_valuation(gold, gFlows, [market]), isNull);
+      final v = _stale(gold, gFlows, [market])!;
       expect(v.amount, 500000.00);
       expect(v.staleFlowCount, 1);
     });
 
-    test('a market value in INR is unmoved by a USD flow', () {
-      final v = _valuation(
-        investment,
-        [
-          testFlow(
-            'i1',
-            CashFlowType.invest,
-            100,
-            DateTime(2026, 3, 1),
-            currency: 'USD',
-          ),
-        ],
-        [_baseline(500000, date, kind: ValuationKind.marketValue)],
-      )!;
+    test('a market value in INR is unmoved by a USD flow, which still makes '
+        'it stale', () {
+      final usd = [
+        testFlow(
+          'i1',
+          CashFlowType.invest,
+          100,
+          DateTime(2026, 3, 1),
+          currency: 'USD',
+        ),
+      ];
+      final market = _baseline(500000, date, kind: ValuationKind.marketValue);
+      expect(_valuation(investment, usd, [market]), isNull);
+      final v = _stale(investment, usd, [market])!;
       expect(v.amount, 500000.00);
+      expect(v.currency, 'INR');
+      expect(v.staleFlowCount, 1);
+    });
+  });
+
+  // Owner decision on #941 (2026-10-10, option 1): a buy or a sale dated after
+  // the latest market value leaves the investment without a usable value.
+  // Cash flows cannot establish a new price, so XIRR, MOIC, return %, totals,
+  // goals, FIRE and the tracking period must not use the old one. It counts
+  // as missing until the user records a newer value.
+  group('a market value followed by a buy or a sale needs a newer value', () {
+    final gold = testInvestment('i1');
+    final asOf = DateTime(2026, 10, 10);
+    final firstBuy = testFlow(
+      'i1',
+      CashFlowType.invest,
+      100000,
+      DateTime(2026, 1, 10),
+    );
+    final market = testSnapshot(
+      'm1',
+      amount: 110000,
+      date: DateTime(2026, 3, 3),
+      kind: ValuationKind.marketValue,
+    );
+    final secondBuy = testFlow(
+      'i1',
+      CashFlowType.invest,
+      50000,
+      DateTime(2026, 6, 5),
+    );
+
+    InvestmentValuation? usable(
+      List<CashFlowEntity> flows,
+      List<InvestmentValuationSnapshot> snapshots, {
+      InvestmentEntity? of,
+    }) => CurrentValueCalculator.valuationOf(
+      of ?? gold,
+      flows,
+      asOf: asOf,
+      snapshots: _by(snapshots),
+    );
+
+    InvestmentValuation? stale(
+      List<CashFlowEntity> flows,
+      List<InvestmentValuationSnapshot> snapshots,
+    ) => CurrentValueCalculator.staleValuationOf(
+      gold,
+      flows,
+      asOf: asOf,
+      snapshots: _by(snapshots),
+    );
+
+    TerminalValues terminal(
+      List<CashFlowEntity> flows,
+      List<InvestmentValuationSnapshot> snapshots,
+    ) => CurrentValueCalculator.terminalValues(
+      investments: [gold],
+      cashFlows: flows,
+      asOf: asOf,
+      snapshots: _by(snapshots),
+    );
+
+    test(
+      'a later INVEST: no usable value, the stale one keeps its own date',
+      () {
+        final flows = [firstBuy, secondBuy];
+        expect(usable(flows, [market]), isNull);
+
+        final v = stale(flows, [market]);
+        expect(v, isNotNull);
+        expect(v!.amount, 110000.00);
+        expect(v.date, DateTime(2026, 3, 3));
+        expect(v.staleFlowCount, 1);
+        expect(v.needsNewerValue, isTrue);
+        expect(v.kind, ValuationKind.marketValue);
+        expect(v.currency, 'INR');
+      },
+    );
+
+    test('terminalValues has no flow for it and counts it as missing', () {
+      final t = terminal([firstBuy, secondBuy], [market]);
+      expect(t.flows, isEmpty);
+      expect(t.missingValueCount, 1);
+      expect(t.needsNewerValueIds, {'i1'});
+      expect(t.limitedHistoryIds, isEmpty);
+    });
+
+    test('so XIRR, MOIC and return are unknown, not a loss', () {
+      final flows = [firstBuy, secondBuy];
+      final stats = module.calculateStats(
+        flows,
+        terminalValues: terminal(flows, [market]),
+      );
+      expect(stats.needsCurrentValue, isTrue);
+      expect(stats.missingValueCount, 1);
+      expect(stats.currentValue, isNull);
+      expect(stats.totalInvested, 150000.00);
+    });
+
+    test('a later RETURN (a partial sale) is stale too', () {
+      final sale = testFlow(
+        'i1',
+        CashFlowType.returnFlow,
+        30000,
+        DateTime(2026, 6, 5),
+      );
+      final flows = [firstBuy, sale];
+      expect(usable(flows, [market]), isNull);
+      final v = stale(flows, [market])!;
+      expect(v.amount, 110000.00);
+      expect(v.date, DateTime(2026, 3, 3));
+      expect(v.staleFlowCount, 1);
+      final t = terminal(flows, [market]);
+      expect(t.flows, isEmpty);
+      expect(t.missingValueCount, 1);
+      expect(t.needsNewerValueIds, {'i1'});
+    });
+
+    test('it counts as missing whatever the net cash flow', () {
+      // Out 100000 and 1000, back 150000: ahead on cash, still no price.
+      final flows = [
+        firstBuy,
+        testFlow('i1', CashFlowType.returnFlow, 150000, DateTime(2026, 2, 1)),
+        testFlow('i1', CashFlowType.invest, 1000, DateTime(2026, 6, 5)),
+      ];
+      final t = terminal(flows, [market]);
+      expect(t.flows, isEmpty);
+      expect(t.missingValueCount, 1);
+      expect(t.needsNewerValueIds, {'i1'});
+    });
+
+    test('every principal flow after the value is counted', () {
+      final v = stale(
+        [
+          firstBuy,
+          secondBuy,
+          testFlow('i1', CashFlowType.returnFlow, 10000, DateTime(2026, 7, 1)),
+        ],
+        [market],
+      )!;
+      expect(v.staleFlowCount, 2);
+    });
+
+    test('INCOME or FEE after the value is not stale: nothing changes', () {
+      final flows = [
+        firstBuy,
+        testFlow('i1', CashFlowType.income, 2000, DateTime(2026, 6, 5)),
+        testFlow('i1', CashFlowType.fee, 100, DateTime(2026, 7, 1)),
+      ];
+      final v = usable(flows, [market])!;
+      expect(v.amount, 110000.00);
+      expect(v.date, DateTime(2026, 7, 1));
+      expect(v.staleFlowCount, 0);
+      expect(v.needsNewerValue, isFalse);
+      expect(stale(flows, [market]), isNull);
+
+      final t = terminal(flows, [market]);
+      expect(t.flows.single.amount, 110000.00);
+      expect(t.flows.single.date, DateTime(2026, 7, 1));
+      expect(t.missingValueCount, 0);
+      expect(t.needsNewerValueIds, isEmpty);
+    });
+
+    test('a buy on the day of the value is already in it', () {
+      final sameDay = testFlow(
+        'i1',
+        CashFlowType.invest,
+        50000,
+        DateTime(2026, 3, 3),
+      );
+      final v = usable([firstBuy, sameDay], [market])!;
+      expect(v.amount, 110000.00);
+      expect(v.staleFlowCount, 0);
+    });
+
+    test(
+      'a newer market value, dated after the buy, makes it usable again',
+      () {
+        final newer = testSnapshot(
+          'm2',
+          amount: 175000,
+          date: DateTime(2026, 6, 20),
+          kind: ValuationKind.marketValue,
+        );
+        final flows = [firstBuy, secondBuy];
+        final v = usable(flows, [market, newer])!;
+        expect(v.amount, 175000.00);
+        expect(v.date, DateTime(2026, 6, 20));
+        expect(v.staleFlowCount, 0);
+        expect(stale(flows, [market, newer]), isNull);
+
+        final t = terminal(flows, [market, newer]);
+        expect(t.flows.single.amount, 175000.00);
+        expect(t.missingValueCount, 0);
+        expect(t.needsNewerValueIds, isEmpty);
+      },
+    );
+
+    test('a carrying value or principal outstanding still rolls forward', () {
+      for (final kind in [
+        ValuationKind.carryingValue,
+        ValuationKind.principalOutstanding,
+      ]) {
+        final snapshot = testSnapshot(
+          'm1',
+          amount: 110000,
+          date: DateTime(2026, 3, 3),
+          kind: kind,
+        );
+        final flows = [firstBuy, secondBuy];
+        final v = usable(flows, [snapshot])!;
+        expect(v.amount, 160000.00, reason: kind.name);
+        expect(v.date, DateTime(2026, 6, 5), reason: kind.name);
+        expect(v.staleFlowCount, 0, reason: kind.name);
+        expect(stale(flows, [snapshot]), isNull, reason: kind.name);
+        final t = terminal(flows, [snapshot]);
+        expect(t.flows.single.amount, 160000.00, reason: kind.name);
+        expect(t.missingValueCount, 0, reason: kind.name);
+      }
+    });
+
+    test('a legacy currentValue pair is read as a carrying value: unmoved', () {
+      final legacy = testInvestment(
+        'i1',
+        compatValue: 110000,
+        compatDate: DateTime(2026, 3, 3),
+      );
+      final flows = [firstBuy, secondBuy];
+      final v = CurrentValueCalculator.valuationOf(legacy, flows, asOf: asOf)!;
+      expect(v.amount, 160000.00);
+      expect(v.date, DateTime(2026, 6, 5));
+      expect(v.kind, ValuationKind.carryingValue);
+      expect(v.staleFlowCount, 0);
+      expect(
+        CurrentValueCalculator.staleValuationOf(legacy, flows, asOf: asOf),
+        isNull,
+      );
+      final t = CurrentValueCalculator.terminalValues(
+        investments: [legacy],
+        cashFlows: flows,
+        asOf: asOf,
+      );
+      expect(t.flows.single.amount, 160000.00);
+      expect(t.missingValueCount, 0);
+      expect(t.needsNewerValueIds, isEmpty);
+    });
+
+    test(
+      'a legacy pair that wins over an older market value rolls forward',
+      () {
+        final older = testSnapshot(
+          'old',
+          amount: 105000,
+          date: DateTime(2026, 1, 15),
+          kind: ValuationKind.marketValue,
+        );
+        final legacy = testInvestment(
+          'i1',
+          compatValue: 130000,
+          compatDate: DateTime(2026, 3, 3),
+          updatedAt: DateTime.utc(2026, 5, 1),
+        );
+        final v = usable([firstBuy, secondBuy], [older], of: legacy)!;
+        expect(v.amount, 180000.00);
+        expect(v.kind, ValuationKind.carryingValue);
+        expect(v.staleFlowCount, 0);
+      },
+    );
+
+    test('a closed investment has none, stale or not', () {
+      final closed = testInvestment('i1', status: InvestmentStatus.closed);
+      expect(usable([firstBuy, secondBuy], [market], of: closed), isNull);
+      expect(
+        CurrentValueCalculator.staleValuationOf(
+          closed,
+          [firstBuy, secondBuy],
+          asOf: asOf,
+          snapshots: _by([market]),
+        ),
+        isNull,
+      );
+    });
+
+    test('clearing the newer value leaves the old one stale: unavailable', () {
+      final older = testSnapshot(
+        'old',
+        amount: 105000,
+        date: DateTime(2026, 2, 1),
+        kind: ValuationKind.marketValue,
+      );
+      final newer = testSnapshot(
+        'new',
+        amount: 175000,
+        date: DateTime(2026, 7, 1),
+        kind: ValuationKind.marketValue,
+      );
+      final impact = CurrentValueCalculator.describeClear(
+        investment: gold,
+        cashFlows: [firstBuy, secondBuy],
+        snapshots: [older, newer],
+        snapshotId: 'new',
+        asOf: asOf,
+      );
+      expect(impact.kind, ClearImpactKind.unavailable);
     });
   });
 
@@ -318,16 +638,17 @@ void main() {
         expect(v.staleFlowCount, 0);
       });
 
-      test('a market value stays put and flags the later principal', () {
+      test('a market value stays put and is stale after the later INVEST', () {
         final market = testSnapshot(
           'm',
           amount: 520000,
           date: DateTime(2026, 7, 1),
           kind: ValuationKind.marketValue,
         );
-        final v = _valuation(investment, later, [base, market])!;
+        expect(_valuation(investment, later, [base, market]), isNull);
+        final v = _stale(investment, later, [base, market])!;
         expect(v.amount, 520000.00);
-        expect(v.date, DateTime(2026, 8, 1));
+        expect(v.date, DateTime(2026, 7, 1));
         expect(v.historyLimited, isTrue);
         expect(v.trackingStart, DateTime(2026, 1, 1));
         expect(v.historyReviewNeeded, isFalse);
