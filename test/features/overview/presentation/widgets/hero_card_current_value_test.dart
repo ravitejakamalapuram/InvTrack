@@ -281,6 +281,43 @@ void main() {
     );
   });
 
+  // A valued portfolio keeps the amount and the return badge on one row, so a
+  // crore figure has the least room at the narrowest width with large text.
+  for (final c in [
+    (name: 'positive', invested: 10000000.0, returned: 22345678.0),
+    (name: 'negative', invested: 12345678.0, returned: 0.0),
+  ]) {
+    testWidgets('a ${c.name} crore amount fits 320dp at 1.8x text', (
+      tester,
+    ) async {
+      _narrowPhone(tester);
+      final net = c.returned - c.invested;
+      final stats = InvestmentStats(
+        totalInvested: c.invested,
+        totalReturned: c.returned,
+        netCashFlow: net,
+        absoluteReturn: net / c.invested * 100,
+        moic: c.returned / c.invested,
+        xirr: 0.05,
+        cashFlowCount: 2,
+        firstCashFlowDate: DateTime(2024, 1, 1),
+        lastCashFlowDate: DateTime(2025, 1, 1),
+      );
+
+      await _pump(tester, textScale: 1.8, card: _card(stats));
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('${net < 0 ? '-' : ''}₹1.23 Cr'), findsOneWidget);
+      expect(
+        _semanticsLabels(tester, find.byType(HeroCardContent)),
+        contains(
+          'Net cash flow so far: ${net < 0 ? 'negative ' : ''}'
+          '1.23 crore rupees',
+        ),
+      );
+    });
+  }
+
   testWidgets('privacy mode hides the net amount in text and semantics', (
     tester,
   ) async {
