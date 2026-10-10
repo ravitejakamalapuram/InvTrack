@@ -368,7 +368,20 @@ class DataImportService {
     var valuationsImported = 0;
     final valuationRepository = _valuationRepository;
     if (valuationRepository != null && snapshots.isNotEmpty) {
-      valuationsImported = await valuationRepository.importAll(snapshots);
+      // Replace has already deleted the account's data: a failed write must
+      // not stop the goals, documents and FIRE settings that follow. The
+      // investments keep the mirror they were written with.
+      try {
+        valuationsImported = await valuationRepository.importAll(snapshots);
+      } catch (e) {
+        // The type only: the message of a backend error can quote names and
+        // amounts (rule 7).
+        LoggerService.error(
+          'Could not save imported valuations',
+          metadata: {'error_type': e.runtimeType.toString()},
+        );
+        warnings.add('Dated values not imported: they could not be saved');
+      }
     }
 
     // Import goals (with investment name-to-ID mapping for linked investments)

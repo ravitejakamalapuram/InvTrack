@@ -851,6 +851,44 @@ void main() {
     });
   });
 
+  // CodeRabbit on PR 961: the dated values are written after Replace has
+  // wiped the account. A failed write must not stop the goals and the rest.
+  group('Replace: the dated values cannot be saved', () {
+    const warning = 'Dated values not imported: they could not be saved';
+
+    test(
+      'goals still import and one fixed warning says what is missing',
+      () async {
+        // A backend error can quote an investment and an amount.
+        valuations.failNextWrite = StateError(
+          'permission denied for $_activeName 125000',
+        );
+        final result = await importZip(_backup());
+
+        expect(result.errors, isEmpty);
+        expect(result.warnings, [warning]);
+        expectNoUserTextIn(result.warnings);
+        expect(result.investmentsImported, 2);
+        expect(result.cashflowsImported, 2);
+        expect(result.goalsImported, 2);
+        expect(goals.goals.map((g) => g.name), [_goalName]);
+        expect(goals.archivedGoals.map((g) => g.name), [_archivedGoalName]);
+        expect(investments.investments.single.name, _activeName);
+        // Only the snapshot the account had before: the backup's was not
+        // written (the fake does not cascade the wipe to snapshots).
+        expect(valuations.docs.keys, ['old-snap']);
+      },
+    );
+
+    test('Merge: the same failure also keeps importing', () async {
+      valuations.failNextWrite = StateError('quota');
+      final result = await importZip(_backup(), ImportStrategy.merge);
+
+      expect(result.warnings, contains(warning));
+      expect(result.goalsImported, 2);
+    });
+  });
+
   group('a readable backup imports exactly as before', () {
     test('Replace: valid backup', () async {
       final result = await importZip(_backup());
