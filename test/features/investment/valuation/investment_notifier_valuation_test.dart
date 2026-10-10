@@ -4,11 +4,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_notifier.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/valuation_providers.dart';
 
@@ -183,8 +185,144 @@ void main() {
     });
   });
 
+  group('a currency round trip (flag on)', () {
+    setUp(() => container = build(enabled: true));
+
+    final snapshotDay = day.subtract(const Duration(days: 30));
+
+    Future<void> changeCurrency(String currency) => notifier().updateInvestment(
+      id: 'gold',
+      name: 'gold',
+      type: InvestmentType.gold,
+      currency: currency,
+    );
+
+    ValuationCandidate? shown(InvestmentEntity investment) =>
+        ValuationSnapshotSelector.select(
+          investment: investment,
+          snapshots: valuations.docs.values,
+          asOf: day,
+        );
+
+    test('changing back shows the snapshot in that currency again', () async {
+      investments.seed(
+        investments: [
+          testInvestment('gold', compatValue: 500000, compatDate: snapshotDay),
+        ],
+      );
+      valuations.docs['s1'] = testSnapshot(
+        's1',
+        investmentId: 'gold',
+        amount: 500000,
+        date: snapshotDay,
+        kind: ValuationKind.marketValue,
+      );
+
+      await changeCurrency('USD');
+      final inUsd = (await investments.getInvestmentById('gold'))!;
+      expect(inUsd.currentValue, isNull);
+      expect(shown(inUsd), isNull);
+
+      await changeCurrency('INR');
+      final back = (await investments.getInvestmentById('gold'))!;
+      expect(back.currency, 'INR');
+      // The pair mirrors the snapshot that applies again.
+      expect(back.currentValue, 500000);
+      expect(back.currentValueDate, snapshotDay);
+      final candidate = shown(back);
+      expect(candidate?.snapshotId, 's1');
+      expect(candidate?.amount, 500000);
+      expect(candidate?.kind, ValuationKind.marketValue);
+    });
+
+    test('the pair mirrors the latest snapshot in the new currency', () async {
+      investments.seed(
+        investments: [
+          testInvestment('gold', compatValue: 500000, compatDate: snapshotDay),
+        ],
+      );
+      valuations.docs['inr'] = testSnapshot(
+        'inr',
+        investmentId: 'gold',
+        amount: 500000,
+        date: snapshotDay,
+      );
+      valuations.docs['usd-old'] = testSnapshot(
+        'usd-old',
+        investmentId: 'gold',
+        amount: 5000,
+        currency: 'USD',
+        date: snapshotDay.subtract(const Duration(days: 60)),
+      );
+      valuations.docs['usd-new'] = testSnapshot(
+        'usd-new',
+        investmentId: 'gold',
+        amount: 6000,
+        currency: 'USD',
+        date: snapshotDay.subtract(const Duration(days: 10)),
+      );
+
+      await changeCurrency('USD');
+
+      final saved = (await investments.getInvestmentById('gold'))!;
+      expect(saved.currentValue, 6000);
+      expect(
+        saved.currentValueDate,
+        snapshotDay.subtract(const Duration(days: 10)),
+      );
+      expect(shown(saved)?.snapshotId, 'usd-new');
+      // Snapshots of the old currency are kept as history.
+      expect(valuations.docs.keys, containsAll(['inr', 'usd-old', 'usd-new']));
+    });
+
+    test('another investment\'s snapshots are not mirrored', () async {
+      investments.seed(
+        investments: [
+          testInvestment('gold', compatValue: 9, compatDate: snapshotDay),
+        ],
+      );
+      valuations.docs['other'] = testSnapshot(
+        'other',
+        investmentId: 'silver',
+        amount: 777,
+        currency: 'USD',
+        date: snapshotDay,
+      );
+
+      await changeCurrency('USD');
+
+      expect(
+        (await investments.getInvestmentById('gold'))!.currentValue,
+        isNull,
+      );
+    });
+  });
+
   group('the flag off', () {
     setUp(() => container = build(enabled: false));
+
+    test('a currency change clears the pair and reads no snapshots', () async {
+      investments.seed(
+        investments: [testInvestment('gold', compatValue: 9, compatDate: day)],
+      );
+      valuations.docs['usd'] = testSnapshot(
+        'usd',
+        investmentId: 'gold',
+        amount: 5,
+        currency: 'USD',
+        date: day,
+      );
+      await notifier().updateInvestment(
+        id: 'gold',
+        name: 'gold',
+        type: InvestmentType.gold,
+        currency: 'USD',
+      );
+      expect(
+        (await investments.getInvestmentById('gold'))!.currentValue,
+        isNull,
+      );
+    });
 
     test('setCurrentValue writes the pair exactly as before', () async {
       investments.seed(investments: [testInvestment('gold')]);

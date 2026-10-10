@@ -5,6 +5,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
+import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
@@ -163,8 +164,15 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .getInvestmentById(id);
       if (existing == null) throw DataException.notFound('Investment', id);
       // The current value is in the stored currency; it means nothing in
-      // another one, so a currency change clears it (money rule 2).
-      final keepsValue = currency == null || currency == existing.currency;
+      // another one, so a currency change clears it (money rule 2), unless
+      // dated valuations in the new currency are on record: the pair then
+      // mirrors the latest of them, like every other write of it. Left null,
+      // it would read as a value cleared by an older app, and hide them.
+      final newCurrency = currency ?? existing.currency;
+      final keepsValue = newCurrency == existing.currency;
+      final mirror = keepsValue
+          ? null
+          : await _mirrorInCurrency(existing.id, newCurrency);
 
       // Built explicitly, not with copyWith: the edit form sends every
       // optional field, and null means the user cleared it. copyWith would
@@ -192,10 +200,12 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         riskLevel: riskLevel,
         compoundingFrequency: compoundingFrequency,
         // Multi-currency: no currency from the form keeps the stored one
-        currency: currency ?? existing.currency,
+        currency: newCurrency,
         // Not on the edit form: set through setCurrentValue only.
-        currentValue: keepsValue ? existing.currentValue : null,
-        currentValueDate: keepsValue ? existing.currentValueDate : null,
+        currentValue: keepsValue ? existing.currentValue : mirror?.amount,
+        currentValueDate: keepsValue
+            ? existing.currentValueDate
+            : mirror?.effectiveDate,
       );
       final repo = ref.read(investmentRepositoryProvider);
       // With dated valuations on, the pair mirrors the latest snapshot and is
@@ -851,9 +861,20 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
-  // Note: With stream-based architecture, manual invalidation is largely unnecessary.
-  // Firestore streams auto-update, and derived providers reactively recompute.
-  // This method is kept for edge cases (e.g., forcing refresh after error recovery).
+  /// The latest live dated valuation of [investmentId] in [currency], or null
+  /// when there is none or the feature is off.
+  Future<InvestmentValuationSnapshot?> _mirrorInCurrency(
+    String investmentId,
+    String currency,
+  ) async {
+    final byInvestment = await _valuationSnapshotsByInvestment();
+    return ValuationSnapshotSelector.mirrorOf(
+      byInvestment?[investmentId] ?? const [],
+      investmentId: investmentId,
+      currency: currency,
+    );
+  }
+
   /// The live dated valuations by investment id, or null while the feature
   /// is off: goal progress then values investments exactly as before.
   Future<Map<String, List<InvestmentValuationSnapshot>>?>
@@ -866,6 +887,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     return byInvestment;
   }
 
+  // Note: With stream-based architecture, manual invalidation is largely unnecessary.
+  // Firestore streams auto-update, and derived providers reactively recompute.
+  // This method is kept for edge cases (e.g., forcing refresh after error recovery).
   void _invalidateAll() {
     ref.invalidate(allInvestmentsProvider);
     ref.invalidate(allCashFlowsStreamProvider);
