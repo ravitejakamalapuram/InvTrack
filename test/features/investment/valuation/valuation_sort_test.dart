@@ -62,11 +62,23 @@ Future<List<String>> _sortedIds(InvestmentSort sort) async {
   addTearDown(container.dispose);
   final sub = container.listen(filteredInvestmentsProvider, (_, _) {});
   addTearDown(sub.close);
+  final stats = container.listen(
+    activeInvestmentBasicStatsMapProvider,
+    (_, _) {},
+  );
+  addTearDown(stats.close);
   container.read(investmentListStateProvider.notifier).setSort(sort);
-  for (var i = 0; i < 50; i++) {
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+  // The list is sorted by these stats: it is final once they have loaded.
+  // Bounded, so a provider that never resolves fails instead of hanging.
+  for (var i = 0; i < 100; i++) {
+    final value = stats.read();
+    if (value.hasError) throw value.error!;
+    if (value.hasValue && !value.isLoading) {
+      return [for (final inv in sub.read().requireValue) inv.id];
+    }
+    await Future<void>.delayed(Duration.zero);
   }
-  return [for (final inv in sub.read().requireValue) inv.id];
+  fail('the stats the list is sorted by did not resolve');
 }
 
 void main() {
