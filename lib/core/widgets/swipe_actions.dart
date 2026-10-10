@@ -1,11 +1,14 @@
 /// Generic swipe actions wrapper widget supporting delete and archive.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Configuration for archive action
 class ArchiveActionConfig {
@@ -15,21 +18,33 @@ class ArchiveActionConfig {
   /// Message for the confirmation dialog
   final String confirmMessage;
 
-  /// Callback when the item is archived
-  final VoidCallback onArchive;
+  /// Callback when the item is archived. It is awaited, so the message
+  /// shown afterwards follows its result.
+  final FutureOr<void> Function() onArchive;
 
   /// Success message to show after archiving
   final String successMessage;
 
+  /// Message to show when [onArchive] throws. Null shows the generic
+  /// "Something went wrong" message from the localisation file.
+  final String? failureMessage;
+
   /// Whether the item is currently archived (for unarchive action)
   final bool isArchived;
+
+  /// Extra content for the confirmation dialog, loaded when the dialog is
+  /// about to open (for example the goals the action changes). Null, or a
+  /// null result, shows the message alone.
+  final Future<Widget?> Function()? confirmDetails;
 
   const ArchiveActionConfig({
     required this.confirmTitle,
     required this.confirmMessage,
     required this.onArchive,
     required this.successMessage,
+    this.failureMessage,
     this.isArchived = false,
+    this.confirmDetails,
   });
 }
 
@@ -202,17 +217,36 @@ class SwipeActions extends StatelessWidget {
       return false;
     } else if (direction == DismissDirection.startToEnd &&
         archiveConfig != null) {
-      final isArchived = archiveConfig!.isArchived;
+      final config = archiveConfig!;
+      final isArchived = config.isArchived;
+      final l10n = AppLocalizations.of(context);
+      final details = await config.confirmDetails?.call();
+      if (!context.mounted) return false;
       final confirmed = await AppFeedback.showConfirmDialog(
         context: context,
-        title: archiveConfig!.confirmTitle,
-        message: archiveConfig!.confirmMessage,
-        confirmText: isArchived ? 'Unarchive' : 'Archive',
+        title: config.confirmTitle,
+        message: config.confirmMessage,
+        details: details,
+        confirmText: isArchived ? l10n.unarchive : l10n.archive,
       );
       if (confirmed == true) {
-        archiveConfig!.onArchive();
+        // The message follows the result: a failed archive is not announced
+        // as done.
+        var succeeded = true;
+        try {
+          await config.onArchive();
+        } catch (_) {
+          succeeded = false;
+        }
         if (context.mounted) {
-          AppFeedback.showSuccess(context, archiveConfig!.successMessage);
+          if (succeeded) {
+            AppFeedback.showSuccess(context, config.successMessage);
+          } else {
+            AppFeedback.showError(
+              context,
+              config.failureMessage ?? l10n.archiveActionFailed,
+            );
+          }
         }
       }
       // Always return false - the item will be removed by provider update

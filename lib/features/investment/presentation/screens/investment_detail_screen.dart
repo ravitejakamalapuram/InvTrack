@@ -14,6 +14,7 @@ import 'package:inv_tracker/features/investment/presentation/screens/add_transac
 import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_providers.dart';
 import 'package:inv_tracker/features/income_projection/presentation/widgets/expected_income_section.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/add_document_sheet.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/archive_investment_confirm.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/cash_flow_card_widget.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/document_list_widget.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_fab_widgets.dart';
@@ -914,19 +915,20 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     // Capture navigator and messenger upfront before any async operations
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    final successMessage =
-        'Investment ${isArchived ? 'unarchived' : 'archived'}';
-    final errorMessage =
-        'Failed to ${isArchived ? 'unarchive' : 'archive'} investment';
+    final l10n = AppLocalizations.of(context);
+    final successMessage = isArchived
+        ? l10n.investmentRestored
+        : l10n.investmentArchived;
+    final errorMessage = isArchived
+        ? l10n.unarchiveInvestmentFailed
+        : l10n.archiveInvestmentFailed;
 
-    final confirmed = await AppFeedback.showConfirmDialog(
-      context: context,
-      title: '${isArchived ? 'Unarchive' : 'Archive'} Investment?',
-      message: isArchived
-          ? 'This will restore the investment to your active list.'
-          : 'This will hide the investment from your active list. You can restore it anytime from the Archived filter.',
-      confirmText: isArchived ? 'Unarchive' : 'Archive',
-      isDestructive: false,
+    // Says what archiving does to the totals, goals and FIRE, and which
+    // goals it changes.
+    final confirmed = await confirmArchiveToggle(
+      context,
+      ref,
+      widget.investment,
     );
 
     if (confirmed && mounted) {

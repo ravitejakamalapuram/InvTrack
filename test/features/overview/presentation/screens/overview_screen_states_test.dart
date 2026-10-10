@@ -9,10 +9,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
-import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/features/investment/presentation/screens/investment_list_screen.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_enums.dart';
 import 'package:inv_tracker/features/overview/presentation/screens/overview_screen.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_empty_state.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
@@ -42,6 +45,7 @@ Future<void> _pumpOverview(
   required Stream<List<CashFlowEntity>> Function() cashFlows,
   Stream<List<InvestmentEntity>> Function()? archivedInvestments,
   bool productionRetry = false,
+  GoRouter? router,
 }) async {
   SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
   final prefs = await SharedPreferences.getInstance();
@@ -74,11 +78,17 @@ Future<void> _pumpOverview(
           );
         }),
       ],
-      child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: const OverviewScreen(),
-      ),
+      child: router == null
+          ? const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: OverviewScreen(),
+            )
+          : MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
     ),
   );
   await tester.pump();
@@ -249,6 +259,94 @@ void main() {
 
       expect(find.text('Try Sample Data'), findsNothing);
       expect(_emptyStateEvents(analytics), 0);
+    },
+  );
+
+  testWidgets(
+    'an account whose investments are all archived sees why the totals are '
+    'empty, not the first-run onboarding (A17)',
+    (tester) async {
+      await _pumpOverview(
+        tester,
+        analytics: analytics,
+        investments: () => Stream.value(const []),
+        cashFlows: () => Stream.value(const []),
+        archivedInvestments: () => Stream.value([_investment]),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(OverviewEmptyState), findsNothing);
+      expect(find.text('All your investments are archived'), findsOneWidget);
+      expect(
+        find.text(
+          'Overview totals, goals and FIRE leave archived investments out, '
+          'so they show nothing for now. Your archived investments are '
+          'still in the Investments tab.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('View investments'), findsOneWidget);
+      // The hero says what it leaves out.
+      expect(find.text('Excludes 1 archived investment'), findsOneWidget);
+      expect(_emptyStateEvents(analytics), 0);
+    },
+  );
+
+  testWidgets(
+    'View investments opens the Investments tab on the Archived filter, so '
+    'the archived investments are what the user sees (A17)',
+    (tester) async {
+      final router = GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const OverviewScreen()),
+          GoRoute(
+            path: '/investments',
+            builder: (_, _) => const InvestmentListScreen(),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await _pumpOverview(
+        tester,
+        analytics: analytics,
+        investments: () => Stream.value(const []),
+        cashFlows: () => Stream.value(const []),
+        archivedInvestments: () => Stream.value([_investment]),
+        router: router,
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.tap(find.text('View investments'));
+      await tester.pumpAndSettle();
+
+      expect(router.routeInformationProvider.value.uri.path, '/investments');
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(InvestmentListScreen)),
+      );
+      expect(
+        container.read(investmentListStateProvider).filter,
+        InvestmentFilter.archived,
+      );
+      // The archived investment is listed, not 'No Matching Investments'.
+      expect(find.text('FD'), findsOneWidget);
+      expect(find.text('No Matching Investments'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'a new account still sees the onboarding and no all-archived card',
+    (tester) async {
+      await _pumpOverview(
+        tester,
+        analytics: analytics,
+        investments: () => Stream.value(const []),
+        cashFlows: () => Stream.value(const []),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(OverviewEmptyState), findsOneWidget);
+      expect(find.text('All your investments are archived'), findsNothing);
+      expect(find.textContaining('Excludes'), findsNothing);
     },
   );
 

@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/widgets/swipe_actions.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/archive_investment_confirm.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_card.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_action_bar.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_enums.dart';
@@ -401,6 +402,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
 
               final investment = filteredInvestments[index];
               final isArchived = investment.isArchived;
+              final l10n = AppLocalizations.of(context);
               return StaggeredFadeIn(
                 index: index,
                 // OPTIMIZATION: Wrap in RepaintBoundary to isolate the expensive GlassCard
@@ -428,26 +430,32 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                       },
                     ),
                     archiveConfig: ArchiveActionConfig(
-                      confirmTitle: isArchived
-                          ? 'Unarchive Investment?'
-                          : 'Archive Investment?',
-                      confirmMessage: isArchived
-                          ? '"${investment.name}" will be restored to your active investments.'
-                          : '"${investment.name}" will be hidden from your active investments.',
+                      confirmTitle: archiveToggleTitle(
+                        l10n,
+                        isArchived: isArchived,
+                      ),
+                      // States what archiving does to the totals, goals and
+                      // FIRE; the goals it changes are listed under it.
+                      confirmMessage: archiveToggleMessage(
+                        l10n,
+                        isArchived: isArchived,
+                      ),
+                      confirmDetails: () =>
+                          archiveConfirmDetails(ref, investment),
                       successMessage: isArchived
-                          ? 'Investment restored'
-                          : 'Investment archived',
+                          ? l10n.investmentRestored
+                          : l10n.investmentArchived,
+                      failureMessage: isArchived
+                          ? l10n.unarchiveInvestmentFailed
+                          : l10n.archiveInvestmentFailed,
                       isArchived: isArchived,
                       onArchive: () {
-                        if (isArchived) {
-                          ref
-                              .read(investmentNotifierProvider.notifier)
-                              .unarchiveInvestment(investment.id);
-                        } else {
-                          ref
-                              .read(investmentNotifierProvider.notifier)
-                              .archiveInvestment(investment.id);
-                        }
+                        final notifier = ref.read(
+                          investmentNotifierProvider.notifier,
+                        );
+                        return isArchived
+                            ? notifier.unarchiveInvestment(investment.id)
+                            : notifier.archiveInvestment(investment.id);
                       },
                     ),
                     child: InvestmentCard(

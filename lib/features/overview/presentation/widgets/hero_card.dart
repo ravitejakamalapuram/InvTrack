@@ -38,6 +38,9 @@ class HeroCardWithToggle extends ConsumerWidget {
   final NumberFormat currencyFormat;
   final Widget Function(String error) errorBuilder;
 
+  /// Archived investments, which the totals leave out (A17).
+  final int archivedCount;
+
   const HeroCardWithToggle({
     super.key,
     required this.globalStats,
@@ -45,6 +48,7 @@ class HeroCardWithToggle extends ConsumerWidget {
     required this.closedStats,
     required this.currencyFormat,
     required this.errorBuilder,
+    this.archivedCount = 0,
   });
 
   @override
@@ -66,6 +70,7 @@ class HeroCardWithToggle extends ConsumerWidget {
             closedStatsReady: false,
             currencyFormat: currencyFormat,
             showRealizedOnly: showRealizedOnly,
+            archivedCount: archivedCount,
           ),
           error: (e, s) => HeroCardContent(
             globalStats: global,
@@ -74,6 +79,7 @@ class HeroCardWithToggle extends ConsumerWidget {
             closedStatsReady: false,
             currencyFormat: currencyFormat,
             showRealizedOnly: showRealizedOnly,
+            archivedCount: archivedCount,
           ),
           data: (closed) => HeroCardContent(
             globalStats: global,
@@ -81,6 +87,7 @@ class HeroCardWithToggle extends ConsumerWidget {
             closedStats: closed,
             currencyFormat: currencyFormat,
             showRealizedOnly: showRealizedOnly,
+            archivedCount: archivedCount,
           ),
         );
       },
@@ -103,6 +110,11 @@ class HeroCardContent extends ConsumerWidget {
   final NumberFormat currencyFormat;
   final bool showRealizedOnly;
 
+  /// How many archived investments the figures leave out. Archived
+  /// investments are excluded from every Overview total on purpose (A17), so
+  /// the card says so when there are any.
+  final int archivedCount;
+
   const HeroCardContent({
     super.key,
     required this.globalStats,
@@ -111,6 +123,7 @@ class HeroCardContent extends ConsumerWidget {
     this.closedStatsReady = true,
     required this.currencyFormat,
     required this.showRealizedOnly,
+    this.archivedCount = 0,
   });
 
   @override
@@ -173,6 +186,16 @@ class HeroCardContent extends ConsumerWidget {
               const SizedBox(height: 6),
               Text(
                 display.secondaryText(l10n)!,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+            if (archivedCount > 0) ...[
+              const SizedBox(height: 6),
+              Text(
+                l10n.overviewArchivedExcluded(archivedCount),
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 11,

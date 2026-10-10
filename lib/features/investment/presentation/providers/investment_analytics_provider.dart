@@ -23,6 +23,11 @@ class InvestmentWithStats {
 
 // ============ ANALYTICS PROVIDERS ============
 
+/// When [investment] was closed. Editing, archiving or unarchiving bumps
+/// `updatedAt`, so it only stands in for items without a closing date.
+DateTime _closedOn(InvestmentEntity investment) =>
+    investment.closedAt ?? investment.updatedAt;
+
 /// Recently closed investments (derived from streams - auto-updates)
 /// Only includes non-archived investments.
 final recentlyClosedInvestmentsProvider =
@@ -39,7 +44,7 @@ final recentlyClosedInvestmentsProvider =
               // Maintain top 3 most recently closed
               int insertIdx = -1;
               for (int j = 0; j < recentClosed.length; j++) {
-                if (i.updatedAt.isAfter(recentClosed[j].updatedAt)) {
+                if (_closedOn(i).isAfter(_closedOn(recentClosed[j]))) {
                   insertIdx = j;
                   break;
                 }
