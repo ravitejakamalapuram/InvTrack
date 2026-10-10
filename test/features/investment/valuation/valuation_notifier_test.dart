@@ -650,6 +650,112 @@ void main() {
     });
   });
 
+  // CodeRabbit on PR 961: an action read the whole collection several times.
+  // It reads what it needs once: one investment's snapshots where the
+  // investment is known, the collection once where only a snapshot id is.
+  group('what an action reads', () {
+    late InvestmentValuationSnapshot first;
+
+    setUp(() {
+      first = testSnapshot(
+        'a',
+        investmentId: 'gold',
+        amount: 100,
+        date: day.subtract(const Duration(days: 5)),
+      );
+      valuations.docs['a'] = first;
+      valuations.docs['b'] = testSnapshot(
+        'b',
+        investmentId: 'gold',
+        amount: 200,
+        date: day,
+      );
+      valuations.docs['other'] = testSnapshot(
+        'other',
+        investmentId: 'silver',
+        amount: 999,
+        date: day,
+      );
+    });
+
+    void expectReadOnce({required bool byInvestment}) {
+      expect(
+        valuations.getAllCount,
+        byInvestment ? 0 : 1,
+        reason: 'whole-collection reads',
+      );
+      expect(valuations.readByInvestment, byInvestment ? ['gold'] : isEmpty);
+    }
+
+    test('setting a value reads that investment once', () async {
+      await notifier().setValuation(
+        investmentId: 'gold',
+        amount: 300,
+        date: day,
+      );
+      expectReadOnce(byInvestment: true);
+    });
+
+    test('editing a value reads the collection once', () async {
+      await notifier().editValuation(snapshotId: 'a', amount: 150);
+      expectReadOnce(byInvestment: false);
+      expect(valuations.mirrors['gold']!.value, 200);
+    });
+
+    test('clearing a value reads the collection once', () async {
+      await notifier().clearValuation('b');
+      expectReadOnce(byInvestment: false);
+      expect(valuations.mirrors['gold']!.value, 100);
+    });
+
+    test('clearing the latest value reads that investment once', () async {
+      expect(await notifier().clearLatestValuation('gold'), isTrue);
+      expectReadOnce(byInvestment: true);
+      expect(valuations.docs['b']!.isLive, isFalse);
+      expect(valuations.docs['a']!.isLive, isTrue);
+      expect(valuations.mirrors['gold']!.value, 100);
+    });
+
+    test('undoing a clear reads that investment once', () async {
+      await notifier().clearValuation('b');
+      valuations
+        ..getAllCount = 0
+        ..readByInvestment.clear();
+      expect(await notifier().undoClear(), isTrue);
+      expectReadOnce(byInvestment: true);
+      expect(valuations.mirrors['gold']!.value, 200);
+    });
+
+    test('confirming a baseline reads the collection once', () async {
+      valuations.docs['a'] = first.copyWith(
+        provenance: ValuationProvenance.openingBaseline,
+      );
+      investments.seed(
+        cashFlows: [
+          testFlow(
+            'gold',
+            CashFlowType.invest,
+            90,
+            day.subtract(const Duration(days: 400)),
+          ),
+        ],
+      );
+      await notifier().rebase('a');
+      expectReadOnce(byInvestment: false);
+    });
+
+    test('a cleared value is still not found or counted', () async {
+      await notifier().clearValuation('b');
+      await expectLater(
+        () => notifier().editValuation(snapshotId: 'b', amount: 1),
+        throwsA(isA<DataException>()),
+      );
+      expect(await notifier().clearLatestValuation('gold'), isTrue);
+      expect(valuations.docs['a']!.isLive, isFalse);
+      expect(await notifier().clearLatestValuation('gold'), isFalse);
+    });
+  });
+
   group('nothing built for a calculation is stored (AC11)', () {
     test('no write holds a current-value: or tracking-start: id, or a cash '
         'flow', () async {

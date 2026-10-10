@@ -275,6 +275,34 @@ void main() {
       expect(valuations.docs.keys, containsAll(['inr', 'usd-old', 'usd-new']));
     });
 
+    test('a currency change reads only that investment\'s snapshots', () async {
+      investments.seed(
+        investments: [
+          testInvestment('gold', compatValue: 9, compatDate: snapshotDay),
+        ],
+      );
+      valuations.docs['usd'] = testSnapshot(
+        'usd',
+        investmentId: 'gold',
+        amount: 6000,
+        currency: 'USD',
+        date: snapshotDay,
+      );
+      valuations.docs['other'] = testSnapshot(
+        'other',
+        investmentId: 'silver',
+        amount: 777,
+        currency: 'USD',
+        date: snapshotDay,
+      );
+
+      await changeCurrency('USD');
+
+      expect(valuations.getAllCount, 0);
+      expect(valuations.readByInvestment, ['gold']);
+      expect((await investments.getInvestmentById('gold'))!.currentValue, 6000);
+    });
+
     test('another investment\'s snapshots are not mirrored', () async {
       investments.seed(
         investments: [

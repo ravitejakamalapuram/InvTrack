@@ -899,9 +899,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     String investmentId,
     String currency,
   ) async {
-    final byInvestment = await _valuationSnapshotsByInvestment();
+    if (!ref.read(valuationSnapshotsActiveProvider)) return null;
+    // mirrorOf leaves out the cleared ones.
     return ValuationSnapshotSelector.mirrorOf(
-      byInvestment?[investmentId] ?? const [],
+      await ref.read(valuationRepositoryProvider).getByInvestment(investmentId),
       investmentId: investmentId,
       currency: currency,
     );

@@ -54,6 +54,8 @@ class _RecordingBatch implements WriteBatch {
   }
 }
 
+class _MockQuery extends Mock implements Query<Map<String, dynamic>> {}
+
 class _MockQuerySnapshot extends Mock
     implements QuerySnapshot<Map<String, dynamic>> {}
 
@@ -458,6 +460,42 @@ void main() {
 
       final all = await repository.getAll();
       expect(all.map((s) => s.id), ['good']);
+    });
+  });
+
+  group('reading one investment', () {
+    test('getByInvestment asks for it by one field, tombstones included, '
+        'and drops what cannot be trusted', () async {
+      final query = _MockQuery();
+      final result = _MockQuerySnapshot();
+      final live = _MockQueryDoc();
+      final cleared = _MockQueryDoc();
+      final bad = _MockQueryDoc();
+      when(() => live.id).thenReturn('live');
+      when(
+        () => live.data(),
+      ).thenReturn(FirestoreValuationRepository.snapshotToFirestore(snapshot));
+      when(() => cleared.id).thenReturn('cleared');
+      when(() => cleared.data()).thenReturn(
+        FirestoreValuationRepository.snapshotToFirestore(
+          snapshot.copyWith(deletedAt: DateTime.utc(2026, 2, 1)),
+        ),
+      );
+      when(() => bad.id).thenReturn('bad');
+      when(() => bad.data()).thenReturn({'kind': 'unknown'});
+      when(() => result.docs).thenReturn([live, cleared, bad]);
+      when(
+        () => valuations.where('investmentId', isEqualTo: 'i1'),
+      ).thenReturn(query);
+      when(() => query.get()).thenAnswer((_) async => result);
+
+      final own = await repository.getByInvestment('i1');
+
+      expect(own.map((s) => s.id), ['live', 'cleared']);
+      expect(own.map((s) => s.isLive), [true, false]);
+      verify(() => valuations.where('investmentId', isEqualTo: 'i1')).called(1);
+      // A single-field equality: no ordering, so no composite index.
+      verifyNever(() => valuations.get());
     });
   });
 

@@ -54,9 +54,28 @@ class InMemoryValuationRepository implements ValuationRepository {
     });
   }
 
+  /// Whole-collection reads, and the investments read one at a time, so a
+  /// test can see what an action reads.
+  var getAllCount = 0;
+  final List<String> readByInvestment = [];
+
   @override
-  Future<List<InvestmentValuationSnapshot>> getAll() async =>
-      docs.values.toList();
+  Future<List<InvestmentValuationSnapshot>> getAll() async {
+    getAllCount++;
+    return docs.values.toList();
+  }
+
+  @override
+  Future<List<InvestmentValuationSnapshot>> getByInvestment(
+    String investmentId,
+  ) async {
+    readByInvestment.add(investmentId);
+    // Cleared ones included, as a query on the collection returns them.
+    return [
+      for (final s in docs.values)
+        if (s.investmentId == investmentId) s,
+    ];
+  }
 
   final _server =
       StreamController<List<InvestmentValuationSnapshot>>.broadcast();

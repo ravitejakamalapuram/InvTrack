@@ -41,6 +41,13 @@ abstract class ValuationRepository {
 
   Future<List<InvestmentValuationSnapshot>> getAll();
 
+  /// Every snapshot of one investment, cleared ones included. Reads that need
+  /// one investment use this instead of [getAll]: it is a single-field query,
+  /// so it needs no composite index and reads nothing of the others.
+  Future<List<InvestmentValuationSnapshot>> getByInvestment(
+    String investmentId,
+  );
+
   /// Every snapshot as the server has it: only states that come from the
   /// server and have no write of this device still pending. A snapshot that
   /// differs from what this device last wrote means another device's write

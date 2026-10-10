@@ -62,6 +62,13 @@ class FirestoreValuationRepository implements ValuationRepository {
       _readAll(await _valuationsRef.get());
 
   @override
+  Future<List<InvestmentValuationSnapshot>> getByInvestment(
+    String investmentId,
+  ) async => _readAll(
+    await _valuationsRef.where('investmentId', isEqualTo: investmentId).get(),
+  );
+
+  @override
   Future<void> save(
     InvestmentValuationSnapshot snapshot, {
     required CompatMirror mirror,

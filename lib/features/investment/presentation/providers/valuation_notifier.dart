@@ -145,7 +145,8 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
     if (amount != null) _validateAmount(amount);
     final day = date == null ? null : _validatedDay(date);
     return _run(() async {
-      final current = await _liveSnapshot(snapshotId);
+      final (snapshot: current, ofInvestment: own) =
+          await _liveSnapshotWithSiblings(snapshotId);
       final investment = await _writableInvestment(current.investmentId);
       final edited = current.copyWith(
         amount: amount == null
@@ -154,7 +155,7 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
         effectiveDate: day,
         kind: kind,
       );
-      await _save(investment, edited, await _liveSnapshotsOf(investment.id));
+      await _save(investment, edited, own);
       ref
           .read(analyticsServiceProvider)
           .logValuationSet(
@@ -170,27 +171,35 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
   /// investment's mirror falls back to the latest snapshot that remains.
   Future<void> clearValuation(String snapshotId) async {
     await _run(() async {
-      final current = await _liveSnapshot(snapshotId);
-      final investment = await _writableInvestment(current.investmentId);
-      final all = await _liveSnapshotsOf(investment.id);
-      final remaining = [
-        for (final s in all)
-          if (s.id != snapshotId) s,
-      ];
-      final cleared = current.copyWith(deletedAt: DateTime.now());
-      await _repository.softDelete(
-        cleared,
-        mirror: _mirrorOf(investment, remaining),
-      );
-      _written(cleared);
-      _undo = _ClearedValuation(current);
-      ref
-          .read(analyticsServiceProvider)
-          .logValuationCleared(
-            kind: current.kind.name,
-            provenance: current.provenance.storageName,
-          );
+      final (snapshot: current, ofInvestment: own) =
+          await _liveSnapshotWithSiblings(snapshotId);
+      await _clear(current, own);
     });
+  }
+
+  /// Clears [current], one of [own] (the live snapshots of its investment).
+  Future<void> _clear(
+    InvestmentValuationSnapshot current,
+    List<InvestmentValuationSnapshot> own,
+  ) async {
+    final investment = await _writableInvestment(current.investmentId);
+    final remaining = [
+      for (final s in own)
+        if (s.id != current.id) s,
+    ];
+    final cleared = current.copyWith(deletedAt: DateTime.now());
+    await _repository.softDelete(
+      cleared,
+      mirror: _mirrorOf(investment, remaining),
+    );
+    _written(cleared);
+    _undo = _ClearedValuation(current);
+    ref
+        .read(analyticsServiceProvider)
+        .logValuationCleared(
+          kind: current.kind.name,
+          provenance: current.provenance.storageName,
+        );
   }
 
   /// Clears the snapshot the investment's value comes from: its latest live
@@ -202,13 +211,14 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
     if (investment == null) {
       throw DataException.notFound('Investment', investmentId);
     }
+    final own = await _liveSnapshotsOf(investmentId);
     final latest = ValuationSnapshotSelector.mirrorOf(
-      await _liveSnapshotsOf(investmentId),
+      own,
       investmentId: investmentId,
       currency: investment.currency,
     );
     if (latest == null) return false;
-    await clearValuation(latest.id);
+    await _run(() => _clear(latest, own));
     return true;
   }
 
@@ -258,7 +268,8 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
   /// and [ValidationException] is thrown.
   Future<InvestmentValuationSnapshot> rebase(String snapshotId) async {
     return _run(() async {
-      final current = await _liveSnapshot(snapshotId);
+      final (snapshot: current, ofInvestment: own) =
+          await _liveSnapshotWithSiblings(snapshotId);
       if (!current.isOpeningBaseline) {
         throw _rejected(
           'Only an opening value can be replaced by full history.',
@@ -280,7 +291,7 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
         );
       }
       final rebased = current.copyWith(provenance: ValuationProvenance.manual);
-      await _save(investment, rebased, await _liveSnapshotsOf(investment.id));
+      await _save(investment, rebased, own);
       return rebased;
     });
   }
@@ -357,17 +368,38 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
   }
 
   /// The live snapshots of [investmentId], from the repository (cache-first
-  /// when offline, like the other reads of the notifiers).
+  /// when offline, like the other reads of the notifiers). It reads that
+  /// investment's snapshots only.
   Future<List<InvestmentValuationSnapshot>> _liveSnapshotsOf(
     String investmentId,
   ) async => [
-    for (final s in await _repository.getAll())
-      if (s.investmentId == investmentId && s.isLive) s,
+    for (final s in await _repository.getByInvestment(investmentId))
+      if (s.isLive) s,
   ];
 
-  Future<InvestmentValuationSnapshot> _liveSnapshot(String id) async {
-    for (final s in await _repository.getAll()) {
-      if (s.id == id && s.isLive) return s;
+  /// The live snapshot [id] and the live snapshots of its investment, itself
+  /// included, from one read. Only the id is known here, so the collection is
+  /// read, once.
+  Future<
+    ({
+      InvestmentValuationSnapshot snapshot,
+      List<InvestmentValuationSnapshot> ofInvestment,
+    })
+  >
+  _liveSnapshotWithSiblings(String id) async {
+    final live = [
+      for (final s in await _repository.getAll())
+        if (s.isLive) s,
+    ];
+    for (final s in live) {
+      if (s.id != id) continue;
+      return (
+        snapshot: s,
+        ofInvestment: [
+          for (final o in live)
+            if (o.investmentId == s.investmentId) o,
+        ],
+      );
     }
     throw DataException.notFound('Valuation', id);
   }
