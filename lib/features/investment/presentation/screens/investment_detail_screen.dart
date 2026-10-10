@@ -137,18 +137,16 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             // heading semantics are set by hand: the app bar would otherwise
             // mark the title as a heading even while it is empty.
             excludeHeaderSemantics: true,
-            title: _CollapsedAppBarTitle(
-              child: Semantics(
-                header: true,
-                child: Text(
-                  widget.investment.name,
-                  style: AppTypography.body.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+            title: _InvestmentNameHeading(
+              inToolbar: true,
+              child: Text(
+                widget.investment.name,
+                style: AppTypography.body.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             actions: [
@@ -209,18 +207,8 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Semantics(
-                                    header: true,
-                                    // Names the screen for screen readers,
-                                    // as the app bar title did, except on
-                                    // Apple platforms (same as AppBar).
-                                    namesRoute: switch (Theme.of(
-                                      context,
-                                    ).platform) {
-                                      TargetPlatform.iOS ||
-                                      TargetPlatform.macOS => null,
-                                      _ => true,
-                                    },
+                                  _InvestmentNameHeading(
+                                    inToolbar: false,
                                     child: Text(
                                       widget.investment.name,
                                       style: AppTypography.h3.copyWith(
@@ -1009,28 +997,64 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
   }
 }
 
-/// Shows [child] in the pinned app bar only once the expanded header, which
-/// carries the same text, has mostly scrolled under the toolbar. While the
-/// header is showing it builds nothing, so the text exists once on screen and
-/// in the semantics tree.
-class _CollapsedAppBarTitle extends StatelessWidget {
-  const _CollapsedAppBarTitle({required this.child});
+/// The investment name as the page heading, either in the expanded header or
+/// in the pinned app bar (#942). The two hand over at one collapse point: the
+/// header copy fades out before it, the app bar copy fades in after it, so the
+/// name is never visible twice and exactly one copy is a heading for screen
+/// readers. The handoff depends only on how far the bar has collapsed, so it
+/// holds for both header heights (with and without notes).
+class _InvestmentNameHeading extends StatelessWidget {
+  const _InvestmentNameHeading({required this.inToolbar, required this.child});
 
+  /// Collapse fraction where the heading moves to the app bar.
+  static const double _handoff = 0.5;
+
+  /// How much of the collapse each copy takes to fade.
+  static const double _fade = 0.2;
+
+  final bool inToolbar;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final settings = context
         .dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
-    if (settings == null) return child;
-    final range = settings.maxExtent - settings.minExtent;
-    if (range <= 0) return child;
-    // 0 when fully expanded, 1 when fully collapsed.
-    final collapsed =
-        1 - ((settings.currentExtent - settings.minExtent) / range);
-    // Fade in over the second half, as the header's own name fades out.
-    final opacity = ((collapsed - 0.5) * 2).clamp(0.0, 1.0);
-    if (opacity == 0) return const SizedBox.shrink();
-    return Opacity(opacity: opacity, child: child);
+    final range = settings == null
+        ? 0.0
+        : settings.maxExtent - settings.minExtent;
+    // 0 when fully expanded, 1 when fully collapsed. A bar that cannot
+    // collapse keeps the name in the header.
+    final collapsed = range <= 0
+        ? 0.0
+        : (1 - (settings!.currentExtent - settings.minExtent) / range).clamp(
+            0.0,
+            1.0,
+          );
+    final heading = Semantics(
+      header: true,
+      // Names the screen for screen readers, as the app bar title did, except
+      // on Apple platforms (same as AppBar).
+      namesRoute: switch (Theme.of(context).platform) {
+        TargetPlatform.iOS || TargetPlatform.macOS => null,
+        _ => true,
+      },
+      child: child,
+    );
+    if (inToolbar) {
+      if (collapsed < _handoff) return const SizedBox.shrink();
+      return Opacity(
+        opacity: Interval(_handoff, _handoff + _fade).transform(collapsed),
+        // Stays the heading from the handoff on, even before it shows.
+        alwaysIncludeSemantics: true,
+        child: heading,
+      );
+    }
+    // At zero opacity the header copy also leaves the semantics tree, which
+    // happens exactly at the handoff. It keeps its size so the header does
+    // not reflow while scrolling.
+    return Opacity(
+      opacity: 1 - Interval(_handoff - _fade, _handoff).transform(collapsed),
+      child: heading,
+    );
   }
 }

@@ -88,7 +88,7 @@ final _flows = [
     ),
 ];
 
-Future<void> _pump(WidgetTester tester) async {
+Future<void> _pump(WidgetTester tester, {InvestmentEntity? investment}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   await tester.pumpWidget(
@@ -113,7 +113,7 @@ Future<void> _pump(WidgetTester tester) async {
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: InvestmentDetailScreen(investment: _investment),
+        home: InvestmentDetailScreen(investment: investment ?? _investment),
       ),
     ),
   );
@@ -132,6 +132,36 @@ Finder _nameInToolbar() => find.descendant(
   of: find.byType(NavigationToolbar),
   matching: find.text(_name),
 );
+
+/// The name in the expanded header, which lives in the app bar's flexible
+/// space.
+Finder _nameInHeader() => find.descendant(
+  of: find.byType(FlexibleSpaceBar),
+  matching: find.text(_name),
+);
+
+/// Opacity of the nearest [Opacity] above [finder], or 1 when there is none.
+double _opacityOf(WidgetTester tester, Finder finder) {
+  final opacity = find.ancestor(of: finder, matching: find.byType(Opacity));
+  if (opacity.evaluate().isEmpty) return 1;
+  return tester.widget<Opacity>(opacity.first).opacity;
+}
+
+/// Scrolls so the app bar has collapsed [fraction] of the way (0 expanded, 1
+/// collapsed). Tests have no status bar, so the bar collapses to the toolbar.
+Future<void> _collapseTo(WidgetTester tester, double fraction) async {
+  final bar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
+  final scrollable = tester.state<ScrollableState>(
+    find
+        .descendant(
+          of: find.byType(CustomScrollView),
+          matching: find.byType(Scrollable),
+        )
+        .first,
+  );
+  scrollable.position.jumpTo((bar.expandedHeight! - kToolbarHeight) * fraction);
+  await tester.pump();
+}
 
 void main() {
   testWidgets('shows the investment name once when the page opens', (
@@ -179,4 +209,62 @@ void main() {
     expect(_nameHeaders(), findsOneWidget);
     semantics.dispose();
   });
+
+  for (final notes in ['BHIVE COWORKING 27 LLP', null]) {
+    final label = notes == null ? 'without notes' : 'with notes';
+    testWidgets('mid-scroll the name shows once and is one heading ($label)', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await _pump(
+          tester,
+          investment: InvestmentEntity(
+            id: 'rbf-1',
+            name: _name,
+            type: InvestmentType.other,
+            status: InvestmentStatus.open,
+            notes: notes,
+            createdAt: DateTime(2026, 1, 1),
+            updatedAt: DateTime(2026, 1, 1),
+            currency: 'INR',
+          ),
+        );
+
+        for (final fraction in [0.3, 0.45, 0.5, 0.55, 0.7, 0.9]) {
+          await _collapseTo(tester, fraction);
+          final reason = 'collapsed $fraction';
+          final headerOpacity = _opacityOf(tester, _nameInHeader());
+          final toolbarOpacity = _nameInToolbar().evaluate().isEmpty
+              ? 0.0
+              : _opacityOf(tester, _nameInToolbar());
+
+          // Never visible in both places at once.
+          expect(
+            headerOpacity == 0 || toolbarOpacity == 0,
+            isTrue,
+            reason:
+                '$reason: header $headerOpacity, '
+                'toolbar $toolbarOpacity',
+          );
+          expect(_nameHeaders(), findsOneWidget, reason: reason);
+
+          // The heading, and the route name, sit on the copy in use.
+          final active = fraction < 0.5 ? _nameInHeader() : _nameInToolbar();
+          if (fraction < 0.5) {
+            expect(_nameInToolbar(), findsNothing, reason: reason);
+            expect(headerOpacity, greaterThan(0), reason: reason);
+          } else {
+            expect(headerOpacity, 0, reason: reason);
+          }
+          final node = tester.getSemantics(active);
+          expect(node.label, contains(_name), reason: reason);
+          expect(node.flagsCollection.isHeader, isTrue, reason: reason);
+          expect(node.flagsCollection.namesRoute, isTrue, reason: reason);
+        }
+      } finally {
+        semantics.dispose();
+      }
+    });
+  }
 }
