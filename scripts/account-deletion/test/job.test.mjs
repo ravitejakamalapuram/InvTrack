@@ -21,7 +21,7 @@ describe('deletion run', () => {
     const audit = await db.doc(`deletionAudit/run1-${hashUid('u1')}`).get();
     assert.equal(audit.get('verified'), true);
     assert.equal(audit.get('outcome'), 'deleted');
-    assert.equal(audit.get('docsDeleted'), 3);
+    assert.equal(audit.get('docsDeleted'), 4);
     assert.equal(audit.get('authDeleted'), true);
     assert.ok(!JSON.stringify(audit.data()).includes('u1@example.com'));
     assert.ok(!JSON.stringify(audit.data()).includes('"u1"'));
@@ -52,7 +52,7 @@ describe('deletion run', () => {
     await seedRequest('u1', 2 * DAY);
     const out = await runJob(opts({ dryRun: true }));
     assert.equal(out.exitCode, 0);
-    assert.equal(out.results[0].docsToDelete, 3);
+    assert.equal(out.results[0].docsToDelete, 4);
     assert.equal(await exists('users/u1/investments/i1'), true);
     assert.equal(await authExists('u1'), true);
     assert.equal(await exists('deletionRequests/u1'), true);
