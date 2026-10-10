@@ -578,8 +578,11 @@ class CurrentValueCalculator {
     if (lastFlow == null) return valuation(amount: winner.amount, on: date);
     // Only an opening baseline may precede the first cash flow: any other
     // value cannot include principal not yet put in, and adding all of it
-    // would count the principal twice.
+    // would count the principal twice. A value dated on or after a baseline
+    // does include it, so the rule does not apply to that value.
+    final baselineIncluded = startsOn != null && !startsOn.isAfter(date);
     if (winner.provenance != ValuationProvenance.openingBaseline &&
+        !baselineIncluded &&
         flows.every((cf) => _dateOnly(cf.date).isAfter(date))) {
       return null;
     }

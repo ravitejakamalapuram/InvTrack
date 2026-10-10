@@ -197,6 +197,21 @@ void main() {
       expect(period.state, TrackingPeriodState.valueUnavailable);
       expect(TrackingPeriodCalculator.stats(period), isNull);
     });
+
+    test('a first flow after a newer snapshot still has an end value', () {
+      final flows = [
+        testFlow('i1', CashFlowType.invest, 50000, DateTime(2026, 8, 1)),
+      ];
+      final period = _build([
+        _baseline(500000, DateTime(2026, 1, 1)),
+        testSnapshot('jul', amount: 530000, date: DateTime(2026, 7, 1)),
+      ], flows: flows);
+      expect(period.state, TrackingPeriodState.ready);
+      expect(period.start, DateTime(2026, 1, 1));
+      expect(period.end, DateTime(2026, 8, 1));
+      expect(period.terminal!.amount, 580000.00);
+      expect(period.flows.map((f) => f.amount), [500000.00, 50000.00]);
+    });
   });
 
   group('conversion', () {

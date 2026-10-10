@@ -291,6 +291,69 @@ void main() {
       expect(v.date, DateTime(2026, 3, 1));
       expect(v.historyLimited, isFalse);
     });
+
+    // CodeRabbit on PR 961: the baseline already holds the principal that
+    // came before the flows, so a newer manual snapshot that wins is not
+    // "before the principal" and the investment must keep its value.
+    group('a baseline, a newer manual snapshot, then the first flow', () {
+      final base = _baseline(500000, DateTime(2026, 1, 1));
+      final newer = testSnapshot(
+        'm',
+        amount: 520000,
+        date: DateTime(2026, 7, 1),
+      );
+      final later = [
+        testFlow('i1', CashFlowType.invest, 50000, DateTime(2026, 8, 1)),
+      ];
+
+      test('is carried forward from the manual snapshot', () {
+        final v = _valuation(investment, later, [base, newer]);
+        expect(v, isNotNull);
+        expect(v!.amount, 570000.00);
+        expect(v.date, DateTime(2026, 8, 1));
+        expect(v.provenance, ValuationProvenance.manual);
+        expect(v.historyLimited, isTrue);
+        expect(v.trackingStart, DateTime(2026, 1, 1));
+        expect(v.historyReviewNeeded, isFalse);
+        expect(v.staleFlowCount, 0);
+      });
+
+      test('a market value stays put and flags the later principal', () {
+        final market = testSnapshot(
+          'm',
+          amount: 520000,
+          date: DateTime(2026, 7, 1),
+          kind: ValuationKind.marketValue,
+        );
+        final v = _valuation(investment, later, [base, market])!;
+        expect(v.amount, 520000.00);
+        expect(v.date, DateTime(2026, 8, 1));
+        expect(v.historyLimited, isTrue);
+        expect(v.trackingStart, DateTime(2026, 1, 1));
+        expect(v.historyReviewNeeded, isFalse);
+        expect(v.staleFlowCount, 1);
+      });
+
+      test('terminalValues counts it, not as a missing value', () {
+        final t = CurrentValueCalculator.terminalValues(
+          investments: [investment],
+          cashFlows: later,
+          asOf: _today,
+          snapshots: _by([base, newer]),
+        );
+        expect(t.missingValueCount, 0);
+        expect(t.flows.single.amount, 570000.00);
+        expect(t.limitedHistoryIds, {'i1'});
+      });
+
+      test(
+        'a baseline dated after the winning snapshot does not excuse it',
+        () {
+          final future = _baseline(500000, DateTime(2026, 12, 1));
+          expect(_valuation(investment, later, [future, newer]), isNull);
+        },
+      );
+    });
   });
 
   group('the latest applicable snapshot is used (plan test 5)', () {
