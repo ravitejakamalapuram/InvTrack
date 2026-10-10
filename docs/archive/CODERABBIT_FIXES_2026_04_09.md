@@ -137,7 +137,7 @@
 ### **11-15. Trivial: Temporary Docs Files (Acknowledged)**
 **Files**: 
 - `docs/CODERABBIT_FIXES_STATUS.md`
-- `docs/CODERABBIT_RE_REVIEW_REQUEST.md`
+- `docs/archive/CODERABBIT_RE_REVIEW_REQUEST.md`
 - `docs/CODERABBIT_REVIEW_COMPLETE.md`
 - `docs/CODERABBIT_THREAD_RESOLUTION.md`
 - `docs/MARATHON_SESSION_COMPLETE.md`

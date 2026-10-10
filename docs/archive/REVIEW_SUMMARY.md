@@ -80,9 +80,9 @@ flutter analyze --no-fatal-infos
 8. `lib/features/settings/presentation/screens/debug_settings_screen.dart` - Updated refs
 
 ### Created (3 docs)
-1. `docs/TWO_TRACK_VERSION_SYSTEM.md` - System explanation
-2. `docs/APP_UPDATE_IMPLEMENTATION_SUMMARY.md` - Changes summary
-3. `docs/IMPLEMENTATION_COMPLETE.md` - Final status
+1. `docs/archive/TWO_TRACK_VERSION_SYSTEM.md` - System explanation
+2. `docs/archive/APP_UPDATE_IMPLEMENTATION_SUMMARY.md` - Changes summary
+3. `docs/archive/IMPLEMENTATION_COMPLETE.md` - Final status
 
 ---
 
@@ -100,7 +100,7 @@ Test files created:
 ✅ version_check_initializer_test.dart (5 tests)
 ```
 
-See `docs/TEST_COVERAGE_SUMMARY.md` for details.
+See `docs/archive/TEST_COVERAGE_SUMMARY.md` for details.
 
 ### 2. Create Firestore Documents (One-Time)
 

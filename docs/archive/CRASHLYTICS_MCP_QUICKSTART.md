@@ -88,7 +88,7 @@ Then follow the conversational prompts to prioritize and fix issues.
 
 ## Full Guide
 
-📖 See [FIREBASE_CRASHLYTICS_MCP_SETUP.md](./FIREBASE_CRASHLYTICS_MCP_SETUP.md) for detailed setup and examples.
+📖 See [FIREBASE_CRASHLYTICS_MCP_SETUP.md](FIREBASE_CRASHLYTICS_MCP_SETUP.md) for detailed setup and examples.
 
 ## Firebase Console
 

@@ -55,17 +55,17 @@ A fully automated crash-to-fix pipeline that integrates Firebase Crashlytics wit
   - Complete setup instructions
   - Troubleshooting and configuration
 
-- ✅ `docs/JULES_QUICK_SETUP.md` (5KB)
+- ✅ `docs/archive/JULES_QUICK_SETUP.md` (5KB)
   - 10-minute quick start guide
   - Step-by-step setup checklist
   - Security reminders
 
-- ✅ `docs/JULES_IMPLEMENTATION_SUMMARY.md` (this file)
+- ✅ `docs/archive/JULES_IMPLEMENTATION_SUMMARY.md` (this file)
   - Implementation overview
   - Next steps
 
 ### Updated Documentation
-- ✅ `docs/CRASHLYTICS_AUTOMATION.md`
+- ✅ `docs/archive/CRASHLYTICS_AUTOMATION.md`
   - Added Jules AI automated fixing section
   - Updated to reference new automation
   - Quick start links
@@ -153,7 +153,7 @@ The following secrets must be configured in GitHub Settings:
 
 ### 2. Quick Setup (10 minutes)
 Follow the step-by-step guide:
-- 📖 Read: `docs/JULES_QUICK_SETUP.md`
+- 📖 Read: `docs/archive/JULES_QUICK_SETUP.md`
 - ⚡ Complete all 7 steps
 - ✅ Test with a manual workflow run
 
@@ -266,4 +266,4 @@ Parameters:
 **Estimated Setup Time:** 10 minutes  
 **First Run Expected:** 15-30 minutes
 
-🎯 **Next Action:** Follow `docs/JULES_QUICK_SETUP.md` to enable automation
+🎯 **Next Action:** Follow `docs/archive/JULES_QUICK_SETUP.md` to enable automation

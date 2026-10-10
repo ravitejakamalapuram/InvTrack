@@ -148,18 +148,18 @@ await batch.commit();
 ### 5. Documentation
 
 #### **Created:**
-1. **`docs/MULTI_CURRENCY_PR_CHECKLIST.md`**
+1. **`docs/archive/MULTI_CURRENCY_PR_CHECKLIST.md`**
    - Feature-by-feature compliance tracking
    - Status: ✅ Complete / ⏳ Pending / ❌ Not Started
    - Covers: CSV, Sample Data, ZIP Export, Goals, Migration
 
-2. **`docs/MULTI_CURRENCY_TEST_PLAN.md`**
+2. **`docs/archive/MULTI_CURRENCY_TEST_PLAN.md`**
    - Comprehensive test strategy
    - Unit, Integration, Widget, E2E tests
    - Test coverage goals and metrics
    - Known issues and next steps
 
-3. **`docs/MULTI_CURRENCY_IMPLEMENTATION_SUMMARY.md`** (this file)
+3. **`docs/archive/MULTI_CURRENCY_IMPLEMENTATION_SUMMARY.md`** (this file)
    - Complete implementation summary
    - All changes documented
    - Git commit history
@@ -218,7 +218,7 @@ The following tests need to be written to verify multi-currency compliance:
 - `test/features/bulk_import/data/services/simple_csv_parser_test.dart`
 
 **Files Created:**
-- `docs/MULTI_CURRENCY_PR_CHECKLIST.md`
+- `docs/archive/MULTI_CURRENCY_PR_CHECKLIST.md`
 
 **Branch:** `feature/p0-multi-currency-support`
 
