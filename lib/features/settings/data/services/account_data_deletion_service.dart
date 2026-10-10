@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/features/income_projection/data/services/orphaned_expected_cash_flow_cleanup_service.dart';
 import 'package:inv_tracker/features/settings/data/services/legacy_currency_backfill_service.dart';
 import 'package:inv_tracker/features/settings/data/services/usd_tag_repair_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -107,6 +108,7 @@ class AccountDataDeletionService {
       ...userPreferenceKeys,
       ...LegacyCurrencyBackfillService.prefsKeysFor(_userId),
       ...UsdTagRepairService.prefsKeysFor(_userId),
+      ...OrphanedExpectedCashFlowCleanupService.prefsKeysFor(_userId),
     ]) {
       await prefs.remove(key);
     }

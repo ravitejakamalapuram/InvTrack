@@ -226,6 +226,42 @@ void main() {
     expect(deleted().toSet(), orphans.map((p) => p.ref).toSet());
   });
 
+  group('prefs keys', () {
+    test('prefsKeysFor lists exactly the key a finished run writes', () async {
+      serverHolds([_Payment('gone')]);
+      await service().runOnce();
+
+      expect(prefs.getKeys(), {'expected_payments_orphan_cleanup_done_user-1'});
+      expect(OrphanedExpectedCashFlowCleanupService.prefsKeysFor(uid), [
+        'expected_payments_orphan_cleanup_done_user-1',
+      ]);
+    });
+
+    test(
+      'requestSweep makes the next run sweep again, for that user only',
+      () async {
+        await prefs.setBool(
+          'expected_payments_orphan_cleanup_done_user-2',
+          true,
+        );
+        serverHolds([_Payment('gone')]);
+        await service().runOnce();
+        expect(service().isComplete, isTrue);
+
+        await OrphanedExpectedCashFlowCleanupService.requestSweep(prefs, uid);
+
+        expect(service().isComplete, isFalse);
+        expect(
+          prefs.getBool('expected_payments_orphan_cleanup_done_user-2'),
+          isTrue,
+        );
+        readsOf.clear();
+        expect(await service().runOnce(), isTrue);
+        expect(readsOf, contains('expectedCashFlows'));
+      },
+    );
+  });
+
   group('runOnce', () {
     test('cleans up, records completion and returns true', () async {
       final orphan = _Payment('gone');

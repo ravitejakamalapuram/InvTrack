@@ -20,6 +20,12 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   /// The user's base currency, for documents with no `currency` field.
   final String Function() _baseCurrency;
 
+  /// Asked for when an investment is deleted while the server gave no answer
+  /// about its expected payments, so that the one-off orphan sweep runs again
+  /// at the next Income Guardian start (#917). Best effort: a failure here
+  /// never stops the delete.
+  final Future<void> Function()? _onExpectedPaymentsUnverified;
+
   /// Timeout for write operations - allows offline writes to complete quickly
   static const Duration _writeTimeout = Duration(seconds: 3);
 
@@ -34,9 +40,11 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     required FirebaseFirestore firestore,
     required String userId,
     required String Function() baseCurrency,
+    Future<void> Function()? onExpectedPaymentsUnverified,
   }) : _firestore = firestore,
        _userId = userId,
-       _baseCurrency = baseCurrency;
+       _baseCurrency = baseCurrency,
+       _onExpectedPaymentsUnverified = onExpectedPaymentsUnverified;
 
   /// Execute a write operation with timeout
   /// If the operation times out (likely offline), we consider it successful
@@ -309,6 +317,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     final expected = await _refsForDeletion(
       _expectedCashFlowsRef,
       investmentId,
+      onUnanswered: _onExpectedPaymentsUnverified,
     );
     final refs = <DocumentReference>[
       for (final doc in cashFlows.docs) doc.reference,
@@ -375,10 +384,19 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   ///
   /// Throws [NetworkException], like [_getDocsForDeletion], when neither can
   /// answer: nothing is deleted then, rather than orphaning them.
+  ///
+  /// Known limit: offline with an empty cache, the cache answers with no
+  /// documents and the delete goes ahead, exactly as it does for cash flows.
+  /// Requiring a server answer would fail every offline delete. Documents the
+  /// server holds but this device never saw then stay behind. [onUnanswered]
+  /// is called in that case (the server gave no answer) so the caller can
+  /// arrange for them to be found later; it is best effort and never stops
+  /// the delete.
   Future<Set<DocumentReference>> _refsForDeletion(
     CollectionReference<Map<String, dynamic>> ref,
-    String investmentId,
-  ) async {
+    String investmentId, {
+    Future<void> Function()? onUnanswered,
+  }) async {
     final refs = <DocumentReference>{};
     var serverAnswered = false;
     try {
@@ -396,6 +414,13 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       refs.addAll(cached.docs.map((doc) => doc.reference));
     } catch (_) {
       if (!serverAnswered) rethrow;
+    }
+    if (!serverAnswered && onUnanswered != null) {
+      try {
+        await onUnanswered();
+      } catch (_) {
+        // Only a hint for a later sweep: the delete must still happen.
+      }
     }
     return refs;
   }
@@ -728,7 +753,11 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
         await _refsForDeletion(_valuationsRef, investmentId),
       );
       cashFlowDocsToDelete.addAll(
-        await _refsForDeletion(_expectedCashFlowsRef, investmentId),
+        await _refsForDeletion(
+          _expectedCashFlowsRef,
+          investmentId,
+          onUnanswered: _onExpectedPaymentsUnverified,
+        ),
       );
     }
 

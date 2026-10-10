@@ -44,7 +44,22 @@ class OrphanedExpectedCashFlowCleanupService {
   final Duration _writeTimeout;
   Future<bool>? _running;
 
-  String get _doneKey => 'expected_payments_orphan_cleanup_done_$_userId';
+  /// Every SharedPreferences key this service keeps for [userId]. Removed on
+  /// account deletion.
+  static List<String> prefsKeysFor(String userId) => [_doneKeyFor(userId)];
+
+  static String _doneKeyFor(String userId) =>
+      'expected_payments_orphan_cleanup_done_$userId';
+
+  /// Makes the next [runOnce] of [userId] sweep again, even if one finished.
+  ///
+  /// Asked for when an investment was deleted without the server saying which
+  /// expected payments it had (offline with an empty cache): those payments
+  /// stay on the server and only a new sweep can remove them.
+  static Future<void> requestSweep(SharedPreferences prefs, String userId) =>
+      prefs.remove(_doneKeyFor(userId));
+
+  String get _doneKey => _doneKeyFor(_userId);
 
   /// Whether the cleanup finished for this user.
   bool get isComplete => _prefs.getBool(_doneKey) ?? false;
