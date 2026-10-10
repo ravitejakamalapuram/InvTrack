@@ -443,6 +443,8 @@ void main() {
   test('types beyond the limit of 50 are skipped with a warning', () async {
     final result = await import(
       _zip({
+        // Replace stops without it (#956): the exporter always writes it.
+        'cashflows.csv': _cashFlowsHeader,
         'custom_types.json': _json(
           types: [for (var i = 0; i < 52; i++) _type('Type $i')],
         ),
