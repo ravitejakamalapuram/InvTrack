@@ -277,7 +277,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Issues**: [GitHub Issues](https://github.com/ravitejakamalapuram/InvTrack/issues)
 - **Support email**: [support@invtracker.app](mailto:support@invtracker.app)
 - **Privacy policy**: https://ravitejakamalapuram.github.io/privacy/invtrack.html
-- **Delete your account**: in the app, Settings > Data & Account > Delete Account; on the web (no app needed): https://ravitejakamalapuram.github.io/privacy/invtrack-delete-account.html; or email the support address from the email you sign in with
+- **Delete your account**: in the app, Settings > Data & Account > Delete Account; on the web (no app needed; sign in with Google, and withdraw the request there if you change your mind): https://ravitejakamalapuram.github.io/delete/invtrack.html; or email the support address from the email you sign in with
 
 ---
 

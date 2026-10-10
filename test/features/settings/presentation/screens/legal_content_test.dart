@@ -282,6 +282,20 @@ void main() {
       expect(privacyPolicyContent, contains(supportEmailAddress));
     });
 
+    test('says what the web deletion page does (APP-333): Google sign-in, '
+        'withdraw, and that a guest account is deleted in the app', () {
+      expect(
+        privacyPolicyContent,
+        contains(
+          'open $hostedAccountDeletionUrl and sign in with the same Google '
+          'account to ask for deletion (you can withdraw the request there '
+          'before it is processed), or email $supportEmailAddress from the '
+          'email address you signed in with. A guest account cannot be '
+          'requested on that page; delete it in the app.',
+        ),
+      );
+    });
+
     // The next two tests are heuristics: they catch the usual ways the
     // statement would stop being true, not every possible way. They list what
     // is allowed instead of what is forbidden, so a new call site fails until

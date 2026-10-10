@@ -4,12 +4,12 @@ Server-side deletion of InvTrack account data (Firestore `users/{uid}` tree + Fi
 
 ## What it does (`run.mjs`)
 
-1. **Load queue**: `deletionRequests/{uid}` older than 24 h (the withdrawal window). Younger requests are only reported.
+1. **Load queue**: `deletionRequests/{uid}` older than 24 h (the withdrawal window). Younger requests are only reported. A request is written either by the app (`source: 'app'`, APP-334) or by the APP-333 web page after a Google sign-in (`source: 'web'`); both are the same document and either can withdraw it by deleting it.
 2. **Orphan sweep**: uids from `collection('users').listDocuments()` (the parent doc is never written, so `.get()` would be empty) that `auth.getUsers()` reports as not found.
 3. **Guest sweep** (off unless `SWEEP_INACTIVE_GUESTS=<days>`, workflow input `sweep_inactive_guests_days`): Auth users with no linked provider and no activity for that many days.
 4. **Cap**: more than `max_per_run` (25) candidates and no `force` -> nothing is deleted, `deletionRuns/{runId}` gets `refused: true`, exit 2.
 5. **Per uid**: `recursiveDelete(users/{uid})` -> `auth.deleteUser` -> Google Analytics deletion request (live mode only, see below) -> `verify.mjs` -> `deletionAudit/{runId}-{sha256(uid)[:16]}` (no raw uid, no email; includes the Analytics outcome) -> delete the request **last**. A crash, a failed verify or a failed Analytics request leaves the request for the next run.
-6. **Alert**: a request still pending after 3 days fails the run (the page promises 7 days).
+6. **Alert**: a request still pending after 3 days fails the run (the APP-333 web page, `https://ravitejakamalapuram.github.io/delete/invtrack.html`, promises 7 days).
 7. `dry_run` (default **true**) prints the plan and writes nothing: no audit, no run record, no deletes, no Analytics calls.
 
 `REQUEST_EMAIL` (workflow input `request_email`): the operator email fallback. Looks the uid up with `getUserByEmail` and creates a normal queue entry (source `app`). Deletes nothing in that run.

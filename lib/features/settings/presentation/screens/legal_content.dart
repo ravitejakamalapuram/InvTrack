@@ -11,11 +11,11 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 const String hostedPrivacyPolicyUrl =
     'https://ravitejakamalapuram.github.io/privacy/invtrack.html';
 
-/// The web page where anyone, with or without the app, can ask for their
-/// account to be deleted (A104). Play Console's Data safety form shows the
-/// same address.
+/// The web page (APP-333) where anyone with a Google account, with or without
+/// the app, can ask for their account to be deleted, and withdraw the request
+/// (A104). Play Console's Data safety form shows the same address.
 const String hostedAccountDeletionUrl =
-    'https://ravitejakamalapuram.github.io/privacy/invtrack-delete-account.html';
+    'https://ravitejakamalapuram.github.io/delete/invtrack.html';
 
 /// The one support address shown anywhere in the app.
 const String supportEmailAddress = 'support@invtracker.app';

@@ -19,11 +19,11 @@ const _canonicalPolicyUrl =
     'https://ravitejakamalapuram.github.io/privacy/invtrack.html';
 const _canonicalSupportEmail = 'support@invtracker.app';
 
-/// The one web page where anyone, with or without the app, can ask for their
-/// account to be deleted (A104, #869). Play Console's Data safety form must
-/// show the same address.
+/// The one web page (APP-333) where anyone with a Google account, with or
+/// without the app, can ask for their account to be deleted (A104, #869).
+/// Play Console's Data safety form must show the same address.
 const _canonicalDeletionUrl =
-    'https://ravitejakamalapuram.github.io/privacy/invtrack-delete-account.html';
+    'https://ravitejakamalapuram.github.io/delete/invtrack.html';
 
 Widget _localized(Widget home) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
