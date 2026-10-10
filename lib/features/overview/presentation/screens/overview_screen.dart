@@ -118,7 +118,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
               SliverAppBar(
                 floating: true,
                 title: const Text(
-                  'Investment Tracker',
+                  'InvTrack',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 centerTitle: false,

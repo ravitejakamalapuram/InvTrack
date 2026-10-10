@@ -1,4 +1,4 @@
-/// Integration tests for InvTracker app.
+/// Integration tests for the InvTrack app.
 ///
 /// These tests verify critical user flows work end-to-end.
 /// Run with: flutter test integration_test/app_test.dart

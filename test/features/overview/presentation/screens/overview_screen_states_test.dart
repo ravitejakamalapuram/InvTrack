@@ -92,6 +92,27 @@ void main() {
     analytics = FakeAnalyticsService();
   });
 
+  // A53: the app bar names the app InvTrack, not "Investment Tracker".
+  testWidgets('app bar title is the app name InvTrack', (tester) async {
+    await _pumpOverview(
+      tester,
+      analytics: analytics,
+      investments: () => Stream.value(const []),
+      cashFlows: () => Stream.value(const []),
+    );
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(
+      find.descendant(
+        of: find.byType(SliverAppBar),
+        matching: find.text('InvTrack'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('InvTrack'), findsWidgets);
+    expect(find.text('Investment Tracker'), findsNothing);
+  });
+
   testWidgets(
     'while data is loading, shows skeletons, not the empty state, and logs '
     'no empty_state_viewed',

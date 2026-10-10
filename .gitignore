@@ -80,14 +80,10 @@ test_output.txt
 **/failures/
 test/golden/**/failures/
 
-# Jules AI Crash Fix intermediate files and Node.js dependencies
+# Node.js dependencies (scripts/account-deletion keeps its own package files)
 node_modules/
 package.json
 package-lock.json
 !scripts/account-deletion/package.json
 !scripts/account-deletion/package-lock.json
-crashlytics_data.json
-jules_sessions.json
-session_results.json
-session_summary.md
 

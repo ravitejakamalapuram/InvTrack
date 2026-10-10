@@ -129,6 +129,35 @@ void main() {
     await tester.pump(); // Process future completion
   });
 
+  // A53: the app is called InvTrack everywhere a user can see it.
+  testWidgets('shows the app name InvTrack, never InvTracker', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(mockAuthRepository),
+          sharedPreferencesProvider.overrideWithValue(mockPrefs),
+          analyticsServiceProvider.overrideWithValue(mockAnalyticsService),
+          notificationServiceProvider.overrideWithValue(
+            mockNotificationService,
+          ),
+          crashlyticsServiceProvider.overrideWithValue(mockCrashlyticsService),
+          googleSignInInitializedProvider.overrideWith((ref) async {}),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SignInScreen(),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 2));
+
+    expect(find.text('InvTrack'), findsOneWidget);
+    expect(find.bySemanticsLabel('InvTrack'), findsWidgets);
+    expect(find.text('InvTracker'), findsNothing);
+    expect(find.bySemanticsLabel('InvTracker'), findsNothing);
+  });
+
   // Regression test for Crashlytics Issue: 9dfdf1143e4d5e88cbfe9a9d91440e44
   // GoogleSignInException: "serverClientId must be provided on Android"
   // Bug fix PR: #357

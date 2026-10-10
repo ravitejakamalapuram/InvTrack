@@ -462,7 +462,7 @@ class SecurityService {
       // - persistAcrossBackgrounding (stickyAuth): keep auth valid across app lifecycle changes
       // - sensitiveTransaction: whether this is a sensitive transaction
       final result = await _localAuth.authenticate(
-        localizedReason: 'Authenticate to unlock InvTracker',
+        localizedReason: 'Authenticate to unlock InvTrack',
         biometricOnly: true,
         persistAcrossBackgrounding:
             true, // Keep auth valid across app lifecycle changes

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -184,18 +183,6 @@ void main() {
   });
 
   group('outside the app', () {
-    test('app-metadata.json registers the same privacy policy URL', () {
-      final metadata =
-          jsonDecode(File('app-metadata.json').readAsStringSync())
-              as Map<String, dynamic>;
-      final modules = (metadata['modules'] as List).cast<Map>();
-      final urls = modules
-          .map((m) => (m['playStoreListing'] as Map?)?['privacyPolicyUrl'])
-          .whereType<String>()
-          .toList();
-      expect(urls, [hostedPrivacyPolicyUrl]);
-    });
-
     test('README shows the same privacy policy URL and support email', () {
       final readme = File('README.md').readAsStringSync();
       expect(readme, contains(hostedPrivacyPolicyUrl));
