@@ -81,14 +81,21 @@ void main() {
     final mockValuationsCollection = MockCollectionReference();
     final noSnapshotsQuery = MockQuery();
     final noSnapshots = MockQuerySnapshot();
-    when(() => mockUserDoc.collection('valuations'))
-        .thenReturn(mockValuationsCollection);
-    when(() => mockValuationsCollection.where(
-          'investmentId',
-          isEqualTo: testInvestmentId,
-        )).thenReturn(noSnapshotsQuery);
-    when(() => noSnapshotsQuery.get(const GetOptions(source: Source.cache)))
-        .thenAnswer((_) async => noSnapshots);
+    when(
+      () => mockUserDoc.collection('valuations'),
+    ).thenReturn(mockValuationsCollection);
+    when(
+      () => mockValuationsCollection.where(
+        'investmentId',
+        isEqualTo: testInvestmentId,
+      ),
+    ).thenReturn(noSnapshotsQuery);
+    when(
+      () => noSnapshotsQuery.get(const GetOptions(source: Source.cache)),
+    ).thenAnswer((_) async => noSnapshots);
+    when(
+      () => noSnapshotsQuery.get(const GetOptions(source: Source.server)),
+    ).thenAnswer((_) async => noSnapshots);
     when(() => noSnapshots.docs).thenReturn([]);
 
     when(() => mockInvestmentsCollection.doc(testInvestmentId))

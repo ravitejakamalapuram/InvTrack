@@ -117,9 +117,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
     // If pagination cursor provided, start after that document
     if (startAfterInvestmentId != null) {
-      final startAfterDoc = await _investmentsRef
-          .doc(startAfterInvestmentId)
-          .get();
+      final startAfterDoc = await _investmentsRef.doc(startAfterInvestmentId).get();
       if (startAfterDoc.exists) {
         query = query.startAfterDocument(startAfterDoc);
       }
@@ -295,10 +293,10 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     required String investmentId,
   }) async {
     final cashFlows = await _getDocsForDeletion(cashFlowsRef, investmentId);
-    final snapshots = await _getDocsForDeletion(_valuationsRef, investmentId);
+    final snapshots = await _valuationRefsForDeletion(investmentId);
     final refs = <DocumentReference>[
       for (final doc in cashFlows.docs) doc.reference,
-      for (final doc in snapshots.docs) doc.reference,
+      ...snapshots,
       investment,
     ];
     for (var i = 0; i < refs.length; i += _deleteBatchSize) {
@@ -313,8 +311,8 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     }
   }
 
-  /// Finds every document of [ref] for [investmentId] (cash flows, or valuation
-  /// snapshots) so it can be deleted alongside the investment.
+  /// Finds every document of [ref] for [investmentId] in the local cache (cash
+  /// flows) so it can be deleted alongside the investment.
   ///
   /// Cache-first: the local Firestore cache is unlimited in size (see
   /// `database_module.dart`), so it holds every cash flow this device has
@@ -347,6 +345,40 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
         throw NetworkException.noConnection(cause: e, stackTrace: st);
       }
     }
+  }
+
+  /// Every valuation snapshot of [investmentId], tombstones included.
+  ///
+  /// Unlike cash flows, snapshots are not kept in the local cache by a
+  /// listener: none runs with the feature flag off, on a fresh install or
+  /// after an account switch, and an empty cache answers with no documents
+  /// rather than an error. So the server is asked as well, and the cache adds
+  /// what it holds that the server has not seen yet (writes made offline).
+  ///
+  /// Throws [NetworkException], like [_getDocsForDeletion], when neither can
+  /// answer: nothing is deleted then, rather than orphaning snapshots.
+  Future<Set<DocumentReference>> _valuationRefsForDeletion(
+    String investmentId,
+  ) async {
+    final refs = <DocumentReference>{};
+    var serverAnswered = false;
+    try {
+      final server = await _valuationsRef
+          .where('investmentId', isEqualTo: investmentId)
+          .get(const GetOptions(source: Source.server))
+          .timeout(_serverReadTimeout);
+      refs.addAll(server.docs.map((doc) => doc.reference));
+      serverAnswered = true;
+    } catch (_) {
+      // Offline or too slow: the cache is all there is.
+    }
+    try {
+      final cached = await _getDocsForDeletion(_valuationsRef, investmentId);
+      refs.addAll(cached.docs.map((doc) => doc.reference));
+    } catch (_) {
+      if (!serverAnswered) rethrow;
+    }
+    return refs;
   }
 
   // ============ ARCHIVED INVESTMENTS ============
@@ -670,20 +702,11 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       } on TimeoutException {
         // Continue without cash flows - they'll be orphaned but filtered out
       }
-      // Valuation snapshots are best-effort too: orphaned ones are left out
-      // of every total (they are only read for active investments), and
-      // account deletion removes them in the end.
-      try {
-        final snapshots = await _getDocsForDeletion(
-          _valuationsRef,
-          investmentId,
-        );
-        for (final doc in snapshots.docs) {
-          cashFlowDocsToDelete.add(doc.reference);
-        }
-      } catch (_) {
-        // Could not list them; leave them.
-      }
+      // Valuation snapshots are not best-effort: when they cannot be listed
+      // this throws before anything is deleted, so none is orphaned.
+      cashFlowDocsToDelete.addAll(
+        await _valuationRefsForDeletion(investmentId),
+      );
     }
 
     // Delete cash flows (and valuation snapshots) in batches

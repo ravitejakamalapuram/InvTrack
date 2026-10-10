@@ -1,8 +1,9 @@
 // #941 (plan test 16): deleting an investment deletes its valuation snapshots,
-// tombstones included. deleteInvestment and deleteArchivedInvestment throw
-// rather than orphan them when they cannot tell which exist; bulkDelete stays
-// best-effort (cash flows are orphaned there by design) and relies on
-// validValuationSnapshotsProvider filtering by active investment.
+// tombstones included. Snapshots are looked up on the server as well as in the
+// cache, because no listener keeps them in the cache (the flag is off, or
+// this is a fresh install or another account). deleteInvestment,
+// deleteArchivedInvestment and bulkDelete throw, deleting nothing, rather
+// than orphan them when they cannot tell which exist.
 //
 // ignore_for_file: subtype_of_sealed_class
 import 'dart:async';
@@ -31,6 +32,18 @@ class _MockQueryDoc extends Mock
 
 class _MockBatch extends Mock implements WriteBatch {}
 
+QuerySnapshot<Map<String, dynamic>> _snapshotOf(List<_MockDoc> refs) {
+  final QuerySnapshot<Map<String, dynamic>> snapshot = _MockQuerySnapshot();
+  final docs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+  for (final ref in refs) {
+    final doc = _MockQueryDoc();
+    when(() => doc.reference).thenReturn(ref);
+    docs.add(doc);
+  }
+  when(() => snapshot.docs).thenReturn(docs);
+  return snapshot;
+}
+
 void main() {
   const uid = 'user-1';
   const id = 'inv-1';
@@ -42,16 +55,14 @@ void main() {
   late FirestoreInvestmentRepository repository;
 
   /// A query on [collection] by investmentId whose cache answer holds [refs].
-  void stubDocs(String collection, String investmentId, List<_MockDoc> refs) {
+  /// The server answers [serverRefs], or is unreachable when that is null.
+  void stubDocs(
+    String collection,
+    String investmentId,
+    List<_MockDoc> refs, {
+    List<_MockDoc>? serverRefs,
+  }) {
     final query = _MockQuery();
-    final QuerySnapshot<Map<String, dynamic>> snapshot = _MockQuerySnapshot();
-    final docs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
-    for (final ref in refs) {
-      final doc = _MockQueryDoc();
-      when(() => doc.reference).thenReturn(ref);
-      docs.add(doc);
-    }
-    when(() => snapshot.docs).thenReturn(docs);
     when(
       () => collections[collection]!.where(
         'investmentId',
@@ -60,7 +71,16 @@ void main() {
     ).thenReturn(query);
     when(
       () => query.get(const GetOptions(source: Source.cache)),
-    ).thenAnswer((_) async => snapshot);
+    ).thenAnswer((_) async => _snapshotOf(refs));
+    if (serverRefs == null) {
+      when(
+        () => query.get(const GetOptions(source: Source.server)),
+      ).thenThrow(TimeoutException('offline'));
+    } else {
+      when(
+        () => query.get(const GetOptions(source: Source.server)),
+      ).thenAnswer((_) async => _snapshotOf(serverRefs));
+    }
   }
 
   /// The cache and the server both fail for [collection] (offline, no cache).
@@ -75,6 +95,9 @@ void main() {
     when(
       () => query.get(const GetOptions(source: Source.cache)),
     ).thenThrow(Exception('cache unavailable'));
+    when(
+      () => query.get(const GetOptions(source: Source.server)),
+    ).thenThrow(TimeoutException('offline'));
     when(() => query.get()).thenThrow(TimeoutException('offline'));
   }
 
@@ -148,6 +171,64 @@ void main() {
       verify(() => batches.single.commit()).called(1);
     });
 
+    test('deletes snapshots only the server holds (an empty cache is not '
+        'proof there are none)', () async {
+      final remoteLive = _MockDoc();
+      final remoteTombstone = _MockDoc();
+      stubDocs('cashflows', id, []);
+      stubDocs('valuations', id, [], serverRefs: [remoteLive, remoteTombstone]);
+
+      await repository.deleteInvestment(id);
+
+      expect(
+        deletedPerBatch.expand((d) => d),
+        containsAll([remoteLive, remoteTombstone]),
+      );
+    });
+
+    test('deletes a snapshot written on this device that the server has not '
+        'seen yet, once, next to the ones it holds', () async {
+      final pending = _MockDoc();
+      final remote = _MockDoc();
+      stubDocs('valuations', id, [pending, remote], serverRefs: [remote]);
+      stubDocs('cashflows', id, []);
+
+      await repository.deleteInvestment(id);
+
+      final all = deletedPerBatch.expand((d) => d).toList();
+      expect(all.where((d) => d == pending), hasLength(1));
+      expect(all.where((d) => d == remote), hasLength(1));
+    });
+
+    test('uses the cache alone when the server cannot be reached', () async {
+      final cached = _MockDoc();
+      stubDocs('cashflows', id, []);
+      stubDocs('valuations', id, [cached]);
+
+      await repository.deleteInvestment(id);
+
+      expect(deletedPerBatch.expand((d) => d), contains(cached));
+    });
+
+    test('uses the server alone when the cache cannot be read', () async {
+      final remote = _MockDoc();
+      stubDocs('cashflows', id, []);
+      final query = _MockQuery();
+      when(
+        () => collections['valuations']!.where('investmentId', isEqualTo: id),
+      ).thenReturn(query);
+      when(
+        () => query.get(const GetOptions(source: Source.cache)),
+      ).thenThrow(Exception('cache unavailable'));
+      when(
+        () => query.get(const GetOptions(source: Source.server)),
+      ).thenAnswer((_) async => _snapshotOf([remote]));
+
+      await repository.deleteInvestment(id);
+
+      expect(deletedPerBatch.expand((d) => d), contains(remote));
+    });
+
     test('throws, deleting nothing, when snapshots cannot be listed', () async {
       stubDocs('cashflows', id, []);
       stubUnreadable('valuations', id);
@@ -201,6 +282,16 @@ void main() {
       );
     });
 
+    test('deletes snapshots only the server holds', () async {
+      final remote = _MockDoc();
+      stubDocs('archivedCashflows', id, []);
+      stubDocs('valuations', id, [], serverRefs: [remote]);
+
+      await repository.deleteArchivedInvestment(id);
+
+      expect(deletedPerBatch.expand((d) => d), contains(remote));
+    });
+
     test('throws, deleting nothing, when snapshots cannot be listed', () async {
       stubDocs('archivedCashflows', id, []);
       stubUnreadable('valuations', id);
@@ -225,13 +316,25 @@ void main() {
       expect(all, contains(investmentDocs['investments/$id']));
     });
 
-    test('stays best-effort when snapshots cannot be listed', () async {
+    test('deletes snapshots only the server holds', () async {
+      final remote = _MockDoc();
+      stubDocs('cashflows', id, []);
+      stubDocs('valuations', id, [], serverRefs: [remote]);
+
+      expect(await repository.bulkDelete([id]), 1);
+
+      expect(deletedPerBatch.expand((d) => d), contains(remote));
+    });
+
+    test('throws, deleting nothing, when snapshots cannot be listed', () async {
       stubDocs('cashflows', id, []);
       stubUnreadable('valuations', id);
 
-      expect(await repository.bulkDelete([id]), 1);
-      final all = deletedPerBatch.expand((d) => d).toList();
-      expect(all, [investmentDocs['investments/$id']]);
+      await expectLater(
+        () => repository.bulkDelete([id]),
+        throwsA(isA<NetworkException>()),
+      );
+      expect(batches, isEmpty);
     });
   });
 }
