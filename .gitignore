@@ -62,6 +62,9 @@ key.properties
 **/*.jks
 **/*.keystore
 
+# Google OAuth client downloads (credential files; the app does not use them)
+**/client_secret*.json
+
 # Firebase config - NOT ignored (contains public identifiers, safe to commit)
 # firebase_options.dart
 key.properties
