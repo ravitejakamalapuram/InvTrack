@@ -3,16 +3,18 @@ import 'package:inv_tracker/features/investment/domain/entities/investment_entit
 import 'package:inv_tracker/features/investment/domain/models/investment_template.dart';
 
 /// What choosing an investment type sets up in the add form (A40, #783):
-/// the structure that goes with the type (income frequency, payout mode,
-/// compounding) and nothing the user would have to confirm.
+/// the structure that goes with the type (payout mode, compounding) and
+/// nothing the user would have to confirm.
 ///
-/// It has no field for a tenure, a name or a risk level, and [typicalRate] is
-/// only the grey hint in the empty rate field. A rate or term the user never
-/// typed would set a maturity date, a reminder and an estimated value for them.
+/// It has no field for a tenure, a name, a risk level or an income frequency,
+/// and [typicalRate] is only the grey hint in the empty rate field. A rate or
+/// term the user never typed would set a maturity date, a reminder and an
+/// estimated value for them; an income frequency would schedule income
+/// reminders for payouts they never mentioned (a fixed deposit that pays at
+/// maturity, physical gold, a plot of land).
 @immutable
 class InvestmentTypeDefaults {
   const InvestmentTypeDefaults({
-    this.incomeFrequency,
     this.payoutMode,
     this.compounding,
     this.typicalRate,
@@ -31,7 +33,6 @@ class InvestmentTypeDefaults {
 
   factory InvestmentTypeDefaults.forTemplate(InvestmentTemplate template) =>
       InvestmentTypeDefaults(
-        incomeFrequency: template.defaultIncomeFrequency,
         payoutMode: template.defaultPayoutMode,
         compounding: template.defaultCompoundingFrequency,
         typicalRate: template.typicalRate,
@@ -40,7 +41,6 @@ class InvestmentTypeDefaults {
   /// Nothing set: the type has no template.
   static const none = InvestmentTypeDefaults();
 
-  final IncomeFrequency? incomeFrequency;
   final InterestPayoutMode? payoutMode;
   final CompoundingFrequency? compounding;
 
@@ -50,12 +50,10 @@ class InvestmentTypeDefaults {
   @override
   bool operator ==(Object other) =>
       other is InvestmentTypeDefaults &&
-      other.incomeFrequency == incomeFrequency &&
       other.payoutMode == payoutMode &&
       other.compounding == compounding &&
       other.typicalRate == typicalRate;
 
   @override
-  int get hashCode =>
-      Object.hash(incomeFrequency, payoutMode, compounding, typicalRate);
+  int get hashCode => Object.hash(payoutMode, compounding, typicalRate);
 }

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/calculations/investment_projector.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/mixins/screen_animation_mixin.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
@@ -285,15 +286,15 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   }
 
   /// A template on the first investment flow form sets the type and its
-  /// structure and nothing else: no rate, no term, no name, no risk level. A
-  /// number the user never typed would set a maturity date, a reminder and an
-  /// estimated value for them.
+  /// structure and nothing else: no rate, no term, no name, no risk level, no
+  /// income frequency. A number the user never typed would set a maturity
+  /// date, a reminder and an estimated value for them, and an income frequency
+  /// schedules income reminders for payouts they never mentioned.
   void _applyStructuralDefaults(InvestmentTemplate template) {
     final defaults = InvestmentTypeDefaults.forTemplate(template);
     setState(() {
       _selectedTemplate = template;
       _selectedType = template.type;
-      _incomeFrequency = defaults.incomeFrequency;
       _interestPayoutMode = defaults.payoutMode;
       _compoundingFrequency = defaults.compounding;
       _appliedDefaults = defaults;
@@ -309,16 +310,14 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         );
   }
 
-  /// A type chip sets the type and the structure that goes with it. A value
-  /// that is no longer what the last chip set is the user's choice and stays.
+  /// A type chip sets the type and the structure that goes with it (never an
+  /// income frequency). A value that is no longer what the last chip set is the
+  /// user's choice and stays.
   void _onTypeChipSelected(InvestmentType type) {
     final next = InvestmentTypeDefaults.forType(type);
     setState(() {
       final applied = _appliedDefaults;
       _selectedType = type;
-      if (_incomeFrequency == applied.incomeFrequency) {
-        _incomeFrequency = next.incomeFrequency;
-      }
       if (_interestPayoutMode == applied.payoutMode) {
         _interestPayoutMode = next.payoutMode;
       }
@@ -406,10 +405,19 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     if (expectedRate != null) enhancedFields.add('expected_rate');
     if (tenureMonths != null) enhancedFields.add('tenure_months');
     if (platform != null) enhancedFields.add('platform');
-    if (_interestPayoutMode != null) enhancedFields.add('payout_mode');
+    // What a type chip set is not a field the user used. (_appliedDefaults is
+    // empty on the form of today, so nothing is left out there.)
+    final applied = _appliedDefaults;
+    if (_interestPayoutMode != null &&
+        _interestPayoutMode != applied.payoutMode) {
+      enhancedFields.add('payout_mode');
+    }
     if (_autoRenewal != null) enhancedFields.add('auto_renewal');
     if (_riskLevel != null) enhancedFields.add('risk_level');
-    if (_compoundingFrequency != null) enhancedFields.add('compounding');
+    if (_compoundingFrequency != null &&
+        _compoundingFrequency != applied.compounding) {
+      enhancedFields.add('compounding');
+    }
 
     if (enhancedFields.isNotEmpty) {
       ref
@@ -572,7 +580,11 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
             initialAmount: amount,
             onWriteResult: (value) => confirmed = value,
           );
-    } catch (_) {
+    } catch (e, st) {
+      // The type and code of the failure only, never its message (CLAUDE.md
+      // rule 7): this is the activation funnel, and a save that starts failing
+      // should show up.
+      ErrorHandler.logError(ErrorHandler.mapException(e, st));
       if (mounted) {
         AppFeedback.showError(context, l10n.investmentCreateFailed);
         setState(() => _isLoading = false);
@@ -659,8 +671,8 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         key: AddInvestmentKeys.name,
         controller: _nameController,
         focusNode: _nameFocusNode,
-        label: 'Investment Name',
-        hint: 'e.g. LenDenClub, Grip Invest',
+        label: l10n.investmentNameLabel,
+        hint: l10n.investmentNameHint,
         showHintWhenEmpty: true,
         prefixIcon: Icons.business_rounded,
         // Limited here, not with maxLength, which prints a counter.
@@ -699,8 +711,8 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   .read(analyticsServiceProvider)
                   .logCurrencySelected(currency: code, context: 'investment');
             },
-            label: 'Investment Currency',
-            subtitle: 'Primary currency for this investment',
+            label: l10n.investmentCurrencyLabel,
+            subtitle: l10n.investmentCurrencySubtitle,
           ),
           SizedBox(height: AppSpacing.sectionSpacing),
           ..._buildDynamicFields(isDark, l10n, includeStartDate: false),
@@ -713,8 +725,8 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
             key: AddInvestmentKeys.notes,
             controller: _notesController,
             focusNode: _notesFocusNode,
-            label: 'Notes (Optional)',
-            hint: 'Add any details about this investment',
+            label: l10n.investmentNotesLabel,
+            hint: l10n.investmentNotesHint,
             prefixIcon: Icons.edit_note_rounded,
             textCapitalization: TextCapitalization.sentences,
             maxLines: 2,
@@ -1660,11 +1672,15 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       children: [
         Row(
           children: [
-            Text(
-              'Maturity Date (Optional)',
-              style: AppTypography.bodyLarge.copyWith(
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : AppColors.neutral900Light,
+            // Flexible: at large text the label wraps instead of running off
+            // the end of the row.
+            Flexible(
+              child: Text(
+                'Maturity Date (Optional)',
+                style: AppTypography.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : AppColors.neutral900Light,
+                ),
               ),
             ),
             if (_maturityDateAutoCalculated && _maturityDate != null) ...[

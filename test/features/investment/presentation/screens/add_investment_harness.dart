@@ -76,6 +76,9 @@ class RecordingInvestmentNotifier extends InvestmentNotifier {
   final List<AddCall> adds;
   final List<Map<String, Object?>> updates;
   int failures = 0;
+
+  /// What a failing add throws.
+  Object error = StateError('the write failed');
   bool? confirmed;
   Completer<void>? gate;
 
@@ -129,7 +132,7 @@ class RecordingInvestmentNotifier extends InvestmentNotifier {
     if (hold != null) await hold.future;
     if (failures > 0) {
       failures--;
-      throw StateError('the write failed');
+      throw error;
     }
     final report = confirmed;
     if (report != null) onWriteResult?.call(report);
@@ -176,6 +179,12 @@ enum Opener {
 
   /// A GoRoute above the opener.
   goRoute,
+
+  /// `Navigator.push` from a page inside a `StatefulShellRoute` branch, as the
+  /// Overview tab does it. The investment detail is a route of another branch
+  /// that opens on the root navigator (`parentNavigatorKey`) and, as in the
+  /// app, sends anyone without the investment to the list.
+  shellBranch,
 }
 
 /// The routes on the navigator, in order, so a test can tell how deep it is.
@@ -260,6 +269,9 @@ Future<FormHarness> pumpAddForm(
 
   /// Replaces the recording analytics service.
   FakeAnalyticsService? analyticsService,
+
+  /// Replaces the app's strings, to see which text comes from them.
+  LocalizationsDelegate<AppLocalizations>? l10nDelegate,
 }) async {
   tester.view.physicalSize = size * devicePixelRatio;
   tester.view.devicePixelRatio = devicePixelRatio;
@@ -283,43 +295,74 @@ Future<FormHarness> pumpAddForm(
     preselectedTemplate: template,
   );
 
+  Widget openerPage() => Scaffold(
+    key: _pageKey,
+    body: Builder(
+      builder: (context) => Column(
+        children: [
+          const Text('Opener'),
+          TextButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(builder: (_) => form()),
+            ),
+            child: const Text('Open form'),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  Widget detailPage(GoRouterState state) {
+    detailVisits.add((id: state.pathParameters['id']!, extra: state.extra));
+    return Scaffold(body: Text('Detail ${state.pathParameters['id']}'));
+  }
+
   final router = GoRouter(
     navigatorKey: rootKey,
     observers: [stack],
     initialLocation: '/',
-    routes: [
-      GoRoute(
-        path: '/',
-        builder: (_, _) => Scaffold(
-          key: _pageKey,
-          body: Builder(
-            builder: (context) => Column(
-              children: [
-                const Text('Opener'),
-                TextButton(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(builder: (_) => form()),
-                  ),
-                  child: const Text('Open form'),
+    routes: opener == Opener.shellBranch
+        ? [
+            StatefulShellRoute.indexedStack(
+              builder: (context, state, shell) => shell,
+              branches: [
+                StatefulShellBranch(
+                  routes: [GoRoute(path: '/', builder: (_, _) => openerPage())],
+                ),
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: '/investments',
+                      builder: (_, _) => const Scaffold(body: Text('List')),
+                      routes: [
+                        GoRoute(
+                          path: ':id',
+                          parentNavigatorKey: rootKey,
+                          redirect: (context, state) =>
+                              state.extra is InvestmentEntity
+                              ? null
+                              : '/investments',
+                          builder: (_, state) => detailPage(state),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
-          ),
-        ),
-        routes: [GoRoute(path: 'add', builder: (_, _) => form())],
-      ),
-      GoRoute(
-        path: '/investments/:id',
-        builder: (context, state) {
-          detailVisits.add((
-            id: state.pathParameters['id']!,
-            extra: state.extra,
-          ));
-          return Scaffold(body: Text('Detail ${state.pathParameters['id']}'));
-        },
-      ),
-    ],
+          ]
+        : [
+            GoRoute(
+              path: '/',
+              builder: (_, _) => openerPage(),
+              routes: [GoRoute(path: 'add', builder: (_, _) => form())],
+            ),
+            GoRoute(
+              path: '/investments/:id',
+              builder: (_, state) => detailPage(state),
+            ),
+          ],
   );
   addTearDown(router.dispose);
 
@@ -344,7 +387,12 @@ Future<FormHarness> pumpAddForm(
       ],
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: [
+          ?l10nDelegate,
+          for (final delegate in AppLocalizations.localizationsDelegates)
+            if (l10nDelegate == null || delegate.type != AppLocalizations)
+              delegate,
+        ],
         supportedLocales: AppLocalizations.supportedLocales,
         themeMode: themeMode,
         theme: appTheme ? AppTheme.lightTheme : ThemeData.light(),

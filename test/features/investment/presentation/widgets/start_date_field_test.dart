@@ -3,6 +3,7 @@
 // that says the date also dates the first cash flow, and is one button for a
 // screen reader.
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/start_date_field.dart';
@@ -29,6 +30,43 @@ Widget _host({
     ),
   ),
 );
+
+/// The field between two buttons, as a hardware keyboard meets it in the form.
+Widget _keyboardHost({required VoidCallback onTap}) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: Scaffold(
+    body: Column(
+      children: [
+        TextButton(
+          key: const ValueKey('before'),
+          autofocus: true,
+          onPressed: () {},
+          child: const Text('Before'),
+        ),
+        StartDateField(date: DateTime(2026, 10, 11), onTap: onTap),
+        TextButton(
+          key: const ValueKey('after'),
+          onPressed: () {},
+          child: const Text('After'),
+        ),
+      ],
+    ),
+  ),
+);
+
+/// The widget with [key] holds the focus, or something inside it does.
+bool _hasFocus(Key key) {
+  final primary = FocusManager.instance.primaryFocus?.context;
+  if (primary == null) return false;
+  if (primary.widget.key == key) return true;
+  var inside = false;
+  primary.visitAncestorElements((element) {
+    inside = element.widget.key == key;
+    return !inside;
+  });
+  return inside;
+}
 
 void main() {
   final today = DateTime(2026, 10, 11);
@@ -160,5 +198,137 @@ void main() {
       tester.getSize(find.byType(TextFormField)).height,
       greaterThanOrEqualTo(48.0),
     );
+  });
+
+  group('a hardware keyboard', () {
+    testWidgets('Tab reaches the field and Enter opens the picker', (
+      tester,
+    ) async {
+      var taps = 0;
+      await tester.pumpWidget(_keyboardHost(onTap: () => taps++));
+      expect(_hasFocus(const ValueKey('before')), isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(
+        tester.widget<InputDecorator>(find.byType(InputDecorator)).isFocused,
+        isTrue,
+        reason: 'the field shows its focus state',
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(taps, 1);
+    });
+
+    testWidgets('Space and the numpad Enter open the picker too', (
+      tester,
+    ) async {
+      var taps = 0;
+      await tester.pumpWidget(_keyboardHost(onTap: () => taps++));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pump();
+      expect(taps, 1);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.numpadEnter);
+      await tester.pump();
+      expect(taps, 2);
+    });
+
+    testWidgets('other keys do nothing, and Tab moves on in one press', (
+      tester,
+    ) async {
+      var taps = 0;
+      await tester.pumpWidget(_keyboardHost(onTap: () => taps++));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(taps, 0);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(_hasFocus(const ValueKey('after')), isTrue);
+    });
+
+    testWidgets('a held key opens the picker once, not on every repeat', (
+      tester,
+    ) async {
+      var taps = 0;
+      await tester.pumpWidget(_keyboardHost(onTap: () => taps++));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.enter);
+      await tester.sendKeyRepeatEvent(LogicalKeyboardKey.enter);
+      await tester.sendKeyRepeatEvent(LogicalKeyboardKey.enter);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.enter);
+      expect(taps, 1);
+    });
+
+    testWidgets('a date picked after opening it with the keyboard keeps '
+        'the field focused', (tester) async {
+      var date = DateTime(2026, 10, 11);
+      late StateSetter update;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                update = setState;
+                return StartDateField(date: date, onTap: () {});
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      // The picker answers with another day.
+      update(() => date = DateTime(2026, 10, 5));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Oct 5, 2026'), findsOneWidget);
+      expect(
+        tester.widget<InputDecorator>(find.byType(InputDecorator)).isFocused,
+        isTrue,
+      );
+    });
+
+    testWidgets('a date picked by touch does not take the focus', (
+      tester,
+    ) async {
+      var date = DateTime(2026, 10, 11);
+      late StateSetter update;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                update = setState;
+                return StartDateField(date: date, onTap: () {});
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Oct 11, 2026'));
+      update(() => date = DateTime(2026, 10, 5));
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        tester.widget<InputDecorator>(find.byType(InputDecorator)).isFocused,
+        isFalse,
+      );
+    });
   });
 }

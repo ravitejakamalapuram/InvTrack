@@ -1,6 +1,7 @@
 // A40 (#783) PR-2: choosing an investment type chip sets the type and the
-// structure that goes with it (payout mode, compounding, income frequency)
-// and nothing else. InvestmentTypeDefaults has no field for a term, and the
+// structure that goes with it (payout mode, compounding) and nothing else.
+// InvestmentTypeDefaults has no field for a term or an income frequency (a
+// frequency schedules income reminders, so only the user sets one), and the
 // typical rate is a hint for the empty rate field, never a value to save.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -16,7 +17,6 @@ void main() {
 
       expect(defaults.payoutMode, InterestPayoutMode.cumulative);
       expect(defaults.compounding, CompoundingFrequency.quarterly);
-      expect(defaults.incomeFrequency, IncomeFrequency.quarterly);
       expect(defaults.typicalRate, 7.0);
     });
 
@@ -27,7 +27,6 @@ void main() {
 
       expect(defaults.payoutMode, InterestPayoutMode.periodic);
       expect(defaults.compounding, CompoundingFrequency.none);
-      expect(defaults.incomeFrequency, IncomeFrequency.monthly);
       expect(defaults.typicalRate, 12.0);
     });
 
@@ -35,7 +34,6 @@ void main() {
       final defaults = InvestmentTypeDefaults.forType(InvestmentType.gold);
 
       expect(defaults.payoutMode, InterestPayoutMode.periodic);
-      expect(defaults.incomeFrequency, IncomeFrequency.semiAnnual);
       expect(defaults.typicalRate, 2.5);
     });
 
@@ -45,7 +43,6 @@ void main() {
 
         expect(defaults.payoutMode, isNull, reason: type.name);
         expect(defaults.compounding, isNull, reason: type.name);
-        expect(defaults.incomeFrequency, isNull, reason: type.name);
         expect(defaults.typicalRate, isNull, reason: type.name);
         expect(defaults, same(InvestmentTypeDefaults.none), reason: type.name);
       }
@@ -70,11 +67,6 @@ void main() {
             first?.defaultCompoundingFrequency,
             reason: type.name,
           );
-          expect(
-            defaults.incomeFrequency,
-            first?.defaultIncomeFrequency,
-            reason: type.name,
-          );
           expect(defaults.typicalRate, first?.typicalRate, reason: type.name);
         }
       },
@@ -89,7 +81,6 @@ void main() {
 
       expect(defaults.payoutMode, InterestPayoutMode.atMaturity);
       expect(defaults.compounding, CompoundingFrequency.quarterly);
-      expect(defaults.incomeFrequency, isNull);
       expect(defaults.typicalRate, 6.5);
     });
   });

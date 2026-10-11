@@ -5,8 +5,12 @@
 // form sends it, and what the user sees and where they land.
 import 'dart:async';
 
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
 import 'package:inv_tracker/core/widgets/currency_selector.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
@@ -18,6 +22,8 @@ import 'package:inv_tracker/features/investment/presentation/providers/providers
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/add_investment_keys.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/start_date_field.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations_en.dart';
 
 import '../../../../helpers/inter_font.dart';
 import 'add_investment_harness.dart';
@@ -32,6 +38,36 @@ const _helperOther = 'Also the date of your first cash flow.';
 const _failed = 'Could not add this investment. Nothing was saved. Try again.';
 const _offline = 'Saved on this device. Syncs when you are online.';
 const _created = 'Investment created successfully';
+
+class _MockFirebaseCrashlytics extends Mock implements FirebaseCrashlytics {}
+
+/// The English strings with the ones the form's own labels use replaced by
+/// marks, so a test can tell text from the strings from a literal in the code.
+class _MarkedStrings extends AppLocalizationsEn {
+  @override
+  String get investmentNameLabel => 'NAME-L';
+  @override
+  String get investmentNameHint => 'NAME-H';
+  @override
+  String get investmentCurrencyLabel => 'CURRENCY-L';
+  @override
+  String get investmentCurrencySubtitle => 'CURRENCY-S';
+  @override
+  String get investmentNotesLabel => 'NOTES-L';
+  @override
+  String get investmentNotesHint => 'NOTES-H';
+}
+
+class _MarkedDelegate extends LocalizationsDelegate<AppLocalizations> {
+  const _MarkedDelegate();
+  @override
+  bool isSupported(Locale locale) => true;
+  @override
+  Future<AppLocalizations> load(Locale locale) async => _MarkedStrings();
+  @override
+  bool shouldReload(covariant LocalizationsDelegate<AppLocalizations> old) =>
+      false;
+}
 
 Finder _chip(InvestmentType type) =>
     find.byKey(AddInvestmentKeys.typeChip(type));
@@ -115,6 +151,32 @@ void main() {
       expect(InvestmentType.values, hasLength(14));
       expect(find.text('⚡ Quick Start'), findsNothing);
       expect(find.text('Start Date (Optional)'), findsNothing);
+    });
+
+    testWidgets('the name, currency and notes texts come from the strings', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pumpAddForm(
+        tester,
+        flagOn: true,
+        now: _now,
+        l10nDelegate: const _MarkedDelegate(),
+      );
+
+      expect(find.text('NAME-L'), findsWidgets);
+      expect(find.text('NAME-H'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('NAME-L')), findsWidgets);
+      expect(find.text('Investment Name'), findsNothing);
+
+      await _openMore(tester);
+      expect(find.text('CURRENCY-L'), findsOneWidget);
+      expect(find.text('CURRENCY-S'), findsOneWidget);
+      expect(find.text('NOTES-L'), findsWidgets);
+      expect(find.text('NOTES-H'), findsOneWidget);
+      expect(find.text('Investment Currency'), findsNothing);
+      expect(find.text('Notes (Optional)'), findsNothing);
+      handle.dispose();
     });
 
     testWidgets('title, type label, name, amount, date, More details, button', (
@@ -528,6 +590,94 @@ void main() {
     });
   });
 
+  group('a failed save is reported, without what the user typed', () {
+    // Unlikely to occur in any other text.
+    const secretName = 'ZqxSecretGripFD';
+    late _MockFirebaseCrashlytics firebase;
+
+    setUpAll(() {
+      registerFallbackValue(StackTrace.empty);
+      registerFallbackValue(const <Object>[]);
+    });
+
+    setUp(() {
+      firebase = _MockFirebaseCrashlytics();
+      when(
+        () => firebase.recordError(
+          any(),
+          any(),
+          reason: any(named: 'reason'),
+          fatal: any(named: 'fatal'),
+          information: any(named: 'information'),
+        ),
+      ).thenAnswer((_) async {});
+      // Tests run with kDebugMode == true, so reporting needs the override.
+      CrashlyticsService.enableInDebugMode = true;
+      LoggerService.crashlyticsServiceForTesting = CrashlyticsService(
+        debugModeEnabled: true,
+        crashlytics: firebase,
+      );
+    });
+
+    tearDown(() {
+      CrashlyticsService.enableInDebugMode = false;
+      LoggerService.crashlyticsServiceForTesting = null;
+    });
+
+    /// An error and a reason for each report made so far.
+    List<Object?> reported() => verify(
+      () => firebase.recordError(
+        captureAny(),
+        any(),
+        reason: captureAny(named: 'reason'),
+        fatal: any(named: 'fatal'),
+        information: any(named: 'information'),
+      ),
+    ).captured;
+
+    testWidgets('one report per failed attempt, with no name or amount', (
+      tester,
+    ) async {
+      final harness = await _open(tester);
+      harness.notifier.failures = 1;
+      harness.notifier.error = StateError(
+        'permission denied for users/uid-42/investments/$secretName '
+        'amount 123456 owner someone@example.com',
+      );
+
+      await _fill(tester, name: secretName, amount: '123456');
+      await _tapSubmit(tester);
+
+      final report = reported();
+      expect(report, hasLength(2), reason: 'an error and its reason');
+      for (final part in report) {
+        final text = '$part';
+        expect(text, isNot(contains(secretName)));
+        expect(text, isNot(contains('123456')));
+        expect(text, isNot(contains('uid-42')));
+        expect(text, isNot(contains('someone@example.com')));
+      }
+      expect(find.text(_failed), findsOneWidget);
+    });
+
+    testWidgets('a save that goes through reports nothing', (tester) async {
+      await _open(tester);
+
+      await _fill(tester, name: secretName, amount: '123456');
+      await _tapSubmit(tester);
+
+      verifyNever(
+        () => firebase.recordError(
+          any(),
+          any(),
+          reason: any(named: 'reason'),
+          fatal: any(named: 'fatal'),
+          information: any(named: 'information'),
+        ),
+      );
+    });
+  });
+
   group('the message after a save', () {
     testWidgets('confirmed: "Investment created successfully"', (tester) async {
       final harness = await _open(tester);
@@ -766,7 +916,9 @@ void main() {
       expect(call.maturityDate, isNull);
       expect(call.interestPayoutMode, InterestPayoutMode.cumulative);
       expect(call.compoundingFrequency, CompoundingFrequency.quarterly);
-      expect(call.incomeFrequency, IncomeFrequency.quarterly);
+      // A payout schedule is the user's to state: with one, the app schedules
+      // an income reminder for it.
+      expect(call.incomeFrequency, isNull);
       expect(call.riskLevel, isNull);
       expect(call.name, 'FD - Senior citizen');
     });
@@ -894,7 +1046,7 @@ void main() {
       final call = harness.adds.single;
       expect(call.interestPayoutMode, InterestPayoutMode.periodic);
       expect(call.compoundingFrequency, CompoundingFrequency.none);
-      expect(call.incomeFrequency, IncomeFrequency.monthly);
+      expect(call.incomeFrequency, isNull);
     });
 
     testWidgets('the first chip tap sets the structure of the default type', (
@@ -911,7 +1063,7 @@ void main() {
         harness.adds.single.interestPayoutMode,
         InterestPayoutMode.periodic,
       );
-      expect(harness.adds.single.incomeFrequency, IncomeFrequency.monthly);
+      expect(harness.adds.single.incomeFrequency, isNull);
     });
 
     testWidgets('a type with no template clears the structure it set', (
@@ -948,11 +1100,28 @@ void main() {
       final call = harness.adds.single;
       expect(call.type, InvestmentType.bonds);
       expect(call.interestPayoutMode, InterestPayoutMode.atMaturity);
-      // Not chosen by the user: follows the type.
-      expect(call.incomeFrequency, IncomeFrequency.monthly);
+      expect(call.incomeFrequency, isNull);
     });
 
-    testWidgets('choosing None for income frequency survives a chip change', (
+    testWidgets('a chip never sets an income frequency, whatever the type', (
+      tester,
+    ) async {
+      for (final type in InvestmentType.values) {
+        // A new form for each type: a save closes the one before.
+        final harness = await _open(tester);
+        await _tapChip(tester, type);
+        await _fill(tester, name: 'Any ${type.name}');
+        await _tapSubmit(tester);
+
+        expect(
+          harness.adds.single.incomeFrequency,
+          isNull,
+          reason: 'a ${type.name} chip must not schedule income reminders',
+        );
+      }
+    });
+
+    testWidgets('an income frequency the user chose survives a chip change', (
       tester,
     ) async {
       final handle = tester.ensureSemantics();
@@ -960,16 +1129,16 @@ void main() {
 
       await _tapChip(tester, InvestmentType.fixedDeposit);
       await _openMore(tester);
-      final none = find.bySemanticsLabel('None income frequency');
-      await tester.ensureVisible(none);
+      final monthly = find.bySemanticsLabel('Monthly income frequency');
+      await tester.ensureVisible(monthly);
       await tester.pumpAndSettle();
-      await tester.tap(none);
+      await tester.tap(monthly);
       await tester.pumpAndSettle();
       await _tapChip(tester, InvestmentType.gold);
       await _fill(tester, name: 'SGB');
       await _tapSubmit(tester);
 
-      expect(harness.adds.single.incomeFrequency, isNull);
+      expect(harness.adds.single.incomeFrequency, IncomeFrequency.monthly);
       handle.dispose();
     });
 
@@ -1042,7 +1211,7 @@ void main() {
         expect(call.maturityDate, isNull);
         expect(call.interestPayoutMode, InterestPayoutMode.cumulative);
         expect(call.compoundingFrequency, CompoundingFrequency.quarterly);
-        expect(call.incomeFrequency, IncomeFrequency.quarterly);
+        expect(call.incomeFrequency, isNull);
         expect(call.riskLevel, isNull);
       },
     );
@@ -1090,6 +1259,51 @@ void main() {
       await _tapSubmit(tester);
 
       expect(enhanced(harness), isEmpty);
+    });
+
+    testWidgets('what a type chip sets is not counted as a field used', (
+      tester,
+    ) async {
+      final harness = await _open(tester);
+
+      await _tapChip(tester, InvestmentType.fixedDeposit);
+      await _fill(tester, name: 'Grip FD', amount: '100000');
+      await _tapSubmit(tester);
+
+      expect(harness.adds.single.interestPayoutMode, isNotNull);
+      expect(harness.adds.single.compoundingFrequency, isNotNull);
+      expect(enhanced(harness), isEmpty);
+    });
+
+    testWidgets('a payout mode the user changed is counted, alone', (
+      tester,
+    ) async {
+      final harness = await _open(tester);
+
+      await _tapChip(tester, InvestmentType.fixedDeposit);
+      await _openMore(tester);
+      await tester.ensureVisible(find.text('At Maturity'));
+      await tester.tap(find.text('At Maturity'));
+      await tester.pumpAndSettle();
+      await _fill(tester, name: 'Grip FD');
+      await _tapSubmit(tester);
+
+      expect(enhanced(harness).single['fields'], 'payout_mode');
+    });
+
+    testWidgets('a rate the user typed is counted, alone', (tester) async {
+      final harness = await _open(tester);
+
+      await _tapChip(tester, InvestmentType.fixedDeposit);
+      await _openMore(tester);
+      await tester.enterText(
+        _fieldLabelled('Expected Return Rate (% p.a.)'),
+        '7.25',
+      );
+      await _fill(tester, name: 'Grip FD');
+      await _tapSubmit(tester);
+
+      expect(enhanced(harness).single['fields'], 'expected_rate');
     });
 
     testWidgets('a start date the user picked is counted', (tester) async {

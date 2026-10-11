@@ -2413,6 +2413,30 @@
   "@investmentNameRequired": {
     "description": "Error under the investment name field when it is empty (A40)"
   },
+  "investmentNameLabel": "Investment Name",
+  "@investmentNameLabel": {
+    "description": "Label of the name field of the add investment form, also read by a screen reader (A40)"
+  },
+  "investmentNameHint": "e.g. LenDenClub, Grip Invest",
+  "@investmentNameHint": {
+    "description": "Example shown in the empty name field of the add investment form (A40)"
+  },
+  "investmentCurrencyLabel": "Investment Currency",
+  "@investmentCurrencyLabel": {
+    "description": "Label of the currency picker in More details of the add investment form (A40)"
+  },
+  "investmentCurrencySubtitle": "Primary currency for this investment",
+  "@investmentCurrencySubtitle": {
+    "description": "Line under the currency picker label in More details of the add investment form (A40)"
+  },
+  "investmentNotesLabel": "Notes (Optional)",
+  "@investmentNotesLabel": {
+    "description": "Label of the notes field in More details of the add investment form (A40)"
+  },
+  "investmentNotesHint": "Add any details about this investment",
+  "@investmentNotesHint": {
+    "description": "Example shown in the empty notes field in More details of the add investment form (A40)"
+  },
   "startDateFieldLabel": "Start Date",
   "@startDateFieldLabel": {
     "description": "Label of the start date field of the add investment form (A40)"
