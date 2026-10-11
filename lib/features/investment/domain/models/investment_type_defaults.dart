@@ -22,8 +22,9 @@ class InvestmentTypeDefaults {
   /// has that type.
   factory InvestmentTypeDefaults.forType(InvestmentType type) {
     for (final template in InvestmentTemplates.all) {
-      if (template.type == type)
+      if (template.type == type) {
         return InvestmentTypeDefaults.forTemplate(template);
+      }
     }
     return none;
   }
