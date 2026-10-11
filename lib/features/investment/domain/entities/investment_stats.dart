@@ -78,6 +78,12 @@ class InvestmentStats {
   /// known (money rule 4).
   final int missingValueCount;
 
+  /// Open investments in these stats that have no current value but have
+  /// returned at least their cost. Their [xirr], [moic] and [absoluteReturn]
+  /// count cash alone, so they are minimums (they leave out whatever is still
+  /// held) and screens label them "so far". See [returnsAreSoFar].
+  final int cashOnlyCount;
+
   /// Investments in these stats that have limited history (an opening
   /// baseline): they count in [totalInvested], [totalReturned],
   /// [netCashFlow] and [currentValue], but not in [xirr], [moic] or
@@ -108,6 +114,7 @@ class InvestmentStats {
     this.currentValueIsEstimate = false,
     this.currentValueRate,
     this.missingValueCount = 0,
+    this.cashOnlyCount = 0,
     this.limitedHistoryCount = 0,
     this.returnsKnown = true,
   }) : paidInCapital = paidInCapital ?? totalInvested,
@@ -146,6 +153,24 @@ class InvestmentStats {
   /// True when an open investment in these stats needs a current value
   /// before its returns can be shown.
   bool get needsCurrentValue => missingValueCount > 0;
+
+  /// Whether an open investment in these stats still lacks a value that its
+  /// return needs (money rule 4): [needsCurrentValue], or stats calculated
+  /// without current values (or before they loaded) that have no value and
+  /// less back than was put in. The one place that decides it.
+  bool get awaitsValue =>
+      needsCurrentValue ||
+      (currentValue == null && totalReturned < totalInvested);
+
+  /// Whether [xirr], [moic] and [absoluteReturn] of the open investments in
+  /// these stats are cash-only minimums: some open investment has returned
+  /// its cost and has no current value ([cashOnlyCount]), and none awaits one
+  /// ([awaitsValue] wins). Stats calculated without current values that got
+  /// their cost back count too. Closed investments are final, so callers ask
+  /// this of the open subset only.
+  bool get returnsAreSoFar =>
+      !awaitsValue &&
+      (cashOnlyCount > 0 || (currentValue == null && totalInvested > 0));
 
   /// Holdings shorter than this show their absolute return instead of an
   /// annualised XIRR, because annualising a few days of return gives absurd
@@ -238,6 +263,7 @@ class InvestmentStats {
     bool? currentValueIsEstimate,
     double? currentValueRate,
     int? missingValueCount,
+    int? cashOnlyCount,
     int? limitedHistoryCount,
     bool? returnsKnown,
   }) {
@@ -260,6 +286,7 @@ class InvestmentStats {
           currentValueIsEstimate ?? this.currentValueIsEstimate,
       currentValueRate: currentValueRate ?? this.currentValueRate,
       missingValueCount: missingValueCount ?? this.missingValueCount,
+      cashOnlyCount: cashOnlyCount ?? this.cashOnlyCount,
       limitedHistoryCount: limitedHistoryCount ?? this.limitedHistoryCount,
       returnsKnown: returnsKnown ?? this.returnsKnown,
     );
@@ -287,6 +314,7 @@ class InvestmentStats {
         other.currentValueIsEstimate == currentValueIsEstimate &&
         other.currentValueRate == currentValueRate &&
         other.missingValueCount == missingValueCount &&
+        other.cashOnlyCount == cashOnlyCount &&
         other.limitedHistoryCount == limitedHistoryCount &&
         other.returnsKnown == returnsKnown;
   }
@@ -311,6 +339,7 @@ class InvestmentStats {
           currentValueIsEstimate,
           currentValueRate,
           missingValueCount,
+          cashOnlyCount,
           limitedHistoryCount,
           returnsKnown,
         );

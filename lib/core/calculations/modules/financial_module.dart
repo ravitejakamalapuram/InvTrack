@@ -212,6 +212,7 @@ class FinancialCalculatorModule implements CalculationModule {
       currentValueIsEstimate: currentValue != null && terminalValues.isEstimate,
       currentValueRate: currentValue != null ? terminalValues.rate : null,
       missingValueCount: terminalValues.missingValueCount,
+      cashOnlyCount: terminalValues.cashOnlyCount,
       limitedHistoryCount: limitedSeen.length,
       returnsKnown: limitedSeen.isEmpty || paidInCapital > 0,
     );
