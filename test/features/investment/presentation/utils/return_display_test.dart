@@ -12,6 +12,10 @@ InvestmentStats _stats({
   double xirr = 0,
   XirrMethod xirrMethod = XirrMethod.exact,
   int count = 2,
+  int cashOnly = 0,
+  int missing = 0,
+  double? currentValue,
+  bool estimate = false,
 }) {
   return InvestmentStats(
     totalInvested: invested,
@@ -24,6 +28,10 @@ InvestmentStats _stats({
     cashFlowCount: count,
     firstCashFlowDate: first,
     lastCashFlowDate: last,
+    currentValue: currentValue,
+    currentValueIsEstimate: estimate,
+    missingValueCount: missing,
+    cashOnlyCount: cashOnly,
   );
 }
 
@@ -75,20 +83,172 @@ void main() {
       expect(display.primaryText(l10n), '—');
     });
 
-    test('open investment that has returned its capital shows its XIRR', () {
+    test('open investment that has returned its capital shows its XIRR '
+        'so far', () {
+      // #954: the figure is the cash-only one, a minimum, so it says so. The
+      // test used to expect the plain "XIRR", which the owner ruled out.
       final stats = _stats(
         invested: 100000,
         returned: 110000,
         first: DateTime(2023, 1, 1),
         last: DateTime(2024, 1, 1),
         xirr: 0.10,
+        cashOnly: 1,
       );
 
       final display = ReturnDisplay.resolve(stats: stats, openStats: stats);
 
       expect(display.kind, ReturnDisplayKind.annualised);
+      expect(display.isSoFar, isTrue);
       expect(display.statusLabel(l10n), isNull);
+      expect(display.metricLabel(l10n), 'XIRR so far');
       expect(display.primaryText(l10n), '+10.0%');
+      expect(display.badgeText(l10n), '+10.0% so far');
+      expect(display.pillText(l10n), '+10.0% IRR so far');
+      expect(display.moicLabel(l10n), 'MOIC so far');
+      expect(display.paidBackHint(l10n), 'Fully paid back? Mark it closed');
+    });
+
+    test(
+      'stats built without values that got the cost back are so far too',
+      () {
+        final stats = _stats(
+          invested: 100000,
+          returned: 110000,
+          first: DateTime(2023, 1, 1),
+          last: DateTime(2024, 1, 1),
+          xirr: 0.10,
+        );
+
+        final display = ReturnDisplay.resolve(stats: stats, openStats: stats);
+
+        expect(display.isSoFar, isTrue);
+        expect(display.metricLabel(l10n), 'XIRR so far');
+      },
+    );
+
+    test('a short so-far holding labels its absolute return', () {
+      final stats = _stats(
+        invested: 100000,
+        returned: 100500,
+        first: DateTime(2026, 9, 1),
+        last: DateTime(2026, 9, 21),
+        xirr: 0.09,
+        cashOnly: 1,
+      );
+
+      final display = ReturnDisplay.resolve(stats: stats, openStats: stats);
+
+      expect(display.kind, ReturnDisplayKind.shortHolding);
+      expect(display.isSoFar, isTrue);
+      expect(display.primaryText(l10n), '+0.5% in 20 days');
+      expect(display.metricLabel(l10n), 'Return so far');
+      expect(display.badgeText(l10n), '+0.5% so far');
+      expect(display.pillText(l10n), '+0.5% in 20 days so far');
+    });
+
+    test('waiting for a value wins over so far', () {
+      // One holding has paid back, another has not: the whole is unknown.
+      final stats = _stats(
+        invested: 200000,
+        returned: 110000,
+        first: DateTime(2023, 1, 1),
+        last: DateTime(2024, 1, 1),
+        xirr: -0.4,
+        cashOnly: 1,
+        missing: 1,
+      );
+
+      final display = ReturnDisplay.resolve(stats: stats, openStats: stats);
+
+      expect(display.kind, ReturnDisplayKind.awaitingCurrentValue);
+      expect(display.isSoFar, isFalse);
+      expect(display.primaryText(l10n), '—');
+      expect(display.paidBackHint(l10n), isNull);
+    });
+
+    test(
+      'an estimated value with a paid-back holding is Expected XIRR so far',
+      () {
+        // Overview: an FD estimated at its accrued value, plus a holding that
+        // paid back and has no value.
+        final stats = _stats(
+          invested: 200000,
+          returned: 110000,
+          first: DateTime(2023, 1, 1),
+          last: DateTime(2026, 6, 1),
+          xirr: 0.08,
+          cashOnly: 1,
+          currentValue: 107000,
+          estimate: true,
+        );
+
+        final display = ReturnDisplay.resolve(stats: stats, openStats: stats);
+
+        expect(display.kind, ReturnDisplayKind.annualised);
+        expect(display.isSoFar, isTrue);
+        expect(display.metricLabel(l10n), 'Expected XIRR so far');
+      },
+    );
+
+    test('a closed investment is final: never so far', () {
+      final stats = _stats(
+        invested: 100000,
+        returned: 110000,
+        first: DateTime(2023, 1, 1),
+        last: DateTime(2024, 1, 1),
+        xirr: 0.10,
+        cashOnly: 1,
+      );
+
+      final display = ReturnDisplay.resolve(stats: stats);
+
+      expect(display.isSoFar, isFalse);
+      expect(display.metricLabel(l10n), 'XIRR');
+      expect(display.badgeText(l10n), '+10.0%');
+      expect(display.pillText(l10n), '+10.0% IRR');
+      expect(display.moicLabel(l10n), 'MOIC');
+      expect(display.paidBackHint(l10n), isNull);
+    });
+
+    test('an open investment with a current value is not so far', () {
+      final stats = _stats(
+        invested: 100000,
+        returned: 10000,
+        first: DateTime(2023, 1, 1),
+        last: DateTime(2024, 1, 1),
+        xirr: 0.05,
+        currentValue: 110000,
+      );
+
+      final display = ReturnDisplay.resolve(stats: stats, openStats: stats);
+
+      expect(display.isSoFar, isFalse);
+      expect(display.metricLabel(l10n), 'XIRR');
+      expect(display.moicLabel(l10n), 'MOIC');
+    });
+
+    test('so-far semantics say what the figure leaves out', () {
+      final stats = _stats(
+        invested: 100000,
+        returned: 110000,
+        first: DateTime(2023, 1, 1),
+        last: DateTime(2024, 1, 1),
+        xirr: 0.10,
+        cashOnly: 1,
+      );
+      final open = ReturnDisplay.resolve(stats: stats, openStats: stats);
+      final closed = ReturnDisplay.resolve(stats: stats);
+
+      expect(
+        open.semanticsFigure(l10n, 'Return: positive 10.0 percent'),
+        'Return: positive 10.0 percent so far. Counts money received only, '
+        'not any value still held.',
+      );
+      expect(
+        closed.semanticsFigure(l10n, 'Return: positive 10.0 percent'),
+        'Return: positive 10.0 percent',
+      );
     });
 
     test('closed investment with zero inflow keeps its real loss', () {

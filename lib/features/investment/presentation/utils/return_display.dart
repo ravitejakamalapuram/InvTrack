@@ -4,8 +4,10 @@
 /// one, their cash flows alone make them look like a loss (−100% badge, −98%
 /// XIRR), so those figures are replaced by a neutral status and a dash. With
 /// an estimated value the XIRR is labelled "Expected". Short holdings show
-/// their absolute return instead of a wildly annualised XIRR. Keep this the
-/// single place that makes these decisions.
+/// their absolute return instead of a wildly annualised XIRR. An open
+/// investment that has returned its cost and has no value keeps its cash-only
+/// figures, labelled "so far" (they are minimums). Keep this the single place
+/// that makes these decisions and words them.
 library;
 
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
@@ -59,6 +61,12 @@ class ReturnDisplay {
   /// The rate (% p.a.) the estimated current value accrued at, if one.
   final double? estimateRate;
 
+  /// Whether the figures are cash-only minimums: an open investment in the
+  /// stats has returned its cost and has no current value, so whatever it
+  /// still holds is left out ([InvestmentStats.returnsAreSoFar]). Labelled
+  /// "so far". Never set while a figure awaits a value.
+  final bool isSoFar;
+
   const ReturnDisplay._({
     required this.kind,
     required this.xirr,
@@ -67,6 +75,7 @@ class ReturnDisplay {
     required this.holdingDays,
     this.isEstimate = false,
     this.estimateRate,
+    this.isSoFar = false,
   });
 
   /// Resolves the display for [stats].
@@ -92,7 +101,7 @@ class ReturnDisplay {
     final days = stats.holdingDays;
 
     final ReturnDisplayKind kind;
-    if (openStats != null && openStats.hasData && _awaitsValue(openStats)) {
+    if (openStats != null && openStats.hasData && openStats.awaitsValue) {
       kind = openStats.totalReturned == 0 && stats.totalReturned == 0
           ? ReturnDisplayKind.awaitingFirstPayout
           : ReturnDisplayKind.awaitingCurrentValue;
@@ -114,15 +123,10 @@ class ReturnDisplay {
       holdingDays: days,
       isEstimate: stats.currentValueIsEstimate,
       estimateRate: stats.currentValueRate,
+      // Awaiting a value wins: returnsAreSoFar is false then.
+      isSoFar:
+          openStats != null && openStats.hasData && openStats.returnsAreSoFar,
     );
-  }
-
-  /// Whether an open investment in [openStats] still lacks a terminal value.
-  static bool _awaitsValue(InvestmentStats openStats) {
-    if (openStats.needsCurrentValue) return true;
-    // Stats calculated without current values (or before they loaded).
-    return openStats.currentValue == null &&
-        openStats.totalReturned < openStats.totalInvested;
   }
 
   /// True when the investment is open and has no terminal value yet, so
@@ -147,14 +151,53 @@ class ReturnDisplay {
   }
 
   /// Label for [primaryText]: "Return" for short holdings, "Expected XIRR"
-  /// while it uses an estimated current value, otherwise "XIRR".
-  String metricLabel(AppLocalizations l10n) {
-    if (kind == ReturnDisplayKind.shortHolding) return l10n.returnLabel;
-    if (kind == ReturnDisplayKind.annualised && isEstimate) {
-      return l10n.expectedXirrLabel;
+  /// while it uses an estimated current value, otherwise "XIRR", each with
+  /// "so far" when [isSoFar] (unless [qualified] is false, for a sentence
+  /// that adds the qualifier itself). A dash has nothing to qualify.
+  String metricLabel(AppLocalizations l10n, {bool qualified = true}) {
+    final soFar = isSoFar && qualified;
+    if (kind == ReturnDisplayKind.shortHolding) {
+      return soFar ? l10n.returnSoFarLabel : l10n.returnLabel;
     }
-    return l10n.xirrLabel;
+    if (kind == ReturnDisplayKind.annualised && isEstimate) {
+      return soFar ? l10n.expectedXirrSoFarLabel : l10n.expectedXirrLabel;
+    }
+    return soFar && kind == ReturnDisplayKind.annualised
+        ? l10n.xirrSoFarLabel
+        : l10n.xirrLabel;
   }
+
+  /// Label of the MOIC next to [primaryText].
+  String moicLabel(AppLocalizations l10n) =>
+      isSoFar ? l10n.moicSoFarLabel : l10n.moicLabel;
+
+  /// The return % badge: "+11.4%", or "+11.4% so far".
+  String badgeText(AppLocalizations l10n) {
+    final percent = formatPercent(absoluteReturn, showSign: true);
+    return isSoFar ? l10n.returnBadgeSoFar(percent) : percent;
+  }
+
+  /// The return pill on an investment card: "+4.9% IRR", "+4.9% Expected
+  /// XIRR", "+2.0% in 3 days" or the same "so far".
+  String pillText(AppLocalizations l10n) {
+    final figure = primaryText(l10n);
+    if (kind == ReturnDisplayKind.shortHolding) {
+      return isSoFar ? l10n.returnBadgeSoFar(figure) : figure;
+    }
+    if (isEstimate) return '$figure ${metricLabel(l10n)}';
+    return isSoFar ? l10n.returnPillSoFar(figure) : '$figure IRR';
+  }
+
+  /// [figure] as a screen reader reads it (already hidden in privacy mode),
+  /// with what "so far" leaves out when [isSoFar].
+  String semanticsFigure(AppLocalizations l10n, String figure) =>
+      isSoFar ? l10n.returnSoFarSemantics(figure) : figure;
+
+  /// A nudge for an open investment that has been paid back and has no value:
+  /// close it so its returns become final. Plain text without amounts. Null
+  /// when the figures are not so far.
+  String? paidBackHint(AppLocalizations l10n) =>
+      isSoFar ? l10n.returnPaidBackHint : null;
 
   /// The main return figure, e.g. "+12.4%", "+2.0% in 3 days" or "—".
   String primaryText(AppLocalizations l10n, {bool showSign = true}) {

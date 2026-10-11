@@ -59,6 +59,12 @@ class InvestmentDetailStatsSection extends StatelessWidget {
                 stats.currentValueIsEstimate)
         ? _projectedMaturityText(l10n)
         : null;
+    // An archived investment cannot be closed from here.
+    final paidBackHint = investment.isArchived
+        ? null
+        : display.paidBackHint(l10n);
+    final hiddenValue = l10n.hiddenAmount;
+    final moicText = formatMultiplier(stats.moic);
 
     return Column(
       children: [
@@ -74,10 +80,10 @@ class InvestmentDetailStatsSection extends StatelessWidget {
             onUpdate: onUpdateCurrentValue,
           ),
         ],
-        if (projection != null) ...[
+        for (final caption in [?projection, ?paidBackHint]) ...[
           const SizedBox(height: 6),
           Text(
-            projection,
+            caption,
             style: AppTypography.small.copyWith(
               color: isDark
                   ? AppColors.neutral400Dark
@@ -119,15 +125,20 @@ class InvestmentDetailStatsSection extends StatelessWidget {
                     ? null
                     : display.secondaryText(l10n),
                 isPrivacyMode: isPrivacyMode,
+                semanticsLabel: display.isSoFar && hasReturnFigure
+                    ? display.semanticsFigure(
+                        l10n,
+                        '${display.metricLabel(l10n, qualified: false)}: '
+                        '${isPrivacyMode ? hiddenValue : display.primaryText(l10n)}',
+                      )
+                    : null,
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: _MiniStatCard(
-                label: 'MOIC',
-                value: display.isAwaitingValue
-                    ? ReturnDisplay.dash
-                    : formatMultiplier(stats.moic),
+                label: display.moicLabel(l10n),
+                value: display.isAwaitingValue ? ReturnDisplay.dash : moicText,
                 color: AppColors.graphPurple,
                 isDark: isDark,
                 // No holding period while MOIC waits for a current value.
@@ -135,6 +146,13 @@ class InvestmentDetailStatsSection extends StatelessWidget {
                     ? null
                     : stats.durationFormatted,
                 isPrivacyMode: isPrivacyMode,
+                semanticsLabel: display.isSoFar
+                    ? display.semanticsFigure(
+                        l10n,
+                        '${l10n.moicLabel}: '
+                        '${isPrivacyMode ? hiddenValue : moicText}',
+                      )
+                    : null,
               ),
             ),
           ],
@@ -250,13 +268,13 @@ class InvestmentDetailStatsSection extends StatelessWidget {
             ),
           ),
           // Return percentage badge
-          _buildReturnBadge(isPositive, status),
+          _buildReturnBadge(isPositive, status, display.badgeText(l10n)),
         ],
       ),
     );
   }
 
-  Widget _buildReturnBadge(bool isPositive, String? status) {
+  Widget _buildReturnBadge(bool isPositive, String? status, String text) {
     if (status != null) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -293,7 +311,7 @@ class InvestmentDetailStatsSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        '${stats.absoluteReturn >= 0 ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}%',
+        text,
         style: AppTypography.bodyMedium.copyWith(
           color: isPositive ? AppColors.successLight : AppColors.errorLight,
           fontWeight: FontWeight.w600,
@@ -490,6 +508,10 @@ class _MiniStatCard extends StatelessWidget {
   final String? subtitle;
   final bool isPrivacyMode;
 
+  /// What a screen reader says instead of the texts, when they need more
+  /// than the label and the value.
+  final String? semanticsLabel;
+
   const _MiniStatCard({
     required this.label,
     required this.value,
@@ -497,6 +519,7 @@ class _MiniStatCard extends StatelessWidget {
     required this.isDark,
     this.subtitle,
     this.isPrivacyMode = false,
+    this.semanticsLabel,
   });
 
   @override
@@ -506,7 +529,7 @@ class _MiniStatCard extends StatelessWidget {
       fontWeight: FontWeight.w700,
     );
 
-    return GlassCard(
+    final card = GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       child: Column(
         children: [
@@ -539,6 +562,14 @@ class _MiniStatCard extends StatelessWidget {
             ),
         ],
       ),
+    );
+    final description = semanticsLabel;
+    if (description == null) return card;
+    return Semantics(
+      container: true,
+      label: description,
+      excludeSemantics: true,
+      child: card,
     );
   }
 }

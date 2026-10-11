@@ -99,6 +99,8 @@ class AccessibilityUtils {
   /// when the return cannot be calculated yet. [returnIsApproximate] reads
   /// [returnPercent] as approximate. [expectedReturnBasis] (e.g. "Based on
   /// 7% p.a.") reads it as expected, from an estimated current value.
+  /// [returnQualifier] rewrites the returns sentence of a figure (e.g. adds
+  /// "so far"); the percent in it is still hidden under [shouldMask].
   static String investmentCardLabel({
     required String name,
     required String type,
@@ -110,6 +112,7 @@ class AccessibilityUtils {
     String? returnStatus,
     bool returnIsApproximate = false,
     String? expectedReturnBasis,
+    String Function(String returns)? returnQualifier,
     DateTime? maturityDate,
     double? totalInvested,
     DateTime? lastActivityDate,
@@ -131,10 +134,13 @@ class AccessibilityUtils {
     final basis = expectedReturnBasis != null && !shouldMask
         ? ', $expectedReturnBasis'
         : '';
+    final figure = returnStatus == null && returnPercent != null
+        ? 'Returns: $expected${shouldMask ? "Hidden percentage" : '$approx${formatPercentageForScreenReader(returnPercent)}'}$basis'
+        : null;
     final returns = returnStatus != null
         ? 'Returns: $returnStatus'
-        : returnPercent != null
-        ? 'Returns: $expected${shouldMask ? "Hidden percentage" : '$approx${formatPercentageForScreenReader(returnPercent)}'}$basis'
+        : figure != null
+        ? (returnQualifier?.call(figure) ?? figure)
         : '';
     final lastActivity = lastActivityDate != null
         ? 'Last activity: ${formatDateForScreenReader(lastActivityDate)}'

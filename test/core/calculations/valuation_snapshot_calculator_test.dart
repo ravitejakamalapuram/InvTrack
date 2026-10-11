@@ -400,6 +400,9 @@ void main() {
       final t = terminal(flows, [market]);
       expect(t.flows, isEmpty);
       expect(t.missingValueCount, 1);
+      // Ahead on cash, but a stale price is not "paid back": no "so far"
+      // figures either (#954).
+      expect(t.cashOnlyCount, 0);
       expect(t.needsNewerValueIds, {'i1'});
     });
 

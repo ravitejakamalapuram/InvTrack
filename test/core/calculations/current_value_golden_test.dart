@@ -647,6 +647,221 @@ void main() {
         asOf: _today,
       );
       expect(terminal.missingValueCount, 0);
+      // Not unknown, but not valued either: its figures are cash-only
+      // minimums (#954), which the screens label "so far".
+      expect(terminal.cashOnlyCount, 1);
+      expect(terminal.flows, isEmpty);
+    });
+
+    group('cash-only figures of an open holding that returned its cost', () {
+      final gold = _investment('gold', InvestmentType.gold);
+
+      TerminalValues terminalOf(
+        List<CashFlowEntity> flows, {
+        InvestmentEntity? investment,
+      }) => CurrentValueCalculator.terminalValues(
+        investments: [investment ?? gold],
+        cashFlows: flows,
+        asOf: _today,
+      );
+
+      test('INVEST 10,00,000 and RETURN 11,14,000: cash-only, not missing', () {
+        final terminal = terminalOf([
+          _flow('gold', CashFlowType.invest, 1000000, DateTime(2025, 10, 10)),
+          _flow(
+            'gold',
+            CashFlowType.returnFlow,
+            1114000,
+            DateTime(2026, 10, 10),
+          ),
+        ]);
+        expect(terminal.cashOnlyCount, 1);
+        expect(terminal.missingValueCount, 0);
+        expect(terminal.flows, isEmpty);
+      });
+
+      test('one paisa short of the cost is still unknown', () {
+        final terminal = terminalOf([
+          _flow('gold', CashFlowType.invest, 1000000, DateTime(2025, 10, 10)),
+          _flow(
+            'gold',
+            CashFlowType.returnFlow,
+            999999.99,
+            DateTime(2026, 10, 10),
+          ),
+        ]);
+        expect(terminal.cashOnlyCount, 0);
+        expect(terminal.missingValueCount, 1);
+      });
+
+      test('exactly the cost back (net 0) is cash-only', () {
+        final terminal = terminalOf([
+          _flow('gold', CashFlowType.invest, 1000000, DateTime(2025, 10, 10)),
+          _flow(
+            'gold',
+            CashFlowType.returnFlow,
+            1000000,
+            DateTime(2026, 10, 10),
+          ),
+        ]);
+        expect(terminal.cashOnlyCount, 1);
+        expect(terminal.missingValueCount, 0);
+      });
+
+      test('payouts that add up to the cost to the paisa count as back', () {
+        // 33333.37 + 33333.37 + 33333.36 = 100000.10 in decimal, but the
+        // doubles sum to a value a hair below it.
+        final terminal = terminalOf([
+          _flow('gold', CashFlowType.invest, 100000.10, DateTime(2025, 1, 1)),
+          _flow(
+            'gold',
+            CashFlowType.returnFlow,
+            33333.37,
+            DateTime(2025, 6, 1),
+          ),
+          _flow(
+            'gold',
+            CashFlowType.returnFlow,
+            33333.37,
+            DateTime(2025, 9, 1),
+          ),
+          _flow(
+            'gold',
+            CashFlowType.returnFlow,
+            33333.36,
+            DateTime(2025, 12, 1),
+          ),
+        ]);
+        expect(terminal.cashOnlyCount, 1);
+        expect(terminal.missingValueCount, 0);
+      });
+
+      test('a fee counts as money out', () {
+        final flows = [
+          _flow('gold', CashFlowType.invest, 100000, DateTime(2025, 1, 1)),
+          _flow('gold', CashFlowType.fee, 500, DateTime(2025, 1, 1)),
+          _flow('gold', CashFlowType.returnFlow, 100400, DateTime(2026, 1, 1)),
+        ];
+        expect(terminalOf(flows).missingValueCount, 1);
+        expect(terminalOf(flows).cashOnlyCount, 0);
+        final enough = [
+          ...flows,
+          _flow('gold', CashFlowType.income, 100, DateTime(2026, 2, 1)),
+        ];
+        expect(terminalOf(enough).cashOnlyCount, 1);
+        expect(terminalOf(enough).missingValueCount, 0);
+      });
+
+      test('cash flows in two currencies stay unknown (INR out, USD back)', () {
+        final terminal = terminalOf([
+          _flow('gold', CashFlowType.invest, 100000, DateTime(2025, 1, 1)),
+          _flow(
+            'gold',
+            CashFlowType.returnFlow,
+            2000,
+            DateTime(2026, 1, 1),
+            currency: 'USD',
+          ),
+        ]);
+        expect(terminal.cashOnlyCount, 0);
+        expect(terminal.missingValueCount, 1);
+      });
+
+      test('income without any money out is neither cash-only nor missing', () {
+        final terminal = terminalOf([
+          _flow('gold', CashFlowType.income, 500, DateTime(2026, 1, 1)),
+        ]);
+        expect(terminal.cashOnlyCount, 0);
+        expect(terminal.missingValueCount, 0);
+      });
+
+      test('a closed investment is neither', () {
+        final closed = _investment(
+          'gold',
+          InvestmentType.gold,
+          status: InvestmentStatus.closed,
+        );
+        final terminal = terminalOf([
+          _flow('gold', CashFlowType.invest, 100000, DateTime(2025, 1, 1)),
+          _flow('gold', CashFlowType.returnFlow, 110000, DateTime(2026, 1, 1)),
+        ], investment: closed);
+        expect(terminal.cashOnlyCount, 0);
+        expect(terminal.missingValueCount, 0);
+      });
+
+      test('an open investment with a manual value is neither', () {
+        final valued = _investment(
+          'gold',
+          InvestmentType.gold,
+          currentValue: 50000,
+          currentValueDate: DateTime(2026, 9, 1),
+        );
+        final terminal = terminalOf([
+          _flow('gold', CashFlowType.invest, 100000, DateTime(2025, 1, 1)),
+          _flow('gold', CashFlowType.returnFlow, 110000, DateTime(2026, 1, 1)),
+        ], investment: valued);
+        expect(terminal.cashOnlyCount, 0);
+        expect(terminal.missingValueCount, 0);
+        expect(terminal.flows, hasLength(1));
+      });
+
+      test('counts add up over several investments', () {
+        final p2p = _investment('p2p', InvestmentType.p2pLending);
+        final terminal = CurrentValueCalculator.terminalValues(
+          investments: [gold, p2p, _fdS1],
+          cashFlows: [
+            _flow('gold', CashFlowType.invest, 100000, DateTime(2025, 1, 1)),
+            _flow(
+              'gold',
+              CashFlowType.returnFlow,
+              110000,
+              DateTime(2026, 1, 1),
+            ),
+            _flow('p2p', CashFlowType.invest, 100000, DateTime(2025, 1, 1)),
+            _flow('p2p', CashFlowType.returnFlow, 1000, DateTime(2026, 1, 1)),
+            ..._flowsS1,
+          ],
+          asOf: _today,
+        );
+        // gold: cash-only. p2p: still out of pocket, but a P2P loan is
+        // valued at what is owed, so it has a value. FD S1: valued.
+        expect(terminal.cashOnlyCount, 1);
+        expect(terminal.missingValueCount, 0);
+        expect(terminal.flows, hasLength(2));
+      });
+
+      test('currency conversion keeps the count', () {
+        final terminal = terminalOf([
+          _flow('gold', CashFlowType.invest, 100000, DateTime(2025, 1, 1)),
+          _flow('gold', CashFlowType.returnFlow, 110000, DateTime(2026, 1, 1)),
+        ]);
+        final converted = terminal.withConvertedFlows(const []);
+        expect(converted.cashOnlyCount, 1);
+        expect(converted.missingValueCount, 0);
+      });
+    });
+
+    test('stats carry the cash-only count and keep their figures', () {
+      // INVEST 1,00,000 on 2023-01-01, RETURN 1,10,000 on 2024-01-01: the
+      // figures are the cash-only ones; only the label changes (#954).
+      final flows = [
+        _flow('gold', CashFlowType.invest, 100000, DateTime(2023, 1, 1)),
+        _flow('gold', CashFlowType.returnFlow, 110000, DateTime(2024, 1, 1)),
+      ];
+      final terminal = CurrentValueCalculator.terminalValues(
+        investments: [_investment('gold', InvestmentType.gold)],
+        cashFlows: flows,
+        asOf: _today,
+      );
+      final stats = module.calculateStats(flows, terminalValues: terminal);
+      expect(stats.cashOnlyCount, 1);
+      expect(stats.missingValueCount, 0);
+      expect(stats.currentValue, isNull);
+      expect(stats.xirr!, closeTo(0.10, 1e-6));
+      expect(stats.moic, closeTo(1.1, 1e-9));
+      expect(stats.absoluteReturn, closeTo(10.0, 1e-9));
+      expect(stats.awaitsValue, isFalse);
+      expect(stats.returnsAreSoFar, isTrue);
     });
 
     test('stats without terminal values keep the cash-only figures', () {

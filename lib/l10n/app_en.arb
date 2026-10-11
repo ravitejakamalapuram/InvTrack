@@ -4202,6 +4202,64 @@
     "description": "Hint under an expected XIRR that uses estimated current values, such as outstanding principal"
   },
 
+  "xirrSoFarLabel": "XIRR so far",
+  "@xirrSoFarLabel": {
+    "description": "Label for the XIRR of an open investment that has returned its cost and has no current value: it counts money received only, so it is a minimum"
+  },
+
+  "expectedXirrSoFarLabel": "Expected XIRR so far",
+  "@expectedXirrSoFarLabel": {
+    "description": "Label for an XIRR that uses estimated current values and also includes an open investment that has returned its cost and has no current value"
+  },
+
+  "moicSoFarLabel": "MOIC so far",
+  "@moicSoFarLabel": {
+    "description": "Label for the MOIC of an open investment that has returned its cost and has no current value: it counts money received only, so it is a minimum"
+  },
+
+  "returnSoFarLabel": "Return so far",
+  "@returnSoFarLabel": {
+    "description": "Label for the absolute return of an open investment held for under 90 days that has returned its cost and has no current value"
+  },
+
+  "returnBadgeSoFar": "{percent} so far",
+  "@returnBadgeSoFar": {
+    "description": "Return badge of an open investment that has returned its cost and has no current value, e.g. '+11.4% so far'",
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "+11.4%"
+      }
+    }
+  },
+
+  "returnPillSoFar": "{value} IRR so far",
+  "@returnPillSoFar": {
+    "description": "Return pill on an investment card of an open investment that has returned its cost and has no current value, e.g. '+4.9% IRR so far'",
+    "placeholders": {
+      "value": {
+        "type": "String",
+        "example": "+4.9%"
+      }
+    }
+  },
+
+  "returnSoFarSemantics": "{figure} so far. Counts money received only, not any value still held.",
+  "@returnSoFarSemantics": {
+    "description": "Screen reader text for a return of an open investment that has returned its cost and has no current value: the figure, then what it leaves out. The figure is already hidden in privacy mode",
+    "placeholders": {
+      "figure": {
+        "type": "String",
+        "example": "Returns: positive 4.9 percent"
+      }
+    }
+  },
+
+  "returnPaidBackHint": "Fully paid back? Mark it closed",
+  "@returnPaidBackHint": {
+    "description": "Hint on the detail page of an open investment that has returned its cost and has no current value: if nothing is left to receive, close it so its returns become final. Plain text, no amount"
+  },
+
   "currentValueLabel": "Current value",
   "@currentValueLabel": {
     "description": "Title of the card showing what an open investment is worth today"

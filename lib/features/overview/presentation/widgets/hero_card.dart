@@ -153,9 +153,12 @@ class HeroCardContent extends ConsumerWidget {
           ? null
           : status != null
           ? 'Return: $status'
-          : isPrivacyMode
-          ? 'Return: Hidden percentage'
-          : 'Return: ${AccessibilityUtils.formatPercentageForScreenReader(stats.absoluteReturn)}',
+          : display.semanticsFigure(
+              l10n,
+              isPrivacyMode
+                  ? 'Return: Hidden percentage'
+                  : 'Return: ${AccessibilityUtils.formatPercentageForScreenReader(stats.absoluteReturn)}',
+            ),
     );
 
     return Semantics(
@@ -166,7 +169,15 @@ class HeroCardContent extends ConsumerWidget {
           children: [
             _buildTitleRow(context, ref),
             const SizedBox(height: 8),
-            _buildValueRow(netPosition, isPositive, stats, status, ref),
+            _buildValueRow(
+              netPosition,
+              isPositive,
+              stats,
+              status,
+              display.badgeText(l10n),
+              display.isSoFar,
+              ref,
+            ),
             const SizedBox(height: 16),
             _buildStatsRow(stats, display, l10n, ref),
             // The return % is on paid-in capital, not on money out.
@@ -301,6 +312,8 @@ class HeroCardContent extends ConsumerWidget {
     bool isPositive,
     InvestmentStats stats,
     String? status,
+    String badgeText,
+    bool isSoFar,
     WidgetRef ref,
   ) {
     final isPrivacyMode = ref.watch(privacyModeProvider);
@@ -344,8 +357,7 @@ class HeroCardContent extends ConsumerWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
-          status ??
-              '${stats.absoluteReturn >= 0 ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}%',
+          status ?? badgeText,
           style: TextStyle(
             color: badgeTextColor,
             fontWeight: FontWeight.w600,
@@ -365,6 +377,17 @@ class HeroCardContent extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [value, const SizedBox(height: 6), badge],
         ),
+      );
+    }
+
+    // "+123.5% so far" is wider than a bare percent: with a crore amount and
+    // large text it moves below the amount rather than squeezing it.
+    if (isSoFar) {
+      return Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 10,
+        runSpacing: 6,
+        children: [value, if (stats.hasData) badge],
       );
     }
 
