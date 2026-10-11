@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"InvTrack","components":[{"name":"HeroCard"},{"name":"InvestmentCard"},{"name":"StatTile"},{"name":"EmptyState"},{"name":"TextField"},{"name":"Button"},{"name":"Chip"},{"name":"Badge"},{"name":"BottomSheet"},{"name":"Dialog"},{"name":"Snackbar"},{"name":"GlassCard"},{"name":"GradientCard"},{"name":"PrivacyMask"},{"name":"AmountText"},{"name":"Skeleton"},{"name":"Navigation"},{"name":"MoreDetails"},{"name":"StickyAction"}]} */
+/* @ds-bundle: {"format":4,"namespace":"InvTrack","components":[{"name":"HeroCard"},{"name":"InvestmentCard"},{"name":"StatTile"},{"name":"GoalCard"},{"name":"EmptyState"},{"name":"TextField"},{"name":"Button"},{"name":"Chip"},{"name":"Badge"},{"name":"BottomSheet"},{"name":"Dialog"},{"name":"Snackbar"},{"name":"GlassCard"},{"name":"GradientCard"},{"name":"PrivacyMask"},{"name":"AmountText"},{"name":"Skeleton"},{"name":"Navigation"},{"name":"MoreDetails"},{"name":"StickyAction"}]} */
 /* InvTrack design system: plain HTML/CSS equivalents of the Flutter widgets. Each component is a function
    that returns an HTML string styled by bundle.css. No framework, no network. Amounts are display strings:
    the app computes metrics in lib/core/calculations; this bundle only shows them. */
@@ -229,8 +229,9 @@
         (o.sub ? '<div class="it-quick__sub it-hide-private">' + esc(o.sub) + '</div>' : '') + '</div></div>', { padding: '16px' });
     }
     if (k === 'mini') {
-      return GlassCard('<div class="it-mini"><div class="it-mini__label">' + esc(o.label) + '</div><div class="it-mini__value" style="color:' + (o.color || 'var(--text)') + '">' +
-        (o.sensitive === false ? esc(o.value) : amount(o.value)) + '</div>' + (o.sub ? '<div class="it-mini__sub">' + esc(o.sub) + '</div>' : '') + '</div>', { padding: '12px' });
+      // Three rows (label, value, subtitle) so two tiles in one .it-two--stats grid share them: StatColumns with tiles.
+      return GlassCard('<div class="it-mini__label">' + esc(o.label) + '</div><div class="it-mini__value" style="color:' + (o.color || 'var(--text)') + '">' +
+        (o.sensitive === false ? esc(o.value) : amount(o.value)) + '</div><div class="it-mini__sub">' + (o.sub ? esc(o.sub) : '') + '</div>', { cls: 'it-mini' });
     }
     if (k === 'net') {
       var accent = o.neutral ? 'var(--text-muted)' : (o.positive === false ? 'var(--danger)' : 'var(--success)');
@@ -461,21 +462,50 @@
     var valueRow = o.status
       ? '<div class="it-hero__value">' + value + badge + '</div>'
       : '<div class="it-hero__value it-hero__value--row">' + value + badge + '</div>';
-    var xirrs = (o.realisedXirr ? '<div class="it-hero__metric"><small>Realised XIRR</small><b>' + amount(o.realisedXirr) + '</b></div>' : '') +
-      '<div class="it-hero__metric"><small>' + esc(o.xirrLabel || 'XIRR') + '</small><b>' + amount(o.xirr) + '</b></div>';
+    // StatColumns: out, in, XIRR, then Realised XIRR. Each column is a subgrid over a label row and a value row (see bundle.css).
+    function statCol(value, label, ic, xirr) {
+      return '<div class="' + cls('it-statcol', xirr && 'it-statcol--xirr') + '"><span class="it-statcol__l">' +
+        (ic ? icon(ic, { size: 14 }) : '') + '<span>' + esc(label) + '</span></span><b class="it-statcol__v">' + value + '</b></div>';
+    }
+    var statCols = statCol(amount(o.out), 'out', 'arrow_upward') + statCol(amount(o.inn), 'in', 'arrow_downward') +
+      statCol(amount(o.xirr), o.xirrLabel || 'XIRR', null, true) + (o.realisedXirr ? statCol(amount(o.realisedXirr), 'Realised XIRR', null, true) : '');
     return '<div class="it-hero" role="group" aria-label="' + esc(title) + '">' +
       '<div class="it-hero__title-row"><div class="it-hero__title">' + esc(title) + '</div>' + PrivacyMask({ kind: 'toggle', on: !!o.privacy, size: 18 }) +
       '<button type="button" class="it-hero__scope" data-it-scope="' + (scope ? 'realized' : 'all') + '" aria-label="' + (scope ? 'Switch to all investments' : 'Switch to realized investments only') + '">' + icon(scope ? 'check_circle' : 'all_inclusive', { size: 14 }) + '<span>' + (scope ? 'Realized' : 'All') + '</span></button></div>' +
       valueRow +
-      '<div class="it-hero__stats"><div class="it-hero__flows">' +
-      '<span class="it-hero__flow">' + icon('arrow_upward', { size: 14 }) + amount(o.out) + '<small>out</small></span>' +
-      '<span class="it-hero__flow">' + icon('arrow_downward', { size: 14 }) + amount(o.inn) + '<small>in</small></span></div>' +
-      '<div class="it-hero__metrics">' + xirrs + '</div></div>' +
+      '<div class="it-statwrap"><div class="it-statcols">' + statCols + '</div></div>' +
       (o.note ? '<p class="it-hero__note">' + esc(o.note) + '</p>' : '') +
       (o.hint ? '<p class="it-hero__note">' + esc(o.hint) + '</p>' : '') +
       '<div class="it-hero__ccy">' + icon('info_outline', { size: 12 }) + '<span>All amounts shown in ' + esc(o.currencyLabel || '₹ (INR)') + '</span></div>' +
       (scope ? '<p class="it-hero__note it-hero__note--scope">Showing closed investments only</p>' : '') + '</div>';
   }
+
+  /* ------------------------------------------------------------------ GoalCard */
+  var GOAL_STATUS = {
+    'achieved': ['check_circle', 'Achieved', 'Goal achieved!'], 'on-track': ['trending_flat', 'On track', 'On track for Jun 2057'],
+    'ahead': ['trending_up', 'Ahead', 'Ahead of schedule! Keep it up!'], 'behind': ['trending_down', 'Behind', 'Behind schedule - needs attention'],
+    'in-progress': ['timelapse', 'In progress', 'Not enough history to project yet'], 'not-started': ['hourglass_empty', 'Not started', 'Start investing to make progress'],
+    'archived': ['archive', 'Archived', 'This goal is archived']
+  };
+  // kind 'list' (GoalCard): icon, name, progress text and ring in the main row, the shared-goals chip on a row of its own under it, and the footer. kind 'carousel' (GoalCarouselCard).
+  function GoalCard(o) {
+    o = o || {};
+    var st = GOAL_STATUS[o.status] || GOAL_STATUS['on-track'], c = o.color || 'var(--accent)';
+    var pct = o.percent == null ? 0 : o.percent;
+    if (o.kind === 'carousel') {
+      var badge = o.status === 'achieved' ? '\ud83c\udf89 Completed' : amountOrPct(pct);
+      return GlassCard('<div class="it-goalc"' + sty({ '--c': c, '--p': Math.min(100, pct) + '%' }) + '><span class="it-goal__icon" style="background:color-mix(in srgb,var(--c) 15%,transparent)">' + esc(o.emoji || '\ud83c\udfaf') + '</span>' +
+        '<div class="it-goalc__body"><div class="it-goalc__head"><span class="it-goalc__name">' + esc(o.name) + '</span><span class="it-goalc__pct">' + badge + '</span></div>' +
+        '<div class="it-goalc__amount">' + amount(o.progress) + '</div><div class="it-goalc__bar"><i></i></div></div></div>', { radius: 16, flat: true });
+    }
+    var chip = o.others ? '<div class="it-goal__chiprow"><span class="it-goal__chip">' + icon('link', { size: 14 }) + '<span>' + (o.others === 1 ? 'Also in 1 goal' : 'Also in ' + o.others + ' goals') + '</span></span></div>' : '';
+    return GlassCard('<div class="it-goal__row"' + sty({ '--c': c }) + '><span class="it-goal__icon">' + esc(o.emoji || '\ud83c\udfaf') + '</span>' +
+      '<div class="it-goal__info"><p class="it-goal__name">' + esc(o.name) + '</p><div class="it-goal__progress">' + amount(o.progress) + '</div></div>' +
+      '<span class="it-goal__ring">' + (o.privacy ? '\u2022\u2022%' : pct + '%') + '</span></div>' + chip +
+      '<div class="it-goal__foot"' + sty({ '--c': c }) + '><span class="it-goal__status">' + icon(st[0], { size: 14 }) + '<span>' + esc(st[1]) + '</span></span>' +
+      '<span class="it-goal__msg">' + esc(o.message || st[2]) + '</span></div>', { cls: 'it-goal', flat: true });
+  }
+  function amountOrPct(p) { return '<span class="it-hide-private">' + p + '%</span>'; }
 
   /* ------------------------------------------------------------------ InvestmentCard */
   var TYPES = {
@@ -565,7 +595,7 @@
 
   /* ------------------------------------------------------------------ export */
   window.InvTrack = {
-    GlassCard: GlassCard, GradientCard: GradientCard, Button: Button, StatTile: StatTile, Badge: Badge, Chip: Chip, EmptyState: EmptyState,
+    GlassCard: GlassCard, GradientCard: GradientCard, Button: Button, StatTile: StatTile, GoalCard: GoalCard, Badge: Badge, Chip: Chip, EmptyState: EmptyState,
     TextField: TextField, PrivacyMask: PrivacyMask, AmountText: AmountText, Skeleton: Skeleton, HeroCard: HeroCard, InvestmentCard: InvestmentCard,
     BottomSheet: BottomSheet, Dialog: Dialog, Snackbar: Snackbar, Navigation: Navigation, MoreDetails: MoreDetails, StickyAction: StickyAction,
     icon: icon, amount: amount, panes: panes, wire: wire, esc: esc,

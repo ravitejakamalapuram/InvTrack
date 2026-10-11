@@ -6355,6 +6355,15 @@
       }
     }
   },
+  "goalAlsoInGoals": "{count, plural, =1{Also in 1 goal} other{Also in {count} goals}}",
+  "@goalAlsoInGoals": {
+    "description": "Goal card chip: the goal's investments also count towards other goals. The short form of goalAlsoCountedIn, which a screen reader hears.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "goalLinkedInvestments": "Linked investments",
   "@goalLinkedInvestments": {
     "description": "Goal details: section listing the investments the goal tracks"

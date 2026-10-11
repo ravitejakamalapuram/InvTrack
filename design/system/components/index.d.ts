@@ -32,6 +32,23 @@ declare namespace InvTrack {
     | { kind: 'hero'; label: string; value: string; subtitle?: string };
   function StatTile(props: StatTileProps): Html;
 
+  type GoalStatusKey = 'achieved' | 'on-track' | 'ahead' | 'behind' | 'in-progress' | 'not-started' | 'archived';
+  interface GoalCardProps {
+    /** 'list' (the default) is the goals list card; 'carousel' is the compact Overview card. */
+    kind?: 'list' | 'carousel';
+    name: string; emoji?: string; color?: Css; status?: GoalStatusKey;
+    /** Already formatted, base currency, e.g. "₹2.5 L of ₹10 L". Masked in privacy mode. */
+    progress: string;
+    /** Whole percent, 0 to 100. */
+    percent?: number;
+    /** The footer text, when it is not the status default. It is end-aligned to the card padding and wraps. */
+    message?: string;
+    /** How many other goals count the same investments: shows "Also in N goals". */
+    others?: number;
+    privacy?: boolean;
+  }
+  function GoalCard(props: GoalCardProps): Html;
+
   type BadgeProps =
     | { kind?: 'change'; value: number; size?: 's' | 'm' | 'l'; filled?: boolean; icon?: boolean; prefix?: string; suffix?: string }
     | { kind: 'status'; label: string; color?: Css; outlined?: boolean }
