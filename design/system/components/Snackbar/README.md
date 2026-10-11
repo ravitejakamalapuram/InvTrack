@@ -7,8 +7,8 @@ Use a snackbar to confirm a finished action or report a failure the user can ret
 - `success`: `success` fill (light `#10b981`, dark `#34d399`), a 20px white check-circle icon, 2 s. Haptic: medium.
 - `error`: `error` fill (light `#ef4444`, dark `#f87171`), a white error icon, 3 s. Haptic: heavy.
 - `info`: `primary` fill (light `#5b4cdb`, dark `#8b7cf6`), a white info icon, 2 s. Haptic: selection.
-- `exact` (CompactAmountText long-press): `neutral-800-light` in light, `surface` in dark; a 11px "Exact Amount" label (white 70%) over the 16px/700 figure to two decimals, and a copy icon button (48dp). Copying shows a green "Copied to clipboard" snackbar for 1 s. 4 s.
-All are floating with a 12px radius (`radius-md`). The message is not styled in code: it takes the theme's `bodyMedium` (`caption`, Inter 14/400) in Material's default colour `onInverseSurface`, which `app_theme.dart` leaves unset, so it falls back to `ColorScheme.surface`: `card`, white in light and #171717 in dark. The icons are explicit white in both themes.
+- `exact` (CompactAmountText long-press): `neutral-800-light` in light, `surface` in dark; a 11px "Exact Amount" label (white 70%) over the 16px/700 figure to two decimals, and a copy icon button (48dp). Copying shows a green "Copied to clipboard" snackbar for 1 s: `success` fill (light `#10b981`, dark `#34d399`), a check icon and the message in `card` colour (white in light, #171717 in dark; 9.33:1 on the dark fill). 4 s.
+All are floating with a 12px radius (`radius-md`). The message is not styled in code: it takes the theme's `bodyMedium` (`caption`, Inter 14/400) in Material's default colour `onInverseSurface`, which `app_theme.dart` leaves unset, so it falls back to `ColorScheme.surface`: `card`, white in light and #171717 in dark. The icons of the success, error and info snackbars are explicit white in both themes; the check of the Copied snackbar is the message colour.
 
 ## Consumer provides
 

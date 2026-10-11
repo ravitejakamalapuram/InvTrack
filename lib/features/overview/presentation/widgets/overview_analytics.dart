@@ -94,8 +94,11 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                                             ? (d.outflows / maxValue * 80)
                                             : 0,
                                         decoration: BoxDecoration(
-                                          color: AppColors.errorLight
-                                              .withValues(alpha: 0.7),
+                                          color:
+                                              (isDark
+                                                      ? AppColors.errorDark
+                                                      : AppColors.errorLight)
+                                                  .withValues(alpha: 0.7),
                                           borderRadius:
                                               const BorderRadius.vertical(
                                                 top: Radius.circular(4),
@@ -110,8 +113,11 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                                             ? (d.inflows / maxValue * 80)
                                             : 0,
                                         decoration: BoxDecoration(
-                                          color: AppColors.successLight
-                                              .withValues(alpha: 0.7),
+                                          color:
+                                              (isDark
+                                                      ? AppColors.successDark
+                                                      : AppColors.successLight)
+                                                  .withValues(alpha: 0.7),
                                           borderRadius:
                                               const BorderRadius.vertical(
                                                 top: Radius.circular(4),
@@ -142,9 +148,16 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildLegendItem('Cash Out', AppColors.errorLight),
+                  // Each swatch is the colour of the bar above it.
+                  _buildLegendItem(
+                    'Cash Out',
+                    isDark ? AppColors.errorDark : AppColors.errorLight,
+                  ),
                   const SizedBox(width: 16),
-                  _buildLegendItem('Cash In', AppColors.successLight),
+                  _buildLegendItem(
+                    'Cash In',
+                    isDark ? AppColors.successDark : AppColors.successLight,
+                  ),
                 ],
               ),
             ],
@@ -396,7 +409,13 @@ class YoYComparisonCard extends ConsumerWidget {
               ),
               if (data.incomeChangePercent case final change?) ...[
                 const SizedBox(height: 12),
-                _buildChangeIndicator(l10n, change, secondary, isPrivacyMode),
+                _buildChangeIndicator(
+                  l10n,
+                  change,
+                  secondary,
+                  isDark,
+                  isPrivacyMode,
+                ),
               ],
             ],
           ),
@@ -506,10 +525,13 @@ class YoYComparisonCard extends ConsumerWidget {
     AppLocalizations l10n,
     double change,
     Color neutral,
+    bool isDark,
     bool isPrivacyMode,
   ) {
     final isUp = change > 0;
-    final color = isUp ? AppColors.successLight : neutral;
+    final color = isUp
+        ? (isDark ? AppColors.successDark : AppColors.successLight)
+        : neutral;
     final icon = isUp
         ? Icons.trending_up
         : change < 0
@@ -570,7 +592,9 @@ class RecentlyClosedCard extends ConsumerWidget {
                 children: [
                   Icon(
                     Icons.check_circle,
-                    color: AppColors.successLight,
+                    color: isDark
+                        ? AppColors.successDark
+                        : AppColors.successLight,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
@@ -608,7 +632,9 @@ class RecentlyClosedCard extends ConsumerWidget {
     // Undefined (null) XIRR shows no IRR line, never "0.0% IRR".
     final xirr = item.stats.xirr;
     final valueStyle = TextStyle(
-      color: isProfit ? AppColors.successLight : AppColors.errorLight,
+      color: isProfit
+          ? (isDark ? AppColors.successDark : AppColors.successLight)
+          : (isDark ? AppColors.errorDark : AppColors.errorLight),
       fontWeight: FontWeight.w600,
     );
 

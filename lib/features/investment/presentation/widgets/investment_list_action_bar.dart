@@ -59,7 +59,7 @@ class InvestmentListActionBar extends ConsumerWidget {
         SelectionActionConfig(
           label: 'Delete',
           icon: Icons.delete_rounded,
-          color: AppColors.errorLight,
+          color: isDark ? AppColors.errorDark : AppColors.errorLight,
           minSelection: 1,
           onPressed: () => _showDeleteConfirmation(context, ref),
         ),

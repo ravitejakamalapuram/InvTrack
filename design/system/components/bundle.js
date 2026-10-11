@@ -233,7 +233,7 @@
         (o.sensitive === false ? esc(o.value) : amount(o.value)) + '</div>' + (o.sub ? '<div class="it-mini__sub">' + esc(o.sub) + '</div>' : '') + '</div>', { padding: '12px' });
     }
     if (k === 'net') {
-      var accent = o.neutral ? 'var(--text-muted)' : (o.positive === false ? 'var(--it-danger-l)' : 'var(--it-success-l)');
+      var accent = o.neutral ? 'var(--text-muted)' : (o.positive === false ? 'var(--danger)' : 'var(--success)');
       var badge = o.status
         ? '<span class="it-pill" style="color:var(--text-muted);background:color-mix(in srgb,var(--text-muted) 15%,transparent)">' + esc(o.status) + '</span>'
         : '<span class="it-pill it-hide-private" style="font-size:14px;font-weight:600;color:' + accent + ';background:color-mix(in srgb,' + accent + ' 15%,transparent)">' + esc(o.returnText) + '</span>';
@@ -246,11 +246,11 @@
         (o.action ? Button({ variant: 'text', label: o.action }) : '') + '</div>', { padding: '0' });
     }
     if (k === 'flows') {
-      return GlassCard('<div class="it-flows">' + icon('arrow_upward', { size: 16, color: 'var(--it-danger-l)' }) + amount(o.out) + '<small>&nbsp;out</small><span class="it-gap"></span>' +
-        icon('arrow_downward', { size: 16, color: 'var(--it-success-l)' }) + amount(o.inn) + '<small>&nbsp;in</small><span class="it-sp"></span><small>' + esc(o.count) + '</small></div>', { padding: '0' });
+      return GlassCard('<div class="it-flows">' + icon('arrow_upward', { size: 16, color: 'var(--danger)' }) + amount(o.out) + '<small>&nbsp;out</small><span class="it-gap"></span>' +
+        icon('arrow_downward', { size: 16, color: 'var(--success)' }) + amount(o.inn) + '<small>&nbsp;in</small><span class="it-sp"></span><small>' + esc(o.count) + '</small></div>', { padding: '0' });
     }
     if (k === 'maturity') {
-      var col = o.color || 'var(--it-accent-l)';
+      var col = o.color || 'var(--accent)';
       return GlassCard('<div class="it-cvalue"><span class="it-metric__icon"' + sty({ '--c': col }) + '>' + icon(o.icon || 'event', { size: 18 }) + '</span>' +
         '<div class="it-cvalue__main"><div class="it-cvalue__label">Maturity Date</div><div class="it-cvalue__amt">' + esc(o.date) + '</div></div>' +
         '<span class="it-pill" style="color:' + col + ';background:color-mix(in srgb,' + col + ' 15%,transparent)">' + esc(o.status) + '</span></div>', { padding: '0' });
@@ -283,7 +283,7 @@
       return '<span class="it-ccy it-ccy--full">' + esc(o.code) + '<i>|</i><span>1 ' + esc(sym[o.code] || o.code) + ' = ' + esc(sym[o.target] || o.target) + Number(o.rate).toFixed(2) + '</span></span>';
     }
     if (k === 'maturity') {
-      var tone = { success: 'var(--it-success-l)', warning: 'var(--it-warning-l)', accent: 'var(--it-accent-l)' }[o.tone || 'accent'];
+      var tone = { success: 'var(--success)', warning: 'var(--warning)', accent: 'var(--accent)' }[o.tone || 'accent'];
       return '<span class="it-tag it-tag--strong"' + sty({ '--c': tone }) + '>' + (o.icon ? icon(o.icon, { size: 10 }) : '') + '<span class="it-tag__t">' + esc(o.label) + '</span></span>';
     }
     if (k === 'type') return '<span class="it-tag"' + sty({ '--c': o.color }) + '>' + esc(o.label) + '</span>';
@@ -325,20 +325,20 @@
       return GlassCard('<div class="it-demo"><span class="it-demo__disc">' + icon('insights', { size: 40 }) + '</span><h3 class="it-demo__title">' + esc(o.title) + '</h3><p class="it-demo__sub">' + esc(o.subtitle) + '</p>' +
         '<div class="it-demo__cmp" role="img" aria-label="' + esc(o.sr) + '"><div class="it-demo__col">' + icon('campaign', { size: 24, color: 'var(--text-muted)' }) + '<b>' + esc(o.advertised) + '</b><small>Advertised</small></div>' +
         icon('arrow_forward', { size: 24, color: 'var(--text-subtle)' }) +
-        '<div class="it-demo__col">' + icon('trending_down', { size: 24, color: 'var(--it-warning-l)' }) + '<b style="color:var(--it-warning-l)">' + esc(o.real) + '</b><small>Your XIRR</small></div></div>' +
+        '<div class="it-demo__col">' + icon('trending_down', { size: 24, color: 'var(--warning)' }) + '<b style="color:var(--warning)">' + esc(o.real) + '</b><small>Your XIRR</small></div></div>' +
         '<p class="it-demo__cap">' + esc(o.caption) + '</p></div>');
     }
     if (k === 'quickstart') {
       var tile = function (ic2, label, sub, col) {
         return '<button type="button" class="it-qs"' + sty({ '--c': col }) + ' aria-label="' + esc(label + ', ' + sub) + '"><span class="it-qs__disc">' + icon(ic2, { size: 24 }) + '</span><b>' + esc(label) + '</b><small>' + esc(sub) + '</small></button>';
       };
-      return GlassCard('<h3 class="it-h4">Get Started</h3><div class="it-tile2">' + tile('add', 'Add Manually', 'Step by step', 'var(--primary)') + tile('upload_file', 'Import CSV', 'Bulk upload', 'var(--it-accent-l)') + '</div>');
+      return GlassCard('<h3 class="it-h4">Get Started</h3><div class="it-tile2">' + tile('add', 'Add Manually', 'Step by step', 'var(--primary)') + tile('upload_file', 'Import CSV', 'Bulk upload', 'var(--accent)') + '</div>');
     }
     if (k === 'sample') {
       return '<div class="it-banner"><span class="it-banner__disc">' + icon('science', { size: 24 }) + '</span><div class="it-banner__txt"><b>Try Sample Data</b><small>Explore with realistic Indian investments</small></div>' + Button({ variant: 'text', label: 'Try It' }) + '</div>';
     }
     if (k === 'error') {         // OverviewLoadErrorState: no add, import or sample-data action
-      return GlassCard('<div class="it-errst">' + icon('cloud_off', { size: 48, color: 'var(--it-danger-l)' }) +
+      return GlassCard('<div class="it-errst">' + icon('cloud_off', { size: 48, color: 'var(--danger)' }) +
         '<h3 class="it-errst__t" aria-live="polite">Couldn\'t load your portfolio</h3>' +
         '<p class="it-errst__m">Your data is safe. Check your connection and try again.</p>' +
         Button({ variant: 'filled', label: 'Retry', icon: 'refresh', iconSize: 18 }) + '</div>');
@@ -466,7 +466,7 @@
     o = o || {};
     var t = TYPES[o.type] || TYPES.other, col = o.closed ? 'var(--it-grey)' : 'var(--inv-' + (TYPES[o.type] ? o.type : 'other') + ')';
     var tagCol = 'var(--inv-' + (TYPES[o.type] ? o.type : 'other') + ')';
-    var netCol = o.positive === false ? 'var(--it-danger-l)' : 'var(--graph-emerald)';
+    var netCol = o.positive === false ? 'var(--danger)' : 'var(--graph-emerald)';
     // A card that awaits its value (`status`) shows what went in and what came back, with no net, sign or percent.
     var awaiting = !!o.status && !o.empty;
     var tags = Badge({ kind: 'type', label: o.typeName || t[0], color: tagCol }) + (o.closed ? Badge({ kind: 'closed' }) : '') + (o.maturity && !o.closed ? Badge(Object.assign({ kind: 'maturity' }, o.maturity)) : '');
@@ -475,7 +475,7 @@
         '<span class="it-inv__got">' + amount(o.received) + '</span><span class="it-inv__w">received</span></div>' +
         '<span class="it-inv__badge it-inv__badge--status">' + esc(o.status) + '</span></div>'
       : '<div class="it-inv__val"><div class="it-inv__net" style="color:' + netCol + '">' + amount((o.positive === false ? '-' : '+') + o.net.replace(/^[-+]/, '')) + '</div>' +
-        (o.badge ? '<span class="it-inv__badge it-hide-private" style="--c:' + (o.badge.positive === false ? 'var(--it-danger-l)' : 'var(--graph-emerald)') + '">' + esc(o.badge.text) + '</span>' : '') + '</div>';
+        (o.badge ? '<span class="it-inv__badge it-hide-private" style="--c:' + (o.badge.positive === false ? 'var(--danger)' : 'var(--graph-emerald)') + '">' + esc(o.badge.text) + '</span>' : '') + '</div>';
     var strip = '<div class="it-inv__strip"><span>' + icon('update', { size: 12 }) + esc(o.last) + '</span><span>' + icon('receipt_long', { size: 12 }) + esc(o.entries) + '</span>' +
       (awaiting ? '' : '<span class="it-sp"></span>' + (o.invested ? '<span><b>Invested: </b>' + amount(o.invested) + '</span>' : '<a href="#" onclick="return false">View Details</a>')) + '</div>';
     var label = (o.closed ? 'Closed' : 'Open') + ' investment: ' + (o.name || '') + '. Type: ' + (o.typeName || t[0]);

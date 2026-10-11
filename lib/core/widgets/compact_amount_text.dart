@@ -137,12 +137,20 @@ class CompactAmountText extends ConsumerWidget {
                   SnackBar(
                     content: Row(
                       children: [
-                        const Icon(Icons.check, color: Colors.white, size: 18),
+                        // The label takes the snackbar's text colour, near-black
+                        // in dark, so the icon and the fill follow the theme.
+                        Icon(
+                          Icons.check,
+                          color: isDark ? AppColors.cardDark : Colors.white,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Text(l10n.copiedToClipboard),
                       ],
                     ),
-                    backgroundColor: AppColors.successLight,
+                    backgroundColor: isDark
+                        ? AppColors.successDark
+                        : AppColors.successLight,
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

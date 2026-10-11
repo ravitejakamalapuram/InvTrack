@@ -30,6 +30,7 @@ class SampleDataBanner extends ConsumerWidget {
         ? AppColors.accentLight.withValues(alpha: 0.15)
         : AppColors.accentLight.withValues(alpha: 0.1);
     final borderColor = AppColors.accentLight.withValues(alpha: 0.4);
+    final accent = isDark ? AppColors.accentDark : AppColors.accentLight;
 
     return Container(
       // The screen owns the horizontal edge (ScreenSliver).
@@ -51,11 +52,7 @@ class SampleDataBanner extends ConsumerWidget {
                   color: AppColors.accentLight.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.science_rounded,
-                  color: AppColors.accentLight,
-                  size: 18,
-                ),
+                child: Icon(Icons.science_rounded, color: accent, size: 18),
               ),
               SizedBox(width: AppSpacing.sm),
               Expanded(
@@ -65,7 +62,7 @@ class SampleDataBanner extends ConsumerWidget {
                     Text(
                       l10n.sampleDataMode,
                       style: AppTypography.label.copyWith(
-                        color: AppColors.accentLight,
+                        color: accent,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

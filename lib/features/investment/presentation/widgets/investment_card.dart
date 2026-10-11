@@ -572,7 +572,7 @@ class _InvestmentInfo extends StatelessWidget {
     if (daysUntilMaturity < 0) {
       return _MaturityInfo(
         label: 'MATURED',
-        color: AppColors.successLight,
+        color: isDark ? AppColors.successDark : AppColors.successLight,
         icon: Icons.check_circle_rounded,
       );
     }
@@ -581,7 +581,7 @@ class _InvestmentInfo extends StatelessWidget {
     if (daysUntilMaturity == 0) {
       return _MaturityInfo(
         label: 'MATURES TODAY',
-        color: AppColors.warningLight,
+        color: isDark ? AppColors.warningDark : AppColors.warningLight,
         icon: Icons.schedule_rounded,
       );
     }
@@ -590,7 +590,7 @@ class _InvestmentInfo extends StatelessWidget {
     if (daysUntilMaturity <= 7) {
       return _MaturityInfo(
         label: '${daysUntilMaturity}d TO MATURITY',
-        color: AppColors.warningLight,
+        color: isDark ? AppColors.warningDark : AppColors.warningLight,
         icon: Icons.schedule_rounded,
       );
     }
@@ -599,7 +599,7 @@ class _InvestmentInfo extends StatelessWidget {
     if (daysUntilMaturity <= 30) {
       return _MaturityInfo(
         label: '${daysUntilMaturity}d TO MATURITY',
-        color: AppColors.accentLight,
+        color: isDark ? AppColors.accentDark : AppColors.accentLight,
         icon: Icons.event_rounded,
       );
     }
@@ -676,7 +676,7 @@ class _InvestmentValueColumn extends StatelessWidget {
         final isPositive = stats.netCashFlow >= 0;
         final plColor = isPositive
             ? AppColors.graphEmerald
-            : AppColors.errorLight;
+            : (isDark ? AppColors.errorDark : AppColors.errorLight);
 
         final valueStyle = _figureStyle(plColor);
 
@@ -722,7 +722,7 @@ class _InvestmentValueColumn extends StatelessWidget {
                 final xirrColor =
                     (isShortHolding ? stats.absoluteReturn : xirr!) >= 0
                     ? AppColors.graphEmerald
-                    : AppColors.errorLight;
+                    : (isDark ? AppColors.errorDark : AppColors.errorLight);
                 final xirrFormatted = display.pillText(l10n);
 
                 return AnimatedOpacity(
@@ -1015,7 +1015,9 @@ class _InvestmentBottomStrip extends StatelessWidget {
               : Text(
                   AppLocalizations.of(context).viewDetails,
                   style: AppTypography.small.copyWith(
-                    color: AppColors.primaryLight,
+                    color: isDark
+                        ? AppColors.primaryDark
+                        : AppColors.primaryLight,
                     fontWeight: FontWeight.w600,
                   ),
                 );
@@ -1066,7 +1068,7 @@ class _InvestmentBottomStrip extends StatelessWidget {
             Text(
               AppLocalizations.of(context).viewDetails,
               style: AppTypography.small.copyWith(
-                color: AppColors.primaryLight,
+                color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
                 fontWeight: FontWeight.w600,
               ),
             ),

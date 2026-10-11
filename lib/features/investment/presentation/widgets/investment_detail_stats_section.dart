@@ -133,7 +133,7 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
                     ? _neutralColor
                     : returnIsPositive
                     ? AppColors.graphCyan
-                    : AppColors.errorLight,
+                    : (isDark ? AppColors.errorDark : AppColors.errorLight),
                 isDark: isDark,
                 subtitle: xirrSubtitle,
                 isPrivacyMode: isPrivacyMode,
@@ -231,8 +231,8 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
     final accent = status != null
         ? _neutralColor
         : isPositive
-        ? AppColors.successLight
-        : AppColors.errorLight;
+        ? (isDark ? AppColors.successDark : AppColors.successLight)
+        : (isDark ? AppColors.errorDark : AppColors.errorLight);
     final netPositionStyle = AppTypography.h2.copyWith(
       color: isDark ? Colors.white : AppColors.neutral900Light,
       fontWeight: FontWeight.w700,
@@ -325,17 +325,19 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
       );
     }
 
+    final color = isPositive
+        ? (isDark ? AppColors.successDark : AppColors.successLight)
+        : (isDark ? AppColors.errorDark : AppColors.errorLight);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: (isPositive ? AppColors.successLight : AppColors.errorLight)
-            .withValues(alpha: 0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         text,
         style: AppTypography.bodyMedium.copyWith(
-          color: isPositive ? AppColors.successLight : AppColors.errorLight,
+          color: color,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -356,7 +358,7 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
           Icon(
             Icons.arrow_upward_rounded,
             size: 16,
-            color: AppColors.errorLight,
+            color: isDark ? AppColors.errorDark : AppColors.errorLight,
           ),
           const SizedBox(width: 4),
           isPrivacyMode
@@ -386,7 +388,7 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
           Icon(
             Icons.arrow_downward_rounded,
             size: 16,
-            color: AppColors.successLight,
+            color: isDark ? AppColors.successDark : AppColors.successLight,
           ),
           const SizedBox(width: 4),
           isPrivacyMode
@@ -680,21 +682,25 @@ class _MaturityCard extends StatelessWidget {
 
     if (isMatured) {
       return (
-        AppColors.successLight,
+        isDark ? AppColors.successDark : AppColors.successLight,
         Icons.check_circle_rounded,
         'Matured ${-daysUntilMaturity} days ago',
       );
     } else if (daysUntilMaturity == 0) {
-      return (AppColors.warningLight, Icons.schedule_rounded, 'Matures today!');
+      return (
+        isDark ? AppColors.warningDark : AppColors.warningLight,
+        Icons.schedule_rounded,
+        'Matures today!',
+      );
     } else if (isUrgent) {
       return (
-        AppColors.warningLight,
+        isDark ? AppColors.warningDark : AppColors.warningLight,
         Icons.schedule_rounded,
         '$daysUntilMaturity days until maturity',
       );
     } else if (isUpcoming) {
       return (
-        AppColors.accentLight,
+        isDark ? AppColors.accentDark : AppColors.accentLight,
         Icons.event_rounded,
         '$daysUntilMaturity days until maturity',
       );

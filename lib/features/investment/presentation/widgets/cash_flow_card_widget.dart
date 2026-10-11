@@ -38,7 +38,9 @@ class CashFlowCardWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isOutflow = cashFlow.type.isOutflow;
-    final color = isOutflow ? AppColors.errorLight : AppColors.successLight;
+    final color = isOutflow
+        ? (isDark ? AppColors.errorDark : AppColors.errorLight)
+        : (isDark ? AppColors.successDark : AppColors.successLight);
 
     return RepaintBoundary(
       child: Padding(

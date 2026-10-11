@@ -584,7 +584,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               child: Icon(
                 Icons.cloud_off_rounded,
                 size: 40,
-                color: AppColors.errorLight,
+                color: isDark ? AppColors.errorDark : AppColors.errorLight,
               ),
             ),
             const SizedBox(height: 16),
@@ -900,12 +900,12 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               ListTile(
                 leading: Icon(
                   Icons.delete_rounded,
-                  color: AppColors.errorLight,
+                  color: isDark ? AppColors.errorDark : AppColors.errorLight,
                 ),
                 title: Text(
                   'Delete Investment',
                   style: AppTypography.body.copyWith(
-                    color: AppColors.errorLight,
+                    color: isDark ? AppColors.errorDark : AppColors.errorLight,
                   ),
                 ),
                 onTap: () {
