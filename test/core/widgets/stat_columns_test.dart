@@ -227,6 +227,45 @@ void main() {
       );
     });
 
+    testWidgets('labels share one too, whatever the sizes of the values', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _app(
+          child: StatColumns(
+            columns: [
+              _col('out', '₹1', valueSize: 14),
+              _col('in', '₹22', valueSize: 14),
+              _col('XIRR', '9.5%', valueSize: 20),
+            ],
+          ),
+        ),
+      );
+
+      // The values sit on one baseline although the XIRR is larger ...
+      final base = baselineY(tester, find.text('₹1'));
+      expect(baselineY(tester, find.text('₹22')), closeTo(base, 0.5));
+      expect(baselineY(tester, find.text('9.5%')), closeTo(base, 0.5));
+      // ... and so do the labels above them.
+      final label = baselineY(tester, find.text('out'));
+      expect(baselineY(tester, find.text('in')), closeTo(label, 0.5));
+      expect(baselineY(tester, find.text('XIRR')), closeTo(label, 0.5));
+    });
+
+    testWidgets('the value key has the width of the column', (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: StatColumns(columns: [_col('out', '₹1'), _col('in', '₹22')]),
+        ),
+      );
+
+      for (var i = 0; i < 2; i++) {
+        final value = tester.getRect(find.byKey(StatColumns.valueKey(i)));
+        expect(value.width, closeTo(_cell(tester, i).width, 0.5));
+        expect(value.left, closeTo(_cell(tester, i).left, 0.5));
+      }
+    });
+
     testWidgets('a note on one column does not move the other value', (
       tester,
     ) async {

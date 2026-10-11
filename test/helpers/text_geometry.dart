@@ -43,14 +43,25 @@ List<ui.LineMetrics> paragraphLines(RenderParagraph paragraph) {
   return lines;
 }
 
+/// y (screen) of the baseline of the first (or [last]) line of [paragraph].
+///
+/// The first line's baseline is the one the render object reports and the
+/// layout aligns by; the line metrics round it differently, by up to a dp. The
+/// other lines are placed from it by the distance between the line metrics.
+double paragraphBaselineY(RenderParagraph paragraph, {bool last = false}) {
+  // ignore: invalid_use_of_protected_member
+  final first = paragraph.computeDistanceToActualBaseline(
+    TextBaseline.alphabetic,
+  );
+  final lines = paragraphLines(paragraph);
+  final below = last ? lines.last.baseline - lines.first.baseline : 0.0;
+  return paragraph.localToGlobal(Offset.zero).dy + first + below;
+}
+
 /// y (screen) of the baseline of the first (or [last]) line of the text that
 /// [finder] matches.
-double baselineY(WidgetTester tester, Finder finder, {bool last = false}) {
-  final paragraph = paragraphOf(tester, finder);
-  final lines = paragraphLines(paragraph);
-  final line = last ? lines.last : lines.first;
-  return paragraph.localToGlobal(Offset.zero).dy + line.baseline;
-}
+double baselineY(WidgetTester tester, Finder finder, {bool last = false}) =>
+    paragraphBaselineY(paragraphOf(tester, finder), last: last);
 
 /// The box (screen coordinates) that the glyphs of the first text matching
 /// [finder] fill. A `Text` that fills its parent has a wider box than its

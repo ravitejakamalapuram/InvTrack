@@ -1,4 +1,5 @@
-/// Equal columns of label over value, with one baseline for the values.
+/// Equal columns of label over value, with one baseline for the labels and one
+/// for the values.
 ///
 /// Every card that shows two or three figures side by side (the Overview hero:
 /// out, in, XIRR; the Investment detail: XIRR and MOIC) lays them out with
@@ -8,9 +9,9 @@
 ///    the last ends on the end edge ([StatColumnsAlign.edges]), or every
 ///    column is centred ([StatColumnsAlign.center]). Both mirror in
 ///    right-to-left layouts.
-///  * The values of one row share a baseline. A label that wraps grows
-///    upward, and a note goes below the value, so nothing a column adds can
-///    move its value.
+///  * The values of one row share a baseline, and so do the labels, whatever
+///    the sizes of the values. A label that wraps grows upward, and a note
+///    goes below the value, so nothing a column adds can move its value.
 ///  * When a column would get less than `minColumnWidth` (scaled by the text
 ///    size), the row drops to fewer columns. A column left alone is a line
 ///    of "label ..... value", the value on the end edge.
@@ -97,8 +98,12 @@ class StatColumns extends StatelessWidget {
   /// The space between a tile's edge and its content.
   final EdgeInsetsGeometry tilePadding;
 
-  /// The key of the cell of column [index], for tests.
+  /// The key of the label of column [index], which has the column's width: for
+  /// tests that measure the columns.
   static ValueKey<String> cellKey(int index) => ValueKey('stat-column-$index');
+
+  /// The key of the value of column [index], which has the column's width.
+  static ValueKey<String> valueKey(int index) => ValueKey('stat-value-$index');
 
   /// How many columns fit one row of [width]: all of them (up to
   /// [maxPerRow]), fewer while a column would be narrower than
@@ -173,7 +178,10 @@ class StatColumns extends StatelessWidget {
   }
 }
 
-/// Two or more columns side by side, values on one baseline.
+/// Two or more columns side by side, in three bands so that each kind of line
+/// has one baseline across the row whatever the font sizes: the labels share
+/// their last line (a label that wraps grows upward), the values share one
+/// baseline, and the notes start on one line below the values.
 class _ColumnsRow extends StatelessWidget {
   const _ColumnsRow({
     required this.columns,
@@ -196,34 +204,116 @@ class _ColumnsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final n = columns.length;
-    final cells = Row(
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
-      children: [
-        for (var k = 0; k < n; k++) ...[
-          if (k > 0) SizedBox(width: gap),
-          Expanded(
-            child: Padding(
-              padding: tilePadding,
-              child: _Cell(
-                column: columns[k],
-                index: firstIndex + k,
-                labelGap: labelGap,
-                alignment: align == StatColumnsAlign.center
-                    ? _CellAlignment.center
-                    : k == n - 1
-                    ? _CellAlignment.end
-                    : _CellAlignment.start,
+    final padding = tilePadding.resolve(Directionality.of(context));
+    final sides = EdgeInsets.only(left: padding.left, right: padding.right);
+
+    AlignmentGeometry alignmentOf(int k) => align == StatColumnsAlign.center
+        ? Alignment.center
+        : k == n - 1
+        ? AlignmentDirectional.centerEnd
+        : AlignmentDirectional.centerStart;
+    TextAlign textAlignOf(int k) => align == StatColumnsAlign.center
+        ? TextAlign.center
+        : k == n - 1
+        ? TextAlign.end
+        : TextAlign.start;
+
+    // One band: a column per Expanded, each part placed on its side of it.
+    Widget band(
+      CrossAxisAlignment cross,
+      Widget? Function(int k) part, {
+      Key? Function(int k)? keyOf,
+    }) {
+      return Row(
+        crossAxisAlignment: cross,
+        textBaseline: cross == CrossAxisAlignment.baseline
+            ? TextBaseline.alphabetic
+            : null,
+        children: [
+          for (var k = 0; k < n; k++) ...[
+            if (k > 0) SizedBox(width: gap),
+            Expanded(
+              child: Padding(
+                padding: sides,
+                child: KeyedSubtree(
+                  key: keyOf?.call(k),
+                  child: Align(
+                    alignment: alignmentOf(k),
+                    child: DefaultTextStyle.merge(
+                      textAlign: textAlignOf(k),
+                      child: part(k) ?? const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ],
-      ],
+      );
+    }
+
+    // A screen reader reads each column label, value, note, left to right. The
+    // bands are rows of their own, so the order is set by sort keys, and every
+    // part has one. A column with a label of its own is read from its value.
+    Widget keyed(int k, int order, Widget child) =>
+        Semantics(sortKey: OrdinalSortKey(k * 3.0 + order), child: child);
+    Widget? labelOf(int k) => columns[k].semanticsLabel != null
+        ? ExcludeSemantics(child: columns[k].label)
+        : keyed(k, 0, columns[k].label);
+    Widget? valueOf(int k) {
+      final description = columns[k].semanticsLabel;
+      return description == null
+          ? keyed(k, 1, columns[k].value)
+          : Semantics(
+              sortKey: OrdinalSortKey(k * 3.0),
+              label: description,
+              excludeSemantics: true,
+              child: columns[k].value,
+            );
+    }
+
+    Widget? noteOf(int k) {
+      final note = columns[k].note;
+      if (note == null) return null;
+      return columns[k].semanticsLabel != null
+          ? ExcludeSemantics(child: note)
+          : keyed(k, 2, note);
+    }
+
+    final bands = Padding(
+      padding: EdgeInsets.only(top: padding.top, bottom: padding.bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          band(
+            CrossAxisAlignment.end,
+            labelOf,
+            keyOf: (k) => StatColumns.cellKey(firstIndex + k),
+          ),
+          SizedBox(height: labelGap),
+          band(
+            CrossAxisAlignment.baseline,
+            valueOf,
+            keyOf: (k) => StatColumns.valueKey(firstIndex + k),
+          ),
+          if (columns.any((c) => c.note != null))
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.xxs),
+              child: band(CrossAxisAlignment.start, noteOf),
+            ),
+        ],
+      ),
+    );
+    final row = Semantics(
+      container: true,
+      explicitChildNodes: true,
+      child: bands,
     );
     final build = tile;
-    if (build == null) return cells;
-    // The cards sit behind the cells and are stretched to the height of the
-    // row, so they share a top and a height whatever the cells hold.
+    if (build == null) return row;
+    // The cards sit behind the bands and are stretched to the height of the
+    // row, so they share a top and a height whatever the columns hold.
     return Stack(
       fit: StackFit.passthrough,
       children: [
@@ -238,77 +328,8 @@ class _ColumnsRow extends StatelessWidget {
             ],
           ),
         ),
-        cells,
+        row,
       ],
-    );
-  }
-}
-
-enum _CellAlignment { start, center, end }
-
-/// One column: the value first, so its baseline is the cell's, with the label
-/// stacked above it (a column that reads upward) and the note below.
-class _Cell extends StatelessWidget {
-  const _Cell({
-    required this.column,
-    required this.index,
-    required this.labelGap,
-    required this.alignment,
-  });
-
-  final StatColumn column;
-  final int index;
-  final double labelGap;
-  final _CellAlignment alignment;
-
-  @override
-  Widget build(BuildContext context) {
-    final cross = switch (alignment) {
-      _CellAlignment.start => CrossAxisAlignment.start,
-      _CellAlignment.center => CrossAxisAlignment.center,
-      _CellAlignment.end => CrossAxisAlignment.end,
-    };
-    final textAlign = switch (alignment) {
-      _CellAlignment.start => TextAlign.start,
-      _CellAlignment.center => TextAlign.center,
-      _CellAlignment.end => TextAlign.end,
-    };
-    final description = column.semanticsLabel;
-    // With one label for the whole figure the parts carry no order of their
-    // own. Without one they are read label, value, note: the value comes first
-    // in the tree (that is what gives the cell its baseline), so the order is
-    // set by sort keys, and every sibling gets one.
-    final keyed = description == null;
-    Widget part(double order, Widget child) =>
-        keyed ? Semantics(sortKey: OrdinalSortKey(order), child: child) : child;
-
-    final cell = DefaultTextStyle.merge(
-      textAlign: textAlign,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: cross,
-        children: [
-          Column(
-            verticalDirection: VerticalDirection.up,
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: cross,
-            children: [
-              part(1, column.value),
-              SizedBox(height: labelGap),
-              part(0, column.label),
-            ],
-          ),
-          if (column.note != null)
-            Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.xxs),
-              child: part(2, column.note!),
-            ),
-        ],
-      ),
-    );
-    return KeyedSubtree(
-      key: StatColumns.cellKey(index),
-      child: _describe(cell, description),
     );
   }
 }
@@ -372,9 +393,12 @@ class _InlineRow extends StatelessWidget {
               SizedBox(width: gap),
               ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: width * _valueShare),
-                child: DefaultTextStyle.merge(
-                  textAlign: TextAlign.end,
-                  child: column.value,
+                child: KeyedSubtree(
+                  key: StatColumns.valueKey(index),
+                  child: DefaultTextStyle.merge(
+                    textAlign: TextAlign.end,
+                    child: column.value,
+                  ),
                 ),
               ),
             ],
