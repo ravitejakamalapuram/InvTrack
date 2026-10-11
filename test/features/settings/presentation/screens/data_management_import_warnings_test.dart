@@ -4,7 +4,6 @@
 /// (money rules 7 and 8).
 library;
 
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -24,6 +23,8 @@ import 'package:inv_tracker/features/settings/data/services/deletion_request_ser
 import 'package:inv_tracker/features/settings/presentation/providers/deletion_request_status_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/data_management_screen.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+
+import '../../../../helpers/contrast.dart';
 
 class _FakePicker extends FilePickerPlatform {
   @override
@@ -190,17 +191,9 @@ void main() {
         final text = DefaultTextStyle.of(
           tester.element(find.text('Imported with 1 warning')),
         ).style.color!;
-        final lighter = math.max(
-          background.computeLuminance(),
-          text.computeLuminance(),
-        );
-        final darker = math.min(
-          background.computeLuminance(),
-          text.computeLuminance(),
-        );
         expect(
-          (lighter + 0.05) / (darker + 0.05),
-          greaterThanOrEqualTo(4.5),
+          contrastRatio(text, background),
+          greaterThanOrEqualTo(kMinText),
           reason: '$brightness',
         );
       }
