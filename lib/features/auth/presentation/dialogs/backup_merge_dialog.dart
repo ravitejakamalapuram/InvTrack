@@ -42,8 +42,16 @@ Future<bool> showBackupMergeDialog(BuildContext context) async {
   return confirmed ?? false;
 }
 
+/// Why linking failed, for every merge that goes through the "Google account
+/// already exists" path.
+const _linkFailureReason = 'google_account_exists';
+
 /// Backs up the guest's data, signs in to Google and merges the backup into
 /// that account, showing progress and the result.
+///
+/// Analytics: a merge that moved every record logs account_link_success; one
+/// the guest went through with that did not complete logs account_link_failure
+/// once. A guest who backs out logs neither.
 ///
 /// The work runs in [guestBackupMergeServiceProvider], because the sign-in
 /// rebuilds the router and can dispose [context] before it finishes. Only
@@ -112,6 +120,7 @@ Future<bool> backupAndMergeGuestData(
     );
   } catch (e, st) {
     hideLoading();
+    unawaited(analytics.logAccountLinkFailure(reason: _linkFailureReason));
     // Backup or sign-in failed before the session changed: the guest is
     // still signed in with all of their data.
     ErrorHandler.handle(
@@ -141,6 +150,7 @@ Future<bool> backupAndMergeGuestData(
       }
       return true;
     case GuestMergeImportFailed(:final backupPath):
+      unawaited(analytics.logAccountLinkFailure(reason: _linkFailureReason));
       await _offerBackup(
         navigator,
         messenger,
@@ -152,6 +162,7 @@ Future<bool> backupAndMergeGuestData(
       );
       return false;
     case GuestMergeDetailsNotMoved():
+      unawaited(analytics.logAccountLinkFailure(reason: _linkFailureReason));
       await _showNotice(
         navigator,
         messenger,

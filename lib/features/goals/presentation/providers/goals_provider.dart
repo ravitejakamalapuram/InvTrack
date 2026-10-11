@@ -193,7 +193,7 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
           await _repository.updateGoal(updatedGoal);
         }
       }, attributes: {'is_archived': goal.isArchived.toString()});
-      _analytics.logGoalUpdated(goalId: goal.id);
+      _analytics.logGoalUpdated();
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -209,7 +209,7 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
         'goal_archive',
         () => _repository.archiveGoal(id),
       );
-      _analytics.logGoalArchived(goalId: id);
+      _analytics.logGoalArchived();
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -240,7 +240,7 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
         'goal_delete',
         () => _repository.deleteGoal(id),
       );
-      _analytics.logGoalDeleted(goalId: id);
+      _analytics.logGoalDeleted();
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -256,7 +256,7 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
         'goal_delete_archived',
         () => _repository.deleteArchivedGoal(id),
       );
-      _analytics.logGoalDeleted(goalId: id);
+      _analytics.logGoalDeleted();
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -283,7 +283,7 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
             } else {
               await _repository.deleteGoal(id);
             }
-            _analytics.logGoalDeleted(goalId: id);
+            _analytics.logGoalDeleted();
             count++;
           }
           return count;

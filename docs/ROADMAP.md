@@ -1252,7 +1252,7 @@ class AnimationDurations {
 After comprehensive codebase analysis, discovered that analytics tracking is **already comprehensive** with 20+ events:
 
 **Existing Implementations:**
-- ✅ **Funnel tracking**: `FirebaseAnalyticsObserver` integrated in `app_router.dart` for automatic screen view tracking
+- ✅ **Funnel tracking**: `AnalyticsRouteObserver` integrated in `app_router.dart` for automatic screen view tracking
 - ✅ **Feature usage tracking**: 20+ events already implemented:
   - Core conversion: `investment_created`, `cashflow_added`
   - Investment lifecycle: `investment_closed`, `investment_reopened`, `investment_archived`, `investment_unarchived`, `investment_deleted`

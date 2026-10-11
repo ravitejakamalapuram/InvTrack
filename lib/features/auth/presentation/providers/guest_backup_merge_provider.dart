@@ -207,11 +207,6 @@ class GuestBackupMergeService {
     // From here only the Google account may see the backup.
     backupPath = await _handOver(backupPath, googleUser.id);
 
-    await analytics.logEvent(
-      name: 'account_link_failure',
-      parameters: {'reason': 'google_account_exists'},
-    );
-
     try {
       await _waitForSession(googleUser.id);
       final importService = _ref.read(dataImportServiceProvider);

@@ -19,6 +19,30 @@ void main() {
     );
   });
 
+  test('accepts every amount_range bucket and the unknown fallback', () {
+    for (final range in allowedAmountRanges) {
+      expectPrivacySafe(
+        _event({'flow_type': 'invest', 'amount_range': range}),
+        allowedStrings: {
+          'flow_type': {'invest'},
+          'amount_range': allowedAmountRanges,
+        },
+      );
+    }
+    expect(allowedAmountRanges, contains('unknown'));
+    expect(allowedAmountRanges, hasLength(8));
+  });
+
+  test('rejects an amount_range that is neither a bucket nor unknown', () {
+    expect(
+      () => expectPrivacySafe(
+        _event({'amount_range': '50000'}),
+        allowedStrings: {'amount_range': allowedAmountRanges},
+      ),
+      throwsA(isA<TestFailure>()),
+    );
+  });
+
   test('accepts an event without parameters', () {
     expectPrivacySafe(_event(null));
   });
