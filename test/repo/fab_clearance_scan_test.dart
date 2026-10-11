@@ -15,6 +15,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import '../layout/guarded_screens.dart';
+
 /// Any FAB: the Scaffold slot or the widget.
 final _declaresFab = RegExp(
   r'\bfloatingActionButton\s*:|\bFloatingActionButton\b',
@@ -109,51 +111,119 @@ List<String> libDartFiles() {
   return files..sort();
 }
 
+/// Any Dart file below a `presentation/screens` folder, however deep.
 bool _isScreen(String path) =>
-    RegExp(r'/presentation/screens/[^/]+\.dart$').hasMatch(path);
+    RegExp(r'/presentation/screens/(?:[^/]+/)*[^/]+\.dart$').hasMatch(path);
+
+/// The code of each class, mixin and extension in [code], then whatever is
+/// left outside them. A FAB and its clearance must sit in the same one, so a
+/// clearance used by an unrelated widget in the same file does not count.
+List<String> scopes(String code) {
+  final scopes = <String>[];
+  final outside = StringBuffer();
+  final header = RegExp(r'\b(?:class|mixin|extension)\b[^{;]*\{');
+  var copied = 0;
+  for (final match in header.allMatches(code)) {
+    if (match.start < copied) continue; // inside a body already taken
+    var depth = 1;
+    var end = match.end;
+    while (end < code.length && depth > 0) {
+      if (code[end] == '{') depth++;
+      if (code[end] == '}') depth--;
+      end++;
+    }
+    outside.write(code.substring(copied, match.start));
+    scopes.add(code.substring(match.start, end));
+    copied = end;
+  }
+  outside.write(code.substring(copied));
+  return [...scopes, outside.toString()];
+}
 
 String _noClearance(String path) =>
     '$path declares a floating action button but does not use the shared FAB '
-    'clearance: wrap its scrolling content in ScreenSliver(clearsFab: true), '
-    'end it with SliverFabClearance, or add AppSpacing.fabClearance(context). '
-    'See "Screen edge and FAB clearance" in design/system/README.md.';
+    'clearance in the same class: wrap its scrolling content in '
+    'ScreenSliver(clearsFab: true), end it with SliverFabClearance, or add '
+    'AppSpacing.fabClearance(context). See "Screen edge and FAB clearance" in '
+    'design/system/README.md.';
 
 String _strayFab(String path) =>
     '$path fills a Scaffold floatingActionButton slot outside '
     'presentation/screens, where the FAB clearance check does not look. Move '
     'it into a screen, or allow it in this test with a reason.';
 
+String _unguarded(String path) =>
+    '$path declares a floating action button, but guardedFabScreens in '
+    'test/layout/guarded_screens.dart does not list it, so no geometry test '
+    'measures that its last item clears the button. Add it there and measure '
+    'it in test/layout/layout_guard_harness.dart.';
+
+String _staleGuard(String path, {required bool exists}) =>
+    '$path is listed in guardedFabScreens but ${exists ? 'no longer declares '
+              'a FAB' : 'does not exist'}. Remove it from '
+    'test/layout/guarded_screens.dart.';
+
+/// Every problem in [sources] (raw file text by `/`-separated path), one
+/// message per file and rule, each naming the file. [guarded] is the set of
+/// screens the geometry guard measures.
+List<String> fabProblems(
+  Map<String, String> sources, {
+  required Set<String> guarded,
+}) {
+  final problems = <String>[];
+  final screensWithFab = <String>{};
+  for (final entry in sources.entries) {
+    final path = entry.key;
+    final code = stripCommentsAndStrings(entry.value);
+    if (_isScreen(path)) {
+      if (!_declaresFab.hasMatch(code)) continue;
+      screensWithFab.add(path);
+      // Each class that fills the Scaffold slot clears the button itself, and
+      // some class holds a FAB together with the clearance (a FAB built by a
+      // small widget of its own is fine beside such a class).
+      final inScope = scopes(code);
+      final cleared =
+          inScope.every(
+            (s) => !_usesFabSlot.hasMatch(s) || _usesClearance.hasMatch(s),
+          ) &&
+          inScope.any(
+            (s) => _declaresFab.hasMatch(s) && _usesClearance.hasMatch(s),
+          );
+      if (!cleared) problems.add(_noClearance(path));
+      if (!guarded.contains(path)) problems.add(_unguarded(path));
+    } else if (_usesFabSlot.hasMatch(code) &&
+        !_slotOutsideScreens.contains(path)) {
+      problems.add(_strayFab(path));
+    }
+  }
+  for (final path in guarded) {
+    if (!screensWithFab.contains(path)) {
+      problems.add(_staleGuard(path, exists: sources.containsKey(path)));
+    }
+  }
+  return problems;
+}
+
 void main() {
+  late final Map<String, String> sources;
   late final Map<String, String> code;
 
   setUpAll(() {
+    sources = {
+      for (final path in libDartFiles()) path: File(path).readAsStringSync(),
+    };
     code = {
-      for (final path in libDartFiles())
-        path: stripCommentsAndStrings(File(path).readAsStringSync()),
+      for (final e in sources.entries) e.key: stripCommentsAndStrings(e.value),
     };
   });
 
   group('FAB clearance', () {
     test('every screen with a FAB uses the shared FAB clearance', () {
-      final missing = [
-        for (final entry in code.entries)
-          if (_isScreen(entry.key) &&
-              _declaresFab.hasMatch(entry.value) &&
-              !_usesClearance.hasMatch(entry.value))
-            entry.key,
-      ];
-      expect(missing, isEmpty, reason: missing.map(_noClearance).join('\n'));
-    });
-
-    test('no Scaffold FAB hides outside presentation/screens', () {
-      final stray = [
-        for (final entry in code.entries)
-          if (!_isScreen(entry.key) &&
-              _usesFabSlot.hasMatch(entry.value) &&
-              !_slotOutsideScreens.contains(entry.key))
-            entry.key,
-      ];
-      expect(stray, isEmpty, reason: stray.map(_strayFab).join('\n'));
+      final problems = fabProblems(
+        sources,
+        guarded: guardedFabScreens.keys.toSet(),
+      );
+      expect(problems, isEmpty, reason: problems.join('\n'));
     });
 
     test('controls: the four main screens and the helper are in the scan', () {
@@ -176,6 +246,117 @@ void main() {
         contains('class SliverFabClearance'),
         reason: 'the shared FAB clearance widget is gone',
       );
+    });
+  });
+
+  // Fake files that try to get past the scan. Each one names the rule it
+  // breaks; a clean one proves the rule is not just "always fail".
+  group('bypass attempts', () {
+    const screens = 'lib/features/zz/presentation/screens';
+    const slot = 'Scaffold(floatingActionButton: fab, body: body);';
+
+    // By default every fake file is known to the geometry guard, so each test
+    // sees only the rule it is about.
+    List<String> scan(Map<String, String> files, {Set<String>? only}) =>
+        fabProblems(files, guarded: only ?? files.keys.toSet());
+
+    test('a FAB with no clearance is flagged', () {
+      final problems = scan({'$screens/a_screen.dart': 'class A { $slot }'});
+      expect(problems.single, contains('$screens/a_screen.dart'));
+    });
+
+    test('a FAB in a screens subfolder is scanned like any screen', () {
+      final problems = scan({
+        '$screens/sub/zz_nested_screen.dart':
+            'class A { Widget b() => Positioned(child: FloatingActionButton('
+            'onPressed: null)); }',
+      });
+      expect(problems.single, contains('$screens/sub/zz_nested_screen.dart'));
+      expect(problems.single, contains('does not use the shared FAB'));
+    });
+
+    test('a clearance in another class does not cover the FAB', () {
+      final problems = scan({
+        '$screens/zz_unrelated_use.dart':
+            'class Other { Widget b() => ScreenSliver(clearsFab: true, '
+            'sliver: s); }\n'
+            'class Screen { $slot }',
+      });
+      expect(problems.single, contains('$screens/zz_unrelated_use.dart'));
+    });
+
+    test('a clearance in the same class as the FAB passes', () {
+      final problems = scan(
+        {
+          '$screens/ok_screen.dart':
+              'class Screen { Widget b() => ScreenSliver(clearsFab: true, '
+              'sliver: s); Widget c() => $slot }',
+        },
+        only: {'$screens/ok_screen.dart'},
+      );
+      expect(problems, isEmpty);
+    });
+
+    test(
+      'a FAB widget in its own class beside a screen that clears passes',
+      () {
+        final problems = scan({
+          '$screens/split_screen.dart':
+              'class _AddFab { Widget b() => FloatingActionButton('
+              'onPressed: null); }\n'
+              'class Screen { Widget b() => SliverFabClearance(); $slot }',
+        });
+        expect(problems, isEmpty);
+      },
+    );
+
+    test('a FAB widget with no clearance next to it is flagged', () {
+      final problems = scan({
+        '$screens/split_screen.dart':
+            'class _AddFab { Widget b() => FloatingActionButton('
+            'onPressed: null); }\n'
+            'class Other { Widget b() => SliverFabClearance(); }',
+      });
+      expect(problems.single, contains('$screens/split_screen.dart'));
+    });
+
+    test('a FAB screen the geometry guard does not know is flagged', () {
+      final problems = scan({
+        '$screens/new_screen.dart':
+            'class Screen { Widget b() => SliverFabClearance(); $slot }',
+      }, only: {});
+      expect(problems.single, contains('$screens/new_screen.dart'));
+      expect(problems.single, contains('guardedFabScreens'));
+    });
+
+    test('a guarded screen that lost its FAB is flagged', () {
+      final problems = scan(
+        {'$screens/old_screen.dart': 'class Screen {}'},
+        only: {'$screens/old_screen.dart'},
+      );
+      expect(problems.single, contains('$screens/old_screen.dart'));
+      expect(problems.single, contains('no longer declares a FAB'));
+    });
+
+    test('a guarded screen that no longer exists is flagged', () {
+      final problems = scan({}, only: {'$screens/gone_screen.dart'});
+      expect(problems.single, contains('$screens/gone_screen.dart'));
+    });
+
+    test('a helper named only in a comment does not count', () {
+      final problems = scan({
+        '$screens/c_screen.dart':
+            '// ScreenSliver(clearsFab: true)\nclass A { $slot }',
+      });
+      expect(problems.single, contains('$screens/c_screen.dart'));
+    });
+
+    test('a Scaffold FAB slot outside presentation/screens is flagged', () {
+      for (final folder in ['pages', 'widgets', 'screens_old']) {
+        final path = 'lib/features/zz/presentation/$folder/p.dart';
+        final problems = scan({path: 'class A { $slot }'}, only: {});
+        expect(problems.single, contains(path), reason: folder);
+      }
     });
   });
 
