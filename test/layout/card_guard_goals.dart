@@ -4,7 +4,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
@@ -248,18 +247,22 @@ Future<_Shape> _runGoal(
     if (shown != _chipText(c.others)) {
       g.fault('the chip says "$shown", want "${_chipText(c.others)}"');
     }
-    // Privacy mode swaps the ring for a text that is wider than the ring at
-    // large text sizes, which leaves the chip a sliver (a follow-up of its
-    // own), so words are only guaranteed whole in the plain run.
-    if (!privacy) {
-      g.expectWholeWords('chip text', chipText, noEllipsisNet: true);
-    }
+    // Whole words in every run: plain, privacy mode (whose ring stand-in is
+    // wider than the ring) and selection mode (whose checkbox takes room).
+    g.expectWholeWords('chip text', chipText, noEllipsisNet: true);
+    // On a line of its own: under the ring and the name, from the start edge,
+    // and inside the card padding.
+    final name = g.rect('goal name', find.text(c.goalName));
     if (chipRect != null && ringRect != null) {
-      final gap = rtl
-          ? chipRect.left - ringRect.right
-          : ringRect.left - chipRect.right;
-      if (gap < AppSpacing.sm - guardTolerance) {
-        g.fault('the chip is ${g.dp(gap)}dp from the ring, want at least 12');
+      if (chipRect.top < ringRect.bottom - guardTolerance) {
+        g.fault('the chip is not under the ring');
+      }
+      if (name != null && chipRect.top < name.bottom - guardTolerance) {
+        g.fault('the chip is not under the goal name');
+      }
+      g.expectNear('chip start', g.startOf(chipRect), startEdge);
+      if ((g.endOf(chipRect) - endEdge) * (rtl ? -1 : 1) > guardTolerance) {
+        g.fault('the chip ends past the card padding');
       }
     }
   }

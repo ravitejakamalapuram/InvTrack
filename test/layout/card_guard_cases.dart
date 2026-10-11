@@ -70,4 +70,28 @@ void defineCardGuardTests({required double width}) {
       );
     });
   }
+
+  // The system "bold text" setting makes the glyphs wider at the same size, so
+  // a footer or a badge that just fitted can stop fitting: every card again at
+  // the text size a user with large text and bold text has.
+  final cards = <(String, Future<void> Function(CardGuard))>[
+    ('hero stats', checkHeroCards),
+    ('goal cards', checkGoalCards),
+    ('the goal carousel card', checkGoalCarousel),
+    ('quick stats tiles', checkQuickStats),
+    ('detail XIRR and MOIC tiles', checkDetailTiles),
+  ];
+  for (final (name, body) in cards) {
+    testWidgets('$name hold with bold text at ${w}dp, text x1.3', (
+      tester,
+    ) async {
+      await runCardGuard(
+        tester,
+        width: width,
+        textScale: 1.3,
+        boldText: true,
+        body: body,
+      );
+    });
+  }
 }

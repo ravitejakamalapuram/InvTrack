@@ -31,8 +31,8 @@ class SharedGoalsChip extends StatelessWidget {
       label: text,
       child: ExcludeSemantics(
         child: Container(
-          // Tighter on a card, where a column beside the ring leaves little
-          // room: at large text the longest word still has to fit.
+          // Tighter on a card: the chip has a line of its own there, the width
+          // of the card less its padding, so the longest word always fits.
           padding: EdgeInsets.symmetric(
             horizontal: compact ? AppSpacing.xs : AppSpacing.sm,
             vertical: AppSpacing.xxs,

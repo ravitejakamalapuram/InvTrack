@@ -60,7 +60,9 @@ class GoalCard extends ConsumerWidget {
     return Padding(
       padding: EdgeInsets.only(bottom: AppSpacing.sm),
       child: progressAsync.when(
-        data: (progress) => GlassCard(
+        data: (progress) {
+          final hasSharedGoals = progress != null && progress.otherGoalsCount > 0;
+          return GlassCard(
             semanticLabel: isSelectionMode
                 ? (l10n?.selectGoalSemanticLabel(goal.name) ?? 'Select ${goal.name}')
                 : (l10n?.viewGoalDetailsSemanticLabel(goal.name) ?? 'View details for ${goal.name}'),
@@ -70,7 +72,12 @@ class GoalCard extends ConsumerWidget {
             child: Column(
               children: [
                 Padding(
-                  padding: EdgeInsets.all(AppSpacing.md),
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.md,
+                    AppSpacing.md,
+                    hasSharedGoals ? AppSpacing.xs : AppSpacing.md,
+                  ),
                   child: Row(
                     children: [
                       // Selection checkbox (shown in selection mode)
@@ -114,11 +121,27 @@ class GoalCard extends ConsumerWidget {
                     ],
                   ),
                 ),
+                // "Also in N goals" on a line of its own, under the ring and the
+                // texts, so it has the whole card width and is never cut.
+                if (hasSharedGoals)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      0,
+                      AppSpacing.md,
+                      AppSpacing.md,
+                    ),
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: SharedGoalsChip(count: progress.otherGoalsCount),
+                    ),
+                  ),
                 // Bottom strip with status
                 _buildBottomStrip(context, isDark, progress),
               ],
             ),
-          ),
+          );
+        },
         loading: () => GlassCard(
             semanticLabel: isSelectionMode
                 ? (l10n?.selectGoalSemanticLabel(goal.name) ?? 'Select ${goal.name}')
@@ -265,10 +288,6 @@ class GoalCard extends ConsumerWidget {
         isPrivacyMode
             ? MaskedAmountText(text: progressText, style: progressTextStyle)
             : Text(progressText, style: progressTextStyle),
-        if (progress != null && progress.otherGoalsCount > 0) ...[
-          SizedBox(height: AppSpacing.xxs),
-          SharedGoalsChip(count: progress.otherGoalsCount),
-        ],
       ],
     );
   }
@@ -297,26 +316,14 @@ class GoalCard extends ConsumerWidget {
         ),
       ),
       child: CardFooterRow(
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Status indicator; the icon has no baseline of its own, so the
-            // status and the message line up on the text's.
-            IgnoreBaseline(
-              child: Icon(status.icon, size: 14, color: status.color),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              status.label(l10n),
-              style: AppTypography.small.copyWith(
-                color: status.color,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+        // Status indicator, then the message: it ends on the card padding, the
+        // same edge as the progress ring above, and wraps instead of being cut.
+        leadingIcon: status.icon,
+        leadingText: status.label(l10n),
+        leadingStyle: AppTypography.small.copyWith(
+          color: status.color,
+          fontWeight: FontWeight.w500,
         ),
-        // Status message: ends on the card padding, the same edge as the
-        // progress ring above, and wraps instead of being cut.
         trailingText: progress?.statusMessage(l10n) ?? '',
         trailingStyle: AppTypography.small.copyWith(
           color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,

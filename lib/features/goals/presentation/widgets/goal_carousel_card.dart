@@ -88,8 +88,12 @@ class GoalCarouselCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Goal name and percentage/completed badge in row
-                  Row(
+                  // Goal name and percentage/completed badge in row. The badge
+                  // takes at most 60% of the line and shrinks to fit, so the
+                  // name keeps the rest and nothing overflows at large text.
+                  LayoutBuilder(builder: (context, constraints) {
+                  final badgeMaxWidth = constraints.maxWidth * 0.6;
+                  return Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
@@ -109,7 +113,9 @@ class GoalCarouselCard extends ConsumerWidget {
                       SizedBox(width: AppSpacing.xs),
                       // Show "Completed" badge for achieved goals, percentage for others
                       if (progress.status == GoalStatus.achieved)
-                        Container(
+                        _BadgeCap(
+                          maxWidth: badgeMaxWidth,
+                          child: Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: AppSpacing.xs,
                             vertical: 2,
@@ -136,9 +142,11 @@ class GoalCarouselCard extends ConsumerWidget {
                               ),
                             ],
                           ),
-                        )
+                        ))
                       else
-                        PrivacyMask(
+                        _BadgeCap(
+                          maxWidth: badgeMaxWidth,
+                          child: PrivacyMask(
                           useTextMask: true,
                           maskedText: '••%',
                           child: Container(
@@ -159,9 +167,10 @@ class GoalCarouselCard extends ConsumerWidget {
                               ),
                             ),
                           ),
-                        ),
+                        )),
                     ],
-                  ),
+                  );
+                  }),
                   SizedBox(height: AppSpacing.xxs),
 
                   // Progress amount
@@ -244,6 +253,27 @@ class GoalCarouselCard extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Holds a badge to [maxWidth]: a wider one is scaled down to fit, never cut
+/// and never wider than the line it sits on.
+class _BadgeCap extends StatelessWidget {
+  const _BadgeCap({required this.maxWidth, required this.child});
+
+  final double maxWidth;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: AlignmentDirectional.centerEnd,
+        child: child,
       ),
     );
   }

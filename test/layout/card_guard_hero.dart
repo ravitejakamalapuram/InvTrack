@@ -20,9 +20,11 @@ const _figureKey = ValueKey('hero-net-cash-flow');
 
 /// Columns per row of the hero stats, by width and text scale: the guard's own
 /// table, so a change to the rule shows up here as well as in the unit test.
-/// Inner width is the card width less its padding: 288dp at 360, 339dp at 411.
+/// Inner width is the card width less its padding: 248dp at 320, 288dp at 360,
+/// 339dp at 411.
 int _heroPerRow(double width, double scale) {
   const table = {
+    320: {10: 3, 13: 2, 20: 1},
     360: {10: 3, 13: 2, 20: 1},
     411: {10: 3, 13: 3, 20: 2},
   };
@@ -457,10 +459,14 @@ Future<_Shape> _run(
   if (figure != null) {
     g.expectNear('net figure start', startOf(figure), startEdge);
   }
-  // Not part of this change: a six-digit amount in full ("-₹50,000") at 72sp is
-  // 317dp wide and ends in an ellipsis on a 360dp phone at text x2.0, on main
-  // as well. It is listed as a follow-up, so this one case is not asserted.
-  final knownTruncation = c.name == 'loss' && g.width < 400 && g.textScale >= 2;
+  // Not part of this change: the headline amount is 36sp, so at text x2.0 it is
+  // 72sp. A six-digit amount in full ("-₹50,000") is 317dp wide and ends in an
+  // ellipsis on a 360dp phone, and on a 320dp phone ("₹13,000" is 268dp in a
+  // 248dp line) any amount of five digits or more does, on main as well. It is
+  // listed as a follow-up, so these cases do not assert the figure.
+  final knownTruncation =
+      g.textScale >= 2 &&
+      (g.width < 340 || (c.name == 'loss' && g.width < 400));
   if (!knownTruncation) g.expectWholeWords('net figure', figureFinder);
 
   Rect? pill;
