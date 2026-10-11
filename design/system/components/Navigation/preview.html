@@ -1,0 +1,29 @@
+<!-- @dsCard group="Navigation" height=525 subtitle="App bar, NavigationBar (5 destinations) and FAB" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+
+  document.getElementById('root').innerHTML = I.panes(function () {
+    return I.Navigation({ title: 'Investments', actions: [{ icon: 'sort', label: 'Sort' }, { icon: 'search', label: 'Search' }],
+      body: '<div class="it-stack" style="gap:12px">' + I.InvestmentCard({ type: 'fixed-deposit', name: 'Senior citizen FD', closed: true, positive: true, net: F.compact(14800), badge: { text: '+7.2% IRR' }, last: 'yesterday', entries: '4 entries', invested: F.compact(200000) }) + '</div>', active: 1 });
+  }, { });
+
+  I.wire(document);
+})();
+</script>
+</body>
+</html>

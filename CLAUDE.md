@@ -18,6 +18,8 @@ Follow `.augment/rules/invtrack_rules.md`: layer boundaries, Riverpod patterns, 
 
 - Feature flags: build a new feature behind a `FeatureFlag` as the rules say. Shipping it means changing the flag's default in code in a release PR. Production behaviour must never depend on the hidden debug menu.
 - Skills: whenever you write or change code, also use the Engineering plugin skills that fit the step: `engineering:architecture` or `engineering:system-design` before building a feature, `engineering:testing-strategy` before writing its tests, `engineering:debug` for a bug, and `engineering:code-review` before a PR is ready. Use the blocks skills for design: `design-with-blocks` to design a new feature and `review-with-blocks` to review that design. Give the same instruction to every subagent that writes code. If a plugin is not installed, follow the same steps by hand.
+- UX changes are mocked first: before you change how a screen looks or flows, mock it in the design system (`design/`, read `design/README.md` first) or in Claude Design, and link the mock in the PR. Not needed for copy-only changes, bug fixes, accessibility labels or one-line style fixes. When a shared widget or a theme token changes, update `design/system/` in the same PR.
+- Mentor mode: before you build an issue or an ask, check that it is worth building. If it is unnecessary, off the plan (`docs/review-2026-10/ACTION_PLAN.md`), or the benefit is far smaller than the effort, say so on the issue and to the owner and propose a smaller version or dropping it. Do not build it as written just because it was asked.
 
 ## Money and data rules
 

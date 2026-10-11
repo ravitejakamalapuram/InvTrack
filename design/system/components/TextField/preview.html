@@ -1,0 +1,34 @@
+<!-- @dsCard group="Inputs" height=1012 subtitle="AppTextField: label above, 14px radius, primary focus border" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+
+  document.getElementById('root').innerHTML = I.panes(function () {
+    return '<div class="it-stack" style="gap:20px">' +
+      I.TextField({ id: 'a', label: 'Name', hint: 'e.g. Senior citizen FD' }) +
+      I.TextField({ id: 'b', label: 'Value in INR', prefixText: '₹', value: '2,50,000', mode: 'decimal' }) +
+      I.TextField({ id: 'c', label: 'Search', prefixIcon: 'search', hint: 'Search investments', focus: true }) +
+      I.TextField({ id: 'd', label: 'Value in INR', prefixText: '₹', value: '-5', error: 'Enter a value of 0 or more', mode: 'decimal' }) +
+      I.TextField({ id: 'e', label: 'Notes', multiline: true, hint: 'Optional' }) +
+      I.TextField({ id: 'f', label: 'Currency', value: 'INR', readonly: true }) +
+      cap('Top to bottom: empty with hint, prefix text and clear button, focused (2px primary), error (red border and message), multi-line, read-only. The label is 18px/600 and tapping it focuses the field (44dp minimum).') +
+    '</div>';
+  });
+
+  I.wire(document);
+})();
+</script>
+</body>
+</html>

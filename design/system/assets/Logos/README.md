@@ -1,0 +1,8 @@
+The InvTrack app mark, as the two files in `assets/icons` of the app repository. The PNG is byte-identical to the repository file; the SVG is the same drawing re-serialised by the asset store (comments dropped, empty elements written with end tags: 1,491 bytes against 1,672). Use them as-is; never redraw, recolour, crop or re-export them.
+
+- `app_icon.png` (1024 x 1024, opaque): the mark that ships. A thick ring, broken by a diagonal arrow pointing up and right, in a violet gradient (#6454ef to #9a78f1) on a deep navy ground (#121534). It is the source for the launcher icon (`flutter_launcher_icons`, adaptive background `#1A1A2E`, web theme colour `#6C63FF`) and appears at 72px on the app-lock and privacy screen. It carries its own navy ground, so it sits on any page background as a square.
+- `app_icon.svg` (1024 x 1024): a different, older mark: a trend arrow over four bars on a rounded violet square (gradient #6C63FF to #5B4CDB, corner radius 220). Nothing in `pubspec.yaml` or `lib/` references it. Treat it as a draft until the product team confirms which mark is current.
+
+Both are multi-colour pictures: show them through `<img>`, which cannot inherit `currentColor`, and never tint them.
+
+Known issues in the source files, kept as they are: `app_icon.png` carries a small grey four-point sparkle (#888998) in its bottom-right corner that looks like an image-generator watermark; replace the file with a clean export rather than cropping it. The app-lock screen tints this opaque PNG white in light mode (`BlendMode.srcIn`), which paints a solid white square because the PNG has no transparency.

@@ -1,0 +1,39 @@
+<!-- @dsCard group="Feedback" height=1711 subtitle="Empty list, first-run Overview cards and the load-error state" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+
+  document.getElementById('root').innerHTML = I.panes(function () {
+    return '<div class="it-stack" style="gap:18px">' +
+      I.EmptyState({ icon: 'account_balance_wallet', title: 'No investments found', message: 'Investments you archive will appear here', actionLabel: 'Add Investment' }) +
+      cap('EmptyStateWidget: 64px icon in text-muted, h3 title, body message, optional text button.') +
+      I.EmptyState({ compact: true, icon: 'flag', title: 'No Archived Goals', message: 'Archived goals will appear here' }) +
+      cap('Compact: 40px icon, body title, caption message.') +
+      I.EmptyState({ kind: 'demo', title: 'See Your Real Returns', subtitle: 'P2P platforms advertise 12%. What did you really earn?', advertised: '12.0%', real: '6.3%',
+        caption: 'Platform fees and one defaulted loan cut 12% to 6.3% a year.', sr: 'Advertised 12.0%. Your XIRR after fees and one defaulted loan: 6.3%.' }) +
+      cap('Overview first run: the XIRR demo, shown at its final frame (the app animates 12.0% down to 6.3%).') +
+      I.EmptyState({ kind: 'quickstart' }) +
+      I.EmptyState({ kind: 'sample' }) +
+      cap('Quick start tiles and the sample-data banner.') +
+      I.EmptyState({ kind: 'error' }) +
+      cap('Portfolio failed to load: no add, import or sample-data actions, only Retry.') +
+    '</div>';
+  });
+
+  I.wire(document);
+})();
+</script>
+</body>
+</html>
