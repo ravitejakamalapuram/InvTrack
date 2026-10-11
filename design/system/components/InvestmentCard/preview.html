@@ -1,4 +1,4 @@
-<!-- @dsCard group="Screens" height=1382 subtitle="Investment list card: type tile, name, return badge, last activity" -->
+<!-- @dsCard group="Screens" height=1960 subtitle="Investment list card: type tile, name, return badge, last activity" -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -17,21 +17,23 @@
 
   // Illustrative figures only.
   var closed = { type: 'fixed-deposit', name: 'Senior citizen FD', closed: true, positive: true, net: F.compact(14800), badge: { text: '+7.2% IRR' }, last: 'yesterday', entries: '4 entries', invested: F.compact(200000) };
-  var awaitingFirst = { type: 'bonds', name: 'Gold bond 2029', positive: false, neutral: true, net: F.compact(150000), status: 'Awaiting first payout',
-    maturity: { tone: 'warning', icon: 'schedule', label: '7d TO MATURITY' }, last: '3 days ago', entries: '1 entry', invested: F.compact(150000) };
-  var awaitingValue = { type: 'p2p-lending', name: 'P2P loan pool A', positive: false, neutral: true, net: F.compact(252000), status: 'Awaiting current value',
-    maturity: { tone: 'accent', icon: 'event', label: '21d TO MATURITY' }, last: '2 weeks ago', entries: '9 entries', invested: F.compact(300000) };
+  var awaitingFirst = { type: 'bonds', name: 'Gold bond 2029', status: 'Awaiting first payout', invested: F.compact(150000), received: F.compact(0),
+    maturity: { tone: 'warning', icon: 'schedule', label: '7d TO MATURITY' }, last: '3 days ago', entries: '1 entry' };
+  var awaitingValue = { type: 'p2p-lending', name: 'P2P loan pool A', status: 'Awaiting current value', invested: F.compact(400000), received: F.compact(252000),
+    maturity: { tone: 'accent', icon: 'event', label: '21d TO MATURITY' }, last: '2 weeks ago', entries: '9 entries' };
   var matured = { type: 'chit-funds', name: 'Chit group 12', positive: true, net: F.compact(8000), badge: { text: '+9.4% IRR' },
     maturity: { tone: 'success', icon: 'check_circle', label: 'MATURED' }, last: 'today', entries: '11 entries', invested: F.compact(120000) };
   var empty = { type: 'other', name: 'Untitled investment', empty: true, last: 'today', entries: '0 entries' };
   document.getElementById('root').innerHTML = I.panes(function () {
     return '<div class="it-stack" style="gap:16px">' +
       '<div>' + I.InvestmentCard(closed) + cap('Closed: grey tile, CLOSED chip, positive net and IRR badge.') + '</div>' +
-      '<div>' + I.InvestmentCard(awaitingFirst) + cap('Open, nothing received: neutral amount and the status chip. No return % at all.') + '</div>' +
-      '<div>' + I.InvestmentCard(awaitingValue) + cap('Open, some payouts but less than invested: “Awaiting current value”.') + '</div>' +
+      '<div>' + I.InvestmentCard(awaitingFirst) + cap('Open, nothing received: what went in, “₹0 received” and the status chip. No net, no minus, no return %.') + '</div>' +
+      '<div>' + I.InvestmentCard(awaitingValue) + cap('Open, some payouts but less than invested: invested, received and “Awaiting current value”. Amounts share one right edge; each word sits on its amount’s baseline.') + '</div>' +
       '<div>' + I.InvestmentCard(matured) + cap('Maturity chips: MATURED (success), MATURES TODAY and ≤7 days (warning), 8–30 days (accent).') + '</div>' +
       '<div>' + I.InvestmentCard(Object.assign({ selectionMode: true, selected: true }, awaitingFirst, { maturity: null })) + cap('Selection mode adds a checkbox before the tile.') + '</div>' +
+      '<div style="max-width:232px">' + I.InvestmentCard(awaitingValue) + cap('Narrow card or large text: the figures drop under the name, still on the right edge.') + '</div>' +
       '<div data-privacy="on">' + I.InvestmentCard(closed) + cap('Privacy mode: amounts masked, badge fades out but keeps its space.') + '</div>' +
+      '<div data-privacy="on">' + I.InvestmentCard(awaitingValue) + cap('Privacy mode, awaiting: invested and received are masked; the words and the status chip stay.') + '</div>' +
       '<div>' + I.InvestmentCard(empty) + cap('No cash flows yet: a chevron replaces the value column, and the strip offers View Details instead of the invested amount.') + '</div>' +
     '</div>';
   });

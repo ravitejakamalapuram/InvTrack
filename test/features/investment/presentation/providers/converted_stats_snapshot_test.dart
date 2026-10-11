@@ -570,6 +570,49 @@ void main() {
       expect(find.text('+7.5% IRR'), findsOneWidget);
     });
 
+    // #977: invested and received are converted figures too, never $1,000
+    // under the rupee symbol or in dollars.
+    testWidgets('an open USD card awaiting a value shows converted invested '
+        'and received', (tester) async {
+      // Stocks have no estimated value, so this open card awaits one.
+      final investment = _investment(
+        'usd',
+        'USD',
+        status: InvestmentStatus.open,
+      );
+      // $1,000 in at 83.8, $500 back at 88.0: ₹83,800 in, ₹44,000 back.
+      final flows = [
+        _flow(
+          'usd-1',
+          'usd',
+          CashFlowType.invest,
+          1000,
+          'USD',
+          DateTime(2024, 10, 1),
+        ),
+        _flow(
+          'usd-2',
+          'usd',
+          CashFlowType.returnFlow,
+          500,
+          'USD',
+          DateTime(2026, 10, 1),
+        ),
+      ];
+      await pumpCard(
+        tester,
+        investment,
+        _overrides(active: [investment], activeFlows: flows),
+      );
+
+      expect(find.text(compactInr(_expectedInvested)), findsOneWidget);
+      expect(find.text(compactInr(44000)), findsOneWidget);
+      expect(find.text('invested'), findsOneWidget);
+      expect(find.text('received'), findsOneWidget);
+      expect(find.text('Awaiting current value'), findsOneWidget);
+      expect(find.textContaining('\$'), findsNothing);
+    });
+
     testWidgets('an archived USD card shows the converted net', (tester) async {
       final investment = _investment('arch', 'USD', archived: true);
       await pumpCard(

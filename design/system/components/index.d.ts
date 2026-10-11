@@ -83,12 +83,19 @@ declare namespace InvTrack {
     | 'gold' | 'crypto' | 'mutual-funds' | 'stocks' | 'invoice-discounting' | 'financing' | 'other';
   interface InvestmentCardProps {
     type: InvestmentTypeKey; name: string; typeName?: string; closed?: boolean;
-    /** Already formatted, base currency. Omit with `empty`. */
-    net?: string; positive?: boolean; neutral?: boolean; status?: string; badge?: { text: string; positive?: boolean };
+    /** Already formatted, base currency. Omit with `empty` or `status`. */
+    net?: string; positive?: boolean; badge?: { text: string; positive?: boolean };
+    /** Open and awaiting a value ("Awaiting first payout" or "Awaiting current value"): the card shows `invested` and `received` and this chip, with no net, sign or percent. */
+    status?: string;
+    /** Already formatted, base currency. Shown with `status`. */
+    received?: string;
     /** No cash flows yet: a chevron replaces the value column (no amount, no badge). */
     empty?: boolean;
     maturity?: { tone: 'success' | 'warning' | 'accent'; icon?: string; label: string } | null;
-    last: string; entries: string; invested?: string; selectionMode?: boolean; selected?: boolean;
+    last: string; entries: string;
+    /** Already formatted, base currency. In the strip as "Invested: ", or the main figure with `status`. */
+    invested?: string;
+    selectionMode?: boolean; selected?: boolean;
   }
   function InvestmentCard(props: InvestmentCardProps): Html;
 

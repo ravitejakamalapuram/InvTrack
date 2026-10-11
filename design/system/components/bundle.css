@@ -282,7 +282,8 @@
 
 /* ---------- Investment card (investment_card.dart) ---------- */
 .it-inv { padding: 0; overflow: hidden; }
-.it-inv__main { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md); }
+.it-inv { container-type: inline-size; }
+.it-inv__main { display: flex; align-items: flex-start; gap: var(--space-md); padding: var(--space-md); }
 .it-inv__check { width: 20px; height: 20px; flex: none; accent-color: var(--it-primary-l); margin: 0 4px 0 0; }
 .it-inv__tile { display: inline-flex; align-items: center; justify-content: center; flex: none; width: var(--icon-xl); height: var(--icon-xl); border-radius: 14px; color: #fff; font-size: 24px; background: linear-gradient(135deg, var(--c), color-mix(in srgb, var(--c) 70%, transparent)); box-shadow: 0 4px 8px color-mix(in srgb, var(--c) 30%, transparent); }
 .it-inv__info { flex: 1; min-width: 0; }
@@ -290,9 +291,24 @@
 .it-inv__tags { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-top: 4px; }
 .it-inv__val { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right; }
 .it-inv__net { font: 600 18px/1.6 var(--font-text); }
+/* Awaiting a value (#977): invested over received, amounts on one right edge, each word on its amount's baseline. */
+.it-inv__ledger { display: grid; grid-template-columns: auto auto; column-gap: 4px; align-items: baseline; }
+.it-inv__ledger > :nth-child(odd) { justify-self: end; }
+.it-inv__ledger > :nth-child(even) { justify-self: start; }
+.it-inv__net--ink { color: var(--text); }
+.it-inv__got { font: 500 12px/1.4 var(--font-text); color: var(--text-secondary); }
+.it-inv__w { font: 400 12px/1.4 var(--font-text); color: var(--text-secondary); }
+.it-inv__badge--status { --c: var(--text-secondary); font-size: 12px; max-width: 104px; text-align: right; }
+/* Narrow card (the card's own width, as in the app): the figures drop under the name, still on the right edge. */
+@container (max-width: 232px) {
+  .it-inv__main { flex-wrap: wrap; }
+  .it-inv__info { flex-basis: calc(100% - 32px - var(--space-md)); }
+  .it-inv__val { flex-basis: 100%; }
+  .it-inv__badge--status { max-width: none; }
+}
 .it-inv__chev { display: inline-flex; color: var(--neutral-400-light); }   /* Icons.chevron_right_rounded: neutral400 in both themes */
 .it-inv__badge { padding: 2px 6px; border-radius: var(--radius-badge); font: 600 10px/1.4 var(--font-text); color: var(--c); background: color-mix(in srgb, var(--c) 10%, transparent); }
-.it-inv__strip { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-sm) var(--space-md); background: var(--it-tint-03); border-radius: 0 0 var(--radius-xl) var(--radius-xl); font: 400 12px/1.4 var(--font-text); color: var(--text-muted); }
+.it-inv__strip { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--space-md); padding: var(--space-sm) var(--space-md); background: var(--it-tint-03); border-radius: 0 0 var(--radius-xl) var(--radius-xl); font: 400 12px/1.4 var(--font-text); color: var(--text-muted); }
 .it-inv__strip > span { display: inline-flex; align-items: center; gap: 4px; }
 .it-inv__strip > .it-sp { flex: 1; }
 .it-inv__strip b { font-weight: 500; }

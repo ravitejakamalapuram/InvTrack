@@ -101,15 +101,20 @@ class AccessibilityUtils {
   /// 7% p.a.") reads it as expected, from an estimated current value.
   /// [returnQualifier] rewrites the returns sentence of a figure (e.g. adds
   /// "so far"); the percent in it is still hidden under [shouldMask].
+  ///
+  /// A null [currentValue] leaves out "Current value: ...", for an open
+  /// investment that awaits one. [receivedSegment] ("Received: 2.52 lakh
+  /// rupees", already hidden under privacy) follows the invested amount.
   static String investmentCardLabel({
     required String name,
     required String type,
-    required double currentValue,
+    required double? currentValue,
     required double? returnPercent,
     required String currencySymbol,
     required String currencyLocale,
     required bool isClosed,
     String? returnStatus,
+    String? receivedSegment,
     bool returnIsApproximate = false,
     String? expectedReturnBasis,
     String Function(String returns)? returnQualifier,
@@ -119,7 +124,9 @@ class AccessibilityUtils {
     bool shouldMask = false,
   }) {
     final status = isClosed ? 'Closed investment' : 'Open investment';
-    final value = shouldMask
+    final value = currentValue == null
+        ? null
+        : shouldMask
         ? 'Hidden amount'
         : formatCurrencyForScreenReader(
             currentValue,
@@ -169,8 +176,9 @@ class AccessibilityUtils {
     final mainLabel = [
       '$status: $name',
       'Type: $type',
-      'Current value: $value',
+      if (value != null) 'Current value: $value',
       if (invested.isNotEmpty) invested,
+      ?receivedSegment,
       if (returns.isNotEmpty) returns,
       if (lastActivity.isNotEmpty) lastActivity,
     ].join('. ');
