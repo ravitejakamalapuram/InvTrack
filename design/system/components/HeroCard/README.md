@@ -21,6 +21,7 @@ Display strings only: `amount`, `returnText` or `status`, `positive`, `out`, `in
 ## Rules
 
 - Hide every amount in privacy mode, the semantics label too ("Hidden amount").
+- A screen reader reads each stat column as one stop, "out:" then the amount ("in:", "XIRR:" the same), never the label and the amount as two; in privacy mode the stop is "out:" then "Hidden amount". The amount keeps its "Double tap and hold to copy" hint and action inside the stop.
 - Never show a return badge or a % XIRR for an open investment without a value: show the status and `—`.
 - Keep the currency disclosure line visible whenever amounts are shown.
 - Stats stack and the title wraps, they are never truncated, at large text scale; only the amount may ellipsise, and its long-press shows the exact figure (`AmountText`).

@@ -195,7 +195,7 @@
 .it-flows .it-gap { width: var(--space-md); }
 .it-flows .it-sp { flex: 1; }
 .it-hint { font: 400 12px/1.4 var(--font-text); color: var(--text-muted); margin: 6px 0 0; }
-.it-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.it-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }   /* grid items stretch: the two tiles of a row share a top and a height (TileRow) */
 
 /* ---------- Badges ---------- */
 .it-chg { display: inline-flex; align-items: center; gap: 4px; border-radius: var(--radius-badge); padding: 4px 8px; font: 600 12px/1.4 var(--font-text); }
@@ -419,11 +419,13 @@
 .it-goal__info { flex: 1; min-width: 0; }
 .it-goal__name { margin: 0; font: 600 16px/1.5 var(--font-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .it-goal__progress { margin-top: 4px; font: 400 12px/1.4 var(--font-text); color: var(--text-muted); }
-.it-goal__chip { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; padding: 4px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--text-muted) 40%, transparent); font: 400 12px/1.4 var(--font-text); color: var(--text-muted); }
+.it-goal__chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px var(--space-xs); border-radius: 12px; border: 1px solid color-mix(in srgb, var(--text-muted) 40%, transparent); font: 400 12px/1.4 var(--font-text); color: var(--text-muted); }
+.it-goal__chiprow { padding: 0 var(--space-md) var(--space-md); }   /* the chip has a line of its own: the card width less its padding */
+.it-goal__row:has(+ .it-goal__chiprow) { padding-bottom: var(--space-xs); }
 .it-goal__ring { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; border: 5px solid var(--c); box-sizing: border-box; font: 600 12px/1 var(--font-text); }
-.it-goal__foot { display: flex; align-items: baseline; gap: var(--space-sm); padding: var(--space-xs) var(--space-md); border-radius: 0 0 var(--radius-xl) var(--radius-xl); background: color-mix(in srgb, var(--text) 3%, transparent); }
+.it-goal__foot { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--space-sm); row-gap: var(--space-xxs); padding: var(--space-sm) var(--space-md); border-radius: 0 0 var(--radius-xl) var(--radius-xl); background: color-mix(in srgb, var(--text) 3%, transparent); }
 .it-goal__status { display: inline-flex; flex: none; align-items: center; gap: 6px; font: 500 12px/1.4 var(--font-text); color: var(--c); }
-.it-goal__msg { flex: 1; min-width: 0; text-align: end; font: 400 12px/1.4 var(--font-text); color: var(--text-muted); }
+.it-goal__msg { flex: 1 1 0; min-width: min-content; text-align: end;   /* beside the status while its longest word fits, else under it on the full width */ font: 400 12px/1.4 var(--font-text); color: var(--text-muted); }
 .it-goalc { display: flex; align-items: center; gap: var(--space-md); }
 .it-goalc__body { flex: 1; min-width: 0; }
 .it-goalc__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-xs); }

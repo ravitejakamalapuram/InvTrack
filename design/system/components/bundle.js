@@ -464,7 +464,7 @@
     'in-progress': ['timelapse', 'In progress', 'Not enough history to project yet'], 'not-started': ['hourglass_empty', 'Not started', 'Start investing to make progress'],
     'archived': ['archive', 'Archived', 'This goal is archived']
   };
-  // kind 'list' (GoalCard): icon, name, progress text, shared-goals chip, ring, and the footer. kind 'carousel' (GoalCarouselCard).
+  // kind 'list' (GoalCard): icon, name, progress text and ring in the main row, the shared-goals chip on a row of its own under it, and the footer. kind 'carousel' (GoalCarouselCard).
   function GoalCard(o) {
     o = o || {};
     var st = GOAL_STATUS[o.status] || GOAL_STATUS['on-track'], c = o.color || 'var(--accent)';
@@ -475,10 +475,10 @@
         '<div class="it-goalc__body"><div class="it-goalc__head"><span class="it-goalc__name">' + esc(o.name) + '</span><span class="it-goalc__pct">' + badge + '</span></div>' +
         '<div class="it-goalc__amount">' + amount(o.progress) + '</div><div class="it-goalc__bar"><i></i></div></div></div>', { radius: 16, flat: true });
     }
-    var chip = o.others ? '<span class="it-goal__chip">' + icon('link', { size: 14 }) + '<span>' + (o.others === 1 ? 'Also in 1 goal' : 'Also in ' + o.others + ' goals') + '</span></span>' : '';
+    var chip = o.others ? '<div class="it-goal__chiprow"><span class="it-goal__chip">' + icon('link', { size: 14 }) + '<span>' + (o.others === 1 ? 'Also in 1 goal' : 'Also in ' + o.others + ' goals') + '</span></span></div>' : '';
     return GlassCard('<div class="it-goal__row"' + sty({ '--c': c }) + '><span class="it-goal__icon">' + esc(o.emoji || '\ud83c\udfaf') + '</span>' +
-      '<div class="it-goal__info"><p class="it-goal__name">' + esc(o.name) + '</p><div class="it-goal__progress">' + amount(o.progress) + '</div>' + chip + '</div>' +
-      '<span class="it-goal__ring">' + (o.privacy ? '\u2022\u2022%' : pct + '%') + '</span></div>' +
+      '<div class="it-goal__info"><p class="it-goal__name">' + esc(o.name) + '</p><div class="it-goal__progress">' + amount(o.progress) + '</div></div>' +
+      '<span class="it-goal__ring">' + (o.privacy ? '\u2022\u2022%' : pct + '%') + '</span></div>' + chip +
       '<div class="it-goal__foot"' + sty({ '--c': c }) + '><span class="it-goal__status">' + icon(st[0], { size: 14 }) + '<span>' + esc(st[1]) + '</span></span>' +
       '<span class="it-goal__msg">' + esc(o.message || st[2]) + '</span></div>', { cls: 'it-goal', flat: true });
   }
