@@ -7,7 +7,7 @@ The submit bar at the foot of a long form (`StickyFormAction`): the button stays
 
 ## Behaviour
 
-- It sits under the scrolling part of the form in a column, so it rides above the keyboard: the body shrinks when the keyboard opens and the bar goes up with it. Do not use a Scaffold's `bottomNavigationBar` for it: that stays at the foot of the screen and the keyboard covers it.
+- It is the Scaffold's `bottomNavigationBar`, so a floating SnackBar appears above it, not over the button. A Scaffold leaves a bottom bar under the keyboard, so the bar pads itself by the keyboard height (or the system bar, whichever is larger) and goes up with the keyboard. Do not also pad it from outside.
 - With a 250dp keyboard open at 320 x 568dp and text 1.8x the button is still on screen and can be tapped.
 
 ## Consumer provides

@@ -5,10 +5,12 @@ import 'package:inv_tracker/core/utils/money_precision.dart';
 
 /// Why the text in the amount invested field cannot be saved.
 enum AmountInputProblem {
-  /// Zero, or an amount that rounds to zero in its currency.
+  /// Zero, a negative amount, or an amount that rounds to zero in its
+  /// currency.
   notPositive,
 
-  /// Not a number, a minus sign, or separators that fit no reading.
+  /// Not a number, a minus sign anywhere but in front of a number, or
+  /// separators that fit no reading.
   invalid,
 
   /// 16 digits or more (invtrack_rules 19.1).
@@ -42,9 +44,20 @@ class InvestmentAmountInput {
     String text, {
     required String currencyCode,
   }) {
-    if (text.trim().isEmpty) return _blank;
-    final value = parseAmountInput(text, getCurrencyLocale(currencyCode));
-    if (value == null) return _problem(AmountInputProblem.invalid);
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return _blank;
+    final locale = getCurrencyLocale(currencyCode);
+    final value = parseAmountInput(trimmed, locale);
+    if (value == null) {
+      // A minus sign in front of a number that reads fine is a negative
+      // amount: not above 0. Any other minus sign is not an amount at all.
+      final negative =
+          trimmed.startsWith('-') &&
+          parseAmountInput(trimmed.substring(1), locale) != null;
+      return _problem(
+        negative ? AmountInputProblem.notPositive : AmountInputProblem.invalid,
+      );
+    }
     if (value >= ValidationConstants.maxAmount) {
       return _problem(AmountInputProblem.tooLarge);
     }

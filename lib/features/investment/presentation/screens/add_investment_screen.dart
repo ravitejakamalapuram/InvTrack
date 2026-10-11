@@ -314,14 +314,14 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   void _onTypeChipSelected(InvestmentType type) {
     final next = InvestmentTypeDefaults.forType(type);
     setState(() {
-      final applied = _appliedDefaults;
+      final structure = _appliedDefaults.reapplyTo(
+        next,
+        payoutMode: _interestPayoutMode,
+        compounding: _compoundingFrequency,
+      );
       _selectedType = type;
-      if (_interestPayoutMode == applied.payoutMode) {
-        _interestPayoutMode = next.payoutMode;
-      }
-      if (_compoundingFrequency == applied.compounding) {
-        _compoundingFrequency = next.compounding;
-      }
+      _interestPayoutMode = structure.payoutMode;
+      _compoundingFrequency = structure.compounding;
       _appliedDefaults = next;
       _typicalRateHint = next.typicalRate;
     });
@@ -406,14 +406,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     // What a type chip set is not a field the user used. (_appliedDefaults is
     // empty on the form of today, so nothing is left out there.)
     final applied = _appliedDefaults;
-    if (_interestPayoutMode != null &&
-        _interestPayoutMode != applied.payoutMode) {
+    if (applied.isPayoutModeUserChoice(_interestPayoutMode)) {
       enhancedFields.add('payout_mode');
     }
     if (_autoRenewal != null) enhancedFields.add('auto_renewal');
     if (_riskLevel != null) enhancedFields.add('risk_level');
-    if (_compoundingFrequency != null &&
-        _compoundingFrequency != applied.compounding) {
+    if (applied.isCompoundingUserChoice(_compoundingFrequency)) {
       enhancedFields.add('compounding');
     }
 

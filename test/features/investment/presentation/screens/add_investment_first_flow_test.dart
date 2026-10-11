@@ -428,7 +428,10 @@ void main() {
       ('0', 'Enter an amount above 0'),
       ('0.00', 'Enter an amount above 0'),
       ('-5', 'Enter an amount above 0'),
-      ('1,5000', 'Enter an amount above 0'),
+      (
+        '1,5000',
+        'Enter a valid amount. Check the commas and the decimal point.',
+      ),
       ('1000000000000000', 'That amount is too large'),
     ]) {
       testWidgets('amount "$typed" shows "$message" and sends nothing', (

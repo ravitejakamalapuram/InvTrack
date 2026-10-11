@@ -47,6 +47,29 @@ class InvestmentTypeDefaults {
   /// Typical annual return % of the type. A hint only; never saved.
   final double? typicalRate;
 
+  /// The payout mode and compounding after the user chooses a chip whose
+  /// defaults are [next], given what the form holds now. A value that is still
+  /// what this chip set follows [next]; one the user changed stays.
+  ({InterestPayoutMode? payoutMode, CompoundingFrequency? compounding})
+  reapplyTo(
+    InvestmentTypeDefaults next, {
+    required InterestPayoutMode? payoutMode,
+    required CompoundingFrequency? compounding,
+  }) => (
+    payoutMode: payoutMode == this.payoutMode ? next.payoutMode : payoutMode,
+    compounding: compounding == this.compounding
+        ? next.compounding
+        : compounding,
+  );
+
+  /// Whether [current] is a payout mode the user chose, not what the chip set.
+  bool isPayoutModeUserChoice(InterestPayoutMode? current) =>
+      current != null && current != payoutMode;
+
+  /// Whether [current] is a compounding the user chose, not what the chip set.
+  bool isCompoundingUserChoice(CompoundingFrequency? current) =>
+      current != null && current != compounding;
+
   @override
   bool operator ==(Object other) =>
       other is InvestmentTypeDefaults &&

@@ -78,8 +78,22 @@ void main() {
       );
     });
 
-    test('a minus sign is invalid, not silently dropped', () {
-      for (final text in ['-5', '-0', '--5', '5-']) {
+    test(
+      'a leading minus sign is a negative amount, never silently dropped',
+      () {
+        for (final text in ['-5', '-0', '-1,00,000']) {
+          expect(
+            _parse(text).problem,
+            AmountInputProblem.notPositive,
+            reason: text,
+          );
+          expect(_parse(text).amount, isNull, reason: text);
+        }
+      },
+    );
+
+    test('a minus sign anywhere else is invalid', () {
+      for (final text in ['--5', '5-', '-', '-abc']) {
         expect(_parse(text).problem, AmountInputProblem.invalid, reason: text);
         expect(_parse(text).amount, isNull, reason: text);
       }

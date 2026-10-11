@@ -108,8 +108,8 @@ class AmountInvestedField extends ConsumerWidget {
     return switch (input.problem) {
       null => null,
       AmountInputProblem.tooLarge => l10n.amountInvestedTooLarge,
-      AmountInputProblem.notPositive ||
-      AmountInputProblem.invalid => l10n.amountInvestedError,
+      AmountInputProblem.notPositive => l10n.amountInvestedError,
+      AmountInputProblem.invalid => l10n.amountInvestedInvalid,
     };
   }
 }

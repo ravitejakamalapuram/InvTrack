@@ -211,6 +211,7 @@ void main() {
       await tester.pump();
       for (final message in [
         'Enter an amount above 0',
+        'Enter a valid amount. Check the commas and the decimal point.',
         'That amount is too large',
       ]) {
         if (find.text(message).evaluate().isNotEmpty) return message;
@@ -234,10 +235,11 @@ void main() {
       }
     });
 
-    testWidgets('an unreadable amount is "Enter an amount above 0"', (
-      tester,
-    ) async {
-      expect(await errorFor(tester, '1,5000'), 'Enter an amount above 0');
+    testWidgets('an unreadable amount says so, not "above 0"', (tester) async {
+      expect(
+        await errorFor(tester, '1,5000'),
+        'Enter a valid amount. Check the commas and the decimal point.',
+      );
     });
 
     testWidgets('16 digits is "That amount is too large"', (tester) async {

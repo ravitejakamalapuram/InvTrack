@@ -101,4 +101,88 @@ void main() {
       ).hashCode,
     );
   });
+
+  // The rule the add form applies when a type chip is chosen: a structural
+  // value that is still what the previous chip set follows the new chip; a
+  // value the user changed stays. The same comparison tells the analytics
+  // which fields the user really used. One rule, here, testable without a
+  // widget.
+  group('structure after choosing another chip', () {
+    final fd = InvestmentTypeDefaults.forType(InvestmentType.fixedDeposit);
+    final p2p = InvestmentTypeDefaults.forType(InvestmentType.p2pLending);
+
+    test('values still set by the previous chip follow the new chip', () {
+      final structure = fd.reapplyTo(
+        p2p,
+        payoutMode: InterestPayoutMode.cumulative,
+        compounding: CompoundingFrequency.quarterly,
+      );
+
+      expect(structure.payoutMode, InterestPayoutMode.periodic);
+      expect(structure.compounding, CompoundingFrequency.none);
+    });
+
+    test('a payout mode the user changed stays, compounding still follows', () {
+      final structure = fd.reapplyTo(
+        p2p,
+        payoutMode: InterestPayoutMode.atMaturity,
+        compounding: CompoundingFrequency.quarterly,
+      );
+
+      expect(structure.payoutMode, InterestPayoutMode.atMaturity);
+      expect(structure.compounding, CompoundingFrequency.none);
+    });
+
+    test('a compounding the user changed stays, payout mode still follows', () {
+      final structure = fd.reapplyTo(
+        p2p,
+        payoutMode: InterestPayoutMode.cumulative,
+        compounding: CompoundingFrequency.monthly,
+      );
+
+      expect(structure.payoutMode, InterestPayoutMode.periodic);
+      expect(structure.compounding, CompoundingFrequency.monthly);
+    });
+
+    test('from nothing set, empty fields take the new chip', () {
+      final structure = InvestmentTypeDefaults.none.reapplyTo(
+        fd,
+        payoutMode: null,
+        compounding: null,
+      );
+
+      expect(structure.payoutMode, InterestPayoutMode.cumulative);
+      expect(structure.compounding, CompoundingFrequency.quarterly);
+    });
+
+    test('a chip without structure clears what the last chip set', () {
+      final structure = fd.reapplyTo(
+        InvestmentTypeDefaults.none,
+        payoutMode: InterestPayoutMode.cumulative,
+        compounding: CompoundingFrequency.quarterly,
+      );
+
+      expect(structure.payoutMode, isNull);
+      expect(structure.compounding, isNull);
+    });
+
+    test('only a value that differs from what the chip set is a choice', () {
+      expect(fd.isPayoutModeUserChoice(null), isFalse);
+      expect(fd.isPayoutModeUserChoice(InterestPayoutMode.cumulative), isFalse);
+      expect(fd.isPayoutModeUserChoice(InterestPayoutMode.periodic), isTrue);
+      expect(fd.isCompoundingUserChoice(null), isFalse);
+      expect(
+        fd.isCompoundingUserChoice(CompoundingFrequency.quarterly),
+        isFalse,
+      );
+      expect(fd.isCompoundingUserChoice(CompoundingFrequency.monthly), isTrue);
+      // Nothing was set by a chip: any value is the user's.
+      expect(
+        InvestmentTypeDefaults.none.isPayoutModeUserChoice(
+          InterestPayoutMode.periodic,
+        ),
+        isTrue,
+      );
+    });
+  });
 }

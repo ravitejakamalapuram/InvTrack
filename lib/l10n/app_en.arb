@@ -2395,6 +2395,10 @@
   "@amountInvestedError": {
     "description": "Error under the amount field of the add investment form when the text is zero, negative or not a number (A40)"
   },
+  "amountInvestedInvalid": "Enter a valid amount. Check the commas and the decimal point.",
+  "@amountInvestedInvalid": {
+    "description": "Error under the amount field of the add investment form when the text is not a number or its commas and decimal point cannot be read (A40)"
+  },
   "amountInvestedTooLarge": "That amount is too large",
   "@amountInvestedTooLarge": {
     "description": "Error under the amount field of the add investment form when the amount has 16 digits or more (A40)"
