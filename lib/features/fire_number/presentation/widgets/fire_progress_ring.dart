@@ -36,7 +36,9 @@ class FireProgressRing extends ConsumerWidget {
     final bgColor = isDark
         ? AppColors.neutral700Dark
         : AppColors.neutral200Light;
-    final progressColor = status.color;
+    final progressColor = status.colorForBrightness(
+      isDark ? Brightness.dark : Brightness.light,
+    );
     final locale = ref.watch(currencyLocaleProvider);
 
     return SizedBox(

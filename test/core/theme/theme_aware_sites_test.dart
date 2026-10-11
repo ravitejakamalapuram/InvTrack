@@ -47,10 +47,6 @@ const _unfixed = <String, int>{
   // PR 3 contrast-theme-aware-screens: settings, auth, goals, FIRE, onboarding.
   'lib/features/auth/presentation/dialogs/backup_merge_dialog.dart': 1,
   'lib/features/auth/presentation/widgets/pending_guest_backup_notice.dart': 1,
-  'lib/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart':
-      5,
-  'lib/features/fire_number/presentation/screens/fire_dashboard_screen.dart': 1,
-  'lib/features/fire_number/presentation/screens/fire_settings_screen.dart': 4,
   'lib/features/goals/presentation/screens/goal_details_screen.dart': 4,
   'lib/features/goals/presentation/screens/goals_screen.dart': 1,
   'lib/features/goals/presentation/widgets/goal_card.dart': 1,
@@ -87,7 +83,6 @@ const _unfixed = <String, int>{
   // them, PR 4 and PR 5 would dim them in dark, and the counts below would
   // still match.
   'lib/core/widgets/metric_tile.dart': 2,
-  'lib/features/fire_number/presentation/widgets/fire_load_error_card.dart': 1,
   // Deliberately kept: no screen uses ChangeBadge (the plan's W2), and its pale
   // fill is the same in both themes. PR 4 edits only its zero-badge text.
   'lib/core/widgets/change_badge.dart': 3,
