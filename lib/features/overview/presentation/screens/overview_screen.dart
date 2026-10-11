@@ -17,6 +17,7 @@ import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/core/widgets/screen_layout.dart';
+import 'package:inv_tracker/core/widgets/stat_columns.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_dashboard_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_card.dart';
@@ -686,36 +687,34 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
           ),
           const SizedBox(height: 12),
           if (stats.firstCashFlowDate != null && stats.lastCashFlowDate != null)
-            // A Wrap, not a Row: at large text sizes the second date drops below
-            // the first instead of overflowing.
-            SizedBox(
-              width: double.infinity,
-              child: Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                spacing: AppSpacing.md,
-                runSpacing: AppSpacing.xs,
-                children: [
-                  _buildDateInfo('First Cash Flow', stats.firstCashFlowDate!),
-                  _buildDateInfo('Last Cash Flow', stats.lastCashFlowDate!),
-                ],
-              ),
+            // Two equal columns, the last ending on the card padding; at large
+            // text sizes they stack into a line each instead of overflowing.
+            StatColumns(
+              minColumnWidth: _dateColumnMinWidth,
+              columns: [
+                _dateColumn('First Cash Flow', stats.firstCashFlowDate!),
+                _dateColumn('Last Cash Flow', stats.lastCashFlowDate!),
+              ],
             ),
         ],
       ),
     );
   }
 
-  Widget _buildDateInfo(String label, DateTime date) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-        const SizedBox(height: 4),
-        Text(
-          AppDateUtils.formatShort(date),
-          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-        ),
-      ],
+  /// The narrowest a date column may get at text x1.0: a short date such as
+  /// "Sep 30, 2026" in 14sp is about 90dp, more than a figure column needs.
+  static const double _dateColumnMinWidth = 104;
+
+  StatColumn _dateColumn(String label, DateTime date) {
+    return StatColumn(
+      label: Text(
+        label,
+        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+      ),
+      value: Text(
+        AppDateUtils.formatShort(date),
+        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+      ),
     );
   }
 }
