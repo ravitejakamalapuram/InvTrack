@@ -313,7 +313,7 @@
 .it-inv__strip > span { display: inline-flex; align-items: center; gap: 4px; }
 .it-inv__strip > .it-sp { flex: 1; }
 .it-inv__strip b { font-weight: 500; }
-.it-inv__strip a { color: var(--it-primary-l); font-weight: 600; text-decoration: none; }
+.it-inv__strip a { color: var(--primary); font-weight: 600; text-decoration: none; }
 
 /* ---------- Bottom sheet / dialog / snackbar ---------- */
 .it-stage { position: relative; overflow: hidden; border-radius: var(--radius-lg); background: var(--background); min-height: 360px; }

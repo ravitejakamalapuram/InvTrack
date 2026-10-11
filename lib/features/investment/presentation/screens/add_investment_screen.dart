@@ -723,7 +723,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                       ),
                       child: Icon(
                         Icons.trending_up_rounded,
-                        color: AppColors.successLight,
+                        color: isDark
+                            ? AppColors.successDark
+                            : AppColors.successLight,
                         size: AppSizes.iconSm,
                       ),
                     ),
@@ -779,7 +781,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   label: 'Interest Earned',
                   value:
                       '+${formatCompactCurrency(projection.interestEarned, symbol: currencySymbol, locale: locale)}',
-                  valueColor: AppColors.successLight,
+                  valueColor: isDark
+                      ? AppColors.successDark
+                      : AppColors.successLight,
                 ),
 
                 // Show EAR vs Nominal if compounding makes a difference
@@ -791,7 +795,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                     value: '${projection.effectiveRate.toStringAsFixed(2)}%',
                     subtitle:
                         '${projection.nominalRate.toStringAsFixed(2)}% nominal → ${projection.effectiveRate.toStringAsFixed(2)}% effective',
-                    valueColor: AppColors.accentLight,
+                    valueColor: isDark
+                        ? AppColors.accentDark
+                        : AppColors.accentLight,
                   ),
                 ],
               ],
@@ -1328,13 +1334,17 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                     Icon(
                       Icons.auto_awesome_rounded,
                       size: 12,
-                      color: AppColors.accentLight,
+                      color: isDark
+                          ? AppColors.accentDark
+                          : AppColors.accentLight,
                     ),
                     SizedBox(width: 2),
                     Text(
                       'Auto',
                       style: AppTypography.caption.copyWith(
-                        color: AppColors.accentLight,
+                        color: isDark
+                            ? AppColors.accentDark
+                            : AppColors.accentLight,
                         fontWeight: FontWeight.w500,
                         fontSize: 10,
                       ),
@@ -1502,7 +1512,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     Color? color,
   }) {
     final isSelected = _incomeFrequency == frequency;
+    // theme-neutral: the selected fill, under a white label in both themes.
     final chipColor = color ?? AppColors.neutral500Light;
+    // The idle icon sits on the page, not on the fill.
+    final idleIconColor =
+        color ??
+        (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light);
 
     return Semantics(
       button: true,
@@ -1538,7 +1553,11 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               Colors.white.withValues(alpha: 0.2),
               progress,
             )!;
-            final iconColor = Color.lerp(chipColor, Colors.white, progress)!;
+            final iconColor = Color.lerp(
+              idleIconColor,
+              Colors.white,
+              progress,
+            )!;
             final textColor = Color.lerp(
               isDark ? AppColors.neutral200Dark : AppColors.neutral700Light,
               Colors.white,

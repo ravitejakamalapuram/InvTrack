@@ -38,7 +38,9 @@ class CashFlowCardWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isOutflow = cashFlow.type.isOutflow;
-    final color = isOutflow ? AppColors.errorLight : AppColors.successLight;
+    final color = isOutflow
+        ? (isDark ? AppColors.errorDark : AppColors.errorLight)
+        : (isDark ? AppColors.successDark : AppColors.successLight);
 
     return RepaintBoundary(
       child: Padding(
@@ -241,7 +243,8 @@ class CashFlowCardWidget extends ConsumerWidget {
               child: Consumer(
                 builder: (context, ref, child) {
                   final isPrivacyMode = ref.watch(privacyModeProvider);
-                  final exchangeText = '1 ${cashFlow.currency} = ${rate.toStringAsFixed(4)} $baseCurrency • ${currencyFormat.formatSmart(convertedAmount)}';
+                  final exchangeText =
+                      '1 ${cashFlow.currency} = ${rate.toStringAsFixed(4)} $baseCurrency • ${currencyFormat.formatSmart(convertedAmount)}';
 
                   return isPrivacyMode
                       ? MaskedAmountText(
