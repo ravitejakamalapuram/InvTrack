@@ -704,6 +704,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
 
   StatColumn _dateColumn(String label, DateTime date) {
     return StatColumn(
+      labelText: label,
       label: Text(
         label,
         style: TextStyle(color: Colors.grey[600], fontSize: 12),

@@ -56,6 +56,7 @@ Future<void> runCardGuard(
   required double width,
   required double textScale,
   required Future<void> Function(CardGuard guard) body,
+  bool boldText = false,
 }) async {
   final fonts = await loadStoreScreenshotFonts(tester);
   expect(
@@ -64,7 +65,12 @@ Future<void> runCardGuard(
     reason: 'these families would render as solid test boxes',
   );
 
-  final guard = CardGuard._(tester, width: width, textScale: textScale);
+  final guard = CardGuard._(
+    tester,
+    width: width,
+    textScale: textScale,
+    boldText: boldText,
+  );
   final previousOnError = FlutterError.onError;
   FlutterError.onError = guard._record;
   final semantics = tester.ensureSemantics();
@@ -72,6 +78,11 @@ Future<void> runCardGuard(
     ..physicalSize = Size(width * _pixelRatio, _guardHeight * _pixelRatio)
     ..devicePixelRatio = _pixelRatio;
   tester.platformDispatcher.textScaleFactorTestValue = textScale;
+  if (boldText) {
+    // The system "bold text" setting: wider glyphs at the same size.
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(boldText: true);
+  }
   try {
     await body(guard);
     guard._verify();
@@ -85,11 +96,17 @@ Future<void> runCardGuard(
 
 /// Collects measurements and violations for one run.
 class CardGuard {
-  CardGuard._(this.tester, {required this.width, required this.textScale});
+  CardGuard._(
+    this.tester, {
+    required this.width,
+    required this.textScale,
+    this.boldText = false,
+  });
 
   final WidgetTester tester;
   final double width;
   final double textScale;
+  final bool boldText;
 
   final _violations = <String>[];
   final _errors = <String>[];
@@ -128,7 +145,8 @@ class CardGuard {
     if (problems.isNotEmpty) {
       fail(
         '${problems.length} layout problem(s) at ${width.toInt()}dp, text '
-        'x$textScale:\n${problems.map((p) => '  - $p').join('\n')}',
+        'x$textScale${boldText ? ', bold text' : ''}:\n'
+        '${problems.map((p) => '  - $p').join('\n')}',
       );
     }
   }
@@ -201,7 +219,12 @@ class CardGuard {
   Rect? rect(String what, Finder finder) {
     final b = box(what, finder);
     if (b == null) return null;
-    return b.localToGlobal(Offset.zero) & b.size;
+    // Through the whole transform, so a box that is scaled down to fit (the
+    // carousel badge) is measured as it is painted.
+    return MatrixUtils.transformRect(
+      b.getTransformTo(null),
+      Offset.zero & b.size,
+    );
   }
 
   /// The paragraph that draws [finder]: the finder itself when it is a text,
@@ -258,6 +281,22 @@ class CardGuard {
     final p = paragraph(what, finder);
     return p == null ? null : paragraphLines(p).length;
   }
+
+  /// The screen reader stop that [finder] belongs to: its own node, or the
+  /// node it is merged into.
+  SemanticsNode? semanticsOf(String what, Finder finder) {
+    if (finder.evaluate().isEmpty) {
+      fault('$what: not on screen');
+      return null;
+    }
+    return tester.getSemantics(finder.first);
+  }
+
+  /// The labels a screen reader stops on, in its order.
+  List<String> stops() => [
+    for (final n in tester.semantics.simulatedAccessibilityTraversal())
+      if (n.label.isNotEmpty) n.label,
+  ];
 
   /// x of the edge of [r] where a line starts / ends in the run's direction.
   double startOf(Rect r) => rtl ? r.right : r.left;

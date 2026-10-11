@@ -205,6 +205,7 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
       fontWeight: FontWeight.w700,
     );
     return StatColumn(
+      labelText: label,
       label: Text(
         label,
         style: AppTypography.small.copyWith(

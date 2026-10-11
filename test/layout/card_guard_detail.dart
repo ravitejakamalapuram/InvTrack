@@ -241,6 +241,52 @@ Future<List<Rect?>> _runDetail(
     g.fault('the tiles are not in reading order');
   }
 
+  // One screen reader stop per tile: "label:", the value, then the note. The
+  // "so far" tiles read a sentence of their own, still one stop.
+  final stopIds = <int>{};
+  final allStops = g.stops();
+  for (final (i, label, value, note) in [
+    (0, c.xirrLabel, c.xirrValue, c.xirrNote),
+    (1, c.moicLabel, c.moicValue, c.moicNote),
+  ]) {
+    final node = g.semanticsOf('stop of tile $i', find.byKey(statValueKey(i)));
+    if (node == null) continue;
+    stopIds.add(node.id);
+    if (c.display.isSoFar) {
+      if (privacy && RegExp(r'\d+(\.\d+)?%').hasMatch(node.label)) {
+        g.fault('the stop of tile $i says a percentage in privacy mode');
+      }
+      if (!privacy && !node.label.contains(value)) {
+        g.fault('the stop of tile $i says "${node.label}", want "$value"');
+      }
+      continue;
+    }
+    final lines = node.label.split('\n');
+    if (lines.first != '$label:') {
+      g.fault('the stop of tile $i says "${lines.first}", want "$label:"');
+    } else if (privacy) {
+      if (lines.length < 2 || lines[1] != 'Hidden amount') {
+        g.fault('the stop of tile $i says ${lines.skip(1)} in privacy mode');
+      }
+    } else {
+      final want = ['$label:', value, ?note];
+      if (lines.length != want.length ||
+          [
+            for (var k = 0; k < want.length; k++) lines[k] == want[k],
+          ].contains(false)) {
+        g.fault('the stop of tile $i says $lines, want $want');
+      }
+    }
+    for (final loose in [label, if (!privacy) value]) {
+      if (allStops.contains(loose)) {
+        g.fault('"$loose" is a screen reader stop of its own');
+      }
+    }
+  }
+  if (stopIds.length != 2) {
+    g.fault('the two tiles are ${stopIds.length} screen reader stops');
+  }
+
   // Labels share their last line, values share one baseline.
   g.expectNear(
     'MOIC label baseline',

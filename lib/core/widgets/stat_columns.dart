@@ -11,7 +11,11 @@
 ///    right-to-left layouts.
 ///  * The values of one row share a baseline, and so do the labels, whatever
 ///    the sizes of the values. A label that wraps grows upward, and a note
-///    goes below the value, so nothing a column adds can move its value.
+///    goes below its own value, so nothing a column adds can move its value.
+///  * A screen reader reads each column as one stop: "labelText:", then the
+///    value (with its own hint and actions), then the note. The label and the
+///    note are drawn but not read on their own; a [StatColumn.semanticsLabel]
+///    replaces the whole stop.
 ///  * When a column would get less than `minColumnWidth` (scaled by the text
 ///    size), the row drops to fewer columns. A column left alone is a line
 ///    of "label ..... value", the value on the end edge.
@@ -26,7 +30,7 @@ library;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
+import 'package:flutter/semantics.dart' show OrdinalSortKey;
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/utils/text_scale.dart';
 
@@ -34,6 +38,7 @@ import 'package:inv_tracker/core/utils/text_scale.dart';
 class StatColumn {
   const StatColumn({
     required this.label,
+    required this.labelText,
     required this.value,
     this.note,
     this.semanticsLabel,
@@ -43,10 +48,15 @@ class StatColumn {
   /// `IgnoreBaseline`, so the baseline of the label stays the text's.
   final Widget label;
 
+  /// What [label] says, for a screen reader: it reads "labelText: value, note"
+  /// as one stop. The label itself is not read, so an icon or a style in it
+  /// cannot add a stop of its own.
+  final String labelText;
+
   /// One line, unless it is a long phrase that has to wrap.
   final Widget value;
 
-  /// Below the value. It never moves the value.
+  /// Under its own value. It never moves the value.
   final Widget? note;
 
   /// What a screen reader says instead of the label, value and note, for a
@@ -178,10 +188,14 @@ class StatColumns extends StatelessWidget {
   }
 }
 
-/// Two or more columns side by side, in three bands so that each kind of line
+/// Two or more columns side by side, in two bands so that each kind of line
 /// has one baseline across the row whatever the font sizes: the labels share
-/// their last line (a label that wraps grows upward), the values share one
-/// baseline, and the notes start on one line below the values.
+/// their last line (a label that wraps grows upward) and the values share one
+/// baseline. A note sits under its own value.
+///
+/// For a screen reader each column is one stop, "label:" then the value, then
+/// the note: the label and the note are drawn but not read on their own, and
+/// the value (with its own hint and actions) is merged with them in one node.
 class _ColumnsRow extends StatelessWidget {
   const _ColumnsRow({
     required this.columns,
@@ -218,12 +232,14 @@ class _ColumnsRow extends StatelessWidget {
         ? TextAlign.end
         : TextAlign.start;
 
-    // One band: a column per Expanded, each part placed on its side of it.
-    Widget band(
-      CrossAxisAlignment cross,
-      Widget? Function(int k) part, {
-      Key? Function(int k)? keyOf,
-    }) {
+    // One part of column k on its side of the column.
+    Widget part(int k, Widget child) => Align(
+      alignment: alignmentOf(k),
+      child: DefaultTextStyle.merge(textAlign: textAlignOf(k), child: child),
+    );
+
+    // One band: a column per Expanded.
+    Widget band(CrossAxisAlignment cross, Widget Function(int k) cell) {
       return Row(
         crossAxisAlignment: cross,
         textBaseline: cross == CrossAxisAlignment.baseline
@@ -233,51 +249,44 @@ class _ColumnsRow extends StatelessWidget {
           for (var k = 0; k < n; k++) ...[
             if (k > 0) SizedBox(width: gap),
             Expanded(
-              child: Padding(
-                padding: sides,
-                child: KeyedSubtree(
-                  key: keyOf?.call(k),
-                  child: Align(
-                    alignment: alignmentOf(k),
-                    child: DefaultTextStyle.merge(
-                      textAlign: textAlignOf(k),
-                      child: part(k) ?? const SizedBox.shrink(),
-                    ),
-                  ),
-                ),
-              ),
+              child: Padding(padding: sides, child: cell(k)),
             ),
           ],
         ],
       );
     }
 
-    // A screen reader reads each column label, value, note, left to right. The
-    // bands are rows of their own, so the order is set by sort keys, and every
-    // part has one. A column with a label of its own is read from its value.
-    Widget keyed(int k, int order, Widget child) =>
-        Semantics(sortKey: OrdinalSortKey(k * 3.0 + order), child: child);
-    Widget? labelOf(int k) => columns[k].semanticsLabel != null
-        ? ExcludeSemantics(child: columns[k].label)
-        : keyed(k, 0, columns[k].label);
-    Widget? valueOf(int k) {
-      final description = columns[k].semanticsLabel;
-      return description == null
-          ? keyed(k, 1, columns[k].value)
-          : Semantics(
-              sortKey: OrdinalSortKey(k * 3.0),
-              label: description,
-              excludeSemantics: true,
-              child: columns[k].value,
-            );
-    }
+    Widget labelCell(int k) => ExcludeSemantics(
+      child: KeyedSubtree(
+        key: StatColumns.cellKey(firstIndex + k),
+        child: part(k, columns[k].label),
+      ),
+    );
 
-    Widget? noteOf(int k) {
-      final note = columns[k].note;
-      if (note == null) return null;
-      return columns[k].semanticsLabel != null
-          ? ExcludeSemantics(child: note)
-          : keyed(k, 2, note);
+    // The value and its note, with the label's words in front: the one stop of
+    // the column. Its first baseline is the value's.
+    Widget valueCell(int k) {
+      final column = columns[k];
+      final note = column.note;
+      return _stop(
+        column,
+        firstIndex + k,
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            KeyedSubtree(
+              key: StatColumns.valueKey(firstIndex + k),
+              child: part(k, column.value),
+            ),
+            if (note != null)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xxs),
+                child: part(k, note),
+              ),
+          ],
+        ),
+      );
     }
 
     final bands = Padding(
@@ -286,22 +295,9 @@ class _ColumnsRow extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          band(
-            CrossAxisAlignment.end,
-            labelOf,
-            keyOf: (k) => StatColumns.cellKey(firstIndex + k),
-          ),
+          band(CrossAxisAlignment.end, labelCell),
           SizedBox(height: labelGap),
-          band(
-            CrossAxisAlignment.baseline,
-            valueOf,
-            keyOf: (k) => StatColumns.valueKey(firstIndex + k),
-          ),
-          if (columns.any((c) => c.note != null))
-            Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.xxs),
-              child: band(CrossAxisAlignment.start, noteOf),
-            ),
+          band(CrossAxisAlignment.baseline, valueCell),
         ],
       ),
     );
@@ -334,14 +330,18 @@ class _ColumnsRow extends StatelessWidget {
   }
 }
 
-Widget _describe(Widget cell, String? description) {
-  if (description == null) {
-    return Semantics(container: true, explicitChildNodes: true, child: cell);
-  }
+/// The one screen reader stop of [column]: "labelText:" and then what [cell]
+/// (the value, its hint and actions, and the note) says, or the column's own
+/// [StatColumn.semanticsLabel] instead of all of it. The label widget is drawn
+/// but kept out of the reading by the caller. The stops are read in the order
+/// of [index], whatever the reading direction puts on the left.
+Widget _stop(StatColumn column, int index, Widget cell) {
+  final description = column.semanticsLabel;
   return Semantics(
     container: true,
-    label: description,
-    excludeSemantics: true,
+    sortKey: OrdinalSortKey(index.toDouble()),
+    label: description ?? '${column.labelText}:',
+    excludeSemantics: description != null,
     child: cell,
   );
 }
@@ -386,7 +386,7 @@ class _InlineRow extends StatelessWidget {
                   alignment: AlignmentDirectional.centerStart,
                   child: DefaultTextStyle.merge(
                     textAlign: TextAlign.start,
-                    child: column.label,
+                    child: ExcludeSemantics(child: column.label),
                   ),
                 ),
               ),
@@ -429,7 +429,7 @@ class _InlineRow extends StatelessWidget {
           );
     return KeyedSubtree(
       key: StatColumns.cellKey(index),
-      child: _describe(framed, column.semanticsLabel),
+      child: _stop(column, index, framed),
     );
   }
 }

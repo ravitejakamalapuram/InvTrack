@@ -477,6 +477,7 @@ class HeroCardContent extends ConsumerWidget {
 
   StatColumn _buildXirrStat(String label, String value) {
     return StatColumn(
+      labelText: label,
       label: Text(
         label,
         style: TextStyle(
@@ -532,6 +533,7 @@ class HeroCardContent extends ConsumerWidget {
     required bool isPrivacyMode,
   }) {
     return StatColumn(
+      labelText: label,
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

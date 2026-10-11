@@ -5,6 +5,7 @@
 // geometry here is exact. The widget sits at the left of the screen in both
 // reading directions, so x is 0 to 300 in both.
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/widgets/stat_columns.dart';
 
@@ -39,6 +40,7 @@ StatColumn _col(
   double valueSize = 14,
   String? semanticsLabel,
 }) => StatColumn(
+  labelText: label,
   label: Text(label, style: const TextStyle(fontSize: 12)),
   value: Text(value, style: TextStyle(fontSize: valueSize)),
   note: note == null ? null : Text(note, style: const TextStyle(fontSize: 10)),
@@ -390,7 +392,16 @@ void main() {
   });
 
   group('semantics', () {
-    testWidgets('a column reads label, value, then note, left to right', (
+    // One stop per column: "label: value", then the note. The widget used to
+    // leave the label, the value and the note as stops of their own, so a
+    // touch on a value was read without saying what it was the value of.
+    List<String> stops(WidgetTester tester) => tester.semantics
+        .simulatedAccessibilityTraversal()
+        .map((n) => n.label)
+        .where((l) => l.isNotEmpty)
+        .toList();
+
+    testWidgets('a column is one stop: label, value, then note', (
       tester,
     ) async {
       final handle = tester.ensureSemantics();
@@ -406,19 +417,81 @@ void main() {
         ),
       );
 
-      final order = tester.semantics
-          .simulatedAccessibilityTraversal()
-          .map((n) => n.label)
-          .where((l) => l.isNotEmpty)
-          .toList();
-      expect(order, [
-        'XIRR label',
-        '9.5%',
-        'xirr note',
-        'MOIC label',
-        '1.4x',
-        'moic note',
+      expect(stops(tester), [
+        'XIRR label:\n9.5%\nxirr note',
+        'MOIC label:\n1.4x\nmoic note',
       ]);
+      handle.dispose();
+    });
+
+    testWidgets('a column that has a row of its own is one stop too', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        _app(
+          width: 288,
+          child: StatColumns(
+            minColumnWidth: 200,
+            columns: [
+              _col('out', '₹1'),
+              _col('in', '₹22', note: 'a note'),
+            ],
+          ),
+        ),
+      );
+
+      expect(stops(tester), ['out:\n₹1', 'in:\n₹22\na note']);
+      handle.dispose();
+    });
+
+    testWidgets('right to left reads the first column first', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        _app(
+          direction: TextDirection.rtl,
+          child: StatColumns(columns: [_col('out', '₹1'), _col('in', '₹22')]),
+        ),
+      );
+
+      expect(stops(tester), ['out:\n₹1', 'in:\n₹22']);
+      handle.dispose();
+    });
+
+    testWidgets('a value keeps its own hint and action in the stop', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      var held = 0;
+      await tester.pumpWidget(
+        _app(
+          child: StatColumns(
+            columns: [
+              StatColumn(
+                labelText: 'out',
+                label: const Text('out'),
+                value: Semantics(
+                  label: 'four lakh rupees',
+                  hint: 'Double tap and hold to copy',
+                  onLongPress: () => held++,
+                  excludeSemantics: true,
+                  child: const Text('₹4L'),
+                ),
+              ),
+              _col('in', '₹22'),
+            ],
+          ),
+        ),
+      );
+
+      final node = tester.getSemantics(find.text('₹4L'));
+      expect(node.label, 'out:\nfour lakh rupees');
+      expect(node.hint, 'Double tap and hold to copy');
+      tester.semantics.performAction(
+        find.semantics.byLabel('out:\nfour lakh rupees'),
+        SemanticsAction.longPress,
+      );
+      expect(held, 1);
       handle.dispose();
     });
 
@@ -437,10 +510,7 @@ void main() {
         ),
       );
 
-      expect(find.bySemanticsLabel('XIRR: 9.5 percent'), findsOneWidget);
-      expect(find.bySemanticsLabel('XIRR'), findsNothing);
-      expect(find.bySemanticsLabel('9.5%'), findsNothing);
-      expect(find.bySemanticsLabel('MOIC'), findsOneWidget);
+      expect(stops(tester), ['XIRR: 9.5 percent', 'MOIC:\n1.4x']);
       handle.dispose();
     });
   });

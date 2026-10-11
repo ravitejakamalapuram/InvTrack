@@ -624,6 +624,48 @@ Future<_Shape> _run(
     }
   }
 
+  // -- Screen reader --------------------------------------------------------
+  // One stop per column, "label:" then the spoken value: a touch on a figure
+  // says what it is the figure of, and privacy mode hides the amount here too.
+  final stopIds = <int>{};
+  final allStops = g.stops();
+  for (var i = 0; i < n; i++) {
+    final node = g.semanticsOf(
+      'screen reader stop of column $i',
+      find.byKey(statValueKey(i)),
+    );
+    if (node == null) continue;
+    stopIds.add(node.id);
+    final lines = node.label.split('\n');
+    if (lines.first != '${c.labels[i]}:' || lines.length != 2) {
+      g.fault(
+        'the stop of column $i says ${node.label.split('\n')}, want '
+        '["${c.labels[i]}:", the value]',
+      );
+      continue;
+    }
+    final spoken = lines[1];
+    if (privacy) {
+      if (spoken != 'Hidden amount') {
+        g.fault('the stop of column $i says "$spoken" in privacy mode');
+      }
+    } else if (i < 2) {
+      if (!spoken.contains('rupee')) {
+        g.fault('the stop of column $i says "$spoken", want an amount');
+      }
+    } else if (spoken != c.values[i]) {
+      g.fault('the stop of column $i says "$spoken", want "${c.values[i]}"');
+    }
+    for (final loose in [c.labels[i], if (!privacy) c.values[i]]) {
+      if (allStops.contains(loose)) {
+        g.fault('"$loose" is a screen reader stop of its own');
+      }
+    }
+  }
+  if (stopIds.length != n && cells.every((r) => r != null)) {
+    g.fault('the $n stat columns are ${stopIds.length} screen reader stops');
+  }
+
   // What the user sees of the last figure, whatever the structure: the XIRR
   // value ends on the card padding, like the buttons above it.
   if (!privacy) {
