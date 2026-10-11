@@ -30,7 +30,7 @@ Closed · Open awaiting first payout · Open awaiting current value · Maturity 
 
 ## Contrast
 
-Type chip text on its 10% tint fails in light for every type (1.35:1 gold to 4.27:1 other) and for P2P, Mutual Funds, Private Equity, Crypto and Other in dark (3.37:1 to 4.35:1); white on the type tile is 1.40:1 to 4.83:1; the closed chip (`#9e9e9e` on grey 20%) is 2.27:1 in light; maturity chips on their tint are 1.91:1 (warning), 2.19:1 (success) and 2.39:1 (accent) in light; in dark they use the dark values, and "View Details" is `primary` dark, 5.39:1 on the card. Kept as drawn; the labels carry the meaning.
+Type chip text on its 10% tint fails in light for every type (1.35:1 gold to 4.27:1 other) and for P2P, Mutual Funds, Private Equity, Crypto and Other in dark (3.37:1 to 4.35:1); white on the type tile is 1.40:1 to 4.83:1; the closed chip (`#9e9e9e` on grey 20%) is 2.27:1 in light; maturity chips on their tint are 1.91:1 (warning) and 2.39:1 (accent) in light (MATURED, in `success` on a 15% `success-tint`, is 4.67:1); in dark they use the dark values, and "View Details" is `primary` dark, 5.39:1 on the card. Kept as drawn; the labels carry the meaning.
 
 ## Source
 

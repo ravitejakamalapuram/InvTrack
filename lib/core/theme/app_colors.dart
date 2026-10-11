@@ -28,7 +28,16 @@ class AppColors {
   // before they were deepened for text. Make every 10 to 30% tint of green or
   // red from these, so the pale fills keep their look and the text on them
   // keeps 4.5:1 (on a tint of the deeper colour it falls to 4.34 and 4.38 at
-  // 15%). Never paint them as text; a scan test enforces both.
+  // 15%). Never paint them as text.
+  //
+  // Text reaches 4.5:1 on a 15% tint only over the card (4.67 and 4.63); over
+  // the page it is 4.48 and 4.45 and over `surfaceLight` 4.31 and 4.25. A 15%
+  // chip belongs inside a GlassCard; on the page or a sheet use 10%.
+  //
+  // A scan test (theme_aware_sites_test.dart) fails a bare read of these and a
+  // direct `.withValues` on the deeper colours. It does not see a colour held
+  // in a variable, an alias, a `Color.lerp` or a hex copy: those tints are
+  // split by hand and a widget test pumps each one.
   static const Color successTintLight = Color(0xFF10B981);
   static const Color dangerTintLight = Color(0xFFEF4444);
 

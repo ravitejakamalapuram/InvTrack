@@ -27,7 +27,7 @@ Empty with hint · filled with clear button · focused · error with message · 
 
 ## Contrast
 
-`field-border` is 1.26:1 on `card` (light) and 1.31:1 on `background` (dark) against the 3:1 asked of a control boundary; the field is told apart by its fill and focus border. The hint (`text-subtle`) is 4.60:1 on `surface` in light and 5.23:1 on #0a0a0a in dark. The focus border is `#5b4cdb`, 5.50:1 on `surface`, in light and `#8b7cf6`, 5.95:1 on #0a0a0a, in dark. The `error` red is 3.45:1 on `surface` in light. Kept as drawn.
+`field-border` is 1.26:1 on `card` (light) and 1.31:1 on `background` (dark) against the 3:1 asked of a control boundary; the field is told apart by its fill and focus border. The hint (`text-subtle`) is 4.60:1 on `surface` in light and 5.23:1 on #0a0a0a in dark. The focus border is `#5b4cdb`, 5.50:1 on `surface`, in light and `#8b7cf6`, 5.95:1 on #0a0a0a, in dark. The `error` red is `#cc1926` in light, 5.15:1 on `surface`.
 
 ## Source
 

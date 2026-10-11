@@ -116,8 +116,9 @@ Where the source's colours miss 4.5:1 they are kept as drawn and flagged in the 
 
 | Pair | Ratio | Where |
 | --- | --- | --- |
-| `success` on `card` · on `success-bg` · on its 15% `success-tint` | 5.37 · 4.73 · 4.67 | positive amounts, ChangeBadge, chips |
-| `danger` on `card` · on `danger-bg` · on its 15% `danger-tint` | 5.62 · 4.60 · 4.63 | negative amounts, error text, chips |
+| `success` on `card` · on `success-bg` · on its 15% `success-tint` over `card` | 5.37 · 4.73 · 4.67 | positive amounts, ChangeBadge, chips |
+| `danger` on `card` · on `danger-bg` · on its 15% `danger-tint` over `card` | 5.62 · 4.60 · 4.63 | negative amounts, error text, chips |
+| `success` / `danger` on their 10% tint over `background` · `surface`; on the 15% tint over `background` · `surface` | 4.71 / 4.75 · 4.51 / 4.53; 4.48 / 4.45 · 4.31 / 4.25 | a 15% chip belongs in a card; on the page or a sheet use 10% |
 | `warning` / `accent` on own 15% tint | 1.91 / 2.39 | maturity chips |
 | snackbar message on `success` · `danger` | white 5.37 · 5.62 in light; #171717 on the dark fills 9.33 · 6.48 | success and error snackbars |
 | white snackbar icon on the dark `success` · `danger` · `primary` fills | 1.92 · 2.77 · 3.33 | icon only; the message carries the meaning |
