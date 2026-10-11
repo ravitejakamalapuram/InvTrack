@@ -37,7 +37,6 @@ void main() {
 
       expect(template.suggestedNamePrefix, isNull);
       expect(template.typicalRate, isNull);
-      expect(template.defaultTenureMonths, isNull);
       expect(template.defaultIncomeFrequency, isNull);
       expect(template.defaultPayoutMode, isNull);
       expect(template.defaultRiskLevel, isNull);
@@ -72,13 +71,15 @@ void main() {
       expect(unknown, isNull);
     });
 
+    // #994: typicalRate is the rate field's grey hint and the card's "~7% p.a."
+    // text only, and templates carry no tenure at all: the form never writes
+    // either into a field (add_investment_screen_template_test.dart).
     group('fixedDeposit template', () {
       test('should have correct defaults', () {
         const fd = InvestmentTemplates.fixedDeposit;
         expect(fd.id, 'fd');
         expect(fd.type, InvestmentType.fixedDeposit);
         expect(fd.typicalRate, 7.0);
-        expect(fd.defaultTenureMonths, 12);
         expect(fd.defaultIncomeFrequency, IncomeFrequency.quarterly);
         expect(fd.defaultPayoutMode, InterestPayoutMode.cumulative);
         expect(fd.defaultRiskLevel, RiskLevel.low);
@@ -103,7 +104,6 @@ void main() {
         expect(sip.id, 'sip');
         expect(sip.type, InvestmentType.mutualFunds);
         expect(sip.typicalRate, 12.0);
-        expect(sip.defaultTenureMonths, isNull); // SIPs are open-ended
         expect(sip.defaultRiskLevel, RiskLevel.medium);
       });
     });
@@ -114,7 +114,6 @@ void main() {
         expect(gold.id, 'gold');
         expect(gold.type, InvestmentType.gold);
         expect(gold.typicalRate, 2.5);
-        expect(gold.defaultTenureMonths, 96); // 8 years for SGB
         expect(gold.defaultRiskLevel, RiskLevel.low);
       });
     });
@@ -125,7 +124,6 @@ void main() {
         expect(bonds.id, 'bonds');
         expect(bonds.type, InvestmentType.bonds);
         expect(bonds.typicalRate, 9.0);
-        expect(bonds.defaultTenureMonths, 36);
         expect(bonds.defaultRiskLevel, RiskLevel.medium);
       });
     });

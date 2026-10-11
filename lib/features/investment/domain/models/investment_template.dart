@@ -1,7 +1,10 @@
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 
 /// Pre-defined investment templates for quick-add functionality
-/// These templates pre-fill common investment patterns to reduce friction
+/// A template sets the type and the structural defaults (payout mode,
+/// compounding, income frequency, risk). It never supplies a rate or a term:
+/// those are the user's, and without them the form saves no maturity date, no
+/// maturity reminder and no estimated value (#994).
 ///
 /// Note: Icon and color are stored as identifiers (string/int) to keep domain layer
 /// platform-agnostic (Rule 1.1). UI extensions convert these to Flutter types.
@@ -21,11 +24,10 @@ class InvestmentTemplate {
   /// Suggested name prefix (e.g., "SBI FD", "LenDenClub")
   final String? suggestedNamePrefix;
 
-  /// Typical expected annual return % (for display)
+  /// Typical annual return % for this type. Display only: the form shows it as
+  /// the grey hint in the empty rate field and the template cards as
+  /// "~7% p.a.". It is never put in a field or saved (#994).
   final double? typicalRate;
-
-  /// Default tenure in months
-  final int? defaultTenureMonths;
 
   /// Default income frequency
   final IncomeFrequency? defaultIncomeFrequency;
@@ -56,7 +58,6 @@ class InvestmentTemplate {
     required this.type,
     this.suggestedNamePrefix,
     this.typicalRate,
-    this.defaultTenureMonths,
     this.defaultIncomeFrequency,
     this.defaultPayoutMode,
     this.defaultRiskLevel,
@@ -79,7 +80,6 @@ class InvestmentTemplates {
     type: InvestmentType.fixedDeposit,
     suggestedNamePrefix: 'FD - ',
     typicalRate: 7.0,
-    defaultTenureMonths: 12,
     defaultIncomeFrequency: IncomeFrequency.quarterly,
     defaultPayoutMode: InterestPayoutMode.cumulative,
     defaultRiskLevel: RiskLevel.low,
@@ -96,7 +96,6 @@ class InvestmentTemplates {
     type: InvestmentType.p2pLending,
     suggestedNamePrefix: '',
     typicalRate: 12.0,
-    defaultTenureMonths: 12,
     defaultIncomeFrequency: IncomeFrequency.monthly,
     defaultPayoutMode: InterestPayoutMode.periodic,
     defaultRiskLevel: RiskLevel.medium,
@@ -113,7 +112,6 @@ class InvestmentTemplates {
     type: InvestmentType.mutualFunds,
     suggestedNamePrefix: 'SIP - ',
     typicalRate: 12.0,
-    defaultTenureMonths: null,
     defaultIncomeFrequency: null,
     defaultPayoutMode: null,
     defaultRiskLevel: RiskLevel.medium,
@@ -130,7 +128,6 @@ class InvestmentTemplates {
     type: InvestmentType.gold,
     suggestedNamePrefix: '',
     typicalRate: 2.5,
-    defaultTenureMonths: 96,
     defaultIncomeFrequency: IncomeFrequency.semiAnnual,
     defaultPayoutMode: InterestPayoutMode.periodic,
     defaultRiskLevel: RiskLevel.low,
@@ -147,7 +144,6 @@ class InvestmentTemplates {
     type: InvestmentType.bonds,
     suggestedNamePrefix: '',
     typicalRate: 9.0,
-    defaultTenureMonths: 36,
     defaultIncomeFrequency: IncomeFrequency.monthly,
     defaultPayoutMode: InterestPayoutMode.periodic,
     defaultRiskLevel: RiskLevel.medium,
@@ -164,7 +160,6 @@ class InvestmentTemplates {
     type: InvestmentType.fixedDeposit,
     suggestedNamePrefix: 'RD - ',
     typicalRate: 6.5,
-    defaultTenureMonths: 12,
     defaultIncomeFrequency: null,
     defaultPayoutMode: InterestPayoutMode.atMaturity,
     defaultRiskLevel: RiskLevel.low,
@@ -181,7 +176,6 @@ class InvestmentTemplates {
     type: InvestmentType.realEstate,
     suggestedNamePrefix: '',
     typicalRate: 3.0,
-    defaultTenureMonths: null,
     defaultIncomeFrequency: IncomeFrequency.monthly,
     defaultPayoutMode: InterestPayoutMode.periodic,
     defaultRiskLevel: RiskLevel.medium,

@@ -75,6 +75,9 @@ void main() {
     tester,
   ) async {
     await _pumpForm(tester, template: InvestmentTemplates.recurringDeposit);
+    // The template fills in no rate or term (#994): the user types them.
+    await _enterField(tester, 'Expected Return Rate (% p.a.)', '6.5');
+    await _enterField(tester, 'Tenure (Months)', '12');
     await _showInterestRow(tester);
 
     // 12 installments of 8,333.33: interest 3,572.05, maturity 1,03,572.05.

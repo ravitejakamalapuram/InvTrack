@@ -19,5 +19,14 @@ extension InvestmentTemplateUI on InvestmentTemplate {
   Color get color {
     return Color(colorValue);
   }
-}
 
+  /// The typical rate as the rate field's hint spells it: "7" for 7.0, "6.5"
+  /// for 6.5. Null when the template has none.
+  String? get typicalRateText {
+    final rate = typicalRate;
+    if (rate == null) return null;
+    return rate == rate.roundToDouble()
+        ? rate.toStringAsFixed(0)
+        : rate.toString();
+  }
+}
