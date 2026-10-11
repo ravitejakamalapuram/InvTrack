@@ -69,7 +69,7 @@ class ContrastPair {
   final String id;
 
   /// Indexes into the audit's corrected proposal (0 to 76). Empty for a
-  /// control and for a pair the plan added.
+  /// control and for a pair the audit had no row for.
   final List<int> rows;
   final PairKind kind;
   final Color? fg;
@@ -80,7 +80,9 @@ class ContrastPair {
   /// P1 text, P2 outlines, P3 edges and dividers, or control.
   final String tier;
 
-  /// True for the three light divider pairs the audit had no row for.
+  /// True for a pair the audit had no row for: the three light dividers the
+  /// plan added, and the four the PR 1 review added. [audit] is then the ratio
+  /// measured with this table.
   final bool addedByPlan;
 
   /// Repo-relative path of the widget test, for a widget pair that is fixed.
@@ -139,6 +141,18 @@ final _typeTints = <(String, InvestmentType, bool, int, double)>[
   ('real-estate', InvestmentType.realEstate, false, 50, 3.13),
   ('stocks', InvestmentType.stocks, false, 52, 2.31),
 ];
+
+String _typeId(InvestmentType type) => type.name.replaceAllMapped(
+  RegExp('[A-Z]'),
+  (m) => '-${m[0]!.toLowerCase()}',
+);
+
+// Ids of the type pairs the audit found failing; the rest are controls.
+final _failingTypeIds = <String>{
+  for (final (id, _, _, _) in _typeFills) 'inv-$id-label@fill',
+  for (final (id, _, isDark, _, _) in _typeTints)
+    'inv-$id-${isDark ? 'dark' : 'light'}@tint10',
+};
 
 /// Built on first use. It reads `AppTheme`, so a test binding must exist.
 final List<ContrastPair> kContrastPairs = _build();
@@ -305,7 +319,10 @@ List<ContrastPair> _build() {
       ground: _tint(AppColors.warningLight, 0.15, _cardL),
       audit: 1.91,
     ),
-    // ChangeBadge text for a zero change, on its fill.
+    // ChangeBadge text for a zero change, on its fill. fg and ground repeat
+    // the constants change_badge.dart picks for a zero change (neutral500Light
+    // on neutral200Light), which a token pair cannot read from the widget. PR
+    // 4 changes the widget and this pair together.
     ContrastPair.token(
       'zero-badge-text-light@fill',
       rows: [62],
@@ -319,6 +336,44 @@ List<ContrastPair> _build() {
       fg: light.onPrimaryContainer,
       ground: light.primaryContainer,
       audit: 3.33,
+    ),
+
+    // ---- P1 text the audit had no row for, found in the PR 1 review ----
+    // The investment card's XIRR pill paints graphEmerald or errorLight on a
+    // 10% tint of itself (investment_card.dart, `xirrColor`). It uses the
+    // light constants in both themes, so dark has the pair below.
+    ContrastPair.token(
+      'graph-emerald-light@tint10',
+      rows: [],
+      fg: AppColors.graphEmerald,
+      ground: _tint(AppColors.graphEmerald, 0.1, _cardL),
+      audit: 2.31,
+      addedByPlan: true,
+    ),
+    ContrastPair.token(
+      'error-light@tint10',
+      rows: [],
+      fg: AppColors.errorLight,
+      ground: _tint(AppColors.errorLight, 0.1, _cardL),
+      audit: 3.29,
+      addedByPlan: true,
+    ),
+    ContrastPair.token(
+      'error-light-in-dark@tint10',
+      rows: [],
+      fg: AppColors.errorLight,
+      ground: _tint(AppColors.errorLight, 0.1, _cardD),
+      audit: 4.31,
+      addedByPlan: true,
+    ),
+    // Danger text on its 15% tint (goal and FIRE status chips, plan PR 5).
+    ContrastPair.token(
+      'danger-light@tint15',
+      rows: [],
+      fg: AppColors.dangerLight,
+      ground: _tint(AppColors.dangerLight, 0.15, _cardL),
+      audit: 3.10,
+      addedByPlan: true,
     ),
 
     // ---- P1 investment-type colours ----
@@ -722,5 +777,38 @@ List<ContrastPair> _build() {
       fg: AppColors.graphPurple,
       ground: _cardD,
     ),
+    // Text on its own tint in dark: the chips and pills the colour PRs touch.
+    ContrastPair.control(
+      'graph-emerald-dark@tint10',
+      fg: AppColors.graphEmerald,
+      ground: _tint(AppColors.graphEmerald, 0.1, _cardD),
+    ),
+    for (final (id, color, alpha) in [
+      ('success-dark@tint15', AppColors.successDark, 0.15),
+      ('danger-dark@tint15', AppColors.dangerDark, 0.15),
+      ('warning-dark@tint15', AppColors.warningDark, 0.15),
+      ('accent-dark@tint15', AppColors.accentDark, 0.15),
+    ])
+      ContrastPair.control(id, fg: color, ground: _tint(color, alpha, _cardD)),
+
+    // Every investment type and theme the audit passed: its label on its
+    // fill and its name on its own 10% tint. PR 7 recolours the types.
+    for (final type in InvestmentType.values) ...[
+      if (!_failingTypeIds.contains('inv-${_typeId(type)}-label@fill'))
+        ContrastPair.control(
+          'inv-${_typeId(type)}-label@fill',
+          fg: white,
+          ground: type.color,
+        ),
+      for (final isDark in [false, true])
+        if (!_failingTypeIds.contains(
+          'inv-${_typeId(type)}-${isDark ? 'dark' : 'light'}@tint10',
+        ))
+          ContrastPair.control(
+            'inv-${_typeId(type)}-${isDark ? 'dark' : 'light'}@tint10',
+            fg: type.color,
+            ground: _tint(type.color, 0.1, isDark ? _cardD : _cardL),
+          ),
+    ],
   ];
 }

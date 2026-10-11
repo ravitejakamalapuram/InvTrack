@@ -108,6 +108,26 @@ void main() {
     });
   });
 
+  group('a translucent ground', () {
+    // 15% of a tint over white, not yet composed over the card: measuring
+    // against it would be wrong in the safe-looking direction.
+    final ground = const Color(0xFF10B981).withValues(alpha: 0.15);
+
+    test('is rejected by contrastRatio', () {
+      expect(
+        () => contrastRatio(const Color(0xFF000000), ground),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
+    test('is rejected by composeOver', () {
+      expect(
+        () => composeOver(const Color(0xFF000000), ground),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+  });
+
   test('minimums are the WCAG 2.1 AA levels', () {
     expect(kMinText, 4.5);
     expect(kMinGraphic, 3.0);

@@ -4,7 +4,10 @@
 // Every pair the audit found failing is on [_allowlist]. Each colour PR
 // deletes the ids it fixes and lowers [_allowlistMax], so a later change
 // cannot quietly break a fixed pair, and a stale entry fails the suite. The
-// allowlist is the thing to review: it may only shrink.
+// allowlist is the thing to review: it may only shrink. Nothing enforces
+// that, so in every diff read the three literals [_allowlist],
+// [_allowlistMax] and [_pairCount]: an id added, or a number raised, needs a
+// reason in the PR body.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -14,7 +17,8 @@ import 'contrast_pairs.dart';
 
 /// Pairs that still fail. Grouped by the PR in the stack that fixes them.
 const _allowlist = <String>{
-  // PR 2 contrast-theme-aware-core: primary painted in dark (4)
+  // PR 2 contrast-theme-aware-core: light colours painted in dark (5)
+  'error-light-in-dark@tint10',
   'primary-light-in-dark@card',
   'primary-light-in-dark@card-strip',
   'primary-light-in-dark@background',
@@ -27,7 +31,9 @@ const _allowlist = <String>{
   'neutral500-dark@input-fill',
   'neutral500-light@surface',
   'zero-badge-text-light@fill',
-  // PR 5 contrast-gain-loss (the two ChangeBadge dark pairs are retired there) (10)
+  // PR 5 contrast-gain-loss (the two ChangeBadge dark pairs are retired there) (12)
+  'danger-light@tint15',
+  'error-light@tint10',
   'danger-light@danger-bg',
   'danger-light@card',
   'on-error-dark',
@@ -82,7 +88,8 @@ const _allowlist = <String>{
   'gradient-button-tail-light@page',
   'quick-stat-subtitle-light@card',
   'quick-stat-label-dark@card',
-  // PR 9 contrast-chart-hero (25)
+  // PR 9 contrast-chart-hero (26)
+  'graph-emerald-light@tint10',
   'graph-cyan-light@card',
   'graph-emerald-light@card',
   'graph-purple-light@card',
@@ -138,7 +145,38 @@ const _allowlist = <String>{
 
 /// The size of [_allowlist]. Lower it with the list; raising it needs a reason
 /// in the PR body.
-const _allowlistMax = 111;
+const _allowlistMax = 115;
+
+/// The size of the pair table. A fixing PR that retires a pair or drops a
+/// ground it cannot fix changes this literal, so the change is in the diff.
+const _pairCount = 154;
+
+/// Files that can never be the measurement of a widget pair: the helper's own
+/// test, this guard and the table. Each mentions pair ids or `contrastRatio`.
+const _notMeasurements = [
+  'test/helpers/contrast_test.dart',
+  'test/core/theme/contrast_guard_test.dart',
+  'test/core/theme/contrast_pairs.dart',
+];
+
+/// Whether [path] names a test that measures the widget pair [id]: a `_test`
+/// file (so the runner runs it) other than [_notMeasurements], resolved
+/// through symlinks, that calls `contrastRatio` and names [id] in code, not
+/// only in a comment. A reviewer still checks that it pumps the widget.
+bool measuresPair(String id, String? path) {
+  if (path == null || !path.endsWith('_test.dart')) return false;
+  final file = File(path);
+  if (!file.existsSync()) return false;
+  final real = file.resolveSymbolicLinksSync();
+  for (final other in _notMeasurements) {
+    if (File(other).resolveSymbolicLinksSync() == real) return false;
+  }
+  final code = file
+      .readAsLinesSync()
+      .where((line) => !line.trimLeft().startsWith('//'))
+      .join('\n');
+  return code.contains('contrastRatio') && code.contains(id);
+}
 
 void main() {
   // The pair table reads AppTheme, which builds text styles from fonts.
@@ -170,17 +208,30 @@ void main() {
     expect(_allowlist.length, _allowlistMax);
   });
 
+  test('the table has as many pairs as _pairCount says', () {
+    expect(pairs.length, _pairCount);
+  });
+
   test('every audited row is in the table', () {
     final rows = {for (final p in pairs) ...p.rows};
     expect(rows, {for (var i = 0; i < 77; i++) i});
   });
 
-  test('the plan added exactly the three light dividers', () {
-    expect(pairs.where((p) => p.addedByPlan).map((p) => p.id), [
-      'outline-variant-light@background',
-      'outline-variant-light@card',
-      'outline-variant-light@surface',
-    ]);
+  test('the pairs the audit had no row for are exactly these', () {
+    // The plan's three light dividers, then the four the PR 1 review found on
+    // the investment card's XIRR pill and the danger tint.
+    expect(
+      pairs.where((p) => p.addedByPlan).map((p) => p.id),
+      unorderedEquals([
+        'danger-light@tint15',
+        'error-light-in-dark@tint10',
+        'error-light@tint10',
+        'graph-emerald-light@tint10',
+        'outline-variant-light@background',
+        'outline-variant-light@card',
+        'outline-variant-light@surface',
+      ]),
+    );
   });
 
   test('measured pairs off the allowlist meet their minimum', () {
@@ -196,17 +247,106 @@ void main() {
 
   test('widget pairs off the allowlist name a test that measures them', () {
     // Only that a real test is named; a reviewer checks it pumps the widget.
-    bool measures(String? path) =>
-        path != null &&
-        File(path).existsSync() &&
-        File(path).readAsStringSync().contains('contrastRatio');
     expectNone([
       for (final p in pairs)
         if (p.kind == PairKind.widget &&
             !_allowlist.contains(p.id) &&
-            !measures(p.widgetTest))
+            !measuresPair(p.id, p.widgetTest))
           p.id,
     ]);
+  });
+
+  group('a widget pair counts as measured only by a test that measures it', () {
+    late Directory tmp;
+    setUp(() => tmp = Directory.systemTemp.createTempSync('contrast_guard_'));
+    tearDown(() => tmp.deleteSync(recursive: true));
+
+    String write(String name, String source) {
+      final file = File('${tmp.path}/$name')..writeAsStringSync(source);
+      return file.path;
+    }
+
+    const measuring = '''
+void main() {
+  test('x', () {
+    expect(contrastRatio(a, b), greaterThan(4.5)); // closed-chip@grey20
+    final id = 'closed-chip@grey20';
+  });
+}
+''';
+
+    test('accepts a test that calls contrastRatio and names the pair', () {
+      expect(
+        measuresPair('closed-chip@grey20', write('a_test.dart', measuring)),
+        isTrue,
+      );
+    });
+
+    test('rejects a test that never names the pair', () {
+      expect(
+        measuresPair('other-pair@card', write('a_test.dart', measuring)),
+        isFalse,
+      );
+    });
+
+    test('rejects a pair named only in a comment', () {
+      final path = write('a_test.dart', '''
+// closed-chip@grey20 is checked elsewhere
+void main() => contrastRatio(a, b);
+''');
+      expect(measuresPair('closed-chip@grey20', path), isFalse);
+    });
+
+    test('rejects a test that never calls contrastRatio', () {
+      final path = write(
+        'a_test.dart',
+        "void main() => print('closed-chip@grey20');",
+      );
+      expect(measuresPair('closed-chip@grey20', path), isFalse);
+    });
+
+    test('rejects a file the test runner would not run', () {
+      expect(
+        measuresPair('closed-chip@grey20', write('a_helper.dart', measuring)),
+        isFalse,
+      );
+    });
+
+    test('rejects a missing file and no file', () {
+      expect(
+        measuresPair('closed-chip@grey20', '${tmp.path}/none_test.dart'),
+        isFalse,
+      );
+      expect(measuresPair('closed-chip@grey20', null), isFalse);
+    });
+
+    test('rejects the helper test, whatever it mentions', () {
+      // contrast_test.dart calls contrastRatio and mentions composeOver.
+      expect(
+        measuresPair('composeOver', 'test/helpers/contrast_test.dart'),
+        isFalse,
+      );
+    });
+
+    test('rejects this guard, which mentions every pair id', () {
+      expect(
+        measuresPair(
+          'measures-nothing@card',
+          'test/core/theme/contrast_guard_test.dart',
+        ),
+        isFalse,
+      );
+    });
+
+    test(
+      'rejects a symlink to the helper test',
+      () {
+        final link = Link('${tmp.path}/alias_test.dart')
+          ..createSync(File('test/helpers/contrast_test.dart').absolute.path);
+        expect(measuresPair('composeOver', link.path), isFalse);
+      },
+      skip: Platform.isWindows ? 'symlinks need privileges on Windows' : false,
+    );
   });
 
   test('allowlisted measured pairs still fail (delete the id once fixed)', () {

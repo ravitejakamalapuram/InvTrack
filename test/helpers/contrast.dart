@@ -15,8 +15,10 @@ const double kMinGraphic = 3.0;
 
 /// [fg] painted over the opaque [ground], with the alpha kept as a fraction
 /// and each channel rounded half up to 8 bits (the colour audit's method; it
-/// is within one level of [Color.alphaBlend]).
+/// is within one level of [Color.alphaBlend]). A translucent [ground] is
+/// rejected: compose it over what it sits on first.
 Color composeOver(Color fg, Color ground) {
+  assert(ground.a == 1, 'The ground must be opaque: compose it first.');
   final a = fg.a;
   // The epsilon makes an exact half (15% of 185 over white is 244.5) round up
   // despite floating-point error.
@@ -31,8 +33,10 @@ Color composeOver(Color fg, Color ground) {
 }
 
 /// WCAG contrast ratio of [fg] on the opaque [ground], from 1 to 21. A
-/// translucent [fg] is judged over [ground], the way it is painted.
+/// translucent [fg] is judged over [ground], the way it is painted. A
+/// translucent [ground] is rejected.
 double contrastRatio(Color fg, Color ground) {
+  assert(ground.a == 1, 'The ground must be opaque: compose it first.');
   final a = composeOver(fg, ground).computeLuminance();
   final b = ground.computeLuminance();
   final lighter = a > b ? a : b;
