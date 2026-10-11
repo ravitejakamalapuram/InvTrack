@@ -117,11 +117,18 @@ void main() {
 
       final label = _color(tester, 'Completed');
       expect(label, AppColors.successDark);
-      // The pill is the light green at 15% over the card.
-      final pill = composeOver(
-        AppColors.successLight.withValues(alpha: 0.15),
-        AppColors.cardDark,
+      // The pill's own fill, read from the widget, over the card.
+      final pillBox = tester.widget<Container>(
+        find
+            .ancestor(
+              of: find.text('Completed'),
+              matching: find.byType(Container),
+            )
+            .first,
       );
+      final pillFill = (pillBox.decoration! as BoxDecoration).color!;
+      expect(pillFill.a, lessThan(1), reason: 'a tint, not the label ground');
+      final pill = composeOver(pillFill, AppColors.cardDark);
       expect(contrastRatio(label, pill), greaterThanOrEqualTo(kMinText));
     });
 
