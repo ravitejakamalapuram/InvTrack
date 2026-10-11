@@ -91,7 +91,7 @@ declare namespace InvTrack {
     received?: string;
     /** No cash flows yet: a chevron replaces the value column (no amount, no badge). */
     empty?: boolean;
-    /** On a narrow card or with large text the label shortens with an ellipsis rather than overflowing. */
+    /** On a narrow card or with large text the label wraps to more lines; it is never cut. */
     maturity?: { tone: 'success' | 'warning' | 'accent'; icon?: string; label: string } | null;
     last: string; entries: string;
     /** Already formatted, base currency. In the strip as "Invested: ", or the main figure with `status`. */

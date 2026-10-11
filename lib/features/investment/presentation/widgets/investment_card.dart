@@ -534,12 +534,11 @@ class _InvestmentInfo extends StatelessWidget {
                       color: maturityInfo.color,
                     ),
                     SizedBox(width: AppSpacing.xxs),
-                    // Gives way on a narrow card instead of overflowing it.
+                    // Wraps on a narrow card or with large text, as the type
+                    // chip beside it does. A status label is never cut.
                     Flexible(
                       child: Text(
                         maturityInfo.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                         style: AppTypography.small.copyWith(
                           color: maturityInfo.color,
                           fontWeight: FontWeight.w600,
@@ -828,28 +827,39 @@ class _AwaitingValue extends StatelessWidget {
       ],
     );
 
+    // Amounts right-aligned in one column, each word on its amount's baseline.
+    // The first row has the name's line box, so the invested figure and the
+    // name share a baseline beside it.
+    final ledger = Table(
+      defaultColumnWidth: const IntrinsicColumnWidth(),
+      defaultVerticalAlignment: TableCellVerticalAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        row(
+          amount(stats.totalInvested, investedStyle),
+          l10n.investmentCardInvestedLabel,
+        ),
+        row(
+          amount(stats.totalReturned, receivedStyle),
+          l10n.investmentCardReceivedLabel,
+        ),
+      ],
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Amounts right-aligned in one column, each word on its amount's
-        // baseline. The first row has the name's line box, so the invested
-        // figure and the name share a baseline beside it.
-        Table(
-          defaultColumnWidth: const IntrinsicColumnWidth(),
-          defaultVerticalAlignment: TableCellVerticalAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            row(
-              amount(stats.totalInvested, investedStyle),
-              l10n.investmentCardInvestedLabel,
-            ),
-            row(
-              amount(stats.totalReturned, receivedStyle),
-              l10n.investmentCardReceivedLabel,
-            ),
-          ],
-        ),
+        // Under the name nothing limits the ledger's width, and a wide symbol
+        // at large text would run past the card where its clip cuts a figure:
+        // it scales down to the room instead, on the right edge.
+        compact
+            ? FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerEnd,
+                child: ledger,
+              )
+            : ledger,
         SizedBox(height: AppSpacing.xxs),
         ConstrainedBox(
           constraints: BoxConstraints(
@@ -970,26 +980,30 @@ class _InvestmentBottomStrip extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    isPrivacyMode
-                        ? MaskedAmountText(
-                            text: currencyFormat.formatCompact(
-                              stats.totalInvested,
+                    // Gives way to the label's width, so a Cr-scale amount at
+                    // large text wraps instead of running past the strip.
+                    Flexible(
+                      child: isPrivacyMode
+                          ? MaskedAmountText(
+                              text: currencyFormat.formatCompact(
+                                stats.totalInvested,
+                              ),
+                              style: subtleTextStyle.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            )
+                          : CompactAmountText(
+                              amount: stats.totalInvested,
+                              compactText: currencyFormat.formatCompact(
+                                stats.totalInvested,
+                              ),
+                              currencySymbol: currencyFormat.currencySymbol,
+                              locale: currencyFormat.locale,
+                              style: subtleTextStyle.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                            style: subtleTextStyle.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                          )
-                        : CompactAmountText(
-                            amount: stats.totalInvested,
-                            compactText: currencyFormat.formatCompact(
-                              stats.totalInvested,
-                            ),
-                            currencySymbol: currencyFormat.currencySymbol,
-                            locale: currencyFormat.locale,
-                            style: subtleTextStyle.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                    ),
                   ],
                 )
               : Text(

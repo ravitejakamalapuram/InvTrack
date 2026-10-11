@@ -3,6 +3,8 @@
 // no minus sign and no percent (money rule 4). The same change aligns every
 // card: amounts on one right edge, labels on their amount's baseline, the same
 // gaps on every card, and nothing clipped at 320dp or 200% text.
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +14,7 @@ import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
@@ -121,6 +124,52 @@ final _crore = _Fx(
   const XirrResult.exact(-0.2),
 );
 
+// Rs10 Cr put in, nothing back: a Cr-scale card whose figures are narrower than
+// _crore's, to line up against it.
+final _croreSmall = _Fx(
+  _investment(
+    id: 'plot',
+    name: 'Plot in Pune',
+    type: InvestmentType.realEstate,
+  ),
+  _stats(invested: 100000000, returned: 0, count: 2),
+  const XirrResult.undefined(XirrUndefinedReason.insufficientFlows),
+);
+
+// Cr-scale cards that keep a net figure: closed, and open with a confirmed
+// value. Their strip shows "Invested: " and the amount.
+final _croreClosed = _Fx(
+  _investment(
+    id: 'flat-closed',
+    name: 'Flat in Powai',
+    type: InvestmentType.realEstate,
+    status: InvestmentStatus.closed,
+  ),
+  _stats(
+    invested: 123500000,
+    returned: 150000000,
+    count: 12,
+    absoluteReturn: 21.5,
+  ),
+  const XirrResult.exact(0.08),
+);
+
+final _croreConfirmed = _Fx(
+  _investment(
+    id: 'flat-confirmed',
+    name: 'Flat in Powai',
+    type: InvestmentType.realEstate,
+  ),
+  _stats(
+    invested: 123500000,
+    returned: 0,
+    count: 12,
+    absoluteReturn: 13.4,
+    currentValue: 140000000,
+  ),
+  const XirrResult.exact(0.134),
+);
+
 // States that keep today's card: a net figure and a return pill.
 final _confirmedValue = _Fx(
   _investment(
@@ -228,6 +277,9 @@ Future<void> _pumpCards(
   Brightness brightness = Brightness.light,
   bool selectionMode = false,
   bool statsFailed = false,
+  String currencySymbol = '₹',
+  String currencyLocale = 'en_IN',
+  String currencyCode = 'INR',
 }) async {
   tester.view.physicalSize = Size(width, 1600);
   tester.view.devicePixelRatio = 1;
@@ -255,15 +307,15 @@ Future<void> _pumpCards(
               c.investment.id,
             ).overrideWith((ref) => Future.value(c.xirr)),
           ],
-        currencySymbolProvider.overrideWith((ref) => '₹'),
+        currencySymbolProvider.overrideWith((ref) => currencySymbol),
         currencyFormatProvider.overrideWith(
           (ref) => NumberFormat.currency(
-            locale: 'en_IN',
-            symbol: '₹',
+            locale: currencyLocale,
+            symbol: currencySymbol,
             decimalDigits: 0,
           ),
         ),
-        currencyCodeProvider.overrideWith((ref) => 'INR'),
+        currencyCodeProvider.overrideWith((ref) => currencyCode),
         privacyModeProvider.overrideWith(
           privacy ? _PrivacyOn.new : _PrivacyOff.new,
         ),
@@ -310,8 +362,13 @@ double _baseline(WidgetTester tester, String text, [int index = 0]) {
   final paragraph = tester.renderObject<RenderParagraph>(
     find.text(text).at(index),
   );
-  return paragraph.localToGlobal(Offset.zero).dy +
-      paragraph.getDryBaseline(paragraph.constraints, TextBaseline.alphabetic)!;
+  // The baseline point is mapped to global coordinates, so a ledger scaled down
+  // to fit measures as drawn.
+  final baseline = paragraph.getDryBaseline(
+    paragraph.constraints,
+    TextBaseline.alphabetic,
+  )!;
+  return paragraph.localToGlobal(Offset(0, baseline)).dy;
 }
 
 String _label(WidgetTester tester, [int index = 0]) =>
@@ -334,21 +391,9 @@ double _nameBox(WidgetTester tester, String name) => tester
 /// text size, growing with the text so it holds as many characters at any size.
 double _minNameBox(double textScale) => 96 * textScale;
 
-/// What fitting means: no overflow, the name keeps its room and every text lies
-/// inside the card.
-void _expectFits(
-  WidgetTester tester, {
-  required String name,
-  required double textScale,
-  double? minNameBox,
-}) {
-  expect(tester.takeException(), isNull);
+/// Every text lies inside the card.
+void _expectInsideCard(WidgetTester tester) {
   final card = tester.getRect(find.byType(GlassCard));
-  expect(
-    _nameBox(tester, name),
-    greaterThanOrEqualTo(minNameBox ?? _minNameBox(textScale)),
-    reason: 'the name box is too narrow',
-  );
   final texts = find.descendant(
     of: find.byType(GlassCard),
     matching: find.byType(Text),
@@ -360,6 +405,99 @@ void _expectFits(
     expect(rect.right, lessThanOrEqualTo(card.right), reason: data);
     expect(rect.bottom, lessThanOrEqualTo(card.bottom), reason: data);
   }
+}
+
+/// What fitting means: no overflow, the name keeps its room and every text lies
+/// inside the card.
+void _expectFits(
+  WidgetTester tester, {
+  required String name,
+  required double textScale,
+  double? minNameBox,
+}) {
+  expect(tester.takeException(), isNull);
+  expect(
+    _nameBox(tester, name),
+    greaterThanOrEqualTo(minNameBox ?? _minNameBox(textScale)),
+    reason: 'the name box is too narrow',
+  );
+  _expectInsideCard(tester);
+}
+
+/// The name keeps [_minNameBox], or all the room that stacking the figures
+/// under it can give: the card less its border, padding, checkbox and tile.
+void _expectNameRoom(
+  WidgetTester tester, {
+  required String name,
+  required double textScale,
+  required bool selectionMode,
+}) {
+  final card = tester.getRect(find.byType(GlassCard));
+  final stackedRoom =
+      card.width -
+      2 -
+      2 * AppSpacing.md -
+      (selectionMode ? AppSizes.minTouchTarget + AppSpacing.xs : 0) -
+      AppSizes.iconXl -
+      AppSpacing.md;
+  expect(
+    _nameBox(tester, name),
+    greaterThanOrEqualTo(math.min(_minNameBox(textScale), stackedRoom) - 0.01),
+    reason: 'the name box is too narrow',
+  );
+}
+
+/// Whether the badge has room for its longest word ("MATURITY") on one line.
+/// Beside the checkbox and tile, at 280dp with 130% text or 320dp with 200%
+/// text, it has not: the word itself then breaks across lines, whole.
+bool _badgeFitsItsLongestWord(double width, double textScale, bool selection) =>
+    !selection ||
+    (width > 280 || textScale < 1.3) && (width > 320 || textScale < 2.0);
+
+/// A status label is content: it wraps, it is never cut. No overflow, no text
+/// outside the card, the label inside its own badge, not one line dropped, and
+/// two lines at most wherever its longest word fits.
+void _expectBadgeWhole(
+  WidgetTester tester,
+  String label, {
+  required String name,
+  required double width,
+  required double textScale,
+  required bool selectionMode,
+}) {
+  expect(tester.takeException(), isNull);
+  _expectInsideCard(tester);
+  _expectNameRoom(
+    tester,
+    name: name,
+    textScale: textScale,
+    selectionMode: selectionMode,
+  );
+  final paragraph = tester.renderObject<RenderParagraph>(find.text(label));
+  expect(
+    paragraph.didExceedMaxLines,
+    isFalse,
+    reason:
+        '"$label" is cut: ${paragraph.size.width}dp drawn of '
+        '${paragraph.getMaxIntrinsicWidth(double.infinity)}dp',
+  );
+  final style = tester.widget<Text>(find.text(label)).style!;
+  final lines =
+      (paragraph.size.height / (style.fontSize! * textScale * style.height!))
+          .round();
+  if (_badgeFitsItsLongestWord(width, textScale, selectionMode)) {
+    expect(
+      lines,
+      lessThanOrEqualTo(2),
+      reason: '"$label" wraps to $lines lines',
+    );
+  }
+  final badge = tester.getRect(
+    find.ancestor(of: find.text(label), matching: find.byType(Container)).first,
+  );
+  final text = _rect(tester, label);
+  expect(text.left, greaterThanOrEqualTo(badge.left));
+  expect(text.right, lessThanOrEqualTo(badge.right));
 }
 
 void main() {
@@ -889,6 +1027,306 @@ void main() {
       expect(paragraph.didExceedMaxLines, isFalse);
       expect(tester.takeException(), isNull);
     });
+  });
+
+  // WCAG 1.4.4: a status label is content. It wraps to a second line instead of
+  // ending in an ellipsis, at every width and text size, selection and privacy
+  // mode included.
+  group('the maturity badge keeps its whole label', () {
+    final badges = <String, DateTime>{
+      '12d TO MATURITY': DateTime(2026, 10, 23),
+      'MATURED': DateTime(2026, 10, 1),
+      'MATURES TODAY': DateTime(2026, 10, 11),
+    };
+    final fixtures = <String, _Fx>{
+      'Cr-scale card': _crore,
+      'P2P card': _p2p,
+      'gold card': _gold,
+    };
+    // (width, text scale, selection mode)
+    final cells = <(double, double, bool)>[
+      (340, 1.0, false),
+      (360, 1.0, false),
+      (360, 1.15, false),
+      (411, 1.3, false),
+      (320, 2.0, false),
+      (280, 1.0, true),
+      (280, 2.0, true),
+      (320, 1.0, true),
+      (320, 2.0, true),
+    ];
+
+    void whole(
+      String label,
+      DateTime maturity,
+      String fixtureName,
+      _Fx fx,
+      (double, double, bool) cell,
+      bool privacy,
+    ) {
+      final (width, scale, selection) = cell;
+      testWidgets('"$label" on the $fixtureName at ${width}dp, ${scale}x'
+          '${selection ? ', selection mode' : ''}'
+          '${privacy ? ', privacy mode' : ''}', (tester) async {
+        await _pumpCards(
+          tester,
+          [fx.maturing(maturity)],
+          width: width,
+          textScale: scale,
+          privacy: privacy,
+          selectionMode: selection,
+        );
+
+        _expectBadgeWhole(
+          tester,
+          label,
+          name: fx.investment.name,
+          width: width,
+          textScale: scale,
+          selectionMode: selection,
+        );
+      });
+    }
+
+    for (final badge in badges.entries) {
+      for (final fixture in fixtures.entries) {
+        for (final cell in cells) {
+          for (final privacy in [false, true]) {
+            whole(
+              badge.key,
+              badge.value,
+              fixture.key,
+              fixture.value,
+              cell,
+              privacy,
+            );
+          }
+        }
+      }
+    }
+
+    // The whole probe grid for the widest badge on the widest card.
+    for (final width in [280.0, 320.0, 340.0, 360.0, 411.0]) {
+      for (final scale in [1.0, 1.15, 1.3, 2.0]) {
+        for (final selection in [false, true]) {
+          for (final privacy in [false, true]) {
+            testWidgets('grid: "12d TO MATURITY" on the Cr-scale card at '
+                '${width}dp, ${scale}x${selection ? ', selection mode' : ''}'
+                '${privacy ? ', privacy mode' : ''}', (tester) async {
+              await _pumpCards(
+                tester,
+                [_crore.maturing(badges.values.first)],
+                width: width,
+                textScale: scale,
+                privacy: privacy,
+                selectionMode: selection,
+              );
+
+              _expectBadgeWhole(
+                tester,
+                '12d TO MATURITY',
+                name: _crore.investment.name,
+                width: width,
+                textScale: scale,
+                selectionMode: selection,
+              );
+            });
+          }
+        }
+      }
+    }
+  });
+
+  // A stacked ledger is as wide as its widest line and never shrinks by itself;
+  // a currency symbol or a longer unit pushed a figure into the card's padding
+  // and, at 200% text, out of the card where its clip cut the figure.
+  group('stacked figures stay inside the card in any currency', () {
+    for (final (symbol, locale, code) in [
+      ('₹', 'en_IN', 'INR'),
+      ('Rp', 'id_ID', 'IDR'),
+      ('CHF', 'de_CH', 'CHF'),
+      ('KSh', 'en_KE', 'KES'),
+      ('AED', 'en_AE', 'AED'),
+    ]) {
+      for (final selection in [false, true]) {
+        testWidgets('$symbol Cr-scale card at 280dp, 2.0x'
+            '${selection ? ', selection mode' : ''}', (tester) async {
+          await _pumpCards(
+            tester,
+            [_crore],
+            width: 280,
+            textScale: 2.0,
+            selectionMode: selection,
+            currencySymbol: symbol,
+            currencyLocale: locale,
+            currencyCode: code,
+          );
+
+          expect(tester.takeException(), isNull);
+          // Inside the card's border and its 16dp padding, not just inside the
+          // card.
+          final content = tester
+              .getRect(find.byType(GlassCard))
+              .deflate(AppSpacing.md + 1);
+          final figures = find.descendant(
+            of: find.byType(Table),
+            matching: find.byType(Text),
+          );
+          expect(figures, findsNWidgets(4));
+          for (var i = 0; i < 4; i++) {
+            final rect = tester.getRect(figures.at(i));
+            final data = tester.widget<Text>(figures.at(i)).data;
+            expect(
+              rect.left,
+              greaterThanOrEqualTo(content.left - 0.01),
+              reason:
+                  '"$data" starts at ${rect.left}, content at ${content.left}',
+            );
+            expect(
+              rect.right,
+              lessThanOrEqualTo(content.right + 0.01),
+              reason:
+                  '"$data" ends at ${rect.right}, content at ${content.right}',
+            );
+          }
+          _expectInsideCard(tester);
+        });
+      }
+    }
+
+    // R1 and R2 where no scaling is needed: stacked Cr-scale cards still share
+    // one right edge and each word sits on its amount's baseline.
+    testWidgets('stacked Cr-scale cards keep one right edge and the baselines '
+        '(340dp, 1.0x)', (tester) async {
+      await _pumpCards(tester, [_crore, _croreSmall], width: 340);
+
+      expect(tester.takeException(), isNull);
+      expect(
+        _rect(tester, '₹12.35 Cr').right,
+        closeTo(_rect(tester, '₹10 Cr').right, 0.01),
+      );
+      expect(
+        _rect(tester, '₹9.88 Cr').right,
+        closeTo(_rect(tester, '₹0').right, 0.01),
+      );
+      for (final (amount, word, i) in [
+        ('₹12.35 Cr', 'invested', 0),
+        ('₹9.88 Cr', 'received', 0),
+        ('₹10 Cr', 'invested', 1),
+        ('₹0', 'received', 1),
+      ]) {
+        expect(
+          _baseline(tester, amount),
+          closeTo(_baseline(tester, word, i), 0.01),
+          reason: '$amount and $word',
+        );
+      }
+    });
+
+    // The ledger scales to the room here (265.7dp of figures in 214dp), so its
+    // baselines are measured after the scale. Only a card that scales moves its
+    // amounts: the words are smaller there, so across cards the amounts' right
+    // edge is not shared, the words' edge is.
+    testWidgets(
+      'a scaled-down ledger keeps its right edge, its amounts together '
+      'and the baselines (280dp, 2.0x)',
+      (tester) async {
+        await _pumpCards(
+          tester,
+          [_crore, _croreSmall],
+          width: 280,
+          textScale: 2,
+        );
+
+        expect(tester.takeException(), isNull);
+        final content = tester
+            .getRect(find.byType(GlassCard).first)
+            .deflate(AppSpacing.md + 1);
+        expect(
+          _rect(tester, '₹12.35 Cr').right,
+          closeTo(_rect(tester, '₹9.88 Cr').right, 0.01),
+        );
+        for (final (word, i) in [
+          ('invested', 0),
+          ('received', 0),
+          ('invested', 1),
+          ('received', 1),
+        ]) {
+          expect(_rect(tester, word, i).right, closeTo(content.right, 0.01));
+        }
+        for (final (amount, word, i) in [
+          ('₹12.35 Cr', 'invested', 0),
+          ('₹9.88 Cr', 'received', 0),
+          ('₹10 Cr', 'invested', 1),
+          ('₹0', 'received', 1),
+        ]) {
+          expect(
+            _baseline(tester, amount),
+            closeTo(_baseline(tester, word, i), 0.01),
+            reason: '$amount and $word',
+          );
+        }
+      },
+    );
+
+    testWidgets('Rp figures keep one right edge and the baselines (360dp, '
+        '1.0x)', (tester) async {
+      await _pumpCards(
+        tester,
+        [_p2p, _gold],
+        currencySymbol: 'Rp',
+        currencyLocale: 'id_ID',
+        currencyCode: 'IDR',
+      );
+
+      expect(tester.takeException(), isNull);
+      final words = find.byWidgetPredicate(
+        (w) => w is Text && (w.data == 'invested' || w.data == 'received'),
+      );
+      expect(words, findsNWidgets(4));
+      final invested = find.text('invested');
+      final received = find.text('received');
+      expect(
+        tester.getRect(invested.at(0)).left,
+        closeTo(tester.getRect(invested.at(1)).left, 0.01),
+      );
+      expect(
+        tester.getRect(received.at(0)).right,
+        closeTo(tester.getRect(received.at(1)).right, 0.01),
+      );
+      for (var i = 0; i < 2; i++) {
+        final card = tester.getRect(find.byType(GlassCard).at(i));
+        final table = tester.getRect(find.byType(Table).at(i));
+        expect(table.right, closeTo(card.right - AppSpacing.md - 1, 0.01));
+      }
+    });
+  });
+
+  // The strip's "Invested: " and amount are one group that cannot be cut, so it
+  // must be allowed to wrap rather than run past the card on a Cr-scale card.
+  group('the bottom strip fits a Cr-scale invested amount', () {
+    final cards = <String, _Fx>{
+      'closed': _croreClosed,
+      'confirmed value': _croreConfirmed,
+    };
+    for (final card in cards.entries) {
+      for (final (width, scale) in [(280.0, 2.0), (280.0, 1.3), (320.0, 2.0)]) {
+        testWidgets('${card.key} Cr-scale card at ${width}dp, ${scale}x', (
+          tester,
+        ) async {
+          await _pumpCards(
+            tester,
+            [card.value],
+            width: width,
+            textScale: scale,
+          );
+
+          expect(find.text('Invested: '), findsOneWidget);
+          expect(tester.takeException(), isNull);
+          _expectInsideCard(tester);
+        });
+      }
+    }
   });
 
   group('selection mode', () {

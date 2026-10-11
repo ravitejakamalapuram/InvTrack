@@ -304,9 +304,9 @@
 @container (max-width: 232px) {
   .it-inv__badge--status { max-width: none; }
 }
-/* A maturity chip shrinks with an ellipsis on a narrow card instead of overflowing it. */
+/* A maturity chip wraps on a narrow card, like the type chip beside it; its label is never cut. A word wider than the room breaks, as in the app. */
 .it-inv__tags > .it-tag { max-width: 100%; min-width: 0; }
-.it-tag__t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.it-tag__t { min-width: 0; overflow-wrap: anywhere; }
 .it-inv__chev { display: inline-flex; color: var(--neutral-400-light); }   /* Icons.chevron_right_rounded: neutral400 in both themes */
 .it-inv__badge { padding: 2px 6px; border-radius: var(--radius-badge); font: 600 10px/1.4 var(--font-text); color: var(--c); background: color-mix(in srgb, var(--c) 10%, transparent); }
 .it-inv__strip { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--space-md); padding: var(--space-sm) var(--space-md); background: var(--it-tint-03); border-radius: 0 0 var(--radius-xl) var(--radius-xl); font: 400 12px/1.4 var(--font-text); color: var(--text-muted); }

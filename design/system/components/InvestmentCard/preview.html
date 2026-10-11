@@ -33,7 +33,7 @@
       '<div>' + I.InvestmentCard(awaitingValue) + cap('Open, some payouts but less than invested: invested, received and “Awaiting current value”. Amounts share one right edge; each word sits on its amount’s baseline.') + '</div>' +
       '<div>' + I.InvestmentCard(matured) + cap('Maturity chips: MATURED (success), MATURES TODAY and ≤7 days (warning), 8–30 days (accent).') + '</div>' +
       '<div>' + I.InvestmentCard(Object.assign({ selectionMode: true, selected: true }, awaitingFirst, { maturity: null })) + cap('Selection mode adds a checkbox before the tile.') + '</div>' +
-      '<div style="max-width:232px">' + I.InvestmentCard(awaitingValue) + cap('Narrow card or large text: the figures drop under the name, still on the right edge, and the maturity chip shortens with an ellipsis if it must.') + '</div>' +
+      '<div style="max-width:232px">' + I.InvestmentCard(awaitingValue) + cap('Narrow card or large text: the figures drop under the name, still on the right edge, and the maturity chip wraps to a second line if it must.') + '</div>' +
       '<div style="max-width:308px">' + I.InvestmentCard(crore) + cap('Stacking is measured on the figures: a wide one like ₹12.35 Cr invested drops under the name where ₹4 L stays beside it.') + '</div>' +
       '<div data-privacy="on">' + I.InvestmentCard(closed) + cap('Privacy mode: amounts masked, badge fades out but keeps its space.') + '</div>' +
       '<div data-privacy="on">' + I.InvestmentCard(awaitingValue) + cap('Privacy mode, awaiting: invested and received are masked; the words and the status chip stay.') + '</div>' +
