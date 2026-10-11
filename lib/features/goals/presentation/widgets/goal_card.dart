@@ -6,6 +6,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/widgets/card_footer_row.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
@@ -295,33 +296,31 @@ class GoalCard extends ConsumerWidget {
           bottomRight: Radius.circular(20),
         ),
       ),
-      child: Row(
-        children: [
-          // Status indicator
-          Icon(status.icon, size: 14, color: status.color),
-          const SizedBox(width: 6),
-          Text(
-            status.label(l10n),
-            style: AppTypography.small.copyWith(
-              color: status.color,
-              fontWeight: FontWeight.w500,
+      child: CardFooterRow(
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Status indicator; the icon has no baseline of its own, so the
+            // status and the message line up on the text's.
+            IgnoreBaseline(
+              child: Icon(status.icon, size: 14, color: status.color),
             ),
-          ),
-          const Spacer(),
-          // Status message
-          Flexible(
-            child: Text(
-              progress?.statusMessage(l10n) ?? '',
+            const SizedBox(width: 6),
+            Text(
+              status.label(l10n),
               style: AppTypography.small.copyWith(
-                color: isDark
-                    ? AppColors.neutral400Dark
-                    : AppColors.neutral500Light,
+                color: status.color,
+                fontWeight: FontWeight.w500,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+          ],
+        ),
+        // Status message: ends on the card padding, the same edge as the
+        // progress ring above, and wraps instead of being cut.
+        trailingText: progress?.statusMessage(l10n) ?? '',
+        trailingStyle: AppTypography.small.copyWith(
+          color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+        ),
       ),
     );
   }

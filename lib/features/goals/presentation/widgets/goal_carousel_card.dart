@@ -1,6 +1,8 @@
 /// Compact goal card for horizontal carousel display.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +11,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/utils/text_scale.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
@@ -22,6 +25,17 @@ class GoalCarouselCard extends ConsumerWidget {
   final double width;
 
   const GoalCarouselCard({super.key, required this.progress, this.width = 280});
+
+  /// The height of the slot that holds a card, for the text size in [context].
+  ///
+  /// The card is three lines of text beside a 48dp icon, so it grows with the
+  /// text size: measured on the real fonts it needs 39dp plus 45dp per unit of
+  /// text scale, and this adds 2dp of slack. A fixed slot overflowed at large
+  /// text. Never under 110dp, the height it was designed at.
+  /// `test/layout/goal_carousel_height_test.dart` sweeps 1.0x to 2.0x text and
+  /// fails when this falls behind the card.
+  static double heightFor(BuildContext context) =>
+      math.max(110.0, 41 + 45 * textScaleOf(context));
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -163,6 +177,8 @@ class GoalCarouselCard extends ConsumerWidget {
                                 : AppColors.neutral500Light,
                             fontSize: 11,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         )
                       : Text(
                           progress.getProgressMessage(currencySymbol, locale),
