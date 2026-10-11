@@ -3769,6 +3769,27 @@
     "description": "Label prefix showing amount invested (e.g., 'Invested: ₹1L')"
   },
 
+  "investmentCardInvestedLabel": "invested",
+  "@investmentCardInvestedLabel": {
+    "description": "Lowercase word after the amount put in, on an investment card that awaits its current value (e.g., '₹4 L invested')"
+  },
+
+  "investmentCardReceivedLabel": "received",
+  "@investmentCardReceivedLabel": {
+    "description": "Lowercase word after the amount received so far, on an investment card that awaits its current value (e.g., '₹2.52 L received')"
+  },
+
+  "investmentCardReceivedSemantics": "Received: {amount}",
+  "@investmentCardReceivedSemantics": {
+    "description": "Screen reader text for the amount received so far, on an investment card that awaits its current value. The amount is already spoken text, or 'Hidden amount' in privacy mode",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "2.52 lakh rupees"
+      }
+    }
+  },
+
   "viewDetails": "View Details",
   "@viewDetails": {
     "description": "Button/link text to view more details"

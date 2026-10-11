@@ -71,51 +71,63 @@ void main() {
     }
   }
 
-  test('updating a goal logs goal_updated without its id', () async {
-    repository.seed(goals: [goal('goal-1')]);
+  group('goal analytics privacy', () {
+    test('updating a goal logs goal_updated without its id', () async {
+      repository.seed(goals: [goal('goal-1')]);
 
-    await notifier().updateGoal(goal('goal-1'));
+      await notifier().updateGoal(goal('goal-1'));
 
-    await expectOnly('goal_updated', count: 1);
-  });
+      await expectOnly('goal_updated', count: 1);
+    });
 
-  test('updating an archived goal logs goal_updated without its id', () async {
-    repository.seed(archivedGoals: [goal('goal-1').copyWith(isArchived: true)]);
+    test(
+      'updating an archived goal logs goal_updated without its id',
+      () async {
+        repository.seed(
+          archivedGoals: [goal('goal-1').copyWith(isArchived: true)],
+        );
 
-    await notifier().updateGoal(goal('goal-1').copyWith(isArchived: true));
+        await notifier().updateGoal(goal('goal-1').copyWith(isArchived: true));
 
-    await expectOnly('goal_updated', count: 1);
-  });
+        await expectOnly('goal_updated', count: 1);
+      },
+    );
 
-  test('archiving a goal logs goal_archived without its id', () async {
-    repository.seed(goals: [goal('goal-1')]);
+    test('archiving a goal logs goal_archived without its id', () async {
+      repository.seed(goals: [goal('goal-1')]);
 
-    await notifier().archiveGoal('goal-1');
+      await notifier().archiveGoal('goal-1');
 
-    await expectOnly('goal_archived', count: 1);
-  });
+      await expectOnly('goal_archived', count: 1);
+    });
 
-  test('deleting a goal logs goal_deleted without its id', () async {
-    repository.seed(goals: [goal('goal-1')]);
+    test('deleting a goal logs goal_deleted without its id', () async {
+      repository.seed(goals: [goal('goal-1')]);
 
-    await notifier().deleteGoal('goal-1');
+      await notifier().deleteGoal('goal-1');
 
-    await expectOnly('goal_deleted', count: 1);
-  });
+      await expectOnly('goal_deleted', count: 1);
+    });
 
-  test('deleting an archived goal logs goal_deleted without its id', () async {
-    repository.seed(archivedGoals: [goal('goal-1').copyWith(isArchived: true)]);
+    test(
+      'deleting an archived goal logs goal_deleted without its id',
+      () async {
+        repository.seed(
+          archivedGoals: [goal('goal-1').copyWith(isArchived: true)],
+        );
 
-    await notifier().deleteArchivedGoal('goal-1');
+        await notifier().deleteArchivedGoal('goal-1');
 
-    await expectOnly('goal_deleted', count: 1);
-  });
+        await expectOnly('goal_deleted', count: 1);
+      },
+    );
 
-  test('bulk deleting logs one goal_deleted per goal, without ids', () async {
-    repository.seed(goals: [goal('goal-1'), goal('goal-2')]);
+    test('bulk deleting logs one goal_deleted per goal, without ids', () async {
+      repository.seed(goals: [goal('goal-1'), goal('goal-2')]);
 
-    await notifier().bulkDelete(['goal-1', 'goal-2']);
+      await notifier().bulkDelete(['goal-1', 'goal-2']);
 
-    await expectOnly('goal_deleted', count: 2);
+      await expectOnly('goal_deleted', count: 2);
+    });
   });
 }

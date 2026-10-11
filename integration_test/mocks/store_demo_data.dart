@@ -114,13 +114,17 @@ class StoreDemoData {
     }
     addCashFlow(hdfcFd.id, daysAgo(10), CashFlowType.returnFlow, 500000);
 
-    // 2. LenDenClub P2P - high yield, exited after a year
+    // 2. LenDenClub P2P - high yield, exited after a year. Its last activity
+    // (22 days ago) is more recent than the open holdings' below (24 and
+    // older), so the Investments list shows it fifth, as the top of the card
+    // under the first screen's four, ahead of any open card with a negative
+    // net cash flow.
     final lendenClub = addInvestment(
       name: 'LenDenClub P2P',
       type: InvestmentType.p2pLending,
       status: InvestmentStatus.closed,
       createdAt: daysAgo(400),
-      closedAt: daysAgo(30),
+      closedAt: daysAgo(22),
       incomeFrequency: IncomeFrequency.monthly,
       notes:
           'Auto-invest, 200+ borrowers. Withdrew after 12 months at 12% p.a.',
@@ -129,12 +133,12 @@ class StoreDemoData {
     for (int i = 12; i >= 1; i--) {
       addCashFlow(
         lendenClub.id,
-        daysAgo(30 + i * 30),
+        daysAgo(22 + i * 30),
         CashFlowType.income,
         1500,
       );
     }
-    addCashFlow(lendenClub.id, daysAgo(30), CashFlowType.returnFlow, 150000);
+    addCashFlow(lendenClub.id, daysAgo(22), CashFlowType.returnFlow, 150000);
 
     // 3. Whitefield 2BHK - real estate, rented then sold at a gain
     final bangaloreFlat = addInvestment(
