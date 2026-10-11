@@ -399,4 +399,11 @@ void main() {
       },
     );
   });
+
+  group('ReturnDisplay pill wording lives in the ARB file', () {
+    test('the plain pill is the localized "returnPill" string', () {
+      expect(l10n.returnPill('+4.9%'), '+4.9% IRR');
+      expect(l10n.returnPillSoFar('+4.9%'), '+4.9% IRR so far');
+    });
+  });
 }

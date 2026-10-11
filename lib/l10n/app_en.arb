@@ -4238,6 +4238,17 @@
     }
   },
 
+  "returnPill": "{value} IRR",
+  "@returnPill": {
+    "description": "Return pill on an investment card, e.g. '+4.9% IRR'",
+    "placeholders": {
+      "value": {
+        "type": "String",
+        "example": "+4.9%"
+      }
+    }
+  },
+
   "returnPillSoFar": "{value} IRR so far",
   "@returnPillSoFar": {
     "description": "Return pill on an investment card of an open investment that has returned its cost and has no current value, e.g. '+4.9% IRR so far'",

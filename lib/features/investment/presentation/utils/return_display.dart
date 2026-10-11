@@ -185,7 +185,7 @@ class ReturnDisplay {
       return isSoFar ? l10n.returnBadgeSoFar(figure) : figure;
     }
     if (isEstimate) return '$figure ${metricLabel(l10n)}';
-    return isSoFar ? l10n.returnPillSoFar(figure) : '$figure IRR';
+    return isSoFar ? l10n.returnPillSoFar(figure) : l10n.returnPill(figure);
   }
 
   /// [figure] as a screen reader reads it (already hidden in privacy mode),
