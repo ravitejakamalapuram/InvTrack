@@ -127,8 +127,8 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.successLight.withValues(alpha: 0.3),
-                    AppColors.successLight.withValues(alpha: 0.0),
+                    AppColors.successTintLight.withValues(alpha: 0.3),
+                    AppColors.successTintLight.withValues(alpha: 0.0),
                   ],
                   stops: [0.0, 1.0],
                 ),
@@ -140,20 +140,20 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.successLight.withValues(alpha: 0.25),
-                    AppColors.successLight.withValues(alpha: 0.15),
+                    AppColors.successTintLight.withValues(alpha: 0.25),
+                    AppColors.successTintLight.withValues(alpha: 0.15),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: AppColors.successLight.withValues(alpha: 0.4),
+                  color: AppColors.successTintLight.withValues(alpha: 0.4),
                   width: 2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.successLight.withValues(alpha: 0.15),
+                    color: AppColors.successTintLight.withValues(alpha: 0.15),
                     blurRadius: 8,
                     spreadRadius: 1,
                   ),
@@ -368,7 +368,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.errorLight.withValues(alpha: 0.15),
+                    color: AppColors.dangerTintLight.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -518,15 +518,15 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.successLight.withValues(alpha: 0.08),
-            AppColors.successLight.withValues(alpha: 0.03),
+            AppColors.successTintLight.withValues(alpha: 0.08),
+            AppColors.successTintLight.withValues(alpha: 0.03),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.successLight.withValues(alpha: 0.15),
+          color: AppColors.successTintLight.withValues(alpha: 0.15),
           width: 1,
         ),
       ),
@@ -539,15 +539,15 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
               shape: BoxShape.circle,
               gradient: LinearGradient(
                 colors: [
-                  AppColors.successLight.withValues(alpha: 0.2),
-                  AppColors.successLight.withValues(alpha: 0.1),
+                  AppColors.successTintLight.withValues(alpha: 0.2),
+                  AppColors.successTintLight.withValues(alpha: 0.1),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.successLight.withValues(alpha: 0.2),
+                  color: AppColors.successTintLight.withValues(alpha: 0.2),
                   blurRadius: 16,
                   spreadRadius: 2,
                 ),
@@ -588,10 +588,10 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
               vertical: AppSpacing.xs,
             ),
             decoration: BoxDecoration(
-              color: AppColors.successLight.withValues(alpha: 0.1),
+              color: AppColors.successTintLight.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: AppColors.successLight.withValues(alpha: 0.2),
+                color: AppColors.successTintLight.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),

@@ -1,7 +1,7 @@
 // Source scan: a colour made for the light theme must not be painted
 // unconditionally, nor in the dark theme.
 //
-// The nine constants below are the light-theme text colours (and the one dark
+// The constants below are the light-theme text colours (and the one dark
 // grey) that the contrast PRs change. A site that reads one of them without a
 // theme check paints it in both themes, so changing its value would also change
 // the dark theme, where the old value was the readable one. A site passes when
@@ -52,7 +52,17 @@ const _constants = [
   'errorLight',
   'accentLight',
   'warningLight',
+  // The old, brighter green and red. They are kept as tint sources, so they
+  // may be painted translucent, or in a branch of a theme check; never bare.
+  'successTintLight',
+  'dangerTintLight',
 ];
+
+/// The status colours that got deeper so that text in them reads on white. A
+/// tint made of one would follow the new value, and text on that tint falls
+/// back under 4.5:1 (4.34 for green, 4.38 for red at 15%); tints are made of
+/// `successTintLight` and `dangerTintLight`, which keep the old hue.
+const _deepStatusConstants = ['successLight', 'errorLight', 'dangerLight'];
 
 /// Sites not yet fixed, by file: how many are left. Raising a number, or adding
 /// a file, needs a reason in the PR body.
@@ -169,6 +179,11 @@ final _tint = RegExp(r'\s*\.withValues\(\s*alpha:\s*([0-9.]+)\s*,?\s*\)');
 final _occurrence = RegExp(
   '\\bAppColors\\s*\\.\\s*(${_constants.join('|')})\\b',
 );
+
+final _statusOccurrence = RegExp(
+  '\\bAppColors\\s*\\.\\s*(${_deepStatusConstants.join('|')})\\b',
+);
+final _tintCall = RegExp(r'\s*\.\s*(?:withValues|withOpacity|withAlpha)\s*\(');
 
 bool _isTint(String code, int at) {
   final m = _tint.matchAsPrefix(code, at);
@@ -320,7 +335,7 @@ typedef Scan = ({
   List<Site> reversed,
 });
 
-/// The sites in [source] that read one of the nine constants. A site in the
+/// The sites in [source] that read one of the listed constants. A site in the
 /// wrong branch of a theme ternary is reversed. One in no theme branch and not
 /// a tint is unguarded, or neutral when it has a `theme-neutral:` comment.
 Scan scan(String source) {
@@ -364,7 +379,7 @@ Scan scan(String source) {
   return (unguarded: unguarded, neutral: neutral, reversed: reversed);
 }
 
-/// The sites that read one of the nine constants with no theme branch, no tint
+/// The sites that read a listed constant with no theme branch, no tint
 /// and no `theme-neutral:` comment.
 List<Site> unguardedSites(String source) => scan(source).unguarded;
 
@@ -374,6 +389,33 @@ List<Site> neutralSites(String source) => scan(source).neutral;
 /// The sites that read a light colour in the dark branch of a theme ternary, or
 /// the dark grey in the light branch.
 List<Site> reversedSites(String source) => scan(source).reversed;
+
+/// The sites in [source] where a tint is made of a status colour that got
+/// deeper: `.withValues(...)`, `.withOpacity(...)` or `.withAlpha(...)` on
+/// `successLight`, `errorLight` or `dangerLight`, directly or on a group that
+/// holds one (`(isDark ? a : AppColors.errorLight).withValues(...)`).
+List<Site> tintedStatusSites(String source) {
+  final code = blankCommentsAndStrings(source);
+  final sites = <Site>[];
+  for (final m in _statusOccurrence.allMatches(code)) {
+    final (from, to) = expressionAround(code, m.start, m.end);
+    // `(a ? x : y).withValues(...)` tints the whole group.
+    final closes = to < code.length && code[to] == ')';
+    if (_tintCall.matchAsPrefix(code, m.end) == null &&
+        !(closes && _tintCall.matchAsPrefix(code, to + 1) != null)) {
+      continue;
+    }
+    sites.add((
+      line: '\n'.allMatches(code.substring(0, m.start)).length + 1,
+      constant: m.group(1)!,
+      expression: code
+          .substring(from, to)
+          .trim()
+          .replaceAll(RegExp(r'\s+'), ' '),
+    ));
+  }
+  return sites;
+}
 
 /// The constants in [source] (app_colors.dart) that are plain aliases of one of
 /// [listed], or of an alias, and are not in [listed].
@@ -637,6 +679,88 @@ final a = isDark ? 'a, (b' : AppColors.successLight;
     });
   });
 
+  group('the tint rule', () {
+    List<int> tinted(String source) => [
+      for (final s in tintedStatusSites(source)) s.line,
+    ];
+
+    test('flags a tint made of a deeper status colour, whatever the call', () {
+      expect(
+        tinted('''
+final a = AppColors.successLight.withValues(alpha: 0.15);
+final b = AppColors.errorLight.withOpacity(0.1);
+final c = AppColors.dangerLight.withAlpha(30);
+final d = AppColors.successLight.withValues(alpha: 0.9);
+'''),
+        [1, 2, 3, 4],
+      );
+    });
+
+    test('flags a tint on a group that holds the colour', () {
+      expect(
+        tinted('''
+final a = (isDark ? AppColors.errorDark : AppColors.errorLight).withValues(alpha: 0.7);
+final b = (isDark
+        ? AppColors.successDark
+        : AppColors.successLight)
+    .withValues(alpha: 0.7);
+'''),
+        [1, 4],
+      );
+    });
+
+    test('reads a tint that the formatter moved to the next line', () {
+      expect(
+        tinted('''
+final a = AppColors.successLight
+    .withValues(
+      alpha: 0.1,
+    );
+final b = AppColors
+    .errorLight
+    .withValues(alpha: 0.1);
+'''),
+        [1, 5],
+      );
+    });
+
+    test('passes the tint sources and the dark colours', () {
+      expect(
+        tinted('''
+final a = AppColors.successTintLight.withValues(alpha: 0.15);
+final b = AppColors.dangerTintLight.withValues(alpha: 0.1);
+final c = AppColors.successDark.withValues(alpha: 0.7);
+final d = (isDark ? AppColors.errorDark : AppColors.dangerTintLight).withValues(alpha: 0.1);
+final e = AppColors.accentLight.withValues(alpha: 0.1);
+'''),
+        isEmpty,
+      );
+    });
+
+    test('passes the colour itself, and a tint in a sibling argument', () {
+      expect(
+        tinted('''
+final a = AppColors.errorLight;
+final b = Icon(Icons.add, color: AppColors.errorLight);
+final c = Foo(AppColors.errorLight, other.withValues(alpha: 0.1));
+final d = [AppColors.successLight, base.withValues(alpha: 0.1)];
+'''),
+        isEmpty,
+      );
+    });
+
+    test('ignores comments and strings', () {
+      expect(
+        tinted('''
+// color: AppColors.errorLight.withOpacity(0.1),
+/* AppColors.successLight.withValues(alpha: 0.1) */
+final a = 'AppColors.successLight.withValues(alpha: 0.1)';
+'''),
+        isEmpty,
+      );
+    });
+  });
+
   test('every site that reads a light colour checks the theme', () {
     final failures = <String>[];
     final stale = <String>[];
@@ -689,6 +813,26 @@ final a = isDark ? 'a, (b' : AppColors.successLight;
       );
     },
   );
+
+  test('no tint is made of a status colour that got deeper', () {
+    final tinted = <String>[];
+    for (final entity in Directory('lib').listSync(recursive: true)) {
+      if (entity is! File || !entity.path.endsWith('.dart')) continue;
+      final path = entity.path.replaceAll(r'\', '/');
+      // The constants are defined here.
+      if (path == 'lib/core/theme/app_colors.dart') continue;
+      for (final s in tintedStatusSites(entity.readAsStringSync())) {
+        tinted.add('$path:${s.line} AppColors.${s.constant}  ${s.expression}');
+      }
+    }
+    expect(
+      tinted,
+      isEmpty,
+      reason:
+          'Tint successTintLight or dangerTintLight: a tint of the deeper '
+          'value puts text on it under 4.5:1.',
+    );
+  });
 
   group('the colour file', () {
     test('finds an alias of a listed constant that is not listed', () {
