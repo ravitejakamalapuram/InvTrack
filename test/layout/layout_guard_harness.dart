@@ -238,13 +238,23 @@ class LayoutGuard {
 
   String _dp(double v) => v.toStringAsFixed(1);
 
+  /// The visible box of [finder]: its first decorated box when it has one, so
+  /// a margin the widget adds to itself is not counted as part of it, else
+  /// the widget's own box.
   Rect? _rect(String what, Finder finder, {bool last = false}) {
     final count = finder.evaluate().length;
     if (count == 0) {
       fault('$what: not found, so its edge could not be measured');
       return null;
     }
-    return tester.getRect(last ? finder.at(count - 1) : finder.first);
+    final target = last ? finder.at(count - 1) : finder.first;
+    final decorated = find.descendant(
+      of: target,
+      matching: find.byType(DecoratedBox),
+    );
+    return tester.getRect(
+      decorated.evaluate().isEmpty ? target : decorated.first,
+    );
   }
 
   /// [finder] starts on the screen edge.
