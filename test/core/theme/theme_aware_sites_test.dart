@@ -6,19 +6,21 @@
 // theme check paints it in both themes, so changing its value would also change
 // the dark theme, where the old value was the readable one. A site passes when
 //
-//  1. its expression (the argument or assignment around it, up to the nearest
-//     comma, semicolon or enclosing bracket) mentions the theme: `isDark` or
-//     `brightness`; or
+//  1. it sits in a branch of a ternary whose condition mentions the theme
+//     (`isDark` or `brightness`). The ternary may be several brackets out, and
+//     it need not be the nearest one: in `isDark ? a : ok ? x : y` the theme
+//     governs `x`. A theme word anywhere else near the site does not count; or
 //  2. it is a tint: `.withValues(alpha: 0.5)` or less applied to it; or
 //  3. the line carries a `theme-neutral:` comment, or the comment line just
 //     above it does, saying why the same colour belongs in both themes (a
-//     fill under a white label, a chart bar).
+//     fill under a white label). Each file's count of these is a literal in
+//     [_neutral], so adding one shows in the test diff.
 //
 // The check reads text, not types. It cannot tell a label from a fill, so rule
-// 1 passes any site whose expression mentions the theme, rule 2 passes a
-// translucent text colour, and rule 3 is the author's word. A colour inside a
-// string interpolation is not seen (none exists in lib/). A reviewer reads the
-// `theme-neutral:` comments.
+// 1 passes a colour in the wrong branch (`isDark ? successLight : x`), rule 2
+// passes a translucent text colour, and rule 3 is the author's word. A colour
+// inside a string interpolation is not seen (none exists in lib/). A reviewer
+// reads the `theme-neutral:` comments.
 //
 // Files still to fix are counted in [_unfixed]. The count must match exactly:
 // a new site in a listed file fails, and so does a fixed one that is still
@@ -81,12 +83,22 @@ const _unfixed = <String, int>{
   'lib/features/income_projection/presentation/widgets/income_cell.dart': 4,
   'lib/features/income_projection/presentation/widgets/income_guardian_dashboard_card.dart':
       11,
-  // In neither PR 2's nor PR 3's file list in the plan; PR 3 must take them.
+  // PR 3 takes these two as well (they were in no file list): if it skipped
+  // them, PR 4 and PR 5 would dim them in dark, and the counts below would
+  // still match.
   'lib/core/widgets/metric_tile.dart': 2,
   'lib/features/fire_number/presentation/widgets/fire_load_error_card.dart': 1,
   // Deliberately kept: no screen uses ChangeBadge (the plan's W2), and its pale
   // fill is the same in both themes. PR 4 edits only its zero-badge text.
   'lib/core/widgets/change_badge.dart': 3,
+};
+
+/// Sites kept on a `theme-neutral:` comment, by file: how many. A comment in
+/// `lib/` is outside the diff a reviewer reads, so each one needs a number here
+/// and a reason in the PR body.
+const _neutral = <String, int>{
+  // The selected fill of the frequency chip, under a white label in both themes.
+  'lib/features/investment/presentation/screens/add_investment_screen.dart': 1,
 };
 
 /// Never scanned: they define the constants and build both themes explicitly.
@@ -182,34 +194,101 @@ bool _isTint(String code, int at) {
   return m != null && double.parse(m.group(1)!) <= 0.5;
 }
 
-/// The sites in [source] that read one of the nine constants with no theme
-/// check, no tint and no `theme-neutral:` comment.
-List<Site> unguardedSites(String source) {
+/// What is open at one bracket level while [_inThemeBranch] reads along: where
+/// the current operand began, and the condition text of each ternary whose
+/// branch we are in.
+class _Level {
+  _Level(this.operand);
+  int operand;
+  final conditions = <String>[];
+  final inThen = <bool>[];
+
+  void reset(int at) {
+    operand = at;
+    conditions.clear();
+    inThen.clear();
+  }
+}
+
+/// Whether the text at [pos] in [code] (comments and strings blanked) sits in a
+/// branch of a ternary whose condition mentions the theme. Reads from the start
+/// of the file with one [_Level] per open bracket, so a ternary in a sibling
+/// argument is gone by the time its bracket closes, and one around the site
+/// still counts from inside nested calls. A `,` or `;` ends the ternaries of
+/// its level.
+bool _inThemeBranch(String code, int pos) {
+  final levels = [_Level(0)];
+  for (var i = 0; i < pos; i++) {
+    final c = code[i];
+    final level = levels.last;
+    final prev = i > 0 ? code[i - 1] : ' ';
+    final next = i + 1 < code.length ? code[i + 1] : ' ';
+    if ('([{'.contains(c)) {
+      levels.add(_Level(i + 1));
+    } else if (')]}'.contains(c)) {
+      if (levels.length > 1) levels.removeLast();
+    } else if (',;'.contains(c)) {
+      level.reset(i + 1);
+    } else if (c == '?' && ' \n'.contains(prev) && !'?.['.contains(next)) {
+      level.conditions.add(code.substring(level.operand, i));
+      level.inThen.add(true);
+      level.operand = i + 1;
+    } else if (c == ':') {
+      // Closes the innermost ternary still in its first branch; with none
+      // open, it ends a name (`color:`).
+      final open = level.inThen.lastIndexOf(true);
+      if (open >= 0) level.inThen[open] = false;
+      level.operand = i + 1;
+    } else if (c == '>' && prev == '=') {
+      level.operand = i + 1; // =>
+    } else if (c == '=' && !'=>'.contains(next) && !'=!<>'.contains(prev)) {
+      level.operand = i + 1;
+    }
+  }
+  return levels.any((l) => l.conditions.any(_theme.hasMatch));
+}
+
+typedef Scan = ({List<Site> unguarded, List<Site> neutral});
+
+/// The sites in [source] that read one of the nine constants and are not in a
+/// theme branch or a tint: the ones with no `theme-neutral:` comment, and the
+/// ones that have it.
+Scan scan(String source) {
   final code = blankCommentsAndStrings(source);
   final lines = source.split('\n');
-  final sites = <Site>[];
+  final unguarded = <Site>[];
+  final neutral = <Site>[];
   for (final m in _occurrence.allMatches(code)) {
+    if (_inThemeBranch(code, m.start)) continue;
     final (from, to) = expressionAround(code, m.start, m.end);
-    final expression = code.substring(from, to);
-    if (_theme.hasMatch(expression)) continue;
     // `(a ? x : y).withValues(...)` tints the whole group.
     final closes = to < code.length && code[to] == ')';
     if (_isTint(code, m.end) || (closes && _isTint(code, to + 1))) continue;
     final line = '\n'.allMatches(code.substring(0, m.start)).length;
-    if (lines[line].contains('theme-neutral:')) continue;
-    if (line > 0 &&
-        lines[line - 1].trimLeft().startsWith('//') &&
-        lines[line - 1].contains('theme-neutral:')) {
-      continue;
-    }
-    sites.add((
+    final site = (
       line: line + 1,
       constant: m.group(1)!,
-      expression: expression.trim().replaceAll(RegExp(r'\s+'), ' '),
-    ));
+      expression: code
+          .substring(from, to)
+          .trim()
+          .replaceAll(RegExp(r'\s+'), ' '),
+    );
+    final marked =
+        lines[line].contains('theme-neutral:') ||
+        (line > 0 &&
+            lines[line - 1].trimLeft().startsWith('//') &&
+            lines[line - 1].contains('theme-neutral:'));
+    (marked ? neutral : unguarded).add(site);
   }
-  return sites;
+  return (unguarded: unguarded, neutral: neutral);
 }
+
+/// The sites that read one of the nine constants with no theme branch, no tint
+/// and no `theme-neutral:` comment.
+List<Site> unguardedSites(String source) => scan(source).unguarded;
+
+/// The sites that pass only because of a `theme-neutral:` comment.
+List<Site> neutralSites(String source) => scan(source).neutral;
 
 void main() {
   group('the scan', () {
@@ -276,6 +355,20 @@ final c = AppColors.successLight;
       );
     });
 
+    test('lists the sites that pass only on that comment', () {
+      const source = '''
+// theme-neutral: a fill under a white label.
+final a = AppColors.successLight;
+final b = AppColors.successLight; // theme-neutral: a fill.
+final c = AppColors.successLight;
+final d = isDark ? AppColors.successDark : AppColors.successLight; // theme-neutral: not needed.
+// theme-neutral: no constant below.
+final e = 1;
+''';
+      expect([for (final s in neutralSites(source)) s.line], [2, 3]);
+      expect([for (final s in unguardedSites(source)) s.line], [4]);
+    });
+
     test('ignores comments and strings, and other constants', () {
       expect(
         found('''
@@ -284,6 +377,44 @@ final c = AppColors.successLight;
 final a = 'AppColors.successLight';
 final b = AppColors.successDark;
 final c = AppColors.successLightBg;
+'''),
+        isEmpty,
+      );
+    });
+
+    test(
+      'flags a light colour in the branch of a ternary that is not the theme',
+      () {
+        expect(
+          found('''
+final a = ok ? AppColors.successLight : (isDark ? AppColors.successDark : AppColors.errorDark);
+final b = ok ? (isDark ? AppColors.errorDark : AppColors.errorLight) : AppColors.errorDark;
+final c = ok ? AppColors.accentLight : isDark ? AppColors.accentDark : AppColors.accentDark;
+'''),
+          [1, 3],
+        );
+      },
+    );
+
+    test('flags a light colour that only sits near a theme check', () {
+      expect(
+        found('''
+final a = AppColors.successLight.withValues(alpha: isDark ? 0.9 : 0.8);
+final b = _pick(isDark, AppColors.errorLight);
+final c = (isDark ? 1 : 2) + (AppColors.accentLight == x ? 1 : 2);
+'''),
+        [1, 2, 3],
+      );
+    });
+
+    test('passes a light colour in any branch of a theme ternary', () {
+      expect(
+        found('''
+final a = isDark ? AppColors.successDark : ok ? AppColors.successLight : AppColors.errorDark;
+final b = isDark ? x : Foo(AppColors.errorLight);
+final c = ok ? (isDark ? AppColors.errorDark : AppColors.errorLight) : y;
+final d = Theme.of(context).brightness == Brightness.dark ? 1 : AppColors.accentLight;
+Text('x', style: TextStyle(color: isDark ? y : AppColors.warningLight, fontSize: 1));
 '''),
         isEmpty,
       );
@@ -327,6 +458,22 @@ final a = isDark ? 'a, (b' : AppColors.successLight;
       _unfixed.keys.toSet().difference(seen),
       isEmpty,
       reason: 'Delete the entry: the file is fixed or gone.',
+    );
+  });
+
+  test('the sites kept on a theme-neutral comment are the ones listed', () {
+    final found = <String, int>{};
+    for (final entity in Directory('lib').listSync(recursive: true)) {
+      if (entity is! File || !entity.path.endsWith('.dart')) continue;
+      final path = entity.path.replaceAll(r'\', '/');
+      if (_skipped.contains(path)) continue;
+      final n = neutralSites(entity.readAsStringSync()).length;
+      if (n > 0) found[path] = n;
+    }
+    expect(
+      found,
+      _neutral,
+      reason: 'A theme-neutral comment needs its file and count in _neutral.',
     );
   });
 }
