@@ -980,29 +980,35 @@ class _InvestmentBottomStrip extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    // Gives way to the label's width, so a Cr-scale amount at
-                    // large text wraps instead of running past the strip.
+                    // Gives way to the label's width. A Cr-scale amount at
+                    // large text scales down rather than wrapping, because a
+                    // wrapped figure ("CHF 123" over ".5M") reads as another
+                    // amount.
                     Flexible(
-                      child: isPrivacyMode
-                          ? MaskedAmountText(
-                              text: currencyFormat.formatCompact(
-                                stats.totalInvested,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: AlignmentDirectional.centerStart,
+                        child: isPrivacyMode
+                            ? MaskedAmountText(
+                                text: currencyFormat.formatCompact(
+                                  stats.totalInvested,
+                                ),
+                                style: subtleTextStyle.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              )
+                            : CompactAmountText(
+                                amount: stats.totalInvested,
+                                compactText: currencyFormat.formatCompact(
+                                  stats.totalInvested,
+                                ),
+                                currencySymbol: currencyFormat.currencySymbol,
+                                locale: currencyFormat.locale,
+                                style: subtleTextStyle.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                              style: subtleTextStyle.copyWith(
-                                fontWeight: FontWeight.w500,
-                              ),
-                            )
-                          : CompactAmountText(
-                              amount: stats.totalInvested,
-                              compactText: currencyFormat.formatCompact(
-                                stats.totalInvested,
-                              ),
-                              currencySymbol: currencyFormat.currencySymbol,
-                              locale: currencyFormat.locale,
-                              style: subtleTextStyle.copyWith(
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+                      ),
                     ),
                   ],
                 )

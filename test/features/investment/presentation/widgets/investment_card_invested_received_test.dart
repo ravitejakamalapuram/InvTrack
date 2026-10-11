@@ -17,6 +17,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
@@ -1322,6 +1323,54 @@ void main() {
           );
 
           expect(find.text('Invested: '), findsOneWidget);
+          expect(tester.takeException(), isNull);
+          _expectInsideCard(tester);
+        });
+      }
+    }
+    // A wrapped money figure reads as a different amount ("CHF 123" over
+    // ".5M"), so the amount scales down instead of wrapping, in every currency.
+    for (final (symbol, locale, code) in [
+      ('₹', 'en_IN', 'INR'),
+      ('Rp', 'id_ID', 'IDR'),
+      ('CHF', 'de_CH', 'CHF'),
+    ]) {
+      for (final card in cards.entries) {
+        testWidgets('the invested amount stays on one line: $symbol, '
+            '${card.key}, 280dp, 2.0x', (tester) async {
+          await _pumpCards(
+            tester,
+            [card.value],
+            width: 280,
+            textScale: 2.0,
+            currencySymbol: symbol,
+            currencyLocale: locale,
+            currencyCode: code,
+          );
+
+          final amount = find.descendant(
+            of: find
+                .ancestor(
+                  of: find.text('Invested: '),
+                  matching: find.byType(Row),
+                )
+                .first,
+            matching: find.byType(CompactAmountText),
+          );
+          expect(amount, findsOneWidget);
+          final paragraph = tester.renderObject<RenderParagraph>(
+            find.descendant(of: amount, matching: find.byType(RichText)).first,
+          );
+          final oneLine = TextPainter(
+            text: paragraph.text,
+            textDirection: paragraph.textDirection,
+            textScaler: paragraph.textScaler,
+          )..layout();
+          expect(
+            paragraph.size.height,
+            closeTo(oneLine.height, 0.5),
+            reason: 'the amount wrapped onto a second line',
+          );
           expect(tester.takeException(), isNull);
           _expectInsideCard(tester);
         });
