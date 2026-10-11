@@ -94,6 +94,7 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                                             ? (d.outflows / maxValue * 80)
                                             : 0,
                                         decoration: BoxDecoration(
+                                          // theme-neutral: a chart bar.
                                           color: AppColors.errorLight
                                               .withValues(alpha: 0.7),
                                           borderRadius:
@@ -110,6 +111,7 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                                             ? (d.inflows / maxValue * 80)
                                             : 0,
                                         decoration: BoxDecoration(
+                                          // theme-neutral: a chart bar.
                                           color: AppColors.successLight
                                               .withValues(alpha: 0.7),
                                           borderRadius:
@@ -142,8 +144,10 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // theme-neutral: the swatch of the chart bar above.
                   _buildLegendItem('Cash Out', AppColors.errorLight),
                   const SizedBox(width: 16),
+                  // theme-neutral: the swatch of the chart bar above.
                   _buildLegendItem('Cash In', AppColors.successLight),
                 ],
               ),
@@ -396,7 +400,13 @@ class YoYComparisonCard extends ConsumerWidget {
               ),
               if (data.incomeChangePercent case final change?) ...[
                 const SizedBox(height: 12),
-                _buildChangeIndicator(l10n, change, secondary, isPrivacyMode),
+                _buildChangeIndicator(
+                  l10n,
+                  change,
+                  secondary,
+                  isDark,
+                  isPrivacyMode,
+                ),
               ],
             ],
           ),
@@ -506,10 +516,13 @@ class YoYComparisonCard extends ConsumerWidget {
     AppLocalizations l10n,
     double change,
     Color neutral,
+    bool isDark,
     bool isPrivacyMode,
   ) {
     final isUp = change > 0;
-    final color = isUp ? AppColors.successLight : neutral;
+    final color = isUp
+        ? (isDark ? AppColors.successDark : AppColors.successLight)
+        : neutral;
     final icon = isUp
         ? Icons.trending_up
         : change < 0
@@ -570,7 +583,9 @@ class RecentlyClosedCard extends ConsumerWidget {
                 children: [
                   Icon(
                     Icons.check_circle,
-                    color: AppColors.successLight,
+                    color: isDark
+                        ? AppColors.successDark
+                        : AppColors.successLight,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
@@ -608,7 +623,9 @@ class RecentlyClosedCard extends ConsumerWidget {
     // Undefined (null) XIRR shows no IRR line, never "0.0% IRR".
     final xirr = item.stats.xirr;
     final valueStyle = TextStyle(
-      color: isProfit ? AppColors.successLight : AppColors.errorLight,
+      color: isProfit
+          ? (isDark ? AppColors.successDark : AppColors.successLight)
+          : (isDark ? AppColors.errorDark : AppColors.errorLight),
       fontWeight: FontWeight.w600,
     );
 

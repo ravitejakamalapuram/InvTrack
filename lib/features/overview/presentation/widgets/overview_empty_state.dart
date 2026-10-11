@@ -259,7 +259,9 @@ class _XIRRDemoCard extends StatelessWidget {
                         rate: formatPercent(animatedXirr),
                         icon: Icons.trending_down_rounded,
                         color: isComplete
-                            ? AppColors.warningLight
+                            ? (isDark
+                                  ? AppColors.warningDark
+                                  : AppColors.warningLight)
                             : primaryColor,
                         isDark: isDark,
                         highlight: isComplete,
@@ -390,7 +392,7 @@ class _QuickStartSection extends StatelessWidget {
                   icon: Icons.upload_file_rounded,
                   label: l10n.importCsv,
                   sublabel: l10n.bulkUpload,
-                  color: AppColors.accentLight,
+                  color: isDark ? AppColors.accentDark : AppColors.accentLight,
                   isDark: isDark,
                   onTap: onImportCsv,
                 ),
@@ -632,7 +634,7 @@ class _SampleDataSection extends StatelessWidget {
             ),
             child: Icon(
               Icons.science_rounded,
-              color: AppColors.accentLight,
+              color: isDark ? AppColors.accentDark : AppColors.accentLight,
               size: 24,
             ),
           ),
@@ -666,7 +668,9 @@ class _SampleDataSection extends StatelessWidget {
               onTrySampleData();
             },
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.accentLight,
+              foregroundColor: isDark
+                  ? AppColors.accentDark
+                  : AppColors.accentLight,
               padding: EdgeInsets.symmetric(
                 horizontal: AppSpacing.md,
                 vertical: AppSpacing.sm,
@@ -719,13 +723,14 @@ class OverviewLoadErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GlassCard(
       child: Column(
         children: [
-          const Icon(
+          Icon(
             Icons.cloud_off_rounded,
             size: 48,
-            color: AppColors.errorLight,
+            color: isDark ? AppColors.errorDark : AppColors.errorLight,
           ),
           SizedBox(height: AppSpacing.sm),
           Semantics(

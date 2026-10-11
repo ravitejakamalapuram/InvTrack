@@ -325,20 +325,20 @@
       return GlassCard('<div class="it-demo"><span class="it-demo__disc">' + icon('insights', { size: 40 }) + '</span><h3 class="it-demo__title">' + esc(o.title) + '</h3><p class="it-demo__sub">' + esc(o.subtitle) + '</p>' +
         '<div class="it-demo__cmp" role="img" aria-label="' + esc(o.sr) + '"><div class="it-demo__col">' + icon('campaign', { size: 24, color: 'var(--text-muted)' }) + '<b>' + esc(o.advertised) + '</b><small>Advertised</small></div>' +
         icon('arrow_forward', { size: 24, color: 'var(--text-subtle)' }) +
-        '<div class="it-demo__col">' + icon('trending_down', { size: 24, color: 'var(--it-warning-l)' }) + '<b style="color:var(--it-warning-l)">' + esc(o.real) + '</b><small>Your XIRR</small></div></div>' +
+        '<div class="it-demo__col">' + icon('trending_down', { size: 24, color: 'var(--warning)' }) + '<b style="color:var(--warning)">' + esc(o.real) + '</b><small>Your XIRR</small></div></div>' +
         '<p class="it-demo__cap">' + esc(o.caption) + '</p></div>');
     }
     if (k === 'quickstart') {
       var tile = function (ic2, label, sub, col) {
         return '<button type="button" class="it-qs"' + sty({ '--c': col }) + ' aria-label="' + esc(label + ', ' + sub) + '"><span class="it-qs__disc">' + icon(ic2, { size: 24 }) + '</span><b>' + esc(label) + '</b><small>' + esc(sub) + '</small></button>';
       };
-      return GlassCard('<h3 class="it-h4">Get Started</h3><div class="it-tile2">' + tile('add', 'Add Manually', 'Step by step', 'var(--primary)') + tile('upload_file', 'Import CSV', 'Bulk upload', 'var(--it-accent-l)') + '</div>');
+      return GlassCard('<h3 class="it-h4">Get Started</h3><div class="it-tile2">' + tile('add', 'Add Manually', 'Step by step', 'var(--primary)') + tile('upload_file', 'Import CSV', 'Bulk upload', 'var(--accent)') + '</div>');
     }
     if (k === 'sample') {
       return '<div class="it-banner"><span class="it-banner__disc">' + icon('science', { size: 24 }) + '</span><div class="it-banner__txt"><b>Try Sample Data</b><small>Explore with realistic Indian investments</small></div>' + Button({ variant: 'text', label: 'Try It' }) + '</div>';
     }
     if (k === 'error') {         // OverviewLoadErrorState: no add, import or sample-data action
-      return GlassCard('<div class="it-errst">' + icon('cloud_off', { size: 48, color: 'var(--it-danger-l)' }) +
+      return GlassCard('<div class="it-errst">' + icon('cloud_off', { size: 48, color: 'var(--danger)' }) +
         '<h3 class="it-errst__t" aria-live="polite">Couldn\'t load your portfolio</h3>' +
         '<p class="it-errst__m">Your data is safe. Check your connection and try again.</p>' +
         Button({ variant: 'filled', label: 'Retry', icon: 'refresh', iconSize: 18 }) + '</div>');

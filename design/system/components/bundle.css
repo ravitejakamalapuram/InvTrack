@@ -245,11 +245,11 @@
 .it-qs small { font: 400 12px/1.4 var(--font-text); color: var(--text-muted); margin-top: -6px; }
 .it-h4 { margin: 0 0 var(--space-md); font: 600 16px/1.4 var(--font-display); color: var(--text); }
 .it-banner { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md); border-radius: var(--radius-md); background: linear-gradient(135deg, color-mix(in srgb, var(--it-accent-l) 10%, transparent), color-mix(in srgb, var(--it-primary-l) 10%, transparent)); border: 1px solid color-mix(in srgb, var(--it-accent-l) 30%, transparent); }
-.it-banner__disc { display: inline-flex; padding: var(--space-sm); border-radius: 50%; background: color-mix(in srgb, var(--it-accent-l) 20%, transparent); color: var(--it-accent-l); }
+.it-banner__disc { display: inline-flex; padding: var(--space-sm); border-radius: 50%; background: color-mix(in srgb, var(--it-accent-l) 20%, transparent); color: var(--accent); }
 .it-banner__txt { flex: 1; min-width: 0; }
 .it-banner__txt b { display: block; font: 600 14px/1.4 var(--font-text); letter-spacing: .1px; color: var(--text); }
 .it-banner__txt small { font: 400 12px/1.4 var(--font-text); color: var(--text-muted); }
-.it-banner .it-btn--text { color: var(--it-accent-l); }
+.it-banner .it-btn--text { color: var(--accent); }
 
 /* ---------- Text field (app_text_field.dart) ---------- */
 .it-field { display: flex; flex-direction: column; }

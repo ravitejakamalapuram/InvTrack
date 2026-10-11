@@ -596,8 +596,12 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                         value: closed.netCashFlow,
                         currencyFormat: currencyFormat,
                         color: closed.netCashFlow >= 0
-                            ? AppColors.successLight
-                            : AppColors.errorLight,
+                            ? (isDark
+                                  ? AppColors.successDark
+                                  : AppColors.successLight)
+                            : (isDark
+                                  ? AppColors.errorDark
+                                  : AppColors.errorLight),
                         icon: Icons.check_circle,
                         isDark: isDark,
                         isPrivacyMode: isPrivacyMode,
@@ -628,7 +632,9 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
   }) {
     final isPositive = value >= 0;
     final valueStyle = TextStyle(
-      color: isPositive ? AppColors.successLight : AppColors.errorLight,
+      color: isPositive
+          ? (isDark ? AppColors.successDark : AppColors.successLight)
+          : (isDark ? AppColors.errorDark : AppColors.errorLight),
       fontWeight: FontWeight.bold,
       fontSize: 16,
     );

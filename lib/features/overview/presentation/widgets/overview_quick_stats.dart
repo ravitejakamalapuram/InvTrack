@@ -30,6 +30,7 @@ class OverviewQuickStats extends StatelessWidget {
     // terminal value, MOIC would read as a total loss.
     final display = ReturnDisplay.resolve(stats: stats, openStats: openStats);
     final awaiting = display.isAwaitingValue;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
         Expanded(
@@ -40,8 +41,10 @@ class OverviewQuickStats extends StatelessWidget {
                 ? ReturnDisplay.dash
                 : '${NumberFormat('#,##0.00').format(stats.moic)}x',
             color: awaiting
-                ? AppColors.neutral500Light
-                : AppColors.successLight,
+                ? (isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light)
+                : (isDark ? AppColors.successDark : AppColors.successLight),
             subtitle: awaiting
                 ? display.secondaryText(l10n)
                 : stats.durationFormatted != null
