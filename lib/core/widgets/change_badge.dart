@@ -27,7 +27,7 @@ class ChangeBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = isZero
-        ? AppColors.neutral500Light
+        ? AppColors.neutral600Light
         : (isPositive ? AppColors.successLight : AppColors.dangerLight);
 
     final bgColor = isZero
