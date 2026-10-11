@@ -1,0 +1,39 @@
+<!-- @dsCard group="Screens" height=1691 subtitle="Overview hero: net cash flow so far, out / in, XIRR" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+  // Illustrative figures only.
+  var positive = { amount: F.smart(325000), returnText: '+17.6%', positive: true, out: F.compact(1850000), inn: F.compact(2175000), xirr: '11.4%',
+    note: 'Money out includes fees. Reinvested payouts count once in MOIC and return %.' };
+  var expected = { amount: F.smart(60000), returnText: '+4.8%', positive: true, out: F.compact(1250000), inn: F.compact(1310000),
+    xirr: '8.1%', xirrLabel: 'Expected XIRR', realisedXirr: '9.2%', hint: 'Based on 7% p.a.' };
+  var awaiting = { amount: F.smart(-1250000), status: 'Awaiting first payout', out: F.compact(1250000), inn: F.compact(0), xirr: '—',
+    hint: 'Add a payout or current value to calculate' };
+  var loss = { scope: 'realized', amount: F.smart(-40000), returnText: '-10.0%', positive: false, out: F.compact(400000), inn: F.compact(360000), xirr: '-6.8%' };
+  document.getElementById('root').innerHTML = I.panes(function () {
+    return '<div class="it-stack" style="gap:20px">' +
+      '<div>' + I.HeroCard(positive) + cap('Every open investment has a value: return badge and XIRR.') + '</div>' +
+      '<div>' + I.HeroCard(expected) + cap('Estimated current value: the label reads Expected XIRR, a note gives the basis, Realised XIRR sits beside it.') + '</div>' +
+      '<div>' + I.HeroCard(awaiting) + cap('Open investments with no value: a neutral status replaces the % badge, XIRR is a dash. Never 0% or −100%.') + '</div>' +
+      '<div>' + I.HeroCard(loss) + cap('Realized scope (closed investments only) with a negative return.') + '</div>' +
+      '<div data-privacy="on">' + I.HeroCard(Object.assign({ privacy: true }, positive)) + cap('Privacy mode: every amount, the return % and the XIRR are hidden.') + '</div>' +
+      '<div>' + I.HeroCard({ loading: true }) + cap('Loading.') + '</div>' +
+      '</div>';
+  });
+  I.wire(document);
+})();
+</script>
+</body>
+</html>

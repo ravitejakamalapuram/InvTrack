@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/guest_backup_merge_provider.dart';
@@ -55,6 +58,7 @@ Future<bool> backupAndMergeGuestData(
   final messenger = ScaffoldMessenger.of(context);
   final navigator = Navigator.of(context, rootNavigator: true);
   final service = ref.read(guestBackupMergeServiceProvider);
+  final analytics = ref.read(analyticsServiceProvider);
 
   DialogRoute<void>? loading;
   void showLoading() {
@@ -124,6 +128,9 @@ Future<bool> backupAndMergeGuestData(
     case GuestMergeCancelled():
       return false;
     case GuestMergeSucceeded():
+      // Only a merge that moved every record: the others are not a conversion
+      // the funnel should count.
+      unawaited(analytics.logAccountLinkSuccess(method: 'merge'));
       if (messenger.mounted) {
         messenger.showSnackBar(
           SnackBar(

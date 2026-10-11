@@ -16,9 +16,55 @@ void main() {
       expect(AnalyticsEvents.csvImportCompleted, 'csv_import_completed');
       expect(AnalyticsEvents.exportGenerated, 'export_generated');
     });
+  });
 
-    test('should have correct error event names', () {
-      expect(AnalyticsEvents.errorOccurred, 'error_occurred');
+  group('AnalyticsService parameters', () {
+    late _MockFirebaseAnalytics firebase;
+    late AnalyticsService service;
+
+    setUp(() {
+      firebase = _MockFirebaseAnalytics();
+      when(
+        () => firebase.logEvent(
+          name: any(named: 'name'),
+          parameters: any(named: 'parameters'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => firebase.logScreenView(
+          screenName: any(named: 'screenName'),
+          screenClass: any(named: 'screenClass'),
+        ),
+      ).thenAnswer((_) async {});
+      service = AnalyticsService(analytics: firebase);
+    });
+
+    // The Firebase plugin asserts that every value is a String or a num, and
+    // GA4 stores nothing else, so a bool flag must go out as 1 or 0.
+    test('investment_created sends the notes flag as 1, not true', () async {
+      await service.logInvestmentCreated(investmentType: 'fd', hasNotes: true);
+
+      verify(
+        () => firebase.logEvent(
+          name: 'investment_created',
+          parameters: {
+            'investment_type': 'fd',
+            'has_notes': 1,
+            'has_amount': 0,
+          },
+        ),
+      ).called(1);
+    });
+
+    test('screen_view sends the screen name and no class', () async {
+      await service.logScreenView(screenName: 'goal_create');
+
+      verify(
+        () => firebase.logScreenView(
+          screenName: 'goal_create',
+          screenClass: null,
+        ),
+      ).called(1);
     });
   });
 

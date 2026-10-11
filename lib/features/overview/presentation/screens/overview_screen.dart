@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/analytics/analytics_screens.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
@@ -20,9 +22,11 @@ import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_
 import 'package:inv_tracker/features/income_projection/presentation/widgets/income_guardian_dashboard_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_enums.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/widgets/portfolio_health_dashboard_card.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_analytics.dart';
+import 'package:inv_tracker/features/overview/presentation/widgets/overview_all_archived_card.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_empty_state.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_quick_stats.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/sample_data_banner.dart';
@@ -88,6 +92,12 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
         (activeInvestmentsAsync.value?.isEmpty ?? false) &&
         (archivedInvestmentsAsync.value?.isEmpty ?? false) &&
         (hasNoInvestmentsAsync.value ?? false);
+    // Archived investments are left out of every total on purpose. The hero
+    // says how many; with only archived ones, the empty totals are explained
+    // instead of offering onboarding (A17).
+    final archivedCount = archivedInvestmentsAsync.value?.length ?? 0;
+    final hasOnlyArchived =
+        (activeInvestmentsAsync.value?.isEmpty ?? false) && archivedCount > 0;
 
     final currencyFormat = ref.watch(currencyFormatProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -99,7 +109,12 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
           HapticFeedback.mediumImpact();
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const AddInvestmentScreen()),
+            MaterialPageRoute(
+              settings: const RouteSettings(
+                name: AnalyticsScreens.addInvestment,
+              ),
+              builder: (_) => const AddInvestmentScreen(),
+            ),
           );
         },
         icon: const Icon(Icons.add),
@@ -118,7 +133,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
               SliverAppBar(
                 floating: true,
                 title: const Text(
-                  'Investment Tracker',
+                  'InvTrack',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 centerTitle: false,
@@ -169,6 +184,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                           currencyFormat,
                           isDark,
                           l10n,
+                          archivedCount: archivedCount,
                         )
                       : _buildEmptyStateContent(
                           context,
@@ -178,6 +194,8 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                           currencyFormat,
                           isDark,
                           isNewAccount: isNewAccount,
+                          archivedCount: archivedCount,
+                          hasOnlyArchived: hasOnlyArchived,
                         ),
                   loading: () => _buildLoadingContent(
                     context,
@@ -207,8 +225,9 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
     AsyncValue<InvestmentStats> closedStats,
     NumberFormat currencyFormat,
     bool isDark,
-    AppLocalizations l10n,
-  ) {
+    AppLocalizations l10n, {
+    required int archivedCount,
+  }) {
     return SliverList(
       delegate: SliverChildListDelegate([
         // Sample Data Mode Banner (shows when active)
@@ -220,6 +239,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
           openStats: openStats,
           closedStats: closedStats,
           currencyFormat: currencyFormat,
+          archivedCount: archivedCount,
           errorBuilder: (error) => OverviewErrorCard(error: error),
         ),
 
@@ -316,6 +336,20 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
     );
   }
 
+  /// Opens the Investments tab on its Archived filter: the default filter
+  /// lists active investments only, and the archived ones are what the
+  /// all-archived card is about.
+  void _showArchivedInvestments(BuildContext context) {
+    // The list state is auto-disposed, and the Investments tab may not be
+    // built yet, so hold the state until that tab has taken it over.
+    final hold = ref.listenManual(investmentListStateProvider, (_, _) {});
+    ref
+        .read(investmentListStateProvider.notifier)
+        .setFilter(InvestmentFilter.archived);
+    context.go('/investments');
+    WidgetsBinding.instance.addPostFrameCallback((_) => hold.close());
+  }
+
   /// Build content for empty state (no cash flows).
   ///
   /// Sample data and the `empty_state_viewed` event are only for a new
@@ -329,6 +363,8 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
     NumberFormat currencyFormat,
     bool isDark, {
     required bool isNewAccount,
+    required int archivedCount,
+    required bool hasOnlyArchived,
   }) {
     // Track the empty state view once, not on every rebuild
     if (isNewAccount && !_emptyStateViewLogged) {
@@ -344,6 +380,29 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
       });
     }
 
+    // Every investment is archived: the totals are empty because archived
+    // ones are left out, not because the account is new.
+    if (hasOnlyArchived) {
+      return SliverList(
+        delegate: SliverChildListDelegate([
+          HeroCardWithToggle(
+            globalStats: globalStats,
+            openStats: globalStats,
+            closedStats: closedStats,
+            currencyFormat: currencyFormat,
+            archivedCount: archivedCount,
+            errorBuilder: (error) => OverviewErrorCard(error: error),
+          ),
+          const SizedBox(height: 32),
+          OverviewAllArchivedCard(
+            onViewInvestments: () => _showArchivedInvestments(context),
+          ),
+          // Bottom padding for FAB
+          const SizedBox(height: 80),
+        ]),
+      );
+    }
+
     return SliverList(
       delegate: SliverChildListDelegate([
         // Hero Card - shows zeros
@@ -353,6 +412,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
           openStats: globalStats,
           closedStats: closedStats,
           currencyFormat: currencyFormat,
+          archivedCount: archivedCount,
           errorBuilder: (error) => OverviewErrorCard(error: error),
         ),
 
@@ -367,7 +427,12 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                 .logEmptyStateActionTapped(action: 'add_manual');
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const AddInvestmentScreen()),
+              MaterialPageRoute(
+                settings: const RouteSettings(
+                  name: AnalyticsScreens.addInvestment,
+                ),
+                builder: (_) => const AddInvestmentScreen(),
+              ),
             );
           },
           onImportCsv: () {
@@ -377,7 +442,12 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                 .logEmptyStateActionTapped(action: 'import_csv');
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const BulkImportScreen()),
+              MaterialPageRoute(
+                settings: const RouteSettings(
+                  name: AnalyticsScreens.bulkImport,
+                ),
+                builder: (_) => const BulkImportScreen(),
+              ),
             );
           },
           onTemplateSelected: (template) {
@@ -388,6 +458,9 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
+                settings: const RouteSettings(
+                  name: AnalyticsScreens.addInvestment,
+                ),
                 builder: (_) =>
                     AddInvestmentScreen(preselectedTemplate: template),
               ),

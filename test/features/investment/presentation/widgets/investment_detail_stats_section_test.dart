@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
@@ -11,6 +12,8 @@ import 'package:inv_tracker/features/investment/domain/entities/investment_stats
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_stats_section.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+
+import '../../../../mocks/mock_analytics_service.dart';
 
 class _PrivacyOff extends PrivacyModeNotifier {
   @override
@@ -78,6 +81,8 @@ Future<void> _pump(
     ProviderScope(
       overrides: [
         currencyCodeProvider.overrideWith((ref) => 'INR'),
+        // The detail reports xirr_viewed when it shows a real XIRR.
+        analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
         privacyModeProvider.overrideWith(
           privacy ? _PrivacyOn.new : _PrivacyOff.new,
         ),

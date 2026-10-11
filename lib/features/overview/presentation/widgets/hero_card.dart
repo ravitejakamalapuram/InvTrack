@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/core/widgets/privacy_toggle_button.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/presentation/utils/return_display.dart';
+import 'package:inv_tracker/features/investment/presentation/utils/xirr_viewed_logger.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Notifier for toggling between all and realized-only net position
@@ -38,6 +39,9 @@ class HeroCardWithToggle extends ConsumerWidget {
   final NumberFormat currencyFormat;
   final Widget Function(String error) errorBuilder;
 
+  /// Archived investments, which the totals leave out (A17).
+  final int archivedCount;
+
   const HeroCardWithToggle({
     super.key,
     required this.globalStats,
@@ -45,6 +49,7 @@ class HeroCardWithToggle extends ConsumerWidget {
     required this.closedStats,
     required this.currencyFormat,
     required this.errorBuilder,
+    this.archivedCount = 0,
   });
 
   @override
@@ -66,6 +71,7 @@ class HeroCardWithToggle extends ConsumerWidget {
             closedStatsReady: false,
             currencyFormat: currencyFormat,
             showRealizedOnly: showRealizedOnly,
+            archivedCount: archivedCount,
           ),
           error: (e, s) => HeroCardContent(
             globalStats: global,
@@ -74,6 +80,7 @@ class HeroCardWithToggle extends ConsumerWidget {
             closedStatsReady: false,
             currencyFormat: currencyFormat,
             showRealizedOnly: showRealizedOnly,
+            archivedCount: archivedCount,
           ),
           data: (closed) => HeroCardContent(
             globalStats: global,
@@ -81,6 +88,7 @@ class HeroCardWithToggle extends ConsumerWidget {
             closedStats: closed,
             currencyFormat: currencyFormat,
             showRealizedOnly: showRealizedOnly,
+            archivedCount: archivedCount,
           ),
         );
       },
@@ -103,6 +111,11 @@ class HeroCardContent extends ConsumerWidget {
   final NumberFormat currencyFormat;
   final bool showRealizedOnly;
 
+  /// How many archived investments the figures leave out. Archived
+  /// investments are excluded from every Overview total on purpose (A17), so
+  /// the card says so when there are any.
+  final int archivedCount;
+
   const HeroCardContent({
     super.key,
     required this.globalStats,
@@ -111,6 +124,7 @@ class HeroCardContent extends ConsumerWidget {
     this.closedStatsReady = true,
     required this.currencyFormat,
     required this.showRealizedOnly,
+    this.archivedCount = 0,
   });
 
   @override
@@ -121,12 +135,18 @@ class HeroCardContent extends ConsumerWidget {
       stats: stats,
       openStats: showRealizedOnly ? null : openStats,
     );
+    final isPrivacyMode = ref.watch(privacyModeProvider);
+    logXirrViewedOnce(
+      ref,
+      surface: XirrSurface.overview,
+      display: display,
+      isHidden: isPrivacyMode,
+    );
     final netPosition = stats.netCashFlow;
     final isPositive = netPosition >= 0;
     final status = display.statusLabel(l10n);
 
     // Privacy mode hides amounts from the screen reader as well.
-    final isPrivacyMode = ref.watch(privacyModeProvider);
     final semanticLabel = AccessibilityUtils.statCardLabel(
       title: showRealizedOnly ? 'Realized Net Position' : l10n.netCashFlowSoFar,
       value: isPrivacyMode
@@ -173,6 +193,16 @@ class HeroCardContent extends ConsumerWidget {
               const SizedBox(height: 6),
               Text(
                 display.secondaryText(l10n)!,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+            if (archivedCount > 0) ...[
+              const SizedBox(height: 6),
+              Text(
+                l10n.overviewArchivedExcluded(archivedCount),
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 11,

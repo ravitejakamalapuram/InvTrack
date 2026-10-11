@@ -27,15 +27,11 @@ class _RecordingNotificationService extends FakeNotificationService {
   Future<void> checkAndShowMilestone({
     required String investmentId,
     required String investmentName,
-    required double totalInvested,
-    required double totalReturned,
+    required double moic,
+    required double gain,
     String currency = 'INR',
   }) async {
-    milestones.add({
-      'invested': totalInvested,
-      'returned': totalReturned,
-      'currency': currency,
-    });
+    milestones.add({'moic': moic, 'gain': gain, 'currency': currency});
   }
 
   @override
@@ -145,11 +141,15 @@ void main() {
     return container;
   }
 
-  InvestmentEntity investment(String id, String currency) => InvestmentEntity(
+  InvestmentEntity investment(
+    String id,
+    String currency, {
+    InvestmentStatus status = InvestmentStatus.open,
+  }) => InvestmentEntity(
     id: id,
     name: 'Fund $id',
     type: InvestmentType.p2pLending,
-    status: InvestmentStatus.open,
+    status: status,
     createdAt: DateTime(2025, 1, 1),
     updatedAt: DateTime(2025, 1, 1),
     currency: currency,
@@ -188,15 +188,20 @@ void main() {
             currency: 'USD',
           );
 
+      // 1.5x on $10,000 in and $15,000 back; the gain is $5,000.
       expect(notifications.milestones, [
-        {'invested': 10000.0, 'returned': 15000.0, 'currency': 'USD'},
+        {'moic': 1.5, 'gain': 5000.0, 'currency': 'USD'},
       ]);
     });
 
     test('mixed currencies are converted before the MOIC check', () async {
-      // $10,000 in, ₹8,30,000 back = $10,000 at 83: 1.0x, not 83x.
+      // $10,000 in, ₹8,30,000 back = $10,000 at 83: 1.0x, not 83x. The
+      // investment is closed: an open one with flows in two currencies has
+      // no current value, so it has no MOIC to announce (money rule 4).
       repo.seed(
-        investments: [investment('inv-2', 'USD')],
+        investments: [
+          investment('inv-2', 'USD', status: InvestmentStatus.closed),
+        ],
         cashFlows: [flow('inv-2', CashFlowType.invest, 10000, 'USD')],
       );
       final container = containerFor('USD');
@@ -214,19 +219,22 @@ void main() {
       expect(notifications.milestones, hasLength(1));
       expect(notifications.milestones.single['currency'], 'USD');
       expect(
-        notifications.milestones.single['invested'] as double,
-        closeTo(10000, 0.005),
+        notifications.milestones.single['moic'] as double,
+        closeTo(1.0, 1e-6),
       );
       expect(
-        notifications.milestones.single['returned'] as double,
-        closeTo(10000, 0.005),
+        notifications.milestones.single['gain'] as double,
+        closeTo(0, 0.005),
       );
     });
 
     test('no milestone when a rate is unavailable offline', () async {
       // Without a rate the ₹8,30,000 would be counted as $830,000 (83x).
+      // Closed, so that it is the missing rate that stops the check.
       repo.seed(
-        investments: [investment('inv-5', 'USD')],
+        investments: [
+          investment('inv-5', 'USD', status: InvestmentStatus.closed),
+        ],
         cashFlows: [flow('inv-5', CashFlowType.invest, 10000, 'USD')],
       );
       final container = containerFor(

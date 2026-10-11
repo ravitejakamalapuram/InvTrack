@@ -1,0 +1,42 @@
+<!-- @dsCard group="Actions" height=826 subtitle="Filter tabs, investment-type selector, template chips" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+
+  var T = I.types;
+  function tc(k, sel, compact) { return I.Chip({ kind: 'type', label: T[k][0], icon: T[k][1], color: 'var(--inv-' + k + ')', selected: sel, compact: compact }); }
+  document.getElementById('root').innerHTML = I.panes(function () {
+    return '<div class="it-stack" style="gap:18px">' +
+      '<div class="it-row" data-it-group style="flex-wrap:nowrap;overflow-x:auto">' + I.Chip({ label: 'All', count: 12, selected: true }) + I.Chip({ label: 'Open', count: 8 }) + I.Chip({ label: 'Closed', count: 3 }) + I.Chip({ label: 'Archived', count: 1, focus: true }) + '</div>' +
+      cap('Filter tabs: pill, 12px label, count bubble. Selected is filled with the light-mode primary in both themes; Archived shows the focus border.') +
+      '<div class="it-row" data-it-group style="gap:10px">' + tc('fixed-deposit', true) + tc('p2p-lending') + tc('bonds') + tc('real-estate') + tc('gold') + '</div>' +
+      cap('TypeSelector, wrap layout: unselected chip on surface, selected chip filled with the type colour and a soft glow.') +
+      '<div class="it-row" data-it-group style="gap:10px">' + tc('chit-funds', false, true) + tc('stocks', true, true) + tc('crypto', false, true) + '</div>' +
+      cap('Compact mode: smaller padding and icon.') +
+      '<div class="it-row" style="gap:12px">' +
+        I.Chip({ kind: 'template', emoji: '🏦', label: 'Fixed Deposit', color: 'var(--inv-fixed-deposit)' }) +
+        I.Chip({ kind: 'template', emoji: '🤝', label: 'P2P Lending', color: 'var(--inv-p2p-lending)' }) +
+        I.Chip({ kind: 'template', emoji: '🏠', label: 'Rental Property', color: 'var(--inv-real-estate)' }) + '</div>' +
+      cap('Quick-template chips on the empty Overview (the source uses an emoji per template).') +
+      '<div class="it-row" style="gap:12px">' + I.Chip({ kind: 'theme', label: 'Material chip' }) + I.Chip({ kind: 'theme', label: 'Selected', selected: true }) + '</div>' +
+      cap('ChipTheme: 8px radius, 12px label, 12 x 8 padding.') +
+    '</div>';
+  });
+
+  I.wire(document);
+})();
+</script>
+</body>
+</html>
