@@ -1,6 +1,8 @@
 /// Investment card widget for the list view.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -73,55 +75,73 @@ class InvestmentCard extends ConsumerWidget {
 
     final l10n = AppLocalizations.of(context);
 
-    // Build accessibility label
-    final baseLabel = statsAsync.maybeWhen(
-      data: (stats) {
-        // Use XIRR from async provider if available, otherwise fall back to
-        // stats (undefined for basic stats)
-        final xirrResult = xirrAsync.value;
-        final xirrValue = xirrResult?.value ?? stats.xirr;
-        final display = ReturnDisplay.resolve(
-          stats: stats,
-          openStats: isClosed ? null : stats,
-          xirr: xirrValue,
-          xirrMethod: xirrResult?.method ?? stats.xirrMethod,
-        );
-        final double? returnPercent = switch (display.kind) {
-          ReturnDisplayKind.annualised =>
-            xirrValue != null ? xirrValue * 100 : null,
-          ReturnDisplayKind.shortHolding => stats.absoluteReturn,
-          _ => null,
-        };
+    // Resolved once for the label, the value column and the bottom strip.
+    final stats = statsAsync.maybeWhen(data: (s) => s, orElse: () => null);
+    final xirrResult = xirrAsync.value;
+    final display = stats == null
+        ? null
+        : ReturnDisplay.resolve(
+            stats: stats,
+            openStats: isClosed ? null : stats,
+            // Null while XIRR is loading: the stats' own (basic) value is used.
+            xirr: xirrResult?.value,
+            xirrMethod: xirrResult?.method,
+          );
+    final isAwaitingValue = display?.isAwaitingValue ?? false;
 
-        return AccessibilityUtils.investmentCardLabel(
-          name: investment.name,
-          type: typeName,
-          currentValue: stats.netCashFlow,
-          // Null while XIRR is loading or undefined: the label leaves it out
-          returnPercent: returnPercent,
-          returnIsApproximate:
-              display.kind == ReturnDisplayKind.annualised &&
-              display.xirrMethod == XirrMethod.approximate,
-          // "Expected", with its basis, until the user confirms the value.
-          expectedReturnBasis:
-              display.kind == ReturnDisplayKind.annualised && display.isEstimate
-              ? display.secondaryText(l10n)
-              : null,
-          returnStatus: display.statusLabel(l10n),
-          // "So far", and what the figure leaves out, when it is a minimum.
-          returnQualifier: (returns) => display.semanticsFigure(l10n, returns),
-          currencySymbol: currencySymbol,
-          currencyLocale: currencyFormat.locale,
-          isClosed: isClosed,
-          maturityDate: investment.maturityDate,
-          totalInvested: stats.totalInvested,
-          lastActivityDate: stats.lastCashFlowDate ?? investment.createdAt,
-          shouldMask: isPrivacyMode,
-        );
-      },
-      orElse: () =>
-          '${isClosed ? "Closed" : "Open"} investment: ${investment.name}, Type: $typeName',
-    );
+    // Build accessibility label
+    final String baseLabel;
+    if (stats == null || display == null) {
+      baseLabel =
+          '${isClosed ? "Closed" : "Open"} investment: ${investment.name}, Type: $typeName';
+    } else {
+      final xirrValue = display.xirr;
+      final double? returnPercent = switch (display.kind) {
+        ReturnDisplayKind.annualised =>
+          xirrValue != null ? xirrValue * 100 : null,
+        ReturnDisplayKind.shortHolding => stats.absoluteReturn,
+        _ => null,
+      };
+
+      baseLabel = AccessibilityUtils.investmentCardLabel(
+        name: investment.name,
+        type: typeName,
+        // An open investment awaiting a value shows what went in and came
+        // back; its net would read as a loss.
+        currentValue: isAwaitingValue ? null : stats.netCashFlow,
+        receivedSegment: isAwaitingValue
+            ? l10n.investmentCardReceivedSemantics(
+                isPrivacyMode
+                    ? l10n.hiddenAmount
+                    : AccessibilityUtils.formatCurrencyForScreenReader(
+                        stats.totalReturned,
+                        currencySymbol,
+                        locale: currencyFormat.locale,
+                      ),
+              )
+            : null,
+        // Null while XIRR is loading or undefined: the label leaves it out
+        returnPercent: returnPercent,
+        returnIsApproximate:
+            display.kind == ReturnDisplayKind.annualised &&
+            display.xirrMethod == XirrMethod.approximate,
+        // "Expected", with its basis, until the user confirms the value.
+        expectedReturnBasis:
+            display.kind == ReturnDisplayKind.annualised && display.isEstimate
+            ? display.secondaryText(l10n)
+            : null,
+        returnStatus: display.statusLabel(l10n),
+        // "So far", and what the figure leaves out, when it is a minimum.
+        returnQualifier: (returns) => display.semanticsFigure(l10n, returns),
+        currencySymbol: currencySymbol,
+        currencyLocale: currencyFormat.locale,
+        isClosed: isClosed,
+        maturityDate: investment.maturityDate,
+        totalInvested: stats.totalInvested,
+        lastActivityDate: stats.lastCashFlowDate ?? investment.createdAt,
+        shouldMask: isPrivacyMode,
+      );
+    }
 
     final semanticLabel = isSelectionMode
         ? '${isSelected ? "Selected" : "Not selected"}, $baseLabel'
@@ -138,67 +158,247 @@ class InvestmentCard extends ConsumerWidget {
         onTap: onTap,
         onLongPress: onLongPress,
         padding: EdgeInsets.zero,
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
-              child: Row(
-                children: [
-                  // Checkbox in selection mode
-                  if (isSelectionMode) ...[
-                    Checkbox(
-                      value: isSelected,
-                      onChanged: onCheckboxChanged,
-                      activeColor: AppColors.primaryLight,
-                    ),
-                    SizedBox(width: AppSpacing.xs),
-                  ],
-                  // Icon with type icon
-                  _TypeIcon(
-                    typeColor: typeColor,
-                    isClosed: isClosed,
-                    icon: investment.type.icon,
-                  ),
-                  SizedBox(width: AppSpacing.md),
-                  // Name and type
-                  Expanded(
-                    child: _InvestmentInfo(
-                      investment: investment,
-                      typeName: typeName,
-                      isDark: isDark,
-                      typeColor: typeColor,
-                      isClosed: isClosed,
-                      referenceDate: referenceDate,
-                    ),
-                  ),
-                  SizedBox(width: AppSpacing.sm),
-                  // Stats
-                  _InvestmentValueColumn(
-                    xirrAsync: xirrAsync,
-                    isClosed: isClosed,
-                    isDark: isDark,
-                    statsAsync: statsAsync,
-                    currencyFormat: currencyFormat,
-                    isPrivacyMode: isPrivacyMode,
-                  ),
-                ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = _isCompact(
+              context,
+              cardWidth: constraints.maxWidth,
+              isSelectionMode: isSelectionMode,
+              valueWidth: _valueColumnWidth(
+                context,
+                stats: stats,
+                display: display,
+                currencyFormat: currencyFormat,
+                isPrivacyMode: isPrivacyMode,
               ),
-            ),
-            // Bottom info strip with stats
-            _InvestmentBottomStrip(
+            );
+            // Icon with type icon
+            final typeIcon = _TypeIcon(
+              typeColor: typeColor,
+              isClosed: isClosed,
+              icon: investment.type.icon,
+            );
+            // Name and type
+            final info = _InvestmentInfo(
               investment: investment,
+              typeName: typeName,
+              isDark: isDark,
+              typeColor: typeColor,
+              isClosed: isClosed,
+              referenceDate: referenceDate,
+            );
+            // Stats
+            final value = _InvestmentValueColumn(
+              xirrAsync: xirrAsync,
+              isClosed: isClosed,
               isDark: isDark,
               statsAsync: statsAsync,
+              display: display,
               currencyFormat: currencyFormat,
               isPrivacyMode: isPrivacyMode,
-              referenceDate: referenceDate,
-            ),
-          ],
+              compact: compact,
+            );
+            // Checkbox in selection mode, with the tile centred on its 48dp
+            // target.
+            final leading = <Widget>[
+              if (isSelectionMode) ...[
+                Checkbox(
+                  value: isSelected,
+                  onChanged: onCheckboxChanged,
+                  activeColor: AppColors.primaryLight,
+                ),
+                SizedBox(width: AppSpacing.xs),
+              ],
+              isSelectionMode
+                  ? SizedBox(
+                      height: AppSizes.minTouchTarget,
+                      child: Center(child: typeIcon),
+                    )
+                  : typeIcon,
+              SizedBox(width: AppSpacing.md),
+            ];
+
+            return Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.all(AppSpacing.md),
+                  // Tile, name and figures hang from the top edge so the name
+                  // and the first figure share a baseline. On a narrow card or
+                  // with large text the figures drop under the name.
+                  child: compact
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ...leading,
+                                Expanded(child: info),
+                              ],
+                            ),
+                            SizedBox(height: AppSpacing.sm),
+                            Align(
+                              alignment: AlignmentDirectional.centerEnd,
+                              child: value,
+                            ),
+                          ],
+                        )
+                      : Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ...leading,
+                            Expanded(child: info),
+                            SizedBox(width: AppSpacing.sm),
+                            value,
+                          ],
+                        ),
+                ),
+                // Bottom info strip with stats
+                _InvestmentBottomStrip(
+                  investment: investment,
+                  isDark: isDark,
+                  statsAsync: statsAsync,
+                  currencyFormat: currencyFormat,
+                  isPrivacyMode: isPrivacyMode,
+                  referenceDate: referenceDate,
+                  isAwaitingValue: isAwaitingValue,
+                  compact: compact,
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 }
+
+/// The least room the name gets beside the figures, in dp at normal text size:
+/// about 5.3 em of the 18sp name, enough for eleven characters including the
+/// ellipsis ("P2P loan po..."). It grows with the text scale so a name keeps as
+/// many characters at 200% text. Below it the figures drop under the name. Not
+/// a design token.
+const double _minNameWidthDp = 96;
+
+/// Whether the name would get less than [_minNameWidthDp] (scaled with the
+/// text) beside a value column [valueWidth] wide, so the figures must drop
+/// under it. [cardWidth] is the card's inner width. The value column's width is
+/// measured on what it draws, never guessed from the card width.
+bool _isCompact(
+  BuildContext context, {
+  required double cardWidth,
+  required bool isSelectionMode,
+  required double valueWidth,
+}) {
+  final leading =
+      (isSelectionMode ? AppSizes.minTouchTarget + AppSpacing.xs : 0) +
+      AppSizes.iconXl +
+      AppSpacing.md;
+  final nameWidth =
+      cardWidth - 2 * AppSpacing.md - leading - AppSpacing.sm - valueWidth;
+  final nameSize = AppTypography.bodyLarge.fontSize!;
+  final textScale = MediaQuery.textScalerOf(context).scale(nameSize) / nameSize;
+  return nameWidth < _minNameWidthDp * textScale;
+}
+
+/// Width of [text] on one line in [style], as a [Text] there draws it: the same
+/// inherited style, text scaler and bold-text setting.
+double _textWidth(BuildContext context, String text, TextStyle style) {
+  var effective = DefaultTextStyle.of(context).style.merge(style);
+  if (MediaQuery.boldTextOf(context)) {
+    effective = effective.merge(const TextStyle(fontWeight: FontWeight.bold));
+  }
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: effective),
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    locale: Localizations.maybeLocaleOf(context),
+  )..layout();
+  final width = painter.width;
+  painter.dispose();
+  return width;
+}
+
+/// Width of the value column as drawn: its widest line, measured on the text it
+/// shows. A masked figure is measured as the dots drawn in its place, so privacy
+/// mode lays out the same whatever the amounts.
+double _valueColumnWidth(
+  BuildContext context, {
+  required InvestmentStats? stats,
+  required ReturnDisplay? display,
+  required NumberFormat currencyFormat,
+  required bool isPrivacyMode,
+}) {
+  // The spinner, or the chevron of a card with nothing to show.
+  if (stats == null || !stats.hasData || display == null) {
+    return AppSizes.iconMd;
+  }
+  final l10n = AppLocalizations.of(context);
+
+  double figure(double amount, TextStyle style, {String prefix = ''}) {
+    if (isPrivacyMode) {
+      final dots = maskedAmountDots(style);
+      return _textWidth(context, dots.text, dots.style);
+    }
+    return _textWidth(
+      context,
+      '$prefix${currencyFormat.formatCompact(amount)}',
+      style,
+    );
+  }
+
+  if (display.isAwaitingValue) {
+    final amounts = math.max(
+      figure(stats.totalInvested, _figureStyle()),
+      figure(stats.totalReturned, _receivedStyle()),
+    );
+    final words = math.max(
+      _textWidth(context, l10n.investmentCardInvestedLabel, _wordStyle()),
+      _textWidth(context, l10n.investmentCardReceivedLabel, _wordStyle()),
+    );
+    final chip = math.min(
+      _statusChipMaxWidth,
+      2 * _chipPaddingX +
+          _textWidth(context, display.statusLabel(l10n)!, _statusChipStyle()),
+    );
+    return math.max(amounts + AppSpacing.xxs + words, chip);
+  }
+
+  final isPositive = stats.netCashFlow >= 0;
+  final net = figure(
+    stats.netCashFlow.abs(),
+    _figureStyle(),
+    prefix: isPositive ? '+' : '-',
+  );
+  // The pill keeps its space even where privacy mode fades it out.
+  final pill =
+      2 * _chipPaddingX +
+      _textWidth(context, display.pillText(l10n), _pillStyle());
+  return math.max(net, pill);
+}
+
+// Text styles of the value column, shared by the widgets and the width probe
+// so the width measured is the width drawn. A colour never changes a width.
+TextStyle _figureStyle([Color? color]) =>
+    AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600, color: color);
+
+TextStyle _receivedStyle([Color? color]) =>
+    AppTypography.small.copyWith(fontWeight: FontWeight.w500, color: color);
+
+TextStyle _wordStyle([Color? color]) =>
+    AppTypography.small.copyWith(color: color);
+
+TextStyle _statusChipStyle([Color? color]) =>
+    AppTypography.small.copyWith(color: color, fontWeight: FontWeight.w600);
+
+TextStyle _pillStyle([Color? color]) => AppTypography.small.copyWith(
+  color: color,
+  fontWeight: FontWeight.w600,
+  fontSize: 10,
+);
+
+/// Horizontal padding of the return pill and the status chip.
+const double _chipPaddingX = 6;
 
 /// Extracted widget for type icon to avoid rebuilds during selection toggling.
 class _TypeIcon extends StatelessWidget {
@@ -333,12 +533,16 @@ class _InvestmentInfo extends StatelessWidget {
                       size: 10,
                       color: maturityInfo.color,
                     ),
-                    SizedBox(width: 3),
-                    Text(
-                      maturityInfo.label,
-                      style: AppTypography.small.copyWith(
-                        color: maturityInfo.color,
-                        fontWeight: FontWeight.w600,
+                    SizedBox(width: AppSpacing.xxs),
+                    // Wraps on a narrow card or with large text, as the type
+                    // chip beside it does. A status label is never cut.
+                    Flexible(
+                      child: Text(
+                        maturityInfo.label,
+                        style: AppTypography.small.copyWith(
+                          color: maturityInfo.color,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -423,23 +627,30 @@ class _InvestmentValueColumn extends StatelessWidget {
   final bool isClosed;
   final bool isDark;
   final AsyncValue<InvestmentStats> statsAsync;
+
+  /// The card's resolved return display; null until the stats are loaded.
+  final ReturnDisplay? display;
   final NumberFormat currencyFormat;
   final bool isPrivacyMode;
+  final bool compact;
 
   const _InvestmentValueColumn({
     required this.xirrAsync,
     required this.isClosed,
     required this.isDark,
     required this.statsAsync,
+    required this.display,
     required this.currencyFormat,
     required this.isPrivacyMode,
+    required this.compact,
   });
 
   @override
   Widget build(BuildContext context) {
     return statsAsync.when(
       data: (stats) {
-        if (!stats.hasData) {
+        final display = this.display;
+        if (!stats.hasData || display == null) {
           return Icon(
             Icons.chevron_right_rounded,
             color: isDark
@@ -448,28 +659,26 @@ class _InvestmentValueColumn extends StatelessWidget {
           );
         }
 
+        // Open with no terminal value: what went in and came back, and a
+        // neutral status. No net figure and no return %.
+        if (display.isAwaitingValue) {
+          return _AwaitingValue(
+            stats: stats,
+            status: display.statusLabel(AppLocalizations.of(context))!,
+            isDark: isDark,
+            currencyFormat: currencyFormat,
+            isPrivacyMode: isPrivacyMode,
+            compact: compact,
+          );
+        }
+
         final l10n = AppLocalizations.of(context);
-        final openStats = isClosed ? null : stats;
-        final status = ReturnDisplay.resolve(
-          stats: stats,
-          openStats: openStats,
-        ).statusLabel(l10n);
-        final neutralColor = isDark
-            ? AppColors.neutral400Dark
-            : AppColors.neutral500Light;
         final isPositive = stats.netCashFlow >= 0;
-        // Neutral while the investment has no terminal value: a negative net
-        // cash flow is money still invested, not a loss.
-        final plColor = status != null
-            ? neutralColor
-            : isPositive
+        final plColor = isPositive
             ? AppColors.graphEmerald
             : AppColors.errorLight;
 
-        final valueStyle = AppTypography.bodyLarge.copyWith(
-          fontWeight: FontWeight.w600,
-          color: plColor,
-        );
+        final valueStyle = _figureStyle(plColor);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -493,82 +702,54 @@ class _InvestmentValueColumn extends StatelessWidget {
                   ),
             SizedBox(height: AppSpacing.xxs),
 
-            // Open with no terminal value: neutral status instead of an IRR
-            if (status != null)
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: neutralColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  status,
-                  style: AppTypography.small.copyWith(
-                    color: neutralColor,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 10,
-                  ),
-                ),
-              )
-            else
-              // XIRR - only show if valid and loaded
-              xirrAsync.when(
-                data: (result) {
-                  final xirr = result.value;
-                  final display = ReturnDisplay.resolve(
-                    stats: stats,
-                    openStats: openStats,
-                    xirr: xirr,
-                    xirrMethod: result.method,
-                  );
-                  final isShortHolding =
-                      display.kind == ReturnDisplayKind.shortHolding;
-                  // An undefined XIRR shows no badge, never "0%".
-                  if (!isShortHolding && xirr == null) {
-                    return const SizedBox.shrink();
-                  }
-                  final isAboveMax =
-                      xirr != null &&
-                      xirr * 100 >
-                          XirrFormatConfig.defaultConfig.maxDisplayPercent;
-                  if (!isShortHolding && !isValidXirr(xirr!) && !isAboveMax) {
-                    return const SizedBox.shrink();
-                  }
-                  final xirrColor =
-                      (isShortHolding ? stats.absoluteReturn : xirr!) >= 0
-                      ? AppColors.graphEmerald
-                      : AppColors.errorLight;
-                  final xirrFormatted = display.pillText(l10n);
+            // XIRR - only show if valid and loaded
+            xirrAsync.when(
+              data: (result) {
+                final xirr = result.value;
+                final isShortHolding =
+                    display.kind == ReturnDisplayKind.shortHolding;
+                // An undefined XIRR shows no badge, never "0%".
+                if (!isShortHolding && xirr == null) {
+                  return const SizedBox.shrink();
+                }
+                final isAboveMax =
+                    xirr != null &&
+                    xirr * 100 >
+                        XirrFormatConfig.defaultConfig.maxDisplayPercent;
+                if (!isShortHolding && !isValidXirr(xirr!) && !isAboveMax) {
+                  return const SizedBox.shrink();
+                }
+                final xirrColor =
+                    (isShortHolding ? stats.absoluteReturn : xirr!) >= 0
+                    ? AppColors.graphEmerald
+                    : AppColors.errorLight;
+                final xirrFormatted = display.pillText(l10n);
 
-                  return AnimatedOpacity(
-                    duration: const Duration(milliseconds: 200),
-                    opacity: isPrivacyMode ? 0.0 : 1.0,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: xirrColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        xirrFormatted,
-                        style: AppTypography.small.copyWith(
-                          color: xirrColor,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 10,
-                        ),
-                      ),
+                return AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: isPrivacyMode ? 0.0 : 1.0,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: _chipPaddingX,
+                      vertical: 2,
                     ),
-                  );
-                },
-                loading: () => SizedBox(
-                  height: 14,
-                  width: 40,
-                  // Optional: show skeleton or nothing while loading XIRR
-                  // Showing nothing avoids UI jumping if it loads fast
-                  child: const SizedBox.shrink(),
-                ),
-                error: (_, _) => const SizedBox.shrink(),
+                    decoration: BoxDecoration(
+                      color: xirrColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(xirrFormatted, style: _pillStyle(xirrColor)),
+                  ),
+                );
+              },
+              loading: () => SizedBox(
+                height: 14,
+                width: 40,
+                // Optional: show skeleton or nothing while loading XIRR
+                // Showing nothing avoids UI jumping if it loads fast
+                child: const SizedBox.shrink(),
               ),
+              error: (_, _) => const SizedBox.shrink(),
+            ),
           ],
         );
       },
@@ -585,6 +766,126 @@ class _InvestmentValueColumn extends StatelessWidget {
   }
 }
 
+/// The widest an awaiting card's status chip grows before it wraps to a
+/// second line, so a long status never widens the figures beside the name.
+const double _statusChipMaxWidth = 104;
+
+/// What an open investment that awaits its current value shows: the amount put
+/// in, the amount received so far and a neutral status chip. Both figures are
+/// the card's stats totals, converted to the base currency.
+///
+/// The amounts share one right edge and each word sits on its amount's
+/// baseline, so every card lines up whatever its figures.
+class _AwaitingValue extends StatelessWidget {
+  final InvestmentStats stats;
+  final String status;
+  final bool isDark;
+  final NumberFormat currencyFormat;
+  final bool isPrivacyMode;
+  final bool compact;
+
+  const _AwaitingValue({
+    required this.stats,
+    required this.status,
+    required this.isDark,
+    required this.currencyFormat,
+    required this.isPrivacyMode,
+    required this.compact,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final primary = isDark ? Colors.white : AppColors.neutral900Light;
+    final secondary = isDark
+        ? AppColors.neutral400Dark
+        : AppColors.neutral600Light;
+    final investedStyle = _figureStyle(primary);
+    final receivedStyle = _receivedStyle(secondary);
+    final wordStyle = _wordStyle(secondary);
+
+    Widget amount(double value, TextStyle style) => isPrivacyMode
+        ? MaskedAmountText(
+            text: currencyFormat.formatCompact(value),
+            style: style,
+          )
+        : CompactAmountText(
+            amount: value,
+            compactText: currencyFormat.formatCompact(value),
+            currencySymbol: currencyFormat.currencySymbol,
+            locale: currencyFormat.locale,
+            style: style,
+          );
+
+    TableRow row(Widget figure, String word) => TableRow(
+      children: [
+        Align(alignment: AlignmentDirectional.centerEnd, child: figure),
+        Padding(
+          padding: EdgeInsetsDirectional.only(start: AppSpacing.xxs),
+          child: Text(word, style: wordStyle),
+        ),
+      ],
+    );
+
+    // Amounts right-aligned in one column, each word on its amount's baseline.
+    // The first row has the name's line box, so the invested figure and the
+    // name share a baseline beside it.
+    final ledger = Table(
+      defaultColumnWidth: const IntrinsicColumnWidth(),
+      defaultVerticalAlignment: TableCellVerticalAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        row(
+          amount(stats.totalInvested, investedStyle),
+          l10n.investmentCardInvestedLabel,
+        ),
+        row(
+          amount(stats.totalReturned, receivedStyle),
+          l10n.investmentCardReceivedLabel,
+        ),
+      ],
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Under the name nothing limits the ledger's width, and a wide symbol
+        // at large text would run past the card where its clip cuts a figure:
+        // it scales down to the room instead, on the right edge.
+        compact
+            ? FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerEnd,
+                child: ledger,
+              )
+            : ledger,
+        SizedBox(height: AppSpacing.xxs),
+        ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: compact ? double.infinity : _statusChipMaxWidth,
+          ),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: _chipPaddingX,
+              vertical: 2,
+            ),
+            decoration: BoxDecoration(
+              color: secondary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              status,
+              textAlign: TextAlign.end,
+              style: _statusChipStyle(secondary),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// Bottom strip showing investment stats.
 /// OPTIMIZATION: Converted to StatelessWidget to avoid unnecessary provider listeners.
 class _InvestmentBottomStrip extends StatelessWidget {
@@ -595,12 +896,21 @@ class _InvestmentBottomStrip extends StatelessWidget {
   final bool isPrivacyMode;
   final DateTime? referenceDate;
 
+  /// The card awaits a current value: its invested amount is in the main row,
+  /// so the strip does not repeat it.
+  final bool isAwaitingValue;
+
+  /// Little room (narrow card or large text): everything wraps in one flow.
+  final bool compact;
+
   const _InvestmentBottomStrip({
     required this.investment,
     required this.isDark,
     required this.statsAsync,
     required this.currencyFormat,
     required this.isPrivacyMode,
+    required this.isAwaitingValue,
+    required this.compact,
     this.referenceDate,
   });
 
@@ -609,7 +919,12 @@ class _InvestmentBottomStrip extends StatelessWidget {
     // OPTIMIZATION: Using passed data instead of watching providers again.
     // This reduces listener count by ~3 per list item.
 
+    final subtleColor = isDark
+        ? AppColors.neutral400Dark
+        : AppColors.neutral500Light;
+
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.sm,
@@ -628,47 +943,35 @@ class _InvestmentBottomStrip extends StatelessWidget {
           final cashFlowCount = stats.cashFlowCount;
 
           final subtleTextStyle = AppTypography.small.copyWith(
-            color: isDark
-                ? AppColors.neutral400Dark
-                : AppColors.neutral500Light,
+            color: subtleColor,
           );
 
-          return Row(
-            children: [
-              // Last activity
-              Icon(
-                Icons.update_rounded,
-                size: 12,
-                color: isDark
-                    ? AppColors.neutral400Dark
-                    : AppColors.neutral500Light,
+          final items = <Widget>[
+            // Last activity
+            _StripItem(
+              icon: Icons.update_rounded,
+              color: subtleColor,
+              text: AppDateUtils.formatRelative(
+                lastActivityDate,
+                relativeTo: referenceDate,
               ),
-              SizedBox(width: 4),
-              Text(
-                AppDateUtils.formatRelative(
-                  lastActivityDate,
-                  relativeTo: referenceDate,
-                ),
-                style: subtleTextStyle,
-              ),
-              SizedBox(width: AppSpacing.md),
-              // Cash flow count
-              Icon(
-                Icons.receipt_long_rounded,
-                size: 12,
-                color: isDark
-                    ? AppColors.neutral400Dark
-                    : AppColors.neutral500Light,
-              ),
-              SizedBox(width: 4),
-              Text(
-                AppLocalizations.of(context).cashFlowEntries(cashFlowCount),
-                style: subtleTextStyle,
-              ),
-              Spacer(),
-              // Total invested
-              if (stats.totalInvested > 0) ...[
-                Row(
+              style: subtleTextStyle,
+            ),
+            // Cash flow count
+            _StripItem(
+              icon: Icons.receipt_long_rounded,
+              color: subtleColor,
+              text: AppLocalizations.of(context).cashFlowEntries(cashFlowCount),
+              style: subtleTextStyle,
+            ),
+          ];
+
+          // Total invested, or a way in when nothing was invested. Not on an
+          // awaiting card, which shows its invested amount above.
+          final Widget? trailing = isAwaitingValue
+              ? null
+              : stats.totalInvested > 0
+              ? Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
@@ -677,37 +980,62 @@ class _InvestmentBottomStrip extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    isPrivacyMode
-                        ? MaskedAmountText(
-                            text: currencyFormat.formatCompact(
-                              stats.totalInvested,
-                            ),
-                            style: subtleTextStyle.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                          )
-                        : CompactAmountText(
-                            amount: stats.totalInvested,
-                            compactText: currencyFormat.formatCompact(
-                              stats.totalInvested,
-                            ),
-                            currencySymbol: currencyFormat.currencySymbol,
-                            locale: currencyFormat.locale,
-                            style: subtleTextStyle.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                    // Gives way to the label's width. A Cr-scale amount at
+                    // large text scales down rather than wrapping, because a
+                    // wrapped figure ("CHF 123" over ".5M") reads as another
+                    // amount.
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: AlignmentDirectional.centerStart,
+                        child: isPrivacyMode
+                            ? MaskedAmountText(
+                                text: currencyFormat.formatCompact(
+                                  stats.totalInvested,
+                                ),
+                                style: subtleTextStyle.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              )
+                            : CompactAmountText(
+                                amount: stats.totalInvested,
+                                compactText: currencyFormat.formatCompact(
+                                  stats.totalInvested,
+                                ),
+                                currencySymbol: currencyFormat.currencySymbol,
+                                locale: currencyFormat.locale,
+                                style: subtleTextStyle.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                      ),
+                    ),
                   ],
-                ),
-              ] else ...[
-                Text(
+                )
+              : Text(
                   AppLocalizations.of(context).viewDetails,
                   style: AppTypography.small.copyWith(
                     color: AppColors.primaryLight,
                     fontWeight: FontWeight.w600,
                   ),
-                ),
-              ],
+                );
+
+          Widget flow(List<Widget> children) => Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.xxs,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: children,
+          );
+
+          if (trailing == null) return flow(items);
+          // The items take what the trailing group leaves and wrap; with
+          // little room the group joins the flow instead of squeezing them.
+          if (compact) return flow([...items, trailing]);
+          return Row(
+            children: [
+              Expanded(child: flow(items)),
+              SizedBox(width: AppSpacing.sm),
+              trailing,
             ],
           );
         },
@@ -716,16 +1044,15 @@ class _InvestmentBottomStrip extends StatelessWidget {
           children: [
             Text(
               AppLocalizations.of(context).loading,
-              style: AppTypography.small.copyWith(
-                color: isDark
-                    ? AppColors.neutral400Dark
-                    : AppColors.neutral500Light,
-              ),
+              style: AppTypography.small.copyWith(color: subtleColor),
             ),
           ],
         ),
-        error: (e, s) => Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        error: (e, s) => Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          spacing: AppSpacing.md,
+          runSpacing: AppSpacing.xxs,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text(
               AppLocalizations.of(context).addedRelative(
@@ -734,11 +1061,7 @@ class _InvestmentBottomStrip extends StatelessWidget {
                   relativeTo: referenceDate,
                 ),
               ),
-              style: AppTypography.small.copyWith(
-                color: isDark
-                    ? AppColors.neutral400Dark
-                    : AppColors.neutral500Light,
-              ),
+              style: AppTypography.small.copyWith(color: subtleColor),
             ),
             Text(
               AppLocalizations.of(context).viewDetails,
@@ -750,6 +1073,34 @@ class _InvestmentBottomStrip extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A small icon and text in the bottom strip. The text wraps instead of
+/// overflowing when the strip is narrow.
+class _StripItem extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String text;
+  final TextStyle style;
+
+  const _StripItem({
+    required this.icon,
+    required this.color,
+    required this.text,
+    required this.style,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: color),
+        SizedBox(width: AppSpacing.xxs),
+        Flexible(child: Text(text, style: style)),
+      ],
     );
   }
 }
