@@ -1,0 +1,34 @@
+<!-- @dsCard group="Privacy and money" height=538 subtitle="Privacy mode: toggle, masked amounts and the blur mask" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+
+  document.getElementById('root').innerHTML = I.panes(function () {
+    return '<div class="it-stack" style="gap:16px">' +
+      '<div class="it-row" style="justify-content:space-between">' + I.StatTile({ kind: 'metric', label: 'Total invested', value: F.compact(1850000), sensitive: true }) + '</div>' +
+      '<div class="it-row" style="gap:12px">' + I.PrivacyMask({ kind: 'toggle', background: false, size: 24, color: 'var(--text)' }) + '<span class="it-cap" style="margin:0">Tap the eye: every amount on this page hides and the icon changes.</span></div>' +
+      '<div style="font:700 36px/1.2 var(--font-text)">' + I.amount(F.compact(325000), { big: true }) + '</div>' +
+      cap('MaskedAmountText: five bullets (six above 24px), letter-spacing 2, announced as “Hidden amount”.') +
+      '<div style="font:600 18px/1.4 var(--font-text)"><span class="it-blur-mask">₹3.25 L</span></div>' +
+      cap('PrivacyMask blur variant: the child is blurred (sigma 12) while privacy mode is on. Use it for charts and sparklines.') +
+      '<div class="it-row" style="gap:12px">' + I.Badge({ value: 11.4 }).replace('class="it-chg', 'class="it-hide-private it-chg') + '<span class="it-cap" style="margin:0">Percentages fade out (opacity 0) but keep their space.</span></div>' +
+    '</div>';
+  });
+
+  I.wire(document);
+})();
+</script>
+</body>
+</html>

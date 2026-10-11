@@ -1,0 +1,59 @@
+<!-- @dsCard group="Cards" height=1624 subtitle="Metric, quick stat and the investment-detail stat arrangement" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+
+  // Illustrative figures only.
+  var up = F.compact(325000), n = function (v) { return F.compact(v); };
+  function detail(kind) {
+    var net, cur, flows, mini1, mini2, matur, hint = '';
+    if (kind === 'open') {
+      net = I.StatTile({ kind: 'net', label: 'Net cash flow so far', value: n(-250000), neutral: true, status: 'Awaiting first payout' });
+      cur = I.StatTile({ kind: 'current', label: 'Current value', basis: 'No current value yet', action: 'Add current value' });
+      flows = I.StatTile({ kind: 'flows', out: n(250000), inn: n(0), count: '1 txns' });
+      mini1 = I.StatTile({ kind: 'mini', label: 'XIRR', value: '—', color: 'var(--text-muted)', sub: 'Add a payout or current value to calculate' });
+      mini2 = I.StatTile({ kind: 'mini', label: 'MOIC', value: '—', color: 'var(--graph-purple)' });
+      matur = I.StatTile({ kind: 'maturity', date: 'Mar 31, 2027', status: '170 days until maturity', color: 'var(--text-muted)', icon: 'event' });
+    } else {
+      net = I.StatTile({ kind: 'net', label: 'Net Position', value: n(14800), positive: true, returnText: '+7.4%' });
+      cur = '';
+      flows = I.StatTile({ kind: 'flows', out: n(200000), inn: n(214800), count: '4 txns' });
+      mini1 = I.StatTile({ kind: 'mini', label: 'XIRR', value: '+7.2%', color: 'var(--graph-cyan)', sub: 'in 1.1y' });
+      mini2 = I.StatTile({ kind: 'mini', label: 'MOIC', value: F.multiplier(1.07), color: 'var(--graph-purple)', sub: '1.1y' });
+      matur = I.StatTile({ kind: 'maturity', date: 'Dec 19, 2025', status: 'Matured 296 days ago', color: 'var(--it-success-l)', icon: 'check_circle' });
+    }
+    return '<div class="it-stack" style="gap:10px">' + net + cur + flows + '<p class="it-hint" style="margin:-4px 0 0">Money out includes fees.</p><div class="it-two">' + mini1 + mini2 + '</div>' + matur + '</div>';
+  }
+  document.getElementById('root').innerHTML = I.panes(function () {
+    return '<div class="it-stack" style="gap:18px">' +
+      '<div class="it-two">' + I.StatTile({ kind: 'metric', label: 'Total invested', value: n(1850000), icon: 'account_balance_wallet', color: 'var(--primary)', sensitive: true }) +
+        I.StatTile({ kind: 'metric', label: 'Total returned', value: n(2175000), icon: 'savings', color: 'var(--it-success-l)', change: '+17.6%', positive: true, sensitive: true }) + '</div>' +
+      cap('MetricTile: bordered card, 16px icon chip, value in Plus Jakarta Sans 20/600, optional trend line.') +
+      '<div class="it-two">' + I.StatTile({ kind: 'quick', icon: 'schedule', label: 'Active', value: '12', sub: '3 maturing in 30 days', color: 'var(--it-accent-l)', sensitive: false }) +
+        I.StatTile({ kind: 'quick', icon: 'payments', label: 'Income this month', value: n(18400), sub: 'from 5 investments', color: 'var(--it-success-l)' }) + '</div>' +
+      cap('QuickStatCard on the Overview: icon tile, label, bold value, subtitle that hides in privacy mode.') +
+      '<div style="background:var(--it-hero-bg);border-radius:var(--radius-xxl);padding:20px">' + I.StatTile({ kind: 'hero', label: 'Net cash flow so far', value: n(325000), subtitle: '+17.6% return' }) + '</div>' +
+      cap('HeroMetric: white text on the hero gradient.') +
+      '<hr class="it-hr" style="margin:6px 0">' +
+      '<p class="it-pane__label" style="margin:0">Investment detail — closed</p>' + detail('closed') +
+      '<p class="it-pane__label" style="margin:6px 0 0">Investment detail — open, no value yet</p>' + detail('open') +
+    '</div>';
+  });
+
+  I.wire(document);
+})();
+</script>
+</body>
+</html>

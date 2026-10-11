@@ -1,0 +1,37 @@
+<!-- @dsCard group="Feedback" height=546 subtitle="Change, status, currency, maturity and type badges" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+
+  document.getElementById('root').innerHTML = I.panes(function () {
+    return '<div class="it-stack" style="gap:16px">' +
+      '<div class="it-row" style="gap:10px">' + I.Badge({ value: 12.4, size: 's' }) + I.Badge({ value: 12.4 }) + I.Badge({ value: 12.4, size: 'l' }) + '</div>' +
+      '<div class="it-row" style="gap:10px">' + I.Badge({ value: -3.25 }) + I.Badge({ value: 0 }) + I.Badge({ value: 7.1, filled: false }) + '</div>' +
+      cap('ChangeBadge: arrow and sign carry direction; the pastel fills are painted in both themes.') +
+      '<div class="it-row" style="gap:10px">' + I.Badge({ kind: 'status', label: 'ACTIVE', color: 'var(--it-success-l)' }) + I.Badge({ kind: 'status', label: 'OVERDUE', color: 'var(--it-danger-l)', outlined: true }) + I.Badge({ kind: 'status', label: 'Awaiting first payout', color: 'var(--text-muted)' }) + '</div>' +
+      cap('StatusBadge: pill, 10px label. The neutral one replaces a return % that cannot be calculated.') +
+      '<div class="it-row" style="gap:10px">' + I.Badge({ kind: 'currency', code: 'USD', compact: true }) + I.Badge({ kind: 'currency', code: 'USD', rate: 83.12, target: 'INR' }) + '</div>' +
+      cap('CurrencyBadge: shows a non-base currency and the rate used to convert it.') +
+      '<div class="it-row" style="gap:8px">' + I.Badge({ kind: 'maturity', tone: 'success', icon: 'check_circle', label: 'MATURED' }) + I.Badge({ kind: 'maturity', tone: 'warning', icon: 'schedule', label: 'MATURES TODAY' }) + I.Badge({ kind: 'maturity', tone: 'accent', icon: 'event', label: '21d TO MATURITY' }) + '</div>' +
+      '<div class="it-row" style="gap:8px">' + I.Badge({ kind: 'type', label: 'Fixed Deposit', color: 'var(--inv-fixed-deposit)' }) + I.Badge({ kind: 'type', label: 'P2P Lending', color: 'var(--inv-p2p-lending)' }) + I.Badge({ kind: 'closed' }) + '</div>' +
+      cap('Maturity, type and closed chips as drawn on the investment card.') +
+    '</div>';
+  });
+
+  I.wire(document);
+})();
+</script>
+</body>
+</html>
