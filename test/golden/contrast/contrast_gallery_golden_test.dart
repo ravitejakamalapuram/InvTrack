@@ -2,16 +2,26 @@
 //
 // The baseline images are committed with the guard. Each later PR
 // regenerates only the scenes it changes, so the image diff on GitHub is the
-// before and after. Tagged `golden`, so CI skips it; regenerate locally with
+// before and after.
+//
+// Tagged `golden`, so the pull-request run (release.yaml, `--exclude-tags=
+// golden`) skips it. The nightly workflow does run it (`flutter test --tags
+// golden test/golden`), so these images are compared every night. They
+// depend on glyph rendering: Roboto stands in for Plus Jakarta Sans because
+// the bundled font files are unusable (#973). When #973 restores them, the
+// fallback stops applying and the nightly run fails until the images are
+// regenerated in the same change. Regenerate locally with
 //   flutter test --tags golden --update-goldens test/golden/contrast
 @Tags(['golden'])
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_theme.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -21,9 +31,9 @@ import 'package:inv_tracker/core/widgets/currency_badge.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/metric_tile.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/investment_card.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -103,10 +113,159 @@ Widget _hero(
   archivedCount: archived,
 );
 
-/// Scene name and content. The names are the file names. Each scene is as
-/// tall as its content, on the page colour of its theme.
-final _scenes = <String, ({Widget Function() build})>{
-  'change_badge': (
+/// One picture: its content and the providers the content reads. Each scene
+/// is as tall as its content, on the page colour of its theme.
+class _Scene {
+  const _Scene({
+    required this.build,
+    this.overrides = const [],
+    this.height = 900,
+  });
+  final Widget Function() build;
+  final List<Override> overrides;
+
+  /// The room the scene may use; the image is as tall as the content.
+  final double height;
+}
+
+// The investment card's maturity chips are relative to this day.
+final _today = DateTime(2026, 10, 11);
+
+InvestmentEntity _investment(
+  String id,
+  String name,
+  InvestmentType type, {
+  InvestmentStatus status = InvestmentStatus.open,
+  DateTime? maturity,
+}) => InvestmentEntity(
+  id: id,
+  name: name,
+  type: type,
+  status: status,
+  createdAt: DateTime(2024, 10, 1),
+  updatedAt: DateTime(2024, 10, 1),
+  currency: 'INR',
+  maturityDate: maturity,
+);
+
+// Demo figures only: a gain paid out, a realised loss and an investment that
+// has had nothing back yet.
+InvestmentStats _paidOut(double invested, double returned, double xirr) =>
+    InvestmentStats(
+      totalInvested: invested,
+      totalReturned: returned,
+      netCashFlow: returned - invested,
+      absoluteReturn: (returned - invested) / invested * 100,
+      moic: returned / invested,
+      xirr: xirr,
+      cashFlowCount: 2,
+      firstCashFlowDate: DateTime(2024, 10, 1),
+      lastCashFlowDate: DateTime(2026, 10, 1),
+    );
+
+final _awaitingPayout = InvestmentStats(
+  totalInvested: 100000,
+  totalReturned: 0,
+  netCashFlow: -100000,
+  absoluteReturn: -100,
+  moic: 0,
+  xirr: null,
+  xirrMethod: XirrMethod.undefined,
+  cashFlowCount: 1,
+  firstCashFlowDate: DateTime(2026, 9, 1),
+  lastCashFlowDate: DateTime(2026, 9, 1),
+);
+
+({InvestmentEntity investment, List<Override> overrides}) _card(
+  InvestmentEntity investment,
+  InvestmentStats stats,
+  XirrResult xirr,
+) => (
+  investment: investment,
+  overrides: [
+    investmentBasicStatsProvider(
+      investment.id,
+    ).overrideWith((ref) => AsyncValue.data(stats)),
+    investmentXirrProvider(
+      investment.id,
+    ).overrideWith((ref) => Future.value(xirr)),
+  ],
+);
+
+// Five cards: MATURED, a chip due in 5 days, one due in 20 days, a closed
+// investment with a loss, and one awaiting its first payout.
+final _cards = [
+  _card(
+    _investment(
+      'demo-1',
+      'Demo fixed deposit',
+      InvestmentType.fixedDeposit,
+      maturity: DateTime(2026, 10, 1),
+    ),
+    _paidOut(1000000, 1114000, 0.114),
+    const XirrResult.exact(0.114),
+  ),
+  _card(
+    _investment(
+      'demo-2',
+      'Demo bonds',
+      InvestmentType.bonds,
+      maturity: DateTime(2026, 10, 16),
+    ),
+    _paidOut(500000, 540000, 0.082),
+    const XirrResult.exact(0.082),
+  ),
+  _card(
+    _investment(
+      'demo-3',
+      'Demo P2P loan',
+      InvestmentType.p2pLending,
+      maturity: DateTime(2026, 10, 31),
+    ),
+    _paidOut(200000, 221000, 0.105),
+    const XirrResult.exact(0.105),
+  ),
+  _card(
+    _investment(
+      'demo-4',
+      'Demo stocks',
+      InvestmentType.stocks,
+      status: InvestmentStatus.closed,
+    ),
+    _paidOut(100000, 50000, -0.5258),
+    const XirrResult.exact(-0.5258),
+  ),
+  _card(
+    _investment('demo-5', 'Demo gold', InvestmentType.gold),
+    _awaitingPayout,
+    const XirrResult.undefined(XirrUndefinedReason.insufficientFlows),
+  ),
+];
+
+/// Scene name and content. The names are the file names.
+final _scenes = <String, _Scene>{
+  'investment_cards': _Scene(
+    height: 1400,
+    overrides: [for (final c in _cards) ...c.overrides],
+    build: () => Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          for (final c in _cards) ...[
+            InvestmentCard(
+              investment: c.investment,
+              isSelectionMode: false,
+              isSelected: false,
+              onTap: () {},
+              referenceDate: _today,
+            ),
+            const SizedBox(height: 12),
+          ],
+        ],
+      ),
+    ),
+  ),
+  'change_badge': _Scene(
     build: () => const Padding(
       padding: EdgeInsets.all(16),
       child: Wrap(
@@ -122,8 +281,8 @@ final _scenes = <String, ({Widget Function() build})>{
       ),
     ),
   ),
-  'text_fields': (build: _fields),
-  'buttons': (
+  'text_fields': _Scene(build: _fields),
+  'buttons': _Scene(
     build: () => Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -147,7 +306,7 @@ final _scenes = <String, ({Widget Function() build})>{
       ),
     ),
   ),
-  'card_edges': (
+  'card_edges': _Scene(
     build: () => const Padding(
       padding: EdgeInsets.all(16),
       child: GlassCard(
@@ -165,7 +324,7 @@ final _scenes = <String, ({Widget Function() build})>{
       ),
     ),
   ),
-  'metric_tiles': (
+  'metric_tiles': _Scene(
     build: () => Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -191,7 +350,7 @@ final _scenes = <String, ({Widget Function() build})>{
       ),
     ),
   ),
-  'currency_badges': (
+  'currency_badges': _Scene(
     build: () => const Padding(
       padding: EdgeInsets.all(16),
       child: Wrap(
@@ -209,7 +368,7 @@ final _scenes = <String, ({Widget Function() build})>{
       ),
     ),
   ),
-  'type_chips': (
+  'type_chips': _Scene(
     build: () => Padding(
       padding: const EdgeInsets.all(16),
       child: TypeSelector<InvestmentType>(
@@ -222,13 +381,13 @@ final _scenes = <String, ({Widget Function() build})>{
       ),
     ),
   ),
-  'hero_card_gain': (
+  'hero_card_gain': _Scene(
     build: () => Padding(
       padding: const EdgeInsets.all(16),
       child: _hero(_gain, archived: 1),
     ),
   ),
-  'hero_card_loss': (
+  'hero_card_loss': _Scene(
     build: () => Padding(
       padding: const EdgeInsets.all(16),
       child: _hero(_loss, realizedOnly: true),
@@ -250,15 +409,18 @@ void main() {
         // fixed, so the harness puts Roboto in their place, as it does for
         // the store screenshots. It also loads the icon font.
         await loadStoreScreenshotFonts(tester);
-        await tester.setGoldenSize(const Size(_sceneWidth, 900));
+        await tester.setGoldenSize(Size(_sceneWidth, scene.height));
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
               privacyModeProvider.overrideWith(_PrivacyOff.new),
               currencyCodeProvider.overrideWith((ref) => 'INR'),
+              currencySymbolProvider.overrideWith((ref) => '₹'),
+              currencyFormatProvider.overrideWith((ref) => _inr),
               analyticsServiceProvider.overrideWithValue(
                 FakeAnalyticsService(),
               ),
+              ...scene.overrides,
             ],
             child: MaterialApp(
               debugShowCheckedModeBanner: false,
