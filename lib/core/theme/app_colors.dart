@@ -14,18 +14,21 @@ class AppColors {
   static const Color accentLight = Color(0xFF0EA5E9);
   static const Color accentDarkLight = Color(0xFF0284C7);
 
-  // Success - Emerald Green (premium feel)
-  static const Color successLight = Color(0xFF10B981);
+  // Success - Emerald Green (premium feel). Deep enough to read as text:
+  // 5.37:1 on the card, 4.73:1 on `successBgLight`, 5.37:1 under a white label.
+  static const Color successLight = Color(0xFF007A54);
   static const Color successBgLight = Color(0xFFD1FAE5);
 
-  // Danger - Coral Red (softer, premium)
-  static const Color dangerLight = Color(0xFFEF4444);
+  // Danger - Coral Red (softer, premium). 5.62:1 on the card, 4.60:1 on
+  // `dangerBgLight`, 5.62:1 under a white label.
+  static const Color dangerLight = Color(0xFFCC1926);
   static const Color dangerBgLight = Color(0xFFFEE2E2);
 
-  // Tint sources for green and red. Make every 10 to 30% tint of green or red
-  // from these, not from `successLight` and `dangerLight`, so a tint keeps its
-  // hue when those two are deepened for text. Never paint them as text; a scan
-  // test enforces both.
+  // Tint sources: the brighter hues that `successLight` and `dangerLight` had
+  // before they were deepened for text. Make every 10 to 30% tint of green or
+  // red from these, so the pale fills keep their look and the text on them
+  // keeps 4.5:1 (on a tint of the deeper colour it falls to 4.34 and 4.38 at
+  // 15%). Never paint them as text; a scan test enforces both.
   static const Color successTintLight = Color(0xFF10B981);
   static const Color dangerTintLight = Color(0xFFEF4444);
 

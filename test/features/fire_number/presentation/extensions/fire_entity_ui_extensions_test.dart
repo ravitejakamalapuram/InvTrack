@@ -77,5 +77,66 @@ void main() {
         }
       });
     });
+
+    group('vividColorForBrightness', () {
+      // The status colour for a tint and for the purple hero card: the
+      // original, brighter hue. Only the two green statuses differ in light,
+      // because only the green text colour got deeper.
+      test('the green statuses keep the old green in light', () {
+        for (final status in [
+          FireProgressStatus.ahead,
+          FireProgressStatus.achieved,
+        ]) {
+          expect(
+            status.vividColorForBrightness(Brightness.light),
+            AppColors.successTintLight,
+          );
+        }
+      });
+
+      test('every other status and every dark value is the plain colour', () {
+        for (final status in FireProgressStatus.values) {
+          expect(
+            status.vividColorForBrightness(Brightness.dark),
+            status.colorForBrightness(Brightness.dark),
+            reason: '${status.name} in dark',
+          );
+          if (status == FireProgressStatus.ahead ||
+              status == FireProgressStatus.achieved) {
+            continue;
+          }
+          expect(
+            status.vividColorForBrightness(Brightness.light),
+            status.colorForBrightness(Brightness.light),
+            reason: '${status.name} in light',
+          );
+        }
+      });
+
+      test('the text colour reads on the card and on its own vivid tint', () {
+        for (final status in [
+          FireProgressStatus.ahead,
+          FireProgressStatus.achieved,
+        ]) {
+          final text = status.colorForBrightness(Brightness.light);
+          final tint = composeOver(
+            status.vividColorForBrightness(Brightness.light).withValues(
+              alpha: 0.15,
+            ),
+            AppColors.cardLight,
+          );
+          expect(
+            contrastRatio(text, AppColors.cardLight),
+            greaterThanOrEqualTo(kMinText),
+            reason: '${status.name} on the card',
+          );
+          expect(
+            contrastRatio(text, tint),
+            greaterThanOrEqualTo(kMinText),
+            reason: '${status.name} on a 15% tint',
+          );
+        }
+      });
+    });
   });
 }

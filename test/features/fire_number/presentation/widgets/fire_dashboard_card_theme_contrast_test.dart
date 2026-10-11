@@ -86,6 +86,21 @@ Color _fireIcon(WidgetTester tester) =>
 Color _text(WidgetTester tester, String text) =>
     tester.widget<Text>(find.text(text)).style!.color!;
 
+/// The tint behind [text]: the fill of the nearest Container around it that
+/// has one, over [ground], the way it is painted.
+Color _tintBehind(WidgetTester tester, String text, Color ground) {
+  for (final element
+      in find
+          .ancestor(of: find.text(text), matching: find.byType(Container))
+          .evaluate()) {
+    final decoration = (element.widget as Container).decoration;
+    if (decoration is BoxDecoration && decoration.color != null) {
+      return composeOver(decoration.color!, ground);
+    }
+  }
+  throw StateError('No filled Container around the text.');
+}
+
 Color _barFill(WidgetTester tester) => tester
     .widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator))
     .valueColor!
@@ -137,6 +152,45 @@ void main() {
       expect(_text(tester, 'Ahead of Schedule'), AppColors.successLight);
       expect(_barFill(tester), AppColors.successLight);
     });
+
+    testWidgets(
+      'fire-status-ahead-light@tint15: the status chip reaches 4.5 and says it in words',
+      (tester) async {
+        await _pump(
+          tester,
+          AppTheme.lightTheme,
+          const FireDashboardCard(),
+          result: ahead,
+        );
+
+        // Colour is not the only carrier: the status is written out.
+        final label = _text(tester, 'Ahead of Schedule');
+        // The chip is tinted with the old, brighter green. Tinted with the
+        // deeper text colour it would be 4.34, under 4.5.
+        final tint = _tintBehind(
+          tester,
+          'Ahead of Schedule',
+          AppColors.cardLight,
+        );
+        expect(
+          tint,
+          composeOver(
+            AppColors.successTintLight.withValues(alpha: 0.15),
+            AppColors.cardLight,
+          ),
+        );
+        expect(
+          contrastRatio(label, tint),
+          greaterThanOrEqualTo(kMinText),
+          reason: 'fire-status-ahead-light@tint15',
+        );
+        expect(
+          contrastRatio(_barFill(tester), AppColors.cardLight),
+          greaterThanOrEqualTo(kMinGraphic),
+          reason: 'the progress bar is a graphic: 3:1',
+        );
+      },
+    );
   });
 
   group('FIRE card, behind', () {

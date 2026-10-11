@@ -17,19 +17,6 @@ import 'contrast_pairs.dart';
 
 /// Pairs that still fail. Grouped by the PR in the stack that fixes them.
 const _allowlist = <String>{
-  // PR 5 contrast-gain-loss (the two ChangeBadge dark pairs are retired there) (12)
-  'danger-light@tint15',
-  'error-light@tint10',
-  'danger-light@danger-bg',
-  'danger-light@card',
-  'on-error-dark',
-  'on-error-light',
-  'success-light@success-bg',
-  'success-light@card',
-  'success-light@tint15',
-  'on-primary-container-light',
-  'danger-dark@danger-bg',
-  'success-dark@success-bg',
   // PR 6 contrast-warning-accent (4)
   'accent-light@card',
   'accent-light@tint15',
@@ -131,11 +118,11 @@ const _allowlist = <String>{
 
 /// The size of [_allowlist]. Lower it with the list; raising it needs a reason
 /// in the PR body.
-const _allowlistMax = 103;
+const _allowlistMax = 91;
 
 /// The size of the pair table. A fixing PR that retires a pair or drops a
 /// ground it cannot fix changes this literal, so the change is in the diff.
-const _pairCount = 154;
+const _pairCount = 179;
 
 /// Files that can never be the measurement of a widget pair: the helper's own
 /// test, this guard and the table. Each mentions pair ids or `contrastRatio`.
@@ -199,14 +186,22 @@ void main() {
     expect(pairs.length, _pairCount);
   });
 
-  test('every audited row is in the table', () {
+  test('every audited row is in the table, but the two retired ones', () {
     final rows = {for (final p in pairs) ...p.rows};
-    expect(rows, {for (var i = 0; i < 77; i++) i});
+    // Rows 1 and 10 (dark danger and success on their pale fills) were retired
+    // in PR 5: only ChangeBadge paints those fills, it paints the light
+    // colour on them and has no caller, so the pairs never occur.
+    const retired = {1, 10};
+    expect(rows, {
+      for (var i = 0; i < 77; i++)
+        if (!retired.contains(i)) i,
+    });
   });
 
   test('the pairs the audit had no row for are exactly these', () {
-    // The plan's three light dividers, then the four the PR 1 review found on
-    // the investment card's XIRR pill and the danger tint.
+    // The plan's three light dividers, the four the PR 1 review found on the
+    // investment card's XIRR pill and the danger tint, and the twenty-one widget
+    // pairs PR 5 added for green and red on the tints and fills they sit on.
     expect(
       pairs.where((p) => p.addedByPlan).map((p) => p.id),
       unorderedEquals([
@@ -217,6 +212,27 @@ void main() {
         'outline-variant-light@background',
         'outline-variant-light@card',
         'outline-variant-light@surface',
+        'maturity-matured-light@tint15',
+        'card-xirr-pill-error-light@tint10',
+        'fire-status-ahead-light@tint15',
+        'goal-completed-light@tint15',
+        'goals-achieved-light@tint10',
+        'cash-flow-row-in-light@tint10',
+        'cash-flow-row-out-light@tint10',
+        'detail-return-badge-success-light@tint15',
+        'detail-return-badge-danger-light@tint15',
+        'detail-maturity-matured-light@tint15',
+        'overview-breakdown-success-light@tint10',
+        'overview-breakdown-danger-light@tint10',
+        'yoy-pill-success-light@tint10',
+        'copied-snackbar-label-light',
+        'confirm-dialog-destructive-light@dialog',
+        'overview-cash-in-bar-light@card',
+        'overview-cash-out-bar-light@card',
+        'overview-cash-in-bar-dark@card',
+        'overview-cash-out-bar-dark@card',
+        'change-badge-outlined-success-dark@page',
+        'change-badge-outlined-danger-dark@page',
       ]),
     );
   });

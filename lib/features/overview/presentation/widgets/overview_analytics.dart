@@ -94,11 +94,14 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                                             ? (d.outflows / maxValue * 80)
                                             : 0,
                                         decoration: BoxDecoration(
-                                          color:
-                                              (isDark
-                                                      ? AppColors.errorDark
-                                                      : AppColors.dangerTintLight)
-                                                  .withValues(alpha: 0.7),
+                                          // Solid in light: 70% of the deeper
+                                          // red is 3.62:1 on the card, and a
+                                          // tint of it is not allowed.
+                                          color: isDark
+                                              ? AppColors.errorDark.withValues(
+                                                  alpha: 0.7,
+                                                )
+                                              : AppColors.errorLight,
                                           borderRadius:
                                               const BorderRadius.vertical(
                                                 top: Radius.circular(4),
@@ -113,11 +116,12 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                                             ? (d.inflows / maxValue * 80)
                                             : 0,
                                         decoration: BoxDecoration(
-                                          color:
-                                              (isDark
-                                                      ? AppColors.successDark
-                                                      : AppColors.successTintLight)
-                                                  .withValues(alpha: 0.7),
+                                          // Solid in light: 70% of the deeper
+                                          // green is 3.07:1 on the card.
+                                          color: isDark
+                                              ? AppColors.successDark
+                                                    .withValues(alpha: 0.7)
+                                              : AppColors.successLight,
                                           borderRadius:
                                               const BorderRadius.vertical(
                                                 top: Radius.circular(4),

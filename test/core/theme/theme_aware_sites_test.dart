@@ -65,14 +65,8 @@ const _constants = [
 const _deepStatusConstants = ['successLight', 'errorLight', 'dangerLight'];
 
 /// Sites not yet fixed, by file: how many are left. Raising a number, or adding
-/// a file, needs a reason in the PR body.
-const _unfixed = <String, int>{
-  // Deliberately kept: no screen uses ChangeBadge (the plan's W2), and its pale
-  // fill is the same in both themes. Two sites are left, its green and red. Its
-  // zero-change text is neutral600Light, which this scan does not list, and
-  // neutral500Dark for an outlined badge in dark, which is themed.
-  'lib/core/widgets/change_badge.dart': 2,
-};
+/// a file, needs a reason in the PR body. None are left.
+const _unfixed = <String, int>{};
 
 /// Sites kept on a `theme-neutral:` comment, by file: how many. A comment in
 /// `lib/` is outside the diff a reviewer reads, so each one needs a number here

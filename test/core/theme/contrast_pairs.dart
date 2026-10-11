@@ -9,6 +9,12 @@
 /// [ContrastPair.widgetTest]. A control pair passes today and must keep
 /// passing.
 ///
+/// Two pairs the audit judged are not here: dark `danger` and `success` on the
+/// pale `danger-bg` and `success-bg`. `ChangeBadge` is the only widget that
+/// paints those fills, it has no caller, and it paints the light colour on
+/// them, so a dark colour on a pale fill never occurs. The real pairs are
+/// `danger-light@danger-bg` and `success-light@success-bg`.
+///
 /// The measured ratios equal the audit's to 0.01, except the light 10% tints
 /// of mutual funds and P2P lending (3.29 measured, 3.27 audited): the audit
 /// rounded the exact half channel 242.5 down, [composeOver] rounds it up.
@@ -97,6 +103,25 @@ const _cardTest =
 
 // The test that pumps the zero-change ChangeBadge and measures its text.
 const _zeroBadgeTest = 'test/core/widgets/change_badge_zero_contrast_test.dart';
+
+// PR 5: the tests that pump a green or red label on its tint, or a fill.
+const _fireCardTest =
+    'test/features/fire_number/presentation/widgets/fire_dashboard_card_theme_contrast_test.dart';
+const _goalCardsTest =
+    'test/features/goals/presentation/widgets/goal_cards_theme_contrast_test.dart';
+const _cashFlowRowTest =
+    'test/features/investment/presentation/widgets/cash_flow_card_theme_contrast_test.dart';
+const _detailStatsTest =
+    'test/features/investment/presentation/widgets/investment_detail_stats_theme_contrast_test.dart';
+const _breakdownTest =
+    'test/features/overview/presentation/screens/overview_breakdown_theme_contrast_test.dart';
+const _overviewColoursTest =
+    'test/features/overview/presentation/widgets/overview_theme_colours_test.dart';
+const _copiedSnackbarTest =
+    'test/core/widgets/compact_amount_text_theme_contrast_test.dart';
+const _changeBadgeStatusTest =
+    'test/core/widgets/change_badge_status_contrast_test.dart';
+const _feedbackTest = 'test/core/utils/app_feedback_theme_contrast_test.dart';
 
 // Grounds the audit used. Dark input fill is the theme's, `neutral800Dark`.
 const _bgL = AppColors.backgroundLight;
@@ -187,13 +212,6 @@ List<ContrastPair> _build() {
       audit: 2.39,
     ),
     ContrastPair.token(
-      'danger-dark@danger-bg',
-      rows: [1],
-      fg: AppColors.dangerDark,
-      ground: AppColors.dangerBgLight,
-      audit: 2.26,
-    ),
-    ContrastPair.token(
       'danger-light@danger-bg',
       rows: [2],
       fg: AppColors.dangerLight,
@@ -278,13 +296,6 @@ List<ContrastPair> _build() {
       audit: 3.76,
     ),
     ContrastPair.token(
-      'success-dark@success-bg',
-      rows: [10],
-      fg: AppColors.successDark,
-      ground: AppColors.successBgLight,
-      audit: 1.70,
-    ),
-    ContrastPair.token(
       'success-light@success-bg',
       rows: [11],
       fg: AppColors.successLight,
@@ -302,7 +313,7 @@ List<ContrastPair> _build() {
       'success-light@tint15',
       rows: [11],
       fg: AppColors.successLight,
-      ground: _tint(AppColors.successLight, 0.15, _cardL),
+      ground: _tint(AppColors.successTintLight, 0.15, _cardL),
       audit: 2.21,
     ),
     ContrastPair.token(
@@ -345,8 +356,9 @@ List<ContrastPair> _build() {
 
     // ---- P1 text the audit had no row for, found in the PR 1 review ----
     // The investment card's XIRR pill paints graphEmerald or errorLight on a
-    // 10% tint of itself (investment_card.dart, `xirrColor`). It uses the
-    // light constants in both themes, so dark has the pair below.
+    // 10% tint (investment_card.dart, `xirrColor`). The green is tinted with
+    // itself; the red with `dangerTintLight`, the brighter red that
+    // `errorLight` had before it was deepened. Dark has the pair below.
     ContrastPair.token(
       'graph-emerald-light@tint10',
       rows: [],
@@ -359,7 +371,7 @@ List<ContrastPair> _build() {
       'error-light@tint10',
       rows: [],
       fg: AppColors.errorLight,
-      ground: _tint(AppColors.errorLight, 0.1, _cardL),
+      ground: _tint(AppColors.dangerTintLight, 0.1, _cardL),
       audit: 3.29,
       addedByPlan: true,
     ),
@@ -376,10 +388,86 @@ List<ContrastPair> _build() {
       'danger-light@tint15',
       rows: [],
       fg: AppColors.dangerLight,
-      ground: _tint(AppColors.dangerLight, 0.15, _cardL),
+      ground: _tint(AppColors.dangerTintLight, 0.15, _cardL),
       audit: 3.10,
       addedByPlan: true,
     ),
+
+    // ---- P1 green and red on the tints and fills of the widgets (PR 5) ----
+    // Each is measured by a test that pumps the widget and reads its real text
+    // colour and its real tint. [audit] is the ratio before the green and red
+    // were deepened (the bars: before they were made solid in light).
+    for (final (id, audit, test, min) in [
+      ('maturity-matured-light@tint15', 2.21, _cardTest, kMinText),
+      ('card-xirr-pill-error-light@tint10', 3.29, _cardTest, kMinText),
+      ('fire-status-ahead-light@tint15', 2.21, _fireCardTest, kMinText),
+      ('goal-completed-light@tint15', 2.21, _goalCardsTest, kMinText),
+      ('goals-achieved-light@tint10', 2.23, _goalCardsTest, kMinText),
+      ('cash-flow-row-in-light@tint10', 2.31, _cashFlowRowTest, kMinText),
+      ('cash-flow-row-out-light@tint10', 3.29, _cashFlowRowTest, kMinText),
+      (
+        'detail-return-badge-success-light@tint15',
+        2.21,
+        _detailStatsTest,
+        kMinText,
+      ),
+      (
+        'detail-return-badge-danger-light@tint15',
+        3.10,
+        _detailStatsTest,
+        kMinText,
+      ),
+      (
+        'detail-maturity-matured-light@tint15',
+        2.21,
+        _detailStatsTest,
+        kMinText,
+      ),
+      (
+        'overview-breakdown-success-light@tint10',
+        2.31,
+        _breakdownTest,
+        kMinText,
+      ),
+      (
+        'overview-breakdown-danger-light@tint10',
+        3.29,
+        _breakdownTest,
+        kMinText,
+      ),
+      ('yoy-pill-success-light@tint10', 2.31, _overviewColoursTest, kMinText),
+      ('copied-snackbar-label-light', 2.54, _copiedSnackbarTest, kMinText),
+      (
+        'confirm-dialog-destructive-light@dialog',
+        3.45,
+        _feedbackTest,
+        kMinText,
+      ),
+      ('overview-cash-in-bar-light@card', 1.94, _overviewColoursTest, graphic),
+      ('overview-cash-out-bar-light@card', 2.62, _overviewColoursTest, graphic),
+      ('overview-cash-in-bar-dark@card', 5.15, _overviewColoursTest, graphic),
+      ('overview-cash-out-bar-dark@card', 3.78, _overviewColoursTest, graphic),
+      (
+        'change-badge-outlined-success-dark@page',
+        7.81,
+        _changeBadgeStatusTest,
+        kMinText,
+      ),
+      (
+        'change-badge-outlined-danger-dark@page',
+        5.26,
+        _changeBadgeStatusTest,
+        kMinText,
+      ),
+    ])
+      ContrastPair.widget(
+        id,
+        rows: const [],
+        audit: audit,
+        min: min,
+        addedByPlan: true,
+        widgetTest: test,
+      ),
 
     // ---- P1 investment-type colours ----
     for (final (id, type, row, audit) in _typeFills)
@@ -764,6 +852,28 @@ List<ContrastPair> _build() {
       'danger-dark@card',
       fg: AppColors.dangerDark,
       ground: _cardD,
+    ),
+    // Light green and red, deepened in PR 5, on the other grounds they sit on.
+    for (final (id, color) in [
+      ('success-light', AppColors.successLight),
+      ('danger-light', AppColors.dangerLight),
+    ])
+      for (final (groundName, ground) in [
+        ('background', _bgL),
+        ('surface', _surfaceL),
+      ])
+        ContrastPair.control('$id@$groundName', fg: color, ground: ground),
+    // Green text on a 10% tint of the old green (goals chip, cash flow rows).
+    ContrastPair.control(
+      'success-light@tint10',
+      fg: AppColors.successLight,
+      ground: _tint(AppColors.successTintLight, 0.1, _cardL),
+    ),
+    // A white label on the green fill: snackbars, onboarding, the Copied toast.
+    ContrastPair.control(
+      'white-on-success-light-fill',
+      fg: white,
+      ground: AppColors.successLight,
     ),
     ContrastPair.control(
       'error-dark@background',

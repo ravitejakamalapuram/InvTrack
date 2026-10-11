@@ -241,7 +241,9 @@ class FireDashboardScreen extends ConsumerWidget {
     String currencySymbol,
     String locale,
   ) {
-    final statusColor = calculation.status.colorForBrightness(
+    // The hero is a purple gradient in both themes, so its glow takes the
+    // brighter hue: the deeper green is 1.0:1 on that purple.
+    final statusColor = calculation.status.vividColorForBrightness(
       isDark ? Brightness.dark : Brightness.light,
     );
     final motivationalMessage = _getMotivationalMessage(
@@ -340,7 +342,9 @@ class FireDashboardScreen extends ConsumerWidget {
     FireProgressStatus status,
     bool isDark,
   ) {
-    final statusColor = status.colorForBrightness(
+    // The badge sits on the purple hero card, in both themes: it takes the
+    // brighter hue, which is the only one that shows on that purple.
+    final statusColor = status.vividColorForBrightness(
       isDark ? Brightness.dark : Brightness.light,
     );
     return Container(
@@ -559,12 +563,16 @@ class FireDashboardScreen extends ConsumerWidget {
     final statusColor = status.colorForBrightness(
       isDark ? Brightness.dark : Brightness.light,
     );
+    // The card and the disc behind the icon are tinted with the brighter hue.
+    final statusTint = status.vividColorForBrightness(
+      isDark ? Brightness.dark : Brightness.light,
+    );
     final nextMilestone = calculation.nextMilestone;
 
     return GlassCard(
       backgroundColor: isDark
-          ? statusColor.withValues(alpha: 0.1)
-          : statusColor.withValues(alpha: 0.08),
+          ? statusTint.withValues(alpha: 0.1)
+          : statusTint.withValues(alpha: 0.08),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -573,7 +581,7 @@ class FireDashboardScreen extends ConsumerWidget {
               Container(
                 padding: EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.2),
+                  color: statusTint.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(

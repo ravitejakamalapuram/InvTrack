@@ -22,6 +22,8 @@ class AppTheme {
         error: AppColors.dangerLight,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
+        // Ink on the lilac container: white would be 3.33:1.
+        onPrimaryContainer: AppColors.neutral900Light,
         onSurface: AppColors.neutral900Light,
         onError: Colors.white,
         outline: AppColors.neutral300Light,
@@ -247,7 +249,8 @@ class AppTheme {
         onPrimary: AppColors.neutral950Dark,
         onSecondary: AppColors.neutral950Dark,
         onSurface: AppColors.neutral50Dark,
-        onError: Colors.white,
+        // Dark ink on the light red: white would be 2.77:1.
+        onError: AppColors.cardDark,
         outline: AppColors.neutral700Dark,
         outlineVariant: AppColors.neutral800Dark,
       ),
