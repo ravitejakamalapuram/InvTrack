@@ -36,7 +36,7 @@
   --it-snack-info: var(--surface);
   --it-nav-bg: var(--surface);                 /* HomeShellScreen NavigationBar: AppColors.surfaceDark, not the theme's cardDark */
 }
-/* AppColors.*Light constants that widgets paint in BOTH themes (see README: "Light values in dark mode") */
+/* AppColors.*Light constants that widgets paint in BOTH themes (see README: "Light values in dark mode"). A widget that picks the dark value in dark mode reads the role token instead: var(--primary), var(--success), var(--danger), var(--warning), var(--accent). */
 :root {
   --it-primary-l: #5b4cdb;   /* AppColors.primaryLight */
   --it-success-l: #10b981;   /* AppColors.successLight */
@@ -255,9 +255,9 @@
 .it-field { display: flex; flex-direction: column; }
 .it-field__label { display: flex; align-items: center; min-height: 44px; margin-bottom: var(--space-xs); font: 600 18px/1.6 var(--font-text); color: var(--text); }
 .it-field__box { position: relative; display: flex; align-items: center; gap: 0; background: var(--surface); border: 1px solid var(--field-border); border-radius: var(--radius-field); padding: 0 var(--space-md); min-height: 56px; }
-.it-field__box:focus-within, .it-field__box.is-focus { border-color: var(--it-primary-l); box-shadow: inset 0 0 0 1px var(--it-primary-l); }   /* 2px, AppColors.primaryLight in both themes */
-.it-field__box.is-error { border-color: var(--it-danger-l); }
-.it-field__box.is-error:focus-within, .it-field__box.is-error.is-focus { box-shadow: inset 0 0 0 1px var(--it-danger-l); }
+.it-field__box:focus-within, .it-field__box.is-focus { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }   /* 2px, primaryLight in light and primaryDark in dark */
+.it-field__box.is-error { border-color: var(--danger); }
+.it-field__box.is-error:focus-within, .it-field__box.is-error.is-focus { box-shadow: inset 0 0 0 1px var(--danger); }
 .it-field__in { flex: 1; min-width: 0; padding: var(--space-md) 0; border: 0; outline: 0; background: transparent; font: 400 16px/1.5 var(--font-text); color: var(--text); resize: none; }
 .it-field__in::placeholder { color: var(--text-subtle); opacity: 1; }
 .it-field__ic { color: var(--text-muted); margin-right: 12px; }
@@ -346,8 +346,8 @@
 .it-dialog__act { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-xs); margin-top: var(--space-xl); }
 .it-dialog__act .it-btn--text { padding: 8px 12px; font: 400 16px/1.5 var(--font-text); letter-spacing: 0; }
 .it-dialog__act .is-muted { color: var(--text-muted); }
-.it-dialog__act .is-danger { color: var(--it-danger-l); font-weight: 600; }
-.it-dialog__act .is-primary { color: var(--it-primary-l); font-weight: 600; }
+.it-dialog__act .is-danger { color: var(--danger); font-weight: 600; }
+.it-dialog__act .is-primary { color: var(--primary); font-weight: 600; }
 .it-snack { display: flex; align-items: center; gap: var(--space-sm); min-height: 48px; padding: 14px var(--space-md); border-radius: var(--radius-md); color: var(--card); font: 400 14px/1.4 var(--font-text); }   /* message: ColorScheme.onInverseSurface falls back to surface = card (white light, #171717 dark) */
 .it-snack .it-icon { color: #fff; }   /* the icons are explicit Colors.white in both themes */
 .it-snack > span:not(.it-icon) { flex: 1; }

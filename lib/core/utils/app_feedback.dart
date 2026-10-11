@@ -135,8 +135,8 @@ class AppFeedback {
               confirmText,
               style: AppTypography.body.copyWith(
                 color: isDestructive
-                    ? AppColors.errorLight
-                    : AppColors.primaryLight,
+                    ? (isDark ? AppColors.errorDark : AppColors.errorLight)
+                    : (isDark ? AppColors.primaryDark : AppColors.primaryLight),
                 fontWeight: FontWeight.w600,
               ),
             ),

@@ -142,6 +142,7 @@ class CompactAmountText extends ConsumerWidget {
                         Text(l10n.copiedToClipboard),
                       ],
                     ),
+                    // theme-neutral: a fill under a white icon and label.
                     backgroundColor: AppColors.successLight,
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
