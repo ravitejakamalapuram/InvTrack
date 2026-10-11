@@ -1354,6 +1354,21 @@
     }
   },
 
+  "importedWithWarnings": "Imported with {count, plural, =1{1 warning} other{{count} warnings}}",
+  "@importedWithWarnings": {
+    "description": "Snackbar after Settings > Import from ZIP when part of the backup was skipped. Shows only how many warnings there were, never file names or content.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "importedWithWarningsHint": "Some items in the backup were not imported.",
+  "@importedWithWarningsHint": {
+    "description": "Second line of the import-with-warnings snackbar. Fixed text: it says what a warning means without naming the skipped file."
+  },
+
   "seedDemoData": "Seed Demo Data?",
   "@seedDemoData": {
     "description": "Seed demo data dialog title"

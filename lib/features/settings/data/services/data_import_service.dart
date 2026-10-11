@@ -198,11 +198,12 @@ class DataImportService {
     // (#956). Replace used to delete first, so a file that could not be read
     // or parsed failed after the account was wiped. Now cashflows.csv, which
     // holds the investments, must be readable or nothing changes. Any other
-    // damaged file stops Replace too: the settings screen shows no warnings
-    // (#959), so skipping it would delete the matching data (all the goals,
-    // say) without a word. Merge deletes nothing, so it skips a damaged file
-    // with a warning that holds no name or amount (rule 7) and imports the
-    // rest. Each file is parsed once, here, and the result is imported below.
+    // damaged file stops Replace too, so skipping it cannot delete the
+    // matching data (all the goals, say) and leave the user a partial import.
+    // Merge deletes nothing, so it skips a damaged file with a warning that
+    // holds no name or amount (rule 7) and imports the rest; the settings
+    // screen shows the warning count (#959). Each file is parsed once, here,
+    // and the result is imported below.
     final isReplace = strategy == ImportStrategy.replace;
     final damagedFiles = <String>[];
     final String? cashflowsCsv;
