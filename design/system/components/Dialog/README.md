@@ -20,7 +20,7 @@ Use a confirm dialog before any destructive or irreversible action (delete, sign
 
 ## Contrast
 
-The dialog fill `surface` equals the dark `background` (#0a0a0a), so the dialog edge is invisible against the dimmed page in dark mode; the scrim is the only separation. The destructive label is `#ef4444`, 3.45:1 on `surface`, in light and `#f87171`, 7.16:1, in dark; `text-muted` message 4.40:1 on `surface` in light. Kept as drawn.
+The dialog fill `surface` equals the dark `background` (#0a0a0a), so the dialog edge is invisible against the dimmed page in dark mode; the scrim is the only separation. The destructive label is `#ef4444`, 3.45:1 on `surface`, in light and `#f87171`, 7.16:1, in dark. Kept as drawn.
 
 ## Source
 

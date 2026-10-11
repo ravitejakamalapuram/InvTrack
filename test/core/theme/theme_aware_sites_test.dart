@@ -58,8 +58,10 @@ const _constants = [
 /// a file, needs a reason in the PR body.
 const _unfixed = <String, int>{
   // Deliberately kept: no screen uses ChangeBadge (the plan's W2), and its pale
-  // fill is the same in both themes. PR 4 edits only its zero-badge text.
-  'lib/core/widgets/change_badge.dart': 3,
+  // fill is the same in both themes. Two sites are left, its green and red. Its
+  // zero-change text is neutral600Light, which this scan does not list, and
+  // neutral500Dark for an outlined badge in dark, which is themed.
+  'lib/core/widgets/change_badge.dart': 2,
 };
 
 /// Sites kept on a `theme-neutral:` comment, by file: how many. A comment in
@@ -162,7 +164,11 @@ String blankCommentsAndStrings(String source) {
 }
 
 final _tint = RegExp(r'\s*\.withValues\(\s*alpha:\s*([0-9.]+)\s*,?\s*\)');
-final _occurrence = RegExp('\\bAppColors\\.(${_constants.join('|')})\\b');
+// Comments are blanked before the scan, so whitespace is all that can sit
+// between the class and the name.
+final _occurrence = RegExp(
+  '\\bAppColors\\s*\\.\\s*(${_constants.join('|')})\\b',
+);
 
 bool _isTint(String code, int at) {
   final m = _tint.matchAsPrefix(code, at);
@@ -600,6 +606,25 @@ final d = x.isDarkish ? AppColors.accentLight : AppColors.warningLight;
 '''),
         [1, 1, 2, 2, 3, 3, 4, 4],
       );
+    });
+
+    test('reads a name split from its class by a line break or a comment', () {
+      // The formatter joins these, but an unformatted file must not slip past.
+      const source = '''
+final a = AppColors
+    .neutral500Light;
+final b = AppColors /* why */ . successLight;
+final c = AppColors // why
+    .errorLight;
+final d = AppColors . accentLight;
+final e = isDark ? AppColors
+    .neutral400Light : AppColors.neutral500Dark;
+final f = isDark ? AppColors
+    .neutral500Dark : AppColors
+    .neutral400Light;
+''';
+      expect(found(source), [1, 3, 4, 6]);
+      expect([for (final s in reversedSites(source)) s.line], [7, 8]);
     });
 
     test('a bracket or comma inside a string does not end the expression', () {

@@ -24,7 +24,7 @@ The figure as a string. The mask is never conditional on the amount: even `₹0`
 
 ## Contrast
 
-The masked bullets inherit the text colour of the figure they replace. The toggle icon on the hero is white at 90% (4.9:1 on the middle gradient stop); on `background` it takes `text-muted` (4.59:1 light, 7.85:1 dark).
+The masked bullets inherit the text colour of the figure they replace. The toggle icon on the hero is white at 90% (4.9:1 on the middle gradient stop); on `background` it takes `text-muted` (5.86:1 light, 7.85:1 dark).
 
 ## Source
 

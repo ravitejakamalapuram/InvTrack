@@ -33,8 +33,9 @@ class AppColors {
   static const Color neutral800Light = Color(0xFF292524);
   static const Color neutral700Light = Color(0xFF44403C);
   static const Color neutral600Light = Color(0xFF57534E);
-  static const Color neutral500Light = Color(0xFF78716C);
-  static const Color neutral400Light = Color(0xFFA8A29E);
+  // Muted and subtle text: 4.5:1 or more on the card, page and surface.
+  static const Color neutral500Light = Color(0xFF66615C);
+  static const Color neutral400Light = Color(0xFF746E6A);
   static const Color neutral300Light = Color(0xFFD6D3D1);
   static const Color neutral200Light = Color(0xFFE7E5E4);
   static const Color neutral100Light = Color(0xFFF5F5F4);
@@ -72,7 +73,8 @@ class AppColors {
   static const Color neutral200Dark = Color(0xFFE7E5E4);
   static const Color neutral300Dark = Color(0xFFD6D3D1);
   static const Color neutral400Dark = Color(0xFFA8A29E);
-  static const Color neutral500Dark = Color(0xFF78716C);
+  // Muted text and hints: 4.5:1 or more on the page, card and input fill.
+  static const Color neutral500Dark = Color(0xFF89827C);
   static const Color neutral600Dark = Color(0xFF57534E);
   static const Color neutral700Dark = Color(0xFF292524);
   static const Color neutral800Dark = Color(0xFF1C1917);

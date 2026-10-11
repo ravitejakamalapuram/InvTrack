@@ -29,7 +29,7 @@
 | Element | Foreground | Background | Ratio | Status |
 |---------|------------|------------|-------|--------|
 | Primary Text | `#1C1917` | `#FAFAF9` | **15.8:1** | ✅ AAA |
-| Secondary Text | `#78716C` | `#FAFAF9` | **4.8:1** | ✅ AA (Large) |
+| Secondary Text | `#66615C` | `#FAFAF9` | **5.9:1** | ✅ AA |
 | Primary Button | `#FFFFFF` | `#5B4CDB` | **8.2:1** | ✅ AAA |
 | Success Text | `#10B981` | `#FFFFFF` | **3.2:1** | ✅ AA (UI) |
 | Danger Text | `#EF4444` | `#FFFFFF` | **4.1:1** | ✅ AA (UI) |

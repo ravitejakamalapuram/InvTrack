@@ -107,4 +107,38 @@ void main() {
       );
     });
   });
+
+  group('the hint', () {
+    // The hint is the faintest text grey, so it must read on the fill the field
+    // paints: surface in light, the page colour in dark.
+    testWidgets('neutral400-light@surface: the light hint reads on the fill', (
+      tester,
+    ) async {
+      final field = await _pump(tester, AppTheme.lightTheme);
+      final hint = field.decoration!.hintStyle!.color!;
+      final fill = field.decoration!.fillColor!;
+      expect(hint, AppColors.neutral400Light);
+      expect(fill, AppColors.surfaceLight);
+      expect(
+        contrastRatio(hint, fill),
+        greaterThanOrEqualTo(kMinText),
+        reason: 'neutral400-light@surface',
+      );
+    });
+
+    testWidgets('neutral500-dark@background: the dark hint reads on the fill', (
+      tester,
+    ) async {
+      final field = await _pump(tester, AppTheme.darkTheme);
+      final hint = field.decoration!.hintStyle!.color!;
+      final fill = field.decoration!.fillColor!;
+      expect(hint, AppColors.neutral500Dark);
+      expect(fill, AppColors.surfaceDark);
+      expect(
+        contrastRatio(hint, fill),
+        greaterThanOrEqualTo(kMinText),
+        reason: 'neutral500-dark@background',
+      );
+    });
+  });
 }
