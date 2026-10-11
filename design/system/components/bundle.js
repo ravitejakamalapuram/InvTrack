@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"InvTrack","components":[{"name":"HeroCard"},{"name":"InvestmentCard"},{"name":"StatTile"},{"name":"EmptyState"},{"name":"TextField"},{"name":"Button"},{"name":"Chip"},{"name":"Badge"},{"name":"BottomSheet"},{"name":"Dialog"},{"name":"Snackbar"},{"name":"GlassCard"},{"name":"GradientCard"},{"name":"PrivacyMask"},{"name":"AmountText"},{"name":"Skeleton"},{"name":"Navigation"}]} */
+/* @ds-bundle: {"format":4,"namespace":"InvTrack","components":[{"name":"HeroCard"},{"name":"InvestmentCard"},{"name":"StatTile"},{"name":"EmptyState"},{"name":"TextField"},{"name":"Button"},{"name":"Chip"},{"name":"Badge"},{"name":"BottomSheet"},{"name":"Dialog"},{"name":"Snackbar"},{"name":"GlassCard"},{"name":"GradientCard"},{"name":"PrivacyMask"},{"name":"AmountText"},{"name":"Skeleton"},{"name":"Navigation"},{"name":"MoreDetails"},{"name":"StickyAction"}]} */
 /* InvTrack design system: plain HTML/CSS equivalents of the Flutter widgets. Each component is a function
    that returns an HTML string styled by bundle.css. No framework, no network. Amounts are display strings:
    the app computes metrics in lib/core/calculations; this bundle only shows them. */
@@ -303,6 +303,11 @@
       return '<button type="button" class="' + cls('it-tchip', o.compact && 'it-tchip--compact', o.selected && 'is-on', o.focus && 'is-focus') + '"' + sty({ '--c': o.color }) + ' data-it-single aria-pressed="' + (o.selected ? 'true' : 'false') + '">' +
         '<span class="it-tchip__ic">' + icon(o.icon, { size: o.compact ? 16 : 18 }) + '</span><span class="it-tchip__t">' + esc(o.label) + '</span></button>';
     }
+    if (k === 'typeRow') {       // TypeSelector scrollingRow: one sideways row, each chip at least 48 x 48
+      var items = o.items || [];
+      return '<div class="it-tchips" data-it-group role="group" aria-label="' + esc((o.label || 'Investment type') + ', ' + items.length + ' choices. Scroll sideways to see all.') + '">' +
+        items.map(function (c) { return Chip({ kind: 'type', label: c.label, icon: c.icon, color: c.color, selected: c.selected, compact: true }); }).join('') + '</div>';
+    }
     if (k === 'template') {
       return '<button type="button" class="it-tmpl"' + sty({ '--c': o.color }) + ' aria-label="Template: ' + esc(o.label) + '"><span style="font-size:16px">' + o.emoji + '</span>' + esc(o.label) + '</button>';
     }
@@ -361,7 +366,25 @@
       '<div class="' + cls('it-field__box', o.focus && 'is-focus', o.error && 'is-error') + '">' +
       (o.prefixIcon ? icon(o.prefixIcon, { cls: 'it-field__ic', size: 24 }) : '') + (o.prefixText ? '<span class="it-field__pre">' + esc(o.prefixText) + '</span>' : '') +
       field + clear + '</div>' +
-      (o.error ? '<div class="it-field__err" id="' + id + '-e" role="alert">' + esc(o.error) + '</div>' : '') + '</div>';
+      (o.error ? '<div class="it-field__err" id="' + id + '-e" role="alert">' + esc(o.error) + '</div>' : '') +
+      (o.helper ? '<div class="' + cls('it-field__helper', o.helperStrong && 'it-field__helper--strong') + '">' + esc(o.helper) + '</div>' : '') + '</div>';
+  }
+
+  /* ------------------------------------------------------------------ MoreDetails */
+  function MoreDetails(o) {
+    o = o || {};
+    var open = !!o.open;
+    return '<div class="it-more-wrap"><button type="button" class="it-glass it-glass--tap it-more" aria-expanded="' + open + '">' +
+      '<span class="it-more__disc">' + icon('tune', { size: 24 }) + '</span>' +
+      '<span class="it-more__t"><b>' + esc(o.title || 'More details') + '</b><small>' + esc(o.summary || '') + '</small></span>' +
+      icon(open ? 'expand_less' : 'expand_more', { size: 24, color: 'var(--text-muted)' }) + '</button>' +
+      (open ? '<div class="it-more__body">' + (o.body || '') + '</div>' : '') + '</div>';
+  }
+
+  /* ------------------------------------------------------------------ StickyAction */
+  function StickyAction(o) {
+    o = o || {};
+    return '<div class="it-sticky">' + (o.body || '') + '</div>';
   }
 
   /* ------------------------------------------------------------------ PrivacyMask */
@@ -544,7 +567,7 @@
   window.InvTrack = {
     GlassCard: GlassCard, GradientCard: GradientCard, Button: Button, StatTile: StatTile, Badge: Badge, Chip: Chip, EmptyState: EmptyState,
     TextField: TextField, PrivacyMask: PrivacyMask, AmountText: AmountText, Skeleton: Skeleton, HeroCard: HeroCard, InvestmentCard: InvestmentCard,
-    BottomSheet: BottomSheet, Dialog: Dialog, Snackbar: Snackbar, Navigation: Navigation,
+    BottomSheet: BottomSheet, Dialog: Dialog, Snackbar: Snackbar, Navigation: Navigation, MoreDetails: MoreDetails, StickyAction: StickyAction,
     icon: icon, amount: amount, panes: panes, wire: wire, esc: esc,
     fmt: { inr: inr, compact: compact, smart: smart, percent: percent, multiplier: multiplier, srAmount: srAmount },
     types: TYPES

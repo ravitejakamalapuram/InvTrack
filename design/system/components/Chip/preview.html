@@ -25,6 +25,13 @@
       cap('TypeSelector, wrap layout: unselected chip on surface, selected chip filled with the type colour and a soft glow.') +
       '<div class="it-row" data-it-group style="gap:10px">' + tc('chit-funds', false, true) + tc('stocks', true, true) + tc('crypto', false, true) + '</div>' +
       cap('Compact mode: smaller padding and icon.') +
+      I.Chip({ kind: 'typeRow', label: 'Investment type', items: [
+        { label: T['p2p-lending'][0], icon: T['p2p-lending'][1], color: 'var(--inv-p2p-lending)' },
+        { label: T['fixed-deposit'][0], icon: T['fixed-deposit'][1], color: 'var(--inv-fixed-deposit)', selected: true },
+        { label: T['bonds'][0], icon: T['bonds'][1], color: 'var(--inv-bonds)' },
+        { label: T['real-estate'][0], icon: T['real-estate'][1], color: 'var(--inv-real-estate)' },
+        { label: T['gold'][0], icon: T['gold'][1], color: 'var(--inv-gold)' }] }) +
+      cap('Type row (scrollingRow): one sideways row, every chip at least 48 x 48, the next chip peeks at the edge.') +
       '<div class="it-row" style="gap:12px">' +
         I.Chip({ kind: 'template', emoji: '🏦', label: 'Fixed Deposit', color: 'var(--inv-fixed-deposit)' }) +
         I.Chip({ kind: 'template', emoji: '🤝', label: 'P2P Lending', color: 'var(--inv-p2p-lending)' }) +

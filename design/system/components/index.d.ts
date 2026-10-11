@@ -44,6 +44,7 @@ declare namespace InvTrack {
   type ChipProps =
     | { kind?: 'filter'; label: string; count?: number; selected?: boolean; focus?: boolean }
     | { kind: 'type'; label: string; icon: string; color: Css; selected?: boolean; compact?: boolean; focus?: boolean }
+    | { kind: 'typeRow'; label?: string; items: { label: string; icon: string; color: Css; selected?: boolean }[] }
     | { kind: 'template'; label: string; emoji: string; color: Css }
     | { kind: 'theme'; label: string; selected?: boolean };
   function Chip(props: ChipProps): Html;
@@ -56,7 +57,7 @@ declare namespace InvTrack {
 
   interface TextFieldProps {
     id?: string; label?: string; value?: string; hint?: string; prefixIcon?: string; prefixText?: string;
-    error?: string; focus?: boolean; readonly?: boolean; disabled?: boolean; multiline?: boolean; mode?: 'text' | 'decimal' | 'numeric';
+    error?: string; helper?: string; helperStrong?: boolean; focus?: boolean; readonly?: boolean; disabled?: boolean; multiline?: boolean; mode?: 'text' | 'decimal' | 'numeric';
   }
   function TextField(props: TextFieldProps): Html;
 
@@ -104,6 +105,12 @@ declare namespace InvTrack {
   function BottomSheet(props: BottomSheetProps): Html;
   function Dialog(props: { title: string; message?: string; confirm?: string; cancel?: string; destructive?: boolean; variant?: 'confirm' | 'form'; html?: Html; height?: number }): Html;
   function Snackbar(props: { kind?: 'success' | 'error' | 'info' | 'exact'; message: string }): Html;
+  /** MoreDetailsTile: the collapsed tile that holds a form's optional fields. `body` is shown while `open`. */
+  function MoreDetails(props: { title?: string; summary?: string; open?: boolean; body?: Html }): Html;
+
+  /** StickyFormAction: the submit bar at the foot of a long form. */
+  function StickyAction(props: { body: Html }): Html;
+
   function Navigation(props?: { title?: string; actions?: { icon: string; label: string; selected?: boolean }[]; items?: { label: string; icon: string; on: string; outlined?: boolean }[]; active?: number; body?: Html; fab?: boolean }): Html;
 
   /** A Material icon by ligature name (Google Fonts Material Icons Round by default). */

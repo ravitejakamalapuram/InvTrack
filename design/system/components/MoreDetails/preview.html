@@ -1,0 +1,31 @@
+<!-- @dsCard group="Containers" height=560 subtitle="The collapsed tile for a form's optional fields" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+  document.getElementById('root').innerHTML = I.panes(function () {
+    return '<div class="it-stack" style="gap:18px">' +
+      I.MoreDetails({ title: 'More details', summary: 'Currency, rate, term, notes and more' }) +
+      cap('Collapsed: 64px tall at least, the summary names what is inside and repeats no number.') +
+      I.MoreDetails({ title: 'More details', summary: 'Currency, rate, term, notes and more', open: true,
+        body: I.TextField({ label: 'Expected Return Rate (% p.a.)', hint: 'e.g. 7', prefixIcon: 'percent', mode: 'decimal' }) +
+              I.TextField({ label: 'Tenure (Months)', hint: 'e.g. 12', prefixIcon: 'schedule', mode: 'numeric' }) }) +
+      cap('Open: the fields are 20px below the header. The grey hints are examples, not values.') +
+    '</div>';
+  });
+  I.wire(document);
+})();
+</script>
+</body>
+</html>

@@ -2377,6 +2377,102 @@
     "description": "Hint text for investment start date"
   },
 
+  "amountInvestedLabel": "Amount invested in {currency}",
+  "@amountInvestedLabel": {
+    "description": "Label of the optional amount field of the add investment form. It names the currency the amount is in (A40)",
+    "placeholders": {
+      "currency": {
+        "type": "String",
+        "example": "INR"
+      }
+    }
+  },
+  "amountInvestedOptional": "Optional. You can add it later.",
+  "@amountInvestedOptional": {
+    "description": "Line under the empty amount field of the add investment form: the amount is not required (A40)"
+  },
+  "amountInvestedError": "Enter an amount above 0",
+  "@amountInvestedError": {
+    "description": "Error under the amount field of the add investment form when the text is zero, negative or not a number (A40)"
+  },
+  "amountInvestedTooLarge": "That amount is too large",
+  "@amountInvestedTooLarge": {
+    "description": "Error under the amount field of the add investment form when the amount has 16 digits or more (A40)"
+  },
+  "hintExample": "e.g. {example}",
+  "@hintExample": {
+    "description": "Hint in an empty form field: an example of what to type. The example is already formatted (A40)",
+    "placeholders": {
+      "example": {
+        "type": "String",
+        "example": "1,00,000"
+      }
+    }
+  },
+  "investmentNameRequired": "Please enter a name",
+  "@investmentNameRequired": {
+    "description": "Error under the investment name field when it is empty (A40)"
+  },
+  "startDateFieldLabel": "Start Date",
+  "@startDateFieldLabel": {
+    "description": "Label of the start date field of the add investment form (A40)"
+  },
+  "startDateHelperToday": "Today. Also the date of your first cash flow.",
+  "@startDateHelperToday": {
+    "description": "Line under the start date field when it is today and an amount is typed: the date also dates the first cash flow (A40)"
+  },
+  "startDateHelper": "Also the date of your first cash flow.",
+  "@startDateHelper": {
+    "description": "Line under the start date field when it is not today and an amount is typed: the date also dates the first cash flow (A40)"
+  },
+  "moreDetailsTitle": "More details",
+  "@moreDetailsTitle": {
+    "description": "Title of the collapsed tile that holds the optional fields of the add investment form (A40)"
+  },
+  "moreDetailsSummary": "Currency, rate, term, notes and more",
+  "@moreDetailsSummary": {
+    "description": "Summary under the More details tile title: what is inside. It never repeats a number the user did not type (A40)"
+  },
+  "investmentTypeRowSemantics": "Investment type, {count, plural, =1{1 choice} other{{count} choices}}. Scroll sideways to see all.",
+  "@investmentTypeRowSemantics": {
+    "description": "Screen reader label of the sideways-scrolling row of investment type chips in the add investment form (A40)",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "14"
+      }
+    }
+  },
+  "investmentCreated": "Investment created successfully",
+  "@investmentCreated": {
+    "description": "Message shown after an investment was added and the server confirmed it (A40)"
+  },
+  "investmentSavedOffline": "Saved on this device. Syncs when you are online.",
+  "@investmentSavedOffline": {
+    "description": "Message shown after an investment was added but the server has not confirmed it yet: it is stored on this device and syncs later (A40)"
+  },
+  "investmentCreateFailed": "Could not add this investment. Nothing was saved. Try again.",
+  "@investmentCreateFailed": {
+    "description": "Message shown when adding an investment failed. What was typed is kept so the user can try again (A40)"
+  },
+
+  "firstInvestmentFlowFeature": "First Investment Flow",
+  "@firstInvestmentFlowFeature": {
+    "description": "Debug Settings: title of the toggle for the add investment form with an amount and start date (A40)"
+  },
+  "firstInvestmentFlowSubtitle": "Add Investment takes an amount and start date and saves both together",
+  "@firstInvestmentFlowSubtitle": {
+    "description": "Debug Settings: subtitle of the first investment flow toggle (A40)"
+  },
+  "firstInvestmentFlowEnabled": "First Investment Flow enabled",
+  "@firstInvestmentFlowEnabled": {
+    "description": "Debug Settings: message after turning the first investment flow on (A40)"
+  },
+  "firstInvestmentFlowDisabled": "First Investment Flow disabled",
+  "@firstInvestmentFlowDisabled": {
+    "description": "Debug Settings: message after turning the first investment flow off (A40)"
+  },
+
   "archive": "Archive",
   "@archive": {
     "description": "Archive action label"

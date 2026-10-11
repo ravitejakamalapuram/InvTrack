@@ -25,6 +25,14 @@ class AppTextField extends StatefulWidget {
   final bool enabled;
   final bool autofocus;
 
+  /// Shows [hint] and [prefixText] while the field is empty and not focused.
+  ///
+  /// By default the label also sits inside the empty field, which hides both
+  /// until the field is focused. With this on, the label is only the one above
+  /// the box (a screen reader still hears it as the field's label), so an
+  /// amount field reads "₹ e.g. 1,00,000" before it is touched.
+  final bool showHintWhenEmpty;
+
   const AppTextField({
     super.key,
     this.controller,
@@ -44,6 +52,7 @@ class AppTextField extends StatefulWidget {
     this.readOnly = false,
     this.enabled = true,
     this.autofocus = false,
+    this.showHintWhenEmpty = false,
   });
 
   @override
@@ -186,10 +195,7 @@ class _AppTextFieldState extends State<AppTextField> {
                 }
               },
               child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  minWidth: 44,
-                  minHeight: 44,
-                ),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -205,118 +211,132 @@ class _AppTextFieldState extends State<AppTextField> {
           ),
           const SizedBox(height: 8),
         ],
-        TextFormField(
-          controller: _internalController,
-          focusNode: _focusNode,
-          textCapitalization: widget.textCapitalization,
-          keyboardType: widget.keyboardType,
-          inputFormatters: widget.inputFormatters,
-          maxLines: widget.maxLines,
-          maxLength: widget.maxLength,
-          readOnly: widget.readOnly,
-          enabled: widget.enabled,
-          autofocus: widget.autofocus,
-          style: AppTypography.body.copyWith(
-            color: isDark ? Colors.white : AppColors.neutral900Light,
-          ),
-          decoration: InputDecoration(
-            // Accessibility: Associate label with input but hide it visually
-            // to preserve the design (since label is rendered outside).
-            labelText: widget.label,
-            floatingLabelBehavior: FloatingLabelBehavior.never,
-            hintText: widget.hint,
-            hintStyle: AppTypography.body.copyWith(
-              color: isDark
-                  ? AppColors.neutral500Dark
-                  : AppColors.neutral400Light,
-            ),
-            prefixText: widget.prefixText,
-            prefixStyle: AppTypography.body.copyWith(
+        _withSemanticLabel(
+          TextFormField(
+            controller: _internalController,
+            focusNode: _focusNode,
+            textCapitalization: widget.textCapitalization,
+            keyboardType: widget.keyboardType,
+            inputFormatters: widget.inputFormatters,
+            maxLines: widget.maxLines,
+            maxLength: widget.maxLength,
+            readOnly: widget.readOnly,
+            enabled: widget.enabled,
+            autofocus: widget.autofocus,
+            style: AppTypography.body.copyWith(
               color: isDark ? Colors.white : AppColors.neutral900Light,
             ),
-            prefixIcon: widget.prefixIcon != null
-                ? Padding(
-                    padding: EdgeInsets.only(
-                      bottom: widget.maxLines > 1
-                          ? (widget.maxLines - 1) * 20.0
-                          : 0,
-                    ),
-                    child: Icon(
-                      widget.prefixIcon,
-                      color: isDark
-                          ? AppColors.neutral400Dark
-                          : AppColors.neutral500Light,
-                    ),
-                  )
-                : null,
-            suffixIcon: showClearButton
-                ? Padding(
-                    padding: EdgeInsets.only(
-                      bottom: widget.maxLines > 1
-                          ? (widget.maxLines - 1) * 20.0
-                          : 0,
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.cancel,
+            decoration: InputDecoration(
+              // Accessibility: Associate label with input but hide it visually
+              // to preserve the design (since label is rendered outside).
+              labelText: widget.showHintWhenEmpty ? null : widget.label,
+              floatingLabelBehavior: widget.showHintWhenEmpty
+                  ? FloatingLabelBehavior.always
+                  : FloatingLabelBehavior.never,
+              hintText: widget.hint,
+              hintStyle: AppTypography.body.copyWith(
+                color: isDark
+                    ? AppColors.neutral500Dark
+                    : AppColors.neutral400Light,
+              ),
+              prefixText: widget.prefixText,
+              prefixStyle: AppTypography.body.copyWith(
+                color: isDark ? Colors.white : AppColors.neutral900Light,
+              ),
+              prefixIcon: widget.prefixIcon != null
+                  ? Padding(
+                      padding: EdgeInsets.only(
+                        bottom: widget.maxLines > 1
+                            ? (widget.maxLines - 1) * 20.0
+                            : 0,
+                      ),
+                      child: Icon(
+                        widget.prefixIcon,
                         color: isDark
                             ? AppColors.neutral400Dark
-                            : AppColors.neutral400Light,
-                        size: 20,
+                            : AppColors.neutral500Light,
                       ),
-                      tooltip: AppLocalizations.of(context).tooltipClearText,
-                      onPressed: _clearText,
-                    ),
-                  )
-                : null,
-            filled: true,
-            fillColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: isDark
-                    ? AppColors.neutral700Dark
-                    : AppColors.neutral200Light,
+                    )
+                  : null,
+              suffixIcon: showClearButton
+                  ? Padding(
+                      padding: EdgeInsets.only(
+                        bottom: widget.maxLines > 1
+                            ? (widget.maxLines - 1) * 20.0
+                            : 0,
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.cancel,
+                          color: isDark
+                              ? AppColors.neutral400Dark
+                              : AppColors.neutral400Light,
+                          size: 20,
+                        ),
+                        tooltip: AppLocalizations.of(context).tooltipClearText,
+                        onPressed: _clearText,
+                      ),
+                    )
+                  : null,
+              filled: true,
+              fillColor: isDark
+                  ? AppColors.surfaceDark
+                  : AppColors.surfaceLight,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: isDark
+                      ? AppColors.neutral700Dark
+                      : AppColors.neutral200Light,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: isDark
+                      ? AppColors.neutral700Dark
+                      : AppColors.neutral200Light,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: isDark
+                      ? AppColors.primaryDark
+                      : AppColors.primaryLight,
+                  width: 2,
+                ),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: isDark ? AppColors.errorDark : AppColors.errorLight,
+                ),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: isDark ? AppColors.errorDark : AppColors.errorLight,
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
               ),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: isDark
-                    ? AppColors.neutral700Dark
-                    : AppColors.neutral200Light,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
-                width: 2,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: isDark ? AppColors.errorDark : AppColors.errorLight,
-              ),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: isDark ? AppColors.errorDark : AppColors.errorLight,
-                width: 2,
-              ),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
+            validator: widget.validator,
+            onFieldSubmitted: widget.onSubmitted,
+            onChanged: widget.onChanged,
           ),
-          validator: widget.validator,
-          onFieldSubmitted: widget.onSubmitted,
-          onChanged: widget.onChanged,
         ),
       ],
     );
   }
+
+  /// Without a labelText in the decoration, the label reaches a screen reader
+  /// through the semantics of the field itself.
+  Widget _withSemanticLabel(Widget field) => widget.showHintWhenEmpty
+      ? Semantics(label: widget.label, child: field)
+      : field;
 }
