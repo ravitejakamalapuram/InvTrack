@@ -162,7 +162,8 @@ const _notMeasurements = [
 /// Whether [path] names a test that measures the widget pair [id]: a `_test`
 /// file (so the runner runs it) other than [_notMeasurements], resolved
 /// through symlinks, that calls `contrastRatio` and names [id] in code, not
-/// only in a comment. A reviewer still checks that it pumps the widget.
+/// only in a comment (a `//` inside a string hides the rest of its line, which
+/// can only fail closed). A reviewer still checks that it pumps the widget.
 bool measuresPair(String id, String? path) {
   if (path == null || !path.endsWith('_test.dart')) return false;
   final file = File(path);
@@ -172,9 +173,9 @@ bool measuresPair(String id, String? path) {
     if (File(other).resolveSymbolicLinksSync() == real) return false;
   }
   final code = file
-      .readAsLinesSync()
-      .where((line) => !line.trimLeft().startsWith('//'))
-      .join('\n');
+      .readAsStringSync()
+      .replaceAll(RegExp(r'/\*[\s\S]*?\*/'), '')
+      .replaceAll(RegExp('//.*'), '');
   return code.contains('contrastRatio') && code.contains(id);
 }
 
@@ -293,6 +294,14 @@ void main() {
       final path = write('a_test.dart', '''
 // closed-chip@grey20 is checked elsewhere
 void main() => contrastRatio(a, b);
+''');
+      expect(measuresPair('closed-chip@grey20', path), isFalse);
+    });
+
+    test('rejects a pair named only in a trailing or block comment', () {
+      final path = write('a_test.dart', '''
+/* closed-chip@grey20 */
+void main() => contrastRatio(a, b); // closed-chip@grey20
 ''');
       expect(measuresPair('closed-chip@grey20', path), isFalse);
     });
