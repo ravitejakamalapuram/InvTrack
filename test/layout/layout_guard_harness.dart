@@ -275,7 +275,12 @@ class LayoutGuard {
       );
       await pumpFrames(1, 100);
     }
-    if (target.evaluate().isNotEmpty) await tester.ensureVisible(target.first);
+    if (target.evaluate().isNotEmpty) {
+      // The middle of the viewport, not the nearest edge: a pinned app bar
+      // does not shrink the viewport, so the nearest edge can leave the target
+      // under it, where a tap lands on the bar.
+      Scrollable.ensureVisible(tester.element(target.first), alignment: 0.5);
+    }
     await pumpFrames(2, 120);
   }
 
