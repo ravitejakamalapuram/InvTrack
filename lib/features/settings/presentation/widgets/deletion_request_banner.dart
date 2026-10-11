@@ -50,7 +50,7 @@ class _DeletionRequestBannerState extends ConsumerState<DeletionRequestBanner> {
 
     return Container(
       margin: EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
+        horizontal: AppSpacing.screenEdge,
         vertical: AppSpacing.sm,
       ),
       padding: EdgeInsets.fromLTRB(

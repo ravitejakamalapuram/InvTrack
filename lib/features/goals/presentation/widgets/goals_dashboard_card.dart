@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/screen_layout.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_carousel_card.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -146,36 +147,25 @@ class _GoalsDashboardCardState extends ConsumerState<GoalsDashboardCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header with achievement badge
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                l10n.goals,
-                style: AppTypography.h4.copyWith(
-                  color: isDark ? Colors.white : AppColors.neutral900Light,
-                ),
+        // Header with achievement badge. The Overview owns the horizontal edge.
+        ScreenSectionHeader(
+          title: l10n.goals,
+          trailing: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xxs,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.successLight.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              l10n.goalsAchieved(summary.achievedGoals, summary.totalGoals),
+              style: AppTypography.caption.copyWith(
+                color: AppColors.successLight,
+                fontWeight: FontWeight.w600,
               ),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xxs,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.successLight.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  l10n.goalsAchieved(summary.achievedGoals, summary.totalGoals),
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.successLight,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
         SizedBox(height: AppSpacing.sm), // Reduced from md to sm
@@ -210,10 +200,10 @@ class _GoalsDashboardCardState extends ConsumerState<GoalsDashboardCard> {
                     return Transform.scale(
                       scale: scale,
                       alignment: Alignment.center,
+                      // The gap to the next page is on the end side only, so the
+                      // active card starts on the screen edge.
                       child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppSpacing.xxs,
-                        ),
+                        padding: EdgeInsetsDirectional.only(end: AppSpacing.xs),
                         child: GoalCarouselCard(
                           progress: progress,
                           width: double.infinity,
