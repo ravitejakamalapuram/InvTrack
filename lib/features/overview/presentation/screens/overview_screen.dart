@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -690,7 +691,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
             // Two equal columns, the last ending on the card padding; at large
             // text sizes they stack into a line each instead of overflowing.
             StatColumns(
-              minColumnWidth: _dateColumnMinWidth,
+              minColumnWidth: AppSizes.statColumnDateMinWidth,
               columns: [
                 _dateColumn('First Cash Flow', stats.firstCashFlowDate!),
                 _dateColumn('Last Cash Flow', stats.lastCashFlowDate!),
@@ -700,10 +701,6 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
       ),
     );
   }
-
-  /// The narrowest a date column may get at text x1.0: a short date such as
-  /// "Sep 30, 2026" in 14sp is about 90dp, more than a figure column needs.
-  static const double _dateColumnMinWidth = 104;
 
   StatColumn _dateColumn(String label, DateTime date) {
     return StatColumn(

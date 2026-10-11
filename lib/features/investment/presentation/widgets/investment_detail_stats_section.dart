@@ -11,6 +11,7 @@ import 'package:inv_tracker/core/utils/number_format_utils.dart';
 import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
+import 'package:inv_tracker/core/widgets/spread_row.dart';
 import 'package:inv_tracker/core/widgets/stat_columns.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
@@ -285,7 +286,7 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       // The badge drops below the amount at large text sizes instead of
       // overflowing.
-      child: _SpreadRow(
+      child: SpreadRow(
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -404,7 +405,7 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
 
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: _SpreadRow(
+      child: SpreadRow(
         children: [
           // Cash out and cash in stay together; at large text sizes "in" drops
           // below "out" instead of overflowing.
@@ -535,7 +536,7 @@ class _CurrentValueCard extends StatelessWidget {
 
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: _SpreadRow(
+      child: SpreadRow(
         children: [
           Semantics(
             container: true,
@@ -620,7 +621,7 @@ class _MaturityCard extends StatelessWidget {
 
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: _SpreadRow(
+      child: SpreadRow(
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -712,29 +713,5 @@ class _MaturityCard extends StatelessWidget {
         '$daysUntilMaturity days until maturity',
       );
     }
-  }
-}
-
-/// A card's line of content with something at its end: they share a line while
-/// they fit, and at large text sizes the last child drops below the others
-/// instead of overflowing. A Row of `Expanded` and a fixed-width child cannot
-/// do this.
-class _SpreadRow extends StatelessWidget {
-  const _SpreadRow({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: AppSpacing.sm,
-        runSpacing: AppSpacing.xxs,
-        children: children,
-      ),
-    );
   }
 }

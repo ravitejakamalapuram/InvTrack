@@ -126,6 +126,10 @@ class AppSizes {
   /// with the text size.
   static const double statColumnMinWidth = 72.0;
 
+  /// Same, for a stat row whose values are dates ("Sep 30, 2026" in 14sp is
+  /// about 90px), such as the Overview Investment Period.
+  static const double statColumnDateMinWidth = 104.0;
+
   /// Divider thickness
   static const double dividerThickness = 1.0;
 
