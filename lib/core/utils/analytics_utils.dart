@@ -87,9 +87,13 @@ Future<String> getBaseCurrencyAmountRange({
       baseCurrency: baseCurrency,
     );
     // Without a rate the converter hands the flow back unconverted. Only a
-    // flow now in the base currency may be bucketed.
+    // flow now in the base currency may be bucketed, and a bad rate (zero,
+    // negative, NaN, infinite) must not fall into a real bucket.
     final flow = converted.singleOrNull;
-    if (flow == null || flow.currency != baseCurrency) {
+    if (flow == null ||
+        flow.currency != baseCurrency ||
+        !flow.amount.isFinite ||
+        flow.amount <= 0) {
       return unknownAmountRange;
     }
     return getAmountRange(flow.amount);
