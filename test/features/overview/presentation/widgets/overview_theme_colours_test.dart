@@ -10,7 +10,6 @@ import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_analytics.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_empty_state.dart';
