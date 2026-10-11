@@ -216,7 +216,7 @@
     var k = o.kind || 'metric', c = o.color;
     if (k === 'metric') {
       var ch = o.change != null
-        ? '<div class="it-metric__change" style="color:' + (o.positive === false ? 'var(--it-danger-l)' : 'var(--it-success-l)') + '">' +
+        ? '<div class="it-metric__change" style="color:' + (o.positive === false ? 'var(--danger)' : 'var(--success)') + '">' +
           icon(trend(o.positive !== false), { size: 14 }) + '<span>' + esc(o.change) + '</span></div>' : '';
       return '<div class="it-metric" role="group" aria-label="' + esc(o.label + ': ' + o.value + (o.change != null ? ', Trending ' + (o.positive === false ? 'down' : 'up') + ' ' + o.change : '')) + '">' +
         '<div class="it-metric__head">' + (o.icon ? '<span class="it-metric__icon"' + sty({ '--c': c }) + '>' + icon(o.icon, { size: 16 }) + '</span>' : '') +

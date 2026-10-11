@@ -31,6 +31,17 @@ import 'package:inv_tracker/core/widgets/currency_badge.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/metric_tile.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
+import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
+import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
+import 'package:inv_tracker/features/fire_number/domain/services/fire_calculation_service.dart';
+import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
+import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_dashboard_card.dart';
+import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_load_error_card.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
+import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
+import 'package:inv_tracker/features/goals/presentation/widgets/goal_card.dart';
+import 'package:inv_tracker/features/goals/presentation/widgets/goal_carousel_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/cash_flow_card_widget.dart';
@@ -477,6 +488,44 @@ final _scenes = <String, _Scene>{
       child: MonthlyCashFlowTrend(currencyFormat: _inr),
     ),
   ),
+  'goals_cards': _Scene(
+    height: 420,
+    overrides: [
+      currencyLocaleProvider.overrideWith((ref) => 'en_IN'),
+      // The goal card shows its error line when the progress cannot load.
+      multiCurrencyGoalProgressProvider(
+        _goal.id,
+      ).overrideWith((ref) => Future<GoalProgress>.error(Exception('offline'))),
+    ],
+    build: () => Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          GoalCarouselCard(progress: _goalAchieved, width: 368),
+          const SizedBox(height: 12),
+          GoalCard(goal: _goal, onTap: () {}),
+        ],
+      ),
+    ),
+  ),
+  'fire_cards': _Scene(
+    height: 420,
+    overrides: [
+      currencyLocaleProvider.overrideWith((ref) => 'en_IN'),
+      fireSettingsProvider.overrideWith((ref) => Stream.value(_fireSettings)),
+      fireCalculationProvider.overrideWithValue(AsyncValue.data(_fireAhead)),
+    ],
+    build: () => Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          const FireDashboardCard(),
+          const SizedBox(height: 12),
+          FireLoadErrorCard(onRetry: () {}),
+        ],
+      ),
+    ),
+  ),
   'cash_flow_rows': _Scene(
     height: 300,
     build: () => Padding(
@@ -506,6 +555,60 @@ final _scenes = <String, _Scene>{
     ),
   ),
 };
+
+// Demo goal and FIRE settings only.
+final _goal = GoalEntity(
+  id: 'demo-goal',
+  name: 'Demo goal',
+  type: GoalType.targetAmount,
+  targetAmount: 1000000,
+  trackingMode: GoalTrackingMode.all,
+  // A letter, not an emoji: the harness has no emoji font.
+  icon: 'G',
+  colorValue: 0xFF3B82F6,
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+  currency: 'INR',
+);
+
+final _goalAchieved = GoalProgress(
+  goal: _goal,
+  currentAmount: 1000000,
+  targetAmount: 1000000,
+  progressPercent: 100,
+  monthlyVelocity: 0,
+  monthlyIncome: 0,
+  status: GoalStatus.achieved,
+  currentMilestone: GoalMilestone.complete,
+  achievedMilestones: const [],
+  linkedInvestmentCount: 1,
+  calculatedAt: DateTime(2026, 10, 4),
+);
+
+final _fireSettings = FireSettingsEntity(
+  id: 'fire',
+  monthlyExpenses: 50000,
+  birthYear: 1998,
+  targetFireAge: 50,
+  isSetupComplete: true,
+  currency: 'INR',
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+);
+
+// 36.6 lakh saved with 60,000 added a month: ahead of schedule.
+final _fireAhead = FireCalculationService().calculate(
+  settings: _fireSettings,
+  currentPortfolioValue: 3660000,
+  currentMonthlySavings: 60000,
+  asOf: DateTime(2026, 10, 2),
+  inputs: const FireInputsSummary(
+    investmentsValue: 3660000,
+    principalWithoutValue: 0,
+    otherAssets: 0,
+    savingsSource: MonthlySavingsSource.history,
+  ),
+);
 
 const _sceneWidth = 400.0;
 final _sceneKey = GlobalKey();

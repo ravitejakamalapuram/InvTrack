@@ -173,6 +173,7 @@ class CrashlyticsSettingsSection extends ConsumerWidget {
     WidgetRef ref,
   ) async {
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final crashlyticsService = ref.read(crashlyticsServiceProvider);
 
     final confirmed = await showDialog<bool>(
@@ -180,7 +181,10 @@ class CrashlyticsSettingsSection extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.warning_amber, color: AppColors.errorLight),
+            Icon(
+              Icons.warning_amber,
+              color: isDark ? AppColors.errorDark : AppColors.errorLight,
+            ),
             const SizedBox(width: 8),
             Text(l10n.testFatalDialogTitle),
           ],
@@ -194,7 +198,9 @@ class CrashlyticsSettingsSection extends ConsumerWidget {
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.errorLight,
+              backgroundColor: isDark
+                  ? AppColors.errorDark
+                  : AppColors.errorLight,
             ),
             child: Text(l10n.crashNow),
           ),

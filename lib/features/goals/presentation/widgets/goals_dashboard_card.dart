@@ -162,7 +162,7 @@ class _GoalsDashboardCardState extends ConsumerState<GoalsDashboardCard> {
             child: Text(
               l10n.goalsAchieved(summary.achievedGoals, summary.totalGoals),
               style: AppTypography.caption.copyWith(
-                color: AppColors.successLight,
+                color: isDark ? AppColors.successDark : AppColors.successLight,
                 fontWeight: FontWeight.w600,
               ),
             ),

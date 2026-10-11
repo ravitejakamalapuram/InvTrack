@@ -71,7 +71,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
               if (hasSavedGuestBackup) const SavedGuestBackupTile(),
               SettingsNavTile(
                 icon: Icons.description,
-                iconColor: AppColors.successLight,
+                iconColor: isDark
+                    ? AppColors.successDark
+                    : AppColors.successLight,
                 title: 'Export as CSV',
                 subtitle: 'Spreadsheet format',
                 trailing: exportState.isLoading
@@ -143,7 +145,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
               if (isAnonymous)
                 SettingsNavTile(
                   icon: Icons.person_remove_outlined,
-                  iconColor: AppColors.warningLight,
+                  iconColor: isDark
+                      ? AppColors.warningDark
+                      : AppColors.warningLight,
                   title: l10n.deleteGuestData,
                   subtitle: _isDeleting
                       ? 'Deleting...'
@@ -163,7 +167,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
                 ),
               SettingsNavTile(
                 icon: Icons.delete_forever,
-                iconColor: AppColors.errorLight,
+                iconColor: isDark ? AppColors.errorDark : AppColors.errorLight,
                 title: 'Delete Account',
                 subtitle: _isDeleting
                     ? 'Deleting...'
@@ -201,7 +205,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
                 children: [
                   Icon(
                     Icons.warning_amber,
-                    color: AppColors.errorLight,
+                    color: isDark ? AppColors.errorDark : AppColors.errorLight,
                     size: 20,
                   ),
                   SizedBox(width: AppSpacing.sm),
@@ -244,10 +248,11 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     final state = ref.read(zipExportStateProvider);
     if (state.hasError && context.mounted) {
       final l10n = AppLocalizations.of(context);
+      final isDark = Theme.of(context).brightness == Brightness.dark;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.exportFailed(state.error.toString())),
-          backgroundColor: AppColors.errorLight,
+          backgroundColor: isDark ? AppColors.errorDark : AppColors.errorLight,
         ),
       );
     } else if (context.mounted) {
@@ -287,7 +292,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
             // Merge option
             _ImportOptionTile(
               icon: Icons.merge_rounded,
-              iconColor: AppColors.successLight,
+              iconColor: isDark
+                  ? AppColors.successDark
+                  : AppColors.successLight,
               title: 'Merge',
               description: 'Add new data, skip duplicates',
               onTap: () => Navigator.pop(dialogContext, ImportStrategy.merge),
@@ -296,7 +303,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
             // Replace option
             _ImportOptionTile(
               icon: Icons.swap_horiz_rounded,
-              iconColor: AppColors.warningLight,
+              iconColor: isDark
+                  ? AppColors.warningDark
+                  : AppColors.warningLight,
               title: 'Replace',
               description: 'Delete existing data first',
               onTap: () => Navigator.pop(dialogContext, ImportStrategy.replace),
@@ -331,7 +340,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.errorLight,
+                  backgroundColor: isDark
+                      ? AppColors.errorDark
+                      : AppColors.errorLight,
                 ),
                 onPressed: () => Navigator.pop(dialogContext, true),
                 child: Text(l10n.replaceAll),
@@ -412,6 +423,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
                   ],
                 ),
               ),
+              // theme-neutral: amber fill under the fixed dark text above.
               backgroundColor: AppColors.warningLight,
               duration: const Duration(seconds: 8),
             ),
@@ -433,10 +445,13 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     } catch (e) {
       if (context.mounted) {
         final l10n = AppLocalizations.of(context);
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.importFailed(e.toString())),
-            backgroundColor: AppColors.errorLight,
+            backgroundColor: isDark
+                ? AppColors.errorDark
+                : AppColors.errorLight,
           ),
         );
       }
@@ -445,6 +460,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
 
   Future<void> _handleDeleteGuestData(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     // First confirmation
@@ -460,7 +476,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.warningLight,
+              backgroundColor: isDark
+                  ? AppColors.warningDark
+                  : AppColors.warningLight,
             ),
             onPressed: () => Navigator.pop(dialogContext, true),
             child: Text(l10n.deleteGuestData),
@@ -511,6 +529,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     ScaffoldMessengerState scaffoldMessenger, {
     bool fromGuestTile = false,
   }) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     // Proceed with deletion. The banner hides its Withdraw button until the
     // flow ends, on every screen.
     final inProgress = ref.read(deletionInProgressProvider.notifier)..start();
@@ -604,7 +623,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
             content: Text(
               l10n.failedToDeleteAccount(e.message ?? 'Unknown error'),
             ),
-            backgroundColor: AppColors.errorLight,
+            backgroundColor: isDark
+                ? AppColors.errorDark
+                : AppColors.errorLight,
           ),
         );
       }
@@ -615,7 +636,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
             duration: const Duration(seconds: 8),
             // Never show the raw exception: it can name internal state.
             content: Text(l10n.failedToDeleteAccount(l10n.pleaseTryAgainLater)),
-            backgroundColor: AppColors.errorLight,
+            backgroundColor: isDark
+                ? AppColors.errorDark
+                : AppColors.errorLight,
           ),
         );
       }
@@ -685,6 +708,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AlertDialog(
       title: Text(l10n.deleteAccount),
       content: SingleChildScrollView(
@@ -715,7 +739,11 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
           label: Text(l10n.deleteAccountExportFirst),
         ),
         FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: AppColors.errorLight),
+          style: FilledButton.styleFrom(
+            backgroundColor: isDark
+                ? AppColors.errorDark
+                : AppColors.errorLight,
+          ),
           onPressed: _exporting ? null : () => Navigator.pop(context, true),
           child: Text(l10n.deleteEverything),
         ),
@@ -744,6 +772,7 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AlertDialog(
       title: Text(l10n.finalConfirmation),
       content: Column(
@@ -772,7 +801,9 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
         ),
         FilledButton(
           style: FilledButton.styleFrom(
-            backgroundColor: _isValid ? AppColors.errorLight : Colors.grey,
+            backgroundColor: _isValid
+                ? (isDark ? AppColors.errorDark : AppColors.errorLight)
+                : Colors.grey,
           ),
           onPressed: _isValid ? () => Navigator.pop(context, 'DELETE') : null,
           child: Text(l10n.deleteMyAccount),

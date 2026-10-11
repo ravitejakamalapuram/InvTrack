@@ -63,6 +63,7 @@ Future<bool> backupAndMergeGuestData(
   WidgetRef ref,
 ) async {
   final l10n = AppLocalizations.of(context);
+  final isDark = Theme.of(context).brightness == Brightness.dark;
   final messenger = ScaffoldMessenger.of(context);
   final navigator = Navigator.of(context, rootNavigator: true);
   final service = ref.read(guestBackupMergeServiceProvider);
@@ -144,7 +145,9 @@ Future<bool> backupAndMergeGuestData(
         messenger.showSnackBar(
           SnackBar(
             content: Text(l10n.guestDataMerged),
-            backgroundColor: AppColors.successLight,
+            backgroundColor: isDark
+                ? AppColors.successDark
+                : AppColors.successLight,
           ),
         );
       }

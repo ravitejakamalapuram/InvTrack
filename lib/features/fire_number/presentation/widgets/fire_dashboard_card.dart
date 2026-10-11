@@ -125,6 +125,9 @@ class FireDashboardCard extends ConsumerWidget {
   ) {
     final progress = calculation.displayProgress;
     final status = calculation.status;
+    final statusColor = status.colorForBrightness(
+      isDark ? Brightness.dark : Brightness.light,
+    );
 
     return GlassCard(
       onTap: () {
@@ -136,7 +139,7 @@ class FireDashboardCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.local_fire_department, color: status.color, size: 24),
+              Icon(Icons.local_fire_department, color: statusColor, size: 24),
               SizedBox(width: AppSpacing.sm),
               Text(
                 l10n.fireProgressTitle,
@@ -153,13 +156,13 @@ class FireDashboardCard extends ConsumerWidget {
                   vertical: AppSpacing.xxs,
                 ),
                 decoration: BoxDecoration(
-                  color: status.color.withValues(alpha: 0.15),
+                  color: statusColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   status.label(l10n),
                   style: AppTypography.caption.copyWith(
-                    color: status.color,
+                    color: statusColor,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -175,7 +178,7 @@ class FireDashboardCard extends ConsumerWidget {
               backgroundColor: isDark
                   ? AppColors.neutral700Dark
                   : AppColors.neutral200Light,
-              valueColor: AlwaysStoppedAnimation<Color>(status.color),
+              valueColor: AlwaysStoppedAnimation<Color>(statusColor),
               minHeight: 8,
             ),
           ),
@@ -218,7 +221,7 @@ class FireDashboardCard extends ConsumerWidget {
                 child: Text(
                   '${progress.toStringAsFixed(1)}%',
                   style: AppTypography.bodyMedium.copyWith(
-                    color: status.color,
+                    color: statusColor,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

@@ -29,46 +29,31 @@ extension FireTypeUI on FireType {
 extension FireProgressStatusUI on FireProgressStatus {
   /// Color representing this status (light mode)
   /// Uses the app's design system colors for consistency
-  Color get color {
-    switch (this) {
-      case FireProgressStatus.notStarted:
-      case FireProgressStatus.notEnoughHistory:
-        return AppColors.neutral500Light;
-      case FireProgressStatus.behind:
-        return AppColors.warningLight; // Rich Amber #F59E0B
-      case FireProgressStatus.onTrack:
-        return AppColors.accentLight; // Teal/Cyan #0EA5E9
-      case FireProgressStatus.ahead:
-        return AppColors.successLight; // Emerald #10B981
-      case FireProgressStatus.achieved:
-        return AppColors.successLight; // Emerald #10B981
-      case FireProgressStatus.coasting:
-        return AppColors.graphTeal; // Teal #14B8A6
-    }
-  }
+  Color get color => colorForBrightness(Brightness.light);
 
   /// Color representing this status (dark mode)
-  Color get colorDark {
+  Color get colorDark => colorForBrightness(Brightness.dark);
+
+  /// The color of this status for the theme it is painted in.
+  Color colorForBrightness(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
     switch (this) {
       case FireProgressStatus.notStarted:
       case FireProgressStatus.notEnoughHistory:
-        return AppColors.neutral400Dark;
+        return isDark ? AppColors.neutral400Dark : AppColors.neutral500Light;
       case FireProgressStatus.behind:
-        return AppColors.warningDark; // Brighter Amber #FBBF24
+        // Rich Amber #F59E0B, brighter Amber #FBBF24 in dark
+        return isDark ? AppColors.warningDark : AppColors.warningLight;
       case FireProgressStatus.onTrack:
-        return AppColors.accentDark; // Cyan #38BDF8
+        // Teal/Cyan #0EA5E9, Cyan #38BDF8 in dark
+        return isDark ? AppColors.accentDark : AppColors.accentLight;
       case FireProgressStatus.ahead:
-        return AppColors.successDark; // Emerald #34D399
       case FireProgressStatus.achieved:
-        return AppColors.successDark; // Emerald #34D399
+        // Emerald #10B981, #34D399 in dark
+        return isDark ? AppColors.successDark : AppColors.successLight;
       case FireProgressStatus.coasting:
-        return AppColors.graphTeal; // Teal #14B8A6
+        return AppColors.graphTeal; // Teal #14B8A6 in both themes
     }
-  }
-
-  /// Get the appropriate color based on brightness
-  Color colorForBrightness(Brightness brightness) {
-    return brightness == Brightness.dark ? colorDark : color;
   }
 
   /// Icon representing this status

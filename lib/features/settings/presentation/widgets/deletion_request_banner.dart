@@ -69,9 +69,9 @@ class _DeletionRequestBannerState extends ConsumerState<DeletionRequestBanner> {
         container: true,
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.warning_amber,
-              color: AppColors.errorLight,
+              color: isDark ? AppColors.errorDark : AppColors.errorLight,
               size: 20,
             ),
             SizedBox(width: AppSpacing.sm),

@@ -41,6 +41,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // PERFORMANCE: Use ref.select to rebuild only when specific fields change
     final themeMode = ref.watch(settingsProvider.select((s) => s.themeMode));
@@ -81,7 +82,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               SettingsNavTile(
                 icon: hasPin ? Icons.lock : Icons.lock_open,
-                iconColor: hasPin ? AppColors.successLight : null,
+                iconColor: hasPin
+                    ? (isDark ? AppColors.successDark : AppColors.successLight)
+                    : null,
                 title: l10n.appLock,
                 subtitle: hasPin
                     ? '${l10n.pinEnabled}${isBiometricEnabled ? ' • ${l10n.biometricsOn}' : ''}'
@@ -115,7 +118,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 SettingsNavTile(
                   icon: Icons.security,
-                  iconColor: AppColors.successLight,
+                  iconColor: isDark
+                      ? AppColors.successDark
+                      : AppColors.successLight,
                   title: l10n.incomeGuardianSettings,
                   subtitle: l10n.incomeGuardianSettingsSubtitle,
                   onTap: () => _navigateTo(
@@ -176,7 +181,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               SettingsNavTile(
                 icon: Icons.logout,
-                iconColor: AppColors.errorLight,
+                iconColor: isDark ? AppColors.errorDark : AppColors.errorLight,
                 title: l10n.signOut,
                 showChevron: false,
                 onTap: () => _handleSignOut(context, ref),
@@ -345,6 +350,7 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final currency = ref.watch(settingsProvider.select((s) => s.currency));
     final currencySwitchStatus = ref.watch(currencySwitchProvider);
 
@@ -357,7 +363,9 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.currencySwitchedSuccessfully(targetCurrency)),
-            backgroundColor: AppColors.successLight,
+            backgroundColor: isDark
+                ? AppColors.successDark
+                : AppColors.successLight,
             duration: const Duration(seconds: 2),
           ),
         );
@@ -371,14 +379,17 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(currencySwitchFailureMessage(l10n, next)),
-            backgroundColor: AppColors.errorLight,
+            backgroundColor: isDark
+                ? AppColors.errorDark
+                : AppColors.errorLight,
             // The blocked-switch explanation is longer; give time to read it.
             duration: Duration(
               seconds: next.unstampedLegacyCurrency != null ? 8 : 3,
             ),
             action: SnackBarAction(
               label: l10n.retry,
-              textColor: Colors.white,
+              // The label colour of the snackbar: near-black on the dark fill.
+              textColor: isDark ? AppColors.cardDark : Colors.white,
               onPressed: () {
                 // Only retry if targetCurrency is not null
                 if (next.targetCurrency != null) {
@@ -399,7 +410,7 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
 
     final tile = SettingsValueTile(
       icon: Icons.currency_exchange_rounded,
-      iconColor: AppColors.successLight,
+      iconColor: isDark ? AppColors.successDark : AppColors.successLight,
       title: l10n.currency,
       value: currencySwitchStatus.isBusy ? l10n.loading : currency,
       trailing: currencySwitchStatus.isBusy

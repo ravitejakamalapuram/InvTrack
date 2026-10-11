@@ -37,7 +37,9 @@ class SecuritySettingsScreen extends ConsumerWidget {
             children: [
               SettingsToggleTile(
                 icon: securityState.hasPin ? Icons.lock : Icons.lock_open,
-                iconColor: securityState.hasPin ? AppColors.successLight : null,
+                iconColor: securityState.hasPin
+                    ? (isDark ? AppColors.successDark : AppColors.successLight)
+                    : null,
                 title: l10n.enableAppLock,
                 subtitle: securityState.hasPin
                     ? l10n.pinRequiredToOpenApp
