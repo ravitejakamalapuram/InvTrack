@@ -370,6 +370,30 @@ void main() {
       expect(display.primaryText(l10n), '—');
     });
 
+    test('the pill of an undefined XIRR is a bare dash, so far or not', () {
+      // #954: a dash has nothing to qualify. A paid-back open investment
+      // (so far) whose XIRR cannot be solved must not read "— IRR so far".
+      final stats = _stats(
+        invested: 100000,
+        returned: 110000,
+        first: DateTime(2023, 1, 1),
+        last: DateTime(2024, 1, 1),
+        xirrMethod: XirrMethod.undefined,
+        cashOnly: 1,
+      );
+
+      final soFar = ReturnDisplay.resolve(stats: stats, openStats: stats);
+      expect(soFar.kind, ReturnDisplayKind.undefined);
+      expect(soFar.isSoFar, isTrue);
+      expect(soFar.primaryText(l10n), '—');
+      expect(soFar.pillText(l10n), '—');
+
+      final closed = ReturnDisplay.resolve(stats: stats);
+      expect(closed.kind, ReturnDisplayKind.undefined);
+      expect(closed.isSoFar, isFalse);
+      expect(closed.pillText(l10n), '—');
+    });
+
     test(
       'portfolio view awaits value when its open part has not paid back',
       () {

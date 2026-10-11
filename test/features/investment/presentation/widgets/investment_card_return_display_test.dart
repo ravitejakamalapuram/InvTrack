@@ -377,6 +377,16 @@ void main() {
     );
     expect(label, isNot(contains('4.9')));
     expect(label, isNot(contains('110')));
+    // No amount is drawn (with privacy off the card shows "+₹10,000" and
+    // "₹1 L"), and the pill, still in the tree, is invisible.
+    expect(find.textContaining('₹'), findsNothing);
+    final pillOpacity = tester.widget<AnimatedOpacity>(
+      find.descendant(
+        of: find.byType(GlassCard),
+        matching: find.byType(AnimatedOpacity),
+      ),
+    );
+    expect(pillOpacity.opacity, 0.0);
   });
 
   testWidgets('a short so-far holding says so on the pill', (tester) async {

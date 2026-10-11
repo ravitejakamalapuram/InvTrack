@@ -181,6 +181,8 @@ class ReturnDisplay {
   /// XIRR", "+2.0% in 3 days" or the same "so far".
   String pillText(AppLocalizations l10n) {
     final figure = primaryText(l10n);
+    // A dash has nothing to qualify: no "IRR", "Expected XIRR" or "so far".
+    if (figure == dash) return dash;
     if (kind == ReturnDisplayKind.shortHolding) {
       return isSoFar ? l10n.returnBadgeSoFar(figure) : figure;
     }
