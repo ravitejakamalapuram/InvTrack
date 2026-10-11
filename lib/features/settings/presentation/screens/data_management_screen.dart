@@ -12,6 +12,7 @@ import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/widgets/screen_layout.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/guest_backup_merge_provider.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
@@ -61,7 +62,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           SizedBox(height: AppSpacing.sm),
 
           // Shown while a deletion request exists (A88).
-          const DeletionRequestBanner(),
+          const ScreenEdge(child: DeletionRequestBanner()),
 
           // Export section
           SettingsSection(

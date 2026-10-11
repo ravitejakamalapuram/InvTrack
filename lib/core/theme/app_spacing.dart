@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:inv_tracker/core/theme/app_sizes.dart';
 
 /// Centralized spacing constants following an 8px grid system.
 /// Based on PRD specifications for consistent UI/UX across all screens.
@@ -51,8 +52,15 @@ class AppSpacing {
   /// Standard screen vertical padding (16px)
   static const double screenPaddingVertical = 16.0;
 
-  /// Compact screen padding for lists/grids (16px)
-  static const double screenPaddingCompact = 16.0;
+  /// The one left/right edge of Overview, Investments, Investment detail and
+  /// Goals (16px): the app bar title, the first and last app bar action chip,
+  /// section headings, the hero, cards and notes all start here. Forms keep
+  /// [screenPaddingHorizontal]. Place content with `ScreenSliver` or
+  /// `ScreenEdge` (`core/widgets/screen_layout.dart`), not with a literal.
+  static const double screenEdge = 16.0;
+
+  /// Compact screen padding for lists/grids (16px). An alias of [screenEdge].
+  static const double screenPaddingCompact = screenEdge;
 
   // ============================================
   // EDGE INSETS PRESETS
@@ -117,6 +125,34 @@ class AppSpacing {
   /// Spacing between chips
   static const double chipSpacing = xs;
 
-  /// Bottom padding for screens with FAB (80px)
-  static const double fabBottomPadding = 80.0;
+  /// Margin Material keeps between the extended FAB and the body's bottom edge
+  /// (16px, `kFloatingActionButtonMargin`).
+  static const double fabMargin = 16.0;
+
+  /// Bottom padding for screens with a FAB (80px): the 56px button, its 16px
+  /// margin and an 8px gap. Add the bottom inset with [fabClearance].
+  static const double fabBottomPadding = AppSizes.fabSize + fabMargin + xs;
+
+  /// Space a scrolling body leaves under its last item so that item can be
+  /// scrolled fully clear of the FAB: [fabBottomPadding] plus the bottom inset.
+  ///
+  /// Read it from the context of the sliver that needs it. Inside the shell's
+  /// navigation bar and inside a `SafeArea` the inset is already consumed
+  /// there and reads 0, as it does for `Scaffold`'s own FAB placement. On a
+  /// screen shown without either, it is the real inset.
+  static double fabClearance(BuildContext context) =>
+      fabBottomPadding + MediaQuery.paddingOf(context).bottom;
+
+  /// Gap between the 48px tap box of an app bar action and its 36px chip (6px).
+  static const double actionInset =
+      (AppSizes.minTouchTarget - AppSizes.tonalActionChip) / 2;
+
+  /// Space between the screen edge and the 48px tap box of the first or last
+  /// app bar action (10px), so the chip inside it starts or ends on
+  /// [screenEdge] and only the transparent box hangs into the gutter.
+  static const double appBarTrailingGap = screenEdge - actionInset;
+
+  /// Width of the app bar leading slot that holds one tonal action (58px).
+  static const double appBarLeadingWidth =
+      appBarTrailingGap + AppSizes.minTouchTarget;
 }

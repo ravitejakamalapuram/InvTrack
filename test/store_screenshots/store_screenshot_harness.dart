@@ -253,8 +253,13 @@ class _NoUpdateNotifier extends InAppUpdateNotifier {
 }
 
 /// Sizes the view like the Play screenshots and starts the real app on
-/// [demo], signed in and with no lock, update prompt or banner.
-Future<void> pumpStoreApp(WidgetTester tester, StoreDemoData demo) async {
+/// [demo], signed in and with no lock, update prompt or banner. A test that
+/// needs another state passes [extraOverrides], which win over the defaults.
+Future<void> pumpStoreApp(
+  WidgetTester tester,
+  StoreDemoData demo, {
+  List<Override> extraOverrides = const [],
+}) async {
   // Release builds have no debug banner, and flutter_test draws elevation
   // shadows as solid outlines where a device draws soft ones. The test
   // framework checks these flags before tearDown callbacks run, so the test
@@ -271,7 +276,9 @@ Future<void> pumpStoreApp(WidgetTester tester, StoreDemoData demo) async {
   final app = await TestApp.create(tester);
   app.seedInvestments(demo.investments, demo.cashFlows);
   app.seedGoals(demo.goals);
-  await app.pumpApp(extraOverrides: _storeOverrides(demo));
+  await app.pumpApp(
+    extraOverrides: [..._storeOverrides(demo), ...extraOverrides],
+  );
   await _settle(tester);
 }
 

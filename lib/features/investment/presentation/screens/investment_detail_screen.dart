@@ -5,10 +5,13 @@ import 'package:inv_tracker/core/analytics/analytics_screens.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
+import 'package:inv_tracker/core/widgets/screen_layout.dart';
+import 'package:inv_tracker/core/widgets/tonal_icon_action.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
@@ -33,6 +36,15 @@ class InvestmentDetailScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<InvestmentDetailScreen> createState() =>
       _InvestmentDetailScreenState();
+}
+
+/// Height of the expanded header, which holds fixed-size text that grows with
+/// the text scale, so the room for it grows too (up to a text scale of x2).
+double _heroExpandedHeight(BuildContext context, {required bool hasNotes}) {
+  const probe = 14.0;
+  final scale = MediaQuery.textScalerOf(context).scale(probe) / probe;
+  final growth = (scale - 1).clamp(0.0, 1.0);
+  return hasNotes ? 200 + 120 * growth : 160 + 24 * growth;
 }
 
 class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
@@ -113,28 +125,22 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
         slivers: [
           // Hero App Bar with pinned navigation
           SliverAppBar(
-            expandedHeight: widget.investment.notes?.isNotEmpty ?? false
-                ? 200
-                : 160,
+            expandedHeight: _heroExpandedHeight(
+              context,
+              hasNotes: widget.investment.notes?.isNotEmpty ?? false,
+            ),
             pinned: true,
             backgroundColor: primaryColor,
             surfaceTintColor: Colors.transparent,
-            leading: IconButton(
-              tooltip: l10n.tooltipBack,
-              icon: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
+            leading: TonalIconAction.leading(
+              TonalIconAction(
+                icon: Icons.arrow_back_rounded,
+                tooltip: l10n.tooltipBack,
+                tone: TonalIconActionTone.onHero,
+                onPressed: () => Navigator.of(context).pop(),
               ),
-              onPressed: () => Navigator.of(context).pop(),
             ),
+            leadingWidth: AppSpacing.appBarLeadingWidth,
             // The expanded header below already shows the name, so the bar
             // carries it only once that header has scrolled away (#942). The
             // heading semantics are set by hand: the app bar would otherwise
@@ -153,24 +159,16 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               ),
             ),
             actions: [
-              IconButton(
+              TonalIconAction(
+                icon: Icons.more_vert_rounded,
                 tooltip: l10n.tooltipMoreOptions,
-                icon: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.more_vert_rounded,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                ),
+                tone: TonalIconActionTone.onHero,
                 onPressed: () => _showOptionsSheet(context, isDark),
               ),
-              const SizedBox(width: 4),
             ],
+            actionsPadding: const EdgeInsetsDirectional.only(
+              end: AppSpacing.appBarTrailingGap,
+            ),
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.pin,
               background: Container(
@@ -183,7 +181,12 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 ),
                 child: SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 56, 20, 16),
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      AppSpacing.screenEdge,
+                      56,
+                      AppSpacing.screenEdge,
+                      16,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -223,7 +226,12 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                                     ),
                                   ),
                                   const SizedBox(height: 6),
-                                  Row(
+                                  // A Wrap: at large text sizes the CLOSED
+                                  // badge drops below the type instead of
+                                  // overflowing.
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 4,
                                     children: [
                                       Container(
                                         padding: const EdgeInsets.symmetric(
@@ -247,7 +255,6 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                                         ),
                                       ),
                                       if (isClosed) ...[
-                                        const SizedBox(width: 8),
                                         Container(
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 8,
@@ -328,8 +335,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           SliverToBoxAdapter(
             child: FadeTransition(
               opacity: _fadeAnim,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+              child: ScreenEdge(
+                top: AppSpacing.md,
+                bottom: AppSpacing.md,
                 child: statsAsync.when(
                   data: (stats) => InvestmentDetailStatsSection(
                     stats: stats,
@@ -359,8 +367,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
           // Segmented Control for Transactions / Expected Income / Documents
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: ScreenEdge(
+              top: AppSpacing.xs,
+              bottom: AppSpacing.md,
               child: InvestmentDetailSegmentControl(
                 isDark: isDark,
                 selectedSegment: selectedSegment,
@@ -405,8 +414,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 // Sort by date descending
                 final sortedFlows = List<CashFlowEntity>.from(cashFlows)
                   ..sort((a, b) => b.date.compareTo(a.date));
-                return SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                return ScreenSliver(
+                  top: 0,
+                  bottom: 0,
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -429,8 +439,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                   ),
                 );
               },
-              loading: () => SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+              loading: () => ScreenSliver(
+                top: 0,
+                bottom: 0,
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) => Padding(
@@ -449,8 +460,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           ] else if (selectedSegment == 1) ...[
             // Expected Income Section
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ScreenEdge(
                 child: ExpectedIncomeSection(
                   investmentId: widget.investment.id,
                   isDark: isDark,
@@ -460,8 +470,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           ] else ...[
             // Documents Section
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ScreenEdge(
                 child: DocumentListWidget(
                   investmentId: widget.investment.id,
                   isReadOnly: isClosed,
@@ -470,8 +479,8 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             ),
           ],
 
-          // Bottom padding
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          // Foot: the last item scrolls clear of the add button.
+          const SliverFabClearance(),
         ],
       ),
       floatingActionButton: isClosed

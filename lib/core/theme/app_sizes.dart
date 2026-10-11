@@ -116,6 +116,10 @@ class AppSizes {
   /// Touch target minimum (accessibility)
   static const double minTouchTarget = 48.0;
 
+  /// Visible chip of a tonal app bar action. The tap box around it is
+  /// [minTouchTarget], so the chip sits 6px inside the box on every side.
+  static const double tonalActionChip = 36.0;
+
   /// Divider thickness
   static const double dividerThickness = 1.0;
 

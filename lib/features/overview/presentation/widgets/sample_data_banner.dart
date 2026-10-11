@@ -32,10 +32,8 @@ class SampleDataBanner extends ConsumerWidget {
     final borderColor = AppColors.accentLight.withValues(alpha: 0.4);
 
     return Container(
-      margin: EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
+      // The screen owns the horizontal edge (ScreenSliver).
+      margin: EdgeInsets.symmetric(vertical: AppSpacing.sm),
       padding: EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: bannerColor,

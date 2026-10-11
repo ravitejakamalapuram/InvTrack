@@ -361,10 +361,17 @@
 
 /* ---------- Navigation: app bar, NavigationBar, FAB (app_theme.dart) ---------- */
 .it-phone { position: relative; overflow: hidden; border-radius: var(--radius-lg); background: var(--background); border: 1px solid var(--outline-variant); min-height: 420px; display: flex; flex-direction: column; }
-.it-appbar { display: flex; align-items: center; gap: var(--space-xs); height: var(--app-bar-height); padding: 0 var(--space-md); background: var(--background); color: var(--text); }
+.it-appbar { display: flex; align-items: center; gap: var(--space-xs); height: var(--app-bar-height); padding: 0 var(--screen-edge, 16px); background: var(--background); color: var(--text); }
 .it-appbar__title { flex: 1; margin: 0; font: 600 20px/1.35 var(--font-display); letter-spacing: -.2px; }
 .it-appbar__act { width: var(--touch-target-min); height: var(--touch-target-min); display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--text); cursor: pointer; margin-right: -12px; }
-.it-phone__body { flex: 1; padding: var(--space-md); position: relative; }
+.it-appbar__act--tonal { margin-right: 0; }
+.it-appbar__act--tonal + .it-appbar__act--tonal { margin-left: calc(-1 * var(--space-xs)); }   /* boxes touch: the chips are 12 apart */
+.it-appbar__act--tonal:last-child { margin-right: -6px; }   /* a 36 chip in a 48 box: the box hangs 6 into the 16 edge, the chip ends on it */
+.it-appbar__chip { width: var(--tonal-action-chip, 36px); height: var(--tonal-action-chip, 36px); display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-md); background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--neutral-700-light); }   /* TonalIconAction: Light constants in both themes except the dark tint and icon */
+[data-theme="dark"] .it-appbar__chip { background: rgba(255, 255, 255, .1); color: #fff; }
+.it-appbar__act--tonal.is-on .it-appbar__chip, [data-theme="dark"] .it-appbar__act--tonal.is-on .it-appbar__chip { background: var(--it-primary-l, #5b4cdb); color: #fff; }   /* selected: primaryLight fill, white icon, in both themes */
+.it-phone__body { flex: 1; padding: var(--space-md) var(--screen-edge, 16px); position: relative; }
+.it-phone__body--fab { padding-bottom: var(--fab-bottom-padding, 80px); }   /* the last item scrolls clear of the FAB (AppSpacing.fabClearance) */
 .it-phone .it-fab { position: absolute; right: var(--space-md); bottom: var(--space-md); }
 .it-navbar { display: flex; height: var(--nav-bar-height); background: var(--it-nav-bg); }
 .it-nav { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; background: transparent; cursor: pointer; color: var(--neutral-500-light); font: 500 10px/1.2 var(--font-text); letter-spacing: .5px; padding: 0; }

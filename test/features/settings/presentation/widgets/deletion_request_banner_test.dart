@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/data/services/guest_backup_store.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
@@ -112,6 +113,14 @@ void main() {
     );
   }
 
+  /// The visible card, without any margin around it.
+  final bannerBox = find
+      .descendant(
+        of: find.byType(DeletionRequestBanner),
+        matching: find.byType(DecoratedBox),
+      )
+      .first;
+
   final screens = <String, Widget>{
     'Overview': const OverviewScreen(),
     'Data & Account': const DataManagementScreen(),
@@ -131,6 +140,16 @@ void main() {
       semantics.dispose();
     });
 
+    testWidgets('$name puts the banner on the screen edge', (tester) async {
+      await pumpApp(tester, screen);
+
+      await emit(tester, DeletionRequestStatus.confirmed);
+
+      final box = tester.getRect(bannerBox);
+      expect(box.left, AppSpacing.screenEdge);
+      expect(box.right, 800 - AppSpacing.screenEdge);
+    });
+
     testWidgets('$name shows no banner when there is no request', (
       tester,
     ) async {
@@ -146,6 +165,20 @@ void main() {
 
   Future<void> pumpBanner(WidgetTester tester) =>
       pumpApp(tester, const Scaffold(body: DeletionRequestBanner()));
+
+  testWidgets('the banner adds no horizontal margin of its own', (
+    tester,
+  ) async {
+    await pumpBanner(tester);
+
+    await emit(tester, DeletionRequestStatus.confirmed);
+
+    // The screen that shows it owns the edge (ScreenEdge); a margin here
+    // would add to that one.
+    final box = tester.getRect(bannerBox);
+    expect(box.left, 0);
+    expect(box.right, 800);
+  });
 
   testWidgets('a request only on this device says it will be sent when '
       'online', (tester) async {

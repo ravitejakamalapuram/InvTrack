@@ -16,6 +16,7 @@ import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
+import 'package:inv_tracker/core/widgets/screen_layout.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_dashboard_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_card.dart';
@@ -141,11 +142,13 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
 
               // Shown while a deletion request exists, whatever the
               // portfolio state (A88).
-              const SliverToBoxAdapter(child: DeletionRequestBanner()),
+              const SliverToBoxAdapter(
+                child: ScreenEdge(child: DeletionRequestBanner()),
+              ),
 
               // Content
-              SliverPadding(
-                padding: EdgeInsets.all(AppSpacing.md),
+              ScreenSliver(
+                clearsFab: true,
                 sliver: globalStats.when(
                   // Without archived investments, or the server's answer on
                   // whether the account is empty, it is not known whether the
@@ -318,9 +321,6 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
           loading: () => const SizedBox.shrink(),
           error: (e, s) => const SizedBox.shrink(),
         ),
-
-        // Bottom padding for FAB
-        SizedBox(height: AppSpacing.fabBottomPadding),
       ]),
     );
   }
@@ -330,8 +330,6 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
     return SliverList(
       delegate: SliverChildListDelegate([
         OverviewLoadErrorState(onRetry: () => reloadPortfolio(ref)),
-        // Bottom padding for FAB
-        const SizedBox(height: 80),
       ]),
     );
   }
@@ -397,8 +395,6 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
           OverviewAllArchivedCard(
             onViewInvestments: () => _showArchivedInvestments(context),
           ),
-          // Bottom padding for FAB
-          const SizedBox(height: 80),
         ]),
       );
     }
@@ -500,9 +496,6 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                   }
                 },
         ),
-
-        // Bottom padding for FAB
-        const SizedBox(height: 80),
       ]),
     );
   }
@@ -542,9 +535,6 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
 
         // Type Distribution Skeleton
         const SectionCardSkeleton(height: 160),
-
-        // Bottom padding for FAB
-        const SizedBox(height: 80),
       ]),
     );
   }
@@ -690,12 +680,19 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
           ),
           const SizedBox(height: 12),
           if (stats.firstCashFlowDate != null && stats.lastCashFlowDate != null)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildDateInfo('First Cash Flow', stats.firstCashFlowDate!),
-                _buildDateInfo('Last Cash Flow', stats.lastCashFlowDate!),
-              ],
+            // A Wrap, not a Row: at large text sizes the second date drops below
+            // the first instead of overflowing.
+            SizedBox(
+              width: double.infinity,
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                spacing: AppSpacing.md,
+                runSpacing: AppSpacing.xs,
+                children: [
+                  _buildDateInfo('First Cash Flow', stats.firstCashFlowDate!),
+                  _buildDateInfo('Last Cash Flow', stats.lastCashFlowDate!),
+                ],
+              ),
             ),
         ],
       ),
