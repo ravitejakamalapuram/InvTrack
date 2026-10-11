@@ -15,11 +15,18 @@ class _PrivacyOff extends PrivacyModeNotifier {
   bool build() => false;
 }
 
+class _PrivacyOn extends PrivacyModeNotifier {
+  @override
+  bool build() => true;
+}
+
 Future<void> _pumpCard(
   WidgetTester tester, {
   required InvestmentEntity investment,
   required InvestmentStats stats,
   required XirrResult xirr,
+  bool privacy = false,
+  double textScale = 1.0,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -50,11 +57,19 @@ Future<void> _pumpCard(
           ),
         ),
         currencyCodeProvider.overrideWith((ref) => 'USD'),
-        privacyModeProvider.overrideWith(_PrivacyOff.new),
+        privacyModeProvider.overrideWith(
+          privacy ? _PrivacyOn.new : _PrivacyOff.new,
+        ),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
         home: Scaffold(
           body: InvestmentCard(
             investment: investment,
@@ -302,5 +317,158 @@ void main() {
     final label = tester.getSemantics(find.byType(GlassCard)).label;
     expect(label, contains('Returns: positive 7.2 percent'));
     expect(label, isNot(contains('expected')));
+  });
+
+  // #954: an open investment that has returned its cost and has no current
+  // value keeps its IRR, labelled "so far", on the card and for screen readers.
+  InvestmentStats paidBackStats({int cashOnly = 0}) => InvestmentStats(
+    totalInvested: 100000,
+    totalReturned: 110000,
+    netCashFlow: 10000,
+    absoluteReturn: 10,
+    moic: 1.1,
+    xirr: 0,
+    cashFlowCount: 2,
+    firstCashFlowDate: DateTime(2023, 1, 1),
+    lastCashFlowDate: DateTime(2024, 1, 1),
+    cashOnlyCount: cashOnly,
+  );
+
+  testWidgets('a paid-back open investment shows its IRR so far', (
+    tester,
+  ) async {
+    await _pumpCard(
+      tester,
+      investment: _investment(InvestmentStatus.open),
+      stats: paidBackStats(cashOnly: 1),
+      xirr: const XirrResult.exact(0.049),
+    );
+
+    expect(find.text('+4.9% IRR so far'), findsOneWidget);
+    expect(find.text('+4.9% IRR'), findsNothing);
+    final label = tester.getSemantics(find.byType(GlassCard)).label;
+    expect(
+      label,
+      contains(
+        'Returns: positive 4.9 percent so far. '
+        'Counts money received only, not any value still held.',
+      ),
+    );
+  });
+
+  testWidgets('privacy mode keeps the so-far note but not the figure', (
+    tester,
+  ) async {
+    await _pumpCard(
+      tester,
+      investment: _investment(InvestmentStatus.open),
+      stats: paidBackStats(cashOnly: 1),
+      xirr: const XirrResult.exact(0.049),
+      privacy: true,
+    );
+
+    final label = tester.getSemantics(find.byType(GlassCard)).label;
+    expect(
+      label,
+      contains(
+        'Returns: Hidden percentage so far. '
+        'Counts money received only, not any value still held.',
+      ),
+    );
+    expect(label, isNot(contains('4.9')));
+    expect(label, isNot(contains('110')));
+    // No amount is drawn (with privacy off the card shows "+₹10,000" and
+    // "₹1 L"), and the pill, still in the tree, is invisible.
+    expect(find.textContaining('₹'), findsNothing);
+    final pillOpacity = tester.widget<AnimatedOpacity>(
+      find.descendant(
+        of: find.byType(GlassCard),
+        matching: find.byType(AnimatedOpacity),
+      ),
+    );
+    expect(pillOpacity.opacity, 0.0);
+  });
+
+  testWidgets('a short so-far holding says so on the pill', (tester) async {
+    final stats = InvestmentStats(
+      totalInvested: 100000,
+      totalReturned: 100500,
+      netCashFlow: 500,
+      absoluteReturn: 0.5,
+      moic: 1.005,
+      xirr: 0,
+      cashFlowCount: 2,
+      firstCashFlowDate: DateTime(2026, 9, 1),
+      lastCashFlowDate: DateTime(2026, 9, 21),
+      cashOnlyCount: 1,
+    );
+    await _pumpCard(
+      tester,
+      investment: _investment(InvestmentStatus.open),
+      stats: stats,
+      xirr: const XirrResult.approximate(0.09),
+    );
+
+    expect(find.text('+0.5% in 20 days so far'), findsOneWidget);
+    final label = tester.getSemantics(find.byType(GlassCard)).label;
+    expect(label, contains('Returns: positive 0.5 percent so far. Counts'));
+  });
+
+  // The longest so-far pill must not overflow on a small phone, or with large
+  // text. (The card's bottom strip already overflows at 320dp and 1.3x text,
+  // with or without a pill, so that size is checked for the pill's own box.)
+  for (final (width, scale) in [(320.0, 1.0), (360.0, 1.3)]) {
+    testWidgets('the so-far pill fits ${width}dp at ${scale}x text', (
+      tester,
+    ) async {
+      tester.view.physicalSize = Size(width, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await _pumpCard(
+        tester,
+        investment: _investment(InvestmentStatus.open),
+        stats: paidBackStats(cashOnly: 1),
+        xirr: const XirrResult.approximate(0.049),
+        textScale: scale,
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('+4.9% approx. IRR so far'), findsOneWidget);
+    });
+  }
+
+  testWidgets('the so-far pill stays inside the card at 320dp and 1.3x text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await _pumpCard(
+      tester,
+      investment: _investment(InvestmentStatus.open),
+      stats: paidBackStats(cashOnly: 1),
+      xirr: const XirrResult.approximate(0.049),
+      textScale: 1.3,
+    );
+    // Only the bottom strip overflows (before and after this change).
+    tester.takeException();
+
+    final pill = tester.getRect(find.text('+4.9% approx. IRR so far'));
+    final card = tester.getRect(find.byType(GlassCard));
+    expect(pill.left, greaterThanOrEqualTo(card.left));
+    expect(pill.right, lessThanOrEqualTo(card.right));
+  });
+
+  testWidgets('a closed card keeps the plain IRR', (tester) async {
+    await _pumpCard(
+      tester,
+      investment: _investment(InvestmentStatus.closed),
+      stats: paidBackStats(cashOnly: 1),
+      xirr: const XirrResult.exact(0.049),
+    );
+    expect(find.text('+4.9% IRR'), findsOneWidget);
+    expect(find.textContaining('so far'), findsNothing);
+    final label = tester.getSemantics(find.byType(GlassCard)).label;
+    expect(label, isNot(contains('so far')));
   });
 }

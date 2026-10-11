@@ -147,6 +147,23 @@ void main() {
     expect(score, isNull);
   });
 
+  test('an open holding that has paid back its cost is scored on its cash '
+      'returns (#954)', () {
+    // No current value, but the cost is back: its cash-only XIRR is a minimum
+    // (labelled "so far" on screen), not an unknown, so the score uses it.
+    final score = _score(
+      [_investment('gold', InvestmentType.gold)],
+      [
+        _flow('gold', CashFlowType.invest, 100000, DateTime(2025, 10, 4)),
+        _flow('gold', CashFlowType.returnFlow, 110000, DateTime(2026, 10, 4)),
+      ],
+    );
+
+    expect(score, isNotNull);
+    // 10% a year is 4 points above 6% inflation: 60 + (0.04 / 0.05) × 20 = 76.
+    expect(score!.returnsPerformance.score, closeTo(76.0, 1e-6));
+  });
+
   // Review follow-ups: a partial portfolio has no score, a total loss is
   // scored rather than called "not enough data", and short holdings are not
   // annualised (the Overview's ReturnDisplay rules).

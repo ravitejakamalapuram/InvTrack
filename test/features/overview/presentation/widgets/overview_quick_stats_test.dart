@@ -130,5 +130,57 @@ void main() {
       expect(icon.color, AppColors.successLight);
       handle.dispose();
     });
+
+    testWidgets('a paid-back open portfolio says MOIC so far', (tester) async {
+      // #954: Rs10 L in, Rs11.14 L back, no current value.
+      final handle = tester.ensureSemantics();
+      final stats = InvestmentStats(
+        totalInvested: 1000000,
+        totalReturned: 1114000,
+        netCashFlow: 114000,
+        absoluteReturn: 11.4,
+        moic: 1.114,
+        xirr: 0.114,
+        cashFlowCount: 2,
+        firstCashFlowDate: DateTime(2025, 10, 10),
+        lastCashFlowDate: DateTime(2026, 10, 10),
+        cashOnlyCount: 1,
+      );
+      await _pump(tester, stats: stats, openStats: stats);
+
+      expect(find.text('MOIC so far'), findsOneWidget);
+      expect(find.text('1.11x'), findsOneWidget);
+      expect(find.text('MOIC'), findsNothing);
+      expect(
+        find.bySemanticsLabel('MOIC so far: 1.11x, over 1.0y'),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('privacy mode hides the so-far MOIC value', (tester) async {
+      final handle = tester.ensureSemantics();
+      final stats = InvestmentStats(
+        totalInvested: 1000000,
+        totalReturned: 1114000,
+        netCashFlow: 114000,
+        absoluteReturn: 11.4,
+        moic: 1.114,
+        xirr: 0.114,
+        cashFlowCount: 2,
+        firstCashFlowDate: DateTime(2025, 10, 10),
+        lastCashFlowDate: DateTime(2026, 10, 10),
+        cashOnlyCount: 1,
+      );
+      await _pump(tester, stats: stats, openStats: stats, privacy: true);
+
+      expect(find.text('MOIC so far'), findsOneWidget);
+      expect(find.text('1.11x'), findsNothing);
+      expect(
+        find.bySemanticsLabel('MOIC so far: Hidden amount'),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
   });
 }

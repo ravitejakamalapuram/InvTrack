@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
@@ -115,6 +116,12 @@ class TerminalValues {
   /// whose cash flows are in more than one currency.
   final int missingValueCount;
 
+  /// Open investments with no value that have returned at least their cost,
+  /// to the paisa, in one currency. Their XIRR, MOIC and return % come from
+  /// cash alone, so they are minimums: whatever is still held is left out.
+  /// Screens label them "so far".
+  final int cashOnlyCount;
+
   /// Whether any value in [flows] is an estimate.
   final bool isEstimate;
 
@@ -135,6 +142,7 @@ class TerminalValues {
   const TerminalValues({
     this.flows = const [],
     this.missingValueCount = 0,
+    this.cashOnlyCount = 0,
     this.isEstimate = false,
     this.rate,
     this.limitedHistoryIds = const {},
@@ -163,6 +171,7 @@ class TerminalValues {
       flows: converted,
       missingValueCount:
           missingValueCount + math.max(0, flows.length - converted.length),
+      cashOnlyCount: cashOnlyCount,
       isEstimate: isEstimate,
       rate: rate,
       limitedHistoryIds: limitedHistoryIds,
@@ -421,6 +430,7 @@ class CurrentValueCalculator {
 
     final flows = <CashFlowEntity>[];
     var missing = 0;
+    var cashOnly = 0;
     var isEstimate = false;
     final rates = <double?>{};
     final limited = <String>{};
@@ -447,13 +457,24 @@ class CurrentValueCalculator {
         // Nothing to judge without cash flows.
         if (own.isEmpty) continue;
         var net = 0.0;
+        var out = 0.0;
         for (final cf in own) {
           net += cf.signedAmount;
+          if (cf.signedAmount < 0) out += cf.amount;
         }
         // Still out of pocket with no value: XIRR, MOIC and return % are
         // unknown. An investment that already returned its cost is not,
         // but that cannot be told from flows in more than one currency.
-        if (net < 0 || _sharedCurrency(own) == null) missing++;
+        // Money is compared to the paisa, so float noise cannot read as a
+        // shortfall.
+        if (FinancialCalculator.roundMoney(net) < 0 ||
+            _sharedCurrency(own) == null) {
+          missing++;
+        } else if (out > 0) {
+          // Its figures are cash-only minimums (#954). With nothing paid out
+          // (income alone) there is no return to qualify.
+          cashOnly++;
+        }
         continue;
       }
 
@@ -483,6 +504,7 @@ class CurrentValueCalculator {
     return TerminalValues(
       flows: flows,
       missingValueCount: missing,
+      cashOnlyCount: cashOnly,
       isEstimate: isEstimate,
       rate: rates.length == 1 ? rates.single : null,
       limitedHistoryIds: limited,
