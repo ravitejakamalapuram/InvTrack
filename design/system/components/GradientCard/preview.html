@@ -1,0 +1,35 @@
+<!-- @dsCard group="Cards" height=510 subtitle="Gradient card with a coloured glow; also the swipe-action backgrounds" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+
+  function body(t, s) { return '<div style="font:600 18px/1.4 var(--font-display)">' + t + '</div><div style="font:400 14px/1.4 var(--font-text);color:rgba(255,255,255,.8);margin-top:4px">' + s + '</div>'; }
+  document.getElementById('root').innerHTML = I.panes(function (theme) {
+    return '<div class="it-stack" style="gap:20px">' +
+      I.GradientCard(body('Hero gradient', 'gradient-hero, glow on'), { gradient: 'hero' }) +
+      I.GradientCard(body('Success gradient', 'gradient-success, glow off'), { gradient: 'success', glow: false }) +
+      '<div class="it-row" style="gap:12px;flex-wrap:nowrap">' +
+        '<div class="it-gcard" style="background:var(--gradient-danger);display:flex;align-items:center;justify-content:flex-end;padding:20px 24px;border-radius:var(--radius-lg)">' + I.icon('delete', { size: 24, color: '#fff' }) + '</div>' +
+        '<div class="it-gcard" style="background:var(--gradient-archive);display:flex;align-items:center;padding:20px 24px;border-radius:var(--radius-lg)">' + I.icon('archive', { size: 24, color: '#fff' }) + '</div></div>' +
+      cap('Swipe-to-delete (danger) and swipe-to-archive backgrounds use the same gradient tokens at a 16px radius.') +
+      cap('GradientCard is used by no screen at this commit (only a golden test); HeroCard uses GlassHeroCard instead. Its default gradient is the same in both themes.') +
+    '</div>';
+  });
+
+  I.wire(document);
+})();
+</script>
+</body>
+</html>

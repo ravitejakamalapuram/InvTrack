@@ -1,0 +1,24 @@
+{
+  "v": 3,
+  "layout": "files",
+  "createdOnFiles": { "v": 1, "at": "2026-10-11T05:53:29Z" },
+  "title": "InvTrack",
+  "namespace": "InvTrack",
+  "libraries": [],
+  "sections": {},
+  "groups": ["Logos"],
+  "assetGroups": {
+    "Logos": {
+      "name": "Logos",
+      "tile": "l",
+      "order": ["app_icon.png", "app_icon.svg"],
+      "files": {
+        "app_icon.png": { "name": "app_icon.png", "blob": "08ebecbaa7df202256fb09a835f2b854", "size": 13856, "type": "image/png" },
+        "app_icon.svg": { "name": "app_icon.svg", "blob": "4e8524eb4f8ebe3465e60b188f1f1645", "size": 1491, "type": "image/svg+xml" }
+      }
+    }
+  },
+  "blobs": {},
+  "docs": { "readme": "project/README.md", "sections": [] },
+  "lastChange": { "by": "Claude", "at": "2026-10-11T06:13:52Z", "via": "Claude Code", "note": "Checked against main@3b7375ae: dark snackbar text, shell NavigationBar, form-dialog field, GradientCard default, sort sheet, empty card, token names, notes" }
+}

@@ -1,0 +1,33 @@
+<!-- @dsCard group="Overlays" height=907 subtitle="Confirm dialog (explicit styling) and form dialog (Material 3 default)" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+
+  document.getElementById('root').innerHTML = I.panes(function () {
+    return '<div class="it-stack" style="gap:14px">' +
+      I.Dialog({ title: 'Delete Investment?', message: 'This will permanently delete this investment and all its transactions. This action cannot be undone.', confirm: 'Delete', height: 330 }) +
+      cap('AppFeedback.showConfirmDialog: surface fill, 20px radius, h4 title, muted message; destructive confirm in the light-mode red.') +
+      I.Dialog({ variant: 'form', title: 'Current value', height: 330, html:
+        '<div class="it-m3field"><span>Value in INR</span><div>1,38,000</div></div>' +
+        '<button type="button" class="it-btn it-btn--text" style="padding:0 8px">' + I.icon('event', { size: 18 }) + '<span>Value as of Oct 11, 2026</span></button>' }) +
+      cap('CurrentValueDialog: Material 3 defaults on the theme (no dialogTheme in app_theme.dart): approximated here, radius 28 and 24 padding are Flutter defaults, not InvTrack code. The field is the global input theme: filled, 12px outline, 2px primary border while focused.') +
+    '</div>';
+  });
+
+  I.wire(document);
+})();
+</script>
+</body>
+</html>

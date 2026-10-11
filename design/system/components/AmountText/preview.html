@@ -1,0 +1,37 @@
+<!-- @dsCard group="Privacy and money" height=582 subtitle="Lakh / crore compact amounts, long-press for the exact figure" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+
+  var rows = [99999, 100000, 325000, 9994999, 9999999, 10505000, 10000000000, -5500000];
+  function table() {
+    return '<table style="width:100%;border-collapse:collapse;font:400 13px/1.4 var(--font-text)"><thead><tr style="text-align:left;color:var(--text-muted)"><th style="padding:6px 8px 6px 0;font-weight:500">Amount</th><th style="padding:6px 8px;font-weight:500">Shown</th><th style="padding:6px 0 6px 8px;font-weight:500">Read aloud</th></tr></thead><tbody>' +
+      rows.map(function (n) {
+        return '<tr style="border-top:1px solid var(--outline-variant)"><td style="padding:8px 8px 8px 0;color:var(--text-secondary)">' + F.inr(n, { decimals: 0 }) + '</td><td style="padding:8px">' + I.AmountText({ amount: n, style: { 'font-weight': '600' } }) + '</td><td style="padding:8px 0 8px 8px;color:var(--text-secondary)">' + F.srAmount(n) + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+  document.getElementById('root').innerHTML = I.panes(function () {
+    return '<div class="it-stack" style="gap:12px">' + table() +
+      cap('Below one lakh the amount is shown in full with lakh grouping. From one lakh: L with up to two decimals, then Cr. A value that rounds to 100 L becomes 1 Cr, never 100 L.') +
+      '<div style="font:700 28px/1.2 var(--font-text)">' + I.AmountText({ amount: 10505000 }) + '</div>' +
+      cap('Press and hold (or Enter) to show the exact amount and copy it.') +
+      '<div data-it-toast></div></div>';
+  });
+
+  I.wire(document);
+})();
+</script>
+</body>
+</html>
