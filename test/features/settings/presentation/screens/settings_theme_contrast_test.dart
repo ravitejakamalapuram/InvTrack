@@ -52,6 +52,13 @@ class _Switch extends CurrencySwitch {
 
   void succeed() =>
       state = const CurrencySwitchStatus.success(targetCurrency: 'USD');
+
+  /// The switch the screen refuses until records saved without a currency are
+  /// stamped: the longer snackbar with a Retry action.
+  void block() => state = const CurrencySwitchStatus.failed(
+    targetCurrency: 'USD',
+    unstampedLegacyCurrency: 'INR',
+  );
 }
 
 class _OneBackup extends Fake implements GuestBackupStore {
@@ -195,6 +202,71 @@ void main() {
           }
           // Let the screen's reset timer run out.
           await tester.pump(const Duration(seconds: 3));
+        },
+      );
+    }
+  });
+
+  group('Settings screen, blocked currency switch', () {
+    Future<ProviderContainer> pump(WidgetTester tester, ThemeData theme) async {
+      SharedPreferences.setMockInitialValues({'currency': 'INR'});
+      final prefs = await SharedPreferences.getInstance();
+      await tester.binding.setSurfaceSize(const Size(800, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _app(theme, const SettingsScreen(), [
+          authRepositoryProvider.overrideWithValue(
+            FakeAuthRepository(googleUser),
+          ),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          securityProvider.overrideWith(() => _Pin(false)),
+          analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
+          crashlyticsServiceProvider.overrideWithValue(
+            _MockCrashlyticsService(),
+          ),
+          googleSignInInitializedProvider.overrideWith((ref) async {}),
+          currencySwitchProvider.overrideWith(_Switch.new),
+        ]),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      return ProviderScope.containerOf(tester.element(find.byType(Scaffold)));
+    }
+
+    for (final dark in [true, false]) {
+      testWidgets(
+        'the ${dark ? 'dark' : 'light'} red fill has a Retry label that '
+        '${dark ? 'reads on it' : 'is unchanged, white'}',
+        (tester) async {
+          final container = await pump(
+            tester,
+            dark ? AppTheme.darkTheme : AppTheme.lightTheme,
+          );
+          (container.read(currencySwitchProvider.notifier) as _Switch).block();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+
+          final bar = tester.widget<SnackBar>(find.byType(SnackBar));
+          final fill = dark ? AppColors.errorDark : AppColors.errorLight;
+          expect(bar.backgroundColor, fill);
+          final retry = tester.widget<SnackBarAction>(
+            find.descendant(
+              of: find.byType(SnackBar),
+              matching: find.byType(SnackBarAction),
+            ),
+          );
+          expect(retry.label, 'Retry');
+          if (dark) {
+            // Near-black on the red: white would be 2.90:1 here (the helper).
+            expect(retry.textColor, AppColors.cardDark);
+            expect(
+              contrastRatio(retry.textColor!, fill),
+              greaterThanOrEqualTo(kMinText),
+            );
+          } else {
+            expect(retry.textColor, Colors.white);
+          }
+          // Let the snackbar and the screen's reset timer run out.
+          await tester.pump(const Duration(seconds: 9));
         },
       );
     }
