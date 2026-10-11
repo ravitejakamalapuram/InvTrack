@@ -65,6 +65,11 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   /// Only the write can fail the call. What follows it (analytics, reminders,
   /// the goal check) is logged when it fails and never rethrown, because by
   /// then the record exists.
+  ///
+  /// [onWriteResult] is told once, right after the write, whether the server
+  /// confirmed it in time. False means the record is saved on this device and
+  /// syncs later. A write without an amount always reports true: it has no
+  /// signal. The callback is guarded like the steps after the save.
   Future<InvestmentEntity> addInvestment({
     required String name,
     required InvestmentType type,
@@ -86,6 +91,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     String? customTypeLabel,
     String? id,
     double? initialAmount,
+    void Function(bool confirmed)? onWriteResult,
   }) async {
     // Input validation
     _validateName(name);
@@ -118,6 +124,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     final InvestmentEntity investment;
     final CashFlowEntity? firstFlow;
+    // False when the server did not confirm the write in time (the record is
+    // pending on this device). The plain write has no such signal.
+    var confirmed = true;
     try {
       final customType = await _resolveCustomType(type, customTypeLabel);
       investment = InvestmentEntity(
@@ -164,7 +173,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           if (firstFlow == null) {
             await repository.createInvestment(investment);
           } else {
-            await repository.createInvestmentWithFirstCashFlow(
+            confirmed = await repository.createInvestmentWithFirstCashFlow(
               investment,
               firstFlow,
             );
@@ -179,6 +188,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
     // The record exists from here. None of this may fail the save, and none of
     // it makes the caller wait: each step starts at once and is guarded.
+    if (onWriteResult != null) {
+      await _afterSave(() => onWriteResult(confirmed));
+    }
     unawaited(
       _afterSave(
         () => ref
