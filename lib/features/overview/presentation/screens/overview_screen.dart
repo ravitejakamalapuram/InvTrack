@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/analytics/analytics_screens.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
@@ -108,7 +109,12 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
           HapticFeedback.mediumImpact();
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const AddInvestmentScreen()),
+            MaterialPageRoute(
+              settings: const RouteSettings(
+                name: AnalyticsScreens.addInvestment,
+              ),
+              builder: (_) => const AddInvestmentScreen(),
+            ),
           );
         },
         icon: const Icon(Icons.add),
@@ -421,7 +427,12 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                 .logEmptyStateActionTapped(action: 'add_manual');
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const AddInvestmentScreen()),
+              MaterialPageRoute(
+                settings: const RouteSettings(
+                  name: AnalyticsScreens.addInvestment,
+                ),
+                builder: (_) => const AddInvestmentScreen(),
+              ),
             );
           },
           onImportCsv: () {
@@ -431,7 +442,12 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                 .logEmptyStateActionTapped(action: 'import_csv');
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const BulkImportScreen()),
+              MaterialPageRoute(
+                settings: const RouteSettings(
+                  name: AnalyticsScreens.bulkImport,
+                ),
+                builder: (_) => const BulkImportScreen(),
+              ),
             );
           },
           onTemplateSelected: (template) {
@@ -442,6 +458,9 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
+                settings: const RouteSettings(
+                  name: AnalyticsScreens.addInvestment,
+                ),
                 builder: (_) =>
                     AddInvestmentScreen(preselectedTemplate: template),
               ),

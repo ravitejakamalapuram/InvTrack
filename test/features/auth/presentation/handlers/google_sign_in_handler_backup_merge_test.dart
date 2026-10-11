@@ -29,6 +29,7 @@ import '../../../goals/data/repositories/mock_goal_repository.dart';
 import '../../../investment/data/repositories/mock_investment_repository.dart';
 
 import '../../../../mocks/fake_auth_repository.dart';
+import '../../../../helpers/analytics_privacy.dart';
 import '../../../../mocks/mock_analytics_service.dart';
 
 /// The guest's data as a ZIP, as built by the merge flow.
@@ -704,4 +705,87 @@ void main() {
       expect(handlerResult, isFalse);
     },
   );
+
+  // A41 (#784): the "guest became an account" step of the activation funnel.
+  // It counts a merge only when every record reached the Google account.
+  Iterable<({String name, Map<String, Object>? parameters})> linkSuccesses() =>
+      analytics.loggedEvents.where((e) => e.name == 'account_link_success');
+
+  testWidgets('a completed merge logs account_link_success{method: merge} '
+      'once', (tester) async {
+    authRepo.onSignInWithGoogle = () async {
+      authRepo.emit(googleUser);
+      return googleUser;
+    };
+
+    await pumpAndStartBackupMerge(tester);
+
+    expect(handlerResult, isTrue);
+    expect(linkSuccesses(), hasLength(1));
+    expect(linkSuccesses().single.parameters, {'method': 'merge'});
+    expectPrivacySafe(
+      linkSuccesses().single,
+      allowedStrings: {
+        'method': {'merge'},
+      },
+    );
+  });
+
+  // Each arranges the sign-in and says whether the user is then offered the
+  // backup, a dialog that has to be closed before the handler returns.
+  final mergesThatDidNotComplete =
+      <String, ({Future<void> Function() arrange, bool offersBackup})>{
+        'the Google account picker was cancelled': (
+          arrange: () async => authRepo.onSignInWithGoogle = () async => null,
+          offersBackup: false,
+        ),
+        'the sign-in failed': (
+          arrange: () async =>
+              authRepo.onSignInWithGoogle = () async =>
+                  throw Exception('network'),
+          offersBackup: false,
+        ),
+        'the import failed after sign-in': (
+          arrange: () async {
+            importError = Exception('Firestore unavailable');
+            authRepo.onSignInWithGoogle = () async {
+              authRepo.emit(googleUser);
+              return googleUser;
+            };
+          },
+          offersBackup: true,
+        ),
+        'some records were not added': (
+          arrange: () async {
+            importResult = const ZipImportResult(
+              investmentsImported: 1,
+              cashflowsImported: 5,
+              goalsImported: 1,
+              documentsImported: 0,
+            );
+            authRepo.onSignInWithGoogle = () async {
+              authRepo.emit(googleUser);
+              return googleUser;
+            };
+          },
+          offersBackup: true,
+        ),
+      };
+  for (final MapEntry(key: reason, value: scenario)
+      in mergesThatDidNotComplete.entries) {
+    testWidgets('when $reason, no account_link_success is logged', (
+      tester,
+    ) async {
+      await scenario.arrange();
+
+      await pumpAndStartBackupMerge(tester);
+      if (scenario.offersBackup) {
+        await tester.tap(find.widgetWithText(TextButton, 'Close'));
+        await tester.pumpAndSettle();
+      }
+
+      expect(handlerResult, isFalse);
+      expect(linkSuccesses(), isEmpty);
+    });
+  }
 }

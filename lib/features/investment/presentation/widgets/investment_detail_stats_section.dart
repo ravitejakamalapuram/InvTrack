@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/calculations/investment_projector.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
@@ -12,11 +13,12 @@ import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/presentation/utils/return_display.dart';
+import 'package:inv_tracker/features/investment/presentation/utils/xirr_viewed_logger.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Stats section widget for investment detail screen.
 /// Displays net position, cash flow summary, XIRR/MOIC, and maturity info.
-class InvestmentDetailStatsSection extends StatelessWidget {
+class InvestmentDetailStatsSection extends ConsumerWidget {
   final InvestmentStats stats;
   final InvestmentEntity investment;
   final bool isDark;
@@ -38,12 +40,18 @@ class InvestmentDetailStatsSection extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final isPositive = stats.netCashFlow >= 0;
     final display = ReturnDisplay.resolve(
       stats: stats,
       openStats: investment.isOpen ? stats : null,
+    );
+    logXirrViewedOnce(
+      ref,
+      surface: XirrSurface.investmentDetail,
+      display: display,
+      isHidden: isPrivacyMode,
     );
     final hasReturnFigure =
         display.kind == ReturnDisplayKind.annualised ||

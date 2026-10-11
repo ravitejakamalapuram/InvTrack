@@ -6,7 +6,7 @@
 /// ## Key Features
 ///
 /// - **Event Tracking**: Log custom events with parameters
-/// - **Screen Tracking**: Automatic screen view tracking via GoRouter observer
+/// - **Screen Tracking**: `screen_view` per named route via `AnalyticsRouteObserver`
 /// - **User Properties**: Set user attributes for segmentation
 /// - **Privacy-First**: Never logs exact amounts, only ranges
 /// - **Debug Mode**: Prints events to console in debug builds
@@ -21,6 +21,9 @@
 /// - `csv_import_completed` (not `complete_csv_import`)
 ///
 /// ## Privacy Guidelines
+///
+/// Parameter values are a `String` or a `num`, never a `bool`: send flags as
+/// 1 or 0. The Firebase plugin asserts on anything else.
 ///
 /// **NEVER log:**
 /// - ❌ Exact investment amounts
@@ -38,7 +41,7 @@
 /// // Basic event logging
 /// await analyticsService.logEvent(
 ///   name: 'investment_created',
-///   parameters: {'investment_type': 'FD', 'has_notes': true},
+///   parameters: {'investment_type': 'FD', 'has_notes': 1},
 /// );
 ///
 /// // Using convenience methods
@@ -47,7 +50,7 @@
 ///   hasNotes: true,
 /// );
 ///
-/// // Screen tracking (automatic via GoRouter observer)
+/// // Screen tracking (automatic via AnalyticsRouteObserver)
 /// // No manual logging needed - observer handles it
 ///
 /// // User properties
@@ -74,24 +77,11 @@ final analyticsServiceProvider = Provider<AnalyticsService>((ref) {
   return AnalyticsService();
 });
 
-/// Provider for the Firebase Analytics observer (for GoRouter).
+/// Which one-time analytics events were already sent in this process, by key.
 ///
-/// Automatically tracks screen views when routes change.
-/// Returns null in test mode when FakeAnalyticsService is used.
-///
-/// ## Usage
-///
-/// ```dart
-/// GoRouter(
-///   observers: [
-///     if (analyticsObserver != null) analyticsObserver!,
-///   ],
-/// );
-/// ```
-final analyticsObserverProvider = Provider<FirebaseAnalyticsObserver?>((ref) {
-  final analytics = ref.watch(analyticsServiceProvider);
-  return analytics.getObserver();
-});
+/// For events meant to happen once per surface per session, such as
+/// `xirr_viewed`. Not persisted: a new process starts empty, which is wanted.
+final analyticsOnceProvider = Provider<Set<String>>((ref) => <String>{});
 
 /// Analytics event names - centralized for consistency.
 ///
@@ -101,10 +91,10 @@ final analyticsObserverProvider = Provider<FirebaseAnalyticsObserver?>((ref) {
 /// ## Event Categories
 ///
 /// - **Core Conversion**: investment_created, cashflow_added
+/// - **Activation Funnel**: xirr_viewed, account_link_success
 /// - **Investment Lifecycle**: closed, reopened, archived, deleted
 /// - **Feature Adoption**: csv_import, export, goals, documents
 /// - **Security & Settings**: security_enabled, theme_changed
-/// - **Error Tracking**: error_occurred
 ///
 /// ## Adding New Events
 ///
@@ -127,6 +117,10 @@ class AnalyticsEvents {
   static const String investmentCreated = 'investment_created';
   static const String cashFlowAdded = 'cashflow_added';
 
+  // Activation funnel
+  static const String xirrViewed = 'xirr_viewed';
+  static const String accountLinkSuccess = 'account_link_success';
+
   // Investment lifecycle
   static const String investmentClosed = 'investment_closed';
   static const String investmentReopened = 'investment_reopened';
@@ -145,7 +139,6 @@ class AnalyticsEvents {
   static const String goalUpdated = 'goal_updated';
   static const String goalArchived = 'goal_archived';
   static const String goalDeleted = 'goal_deleted';
-  static const String goalMilestoneReached = 'goal_milestone_reached';
 
   // Documents feature
   static const String documentAdded = 'document_added';
@@ -154,9 +147,6 @@ class AnalyticsEvents {
   static const String securityEnabled = 'security_enabled';
   static const String securityDisabled = 'security_disabled';
   static const String themeChanged = 'theme_changed';
-
-  // Error tracking
-  static const String errorOccurred = 'error_occurred';
 
   // Template & Quick-Add events
   static const String templateSelected = 'template_selected';
@@ -169,8 +159,7 @@ class AnalyticsEvents {
   // Empty State Interaction events
   static const String emptyStateActionTapped = 'empty_state_action_tapped';
 
-  // Projection & Smart Defaults events
-  static const String projectionViewed = 'projection_viewed';
+  // Smart Defaults events
   static const String smartDefaultApplied = 'smart_default_applied';
 
   // Enhanced Fields usage
@@ -180,11 +169,6 @@ class AnalyticsEvents {
   static const String incomeGuardianEnabled = 'income_guardian_enabled';
   static const String incomeGuardianDisabled = 'income_guardian_disabled';
   static const String incomeGuardianSettingChanged = 'income_guardian_setting_changed';
-  static const String incomeGuardianNotificationShown = 'income_guardian_notification_shown';
-  static const String incomeGuardianPaymentMatched = 'income_guardian_payment_matched';
-  static const String incomeGuardianCalendarViewed = 'income_guardian_calendar_viewed';
-  static const String expectedCashFlowCreated = 'expected_cashflow_created';
-  static const String expectedCashFlowDismissed = 'expected_cashflow_dismissed';
 
   // Multi-Currency events
   static const String currencySelected = 'currency_selected';
@@ -195,13 +179,11 @@ class AnalyticsEvents {
   static const String reportViewed = 'report_viewed';
   static const String reportExported = 'report_exported';
   static const String historicalReportAccessed = 'historical_report_accessed';
-  static const String reportMetricTooltipViewed = 'report_metric_tooltip_viewed';
 
   // Portfolio Health Score events
   static const String portfolioHealthViewed = 'portfolio_health_viewed';
   static const String portfolioHealthDetailsOpened = 'portfolio_health_details_opened';
   static const String healthScoreCalculated = 'health_score_calculated';
-  static const String healthComponentExpanded = 'health_component_expanded';
   static const String healthScoreShared = 'health_score_shared';
 }
 
@@ -213,23 +195,6 @@ class AnalyticsService {
       : _analytics = analytics ?? FirebaseAnalytics.instance;
 
   final FirebaseAnalytics _analytics;
-
-  /// Get the analytics observer for navigation tracking.
-  ///
-  /// Returns [FirebaseAnalyticsObserver] for automatic screen view tracking.
-  /// Returns null for fake implementations (used in tests).
-  ///
-  /// ## Usage
-  ///
-  /// ```dart
-  /// final observer = analyticsService.getObserver();
-  /// GoRouter(
-  ///   observers: [if (observer != null) observer],
-  /// );
-  /// ```
-  FirebaseAnalyticsObserver? getObserver() {
-    return FirebaseAnalyticsObserver(analytics: _analytics);
-  }
 
   /// Log a custom event with optional parameters.
   ///
@@ -289,14 +254,14 @@ class AnalyticsService {
     }
   }
 
-  /// Log screen view (usually handled automatically by observer).
+  /// Log screen view (handled by `AnalyticsRouteObserver`).
   ///
-  /// Manual screen view logging is rarely needed - the [FirebaseAnalyticsObserver]
-  /// automatically tracks screen views when routes change.
+  /// Manual screen view logging is rarely needed - the observer logs a screen
+  /// view when a named route is shown.
   ///
   /// ## Parameters
   ///
-  /// - [screenName]: Name of the screen (e.g., "InvestmentListScreen")
+  /// - [screenName]: A name from `AnalyticsScreens`, never a path or an id
   /// - [screenClass]: Optional class name for grouping
   ///
   /// ## Example
@@ -304,8 +269,7 @@ class AnalyticsService {
   /// ```dart
   /// // Manual logging (rarely needed)
   /// await analyticsService.logScreenView(
-  ///   screenName: 'InvestmentDetailScreen',
-  ///   screenClass: 'InvestmentScreen',
+  ///   screenName: AnalyticsScreens.fire,
   /// );
   /// ```
   Future<void> logScreenView({
@@ -368,27 +332,20 @@ class AnalyticsService {
   /// - [name]: Property name (max 24 chars, alphanumeric + underscore)
   /// - [value]: Property value (max 36 chars, null to clear)
   ///
-  /// ## Common Properties
+  /// ## Properties in use
   ///
-  /// - `preferred_currency`: "INR", "USD", "EUR"
-  /// - `theme_mode`: "light", "dark", "system"
-  /// - `security_enabled`: "true", "false"
-  /// - `investment_count_range`: "0", "1_5", "6_20", "21_plus"
+  /// Set by `userPropertiesSyncProvider`, the one place that sets them:
+  ///
+  /// - `is_guest`: "true", "false"
+  /// - `base_currency`: the user's base currency code, e.g. "INR"
   ///
   /// ## Example
   ///
   /// ```dart
-  /// // Set currency preference
-  /// await analyticsService.setUserProperty(
-  ///   name: 'preferred_currency',
-  ///   value: 'INR',
-  /// );
+  /// await analyticsService.setUserProperty(name: 'is_guest', value: 'true');
   ///
   /// // Clear property
-  /// await analyticsService.setUserProperty(
-  ///   name: 'preferred_currency',
-  ///   value: null,
-  /// );
+  /// await analyticsService.setUserProperty(name: 'is_guest', value: null);
   /// ```
   Future<void> setUserProperty({
     required String name,
@@ -421,21 +378,6 @@ class AnalyticsService {
     await _analytics.logLogin(loginMethod: method);
   }
 
-  /// Log sign up event (Firebase predefined event).
-  ///
-  /// ## Parameters
-  ///
-  /// - [method]: Sign-up method (e.g., "google", "email", "apple")
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await analyticsService.logSignUp(method: 'google');
-  /// ```
-  Future<void> logSignUp({required String method}) async {
-    await _analytics.logSignUp(signUpMethod: method);
-  }
-
   /// Log investment created (core conversion event).
   ///
   /// Tracks when a user creates a new investment. This is a key conversion metric.
@@ -444,6 +386,10 @@ class AnalyticsService {
   ///
   /// - [investmentType]: Type of investment (e.g., "FD", "Stocks", "MF", "PPF")
   /// - [hasNotes]: Whether user added notes (indicates engagement)
+  /// - [hasAmount]: Whether the user entered an amount while creating it
+  ///   (always false until Add Investment takes one, A40)
+  ///
+  /// Both flags are sent as 1 or 0, never as a bool.
   ///
   /// ## Example
   ///
@@ -456,10 +402,15 @@ class AnalyticsService {
   Future<void> logInvestmentCreated({
     required String investmentType,
     bool hasNotes = false,
+    bool hasAmount = false,
   }) async {
     await logEvent(
       name: AnalyticsEvents.investmentCreated,
-      parameters: {'investment_type': investmentType, 'has_notes': hasNotes},
+      parameters: {
+        'investment_type': investmentType,
+        'has_notes': hasNotes ? 1 : 0,
+        'has_amount': hasAmount ? 1 : 0,
+      },
     );
   }
 
@@ -523,6 +474,45 @@ class AnalyticsService {
     );
   }
 
+  /// Log that a real XIRR was shown (activation funnel).
+  ///
+  /// Logged once per surface per process, after the frame, and only when a
+  /// figure is on screen: never for the dash that stands in for an open
+  /// investment without a current value.
+  ///
+  /// ## Parameters
+  ///
+  /// - [surface]: Where it was shown: "overview" or "investment_detail"
+  /// - [isEstimate]: Whether the figure uses an estimated current value
+  ///   ("Expected XIRR"); sent as 1 or 0
+  ///
+  /// ## Privacy
+  ///
+  /// The rate itself is never sent.
+  Future<void> logXirrViewed({
+    required String surface,
+    required bool isEstimate,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.xirrViewed,
+      parameters: {'surface': surface, 'is_estimate': isEstimate ? 1 : 0},
+    );
+  }
+
+  /// Log that a guest became a Google account (activation funnel).
+  ///
+  /// ## Parameters
+  ///
+  /// - [method]: "link" when the guest's own account was linked to Google
+  ///   (UID and data kept), "merge" when the guest's data was moved into a
+  ///   Google account that already existed and every record arrived
+  Future<void> logAccountLinkSuccess({required String method}) async {
+    await logEvent(
+      name: AnalyticsEvents.accountLinkSuccess,
+      parameters: {'method': method},
+    );
+  }
+
   /// Log CSV import completed
   Future<void> logCsvImportCompleted({
     required int rowCount,
@@ -539,20 +529,6 @@ class AnalyticsService {
     await logEvent(
       name: AnalyticsEvents.exportGenerated,
       parameters: {'format': format},
-    );
-  }
-
-  /// Log error occurred
-  Future<void> logErrorOccurred({
-    required String errorType,
-    String? screen,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.errorOccurred,
-      parameters: {
-        'error_type': errorType,
-        ...?screen != null ? {'screen': screen} : null,
-      },
     );
   }
 
@@ -595,17 +571,6 @@ class AnalyticsService {
     await logEvent(
       name: AnalyticsEvents.goalDeleted,
       parameters: {'goal_id': goalId},
-    );
-  }
-
-  /// Log goal milestone reached
-  Future<void> logGoalMilestoneReached({
-    required String goalId,
-    required int milestone,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.goalMilestoneReached,
-      parameters: {'goal_id': goalId, 'milestone': milestone},
     );
   }
 
@@ -744,24 +709,6 @@ class AnalyticsService {
   }
 
   // ============ Projection & Smart Defaults Events ============
-
-  /// Log projection card viewed
-  Future<void> logProjectionViewed({
-    required String investmentType,
-    required double expectedRate,
-    required int tenureMonths,
-    String? compounding,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.projectionViewed,
-      parameters: {
-        'investment_type': investmentType,
-        'expected_rate_range': _getRateRange(expectedRate),
-        'tenure_months': tenureMonths,
-        ...?compounding != null ? {'compounding': compounding} : null,
-      },
-    );
-  }
 
   /// Log smart default applied (e.g., auto-calculated maturity date)
   Future<void> logSmartDefaultApplied({required String fieldName}) async {
@@ -991,37 +938,6 @@ class AnalyticsService {
     );
   }
 
-  /// Log report metric tooltip viewed
-  ///
-  /// Tracks which financial metrics users need help understanding,
-  /// helping identify areas for improved UI/UX or help documentation.
-  ///
-  /// ## Parameters
-  ///
-  /// - [metricName]: Name of metric (e.g., "xirr", "cagr", "capital_gains")
-  /// - [reportType]: Which report the tooltip was viewed in
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await analyticsService.logReportMetricTooltipViewed(
-  ///   metricName: 'xirr',
-  ///   reportType: 'performance',
-  /// );
-  /// ```
-  Future<void> logReportMetricTooltipViewed({
-    required String metricName,
-    required String reportType,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.reportMetricTooltipViewed,
-      parameters: {
-        'metric_name': metricName,
-        'report_type': reportType,
-      },
-    );
-  }
-
   // ============ Portfolio Health Score Events ============
 
   /// Log portfolio health viewed (dashboard card)
@@ -1124,37 +1040,6 @@ class AnalyticsService {
     );
   }
 
-  /// Log health component expanded
-  ///
-  /// Tracks which health components users drill into for details.
-  /// Identifies which metrics are most interesting to users.
-  ///
-  /// ## Parameters
-  ///
-  /// - [componentName]: Component name ("returns", "diversification", "liquidity", "goals", "actions")
-  /// - [componentScore]: Component score range ("80_100", "60_80", "40_60", "20_40", "0_20")
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await analyticsService.logHealthComponentExpanded(
-  ///   componentName: 'diversification',
-  ///   componentScore: '40_60',
-  /// );
-  /// ```
-  Future<void> logHealthComponentExpanded({
-    required String componentName,
-    required String componentScore,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.healthComponentExpanded,
-      parameters: {
-        'component_name': componentName,
-        'component_score': componentScore,
-      },
-    );
-  }
-
   /// Log health score shared
   ///
   /// Tracks when users share their portfolio health score.
@@ -1184,17 +1069,6 @@ class AnalyticsService {
         'share_method': shareMethod,
       },
     );
-  }
-
-  // ============ Helper Methods ============
-
-  /// Get rate range bucket for analytics (avoid logging exact rates)
-  String _getRateRange(double rate) {
-    if (rate < 5) return 'under_5';
-    if (rate < 8) return '5_to_8';
-    if (rate < 12) return '8_to_12';
-    if (rate < 15) return '12_to_15';
-    return 'over_15';
   }
 }
 
@@ -1298,176 +1172,6 @@ extension IncomeGuardianAnalytics on AnalyticsService {
       parameters: {
         'setting_name': settingName,
         'new_value': newValue,
-      },
-    );
-  }
-
-  /// Log Income Guardian notification shown
-  ///
-  /// Tracks when payment notifications are displayed to users.
-  ///
-  /// ## Parameters
-  ///
-  /// - [notificationType]: Type of notification (e.g., "upcoming", "overdue")
-  /// - [investmentPlatform]: Platform name (e.g., "LenDenClub", "GrowW")
-  ///
-  /// ## Privacy
-  ///
-  /// **NEVER log exact amounts or investment names** - only platform types.
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await analyticsService.logIncomeGuardianNotificationShown(
-  ///   notificationType: 'upcoming',
-  ///   investmentPlatform: 'LenDenClub',
-  /// );
-  /// ```
-  Future<void> logIncomeGuardianNotificationShown({
-    required String notificationType,
-    required String investmentPlatform,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.incomeGuardianNotificationShown,
-      parameters: {
-        'notification_type': notificationType,
-        'investment_platform': investmentPlatform,
-      },
-    );
-  }
-
-  /// Log Income Guardian payment auto-matched
-  ///
-  /// Tracks when the sync service successfully matches a payment.
-  ///
-  /// ## Parameters
-  ///
-  /// - [matchConfidence]: Confidence score range (e.g., "50_70", "70_85", "85_100")
-  /// - [daysDifference]: Days between expected and actual (e.g., "0_7", "8_14", "15_30")
-  /// - [investmentPlatform]: Platform name for pattern tracking
-  ///
-  /// ## Privacy
-  ///
-  /// **NEVER log exact amounts** - only confidence ranges.
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await analyticsService.logIncomeGuardianPaymentMatched(
-  ///   matchConfidence: '85_100',
-  ///   daysDifference: '0_7',
-  ///   investmentPlatform: 'LenDenClub',
-  /// );
-  /// ```
-  Future<void> logIncomeGuardianPaymentMatched({
-    required String matchConfidence,
-    required String daysDifference,
-    required String investmentPlatform,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.incomeGuardianPaymentMatched,
-      parameters: {
-        'match_confidence': matchConfidence,
-        'days_difference': daysDifference,
-        'investment_platform': investmentPlatform,
-      },
-    );
-  }
-
-  /// Log Income Guardian calendar viewed
-  ///
-  /// Tracks when users view the income calendar.
-  ///
-  /// ## Parameters
-  ///
-  /// - [month]: Month being viewed (1-12)
-  /// - [year]: Year being viewed
-  /// - [totalExpected]: Total expected payments count (not amount!)
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await analyticsService.logIncomeGuardianCalendarViewed(
-  ///   month: 5,
-  ///   year: 2026,
-  ///   totalExpected: 8,
-  /// );
-  /// ```
-  Future<void> logIncomeGuardianCalendarViewed({
-    required int month,
-    required int year,
-    required int totalExpected,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.incomeGuardianCalendarViewed,
-      parameters: {
-        'month': month,
-        'year': year,
-        'total_expected': totalExpected,
-      },
-    );
-  }
-
-  /// Log expected cash flow created
-  ///
-  /// Tracks when ML prediction creates new expected cash flow.
-  ///
-  /// ## Parameters
-  ///
-  /// - [source]: Source of prediction (e.g., "ml_prediction", "manual", "pattern")
-  /// - [confidence]: Prediction confidence range (e.g., "70_85", "85_95", "95_100")
-  /// - [investmentPlatform]: Platform name
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await analyticsService.logExpectedCashFlowCreated(
-  ///   source: 'ml_prediction',
-  ///   confidence: '85_95',
-  ///   investmentPlatform: 'LenDenClub',
-  /// );
-  /// ```
-  Future<void> logExpectedCashFlowCreated({
-    required String source,
-    required String confidence,
-    required String investmentPlatform,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.expectedCashFlowCreated,
-      parameters: {
-        'source': source,
-        'confidence': confidence,
-        'investment_platform': investmentPlatform,
-      },
-    );
-  }
-
-  /// Log expected cash flow dismissed
-  ///
-  /// Tracks when users manually dismiss expected payments.
-  ///
-  /// ## Parameters
-  ///
-  /// - [reason]: Dismissal reason (e.g., "incorrect", "duplicate", "unwanted")
-  /// - [status]: Status when dismissed (e.g., "pending", "overdue")
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await analyticsService.logExpectedCashFlowDismissed(
-  ///   reason: 'incorrect',
-  ///   status: 'pending',
-  /// );
-  /// ```
-  Future<void> logExpectedCashFlowDismissed({
-    required String reason,
-    required String status,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.expectedCashFlowDismissed,
-      parameters: {
-        'reason': reason,
-        'status': status,
       },
     );
   }
