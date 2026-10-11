@@ -55,7 +55,7 @@ class GoalsListActionBar extends ConsumerWidget {
         SelectionActionConfig(
           label: l10n.delete,
           icon: Icons.delete_rounded,
-          color: AppColors.errorLight,
+          color: isDark ? AppColors.errorDark : AppColors.errorLight,
           minSelection: 1,
           onPressed: () => _showDeleteConfirmation(context, ref),
         ),

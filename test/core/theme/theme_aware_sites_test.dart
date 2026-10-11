@@ -47,12 +47,6 @@ const _unfixed = <String, int>{
   // PR 3 contrast-theme-aware-screens: settings, auth, goals, FIRE, onboarding.
   'lib/features/auth/presentation/dialogs/backup_merge_dialog.dart': 1,
   'lib/features/auth/presentation/widgets/pending_guest_backup_notice.dart': 1,
-  'lib/features/goals/presentation/screens/goal_details_screen.dart': 4,
-  'lib/features/goals/presentation/screens/goals_screen.dart': 1,
-  'lib/features/goals/presentation/widgets/goal_card.dart': 1,
-  'lib/features/goals/presentation/widgets/goal_carousel_card.dart': 1,
-  'lib/features/goals/presentation/widgets/goals_dashboard_card.dart': 1,
-  'lib/features/goals/presentation/widgets/goals_list_action_bar.dart': 1,
   'lib/features/onboarding/presentation/screens/onboarding_screen.dart': 2,
   'lib/features/settings/presentation/screens/about_screen.dart': 4,
   'lib/features/settings/presentation/screens/appearance_settings_screen.dart':

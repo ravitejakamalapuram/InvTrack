@@ -87,7 +87,7 @@ class GoalDetailsScreen extends ConsumerWidget {
           Icon(
             Icons.error_outline_rounded,
             size: 64,
-            color: AppColors.errorLight,
+            color: isDark ? AppColors.errorDark : AppColors.errorLight,
           ),
           SizedBox(height: AppSpacing.md),
           Text(
@@ -530,7 +530,9 @@ class GoalDetailsScreen extends ConsumerWidget {
             loading: () => const LinearProgressIndicator(),
             error: (_, _) => Text(
               l10n.failedToLoadInvestments,
-              style: secondary.copyWith(color: AppColors.errorLight),
+              style: secondary.copyWith(
+                color: isDark ? AppColors.errorDark : AppColors.errorLight,
+              ),
             ),
           ),
         ],
@@ -559,7 +561,7 @@ class GoalDetailsScreen extends ConsumerWidget {
                 : Icons.remove_circle_outline_rounded,
             size: 18,
             color: item.isCounted
-                ? AppColors.successLight
+                ? (isDark ? AppColors.successDark : AppColors.successLight)
                 : AppColors.neutral400Dark,
           ),
           SizedBox(width: AppSpacing.sm),
@@ -632,7 +634,9 @@ class GoalDetailsScreen extends ConsumerWidget {
                           ? Icons.check_circle_rounded
                           : Icons.circle_outlined,
                       color: achieved
-                          ? AppColors.successLight
+                          ? (isDark
+                                ? AppColors.successDark
+                                : AppColors.successLight)
                           : AppColors.neutral400Dark,
                       size: 20,
                     ),

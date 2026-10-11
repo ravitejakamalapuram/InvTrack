@@ -115,7 +115,9 @@ class GoalCarouselCard extends ConsumerWidget {
                               Text(
                                 l10n.goalCompleted,
                                 style: AppTypography.caption.copyWith(
-                                  color: AppColors.successLight,
+                                  color: isDark
+                                      ? AppColors.successDark
+                                      : AppColors.successLight,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 11,
                                 ),
