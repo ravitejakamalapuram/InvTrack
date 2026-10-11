@@ -186,6 +186,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     if (widget.preselectedTemplate != null && investment == null) {
       // Defer template application to after first frame so setState works
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
         if (_firstInvestmentForm) {
           _applyStructuralDefaults(widget.preselectedTemplate!);
         } else {
@@ -536,18 +537,20 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     setState(() => _isLoading = true);
     HapticFeedback.lightImpact();
 
-    try {
-      final notes = _notesController.text.trim().isEmpty
-          ? null
-          : _notesController.text.trim();
-      final platform = _platformController.text.trim().isEmpty
-          ? null
-          : _platformController.text.trim();
-      final expectedRate = double.tryParse(_expectedRateController.text.trim());
-      final tenureMonths = int.tryParse(_tenureController.text.trim());
+    final notes = _notesController.text.trim().isEmpty
+        ? null
+        : _notesController.text.trim();
+    final platform = _platformController.text.trim().isEmpty
+        ? null
+        : _platformController.text.trim();
+    final expectedRate = double.tryParse(_expectedRateController.text.trim());
+    final tenureMonths = int.tryParse(_tenureController.text.trim());
 
-      var confirmed = true;
-      final investment = await ref
+    // Only the write can fail the save.
+    final InvestmentEntity investment;
+    var confirmed = true;
+    try {
+      investment = await ref
           .read(investmentNotifierProvider.notifier)
           .addInvestment(
             name: _nameController.text.trim(),
@@ -569,37 +572,44 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
             initialAmount: amount,
             onWriteResult: (value) => confirmed = value,
           );
+    } catch (_) {
+      if (mounted) {
+        AppFeedback.showError(context, l10n.investmentCreateFailed);
+        setState(() => _isLoading = false);
+      }
+      return;
+    }
 
+    // The record exists from here: nothing below may say it was not saved. The
+    // button stays busy until the form is gone, so a tap during the pop does
+    // not send it again.
+    try {
       _trackNewInvestment(
         startDateUsed: _startDatePicked,
         expectedRate: expectedRate,
         tenureMonths: tenureMonths,
         platform: platform,
       );
-
-      if (!mounted) return;
-      if (confirmed) {
-        AppFeedback.showSuccess(context, l10n.investmentCreated);
-      } else {
-        AppFeedback.showInfo(context, l10n.investmentSavedOffline);
-      }
-      // The form gives way to the investment it made. This form was opened
-      // with Navigator.push, which GoRouter does not know, so it is popped and
-      // the detail pushed on the router: Back lands on the page that opened
-      // the form, and the stack is no deeper than before.
-      final router = GoRouter.of(context);
-      context.safePop();
-      router.push(
-        '/investments/${Uri.encodeComponent(investment.id)}',
-        extra: investment,
-      );
     } catch (_) {
-      if (mounted) AppFeedback.showError(context, l10n.investmentCreateFailed);
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      // Analytics never fail a saved investment.
     }
+
+    if (!mounted) return;
+    if (confirmed) {
+      AppFeedback.showSuccess(context, l10n.investmentCreated);
+    } else {
+      AppFeedback.showInfo(context, l10n.investmentSavedOffline);
+    }
+    // The form gives way to the investment it made. This form was opened with
+    // Navigator.push, which GoRouter does not know, so it is popped and the
+    // detail pushed on the router: Back lands on the page that opened the
+    // form, and the stack is no deeper than before.
+    final router = GoRouter.of(context);
+    context.safePop();
+    router.push(
+      '/investments/${Uri.encodeComponent(investment.id)}',
+      extra: investment,
+    );
   }
 
   /// The form behind the first investment flow (A40, #783): the same State and

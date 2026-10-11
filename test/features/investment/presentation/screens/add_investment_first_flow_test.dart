@@ -496,6 +496,23 @@ void main() {
       expect(harness.detailVisits, hasLength(1));
     });
 
+    testWidgets('two taps in the same frame send once', (tester) async {
+      final harness = await _open(tester);
+      harness.notifier.gate = Completer<void>();
+
+      await _fill(tester, name: 'Grip FD', amount: '100000');
+      // No frame between them: the button has not yet been rebuilt as loading.
+      await tester.tap(_submit());
+      await tester.tap(_submit());
+      await tester.pump();
+
+      expect(harness.adds, hasLength(1));
+      harness.notifier.gate!.complete();
+      await tester.pumpAndSettle();
+      expect(harness.adds, hasLength(1));
+      expect(harness.detailVisits, hasLength(1));
+    });
+
     testWidgets('two separate forms never share an id', (tester) async {
       final first = await _open(tester);
       await _fill(tester, name: 'Grip FD', amount: '100000');

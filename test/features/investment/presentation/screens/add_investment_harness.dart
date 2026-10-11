@@ -257,6 +257,9 @@ Future<FormHarness> pumpAddForm(
 
   /// Drawn over the bottom of the screen, for a stand-in keyboard in a render.
   Widget? overlay,
+
+  /// Replaces the recording analytics service.
+  FakeAnalyticsService? analyticsService,
 }) async {
   tester.view.physicalSize = size * devicePixelRatio;
   tester.view.devicePixelRatio = devicePixelRatio;
@@ -266,7 +269,7 @@ Future<FormHarness> pumpAddForm(
   final updates = <Map<String, Object?>>[];
   final detailVisits = <({String id, Object? extra})>[];
   final notifier = RecordingInvestmentNotifier(adds, updates);
-  final analytics = FakeAnalyticsService();
+  final analytics = analyticsService ?? FakeAnalyticsService();
   final rootKey = GlobalKey<NavigatorState>();
   final stack = RouteStack();
   SharedPreferences? prefs;
