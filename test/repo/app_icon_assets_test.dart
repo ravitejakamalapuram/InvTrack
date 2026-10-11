@@ -308,29 +308,35 @@ void main() {
       }
     });
 
-    test('draws only inside the central 66 of 108 units (safe zone)', () async {
-      final p = await _png('$_iconDir/app_icon_foreground.png');
-      expect(p.countVisible(), greaterThan(0), reason: 'nothing drawn');
-      final unit = p.width / _canvas;
-      // One unit of tolerance for anti-aliasing at the edge of the zone.
-      final lo = (_canvas - _safeSquare) / 2 - 1;
-      final hi = (_canvas + _safeSquare) / 2 + 1;
-      final outside = <String>[];
-      for (var y = 0; y < p.height; y++) {
-        for (var x = 0; x < p.width; x++) {
-          if (p.alpha(x, y) <= 8) continue;
-          final ux = x / unit, uy = y / unit;
-          if (ux < lo || ux > hi || uy < lo || uy > hi) {
-            if (outside.length < 5) {
+    // Launchers mask the layer with a circle, a squircle or a rounded square.
+    // The circle is the strictest, with a radius of 33 of the 108 units.
+    for (final name in ['app_icon_foreground.png', 'app_icon_monochrome.png']) {
+      test('$name draws only inside the circular safe zone', () async {
+        final p = await _png('$_iconDir/$name');
+        expect(p.countVisible(), greaterThan(0), reason: 'nothing drawn');
+        final unit = p.width / _canvas;
+        // One unit of tolerance for anti-aliasing at the edge of the zone.
+        final limit = _safeSquare / 2 + 1;
+        final outside = <String>[];
+        for (var y = 0; y < p.height; y++) {
+          for (var x = 0; x < p.width; x++) {
+            if (p.alpha(x, y) <= 8) continue;
+            final dx = (x + 0.5) / unit - _canvas / 2;
+            final dy = (y + 0.5) / unit - _canvas / 2;
+            if (dx * dx + dy * dy > limit * limit && outside.length < 5) {
               outside.add(
-                '(${ux.toStringAsFixed(1)}, ${uy.toStringAsFixed(1)})',
+                '(${dx.toStringAsFixed(1)}, ${dy.toStringAsFixed(1)})',
               );
             }
           }
         }
-      }
-      expect(outside, isEmpty, reason: 'drawn outside the safe zone (units)');
-    });
+        expect(
+          outside,
+          isEmpty,
+          reason: 'drawn outside the safe circle (units from centre)',
+        );
+      });
+    }
   });
 
   group('Android adaptive icon resources', () {
