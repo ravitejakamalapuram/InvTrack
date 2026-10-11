@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/analytics_screens.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
@@ -507,6 +508,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
     Navigator.of(context).push(
       MaterialPageRoute(
+        settings: const RouteSettings(name: AnalyticsScreens.addCashFlow),
         builder: (context) => AddTransactionScreen(
           investmentId: widget.investment.id,
           initialType: smartDefaultType,

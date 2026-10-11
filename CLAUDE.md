@@ -29,7 +29,7 @@ These came out of the October 2026 review (`docs/review-2026-10/`). Breaking one
 4. An open investment needs a current value for XIRR, MOIC and return %. Without one, show “—” or “Awaiting first payout”, never 0% or −100%.
 5. Cash-flow dates are date-only; normalise them before saving and before computing. XIRR uses actual/365 like Excel. The Indian FY is the half-open range [1 Apr, next 1 Apr).
 6. Every Firestore collection must be covered by account deletion (`AccountDataDeletionService`; a test enforces this) and by export/import.
-7. Never send names, amounts, file names or paths to Analytics or Crashlytics. Amounts may be sent only as buckets.
+7. Never send names, amounts, file names or paths to Analytics or Crashlytics. Amounts may be sent only as buckets. Analytics parameter values are String or num only (send flags as 1/0, never bool). Screen names come from `AnalyticsScreens`, never a path or id.
 8. Privacy mode hides every amount, including semantics labels, notifications and share text.
 9. Archived investments are deliberately left out of totals, goals and FIRE. The UI must say so wherever it matters.
 
