@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_theme.dart';
 import 'package:inv_tracker/core/widgets/change_badge.dart';
 
 import '../../helpers/contrast.dart';
@@ -15,6 +16,17 @@ import '../../helpers/contrast.dart';
 Future<void> _pump(WidgetTester tester, double value) => tester.pumpWidget(
   MaterialApp(
     home: Scaffold(body: ChangeBadge(value: value)),
+  ),
+);
+
+Future<void> _pumpOn(
+  WidgetTester tester,
+  ThemeData theme, {
+  required bool filled,
+}) => tester.pumpWidget(
+  MaterialApp(
+    theme: theme,
+    home: Scaffold(body: ChangeBadge(value: 0, filled: filled)),
   ),
 );
 
@@ -55,6 +67,48 @@ void main() {
       expect(contrastRatio(text, fill), closeTo(6.08, 0.01));
     },
   );
+
+  // The outlined badge has no fill: its text sits on the page. The light grey
+  // that is right on the pale fill is too dark there in the dark theme.
+  testWidgets(
+    'an outlined zero badge reads on the dark page and the dark card',
+    (tester) async {
+      await _pumpOn(tester, AppTheme.darkTheme, filled: false);
+      final text = _textColor(tester, '0.00%');
+      expect(text, AppColors.neutral500Dark);
+      for (final ground in [AppColors.surfaceDark, AppColors.cardDark]) {
+        expect(
+          contrastRatio(text, ground),
+          greaterThanOrEqualTo(kMinText),
+          reason: 'outlined zero badge text on ${ground.toARGB32()}',
+        );
+      }
+    },
+  );
+
+  testWidgets('an outlined zero badge reads on the light page', (tester) async {
+    await _pumpOn(tester, AppTheme.lightTheme, filled: false);
+    final text = _textColor(tester, '0.00%');
+    expect(text, AppColors.neutral600Light);
+    for (final ground in [AppColors.backgroundLight, AppColors.cardLight]) {
+      expect(
+        contrastRatio(text, ground),
+        greaterThanOrEqualTo(kMinText),
+        reason: 'outlined zero badge text on ${ground.toARGB32()}',
+      );
+    }
+  });
+
+  testWidgets('a filled zero badge keeps its pale fill and text in dark', (
+    tester,
+  ) async {
+    await _pumpOn(tester, AppTheme.darkTheme, filled: true);
+    final text = _textColor(tester, '0.00%');
+    final fill = _fill(tester);
+    expect(fill, AppColors.neutral200Light);
+    expect(text, AppColors.neutral600Light);
+    expect(contrastRatio(text, fill), greaterThanOrEqualTo(kMinText));
+  });
 
   testWidgets('a zero change shows no sign and no arrow', (tester) async {
     await _pump(tester, 0);

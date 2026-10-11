@@ -58,8 +58,9 @@ const _constants = [
 /// a file, needs a reason in the PR body.
 const _unfixed = <String, int>{
   // Deliberately kept: no screen uses ChangeBadge (the plan's W2), and its pale
-  // fill is the same in both themes. Two sites are left, its green and red; its
-  // zero-change text moved to neutral600Light, which this scan does not list.
+  // fill is the same in both themes. Two sites are left, its green and red. Its
+  // zero-change text is neutral600Light, which this scan does not list, and
+  // neutral500Dark for an outlined badge in dark, which is themed.
   'lib/core/widgets/change_badge.dart': 2,
 };
 

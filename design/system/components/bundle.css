@@ -175,11 +175,12 @@
 .it-chg { display: inline-flex; align-items: center; gap: 4px; border-radius: var(--radius-badge); padding: 4px 8px; font: 600 12px/1.4 var(--font-text); }
 .it-chg--s { padding: 2px 6px; gap: 2px; font: 600 10px/1.2 var(--font-text); letter-spacing: .5px; }
 .it-chg--l { padding: 6px 12px; border-radius: 10px; font: 600 16px/1.2 var(--font-display); }
-/* ChangeBadge never reads the theme: it paints the Light constants in both themes */
+/* ChangeBadge paints the Light constants in both themes; only an outlined zero badge, which has no fill and sits on the page, reads the theme */
 .it-chg--up { color: var(--it-success-l); background: var(--it-success-bg-l); }
 .it-chg--down { color: var(--it-danger-l); background: var(--it-danger-bg-l); }
 .it-chg--zero { color: var(--it-neutral-600-l); background: var(--it-neutral-200-l); }
 .it-chg--outline { background: transparent; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); }
+[data-theme="dark"] .it-chg--zero.it-chg--outline { color: var(--neutral-500-dark); }   /* neutral500Dark: the zero text on the dark page */
 .it-status { display: inline-block; padding: 4px 10px; border-radius: 20px; font: 600 10px/1.2 var(--font-text); letter-spacing: .5px; color: var(--c); background: color-mix(in srgb, var(--c) 15%, transparent); }
 .it-status--outline { background: transparent; border: 1px solid color-mix(in srgb, var(--c) 50%, transparent); }
 .it-ccy { display: inline-flex; align-items: center; border-radius: var(--radius-xs); padding: 2px 6px; font: 600 11px/1.4 var(--font-text); color: var(--primary); background: color-mix(in srgb, var(--primary) 20%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); }

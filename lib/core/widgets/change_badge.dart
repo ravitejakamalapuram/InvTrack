@@ -26,8 +26,12 @@ class ChangeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // The outlined badge has no fill, so a zero change sits on the page itself.
     final color = isZero
-        ? AppColors.neutral600Light
+        ? (isDark && !filled
+              ? AppColors.neutral500Dark
+              : AppColors.neutral600Light)
         : (isPositive ? AppColors.successLight : AppColors.dangerLight);
 
     final bgColor = isZero
