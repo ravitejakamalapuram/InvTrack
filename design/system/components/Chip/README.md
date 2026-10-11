@@ -1,6 +1,6 @@
 Selectable pills: the filter tabs above the investment list, the investment-type selector in forms, the quick-template chips, and the Material chip theme.
 
-Use filter chips to narrow a list (exactly one selected), the type selector to pick one value from a small set, template chips to start a form with defaults.
+Use filter chips to narrow a list (exactly one selected), the type selector to pick one value from a small set, template chips to start a form with the type and its structural defaults (payout mode, compounding, income frequency), never with a rate or a term: the template's typical rate is only the grey hint in the empty rate field (#994).
 
 ## Kinds (`InvTrack.Chip({ kind })`)
 
