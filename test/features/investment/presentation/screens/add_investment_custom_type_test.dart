@@ -51,7 +51,6 @@ class _RecordingNotifier extends InvestmentNotifier {
     String? currency,
     String? customTypeLabel,
     String? id,
-    String? firstCashFlowId,
     double? initialAmount,
   }) async {
     adds.add({'name': name, 'type': type, 'customTypeLabel': customTypeLabel});

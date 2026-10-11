@@ -54,13 +54,13 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   ///
   /// With [initialAmount] the investment and its first cash flow, an INVEST of
   /// that amount dated [startDate] (today when null), are saved in one atomic
-  /// write. [id] and [firstCashFlowId] are the ids of the two records: a caller
-  /// that may retry passes the same [id] each time, so the retry replaces the
-  /// first write instead of adding a duplicate. Both are minted when neither is
-  /// given. When only [id] is given, the flow's id is derived from it as
-  /// `'$id-first-flow'`, so a retry with just [id] cannot add a second flow
-  /// (and double the invested amount). A [firstCashFlowId] passed explicitly
-  /// always wins.
+  /// write. A caller that may retry passes the same [id] each time, so the
+  /// retry replaces the first write instead of adding a duplicate; [id] is
+  /// minted when null. The flow's id is always derived from the investment's,
+  /// as `'<investment id>-first-flow'`, so one id decides both records: a retry
+  /// cannot add a second flow (and double the invested amount), and a flow id
+  /// cannot be moved to another investment. Retry only an unresolved attempt:
+  /// a retry after the user deleted the first flow brings it back.
   ///
   /// Only the write can fail the call. What follows it (analytics, reminders,
   /// the goal check) is logged when it fails and never rethrown, because by
@@ -85,7 +85,6 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     // Text typed in the "Custom type" field of an investment of type Other
     String? customTypeLabel,
     String? id,
-    String? firstCashFlowId,
     double? initialAmount,
   }) async {
     // Input validation
@@ -142,9 +141,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       firstFlow = firstAmount == null
           ? null
           : CashFlowEntity(
-              id:
-                  firstCashFlowId ??
-                  (id == null ? const Uuid().v4() : '$id-first-flow'),
+              id: '${investment.id}-first-flow',
               investmentId: investment.id,
               type: CashFlowType.invest,
               amount: firstAmount,

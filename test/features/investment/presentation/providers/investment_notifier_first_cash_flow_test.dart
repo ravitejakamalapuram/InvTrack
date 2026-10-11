@@ -215,7 +215,6 @@ void main() {
     String? currency,
     DateTime? startDate,
     String? id,
-    String? firstCashFlowId,
     String name = 'HDFC FD',
     String? notes,
     IncomeFrequency? incomeFrequency,
@@ -231,7 +230,6 @@ void main() {
         startDate: startDate,
         initialAmount: initialAmount,
         id: id,
-        firstCashFlowId: firstCashFlowId,
         incomeFrequency: incomeFrequency,
         maturityDate: maturityDate,
       );
@@ -296,13 +294,6 @@ void main() {
       expect(repo.plainCreates, isEmpty);
       expect(repo.atomicCreates.single.investmentId, created.id);
       expect(repo.cashFlows.single.investmentId, created.id);
-    });
-
-    test('a first-flow id with no amount makes no flow', () async {
-      await add(firstCashFlowId: 'cf-unused');
-
-      expect(repo.cashFlows, isEmpty);
-      expect(repo.plainCreates, hasLength(1));
     });
   });
 
@@ -377,29 +368,17 @@ void main() {
 
   group('ids', () {
     test('given ids are used on both records', () async {
-      final created = await add(
-        initialAmount: 100,
-        id: 'inv-given',
-        firstCashFlowId: 'cf-given',
-      );
+      final created = await add(initialAmount: 100, id: 'inv-given');
 
       expect(created.id, 'inv-given');
       expect(repo.investments.single.id, 'inv-given');
-      expect(repo.cashFlows.single.id, 'cf-given');
+      expect(repo.cashFlows.single.id, 'inv-given-first-flow');
       expect(repo.cashFlows.single.investmentId, 'inv-given');
     });
 
     test('a second call with the same ids creates no duplicate', () async {
-      await add(
-        initialAmount: 100,
-        id: 'inv-given',
-        firstCashFlowId: 'cf-given',
-      );
-      await add(
-        initialAmount: 100,
-        id: 'inv-given',
-        firstCashFlowId: 'cf-given',
-      );
+      await add(initialAmount: 100, id: 'inv-given');
+      await add(initialAmount: 100, id: 'inv-given');
 
       expect(repo.investments, hasLength(1));
       expect(repo.cashFlows, hasLength(1));
@@ -409,17 +388,13 @@ void main() {
         'each', () async {
       repo.failNextAtomic = StateError('network error');
       await expectLater(
-        add(initialAmount: 100, id: 'inv-given', firstCashFlowId: 'cf-given'),
+        add(initialAmount: 100, id: 'inv-given'),
         throwsA(isA<StateError>()),
       );
       expect(repo.investments, isEmpty);
       expect(repo.cashFlows, isEmpty);
 
-      await add(
-        initialAmount: 100,
-        id: 'inv-given',
-        firstCashFlowId: 'cf-given',
-      );
+      await add(initialAmount: 100, id: 'inv-given');
 
       expect(repo.atomicCreates.map((c) => c.investmentId), [
         'inv-given',
@@ -481,13 +456,26 @@ void main() {
     });
 
     test(
-      'a first flow id passed explicitly wins over the derived one',
+      'the flow id is always derived from the investment id, minted or given',
       () async {
-        await add(initialAmount: 100, id: 'inv-1', firstCashFlowId: 'cf-mine');
+        final created = await add(initialAmount: 100);
 
-        expect(repo.cashFlows.single.id, 'cf-mine');
+        expect(repo.cashFlows.single.id, '${created.id}-first-flow');
       },
     );
+
+    test('an id that already ends in the suffix stays distinct and a retry '
+        'of it adds nothing', () async {
+      await add(initialAmount: 100, id: 'x');
+      await add(initialAmount: 200, id: 'x-first-flow');
+      await add(initialAmount: 200, id: 'x-first-flow');
+
+      expect(repo.investments.map((i) => i.id), ['x', 'x-first-flow']);
+      expect(repo.cashFlows.map((f) => f.id), [
+        'x-first-flow',
+        'x-first-flow-first-flow',
+      ]);
+    });
 
     test('without ids each call mints its own', () async {
       await add(initialAmount: 100);
