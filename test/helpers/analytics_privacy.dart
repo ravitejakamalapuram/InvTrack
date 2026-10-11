@@ -20,6 +20,21 @@ const _forbiddenKeys = {
   'uid',
 };
 
+/// Every value `amount_range` may take: the buckets of the base-currency
+/// amount, or `unknown` when it could not be converted to the base currency
+/// (money rule 2: never bucket a native amount as if it were in the base
+/// currency). Pass it as `allowedStrings: {'amount_range': allowedAmountRanges}`.
+const allowedAmountRanges = {
+  'under_1k',
+  '1k_10k',
+  '10k_50k',
+  '50k_1L',
+  '1L_5L',
+  '5L_10L',
+  'over_10L',
+  'unknown',
+};
+
 final _snakeCase = RegExp(r'^[a-z][a-z0-9_]*$');
 
 /// Fails unless [event] is safe to send to Analytics.

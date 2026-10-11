@@ -20,13 +20,13 @@ class _RecordingAnalytics extends FakeAnalyticsService {
   Object? failWith;
 
   @override
-  Future<void> setUserProperty({
+  Future<bool> setUserProperty({
     required String name,
     required String? value,
   }) async {
     if (failWith != null) throw failWith!;
     calls.add((name: name, value: value));
-    await super.setUserProperty(name: name, value: value);
+    return super.setUserProperty(name: name, value: value);
   }
 }
 

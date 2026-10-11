@@ -87,6 +87,11 @@ void main() {
       expect(handlerResult, isTrue);
       expect(linkSuccesses(), hasLength(1));
       expect(linkSuccesses().single.parameters, {'method': 'link'});
+      expect(
+        analytics.loggedEvents.map((e) => e.name),
+        isNot(contains('account_link_failure')),
+        reason: 'a link that worked is not a failure (#980)',
+      );
       expectPrivacySafe(
         linkSuccesses().single,
         allowedStrings: {

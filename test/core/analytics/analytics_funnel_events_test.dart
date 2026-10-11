@@ -76,23 +76,38 @@ void main() {
     }
   });
 
-  test('account_link_success carries only the method', () async {
-    await service.logAccountLinkSuccess(method: 'link');
-    await service.logAccountLinkSuccess(method: 'merge');
+  group('account link events', () {
+    test('account_link_success carries only the method', () async {
+      await service.logAccountLinkSuccess(method: 'link');
+      await service.logAccountLinkSuccess(method: 'merge');
 
-    expect(sent.map((e) => e.name), [
-      'account_link_success',
-      'account_link_success',
-    ]);
-    expect(sent[0].parameters, {'method': 'link'});
-    expect(sent[1].parameters, {'method': 'merge'});
-    for (final event in sent) {
+      expect(sent.map((e) => e.name), [
+        'account_link_success',
+        'account_link_success',
+      ]);
+      expect(sent[0].parameters, {'method': 'link'});
+      expect(sent[1].parameters, {'method': 'merge'});
+      for (final event in sent) {
+        expectPrivacySafe(
+          event,
+          allowedStrings: {
+            'method': {'link', 'merge'},
+          },
+        );
+      }
+    });
+
+    test('account_link_failure carries only the reason', () async {
+      await service.logAccountLinkFailure(reason: 'google_account_exists');
+
+      expect(sent.single.name, 'account_link_failure');
+      expect(sent.single.parameters, {'reason': 'google_account_exists'});
       expectPrivacySafe(
-        event,
+        sent.single,
         allowedStrings: {
-          'method': {'link', 'merge'},
+          'reason': {'google_account_exists'},
         },
       );
-    }
+    });
   });
 }

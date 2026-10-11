@@ -5,7 +5,36 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/analytics_utils.dart';
+import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
+import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
+
+import '../../mocks/mock_currency_conversion_service.dart';
+
+/// Converts every non-base flow at a fixed [rate], whatever it is.
+class _FixedRateConversionService extends MockCurrencyConversionService {
+  _FixedRateConversionService(this.rate);
+
+  final double rate;
+
+  @override
+  Future<Map<String, double>> batchConvertHistorical({
+    required Map<String, ConversionRequest> requests,
+    required String to,
+  }) async => {for (final key in requests.keys) key: rate};
+}
+
+CashFlowEntity _flow({required double amount, required String currency}) =>
+    CashFlowEntity(
+      id: 'cf',
+      investmentId: 'inv',
+      date: DateTime(2026, 4, 1),
+      type: CashFlowType.invest,
+      amount: amount,
+      createdAt: DateTime(2026, 4, 1),
+      currency: currency,
+    );
 
 void main() {
   group('getAmountRange', () {
@@ -99,5 +128,51 @@ void main() {
         expect(getAmountRange(2500000), 'over_10L');
       });
     });
+  });
+
+  group('getBaseCurrencyAmountRange', () {
+    Future<String> bucket(double amount, double rate) =>
+        getBaseCurrencyAmountRange(
+          cashFlow: _flow(amount: amount, currency: 'USD'),
+          baseCurrency: 'INR',
+          converter: BatchCurrencyConverter(_FixedRateConversionService(rate)),
+        );
+
+    test('buckets the amount in the base currency', () async {
+      expect(await bucket(1000, 83), '50k_1L');
+    });
+
+    test('a flow already in the base currency is bucketed as is', () async {
+      expect(
+        await getBaseCurrencyAmountRange(
+          cashFlow: _flow(amount: 25000, currency: 'INR'),
+          baseCurrency: 'INR',
+          converter: null,
+        ),
+        '10k_50k',
+      );
+    });
+
+    test('no converter -> unknown', () async {
+      expect(
+        await getBaseCurrencyAmountRange(
+          cashFlow: _flow(amount: 1000, currency: 'USD'),
+          baseCurrency: 'INR',
+          converter: null,
+        ),
+        unknownAmountRange,
+      );
+    });
+
+    for (final entry in {
+      'a zero rate': 0.0,
+      'a negative rate': -83.0,
+      'a NaN rate': double.nan,
+      'an infinite rate': double.infinity,
+    }.entries) {
+      test('${entry.key} -> unknown, never a bucket', () async {
+        expect(await bucket(1000, entry.value), unknownAmountRange);
+      });
+    }
   });
 }
