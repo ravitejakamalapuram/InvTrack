@@ -362,7 +362,10 @@ void main() {
       final drawables = RegExp(
         r'@drawable/(\w+)',
       ).allMatches(text).map((m) => m.group(1)!).toSet();
-      expect(drawables, containsAll(['ic_launcher_foreground']));
+      expect(
+        drawables,
+        containsAll(['ic_launcher_foreground', 'ic_launcher_monochrome']),
+      );
       for (final name in drawables) {
         for (final d in _densities) {
           final f = File('$_res/drawable-$d/$name.png');
