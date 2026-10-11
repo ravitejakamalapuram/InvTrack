@@ -464,6 +464,7 @@ class IncomeTrendReportScreen extends ConsumerWidget {
   }
 
   Widget _buildErrorState(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -473,7 +474,7 @@ class IncomeTrendReportScreen extends ConsumerWidget {
             Icon(
               Icons.cloud_off_rounded,
               size: 64,
-              color: AppColors.errorLight,
+              color: isDark ? AppColors.errorDark : AppColors.errorLight,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(

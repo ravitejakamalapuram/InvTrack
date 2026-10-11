@@ -44,18 +44,6 @@ const _constants = [
 /// Sites not yet fixed, by file: how many are left. Raising a number, or adding
 /// a file, needs a reason in the PR body.
 const _unfixed = <String, int>{
-  // PR 3, separate commit: hidden until A42 (Income Guardian).
-  'lib/features/income_projection/presentation/screens/income_calendar_screen.dart':
-      1,
-  'lib/features/income_projection/presentation/screens/income_guardian_settings_screen.dart':
-      3,
-  'lib/features/income_projection/presentation/screens/income_trend_report_screen.dart':
-      1,
-  'lib/features/income_projection/presentation/widgets/expected_income_section.dart':
-      13,
-  'lib/features/income_projection/presentation/widgets/income_cell.dart': 4,
-  'lib/features/income_projection/presentation/widgets/income_guardian_dashboard_card.dart':
-      11,
   // Deliberately kept: no screen uses ChangeBadge (the plan's W2), and its pale
   // fill is the same in both themes. PR 4 edits only its zero-badge text.
   'lib/core/widgets/change_badge.dart': 3,
