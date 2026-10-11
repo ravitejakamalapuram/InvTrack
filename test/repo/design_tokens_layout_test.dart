@@ -20,6 +20,7 @@ const _layoutTokens = <String, double>{
   'fab-size': AppSizes.fabSize,
   'touch-target-min': AppSizes.minTouchTarget,
   'tonal-action-chip': AppSizes.tonalActionChip,
+  'stat-column-min-width': AppSizes.statColumnMinWidth,
 };
 
 /// Every `{name, value}` token in [node], by name.
