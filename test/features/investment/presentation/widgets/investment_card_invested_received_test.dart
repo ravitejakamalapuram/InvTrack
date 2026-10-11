@@ -16,6 +16,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_card.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -37,6 +38,9 @@ class _Fx {
   final XirrResult xirr;
 
   _Fx archived() => _Fx(investment.copyWith(isArchived: true), stats, xirr);
+
+  _Fx maturing(DateTime date) =>
+      _Fx(investment.copyWith(maturityDate: date), stats, xirr);
 }
 
 InvestmentEntity _investment({
@@ -104,6 +108,17 @@ final _gold = _Fx(
     last: DateTime(2026, 1, 1),
   ),
   const XirrResult.undefined(XirrUndefinedReason.insufficientFlows),
+);
+
+// Rs12.35 Cr put in, Rs9.88 Cr back, no value: the widest figures a card shows.
+final _crore = _Fx(
+  _investment(
+    id: 'flat',
+    name: 'Flat in Powai',
+    type: InvestmentType.realEstate,
+  ),
+  _stats(invested: 123500000, returned: 98800000, count: 12),
+  const XirrResult.exact(-0.2),
 );
 
 // States that keep today's card: a net figure and a return pill.
@@ -306,6 +321,46 @@ String _label(WidgetTester tester, [int index = 0]) =>
 Finder _chipBox(String status) => find
     .ancestor(of: find.text(status), matching: find.byType(Container))
     .first;
+
+/// The box beside the tile that holds the name and the chips: the width the
+/// name has.
+double _nameBox(WidgetTester tester, String name) => tester
+    .getRect(
+      find.ancestor(of: find.text(name), matching: find.byType(Column)).first,
+    )
+    .width;
+
+/// A name keeps room for about nine characters and an ellipsis: 96dp at normal
+/// text size, growing with the text so it holds as many characters at any size.
+double _minNameBox(double textScale) => 96 * textScale;
+
+/// What fitting means: no overflow, the name keeps its room and every text lies
+/// inside the card.
+void _expectFits(
+  WidgetTester tester, {
+  required String name,
+  required double textScale,
+  double? minNameBox,
+}) {
+  expect(tester.takeException(), isNull);
+  final card = tester.getRect(find.byType(GlassCard));
+  expect(
+    _nameBox(tester, name),
+    greaterThanOrEqualTo(minNameBox ?? _minNameBox(textScale)),
+    reason: 'the name box is too narrow',
+  );
+  final texts = find.descendant(
+    of: find.byType(GlassCard),
+    matching: find.byType(Text),
+  );
+  for (var i = 0; i < texts.evaluate().length; i++) {
+    final rect = tester.getRect(texts.at(i));
+    final data = tester.widget<Text>(texts.at(i)).data;
+    expect(rect.left, greaterThanOrEqualTo(card.left), reason: data);
+    expect(rect.right, lessThanOrEqualTo(card.right), reason: data);
+    expect(rect.bottom, lessThanOrEqualTo(card.bottom), reason: data);
+  }
+}
 
 void main() {
   setUpAll(_loadInter);
@@ -630,25 +685,11 @@ void main() {
               textScale: scale,
             );
 
-            expect(tester.takeException(), isNull);
-            final card = tester.getRect(find.byType(GlassCard));
-            // The name keeps room to show.
-            expect(
-              tester.getRect(find.text(entry.value.investment.name)).width,
-              greaterThan(0),
+            _expectFits(
+              tester,
+              name: entry.value.investment.name,
+              textScale: scale,
             );
-            // Every text lies inside the card.
-            final texts = find.descendant(
-              of: find.byType(GlassCard),
-              matching: find.byType(Text),
-            );
-            for (var i = 0; i < texts.evaluate().length; i++) {
-              final rect = tester.getRect(texts.at(i));
-              final data = tester.widget<Text>(texts.at(i)).data;
-              expect(rect.left, greaterThanOrEqualTo(card.left), reason: data);
-              expect(rect.right, lessThanOrEqualTo(card.right), reason: data);
-              expect(rect.bottom, lessThanOrEqualTo(card.bottom), reason: data);
-            }
           });
         }
       }
@@ -690,6 +731,199 @@ void main() {
         handle.dispose();
       });
     }
+  });
+
+  // The figures decide whether the name keeps its room beside them, measured
+  // on what is drawn: Cr-scale amounts stack under the name where short ones
+  // sit beside it, and masked figures count as the dots they are.
+  group('a wide figure never squeezes the name', () {
+    for (final (width, scale) in [
+      (280.0, 1.0),
+      (320.0, 1.0),
+      (320.0, 1.15),
+      (340.0, 1.3),
+      (360.0, 1.3),
+      (320.0, 2.0),
+    ]) {
+      for (final privacy in [false, true]) {
+        testWidgets('Cr-scale card at ${width}dp, ${scale}x'
+            '${privacy ? ', privacy mode' : ''}', (tester) async {
+          await _pumpCards(
+            tester,
+            [_crore],
+            width: width,
+            textScale: scale,
+            privacy: privacy,
+          );
+
+          _expectFits(tester, name: 'Flat in Powai', textScale: scale);
+        });
+      }
+    }
+
+    for (final (width, scale) in [
+      (360.0, 1.0),
+      (320.0, 1.0),
+      (360.0, 1.3),
+      (320.0, 1.3),
+    ]) {
+      for (final fx in [_p2p, _crore, _confirmedValue]) {
+        testWidgets('selection mode: ${fx.investment.name} at ${width}dp, '
+            '${scale}x', (tester) async {
+          await _pumpCards(
+            tester,
+            [fx],
+            width: width,
+            textScale: scale,
+            selectionMode: true,
+          );
+
+          _expectFits(tester, name: fx.investment.name, textScale: scale);
+        });
+      }
+    }
+
+    // 340dp, 1.0x: "₹12.35 Cr invested" is too wide to leave the name its
+    // room; the five dots that replace it in privacy mode are not.
+    testWidgets('Cr-scale figures drop under the name', (tester) async {
+      await _pumpCards(tester, [_crore], width: 340);
+
+      expect(
+        _rect(tester, '₹12.35 Cr').top,
+        greaterThanOrEqualTo(_rect(tester, 'Flat in Powai').bottom),
+      );
+    });
+
+    testWidgets('masked figures are measured as the dots drawn, so they sit '
+        'beside the name', (tester) async {
+      await _pumpCards(tester, [_crore], width: 340, privacy: true);
+
+      expect(
+        _rect(tester, '•••••').top,
+        lessThan(_rect(tester, 'Flat in Powai').bottom),
+      );
+    });
+
+    testWidgets('in privacy mode the layout does not depend on the amounts', (
+      tester,
+    ) async {
+      await _pumpCards(tester, [_p2p, _crore], width: 340, privacy: true);
+
+      expect(
+        _nameBox(tester, 'P2P loan pool A'),
+        closeTo(_nameBox(tester, 'Flat in Powai'), 0.01),
+      );
+    });
+  });
+
+  group('maturity badge', () {
+    final soon = DateTime(2026, 10, 23); // the reference date plus 12 days
+    final past = DateTime(2026, 10, 1);
+
+    void badgeFits(
+      String label,
+      _Fx fx,
+      double width,
+      double scale, {
+      bool privacy = false,
+    }) {
+      testWidgets('"$label" on ${fx.investment.name} at ${width}dp, ${scale}x'
+          '${privacy ? ', privacy mode' : ''}', (tester) async {
+        await _pumpCards(
+          tester,
+          [fx],
+          width: width,
+          textScale: scale,
+          privacy: privacy,
+        );
+
+        expect(find.text(label), findsOneWidget);
+        _expectFits(tester, name: fx.investment.name, textScale: scale);
+        // The label stays inside its own badge.
+        final badge = tester.getRect(
+          find
+              .ancestor(of: find.text(label), matching: find.byType(Container))
+              .first,
+        );
+        final text = _rect(tester, label);
+        expect(text.left, greaterThanOrEqualTo(badge.left));
+        expect(text.right, lessThanOrEqualTo(badge.right));
+      });
+    }
+
+    for (final (width, scale) in [
+      (320.0, 1.0),
+      (320.0, 1.15),
+      (320.0, 2.0),
+      (360.0, 1.0),
+      (360.0, 1.15),
+      (360.0, 1.3),
+    ]) {
+      badgeFits('12d TO MATURITY', _p2p.maturing(soon), width, scale);
+    }
+    for (final (width, scale) in [(320.0, 1.0), (320.0, 1.15), (360.0, 1.3)]) {
+      badgeFits('12d TO MATURITY', _crore.maturing(soon), width, scale);
+    }
+    badgeFits(
+      '12d TO MATURITY',
+      _crore.maturing(soon),
+      320,
+      2.0,
+      privacy: true,
+    );
+    badgeFits('MATURED', _p2p.maturing(past), 320, 1.15);
+    badgeFits('MATURED', _gold.maturing(past), 320, 2.0);
+    badgeFits(
+      'MATURES TODAY',
+      _gold.maturing(DateTime(2026, 10, 11)),
+      320,
+      2.0,
+    );
+
+    testWidgets('the whole label shows when there is room', (tester) async {
+      await _pumpCards(tester, [_gold.maturing(soon)], width: 411);
+
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.text('12d TO MATURITY'),
+      );
+      expect(paragraph.didExceedMaxLines, isFalse);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('selection mode', () {
+    Finder tile(InvestmentType type) => find
+        .ancestor(of: find.byIcon(type.icon), matching: find.byType(Container))
+        .first;
+
+    for (final (width, scale) in [(360.0, 1.0), (320.0, 1.0), (320.0, 2.0)]) {
+      testWidgets('the type tile is centred on the checkbox '
+          '(${width}dp, ${scale}x)', (tester) async {
+        await _pumpCards(
+          tester,
+          [_p2p],
+          width: width,
+          textScale: scale,
+          selectionMode: true,
+        );
+
+        expect(
+          tester.getCenter(tile(InvestmentType.p2pLending)).dy,
+          closeTo(tester.getCenter(find.byType(Checkbox)).dy, 0.01),
+        );
+      });
+    }
+
+    testWidgets('outside selection mode the tile still hangs from the top', (
+      tester,
+    ) async {
+      await _pumpCards(tester, [_p2p], width: 360);
+
+      expect(
+        tester.getRect(tile(InvestmentType.p2pLending)).top,
+        closeTo(_rect(tester, 'P2P loan pool A').top, 0.01),
+      );
+    });
   });
 
   // Guard: every other state keeps its net figure and pill, and shows neither

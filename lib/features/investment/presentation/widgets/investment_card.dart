@@ -1,6 +1,8 @@
 /// Investment card widget for the list view.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -162,6 +164,13 @@ class InvestmentCard extends ConsumerWidget {
               context,
               cardWidth: constraints.maxWidth,
               isSelectionMode: isSelectionMode,
+              valueWidth: _valueColumnWidth(
+                context,
+                stats: stats,
+                display: display,
+                currencyFormat: currencyFormat,
+                isPrivacyMode: isPrivacyMode,
+              ),
             );
             // Icon with type icon
             final typeIcon = _TypeIcon(
@@ -189,7 +198,8 @@ class InvestmentCard extends ConsumerWidget {
               isPrivacyMode: isPrivacyMode,
               compact: compact,
             );
-            // Checkbox in selection mode
+            // Checkbox in selection mode, with the tile centred on its 48dp
+            // target.
             final leading = <Widget>[
               if (isSelectionMode) ...[
                 Checkbox(
@@ -199,7 +209,12 @@ class InvestmentCard extends ConsumerWidget {
                 ),
                 SizedBox(width: AppSpacing.xs),
               ],
-              typeIcon,
+              isSelectionMode
+                  ? SizedBox(
+                      height: AppSizes.minTouchTarget,
+                      child: Center(child: typeIcon),
+                    )
+                  : typeIcon,
               SizedBox(width: AppSpacing.md),
             ];
 
@@ -258,25 +273,132 @@ class InvestmentCard extends ConsumerWidget {
   }
 }
 
-/// Below this width (dp at normal text size) the row has no room for the name
-/// beside the figures, so the figures drop under it. Tuned on a 320dp phone
-/// with 1.3x to 2x text; not a design token.
-const double _compactBelowDp = 200;
+/// The least room the name gets beside the figures, in dp at normal text size:
+/// about 5.3 em of the 18sp name, enough for eleven characters including the
+/// ellipsis ("P2P loan po..."). It grows with the text scale so a name keeps as
+/// many characters at 200% text. Below it the figures drop under the name. Not
+/// a design token.
+const double _minNameWidthDp = 96;
 
-/// Whether the main row has less than [_compactBelowDp] left beside the tile,
-/// measured at normal text size. [cardWidth] is the card's inner width.
+/// Whether the name would get less than [_minNameWidthDp] (scaled with the
+/// text) beside a value column [valueWidth] wide, so the figures must drop
+/// under it. [cardWidth] is the card's inner width. The value column's width is
+/// measured on what it draws, never guessed from the card width.
 bool _isCompact(
   BuildContext context, {
   required double cardWidth,
   required bool isSelectionMode,
+  required double valueWidth,
 }) {
-  final leading = isSelectionMode
-      ? AppSizes.minTouchTarget + AppSpacing.xs
-      : 0.0;
-  final textScale = MediaQuery.textScalerOf(context).scale(12) / 12;
-  return (cardWidth - 2 * AppSpacing.md - leading) / textScale <
-      _compactBelowDp;
+  final leading =
+      (isSelectionMode ? AppSizes.minTouchTarget + AppSpacing.xs : 0) +
+      AppSizes.iconXl +
+      AppSpacing.md;
+  final nameWidth =
+      cardWidth - 2 * AppSpacing.md - leading - AppSpacing.sm - valueWidth;
+  final nameSize = AppTypography.bodyLarge.fontSize!;
+  final textScale = MediaQuery.textScalerOf(context).scale(nameSize) / nameSize;
+  return nameWidth < _minNameWidthDp * textScale;
 }
+
+/// Width of [text] on one line in [style], as a [Text] there draws it: the same
+/// inherited style, text scaler and bold-text setting.
+double _textWidth(BuildContext context, String text, TextStyle style) {
+  var effective = DefaultTextStyle.of(context).style.merge(style);
+  if (MediaQuery.boldTextOf(context)) {
+    effective = effective.merge(const TextStyle(fontWeight: FontWeight.bold));
+  }
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: effective),
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    locale: Localizations.maybeLocaleOf(context),
+  )..layout();
+  final width = painter.width;
+  painter.dispose();
+  return width;
+}
+
+/// Width of the value column as drawn: its widest line, measured on the text it
+/// shows. A masked figure is measured as the dots drawn in its place, so privacy
+/// mode lays out the same whatever the amounts.
+double _valueColumnWidth(
+  BuildContext context, {
+  required InvestmentStats? stats,
+  required ReturnDisplay? display,
+  required NumberFormat currencyFormat,
+  required bool isPrivacyMode,
+}) {
+  // The spinner, or the chevron of a card with nothing to show.
+  if (stats == null || !stats.hasData || display == null) {
+    return AppSizes.iconMd;
+  }
+  final l10n = AppLocalizations.of(context);
+
+  double figure(double amount, TextStyle style, {String prefix = ''}) {
+    if (isPrivacyMode) {
+      final dots = maskedAmountDots(style);
+      return _textWidth(context, dots.text, dots.style);
+    }
+    return _textWidth(
+      context,
+      '$prefix${currencyFormat.formatCompact(amount)}',
+      style,
+    );
+  }
+
+  if (display.isAwaitingValue) {
+    final amounts = math.max(
+      figure(stats.totalInvested, _figureStyle()),
+      figure(stats.totalReturned, _receivedStyle()),
+    );
+    final words = math.max(
+      _textWidth(context, l10n.investmentCardInvestedLabel, _wordStyle()),
+      _textWidth(context, l10n.investmentCardReceivedLabel, _wordStyle()),
+    );
+    final chip = math.min(
+      _statusChipMaxWidth,
+      2 * _chipPaddingX +
+          _textWidth(context, display.statusLabel(l10n)!, _statusChipStyle()),
+    );
+    return math.max(amounts + AppSpacing.xxs + words, chip);
+  }
+
+  final isPositive = stats.netCashFlow >= 0;
+  final net = figure(
+    stats.netCashFlow.abs(),
+    _figureStyle(),
+    prefix: isPositive ? '+' : '-',
+  );
+  // The pill keeps its space even where privacy mode fades it out.
+  final pill =
+      2 * _chipPaddingX +
+      _textWidth(context, display.pillText(l10n), _pillStyle());
+  return math.max(net, pill);
+}
+
+// Text styles of the value column, shared by the widgets and the width probe
+// so the width measured is the width drawn. A colour never changes a width.
+TextStyle _figureStyle([Color? color]) =>
+    AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600, color: color);
+
+TextStyle _receivedStyle([Color? color]) =>
+    AppTypography.small.copyWith(fontWeight: FontWeight.w500, color: color);
+
+TextStyle _wordStyle([Color? color]) =>
+    AppTypography.small.copyWith(color: color);
+
+TextStyle _statusChipStyle([Color? color]) =>
+    AppTypography.small.copyWith(color: color, fontWeight: FontWeight.w600);
+
+TextStyle _pillStyle([Color? color]) => AppTypography.small.copyWith(
+  color: color,
+  fontWeight: FontWeight.w600,
+  fontSize: 10,
+);
+
+/// Horizontal padding of the return pill and the status chip.
+const double _chipPaddingX = 6;
 
 /// Extracted widget for type icon to avoid rebuilds during selection toggling.
 class _TypeIcon extends StatelessWidget {
@@ -412,11 +534,16 @@ class _InvestmentInfo extends StatelessWidget {
                       color: maturityInfo.color,
                     ),
                     SizedBox(width: AppSpacing.xxs),
-                    Text(
-                      maturityInfo.label,
-                      style: AppTypography.small.copyWith(
-                        color: maturityInfo.color,
-                        fontWeight: FontWeight.w600,
+                    // Gives way on a narrow card instead of overflowing it.
+                    Flexible(
+                      child: Text(
+                        maturityInfo.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.small.copyWith(
+                          color: maturityInfo.color,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -552,10 +679,7 @@ class _InvestmentValueColumn extends StatelessWidget {
             ? AppColors.graphEmerald
             : AppColors.errorLight;
 
-        final valueStyle = AppTypography.bodyLarge.copyWith(
-          fontWeight: FontWeight.w600,
-          color: plColor,
-        );
+        final valueStyle = _figureStyle(plColor);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -606,19 +730,15 @@ class _InvestmentValueColumn extends StatelessWidget {
                   duration: const Duration(milliseconds: 200),
                   opacity: isPrivacyMode ? 0.0 : 1.0,
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: _chipPaddingX,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: xirrColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text(
-                      xirrFormatted,
-                      style: AppTypography.small.copyWith(
-                        color: xirrColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 10,
-                      ),
-                    ),
+                    child: Text(xirrFormatted, style: _pillStyle(xirrColor)),
                   ),
                 );
               },
@@ -681,15 +801,9 @@ class _AwaitingValue extends StatelessWidget {
     final secondary = isDark
         ? AppColors.neutral400Dark
         : AppColors.neutral600Light;
-    final investedStyle = AppTypography.bodyLarge.copyWith(
-      fontWeight: FontWeight.w600,
-      color: primary,
-    );
-    final receivedStyle = AppTypography.small.copyWith(
-      fontWeight: FontWeight.w500,
-      color: secondary,
-    );
-    final wordStyle = AppTypography.small.copyWith(color: secondary);
+    final investedStyle = _figureStyle(primary);
+    final receivedStyle = _receivedStyle(secondary);
+    final wordStyle = _wordStyle(secondary);
 
     Widget amount(double value, TextStyle style) => isPrivacyMode
         ? MaskedAmountText(
@@ -742,7 +856,10 @@ class _AwaitingValue extends StatelessWidget {
             maxWidth: compact ? double.infinity : _statusChipMaxWidth,
           ),
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            padding: EdgeInsets.symmetric(
+              horizontal: _chipPaddingX,
+              vertical: 2,
+            ),
             decoration: BoxDecoration(
               color: secondary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
@@ -750,10 +867,7 @@ class _AwaitingValue extends StatelessWidget {
             child: Text(
               status,
               textAlign: TextAlign.end,
-              style: AppTypography.small.copyWith(
-                color: secondary,
-                fontWeight: FontWeight.w600,
-              ),
+              style: _statusChipStyle(secondary),
             ),
           ),
         ),

@@ -284,7 +284,7 @@
     }
     if (k === 'maturity') {
       var tone = { success: 'var(--it-success-l)', warning: 'var(--it-warning-l)', accent: 'var(--it-accent-l)' }[o.tone || 'accent'];
-      return '<span class="it-tag it-tag--strong"' + sty({ '--c': tone }) + '>' + (o.icon ? icon(o.icon, { size: 10 }) : '') + esc(o.label) + '</span>';
+      return '<span class="it-tag it-tag--strong"' + sty({ '--c': tone }) + '>' + (o.icon ? icon(o.icon, { size: 10 }) : '') + '<span class="it-tag__t">' + esc(o.label) + '</span></span>';
     }
     if (k === 'type') return '<span class="it-tag"' + sty({ '--c': o.color }) + '>' + esc(o.label) + '</span>';
     if (k === 'closed') return '<span class="it-tag it-tag--closed">CLOSED</span>';

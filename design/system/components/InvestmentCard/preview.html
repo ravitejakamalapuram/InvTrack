@@ -21,6 +21,8 @@
     maturity: { tone: 'warning', icon: 'schedule', label: '7d TO MATURITY' }, last: '3 days ago', entries: '1 entry' };
   var awaitingValue = { type: 'p2p-lending', name: 'P2P loan pool A', status: 'Awaiting current value', invested: F.compact(400000), received: F.compact(252000),
     maturity: { tone: 'accent', icon: 'event', label: '21d TO MATURITY' }, last: '2 weeks ago', entries: '9 entries' };
+  var crore = { type: 'real-estate', name: 'Flat in Powai', status: 'Awaiting current value', invested: F.compact(123500000), received: F.compact(98800000),
+    maturity: { tone: 'warning', icon: 'schedule', label: '12d TO MATURITY' }, last: '2 weeks ago', entries: '12 entries' };
   var matured = { type: 'chit-funds', name: 'Chit group 12', positive: true, net: F.compact(8000), badge: { text: '+9.4% IRR' },
     maturity: { tone: 'success', icon: 'check_circle', label: 'MATURED' }, last: 'today', entries: '11 entries', invested: F.compact(120000) };
   var empty = { type: 'other', name: 'Untitled investment', empty: true, last: 'today', entries: '0 entries' };
@@ -31,7 +33,8 @@
       '<div>' + I.InvestmentCard(awaitingValue) + cap('Open, some payouts but less than invested: invested, received and “Awaiting current value”. Amounts share one right edge; each word sits on its amount’s baseline.') + '</div>' +
       '<div>' + I.InvestmentCard(matured) + cap('Maturity chips: MATURED (success), MATURES TODAY and ≤7 days (warning), 8–30 days (accent).') + '</div>' +
       '<div>' + I.InvestmentCard(Object.assign({ selectionMode: true, selected: true }, awaitingFirst, { maturity: null })) + cap('Selection mode adds a checkbox before the tile.') + '</div>' +
-      '<div style="max-width:232px">' + I.InvestmentCard(awaitingValue) + cap('Narrow card or large text: the figures drop under the name, still on the right edge.') + '</div>' +
+      '<div style="max-width:232px">' + I.InvestmentCard(awaitingValue) + cap('Narrow card or large text: the figures drop under the name, still on the right edge, and the maturity chip shortens with an ellipsis if it must.') + '</div>' +
+      '<div style="max-width:308px">' + I.InvestmentCard(crore) + cap('Stacking is measured on the figures: a wide one like ₹12.35 Cr invested drops under the name where ₹4 L stays beside it.') + '</div>' +
       '<div data-privacy="on">' + I.InvestmentCard(closed) + cap('Privacy mode: amounts masked, badge fades out but keeps its space.') + '</div>' +
       '<div data-privacy="on">' + I.InvestmentCard(awaitingValue) + cap('Privacy mode, awaiting: invested and received are masked; the words and the status chip stay.') + '</div>' +
       '<div>' + I.InvestmentCard(empty) + cap('No cash flows yet: a chevron replaces the value column, and the strip offers View Details instead of the invested amount.') + '</div>' +
