@@ -67,7 +67,7 @@ Implemented proper Firebase account linking using `linkWithCredential()` API:
 
 ### 4. **Documentation**
 
-**`docs/GUEST_MODE_FIXES.md`**
+**`docs/archive/GUEST_MODE_FIXES.md`**
 - Comprehensive documentation of all fixes
 - Testing checklist
 - Error handling matrix
@@ -191,8 +191,8 @@ Without this, guest mode will fail with `admin-restricted-operation` error.
 
 ## 📚 Related Documentation
 
-- **Architecture**: `docs/ANONYMOUS_AUTH_GUEST_MODE.md`
-- **Fix Details**: `docs/GUEST_MODE_FIXES.md`
+- **Architecture**: `docs/archive/ANONYMOUS_AUTH_GUEST_MODE.md`
+- **Fix Details**: `docs/archive/GUEST_MODE_FIXES.md`
 - **Firebase Docs**: [Link Anonymous Accounts](https://firebase.google.com/docs/auth/android/anonymous-auth#convert-an-anonymous-account-to-a-permanent-account)
 
 ---

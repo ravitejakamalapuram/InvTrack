@@ -374,25 +374,20 @@ knowledge_base:
       # Core rules and standards
       - ".augment/rules/invtrack_rules.md"
 
-      # Technical specifications
-      - "docs/InvTracker_TechSpec.md"
-      - "docs/InvTracker_PRD.md"
+      # Data model contract (the old PRD, tech spec and feature plans
+      # described an architecture that no longer exists and now live in
+      # docs/archive/)
+      - "docs/FINANCIAL_DATA_MODEL.md"
 
       # Localization guides
       - "docs/LOCALIZATION.md"
-      - "docs/LOCALIZATION_QUICKSTART.md"
       - "docs/CURRENCY_LOCALIZATION_GUIDE.md"
 
-      # Multi-currency implementation
-      - "docs/MULTI_CURRENCY_IMPLEMENTATION.md"
-      - "docs/MULTI_CURRENCY_PR_CHECKLIST.md"
+      # Currency conversion
+      - "docs/CURRENCY_CONVERSION_ARCHITECTURE.md"
 
       # Accessibility
       - "docs/ACCESSIBILITY.md"
-
-      # Feature plans
-      - "docs/FIRE_NUMBER_FEATURE_PLAN.md"
-      - "docs/GOALS_FEATURE_PLAN.md"
 
       # Project overview
       - "README.md"
