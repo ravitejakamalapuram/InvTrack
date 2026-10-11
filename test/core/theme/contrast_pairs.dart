@@ -61,10 +61,10 @@ class ContrastPair {
     this.min = kMinText,
     this.tier = 'P1',
     this.widgetTest,
+    this.addedByPlan = false,
   }) : kind = PairKind.widget,
        fg = null,
-       ground = null,
-       addedByPlan = false;
+       ground = null;
 
   final String id;
 
@@ -90,6 +90,10 @@ class ContrastPair {
 
   double get ratio => contrastRatio(fg!, ground!);
 }
+
+// The test that pumps the investment card in dark and measures its text.
+const _cardTest =
+    'test/features/investment/presentation/widgets/investment_card_theme_contrast_test.dart';
 
 // Grounds the audit used. Dark input fill is the theme's, `neutral800Dark`.
 const _bgL = AppColors.backgroundLight;
@@ -358,13 +362,13 @@ List<ContrastPair> _build() {
       audit: 3.29,
       addedByPlan: true,
     ),
-    ContrastPair.token(
+    // Measured on the pumped card since PR 2: the card paints errorDark in dark.
+    ContrastPair.widget(
       'error-light-in-dark@tint10',
       rows: [],
-      fg: AppColors.errorLight,
-      ground: _tint(AppColors.errorLight, 0.1, _cardD),
       audit: 4.31,
       addedByPlan: true,
+      widgetTest: _cardTest,
     ),
     // Danger text on its 15% tint (goal and FIRE status chips, plan PR 5).
     ContrastPair.token(
@@ -536,16 +540,23 @@ List<ContrastPair> _build() {
         rows: [20],
         audit: audit,
       ),
-    ContrastPair.widget('primary-light-in-dark@card', rows: [53], audit: 2.99),
+    ContrastPair.widget(
+      'primary-light-in-dark@card',
+      rows: [53],
+      audit: 2.99,
+      widgetTest: _cardTest,
+    ),
     ContrastPair.widget(
       'primary-light-in-dark@card-strip',
       rows: [53],
       audit: 2.78,
+      widgetTest: _cardTest,
     ),
     ContrastPair.widget(
       'primary-light-in-dark@background',
       rows: [53],
       audit: 3.30,
+      widgetTest: _cardTest,
     ),
     ContrastPair.widget(
       'currency-badge-compact-light@tint20',
@@ -608,6 +619,7 @@ List<ContrastPair> _build() {
       audit: 2.99,
       min: graphic,
       tier: 'P2',
+      widgetTest: 'test/core/widgets/app_text_field_theme_contrast_test.dart',
     ),
     ContrastPair.widget(
       'glass-border-dark@card',
