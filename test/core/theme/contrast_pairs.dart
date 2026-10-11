@@ -122,6 +122,8 @@ const _copiedSnackbarTest =
 const _changeBadgeStatusTest =
     'test/core/widgets/change_badge_status_contrast_test.dart';
 const _feedbackTest = 'test/core/utils/app_feedback_theme_contrast_test.dart';
+const _reportsCountTest =
+    'test/features/reports/presentation/screens/reports_home_attention_contrast_test.dart';
 
 // Grounds the audit used. Dark input fill is the theme's, `neutral800Dark`.
 const _bgL = AppColors.backgroundLight;
@@ -437,6 +439,12 @@ List<ContrastPair> _build() {
       ),
       ('yoy-pill-success-light@tint10', 2.31, _overviewColoursTest, kMinText),
       ('copied-snackbar-label-light', 2.54, _copiedSnackbarTest, kMinText),
+      (
+        'reports-attention-count-light@tint10',
+        2.79,
+        _reportsCountTest,
+        kMinText,
+      ),
       (
         'confirm-dialog-destructive-light@dialog',
         3.45,

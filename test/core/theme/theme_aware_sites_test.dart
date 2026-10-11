@@ -62,6 +62,7 @@ const _constants = [
 /// tint made of one would follow the new value, and text on that tint falls
 /// back under 4.5:1 (4.34 for green, 4.38 for red at 15%); tints are made of
 /// `successTintLight` and `dangerTintLight`, which keep the old hue.
+/// `colorScheme.error` is `dangerLight` in the light theme, so it counts too.
 const _deepStatusConstants = ['successLight', 'errorLight', 'dangerLight'];
 
 /// Sites not yet fixed, by file: how many are left. Raising a number, or adding
@@ -175,7 +176,8 @@ final _occurrence = RegExp(
 );
 
 final _statusOccurrence = RegExp(
-  '\\bAppColors\\s*\\.\\s*(${_deepStatusConstants.join('|')})\\b',
+  '\\bAppColors\\s*\\.\\s*(${_deepStatusConstants.join('|')})\\b'
+  r'|\bcolorScheme\s*\.\s*(error)\b',
 );
 final _tintCall = RegExp(r'\s*\.\s*(?:withValues|withOpacity|withAlpha)\s*\(');
 
@@ -401,7 +403,7 @@ List<Site> tintedStatusSites(String source) {
     }
     sites.add((
       line: '\n'.allMatches(code.substring(0, m.start)).length + 1,
-      constant: m.group(1)!,
+      constant: m.group(1) ?? 'colorScheme.${m.group(2)}',
       expression: code
           .substring(from, to)
           .trim()
@@ -743,6 +745,21 @@ final d = [AppColors.successLight, base.withValues(alpha: 0.1)];
       );
     });
 
+    test('flags a tint of the theme error colour, the light red', () {
+      expect(
+        tinted('''
+final a = Theme.of(context).colorScheme.error.withValues(alpha: 0.1);
+final b = scheme.colorScheme
+    .error
+    .withOpacity(0.2);
+final c = Theme.of(context).colorScheme.error;
+final d = Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1);
+final e = Theme.of(context).colorScheme.onError.withValues(alpha: 0.1);
+'''),
+        [1, 2],
+      );
+    });
+
     test('ignores comments and strings', () {
       expect(
         tinted('''
@@ -816,7 +833,10 @@ final a = 'AppColors.successLight.withValues(alpha: 0.1)';
       // The constants are defined here.
       if (path == 'lib/core/theme/app_colors.dart') continue;
       for (final s in tintedStatusSites(entity.readAsStringSync())) {
-        tinted.add('$path:${s.line} AppColors.${s.constant}  ${s.expression}');
+        final name = s.constant.contains('.')
+            ? s.constant
+            : 'AppColors.${s.constant}';
+        tinted.add('$path:${s.line} $name  ${s.expression}');
       }
     }
     expect(
