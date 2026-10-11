@@ -19,6 +19,7 @@ import 'package:inv_tracker/features/investment/presentation/providers/investmen
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 
 import '../../../../helpers/analytics_privacy.dart';
+import '../../../../mocks/crashlytics_recorder.dart';
 import '../../../../mocks/mock_analytics_service.dart';
 import '../../../../mocks/mock_currency_conversion_service.dart';
 import '../../../../mocks/mock_notification_service.dart';
@@ -81,6 +82,39 @@ class _HangingNotifications extends _RecordingNotifications {
     double? currentValue,
     String currency = 'INR',
   }) => Completer<void>().future;
+}
+
+/// Activation nudges whose cancel (a platform call) never returns.
+class _HangingActivationCancel extends _RecordingNotifications {
+  @override
+  Future<void> cancelActivationSequence() => Completer<void>().future;
+}
+
+/// Goals whose read never delivers, like a Firestore read that never answers.
+class _HangingGoalRepository extends FakeGoalRepository {
+  /// Never emits and never closes, so `first` waits for ever.
+  @override
+  Stream<List<GoalEntity>> watchActiveGoals() =>
+      StreamController<List<GoalEntity>>().stream;
+}
+
+/// Analytics that fails with a message holding what must never be logged: a
+/// name, an amount and an id.
+class _LeakyAnalytics extends FakeAnalyticsService {
+  static const leak = 'Ravi-Kumar-P2P 123456.78 inv-secret-42';
+
+  @override
+  Future<void> logInvestmentCreated({
+    required String investmentType,
+    bool hasNotes = false,
+    bool hasAmount = false,
+  }) => throw StateError(leak);
+
+  @override
+  Future<void> logCashFlowAdded({
+    required String flowType,
+    required String amountRange,
+  }) => Future.error(StateError(leak));
 }
 
 class _FailingActivationCancel extends _RecordingNotifications {
@@ -149,11 +183,12 @@ void main() {
     CurrencyConversionService? conversion,
     FakeAnalyticsService? analyticsService,
     FakeNotificationService? notificationService,
+    FakeGoalRepository? goalRepository,
   }) {
     final container = ProviderContainer(
       overrides: [
         investmentRepositoryProvider.overrideWithValue(repo),
-        goalRepositoryProvider.overrideWithValue(goals),
+        goalRepositoryProvider.overrideWithValue(goalRepository ?? goals),
         analyticsServiceProvider.overrideWithValue(
           analyticsService ?? analytics,
         ),
@@ -285,6 +320,25 @@ void main() {
       expect(repo.investments.single.startDate, DateTime(2026, 10, 11));
     });
 
+    // Local values whose UTC date differs from the local date in some zones
+    // (23:30 in Los Angeles is already the next UTC day; 01:00 in Kolkata is
+    // still the previous one). The day kept must be the local calendar day. A
+    // test cannot change the process zone, so under a UTC runner the two dates
+    // agree; run with TZ=America/Los_Angeles to exercise the difference.
+    for (final (:local, :day) in [
+      (local: DateTime(2026, 10, 11, 23, 30), day: DateTime(2026, 10, 11)),
+      (local: DateTime(2026, 10, 12, 1, 0), day: DateTime(2026, 10, 12)),
+    ]) {
+      test('a start date of $local is the local day $day on both records, '
+          'whatever its UTC date', () async {
+        final created = await add(initialAmount: 100000, startDate: local);
+
+        expect(repo.cashFlows.single.date, day);
+        expect(created.startDate, day);
+        expect(repo.investments.single.startDate, day);
+      });
+    }
+
     test('with no start date it is dated today on both records', () async {
       final before = DateTime.now();
       await add(initialAmount: 100000);
@@ -375,6 +429,66 @@ void main() {
       expect(repo.cashFlows, hasLength(1));
     });
 
+    test('a retry with only the investment id leaves one investment and one '
+        'flow of 100000.00', () async {
+      await add(initialAmount: 100000, id: 'inv-1');
+      await add(initialAmount: 100000, id: 'inv-1');
+
+      expect(repo.investments, hasLength(1));
+      expect(repo.cashFlows, hasLength(1));
+      expect(repo.cashFlows.single.amount, 100000.00);
+      expect(repo.cashFlows.single.investmentId, 'inv-1');
+    });
+
+    test('a retry with only the investment id after a failed write leaves '
+        'one of each', () async {
+      repo.failNextAtomic = StateError('network error');
+      await expectLater(
+        add(initialAmount: 100000, id: 'inv-1'),
+        throwsA(isA<StateError>()),
+      );
+      expect(repo.cashFlows, isEmpty);
+
+      await add(initialAmount: 100000, id: 'inv-1');
+      await add(initialAmount: 100000, id: 'inv-1');
+
+      expect(repo.investments, hasLength(1));
+      expect(repo.cashFlows, hasLength(1));
+      expect(repo.cashFlows.single.amount, 100000.00);
+    });
+
+    test('the first flow id derived from the investment id is stable: the '
+        'same on every call, so it survives a restart', () async {
+      await add(initialAmount: 100, id: 'inv-1');
+
+      expect(repo.cashFlows.single.id, 'inv-1-first-flow');
+    });
+
+    test('two different investment ids and no flow ids make two distinct '
+        'flows', () async {
+      await add(initialAmount: 100, id: 'inv-a');
+      await add(initialAmount: 200, id: 'inv-b');
+
+      expect(
+        repo.investments.map((i) => i.id),
+        unorderedEquals(['inv-a', 'inv-b']),
+      );
+      expect(repo.cashFlows, hasLength(2));
+      expect(repo.cashFlows.map((f) => f.id).toSet(), hasLength(2));
+      final byInvestment = {for (final f in repo.cashFlows) f.investmentId: f};
+      expect(byInvestment['inv-a']!.amount, 100);
+      expect(byInvestment['inv-b']!.amount, 200);
+    });
+
+    test(
+      'a first flow id passed explicitly wins over the derived one',
+      () async {
+        await add(initialAmount: 100, id: 'inv-1', firstCashFlowId: 'cf-mine');
+
+        expect(repo.cashFlows.single.id, 'cf-mine');
+      },
+    );
+
     test('without ids each call mints its own', () async {
       await add(initialAmount: 100);
       await add(initialAmount: 100);
@@ -442,6 +556,21 @@ void main() {
         },
       );
 
+      test('an activation cancel that never completes does not block the call, '
+          '$path', () async {
+        final hanging = containerFor(
+          conversion: MockCurrencyConversionService(),
+          notificationService: _HangingActivationCancel(),
+        );
+
+        await expectLater(
+          add(initialAmount: amount, on: hanging),
+          completes,
+        ).timeout(const Duration(seconds: 2));
+
+        expect(repo.investments, hasLength(1));
+      });
+
       test('a failing write is the failure, and nothing after it runs, '
           '$path', () async {
         // The plain path fails in createInvestment; the atomic one in its own.
@@ -471,6 +600,67 @@ void main() {
         expect(notifications.activationCancelled, 0);
       });
     }
+  });
+
+  group('what follows the save never delays it', () {
+    test('a goal check that never completes does not block the call', () async {
+      final hanging = containerFor(
+        conversion: MockCurrencyConversionService(),
+        goalRepository: _HangingGoalRepository(),
+      );
+
+      await expectLater(
+        add(initialAmount: 100000, on: hanging),
+        completes,
+      ).timeout(const Duration(seconds: 2));
+
+      expect(repo.investments, hasLength(1));
+      expect(repo.cashFlows, hasLength(1));
+    });
+  });
+
+  group('the log of a failed step after the save', () {
+    test('is the constant message and the error type only: no name, amount, '
+        'id or error text', () async {
+      final reports = recordCrashReports();
+      final leaky = containerFor(
+        conversion: MockCurrencyConversionService(),
+        analyticsService: _LeakyAnalytics(),
+      );
+
+      await add(
+        name: 'Ravi-Kumar-P2P',
+        initialAmount: 123456.78,
+        id: 'inv-secret-42',
+        on: leaky,
+      );
+      await pumpEventQueue();
+
+      // investment_created and cashflow_added each failed once.
+      expect(reports, hasLength(2));
+      for (final report in reports) {
+        expect(report.exception, 'A step after saving failed');
+        expect(
+          report.reason,
+          'A step after saving failed | Metadata: errorType=StateError',
+        );
+        expect(report.fatal, isFalse);
+      }
+      final text = reports.map((r) => '${r.exception} ${r.reason}').join(' ');
+      for (final secret in [
+        'Ravi',
+        'Kumar',
+        '123456',
+        '12345',
+        'inv-secret',
+        'secret',
+        _LeakyAnalytics.leak,
+      ]) {
+        expect(text, isNot(contains(secret)));
+      }
+      // The save itself went through.
+      expect(repo.investments.single.id, 'inv-secret-42');
+    });
   });
 
   group('analytics', () {

@@ -55,8 +55,12 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   /// With [initialAmount] the investment and its first cash flow, an INVEST of
   /// that amount dated [startDate] (today when null), are saved in one atomic
   /// write. [id] and [firstCashFlowId] are the ids of the two records: a caller
-  /// that may retry passes the same ones each time, so the retry replaces the
-  /// first write instead of adding a duplicate. They are minted when null.
+  /// that may retry passes the same [id] each time, so the retry replaces the
+  /// first write instead of adding a duplicate. Both are minted when neither is
+  /// given. When only [id] is given, the flow's id is derived from it as
+  /// `'$id-first-flow'`, so a retry with just [id] cannot add a second flow
+  /// (and double the invested amount). A [firstCashFlowId] passed explicitly
+  /// always wins.
   ///
   /// Only the write can fail the call. What follows it (analytics, reminders,
   /// the goal check) is logged when it fails and never rethrown, because by
@@ -138,7 +142,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       firstFlow = firstAmount == null
           ? null
           : CashFlowEntity(
-              id: firstCashFlowId ?? const Uuid().v4(),
+              id:
+                  firstCashFlowId ??
+                  (id == null ? const Uuid().v4() : '$id-first-flow'),
               investmentId: investment.id,
               type: CashFlowType.invest,
               amount: firstAmount,

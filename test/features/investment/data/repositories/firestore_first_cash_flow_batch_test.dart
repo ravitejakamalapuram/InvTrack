@@ -26,6 +26,11 @@ class _InMemoryFirestore extends Fake implements FirebaseFirestore {
   /// Thrown by the next commit, which then applies nothing (a rejected write).
   Object? commitError;
 
+  /// What the commit with this number throws. Commits are numbered from 1 over
+  /// the life of the store. A failed commit applies nothing, but the commits
+  /// before it have already been applied, like a real server would have.
+  final failingCommits = <int, Object>{};
+
   /// While set, a commit applies its writes at once, like the local cache, but
   /// only completes when this does (the server has not answered).
   Completer<void>? serverAnswer;
@@ -91,6 +96,8 @@ class _Batch extends Fake implements WriteBatch {
   @override
   Future<void> commit() async {
     store.commits++;
+    final numbered = store.failingCommits.remove(store.commits);
+    if (numbered != null) throw numbered;
     final error = store.commitError;
     if (error != null) {
       store.commitError = null;
@@ -278,6 +285,36 @@ void main() {
       expect(firestore.of('cashflows'), isEmpty);
     });
 
+    // A date with a time of day, stored as the local calendar day at UTC
+    // midnight. The two values have a UTC date that differs from the local
+    // date in some zones (23:30 in Los Angeles is already the next UTC day;
+    // 01:00 in Kolkata is still the previous one), so the stored day must come
+    // from the local year, month and day fields, never from toUtc(). A test
+    // cannot change the process zone: under a UTC runner the two dates agree,
+    // so run with TZ=America/Los_Angeles to exercise the difference.
+    for (final (:local, :day) in [
+      (local: DateTime(2026, 10, 11, 23, 30), day: DateTime.utc(2026, 10, 11)),
+      (local: DateTime(2026, 10, 12, 1, 0), day: DateTime.utc(2026, 10, 12)),
+    ]) {
+      test('a date of $local is stored as $day on both records', () async {
+        await repository.createInvestmentWithFirstCashFlow(
+          investment(startDate: local),
+          firstFlow(date: local),
+        );
+
+        expect(
+          (_firstFlowDoc(firestore)['date'] as Timestamp).toDate().toUtc(),
+          day,
+        );
+        expect(
+          (firestore.of('investments')['inv-1']!['startDate'] as Timestamp)
+              .toDate()
+              .toUtc(),
+          day,
+        );
+      });
+    }
+
     testWidgets('is true when the server answers before the write timeout, '
         'false when it does not', (tester) async {
       final answer = firestore.serverAnswer = Completer<void>();
@@ -306,6 +343,60 @@ void main() {
       );
       expect(second, isTrue);
     });
+  });
+
+  // The count test above ("one batch, one commit") would pass for any code that
+  // happens to build one batch. What matters is what a failure leaves behind,
+  // so the fake can fail the Nth commit, whichever write that is.
+  group('atomicity is what a failed commit leaves, not a commit count', () {
+    FirebaseException failure() =>
+        FirebaseException(plugin: 'cloud_firestore', code: 'unavailable');
+
+    for (final n in [1, 2]) {
+      test('with commit #$n set to fail, the repository stores both records '
+          'or neither', () async {
+        firestore.failingCommits[n] = failure();
+
+        try {
+          await repository.createInvestmentWithFirstCashFlow(
+            investment(),
+            firstFlow(),
+          );
+        } on FirebaseException {
+          // Commit #1 failing is the expected rejection.
+        }
+
+        expect(
+          firestore.of('investments').length,
+          firestore.of('cashflows').length,
+          reason:
+              'an investment without its first flow, or a flow without '
+              'its investment, was left behind',
+        );
+      });
+    }
+
+    test(
+      'the same failure leaves an investment without its flow when the '
+      'save is split in two batches: what the test above guards against',
+      () async {
+        firestore.failingCommits[2] = failure();
+        final user = firestore.collection('users').doc(_InMemoryFirestore.uid);
+
+        final first = firestore.batch()
+          ..set(user.collection('investments').doc('inv-1'), {
+            'name': 'HDFC FD',
+          });
+        await first.commit();
+        final second = firestore.batch()
+          ..set(user.collection('cashflows').doc('cf-1'), {'amount': 100000});
+
+        await expectLater(second.commit(), throwsA(isA<FirebaseException>()));
+
+        expect(firestore.of('investments').keys, ['inv-1']);
+        expect(firestore.of('cashflows'), isEmpty);
+      },
+    );
   });
 }
 
