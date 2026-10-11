@@ -15,6 +15,7 @@ import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/utils/number_format_utils.dart';
+import 'package:inv_tracker/core/utils/text_measure.dart';
 import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
@@ -301,24 +302,6 @@ bool _isCompact(
   return nameWidth < _minNameWidthDp * textScale;
 }
 
-/// Width of [text] on one line in [style], as a [Text] there draws it: the same
-/// inherited style, text scaler and bold-text setting.
-double _textWidth(BuildContext context, String text, TextStyle style) {
-  var effective = DefaultTextStyle.of(context).style.merge(style);
-  if (MediaQuery.boldTextOf(context)) {
-    effective = effective.merge(const TextStyle(fontWeight: FontWeight.bold));
-  }
-  final painter = TextPainter(
-    text: TextSpan(text: text, style: effective),
-    textDirection: Directionality.of(context),
-    textScaler: MediaQuery.textScalerOf(context),
-    locale: Localizations.maybeLocaleOf(context),
-  )..layout();
-  final width = painter.width;
-  painter.dispose();
-  return width;
-}
-
 /// Width of the value column as drawn: its widest line, measured on the text it
 /// shows. A masked figure is measured as the dots drawn in its place, so privacy
 /// mode lays out the same whatever the amounts.
@@ -338,9 +321,9 @@ double _valueColumnWidth(
   double figure(double amount, TextStyle style, {String prefix = ''}) {
     if (isPrivacyMode) {
       final dots = maskedAmountDots(style);
-      return _textWidth(context, dots.text, dots.style);
+      return measureTextWidth(context, dots.text, dots.style);
     }
-    return _textWidth(
+    return measureTextWidth(
       context,
       '$prefix${currencyFormat.formatCompact(amount)}',
       style,
@@ -353,13 +336,17 @@ double _valueColumnWidth(
       figure(stats.totalReturned, _receivedStyle()),
     );
     final words = math.max(
-      _textWidth(context, l10n.investmentCardInvestedLabel, _wordStyle()),
-      _textWidth(context, l10n.investmentCardReceivedLabel, _wordStyle()),
+      measureTextWidth(context, l10n.investmentCardInvestedLabel, _wordStyle()),
+      measureTextWidth(context, l10n.investmentCardReceivedLabel, _wordStyle()),
     );
     final chip = math.min(
       _statusChipMaxWidth,
       2 * _chipPaddingX +
-          _textWidth(context, display.statusLabel(l10n)!, _statusChipStyle()),
+          measureTextWidth(
+            context,
+            display.statusLabel(l10n)!,
+            _statusChipStyle(),
+          ),
     );
     return math.max(amounts + AppSpacing.xxs + words, chip);
   }
@@ -373,7 +360,7 @@ double _valueColumnWidth(
   // The pill keeps its space even where privacy mode fades it out.
   final pill =
       2 * _chipPaddingX +
-      _textWidth(context, display.pillText(l10n), _pillStyle());
+      measureTextWidth(context, display.pillText(l10n), _pillStyle());
   return math.max(net, pill);
 }
 

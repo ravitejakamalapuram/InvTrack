@@ -1,6 +1,8 @@
 /// Compact goal card for horizontal carousel display.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +11,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/utils/text_scale.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
@@ -22,6 +25,17 @@ class GoalCarouselCard extends ConsumerWidget {
   final double width;
 
   const GoalCarouselCard({super.key, required this.progress, this.width = 280});
+
+  /// The height of the slot that holds a card, for the text size in [context].
+  ///
+  /// The card is three lines of text beside a 48dp icon, so it grows with the
+  /// text size: measured on the real fonts it needs 39dp plus 45dp per unit of
+  /// text scale, and this adds 2dp of slack. A fixed slot overflowed at large
+  /// text. Never under 110dp, the height it was designed at.
+  /// `test/layout/goal_carousel_height_test.dart` sweeps 1.0x to 2.0x text and
+  /// fails when this falls behind the card.
+  static double heightFor(BuildContext context) =>
+      math.max(110.0, 41 + 45 * textScaleOf(context));
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -74,8 +88,12 @@ class GoalCarouselCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Goal name and percentage/completed badge in row
-                  Row(
+                  // Goal name and percentage/completed badge in row. The badge
+                  // takes at most 60% of the line and shrinks to fit, so the
+                  // name keeps the rest and nothing overflows at large text.
+                  LayoutBuilder(builder: (context, constraints) {
+                  final badgeMaxWidth = constraints.maxWidth * 0.6;
+                  return Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
@@ -95,7 +113,9 @@ class GoalCarouselCard extends ConsumerWidget {
                       SizedBox(width: AppSpacing.xs),
                       // Show "Completed" badge for achieved goals, percentage for others
                       if (progress.status == GoalStatus.achieved)
-                        Container(
+                        _BadgeCap(
+                          maxWidth: badgeMaxWidth,
+                          child: Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: AppSpacing.xs,
                             vertical: 2,
@@ -126,9 +146,11 @@ class GoalCarouselCard extends ConsumerWidget {
                               ),
                             ],
                           ),
-                        )
+                        ))
                       else
-                        PrivacyMask(
+                        _BadgeCap(
+                          maxWidth: badgeMaxWidth,
+                          child: PrivacyMask(
                           useTextMask: true,
                           maskedText: '••%',
                           child: Container(
@@ -149,9 +171,10 @@ class GoalCarouselCard extends ConsumerWidget {
                               ),
                             ),
                           ),
-                        ),
+                        )),
                     ],
-                  ),
+                  );
+                  }),
                   SizedBox(height: AppSpacing.xxs),
 
                   // Progress amount
@@ -167,6 +190,8 @@ class GoalCarouselCard extends ConsumerWidget {
                                 : AppColors.neutral500Light,
                             fontSize: 11,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         )
                       : Text(
                           progress.getProgressMessage(currencySymbol, locale),
@@ -232,6 +257,27 @@ class GoalCarouselCard extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Holds a badge to [maxWidth]: a wider one is scaled down to fit, never cut
+/// and never wider than the line it sits on.
+class _BadgeCap extends StatelessWidget {
+  const _BadgeCap({required this.maxWidth, required this.child});
+
+  final double maxWidth;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: AlignmentDirectional.centerEnd,
+        child: child,
       ),
     );
   }

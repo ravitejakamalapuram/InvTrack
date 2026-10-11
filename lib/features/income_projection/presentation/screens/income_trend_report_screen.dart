@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/widgets/tile_row.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/income_trend_provider.dart';
 import 'package:inv_tracker/features/security/presentation/widgets/privacy_protection_wrapper.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -131,24 +132,20 @@ class IncomeTrendReportScreen extends ConsumerWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: AppSpacing.md),
-            Row(
+            // Both tiles share a top and a height, whatever their labels need.
+            TileRow(
               children: [
-                Expanded(
-                  child: _buildMetricTile(
-                    context,
-                    label: l10n.monthOverMonth,
-                    value: '${report.momGrowth.toStringAsFixed(1)}%',
-                    isPositive: report.momGrowth >= 0,
-                  ),
+                _buildMetricTile(
+                  context,
+                  label: l10n.monthOverMonth,
+                  value: '${report.momGrowth.toStringAsFixed(1)}%',
+                  isPositive: report.momGrowth >= 0,
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: _buildMetricTile(
-                    context,
-                    label: l10n.quarterOverQuarter,
-                    value: '${report.qoqGrowth.toStringAsFixed(1)}%',
-                    isPositive: report.qoqGrowth >= 0,
-                  ),
+                _buildMetricTile(
+                  context,
+                  label: l10n.quarterOverQuarter,
+                  value: '${report.qoqGrowth.toStringAsFixed(1)}%',
+                  isPositive: report.qoqGrowth >= 0,
                 ),
               ],
             ),

@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -17,6 +18,7 @@ import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/core/widgets/screen_layout.dart';
+import 'package:inv_tracker/core/widgets/stat_columns.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_dashboard_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_card.dart';
@@ -696,36 +698,31 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
           ),
           const SizedBox(height: 12),
           if (stats.firstCashFlowDate != null && stats.lastCashFlowDate != null)
-            // A Wrap, not a Row: at large text sizes the second date drops below
-            // the first instead of overflowing.
-            SizedBox(
-              width: double.infinity,
-              child: Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                spacing: AppSpacing.md,
-                runSpacing: AppSpacing.xs,
-                children: [
-                  _buildDateInfo('First Cash Flow', stats.firstCashFlowDate!),
-                  _buildDateInfo('Last Cash Flow', stats.lastCashFlowDate!),
-                ],
-              ),
+            // Two equal columns, the last ending on the card padding; at large
+            // text sizes they stack into a line each instead of overflowing.
+            StatColumns(
+              minColumnWidth: AppSizes.statColumnDateMinWidth,
+              columns: [
+                _dateColumn('First Cash Flow', stats.firstCashFlowDate!),
+                _dateColumn('Last Cash Flow', stats.lastCashFlowDate!),
+              ],
             ),
         ],
       ),
     );
   }
 
-  Widget _buildDateInfo(String label, DateTime date) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-        const SizedBox(height: 4),
-        Text(
-          AppDateUtils.formatShort(date),
-          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-        ),
-      ],
+  StatColumn _dateColumn(String label, DateTime date) {
+    return StatColumn(
+      labelText: label,
+      label: Text(
+        label,
+        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+      ),
+      value: Text(
+        AppDateUtils.formatShort(date),
+        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+      ),
     );
   }
 }
