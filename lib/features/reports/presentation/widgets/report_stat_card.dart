@@ -50,7 +50,7 @@ class ReportStatCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final effectiveIconColor =
-        iconColor ?? (isDark ? AppColors.primaryLight : AppColors.primaryDark);
+        iconColor ?? (isDark ? AppColors.primaryDark : AppColors.primaryLight);
 
     return GlassCard(
       child: Column(

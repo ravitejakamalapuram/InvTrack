@@ -56,10 +56,6 @@ const _unfixed = <String, int>{
   'lib/features/income_projection/presentation/widgets/income_cell.dart': 4,
   'lib/features/income_projection/presentation/widgets/income_guardian_dashboard_card.dart':
       11,
-  // PR 3 takes these two as well (they were in no file list): if it skipped
-  // them, PR 4 and PR 5 would dim them in dark, and the counts below would
-  // still match.
-  'lib/core/widgets/metric_tile.dart': 2,
   // Deliberately kept: no screen uses ChangeBadge (the plan's W2), and its pale
   // fill is the same in both themes. PR 4 edits only its zero-badge text.
   'lib/core/widgets/change_badge.dart': 3,
