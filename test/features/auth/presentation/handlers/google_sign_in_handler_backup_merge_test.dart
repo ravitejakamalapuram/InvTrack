@@ -901,22 +901,26 @@ void main() {
           successes: 0,
         ),
       };
-  for (final MapEntry(key: what, value: outcome) in mergeOutcomes.entries) {
-    testWidgets('when $what, ${outcome.failures} account_link_failure and '
-        '${outcome.successes} account_link_success are logged', (tester) async {
-      await outcome.run(tester);
+  group('merge outcomes', () {
+    for (final MapEntry(key: what, value: outcome) in mergeOutcomes.entries) {
+      testWidgets('when $what, ${outcome.failures} account_link_failure and '
+          '${outcome.successes} account_link_success are logged', (
+        tester,
+      ) async {
+        await outcome.run(tester);
 
-      expect(linkFailures(), hasLength(outcome.failures));
-      expect(linkSuccesses(), hasLength(outcome.successes));
-      for (final failure in linkFailures()) {
-        expect(failure.parameters, {'reason': 'google_account_exists'});
-        expectPrivacySafe(
-          failure,
-          allowedStrings: {
-            'reason': {'google_account_exists'},
-          },
-        );
-      }
-    });
-  }
+        expect(linkFailures(), hasLength(outcome.failures));
+        expect(linkSuccesses(), hasLength(outcome.successes));
+        for (final failure in linkFailures()) {
+          expect(failure.parameters, {'reason': 'google_account_exists'});
+          expectPrivacySafe(
+            failure,
+            allowedStrings: {
+              'reason': {'google_account_exists'},
+            },
+          );
+        }
+      });
+    }
+  });
 }

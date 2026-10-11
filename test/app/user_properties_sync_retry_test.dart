@@ -84,64 +84,66 @@ void main() {
   Iterable<String?> writesOf(String name) =>
       calls.where((c) => c.name == name).map((c) => c.value);
 
-  test('a write that failed is sent again at the next sync, though the value '
-      'is unchanged', () async {
-    var failed = false;
-    firebaseWrite = (name, _) async {
-      if (name == 'is_guest' && !failed) {
-        failed = true;
-        throw Exception('analytics offline');
-      }
-    };
+  group('user-property retry', () {
+    test('a write that failed is sent again at the next sync, though the value '
+        'is unchanged', () async {
+      var failed = false;
+      firebaseWrite = (name, _) async {
+        if (name == 'is_guest' && !failed) {
+          failed = true;
+          throw Exception('analytics offline');
+        }
+      };
 
-    await emit(guest);
-    expect(writesOf('is_guest'), ['true'], reason: 'the first write failed');
+      await emit(guest);
+      expect(writesOf('is_guest'), ['true'], reason: 'the first write failed');
 
-    await emit(guestRefreshed);
+      await emit(guestRefreshed);
 
-    expect(writesOf('is_guest'), ['true', 'true']);
-    expect(
-      writesOf('base_currency'),
-      ['INR'],
-      reason: 'the one that went through is not sent again',
-    );
-  });
+      expect(writesOf('is_guest'), ['true', 'true']);
+      expect(
+        writesOf('base_currency'),
+        ['INR'],
+        reason: 'the one that went through is not sent again',
+      );
+    });
 
-  test('once a retry goes through, the value is not sent again', () async {
-    var failures = 1;
-    firebaseWrite = (name, _) async {
-      if (name == 'is_guest' && failures-- > 0) throw Exception('offline');
-    };
+    test('once a retry goes through, the value is not sent again', () async {
+      var failures = 1;
+      firebaseWrite = (name, _) async {
+        if (name == 'is_guest' && failures-- > 0) throw Exception('offline');
+      };
 
-    await emit(guest);
-    await emit(guestRefreshed);
-    await emit(guest);
+      await emit(guest);
+      await emit(guestRefreshed);
+      await emit(guest);
 
-    expect(writesOf('is_guest'), ['true', 'true']);
-  });
+      expect(writesOf('is_guest'), ['true', 'true']);
+    });
 
-  test('a failure for a value that has been replaced does not undo the newer '
-      'one', () async {
-    final slowInr = Completer<void>();
-    firebaseWrite = (name, value) {
-      if (name == 'base_currency' && value == 'INR') return slowInr.future;
-      return Future<void>.value();
-    };
+    test('a failure for a value that has been replaced does not undo the newer '
+        'one', () async {
+      final slowInr = Completer<void>();
+      firebaseWrite = (name, value) {
+        if (name == 'base_currency' && value == 'INR') return slowInr.future;
+        return Future<void>.value();
+      };
 
-    await emit(guest);
-    container.read(_currencyProvider.notifier).set('USD');
-    await pumpEventQueue();
-    expect(writesOf('base_currency'), ['INR', 'USD']);
+      await emit(guest);
+      container.read(_currencyProvider.notifier).set('USD');
+      await pumpEventQueue();
+      expect(writesOf('base_currency'), ['INR', 'USD']);
 
-    // The old write fails after the new one went through.
-    slowInr.completeError(Exception('analytics offline'));
-    await pumpEventQueue();
-    await emit(guestRefreshed);
+      // The old write fails after the new one went through.
+      slowInr.completeError(Exception('analytics offline'));
+      await pumpEventQueue();
+      await emit(guestRefreshed);
 
-    expect(
-      writesOf('base_currency'),
-      ['INR', 'USD'],
-      reason: 'USD is what Analytics holds, so it is not written again',
-    );
+      expect(
+        writesOf('base_currency'),
+        ['INR', 'USD'],
+        reason: 'USD is what Analytics holds, so it is not written again',
+      );
+    });
   });
 }
