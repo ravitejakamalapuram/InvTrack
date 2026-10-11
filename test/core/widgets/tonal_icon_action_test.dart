@@ -86,7 +86,7 @@ void main() {
       expect(taps, 1);
     });
 
-    testWidgets('screen readers get the tooltip as the button name', (
+    testWidgets('the button exposes its tooltip on its semantics node', (
       tester,
     ) async {
       final handle = tester.ensureSemantics();
@@ -101,7 +101,9 @@ void main() {
         );
         expect(find.byTooltip('Add Goal'), findsOneWidget);
         // Flutter exposes a button's tooltip as its semantics tooltip, which
-        // is what TalkBack reads when a button has no label of its own.
+        // TalkBack reads when a button has no label of its own. The label
+        // stays empty on purpose (a second label would be read twice); how
+        // the oldest Android versions announce a tooltip is not checked here.
         final node = tester.getSemantics(find.byType(IconButton));
         expect(node.tooltip, 'Add Goal');
         expect(node.flagsCollection.isButton, isTrue);

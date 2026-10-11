@@ -175,6 +175,41 @@ void main() {
     });
   }
 
+  group('directional insets', () {
+    // The edge is the same on both sides today, so no layout in a mirrored
+    // language can tell EdgeInsets from EdgeInsetsDirectional. The type is
+    // what makes a later start/end difference (a gap on the end side only)
+    // mirror, so it is checked here.
+    testWidgets('ScreenSliver pads with EdgeInsetsDirectional', (tester) async {
+      await _pump(tester, slivers: [ScreenSliver(sliver: _tall())]);
+      final padding = tester.widget<SliverPadding>(
+        find.descendant(
+          of: find.byType(ScreenSliver),
+          matching: find.byType(SliverPadding),
+        ),
+      );
+      expect(padding.padding, isA<EdgeInsetsDirectional>());
+    });
+
+    testWidgets('ScreenEdge pads with EdgeInsetsDirectional', (tester) async {
+      await _pump(
+        tester,
+        slivers: [
+          const SliverToBoxAdapter(
+            child: ScreenEdge(child: SizedBox(height: 8)),
+          ),
+        ],
+      );
+      final padding = tester.widget<Padding>(
+        find.descendant(
+          of: find.byType(ScreenEdge),
+          matching: find.byType(Padding),
+        ),
+      );
+      expect(padding.padding, isA<EdgeInsetsDirectional>());
+    });
+  });
+
   group('ScreenSectionHeader', () {
     final badge = GlobalKey();
 
