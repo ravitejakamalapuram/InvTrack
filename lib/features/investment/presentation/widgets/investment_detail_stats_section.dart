@@ -63,8 +63,16 @@ class InvestmentDetailStatsSection extends StatelessWidget {
     final paidBackHint = investment.isArchived
         ? null
         : display.paidBackHint(l10n);
-    final hiddenValue = l10n.hiddenAmount;
     final moicText = formatMultiplier(stats.moic);
+    // The annualised rate is a return figure: hide it in privacy mode like the
+    // primary value. The hint is not sensitive. No holding period while MOIC
+    // waits for a current value.
+    final xirrSubtitle = isPrivacyMode && !display.isAwaitingValue
+        ? null
+        : display.secondaryText(l10n);
+    final moicSubtitle = display.isAwaitingValue
+        ? null
+        : stats.durationFormatted;
 
     return Column(
       children: [
@@ -119,17 +127,16 @@ class InvestmentDetailStatsSection extends StatelessWidget {
                     ? AppColors.graphCyan
                     : AppColors.errorLight,
                 isDark: isDark,
-                // The annualised rate is a return figure: hide it in privacy
-                // mode like the primary value. The hint is not sensitive.
-                subtitle: isPrivacyMode && !display.isAwaitingValue
-                    ? null
-                    : display.secondaryText(l10n),
+                subtitle: xirrSubtitle,
                 isPrivacyMode: isPrivacyMode,
                 semanticsLabel: display.isSoFar && hasReturnFigure
                     ? display.semanticsFigure(
                         l10n,
-                        '${display.metricLabel(l10n, qualified: false)}: '
-                        '${isPrivacyMode ? hiddenValue : display.primaryText(l10n)}',
+                        _withSubtitle(
+                          '${display.metricLabel(l10n, qualified: false)}: '
+                          '${isPrivacyMode ? l10n.hiddenPercentage : display.primaryText(l10n)}',
+                          xirrSubtitle,
+                        ),
                       )
                     : null,
               ),
@@ -141,16 +148,18 @@ class InvestmentDetailStatsSection extends StatelessWidget {
                 value: display.isAwaitingValue ? ReturnDisplay.dash : moicText,
                 color: AppColors.graphPurple,
                 isDark: isDark,
-                // No holding period while MOIC waits for a current value.
-                subtitle: display.isAwaitingValue
-                    ? null
-                    : stats.durationFormatted,
+                subtitle: moicSubtitle,
                 isPrivacyMode: isPrivacyMode,
+                // A multiple is not a percentage: it keeps the neutral hidden
+                // string the Overview quick-stats tile uses.
                 semanticsLabel: display.isSoFar
                     ? display.semanticsFigure(
                         l10n,
-                        '${l10n.moicLabel}: '
-                        '${isPrivacyMode ? hiddenValue : moicText}',
+                        _withSubtitle(
+                          '${l10n.moicLabel}: '
+                          '${isPrivacyMode ? l10n.hiddenAmount : moicText}',
+                          moicSubtitle,
+                        ),
                       )
                     : null,
               ),
@@ -168,6 +177,11 @@ class InvestmentDetailStatsSection extends StatelessWidget {
 
   Color get _neutralColor =>
       isDark ? AppColors.neutral400Dark : AppColors.neutral500Light;
+
+  /// [figure] followed by the card's visible subtitle, which a card that
+  /// replaces its texts with one semantics label would otherwise drop.
+  static String _withSubtitle(String figure, String? subtitle) =>
+      subtitle == null ? figure : '$figure, $subtitle';
 
   /// "Projected at maturity ₹1,23,144 (7.19% p.a.)" for an open investment
   /// that has not paid out yet, when its rate and tenure are known. Periodic

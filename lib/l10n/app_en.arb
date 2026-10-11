@@ -3107,6 +3107,11 @@
     "description": "Semantic label for privacy-masked amounts"
   },
 
+  "hiddenPercentage": "Hidden percentage",
+  "@hiddenPercentage": {
+    "description": "Semantic label for a privacy-masked return percentage"
+  },
+
   "portfolioHealthScore": "Portfolio Health Score",
   "@portfolioHealthScore": {
     "description": "Portfolio health score title"

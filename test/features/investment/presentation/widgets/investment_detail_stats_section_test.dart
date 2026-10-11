@@ -410,17 +410,44 @@ void main() {
 
     /// The stats the app builds: terminal values first, then the one stats
     /// implementation.
-    InvestmentStats statsOf(InvestmentEntity investment) {
+    InvestmentStats statsOf(
+      InvestmentEntity investment, [
+      List<CashFlowEntity>? from,
+    ]) {
+      final cashFlows = from ?? flows;
       final terminal = CurrentValueCalculator.terminalValues(
         investments: [investment],
-        cashFlows: flows,
+        cashFlows: cashFlows,
         asOf: DateTime(2026, 10, 11),
       );
       return FinancialCalculatorModule().calculateStats(
-        flows,
+        cashFlows,
         terminalValues: terminal,
       );
     }
+
+    // Rs1,00,000 in, Rs1,02,000 back 3 days later: a short holding that has
+    // returned its cost, so its figures are so far and carry subtitles.
+    final shortFlows = [
+      CashFlowEntity(
+        id: 'in',
+        investmentId: 'fd-1',
+        date: DateTime(2026, 10, 1),
+        type: CashFlowType.invest,
+        amount: 100000,
+        currency: 'INR',
+        createdAt: DateTime(2026, 10, 1),
+      ),
+      CashFlowEntity(
+        id: 'out',
+        investmentId: 'fd-1',
+        date: DateTime(2026, 10, 4),
+        type: CashFlowType.returnFlow,
+        amount: 102000,
+        currency: 'INR',
+        createdAt: DateTime(2026, 10, 4),
+      ),
+    ];
 
     const soFarNote =
         'so far. Counts money received only, not any value still held.';
@@ -442,7 +469,11 @@ void main() {
       expect(find.text('XIRR'), findsNothing);
       expect(find.text('MOIC'), findsNothing);
       expect(find.bySemanticsLabel('XIRR: +11.4% $soFarNote'), findsOneWidget);
-      expect(find.bySemanticsLabel('MOIC: 1.11x $soFarNote'), findsOneWidget);
+      // The visible "1.0y" under the MOIC is read too, before the qualifier.
+      expect(
+        find.bySemanticsLabel('MOIC: 1.11x, 1.0y $soFarNote'),
+        findsOneWidget,
+      );
       handle.dispose();
     });
 
@@ -468,8 +499,71 @@ void main() {
         find.bySemanticsLabel(RegExp(r'11\.4|1\.11|1,114|11\.14')),
         findsNothing,
       );
+      // A hidden percentage is announced as one, like the list card and the
+      // Overview hero do; the multiple keeps the neutral hidden string.
       expect(
-        find.bySemanticsLabel('XIRR: Hidden amount $soFarNote'),
+        find.bySemanticsLabel('XIRR: Hidden percentage $soFarNote'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('MOIC: Hidden amount, 1.0y $soFarNote'),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('read the subtitle under the return and the MOIC', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final investment = _investment(type: InvestmentType.gold);
+      await _pump(
+        tester,
+        investment: investment,
+        stats: statsOf(investment, shortFlows),
+      );
+
+      // What is on screen under the figures is part of what is announced.
+      expect(find.text('annualised >1000%'), findsOneWidget);
+      expect(find.text('<1mo'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          'Return: +2.0% in 3 days, annualised >1000% $soFarNote',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('MOIC: 1.02x, <1mo $soFarNote'),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('hide the short holding return and its subtitle in privacy', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final investment = _investment(type: InvestmentType.gold);
+      await _pump(
+        tester,
+        investment: investment,
+        stats: statsOf(investment, shortFlows),
+        privacy: true,
+      );
+
+      // The annualised hint is a return figure: not shown, not read.
+      expect(find.textContaining('annualised'), findsNothing);
+      expect(
+        find.bySemanticsLabel(RegExp(r'2\.0|1\.02|102|1000|annualised')),
+        findsNothing,
+      );
+      expect(
+        find.bySemanticsLabel('Return: Hidden percentage $soFarNote'),
+        findsOneWidget,
+      );
+      // The holding period is not an amount, so it stays.
+      expect(
+        find.bySemanticsLabel('MOIC: Hidden amount, <1mo $soFarNote'),
         findsOneWidget,
       );
       handle.dispose();
