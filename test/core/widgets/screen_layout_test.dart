@@ -189,10 +189,17 @@ void main() {
       textScale: textScale,
       slivers: [
         SliverToBoxAdapter(
+          // A Column with start alignment, like the Overview's goals card:
+          // it gives its children loose widths.
           child: ScreenEdge(
-            child: ScreenSectionHeader(
-              title: 'Goals',
-              trailing: Container(key: badge, child: Text(badgeText)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ScreenSectionHeader(
+                  title: 'Goals',
+                  trailing: Container(key: badge, child: Text(badgeText)),
+                ),
+              ],
             ),
           ),
         ),
