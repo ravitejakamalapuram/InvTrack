@@ -1,0 +1,35 @@
+<!-- @dsCard group="Cards" height=570 subtitle="Frosted card: translucent fill, hairline border, 20px radius" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+
+  document.getElementById('root').innerHTML = I.panes(function () {
+    return '<div class="it-stack" style="gap:16px">' +
+      I.GlassCard('<div class="it-h4" style="margin:0 0 4px">Quick Templates</div><div class="it-cap" style="margin:0">Tap to start with pre-filled defaults</div>') +
+      cap('Default: 16px padding, 20px radius, 10px backdrop blur, 1px glass border, no shadow.') +
+      I.GlassCard('<div class="it-h4" style="margin:0">Tappable card</div>', { tap: true, label: 'Tappable card' }) +
+      I.GlassCard('<div class="it-h4" style="margin:0">Keyboard focus</div>', { tap: true, focus: true }) +
+      cap('Tappable and focused: the border becomes a 2px focus-ring.') +
+      I.GlassCard('<div class="it-h4" style="margin:0">List item (blur 0)</div>', { flat: true }) +
+      cap('Blur 0 for list items: no BackdropFilter, because the fill is already solid.') +
+      cap('The hero variant (GlassHeroCard) is documented under HeroCard.') +
+    '</div>';
+  });
+
+  I.wire(document);
+})();
+</script>
+</body>
+</html>

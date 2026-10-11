@@ -1,0 +1,35 @@
+<!-- @dsCard group="Actions" height=636 subtitle="Gradient primary, elevated, outlined, text, filled and FAB" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+
+  document.getElementById('root').innerHTML = I.panes(function () {
+    return '<div class="it-stack" style="gap:16px">' +
+      I.Button({ variant: 'gradient', label: 'Add Investment', icon: 'add' }) +
+      I.Button({ variant: 'gradient', label: 'Saving', loading: true }) +
+      I.Button({ variant: 'gradient', label: 'Delete', color: '#ef4444' }) +
+      cap('GradientButton: full width, 56px, 16px radius, glow. Loading swaps in a grey fill and a spinner. A disabled GradientButton keeps its gradient (no visual disabled state in the source).') +
+      '<div class="it-row" style="gap:12px">' + I.Button({ variant: 'elevated', label: 'Continue' }) + I.Button({ variant: 'outlined', label: 'Cancel' }) + I.Button({ variant: 'text', label: 'Reset' }) + '</div>' +
+      cap('ElevatedButton, OutlinedButton and TextButton from app_theme.dart (radius 12; the text button has no background).') +
+      '<div class="it-row" style="gap:12px">' + I.Button({ variant: 'filled', label: 'Save' }) + I.Button({ variant: 'filled', label: 'Retry', icon: 'refresh' }) + I.Button({ variant: 'fab', label: 'Add Investment', icon: 'add' }) + '</div>' +
+      cap('FilledButton (Material 3 default: no filledButtonTheme) and the FAB (56px, 16px radius).') +
+    '</div>';
+  });
+
+  I.wire(document);
+})();
+</script>
+</body>
+</html>
