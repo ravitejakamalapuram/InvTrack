@@ -18,10 +18,14 @@ class SavedGuestBackupTile extends ConsumerWidget {
     if (backups.isEmpty) return const SizedBox.shrink();
 
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final service = ref.read(guestBackupMergeServiceProvider);
 
     return ListTile(
-      leading: const Icon(Icons.restore_page, color: AppColors.warningLight),
+      leading: Icon(
+        Icons.restore_page,
+        color: isDark ? AppColors.warningDark : AppColors.warningLight,
+      ),
       title: Text(l10n.savedGuestBackupTitle),
       subtitle: Text(l10n.savedGuestBackupSubtitle),
       trailing: Row(
@@ -47,6 +51,7 @@ class SavedGuestBackupTile extends ConsumerWidget {
     GuestBackupMergeService service,
   ) async {
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -59,7 +64,9 @@ class SavedGuestBackupTile extends ConsumerWidget {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.errorLight,
+              backgroundColor: isDark
+                  ? AppColors.errorDark
+                  : AppColors.errorLight,
             ),
             onPressed: () => Navigator.pop(dialogContext, true),
             child: Text(l10n.delete),

@@ -33,6 +33,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       title: 'Track Money In & Out',
       subtitle:
           'Record what you invested and what came back.\nFDs, P2P lending, bonds, real estate & more.',
+      // theme-neutral: gradient behind a white icon, the same in both themes.
       gradient: [AppColors.primaryLight, AppColors.accentLight],
     ),
     OnboardingPage(
@@ -40,6 +41,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       title: 'Know Your Real Returns',
       subtitle:
           'XIRR shows your true annual return.\nMOIC shows how much your money multiplied.',
+      // theme-neutral: gradient behind a white icon, the same in both themes.
       gradient: [AppColors.successLight, const Color(0xFF059669)],
     ),
     OnboardingPage(

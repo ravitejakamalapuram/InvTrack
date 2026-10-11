@@ -72,6 +72,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
 
   Future<void> _activateDebugMode() async {
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final notifier = ref.read(debugModeProvider.notifier);
     final wasEnabled = ref.read(debugModeProvider);
 
@@ -89,7 +90,9 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
               wasEnabled ? l10n.debugModeDisabled : l10n.debugModeEnabled,
             ),
             duration: const Duration(seconds: 2),
-            backgroundColor: wasEnabled ? null : AppColors.successLight,
+            backgroundColor: wasEnabled
+                ? null
+                : (isDark ? AppColors.successDark : AppColors.successLight),
           ),
         );
       }
@@ -108,7 +111,9 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
           SnackBar(
             content: Text(l10n.debugModeActivationFailed),
             duration: const Duration(seconds: 2),
-            backgroundColor: AppColors.errorLight,
+            backgroundColor: isDark
+                ? AppColors.errorDark
+                : AppColors.errorLight,
           ),
         );
       }
@@ -118,6 +123,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
   /// Check for app updates manually using Google Play In-App Updates
   Future<void> _checkForUpdates(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     try {
       // Show loading indicator
@@ -162,7 +168,9 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
             SnackBar(
               content: Text(l10n.appIsUpToDate),
               duration: const Duration(seconds: 2),
-              backgroundColor: AppColors.successLight,
+              backgroundColor: isDark
+                  ? AppColors.successDark
+                  : AppColors.successLight,
             ),
           );
         }
@@ -447,7 +455,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                 Icon(
                   Icons.error_outline,
                   size: 64,
-                  color: AppColors.errorLight,
+                  color: isDark ? AppColors.errorDark : AppColors.errorLight,
                 ),
                 SizedBox(height: AppSpacing.md),
                 Text(

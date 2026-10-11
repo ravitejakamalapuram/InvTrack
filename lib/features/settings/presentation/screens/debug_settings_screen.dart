@@ -33,6 +33,7 @@ class DebugSettingsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final isDebugEnabled = ref.watch(debugModeProvider);
     final seedState = ref.watch(seedDataStateProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.debugSettings, style: AppTypography.h3)),
@@ -101,7 +102,7 @@ class DebugSettingsScreen extends ConsumerWidget {
               ),
               SettingsNavTile(
                 icon: Icons.delete_outline,
-                iconColor: AppColors.errorLight,
+                iconColor: isDark ? AppColors.errorDark : AppColors.errorLight,
                 title: l10n.clearSampleData,
                 subtitle: l10n.deleteSampleInvestments,
                 onTap: () => _handleClearSampleData(context, ref),
@@ -139,6 +140,7 @@ class DebugSettingsScreen extends ConsumerWidget {
   Widget _buildFeatureFlagsSection(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final featureFlags = ref.watch(featureFlagsProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SettingsSection(
       title: l10n.experimentalFeatures,
@@ -218,7 +220,7 @@ class DebugSettingsScreen extends ConsumerWidget {
         // Income Guardian feature flag
         SettingsToggleTile(
           icon: Icons.shield_outlined,
-          iconColor: AppColors.successLight,
+          iconColor: isDark ? AppColors.successDark : AppColors.successLight,
           title: l10n.incomeGuardianFeature,
           subtitle: l10n.incomeGuardianFeatureSubtitle,
           value: featureFlags[FeatureFlag.incomeGuardian] ?? false,
@@ -389,6 +391,7 @@ class DebugSettingsScreen extends ConsumerWidget {
   /// Handle seeding sample data
   Future<void> _handleSeedData(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final notifier = ref.read(seedDataStateProvider.notifier);
 
     try {
@@ -398,7 +401,9 @@ class DebugSettingsScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.sampleDataSeeded),
-            backgroundColor: AppColors.successLight,
+            backgroundColor: isDark
+                ? AppColors.successDark
+                : AppColors.successLight,
           ),
         );
       }
@@ -415,7 +420,9 @@ class DebugSettingsScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.errorOccurred(e.toString())),
-            backgroundColor: AppColors.errorLight,
+            backgroundColor: isDark
+                ? AppColors.errorDark
+                : AppColors.errorLight,
           ),
         );
       }
@@ -428,6 +435,7 @@ class DebugSettingsScreen extends ConsumerWidget {
     WidgetRef ref,
   ) async {
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final sampleDataState = ref.read(sampleDataModeProvider);
 
     // Check if there's any sample data to clear
@@ -437,7 +445,9 @@ class DebugSettingsScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.noSampleDataToClear),
-            backgroundColor: AppColors.neutral500Light,
+            backgroundColor: isDark
+                ? AppColors.neutral400Dark
+                : AppColors.neutral500Light,
           ),
         );
       }
@@ -457,7 +467,11 @@ class DebugSettingsScreen extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.errorLight),
+            style: TextButton.styleFrom(
+              foregroundColor: isDark
+                  ? AppColors.errorDark
+                  : AppColors.errorLight,
+            ),
             child: Text(l10n.delete),
           ),
         ],
@@ -472,7 +486,9 @@ class DebugSettingsScreen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(l10n.sampleDataCleared),
-              backgroundColor: AppColors.successLight,
+              backgroundColor: isDark
+                  ? AppColors.successDark
+                  : AppColors.successLight,
             ),
           );
         }
@@ -493,7 +509,9 @@ class DebugSettingsScreen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(l10n.errorOccurred(e.toString())),
-              backgroundColor: AppColors.errorLight,
+              backgroundColor: isDark
+                  ? AppColors.errorDark
+                  : AppColors.errorLight,
             ),
           );
         }

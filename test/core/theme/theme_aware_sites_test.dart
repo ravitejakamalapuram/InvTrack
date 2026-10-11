@@ -44,23 +44,6 @@ const _constants = [
 /// Sites not yet fixed, by file: how many are left. Raising a number, or adding
 /// a file, needs a reason in the PR body.
 const _unfixed = <String, int>{
-  // PR 3 contrast-theme-aware-screens: settings, auth, goals, FIRE, onboarding.
-  'lib/features/auth/presentation/dialogs/backup_merge_dialog.dart': 1,
-  'lib/features/auth/presentation/widgets/pending_guest_backup_notice.dart': 1,
-  'lib/features/onboarding/presentation/screens/onboarding_screen.dart': 2,
-  'lib/features/settings/presentation/screens/about_screen.dart': 4,
-  'lib/features/settings/presentation/screens/appearance_settings_screen.dart':
-      2,
-  'lib/features/settings/presentation/screens/data_management_screen.dart': 15,
-  'lib/features/settings/presentation/screens/debug_settings_screen.dart': 8,
-  'lib/features/settings/presentation/screens/notifications_settings_screen.dart':
-      1,
-  'lib/features/settings/presentation/screens/security_settings_screen.dart': 1,
-  'lib/features/settings/presentation/screens/settings_screen.dart': 6,
-  'lib/features/settings/presentation/widgets/crashlytics_settings_section.dart':
-      2,
-  'lib/features/settings/presentation/widgets/deletion_request_banner.dart': 1,
-  'lib/features/settings/presentation/widgets/saved_guest_backup_tile.dart': 2,
   // PR 3, separate commit: hidden until A42 (Income Guardian).
   'lib/features/income_projection/presentation/screens/income_calendar_screen.dart':
       1,
@@ -88,6 +71,13 @@ const _unfixed = <String, int>{
 const _neutral = <String, int>{
   // The selected fill of the frequency chip, under a white label in both themes.
   'lib/features/investment/presentation/screens/add_investment_screen.dart': 1,
+  // The page gradients behind a white icon, the same in both themes.
+  'lib/features/onboarding/presentation/screens/onboarding_screen.dart': 2,
+  // The Success and Error swatches of the theme preview, under white labels.
+  'lib/features/settings/presentation/screens/appearance_settings_screen.dart':
+      2,
+  // The import-warnings snackbar: amber fill under fixed dark ink text.
+  'lib/features/settings/presentation/screens/data_management_screen.dart': 1,
 };
 
 /// Never scanned: they define the constants and build both themes explicitly.
