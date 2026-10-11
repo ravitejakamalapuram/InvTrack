@@ -530,8 +530,8 @@
         icon(on ? it.on : it.icon, { size: 24, family: on ? 'base' : (it.outlined ? 'outlined' : 'base') }) + '</span><span>' + esc(it.label) + '</span></button>';
     }).join('');
     return '<div class="it-phone"><div class="it-appbar"><h2 class="it-appbar__title">' + esc(o.title || 'Overview') + '</h2>' +
-      (o.actions || []).map(function (a) { return '<button type="button" class="it-appbar__act" aria-label="' + esc(a.label) + '">' + icon(a.icon, { size: 24 }) + '</button>'; }).join('') + '</div>' +
-      '<div class="it-phone__body">' + (o.body || '') + (o.fab === false ? '' : Button({ variant: 'fab', icon: 'add', label: 'Add Investment' })) + '</div>' +
+      (o.actions || []).map(function (a) { return '<button type="button" class="' + cls('it-appbar__act', 'it-appbar__act--tonal', a.selected && 'is-on') + '" aria-label="' + esc(a.label) + '"><span class="it-appbar__chip">' + icon(a.icon, { size: 20 }) + '</span></button>'; }).join('') + '</div>' +
+      '<div class="' + cls('it-phone__body', o.fab !== false && 'it-phone__body--fab') + '">' + (o.body || '') + (o.fab === false ? '' : Button({ variant: 'fab', icon: 'add', label: 'Add Investment' })) + '</div>' +
       '<nav class="it-navbar" data-it-group aria-label="Primary">' + nav + '</nav></div>';
   }
 
