@@ -121,6 +121,10 @@ const _copiedSnackbarTest =
     'test/core/widgets/compact_amount_text_theme_contrast_test.dart';
 const _changeBadgeStatusTest =
     'test/core/widgets/change_badge_status_contrast_test.dart';
+const _fireMilestoneTest =
+    'test/features/fire_number/presentation/widgets/fire_milestone_card_theme_contrast_test.dart';
+const _fireInsightTest =
+    'test/features/fire_number/presentation/screens/fire_dashboard_hero_colour_test.dart';
 const _feedbackTest = 'test/core/utils/app_feedback_theme_contrast_test.dart';
 const _reportsCountTest =
     'test/features/reports/presentation/screens/reports_home_attention_contrast_test.dart';
@@ -425,6 +429,11 @@ List<ContrastPair> _build() {
         _detailStatsTest,
         kMinText,
       ),
+      // The arrows and checks on their discs: graphics, so 3:1.
+      ('detail-net-disc-success-light@tint10', 2.31, _detailStatsTest, graphic),
+      ('detail-net-disc-danger-light@tint10', 3.29, _detailStatsTest, graphic),
+      ('fire-milestone-disc-light@tint20', 2.10, _fireMilestoneTest, graphic),
+      ('fire-insight-disc-light@tint20', 1.97, _fireInsightTest, graphic),
       (
         'overview-breakdown-success-light@tint10',
         2.31,
@@ -877,6 +886,23 @@ List<ContrastPair> _build() {
       fg: AppColors.successLight,
       ground: _tint(AppColors.successTintLight, 0.1, _cardL),
     ),
+    // The same tint on the other light grounds. A 10% tint reads on all three
+    // (4.51:1 at the least, on surface). A 15% tint reads only on the card
+    // (4.67 and 4.63); on the page it is 4.48 and 4.45 and on surface 4.31 and
+    // 4.25, so a 15% chip belongs in a GlassCard and anywhere else takes 10%.
+    for (final (name, fg, source) in [
+      ('success-light', AppColors.successLight, AppColors.successTintLight),
+      ('danger-light', AppColors.dangerLight, AppColors.dangerTintLight),
+    ])
+      for (final (groundName, ground) in [
+        ('background', _bgL),
+        ('surface', _surfaceL),
+      ])
+        ContrastPair.control(
+          '$name@tint10-on-$groundName',
+          fg: fg,
+          ground: _tint(source, 0.1, ground),
+        ),
     // A white label on the green fill: snackbars, onboarding, the Copied toast.
     ContrastPair.control(
       'white-on-success-light-fill',

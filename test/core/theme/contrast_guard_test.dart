@@ -122,7 +122,7 @@ const _allowlistMax = 91;
 
 /// The size of the pair table. A fixing PR that retires a pair or drops a
 /// ground it cannot fix changes this literal, so the change is in the diff.
-const _pairCount = 180;
+const _pairCount = 188;
 
 /// Files that can never be the measurement of a widget pair: the helper's own
 /// test, this guard and the table. Each mentions pair ids or `contrastRatio`.
@@ -200,7 +200,7 @@ void main() {
 
   test('the pairs the audit had no row for are exactly these', () {
     // The plan's three light dividers, the four the PR 1 review found on the
-    // investment card's XIRR pill and the danger tint, and the twenty-two widget
+    // investment card's XIRR pill and the danger tint, and the twenty-six widget
     // pairs PR 5 added for green and red on the tints and fills they sit on.
     expect(
       pairs.where((p) => p.addedByPlan).map((p) => p.id),
@@ -222,6 +222,10 @@ void main() {
         'detail-return-badge-success-light@tint15',
         'detail-return-badge-danger-light@tint15',
         'detail-maturity-matured-light@tint15',
+        'detail-net-disc-success-light@tint10',
+        'detail-net-disc-danger-light@tint10',
+        'fire-milestone-disc-light@tint20',
+        'fire-insight-disc-light@tint20',
         'overview-breakdown-success-light@tint10',
         'overview-breakdown-danger-light@tint10',
         'yoy-pill-success-light@tint10',

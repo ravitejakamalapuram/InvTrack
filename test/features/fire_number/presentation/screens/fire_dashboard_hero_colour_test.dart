@@ -4,11 +4,17 @@
 // and on purple that would be 1.0:1: invisible. The hero keeps the bright
 // green it always had, 2.1:1 to 2.4:1, which is still under 4.5 and is
 // recorded as a follow-up for the hero tier; this PR must not make it worse.
+//
+// The insight card below the hero is on the page, not on purple: its fill and
+// the disc behind its icon are tints of the brighter green, and the icon is the
+// deeper green. Colour is not the only carrier: the header says "You're ahead
+// of schedule!".
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/domain/services/fire_calculation_service.dart';
@@ -131,5 +137,50 @@ void main() {
         reason: 'on ${stop.toARGB32()}',
       );
     }
+  });
+
+  testWidgets('in light the insight card is a tint of the brighter green and '
+      'its icon the deeper one (fire-insight-disc-light@tint20)', (
+    tester,
+  ) async {
+    await _pump(tester, ahead, Brightness.light);
+
+    expect(find.text("You're ahead!"), findsOneWidget);
+    final icon = find.byIcon(Icons.check_circle_outline);
+    expect(icon, findsOneWidget);
+    expect(tester.widget<Icon>(icon).color, AppColors.successLight);
+
+    final card = tester.widget<GlassCard>(
+      find.ancestor(of: icon, matching: find.byType(GlassCard)).first,
+    );
+    final cardFill = composeOver(card.backgroundColor!, AppColors.cardLight);
+    expect(
+      cardFill,
+      composeOver(
+        AppColors.successTintLight.withValues(alpha: 0.08),
+        AppColors.cardLight,
+      ),
+    );
+    Color? discFill;
+    for (final element
+        in find.ancestor(of: icon, matching: find.byType(Container)).evaluate()) {
+      final decoration = (element.widget as Container).decoration;
+      if (decoration is BoxDecoration && decoration.color != null) {
+        discFill = composeOver(decoration.color!, cardFill);
+        break;
+      }
+    }
+    expect(
+      discFill,
+      composeOver(
+        AppColors.successTintLight.withValues(alpha: 0.2),
+        cardFill,
+      ),
+    );
+    expect(
+      contrastRatio(AppColors.successLight, discFill!),
+      greaterThanOrEqualTo(kMinGraphic),
+      reason: 'fire-insight-disc-light@tint20',
+    );
   });
 }

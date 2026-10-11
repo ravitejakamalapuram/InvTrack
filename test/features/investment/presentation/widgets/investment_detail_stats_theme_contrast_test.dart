@@ -174,6 +174,45 @@ void main() {
     });
   }
 
+  // The disc behind the net-position arrow is a 10% tint of the brighter hue,
+  // the arrow the deeper one. The arrow points up for a gain and down for a
+  // loss, so colour is not the only carrier.
+  final discCases = [
+    (
+      'a gain',
+      _stats(invested: 100000, returned: 110000),
+      Icons.trending_up_rounded,
+      AppColors.successLight,
+      AppColors.successTintLight,
+      'detail-net-disc-success-light@tint10',
+    ),
+    (
+      'a loss',
+      _stats(invested: 100000, returned: 50000),
+      Icons.trending_down_rounded,
+      AppColors.errorLight,
+      AppColors.dangerTintLight,
+      'detail-net-disc-danger-light@tint10',
+    ),
+  ];
+
+  for (final (name, stats, arrow, color, tintSource, id) in discCases) {
+    testWidgets('$name in light: the net-position arrow reads on its disc '
+        '($id)', (tester) async {
+      await _pump(tester, investment: _closed(), stats: stats);
+
+      final icon = find.byIcon(arrow);
+      expect(icon, findsOneWidget, reason: 'the arrow tells gain from loss');
+      expect(tester.widget<Icon>(icon).color, color);
+      final disc = _tintBehind(tester, icon, AppColors.cardLight);
+      expect(
+        disc,
+        composeOver(tintSource.withValues(alpha: 0.1), AppColors.cardLight),
+      );
+      expect(contrastRatio(color, disc), greaterThanOrEqualTo(kMinGraphic));
+    });
+  }
+
   testWidgets(
     'a matured investment in light: the maturity row reads on its tint '
     '(detail-maturity-matured-light@tint15)',
