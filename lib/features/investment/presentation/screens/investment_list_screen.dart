@@ -10,7 +10,9 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
+import 'package:inv_tracker/core/widgets/screen_layout.dart';
 import 'package:inv_tracker/core/widgets/swipe_actions.dart';
+import 'package:inv_tracker/core/widgets/tonal_icon_action.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
@@ -144,7 +146,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
               backgroundColor: isDark
                   ? AppColors.surfaceDark
                   : AppColors.surfaceLight,
-              titleSpacing: AppSpacing.md,
+              titleSpacing: AppSpacing.screenEdge,
               title: isSearching
                   ? const InvestmentListSearchField()
                   : Text(
@@ -157,15 +159,16 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                       ),
                     ),
               actions: isSearching ? null : _buildAppBarActions(isDark, l10n),
+              actionsPadding: const EdgeInsetsDirectional.only(
+                end: AppSpacing.appBarTrailingGap,
+              ),
             ),
 
             // Filter Tabs or Selection Controls
             SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.xs,
-                ),
+              child: ScreenEdge(
+                top: AppSpacing.xs,
+                bottom: AppSpacing.xs,
                 child: isSelectionMode
                     ? const InvestmentListSelectionControls()
                     : const InvestmentListFilterTabs(),
@@ -175,11 +178,9 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
             // Active Type Filter Chip
             if (hasTypeFilter)
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.xs,
-                  ),
+                child: ScreenEdge(
+                  top: AppSpacing.xs,
+                  bottom: AppSpacing.xs,
                   child: _ActiveTypeFilterChip(
                     type: typeFilter!,
                     isDark: isDark,
@@ -244,99 +245,37 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
 
     return [
       // Selection mode toggle
-      IconButton(
+      TonalIconAction(
+        icon: isSelectionMode ? Icons.close_rounded : Icons.checklist_rounded,
         tooltip: l10n.tooltipToggleSelectionMode,
-        icon: Container(
-          padding: EdgeInsets.all(AppSpacing.xs),
-          decoration: BoxDecoration(
-            color: isSelectionMode
-                ? AppColors.primaryLight
-                : (isDark ? Colors.white : AppColors.primaryLight).withValues(
-                    alpha: 0.1,
-                  ),
-            borderRadius: AppSizes.borderRadiusMd,
-          ),
-          child: Icon(
-            isSelectionMode ? Icons.close_rounded : Icons.checklist_rounded,
-            color: isSelectionMode
-                ? Colors.white
-                : (isDark ? Colors.white : AppColors.neutral700Light),
-            size: 20,
-          ),
-        ),
+        selected: isSelectionMode,
         onPressed: () {
           HapticFeedback.selectionClick();
           ref.read(investmentListStateProvider.notifier).toggleSelectionMode();
         },
       ),
       // Sort button
-      IconButton(
+      TonalIconAction(
+        icon: Icons.sort_rounded,
         tooltip: l10n.tooltipSortInvestments,
-        icon: Container(
-          padding: EdgeInsets.all(AppSpacing.xs),
-          decoration: BoxDecoration(
-            color: sort != InvestmentSort.lastActivity
-                ? AppColors.primaryLight
-                : (isDark ? Colors.white : AppColors.primaryLight).withValues(
-                    alpha: 0.1,
-                  ),
-            borderRadius: AppSizes.borderRadiusMd,
-          ),
-          child: Icon(
-            Icons.sort_rounded,
-            color: sort != InvestmentSort.lastActivity
-                ? Colors.white
-                : (isDark ? Colors.white : AppColors.neutral700Light),
-            size: 20,
-          ),
-        ),
+        selected: sort != InvestmentSort.lastActivity,
         onPressed: () => _showSortOptions(isDark),
       ),
       // Type filter button
-      IconButton(
+      TonalIconAction(
+        icon: Icons.filter_list_rounded,
         tooltip: l10n.tooltipFilterInvestments,
-        icon: Container(
-          padding: EdgeInsets.all(AppSpacing.xs),
-          decoration: BoxDecoration(
-            color: hasTypeFilter
-                ? AppColors.primaryLight
-                : (isDark ? Colors.white : AppColors.primaryLight).withValues(
-                    alpha: 0.1,
-                  ),
-            borderRadius: AppSizes.borderRadiusMd,
-          ),
-          child: Icon(
-            Icons.filter_list_rounded,
-            color: hasTypeFilter
-                ? Colors.white
-                : (isDark ? Colors.white : AppColors.neutral700Light),
-            size: 20,
-          ),
-        ),
+        selected: hasTypeFilter,
         onPressed: () => _showTypeFilterOptions(isDark),
       ),
-      IconButton(
+      TonalIconAction(
+        icon: Icons.search_rounded,
         tooltip: l10n.tooltipSearchInvestments,
-        icon: Container(
-          padding: EdgeInsets.all(AppSpacing.xs),
-          decoration: BoxDecoration(
-            color: (isDark ? Colors.white : AppColors.primaryLight).withValues(
-              alpha: 0.1,
-            ),
-            borderRadius: AppSizes.borderRadiusMd,
-          ),
-          child: Icon(
-            Icons.search_rounded,
-            color: isDark ? Colors.white : AppColors.neutral700Light,
-            size: 20,
-          ),
-        ),
         onPressed: () {
           HapticFeedback.selectionClick();
           ref.read(investmentListStateProvider.notifier).toggleSearch();
         },
       ),
-      SizedBox(width: AppSpacing.xs),
     ];
   }
 
@@ -394,8 +333,8 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         // which can cause jank on older devices.
         final now = DateTime.now();
 
-        return SliverPadding(
-          padding: EdgeInsets.all(AppSpacing.md),
+        return ScreenSliver(
+          clearsFab: true,
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
               // Defensive bounds check to prevent IndexOutOfBoundsException during

@@ -7,7 +7,9 @@ import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
+import 'package:inv_tracker/core/widgets/screen_layout.dart';
 import 'package:inv_tracker/core/widgets/swipe_actions.dart';
+import 'package:inv_tracker/core/widgets/tonal_icon_action.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_list_state_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
@@ -227,7 +229,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
             backgroundColor: isDark
                 ? AppColors.surfaceDark
                 : AppColors.surfaceLight,
-            titleSpacing: AppSpacing.md,
+            titleSpacing: AppSpacing.screenEdge,
             title: Text(
               l10n.goals,
               style: AppTypography.h2.copyWith(
@@ -235,16 +237,17 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                 fontSize: 22,
               ),
             ),
-            actions: _buildAppBarActions(isDark, isSelectionMode, l10n),
+            actions: _buildAppBarActions(isSelectionMode, l10n),
+            actionsPadding: const EdgeInsetsDirectional.only(
+              end: AppSpacing.appBarTrailingGap,
+            ),
           ),
 
           // Filter Tabs or Selection Controls
           SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.xs,
-              ),
+            child: ScreenEdge(
+              top: AppSpacing.xs,
+              bottom: AppSpacing.xs,
               child: isSelectionMode
                   ? GoalsListSelectionControls(filteredGoals: filteredGoals)
                   : _buildFilterTabs(isDark),
@@ -272,47 +275,29 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
   }
 
   List<Widget> _buildAppBarActions(
-    bool isDark,
     bool isSelectionMode,
     AppLocalizations l10n,
   ) {
     return [
       // Selection mode toggle
-      IconButton(
-        icon: Container(
-          padding: EdgeInsets.all(AppSpacing.xs),
-          decoration: BoxDecoration(
-            color: isSelectionMode
-                ? AppColors.primaryLight
-                : (isDark ? Colors.white : AppColors.primaryLight).withValues(
-                    alpha: 0.1,
-                  ),
-            borderRadius: AppSizes.borderRadiusMd,
-          ),
-          child: Icon(
-            isSelectionMode ? Icons.close_rounded : Icons.checklist_rounded,
-            color: isSelectionMode
-                ? Colors.white
-                : (isDark ? Colors.white : AppColors.neutral700Light),
-            size: 20,
-          ),
-        ),
+      TonalIconAction(
+        icon: isSelectionMode ? Icons.close_rounded : Icons.checklist_rounded,
+        tooltip: isSelectionMode
+            ? l10n.tooltipExitSelection
+            : l10n.tooltipSelectGoals,
+        selected: isSelectionMode,
         onPressed: () {
           HapticFeedback.selectionClick();
           ref.read(goalsListStateProvider.notifier).toggleSelectionMode();
         },
-        tooltip: isSelectionMode
-            ? l10n.tooltipExitSelection
-            : l10n.tooltipSelectGoals,
       ),
       // Add button (only when not in selection mode)
       if (!isSelectionMode)
-        IconButton(
-          icon: const Icon(Icons.add_rounded),
-          onPressed: () => context.push('/goals/create'),
+        TonalIconAction(
+          icon: Icons.add_rounded,
           tooltip: l10n.tooltipAddGoal,
+          onPressed: () => context.push('/goals/create'),
         ),
-      SizedBox(width: AppSpacing.sm),
     ];
   }
 
@@ -363,8 +348,8 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
           );
         }
 
-        return SliverPadding(
-          padding: EdgeInsets.all(AppSpacing.md),
+        return ScreenSliver(
+          clearsFab: true,
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
               final goal = goals[index];

@@ -18,7 +18,7 @@
   function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
 
   document.getElementById('root').innerHTML = I.panes(function () {
-    return I.Navigation({ title: 'Investments', actions: [{ icon: 'sort', label: 'Sort' }, { icon: 'search', label: 'Search' }],
+    return I.Navigation({ title: 'Investments', actions: [{ icon: 'sort', label: 'Sort', selected: true }, { icon: 'search', label: 'Search' }],
       body: '<div class="it-stack" style="gap:12px">' + I.InvestmentCard({ type: 'fixed-deposit', name: 'Senior citizen FD', closed: true, positive: true, net: F.compact(14800), badge: { text: '+7.2% IRR' }, last: 'yesterday', entries: '4 entries', invested: F.compact(200000) }) + '</div>', active: 1 });
   }, { });
 

@@ -104,7 +104,7 @@ declare namespace InvTrack {
   function BottomSheet(props: BottomSheetProps): Html;
   function Dialog(props: { title: string; message?: string; confirm?: string; cancel?: string; destructive?: boolean; variant?: 'confirm' | 'form'; html?: Html; height?: number }): Html;
   function Snackbar(props: { kind?: 'success' | 'error' | 'info' | 'exact'; message: string }): Html;
-  function Navigation(props?: { title?: string; actions?: { icon: string; label: string }[]; items?: { label: string; icon: string; on: string; outlined?: boolean }[]; active?: number; body?: Html; fab?: boolean }): Html;
+  function Navigation(props?: { title?: string; actions?: { icon: string; label: string; selected?: boolean }[]; items?: { label: string; icon: string; on: string; outlined?: boolean }[]; active?: number; body?: Html; fab?: boolean }): Html;
 
   /** A Material icon by ligature name (Google Fonts Material Icons Round by default). */
   function icon(name: string, opts?: { size?: number; color?: Css; family?: 'round' | 'base' | 'outlined'; cls?: string }): Html;
