@@ -14,13 +14,27 @@ import 'package:flutter_test/flutter_test.dart';
 
 String _read(String path) => File(path).readAsStringSync();
 
-/// True when [text] spells the old app name in any quoting or case. The class
-/// name `InvTrackerApp` is allowed (users never see it). Lower-case
-/// `invtracker` alone is not matched: it is part of the package id and the
-/// support domain.
+/// True when [text] spells the old app name in any quoting or case.
+///
+/// Matched: `InvTracker`, `Inv Tracker` and `Investment Tracker` in any case,
+/// and the one-word `invtracker` in any case except all lower case (so
+/// `invTracker`, `INVTRACKER` and `Invtracker`).
+///
+/// Spared, because users never see them:
+/// - the class name `InvTrackerApp`;
+/// - the all-lower-case `invtracker`, which is the package id, the support
+///   domain and the Firebase project id;
+/// - a one-word hit glued to a longer name: preceded by a letter, digit, `_`,
+///   `.`, `@` or `/` (the Firebase iOS bundle id `com.invtracker.invTracker`,
+///   the getter `l10n.invTrackerPremium`, an e-mail or a path), or followed by
+///   a letter, digit or `_` (an identifier such as `invTrackerPremium`).
 bool _mentionsOldAppName(String text) =>
     RegExp(r'InvTracker(?!App\b)').hasMatch(text) ||
-    RegExp(r'Inv(?:estment)?\s+Tracker', caseSensitive: false).hasMatch(text);
+    RegExp(r'Inv(?:estment)?\s+Tracker', caseSensitive: false).hasMatch(text) ||
+    RegExp(
+      r'(?<![A-Za-z0-9_.@/])invtracker(?![A-Za-z0-9_])',
+      caseSensitive: false,
+    ).allMatches(text).any((m) => m.group(0) != 'invtracker');
 
 String _pubspecVersion() {
   final match = RegExp(
@@ -239,6 +253,18 @@ void main() {
         "'investment tracker'",
         "'INVESTMENT TRACKER'",
         'InvTracker is a tracking tool only.',
+        // One word in the other cases: the camel-case and shouting forms.
+        "'invTracker'",
+        '"INVTRACKER"',
+        'Welcome to INVTRACKER',
+        'Sign in to invTracker',
+        'Invtracker is a tracking tool only.',
+        "Open invTracker's settings",
+        'Visit invTracker.',
+        // A hyphen is not a shield: only identifier and path characters are.
+        'Sign in to my-invTracker',
+        // One user-facing hit is enough, even next to a spared spelling.
+        'com.invtracker.invTracker and invTracker',
       ]) {
         expect(_mentionsOldAppName(text), isTrue, reason: text);
       }
@@ -250,6 +276,18 @@ void main() {
         'com.invtracker.inv_tracker',
         "import 'package:inv_tracker/main.dart';",
         'investment tracking for alternative assets',
+        // Package id, domain and project id are lower case; the Firebase iOS
+        // bundle id and the generated l10n getter carry a camel-case
+        // `invTracker` that users never see.
+        'invtracker',
+        "iosBundleId: 'com.invtracker.invTracker',",
+        'l10n.invTrackerPremium',
+        'Text(invTrackerPremium)',
+        "projectId: 'invtracker-b19d1',",
+        "const MethodChannel('com.invtracker/security')",
+        'support@INVTRACKER.APP',
+        'https://INVTRACKER.app/privacy',
+        'final _invTracker = 1;',
       ]) {
         expect(_mentionsOldAppName(text), isFalse, reason: text);
       }
