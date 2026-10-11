@@ -66,7 +66,12 @@ Tickets are GitHub issues labelled `review-2026-10` and titled `[Axx] …`. The 
      - migration or rollback notes;
      - follow-ups.
    - Run `superpowers:requesting-code-review` before marking the PR ready. Handle review feedback with `superpowers:receiving-code-review`.
-   - Right after opening any PR, comment `@coderabbitai review` on it. The repo gets no automatic CodeRabbit reviews, and the free plan allows one review an hour. If CodeRabbit replies "Review limit reached", ask again after the time it names, one PR at a time. Ask again after you push fixes for a "changes requested" review, because that review blocks the merge until CodeRabbit approves.
+   - Right after opening a PR that needs CodeRabbit (next bullet), comment `@coderabbitai review` on it. The repo gets no automatic CodeRabbit reviews, and the free plan allows one review an hour. If CodeRabbit replies "Review limit reached", ask again after the time it names, one PR at a time. Ask again after you push fixes for a "changes requested" review, because that review blocks the merge until CodeRabbit approves.
+   - Which PRs need CodeRabbit (owner decisions of 2026-10-11):
+     - Docs-only and test-only PRs skip it. Merge them on green CI after merging `main` in, and say so in the inbox.
+     - Under `lib/`, only risky PRs get it: money and calculations, data and Firestore, import and export, notifications, sign-in, security and privacy, and CI.
+     - Layout, copy, icon and analytics-wiring PRs that touch no amounts, names or ids merge after an independent review by a separate agent, a green full local suite and green CI.
+     - When unsure, treat the PR as risky.
    - The review covers more than correctness and tests. It must also check:
      - **Security and privacy:** workflow token permissions, checkout credentials, untrusted `${{ }}` in `run:`, secrets, auth and deletion flows, and PII or amounts in logs.
      - **Bypass:** for every guard, check or gate, how it could pass falsely, for example on deleted, renamed or symlinked files, re-runs, time zones, process death or offline.
@@ -81,6 +86,7 @@ Tickets are GitHub issues labelled `review-2026-10` and titled `[Axx] …`. The 
 - 2026-10-02: iOS is deferred until Android activation and retention targets are met.
 - 2026-10-03: records saved without a currency are stamped once, after the user confirms which currency they are in (A03-F1).
 - 2026-10-10: an open investment that has returned its cost and has no current value keeps its figures, labelled “so far” (#954).
+- 2026-10-11: CodeRabbit is skipped for docs-only and test-only PRs, and under `lib/` is used only for risky PRs (see the review steps above).
 - Plan defaults that hold until the founder says otherwise: Premium is built from new features only, and nothing free today becomes paid (A58); the dormant ads SDK is removed (A34, A57); Income Guardian is hidden until something generates expected payouts (A42).
 - Account deletion builds on the existing pipeline: `deletionRequests` rules (APP-331), the processing job in `scripts/account-deletion` (APP-332) and in-app requests (APP-334). Extend that work; don't replace it.
 
