@@ -94,9 +94,11 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                                             ? (d.outflows / maxValue * 80)
                                             : 0,
                                         decoration: BoxDecoration(
-                                          // theme-neutral: a chart bar.
-                                          color: AppColors.errorLight
-                                              .withValues(alpha: 0.7),
+                                          color:
+                                              (isDark
+                                                      ? AppColors.errorDark
+                                                      : AppColors.errorLight)
+                                                  .withValues(alpha: 0.7),
                                           borderRadius:
                                               const BorderRadius.vertical(
                                                 top: Radius.circular(4),
@@ -111,9 +113,11 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                                             ? (d.inflows / maxValue * 80)
                                             : 0,
                                         decoration: BoxDecoration(
-                                          // theme-neutral: a chart bar.
-                                          color: AppColors.successLight
-                                              .withValues(alpha: 0.7),
+                                          color:
+                                              (isDark
+                                                      ? AppColors.successDark
+                                                      : AppColors.successLight)
+                                                  .withValues(alpha: 0.7),
                                           borderRadius:
                                               const BorderRadius.vertical(
                                                 top: Radius.circular(4),
@@ -144,11 +148,16 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // theme-neutral: the swatch of the chart bar above.
-                  _buildLegendItem('Cash Out', AppColors.errorLight),
+                  // Each swatch is the colour of the bar above it.
+                  _buildLegendItem(
+                    'Cash Out',
+                    isDark ? AppColors.errorDark : AppColors.errorLight,
+                  ),
                   const SizedBox(width: 16),
-                  // theme-neutral: the swatch of the chart bar above.
-                  _buildLegendItem('Cash In', AppColors.successLight),
+                  _buildLegendItem(
+                    'Cash In',
+                    isDark ? AppColors.successDark : AppColors.successLight,
+                  ),
                 ],
               ),
             ],

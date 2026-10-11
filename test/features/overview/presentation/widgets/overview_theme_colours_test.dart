@@ -1,6 +1,10 @@
 // The Overview paints the colours of the theme it is in. In dark, status text
 // and icons use the dark values; a light value there is a shade too dim on the
 // dark card, and the contrast PRs make it dimmer. In light nothing changes.
+//
+// The Cash In and Out chart is the one place that paints fills, not text: its
+// bars and the legend swatches under them are one colour per series, so a
+// colour PR that changes the swatch has to change the bar with it.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -172,6 +176,67 @@ void main() {
           );
         }
       });
+
+      testWidgets(
+        'the Cash Out and Cash In bars and swatches follow the theme',
+        (tester) async {
+          await _pump(
+            tester,
+            MonthlyCashFlowTrend(
+              currencyFormat: NumberFormat.currency(
+                locale: 'en_IN',
+                symbol: '₹',
+                decimalDigits: 0,
+              ),
+            ),
+            brightness,
+            overrides: [
+              monthlyCashFlowTrendProvider.overrideWithValue(
+                AsyncValue.data([
+                  MonthlyCashFlowData(
+                    month: DateTime(2026, 9, 1),
+                    inflows: 8000,
+                    outflows: 5000,
+                  ),
+                ]),
+              ),
+            ],
+          );
+          Iterable<Color> fills(bool Function(Container) isIt) => [
+            for (final w in tester.widgetList<Container>(
+              find.byType(Container),
+            ))
+              if (isIt(w)) (w.decoration! as BoxDecoration).color!,
+          ];
+          // Outflows first, then inflows; the legend lists Cash Out, Cash In.
+          final bars = fills(
+            (c) =>
+                c.decoration is BoxDecoration &&
+                (c.decoration! as BoxDecoration).borderRadius ==
+                    const BorderRadius.vertical(top: Radius.circular(4)),
+          );
+          final swatches = fills(
+            (c) =>
+                c.decoration is BoxDecoration &&
+                c.constraints == BoxConstraints.tightFor(width: 12, height: 12),
+          );
+          expect(bars, [
+            error.withValues(alpha: 0.7),
+            success.withValues(alpha: 0.7),
+          ]);
+          expect(swatches, [error, success]);
+          if (brightness == Brightness.dark) {
+            // A data graphic needs 3:1 against the card it is drawn on.
+            for (final fill in [...bars, ...swatches]) {
+              expect(
+                contrastRatio(fill, AppColors.cardDark),
+                greaterThanOrEqualTo(kMinGraphic),
+                reason: fill.toString(),
+              );
+            }
+          }
+        },
+      );
     });
   }
 }
