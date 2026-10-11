@@ -97,7 +97,7 @@ Icons are Material icons from the Flutter SDK's `MaterialIcons` font, almost alw
 | Financing | `payments` | `inv-financing` |
 | Other | `attach_money` | `inv-other` |
 
-**The app mark** is in `assets/Logos` (`app_icon.png`, `app_icon.svg`); read that group's README before using it. Never redraw, recolour or crop it.
+**The app mark** is the "Portfolio ring", kept in `assets/icons` of the app repository (`app_icon.svg`, `app_icon_foreground.svg`, `app_icon_monochrome.svg` and their PNG exports); read `assets/Logos/README.md` before using it, because the copies in that group are the old mark. Never redraw, recolour or crop it.
 
 ## Using the components
 

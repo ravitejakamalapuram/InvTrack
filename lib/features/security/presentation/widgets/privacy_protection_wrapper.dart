@@ -76,7 +76,9 @@ class _PrivacyProtectionWrapperState
               color: isDark ? AppColors.backgroundDark : AppColors.primaryLight,
               child: Center(
                 child: Image.asset(
-                  'assets/icons/app_icon.png',
+                  // Transparent mark, so the srcIn tint below draws the ring and
+                  // not a square.
+                  'assets/icons/app_icon_mark.png',
                   width: 72,
                   height: 72,
                   // Use white tint for light mode (icon on primary color)
