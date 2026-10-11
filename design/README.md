@@ -15,7 +15,7 @@ The files map one to one: `project/<path>` in the artifact is `design/system/<pa
 
 - Fonts: `system/tokens.json` lists Inter at 400, 500 and 600 as `fonts/Inter-*.ttf`. The real files are in `assets/fonts/`; do not duplicate them here. To republish the artifact, copy them back into the artifact's `fonts/` folder.
 - Plus Jakarta Sans: the four `assets/fonts/PlusJakartaSans-*.ttf` files are a saved GitHub "Page not found" page, not fonts (see #973). The system names the family only; the app loads it from Google Fonts.
-- The app icons: `assets/icons/app_icon.png` and `app_icon.svg`. `system/assets/Logos/README.md` says which one ships and what is wrong with each.
+- The app icons: the files in `assets/icons` (the "Portfolio ring" shipped in #985). `system/assets/Logos/README.md` lists them and says which copies in the snapshot are stale.
 - Generated files (`tokens.css`, the artifact's `api/` cards and `manifest.json`).
 
 ## Snapshot
