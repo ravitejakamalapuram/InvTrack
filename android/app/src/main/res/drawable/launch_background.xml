@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- InvTracker branded splash screen -->
+<!-- InvTrack branded splash screen -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Background gradient color -->
     <item android:drawable="@color/splash_background" />

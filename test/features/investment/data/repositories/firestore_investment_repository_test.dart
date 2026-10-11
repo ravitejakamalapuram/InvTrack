@@ -97,6 +97,17 @@ void main() {
       () => noSnapshotsQuery.get(const GetOptions(source: Source.server)),
     ).thenAnswer((_) async => noSnapshots);
     when(() => noSnapshots.docs).thenReturn([]);
+    // It also lists the investment's expected payments (#917); none here.
+    final mockExpectedCollection = MockCollectionReference();
+    when(
+      () => mockUserDoc.collection('expectedCashFlows'),
+    ).thenReturn(mockExpectedCollection);
+    when(
+      () => mockExpectedCollection.where(
+        'investmentId',
+        isEqualTo: testInvestmentId,
+      ),
+    ).thenReturn(noSnapshotsQuery);
 
     when(() => mockInvestmentsCollection.doc(testInvestmentId))
         .thenReturn(mockInvestmentDoc);

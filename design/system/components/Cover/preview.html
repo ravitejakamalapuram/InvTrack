@@ -1,0 +1,45 @@
+<!-- @dsCard height=300 -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=960">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&display=swap">
+<style>
+  html, body { margin: 0; }
+  svg { display: block; width: 960px; height: 300px; }
+  .ground { fill: var(--background); }
+  .blk { rx: var(--radius-xxl); ry: var(--radius-xxl); }
+  .b-brand { fill: var(--primary); }
+  .b-deep { fill: var(--primary-pressed); }
+  .b-accent { fill: var(--accent); }
+  .b-ok { fill: var(--success); }
+  .b-warn { fill: var(--warning); }
+  .dot { fill: var(--primary-container); }
+  .cut { fill: none; stroke: var(--background); stroke-width: 16; }
+  .name { font: 800 80px/0.95 var(--font-display); letter-spacing: -2.5px; fill: var(--text); }
+  .tag { font: 400 14px/1.4 var(--font-text); fill: var(--text-muted); }
+</style>
+</head>
+<body>
+<svg viewBox="0 0 960 300" role="img" aria-label="InvTrack">
+<!-- blocks: primary 192x192 slab, primary-pressed 144x144 bleeding off the right edge, accent 120x120, success disc r72, warning disc r24 (all full-value identity colours)
+     arrangement: a staggered stack right of x=480 that bleeds off the top and right edges, one tall slab with satellites
+     pattern: discs from radius-full, 16 dots at a 24px pitch (space-xl); the system is soft and large-radius (20-24px cards, hero glow circles), so discs, plus a ground-coloured ring cut from the brand slab that echoes the app mark's ring
+     steps and radii: 24 (space-xl) and 12 (space-sm); radius-xxl 24 for blocks, radius-full for discs -->
+<rect class="ground" width="960" height="300"/>
+<rect class="blk b-brand" x="624" y="24" width="192" height="192"/>
+<circle class="cut" cx="720" cy="120" r="56"/>
+<rect class="blk b-deep" x="816" y="0" width="144" height="144"/>
+<rect class="blk b-accent" x="480" y="120" width="120" height="120"/>
+<circle class="b-ok" cx="888" cy="216" r="72"/>
+<circle class="b-warn" cx="552" cy="60" r="24"/>
+<g class="dot">
+<circle cx="636" cy="252" r="6"/><circle cx="660" cy="252" r="6"/><circle cx="684" cy="252" r="6"/><circle cx="708" cy="252" r="6"/><circle cx="732" cy="252" r="6"/><circle cx="756" cy="252" r="6"/><circle cx="780" cy="252" r="6"/><circle cx="804" cy="252" r="6"/>
+<circle cx="636" cy="276" r="6"/><circle cx="660" cy="276" r="6"/><circle cx="684" cy="276" r="6"/><circle cx="708" cy="276" r="6"/><circle cx="732" cy="276" r="6"/><circle cx="756" cy="276" r="6"/><circle cx="780" cy="276" r="6"/><circle cx="804" cy="276" r="6"/>
+</g>
+<text class="name" x="32" y="232">InvTrack</text>
+<text class="tag" x="34" y="268">Track investments. Grow wealth.</text>
+</svg>
+</body>
+</html>

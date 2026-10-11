@@ -686,12 +686,12 @@ void main() {
     test(
       'should show milestone notification when MOIC threshold reached',
       () async {
-        // 1000 invested, 1500 returned = 1.5x MOIC
+        // The shared MOIC is 1.5 (1000 paid in, 500 gained).
         await service.checkAndShowMilestone(
           investmentId: 'inv-milestone',
           investmentName: 'P2P Investment',
-          totalInvested: 1000,
-          totalReturned: 1500,
+          moic: 1.5,
+          gain: 500,
         );
 
         expect(fakePlugin.shownNotifications.length, 1);
@@ -705,16 +705,16 @@ void main() {
       await service.checkAndShowMilestone(
         investmentId: 'inv-dup',
         investmentName: 'Test Investment',
-        totalInvested: 1000,
-        totalReturned: 1500,
+        moic: 1.5,
+        gain: 500,
       );
 
       // Try to show same milestone again
       await service.checkAndShowMilestone(
         investmentId: 'inv-dup',
         investmentName: 'Test Investment',
-        totalInvested: 1000,
-        totalReturned: 1600, // Still 1.5x+
+        moic: 1.6, // Still 1.5x+
+        gain: 600,
       );
 
       // Should only have 1 notification (not 2)
@@ -724,12 +724,11 @@ void main() {
     test(
       'should show higher milestone when multiple thresholds crossed',
       () async {
-        // 1000 invested, 2000 returned = 2.0x MOIC
         await service.checkAndShowMilestone(
           investmentId: 'inv-high',
           investmentName: 'High Performer',
-          totalInvested: 1000,
-          totalReturned: 2000,
+          moic: 2.0,
+          gain: 1000,
         );
 
         expect(fakePlugin.shownNotifications.length, 1);
@@ -744,11 +743,46 @@ void main() {
       await service.checkAndShowMilestone(
         investmentId: 'inv-disabled',
         investmentName: 'Disabled',
-        totalInvested: 1000,
-        totalReturned: 2000,
+        moic: 2.0,
+        gain: 1000,
       );
 
       expect(fakePlugin.shownNotifications.length, 0);
+    });
+
+    test('should not show a milestone below the first one', () async {
+      await service.checkAndShowMilestone(
+        investmentId: 'inv-below',
+        investmentName: 'Below',
+        moic: 1.499999,
+        gain: 499.999,
+      );
+
+      expect(fakePlugin.shownNotifications, isEmpty);
+    });
+
+    test('should not show a milestone without a MOIC', () async {
+      // 0 is what the shared stats give when nothing was paid in.
+      await service.checkAndShowMilestone(
+        investmentId: 'inv-none',
+        investmentName: 'None',
+        moic: 0,
+        gain: 0,
+      );
+      await service.checkAndShowMilestone(
+        investmentId: 'inv-nan',
+        investmentName: 'NaN',
+        moic: double.nan,
+        gain: 0,
+      );
+      await service.checkAndShowMilestone(
+        investmentId: 'inv-inf',
+        investmentName: 'Infinite',
+        moic: double.infinity,
+        gain: 0,
+      );
+
+      expect(fakePlugin.shownNotifications, isEmpty);
     });
 
     test('should use private visibility for idle alerts', () async {
@@ -780,8 +814,8 @@ void main() {
       await service.checkAndShowMilestone(
         investmentId: 'inv-usd',
         investmentName: 'US Fund',
-        totalInvested: 10000,
-        totalReturned: 15000,
+        moic: 1.5,
+        gain: 5000,
         currency: 'USD',
       );
 
@@ -794,8 +828,8 @@ void main() {
       await service.checkAndShowMilestone(
         investmentId: 'inv-inr',
         investmentName: 'FD',
-        totalInvested: 100000,
-        totalReturned: 970000,
+        moic: 9.7,
+        gain: 870000,
         currency: 'INR',
       );
 
@@ -1207,8 +1241,8 @@ void main() {
         await service.checkAndShowMilestone(
           investmentId: 'inv-no-perm',
           investmentName: 'No Permission Investment',
-          totalInvested: 10000,
-          totalReturned: 20000, // 2x return
+          moic: 2.0,
+          gain: 10000,
         );
 
         expect(fakePlugin.shownNotifications.length, 0);

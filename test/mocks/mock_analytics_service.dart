@@ -1,4 +1,3 @@
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -28,6 +27,15 @@ class FakeAnalyticsService implements AnalyticsService {
     required String name,
     Map<String, Object>? parameters,
   }) async {
+    // The Firebase plugin asserts on anything but a String or a num.
+    for (final MapEntry(:key, :value) in (parameters ?? {}).entries) {
+      if (value is! String && value is! num) {
+        throw ArgumentError(
+          "Analytics parameter '$key' of '$name' must be a String or a num, "
+          'was ${value.runtimeType}',
+        );
+      }
+    }
     loggedEvents.add((name: name, parameters: parameters));
     if (kDebugMode) {
       debugPrint('📊 FakeAnalytics: $name ${parameters ?? ''}');
@@ -61,18 +69,37 @@ class FakeAnalyticsService implements AnalyticsService {
   }
 
   @override
-  Future<void> logSignUp({required String method}) async {
-    await logEvent(name: 'sign_up', parameters: {'method': method});
-  }
-
-  @override
   Future<void> logInvestmentCreated({
     required String investmentType,
     bool hasNotes = false,
+    bool hasAmount = false,
   }) async {
     await logEvent(
       name: AnalyticsEvents.investmentCreated,
-      parameters: {'investment_type': investmentType, 'has_notes': hasNotes},
+      parameters: {
+        'investment_type': investmentType,
+        'has_notes': hasNotes ? 1 : 0,
+        'has_amount': hasAmount ? 1 : 0,
+      },
+    );
+  }
+
+  @override
+  Future<void> logXirrViewed({
+    required String surface,
+    required bool isEstimate,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.xirrViewed,
+      parameters: {'surface': surface, 'is_estimate': isEstimate ? 1 : 0},
+    );
+  }
+
+  @override
+  Future<void> logAccountLinkSuccess({required String method}) async {
+    await logEvent(
+      name: AnalyticsEvents.accountLinkSuccess,
+      parameters: {'method': method},
     );
   }
 
@@ -129,20 +156,6 @@ class FakeAnalyticsService implements AnalyticsService {
   }
 
   @override
-  Future<void> logErrorOccurred({
-    required String errorType,
-    String? screen,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.errorOccurred,
-      parameters: {
-        'error_type': errorType,
-        ...?screen != null ? {'screen': screen} : null,
-      },
-    );
-  }
-
-  @override
   Future<void> logGoalCreated({
     required String goalType,
     required String trackingMode,
@@ -179,17 +192,6 @@ class FakeAnalyticsService implements AnalyticsService {
     await logEvent(
       name: AnalyticsEvents.goalDeleted,
       parameters: {'goal_id': goalId},
-    );
-  }
-
-  @override
-  Future<void> logGoalMilestoneReached({
-    required String goalId,
-    required int milestone,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.goalMilestoneReached,
-      parameters: {'goal_id': goalId, 'milestone': milestone},
     );
   }
 
@@ -324,24 +326,6 @@ class FakeAnalyticsService implements AnalyticsService {
   }
 
   @override
-  Future<void> logProjectionViewed({
-    required String investmentType,
-    required double expectedRate,
-    required int tenureMonths,
-    String? compounding,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.projectionViewed,
-      parameters: {
-        'investment_type': investmentType,
-        'expected_rate': expectedRate,
-        'tenure_months': tenureMonths,
-        ...?compounding != null ? {'compounding': compounding} : null,
-      },
-    );
-  }
-
-  @override
   Future<void> logSmartDefaultApplied({required String fieldName}) async {
     await logEvent(
       name: AnalyticsEvents.smartDefaultApplied,
@@ -404,12 +388,6 @@ class FakeAnalyticsService implements AnalyticsService {
     );
   }
 
-  @override
-  FirebaseAnalyticsObserver? getObserver() {
-    // Return null for fake implementation - no Firebase in tests
-    return null;
-  }
-
   // ============ Reports Analytics Events ============
 
   @override
@@ -460,20 +438,6 @@ class FakeAnalyticsService implements AnalyticsService {
     );
   }
 
-  @override
-  Future<void> logReportMetricTooltipViewed({
-    required String metricName,
-    required String reportType,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.reportMetricTooltipViewed,
-      parameters: {
-        'metric_name': metricName,
-        'report_type': reportType,
-      },
-    );
-  }
-
   // ============ Portfolio Health Score Events ============
 
   @override
@@ -516,20 +480,6 @@ class FakeAnalyticsService implements AnalyticsService {
         'score_tier': scoreTier,
         'investment_count': investmentCount,
         'has_goals': hasGoals ? 1 : 0,
-      },
-    );
-  }
-
-  @override
-  Future<void> logHealthComponentExpanded({
-    required String componentName,
-    required String componentScore,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.healthComponentExpanded,
-      parameters: {
-        'component_name': componentName,
-        'component_score': componentScore,
       },
     );
   }

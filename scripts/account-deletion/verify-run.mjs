@@ -1,20 +1,37 @@
-// Independent read-back job: a fresh process that re-checks what the deletion run reported.
+// Independent read-back job: a fresh process that re-checks what the deletion run reported. It is given the run id
+// only. The run's accounts are known by hash alone (deletionAudit/{runId}-{hash}), so it hashes what exists now and
+// compares; no uid is ever passed between jobs, because a step's env is printed in a public log.
 import { appendFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
+import { hashUid } from './run.mjs';
+import { safeErrorCode } from './safe-error.mjs';
 import { COOLING_MS, findOrphans } from './sweep.mjs';
-import { verifyUserGone } from './verify.mjs';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export async function verifyRun({ db, auth, runId, uids, now = new Date() }) {
+export async function verifyRun({ db, auth, runId, now = new Date() }) {
   const problems = [];
 
-  for (const uid of uids) {
-    const r = await verifyUserGone({ db, auth, uid });
-    r.problems.forEach((p) => problems.push(`processed account: ${p}`));
+  const audit = await db.collection('deletionAudit').where('runId', '==', runId).get();
+  const processed = new Set(audit.docs.map((d) => d.get('uidHash')));
+  if (processed.size > 0) {
+    // users/{uid} is often a missing ancestor, which listDocuments() returns and a plain query does not.
+    for (const ref of await db.collection('users').listDocuments()) {
+      const h = hashUid(ref.id);
+      if (processed.has(h)) problems.push(`processed account ${h}: users data still exists`);
+    }
+    let pageToken;
+    do {
+      const page = await auth.listUsers(1000, pageToken);
+      for (const u of page.users) {
+        const h = hashUid(u.uid);
+        if (processed.has(h)) problems.push(`processed account ${h}: auth user still exists`);
+      }
+      pageToken = page.pageToken;
+    } while (pageToken);
   }
 
   const runDoc = await db.collection('deletionRuns').doc(runId).get();
@@ -35,8 +52,7 @@ export async function verifyRun({ db, auth, runId, uids, now = new Date() }) {
 async function main() {
   const env = process.env;
   initializeApp({ credential: applicationDefault(), projectId: env.GCLOUD_PROJECT || 'invtracker-b19d1' });
-  const uids = (env.UIDS ?? '').split(',').filter(Boolean);
-  const out = await verifyRun({ db: getFirestore(), auth: getAuth(), runId: env.RUN_ID, uids });
+  const out = await verifyRun({ db: getFirestore(), auth: getAuth(), runId: env.RUN_ID });
   const text = out.ok ? 'verify: all checks passed' : `verify: MISMATCH\n${out.problems.map((p) => `- ${p}`).join('\n')}`;
   console.log(text);
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, `## Verify\n\n${text}\n`);
@@ -47,7 +63,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   main().then(
     (code) => process.exit(code),
     (e) => {
-      console.error(e);
+      // This log is public and an error message can hold a uid or an email, so only a short code is printed.
+      console.error(`verify could not finish (${safeErrorCode(e)}); details are withheld because this log is public.`);
       process.exit(1);
     },
   );

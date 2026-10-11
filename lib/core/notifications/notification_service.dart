@@ -869,14 +869,14 @@ class NotificationService with NotificationPreferencesMixin {
   Future<void> checkAndShowMilestone({
     required String investmentId,
     required String investmentName,
-    required double totalInvested,
-    required double totalReturned,
+    required double moic,
+    required double gain,
     String currency = 'INR',
   }) => _investmentHandler.checkAndShowMilestone(
     investmentId: investmentId,
     investmentName: investmentName,
-    totalInvested: totalInvested,
-    totalReturned: totalReturned,
+    moic: moic,
+    gain: gain,
     formatCurrency: _formatCurrency,
     currency: currency,
   );

@@ -10,10 +10,10 @@ import 'dart:io';
 void main() async {
   print('''
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                         InvTracker App Icon Setup                            ║
+║                         InvTrack App Icon Setup                              ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║                                                                              ║
-║  To generate app icons for InvTracker:                                       ║
+║  To generate app icons for InvTrack:                                         ║
 ║                                                                              ║
 ║  1. CREATE YOUR ICON:                                                        ║
 ║     • Use Figma, Canva, or any design tool                                   ║

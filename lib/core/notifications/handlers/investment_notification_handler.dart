@@ -641,21 +641,24 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
   // ============ Milestone Notifications ============
 
   /// Check if investment has reached a new milestone and show notification.
+  ///
+  /// [moic] and [gain] are the investment's shared stats in [currency] (the
+  /// MOIC on paid-in capital, as the screens show it); this does not work
+  /// them out again (money rule 3).
   Future<void> checkAndShowMilestone({
     required String investmentId,
     required String investmentName,
-    required double totalInvested,
-    required double totalReturned,
+    required double moic,
+    required double gain,
     required String Function(double, String) formatCurrency,
     String currency = 'INR',
   }) async {
     await ensureInitialized();
     if (!milestonesEnabled) return;
-    if (totalInvested <= 0) return;
+    // 0 is what the shared stats give when nothing was paid in.
+    if (!moic.isFinite || moic <= 0) return;
 
     if (!await ensurePermissionsForShow()) return;
-
-    final moic = totalReturned / totalInvested;
 
     double? reachedMilestone;
     for (final milestone in standardMilestones.reversed) {
@@ -669,8 +672,7 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
 
     await markMilestoneShown(investmentId, reachedMilestone);
 
-    final profit = totalReturned - totalInvested;
-    final formattedProfit = formatCurrency(profit, currency);
+    final formattedProfit = formatCurrency(gain, currency);
 
     final title =
         '🎉 ${reachedMilestone.toStringAsFixed(1)}x Returns Achieved!';
