@@ -1367,7 +1367,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       label: 'Expected Return Rate (% p.a.)',
       hint:
           hint ??
-          AppLocalizations.of(context).hintExpectedRateExample(_rateHintExample),
+          AppLocalizations.of(
+            context,
+          ).hintExpectedRateExample(_rateHintExample),
       showHintWhenEmpty: _firstInvestmentForm,
       prefixIcon: Icons.percent_rounded,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
