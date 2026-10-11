@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/auth/domain/usecases/link_account_usecase.dart';
 import 'package:inv_tracker/features/auth/presentation/dialogs/backup_merge_dialog.dart';
@@ -61,10 +64,12 @@ class GoogleSignInHandler {
       }
 
       final linkUseCase = ref.read(linkAccountUseCaseProvider);
+      // Read before the Google picker opens: the screen may be gone by then.
+      final analytics = ref.read(analyticsServiceProvider);
       final result = await linkUseCase.execute();
 
       return switch (result) {
-        LinkAccountSuccess() => _handleSuccess(result),
+        LinkAccountSuccess() => _handleSuccess(result, analytics),
         LinkAccountAccountExists() => await _handleAccountExists(),
         LinkAccountNotAnonymous() => _handleNotAnonymous(),
         LinkAccountCancelled() => _handleCancelled(),
@@ -91,11 +96,12 @@ class GoogleSignInHandler {
     }
   }
 
-  bool _handleSuccess(LinkAccountSuccess result) {
+  bool _handleSuccess(LinkAccountSuccess result, AnalyticsService analytics) {
     LoggerService.info(
       'Account linking succeeded',
       metadata: {'anonymous': false},
     );
+    unawaited(analytics.logAccountLinkSuccess(method: 'link'));
 
     if (context.mounted) {
       final l10n = AppLocalizations.of(context);

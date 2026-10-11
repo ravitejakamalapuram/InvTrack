@@ -6,12 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_stats_section.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+
+import '../../../../mocks/mock_analytics_service.dart';
 
 class _Privacy extends PrivacyModeNotifier {
   _Privacy(this.value);
@@ -80,7 +83,11 @@ Future<void> _pump(
 }) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [privacyModeProvider.overrideWith(() => _Privacy(privacy))],
+      overrides: [
+        privacyModeProvider.overrideWith(() => _Privacy(privacy)),
+        // The detail reports xirr_viewed when it shows a real XIRR.
+        analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
+      ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,

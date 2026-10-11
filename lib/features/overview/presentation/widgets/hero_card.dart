@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/core/widgets/privacy_toggle_button.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/presentation/utils/return_display.dart';
+import 'package:inv_tracker/features/investment/presentation/utils/xirr_viewed_logger.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Notifier for toggling between all and realized-only net position
@@ -134,12 +135,18 @@ class HeroCardContent extends ConsumerWidget {
       stats: stats,
       openStats: showRealizedOnly ? null : openStats,
     );
+    final isPrivacyMode = ref.watch(privacyModeProvider);
+    logXirrViewedOnce(
+      ref,
+      surface: XirrSurface.overview,
+      display: display,
+      isHidden: isPrivacyMode,
+    );
     final netPosition = stats.netCashFlow;
     final isPositive = netPosition >= 0;
     final status = display.statusLabel(l10n);
 
     // Privacy mode hides amounts from the screen reader as well.
-    final isPrivacyMode = ref.watch(privacyModeProvider);
     final semanticLabel = AccessibilityUtils.statCardLabel(
       title: showRealizedOnly ? 'Realized Net Position' : l10n.netCashFlowSoFar,
       value: isPrivacyMode

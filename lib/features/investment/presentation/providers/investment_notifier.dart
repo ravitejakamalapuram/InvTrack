@@ -117,6 +117,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .logInvestmentCreated(
             investmentType: type.name,
             hasNotes: notes != null && notes.trim().isNotEmpty,
+            // Add Investment takes no amount yet: A40 sets this.
+            hasAmount: false,
           );
 
       // Schedule income reminder if frequency is set

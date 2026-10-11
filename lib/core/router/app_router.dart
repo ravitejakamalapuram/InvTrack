@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/analytics_route_observer.dart';
+import 'package:inv_tracker/core/analytics/analytics_screens.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
@@ -45,7 +47,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
   final securityState = ref.watch(securityProvider);
   final onboardingComplete = ref.watch(onboardingCompleteProvider);
-  final analyticsObserver = ref.watch(analyticsObserverProvider);
+  final analytics = ref.watch(analyticsServiceProvider);
   final isReportsEnabled = ref.watch(isReportsTabEnabledProvider);
   final isIncomeGuardianEnabled = ref.watch(isIncomeGuardianEnabledProvider);
 
@@ -54,7 +56,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     // Route paths are diagnostics; release builds must not log them (A35).
     debugLogDiagnostics: ref.watch(developerToolsAvailableProvider),
-    observers: [...?analyticsObserver != null ? [analyticsObserver] : null],
+    // The one observer: go_router forwards the tabs' own Navigators to it, so
+    // none of the tab branches gets another (it would log every tab twice).
+    observers: [AnalyticsRouteObserver(analytics)],
     redirect: (context, state) {
       final isLocked = securityState.isLocked;
       final isLockScreen = state.uri.toString() == '/lock';
@@ -122,6 +126,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/',
+                name: AnalyticsScreens.overview,
                 builder: (context, state) => const OverviewScreen(),
               ),
             ],
@@ -131,12 +136,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/investments',
+                name: AnalyticsScreens.investments,
                 builder: (context, state) => const InvestmentListScreen(),
                 // Routes, not imperative pushes, so the lock redirect above
                 // applies to them (A07). They cover the whole screen.
                 routes: [
                   GoRoute(
                     path: ':id',
+                    name: AnalyticsScreens.investmentDetail,
                     parentNavigatorKey: rootNavigatorKey,
                     // The caller passes the investment it already loaded.
                     redirect: (context, state) =>
@@ -147,6 +154,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: ':id/add-cash-flow',
+                    name: AnalyticsScreens.addCashFlow,
                     parentNavigatorKey: rootNavigatorKey,
                     builder: (context, state) =>
                         NotificationNavigator.addCashFlowScreen(
@@ -163,14 +171,17 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/goals',
+                name: AnalyticsScreens.goals,
                 builder: (context, state) => const GoalsScreen(),
                 routes: [
                   GoRoute(
                     path: 'create',
+                    name: AnalyticsScreens.goalCreate,
                     builder: (context, state) => const CreateGoalScreen(),
                   ),
                   GoRoute(
                     path: ':id',
+                    name: AnalyticsScreens.goalDetail,
                     builder: (context, state) {
                       final goalId = state.pathParameters['id']!;
                       return GoalDetailsScreen(goalId: goalId);
@@ -185,11 +196,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/reports',
+                name: AnalyticsScreens.reports,
                 builder: (context, state) => const ReportsHomeScreen(),
                 routes: [
                   // Dynamic report builder - handles both wizard and generated reports
                   GoRoute(
                     path: 'builder',
+                    name: AnalyticsScreens.reportBuilder,
                     builder: (context, state) {
                       final params = state.uri.queryParameters;
 
@@ -225,6 +238,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/settings',
+                name: AnalyticsScreens.settings,
                 builder: (context, state) => const SettingsScreen(),
               ),
             ],
@@ -233,15 +247,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/auth/signin',
+        name: AnalyticsScreens.signIn,
         builder: (context, state) => const SignInScreen(),
       ),
       GoRoute(
         path: '/lock',
+        name: AnalyticsScreens.lock,
         builder: (context, state) =>
             const PasscodeScreen(mode: PasscodeMode.unlock),
       ),
       GoRoute(
         path: '/onboarding',
+        name: AnalyticsScreens.onboarding,
         builder: (context, state) => OnboardingScreen(
           onComplete: () {
             // Invalidate the provider so it re-checks
@@ -253,14 +270,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       // FIRE Number routes
       GoRoute(
         path: '/fire',
+        name: AnalyticsScreens.fire,
         builder: (context, state) => const FireDashboardScreen(),
         routes: [
           GoRoute(
             path: 'setup',
+            name: AnalyticsScreens.fireSetup,
             builder: (context, state) => const FireSetupScreen(),
           ),
           GoRoute(
             path: 'settings',
+            name: AnalyticsScreens.fireSettings,
             builder: (context, state) => const FireSettingsScreen(),
           ),
         ],
@@ -268,11 +288,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Portfolio Health route
       GoRoute(
         path: '/portfolio-health',
+        name: AnalyticsScreens.portfolioHealth,
         builder: (context, state) => const PortfolioHealthDetailsScreen(),
       ),
       // Income Calendar route
       GoRoute(
         path: '/income-calendar',
+        name: AnalyticsScreens.incomeCalendar,
         builder: (context, state) => const IncomeCalendarScreen(),
       ),
     ],
