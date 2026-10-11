@@ -18,7 +18,7 @@
   document.getElementById('root').innerHTML = I.panes(function () {
     return '<div class="it-stack" style="gap:14px">' +
       I.Dialog({ title: 'Delete Investment?', message: 'This will permanently delete this investment and all its transactions. This action cannot be undone.', confirm: 'Delete', height: 330 }) +
-      cap('AppFeedback.showConfirmDialog: surface fill, 20px radius, h4 title, muted message; destructive confirm in the theme\'s error colour (#ef4444 in light, #f87171 in dark).') +
+      cap('AppFeedback.showConfirmDialog: surface fill, 20px radius, h4 title, muted message; destructive confirm in the theme\'s error colour (#cc1926 in light, #f87171 in dark).') +
       I.Dialog({ variant: 'form', title: 'Current value', height: 330, html:
         '<div class="it-m3field"><span>Value in INR</span><div>1,38,000</div></div>' +
         '<button type="button" class="it-btn it-btn--text" style="padding:0 8px">' + I.icon('event', { size: 18 }) + '<span>Value as of Oct 11, 2026</span></button>' }) +

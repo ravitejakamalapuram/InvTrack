@@ -31,8 +31,8 @@
 | Primary Text | `#1C1917` | `#FAFAF9` | **15.8:1** | ✅ AAA |
 | Secondary Text | `#66615C` | `#FAFAF9` | **5.9:1** | ✅ AA |
 | Primary Button | `#FFFFFF` | `#5B4CDB` | **8.2:1** | ✅ AAA |
-| Success Text | `#10B981` | `#FFFFFF` | **3.2:1** | ✅ AA (UI) |
-| Danger Text | `#EF4444` | `#FFFFFF` | **4.1:1** | ✅ AA (UI) |
+| Success Text | `#007A54` | `#FFFFFF` | **5.37:1** | ✅ AA |
+| Danger Text | `#CC1926` | `#FFFFFF` | **5.62:1** | ✅ AA |
 | Card Text | `#1C1917` | `#FFFFFF` | **16.1:1** | ✅ AAA |
 
 #### Dark Mode

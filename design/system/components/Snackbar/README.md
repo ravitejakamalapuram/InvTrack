@@ -4,8 +4,8 @@ Use a snackbar to confirm a finished action or report a failure the user can ret
 
 ## Kinds
 
-- `success`: `success` fill (light `#10b981`, dark `#34d399`), a 20px white check-circle icon, 2 s. Haptic: medium.
-- `error`: `error` fill (light `#ef4444`, dark `#f87171`), a white error icon, 3 s. Haptic: heavy.
+- `success`: `success` fill (light `#007a54`, dark `#34d399`), a 20px white check-circle icon, 2 s. Haptic: medium.
+- `error`: `error` fill (light `#cc1926`, dark `#f87171`), a white error icon, 3 s. Haptic: heavy.
 - `info`: `primary` fill (light `#5b4cdb`, dark `#8b7cf6`), a white info icon, 2 s. Haptic: selection.
 - `exact` (CompactAmountText long-press): `neutral-800-light` in light, `surface` in dark; a 11px "Exact Amount" label (white 70%) over the 16px/700 figure to two decimals, and a copy icon button (48dp). Copying shows a green "Copied to clipboard" snackbar for 1 s: `success` fill (light `#10b981`, dark `#34d399`), a check icon and the message in `card` colour (white in light, #171717 in dark; 9.33:1 on the dark fill). 4 s.
 The snackbars of Settings, Data & Account and the guest-backup notices follow the same rule: `success` or `error` fill by theme, and the Retry action of the currency snackbar is the message colour (white in light, #171717 in dark). Only the import-warnings snackbar keeps one amber fill (`warning`, #f59e0b) with fixed dark text in both themes.
@@ -23,7 +23,7 @@ All are floating with a 12px radius (`radius-md`). The message is not styled in 
 
 ## Contrast
 
-In light the white message is 2.54:1 on the success fill and 3.76:1 on the error fill; white on the info fill is 6.00:1. In dark the message is #171717 on the lighter fills: 9.33:1 on success `#34d399`, 6.48:1 on error `#f87171`, 5.39:1 on info `#8b7cf6`; only the white icon is low there, 1.92:1, 2.77:1 and 3.33:1. The exact-amount toast is 15.17:1 and 19.80:1. These are the source's pairs and are kept; the message and the icon shape carry the meaning.
+In light the white message is 5.37:1 on the success fill and 5.62:1 on the error fill; white on the info fill is 6.00:1. In dark the message is #171717 on the lighter fills: 9.33:1 on success `#34d399`, 6.48:1 on error `#f87171`, 5.39:1 on info `#8b7cf6`; only the white icon is low there, 1.92:1, 2.77:1 and 3.33:1. The exact-amount toast is 15.17:1 and 19.80:1. These are the source's pairs and are kept; the message and the icon shape carry the meaning.
 
 ## Source
 

@@ -22,8 +22,8 @@ declare namespace InvTrack {
   function Button(props: ButtonProps): Html;
 
   type StatTileProps =
-    | { kind?: 'metric'; label: string; value: string; icon?: string; color?: Css; change?: string; positive?: boolean; sensitive?: boolean }
-    | { kind: 'quick'; icon: string; label: string; value: string; sub?: string; color: Css; sensitive?: boolean }
+    | { kind?: 'metric'; label: string; value: string; icon?: string; color?: Css; tint?: Css; change?: string; positive?: boolean; sensitive?: boolean }
+    | { kind: 'quick'; icon: string; label: string; value: string; sub?: string; color: Css; tint?: Css; sensitive?: boolean }
     | { kind: 'mini'; label: string; value: string; sub?: string; color?: Css; sensitive?: boolean }
     | { kind: 'net'; label: string; value: string; positive?: boolean; neutral?: boolean; status?: string; returnText?: string }
     | { kind: 'current'; label: string; value?: string; basis: string; action?: string }

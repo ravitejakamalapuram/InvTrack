@@ -14,7 +14,7 @@ Use it in the investment list, search results and selection mode. For a summary 
 
 ## States
 
-Closed · Open awaiting first payout · Open awaiting current value · Maturity chips · Selection mode · Privacy mode · No cash flows yet. A positive net cash flow and a positive return badge are `graph-emerald`; a negative net cash flow while a value exists is `danger` (#ef4444 in light, #f87171 in dark); the maturity chips use `success`, `warning` and `accent` the same way. While the investment awaits a value there is no net to colour: money still invested is not a loss, so the card shows invested and received in `text` and `text-secondary`. With no cash flows yet (`empty`) the value column is a `chevron_right` in `neutral-400-light` (`neutral-400-dark` in dark): no amount, no badge, and the strip offers View Details.
+Closed · Open awaiting first payout · Open awaiting current value · Maturity chips · Selection mode · Privacy mode · No cash flows yet. A positive net cash flow and a positive return badge are `graph-emerald`; a negative net cash flow while a value exists is `danger` (#cc1926 in light, #f87171 in dark), and a loss pill is tinted with `danger-tint` in light; the maturity chips use `success`, `warning` and `accent` the same way, and MATURED is tinted with `success-tint` in light (the label on it is 4.67:1; on a tint of `success` itself it would be 4.34:1). While the investment awaits a value there is no net to colour: money still invested is not a loss, so the card shows invested and received in `text` and `text-secondary`. With no cash flows yet (`empty`) the value column is a `chevron_right` in `neutral-400-light` (`neutral-400-dark` in dark): no amount, no badge, and the strip offers View Details.
 
 ## Consumer provides
 

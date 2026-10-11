@@ -19,6 +19,8 @@
   --it-focus-chip: var(--neutral-900-light);   /* filter chip focus border */
   --it-snack-info: var(--neutral-800-light);   /* "Exact amount" toast background */
   --it-nav-bg: var(--white);                   /* HomeShellScreen NavigationBar: AppColors.whiteLight */
+  --it-success-tint: var(--success-tint);      /* what a green chip, disc or tile is tinted with: the brighter green in light (successTintLight) */
+  --it-danger-tint: var(--danger-tint);        /* likewise for red (dangerTintLight) */
 }
 [data-theme="dark"] {
   --it-tint-03: rgba(255, 255, 255, .03);
@@ -35,12 +37,14 @@
   --it-focus-chip: #ffffff;
   --it-snack-info: var(--surface);
   --it-nav-bg: var(--surface);                 /* HomeShellScreen NavigationBar: AppColors.surfaceDark, not the theme's cardDark */
+  --it-success-tint: var(--success);           /* in dark the tint is made of the dark green itself */
+  --it-danger-tint: var(--danger);
 }
 /* AppColors.*Light constants that widgets paint in BOTH themes (see README: "Light values in dark mode"). A widget that picks the dark value in dark mode reads the role token instead: var(--primary), var(--success), var(--danger), var(--warning), var(--accent). */
 :root {
   --it-primary-l: #5b4cdb;   /* AppColors.primaryLight */
-  --it-success-l: #10b981;   /* AppColors.successLight */
-  --it-danger-l: #ef4444;    /* AppColors.errorLight = dangerLight */
+  --it-success-l: #007a54;   /* AppColors.successLight */
+  --it-danger-l: #cc1926;    /* AppColors.errorLight = dangerLight */
   --it-warning-l: #f59e0b;   /* AppColors.warningLight */
   --it-accent-l: #0ea5e9;    /* AppColors.accentLight */
   --it-success-bg-l: #d1fae5;
@@ -142,12 +146,12 @@
 /* ---------- Stat tiles ---------- */
 .it-metric { display: block; width: 100%; text-align: left; background: var(--card); border: 1px solid var(--field-border); border-radius: var(--radius-lg); padding: var(--space-md); font: inherit; color: var(--text); }
 .it-metric__head { display: flex; align-items: center; gap: var(--space-xs); }
-.it-metric__icon { display: inline-flex; padding: var(--space-xs); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--c, var(--it-primary-l)) 10%, transparent); color: var(--c, var(--it-primary-l)); }
+.it-metric__icon { display: inline-flex; padding: var(--space-xs); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--tint, var(--c, var(--it-primary-l))) 10%, transparent); color: var(--c, var(--it-primary-l)); }
 .it-metric__label { flex: 1; min-width: 0; font: 400 14px/1.4 var(--font-text); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .it-metric__value { margin-top: var(--space-sm); font: 600 20px/1.3 var(--font-display); color: var(--text); }
 .it-metric__change { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font: 500 12px/1.4 var(--font-text); }
 .it-quick { display: flex; align-items: center; gap: var(--space-sm); }
-.it-quick__icon { display: inline-flex; padding: 10px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--c) 10%, transparent); color: var(--c); }
+.it-quick__icon { display: inline-flex; padding: 10px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--tint, var(--c)) 10%, transparent); color: var(--c); }
 .it-quick__label { font: 400 12px/1.4 var(--font-text); color: var(--it-grey-600); }
 .it-quick__value { font: 700 18px/1.4 var(--font-text); color: var(--text-secondary); }   /* bare TextStyle: inherits Theme.textTheme.bodyMedium colour (neutral600 / neutral400) */
 .it-quick__sub { font: 400 11px/1.4 var(--font-text); color: var(--it-grey-500); }
@@ -156,7 +160,7 @@
 .it-mini__value { margin-top: 4px; font: 700 15px/1.5 var(--font-text); }
 .it-mini__sub { margin-top: 2px; font: 400 10px/1.4 var(--font-text); color: var(--text-subtle); }
 .it-netpos { display: flex; align-items: center; gap: 14px; }
-.it-netpos__icon { display: inline-flex; padding: var(--space-sm); border-radius: 14px; background: color-mix(in srgb, var(--c) 10%, transparent); color: var(--c); }
+.it-netpos__icon { display: inline-flex; padding: var(--space-sm); border-radius: 14px; background: color-mix(in srgb, var(--tint, var(--c)) 10%, transparent); color: var(--c); }
 .it-netpos__label { font: 400 12px/1.4 var(--font-text); color: var(--text-muted); }
 .it-netpos__value { margin-top: 4px; font: 700 20px/1.35 var(--font-display); letter-spacing: -.2px; color: var(--text); }
 .it-pill { display: inline-block; padding: 6px 10px; border-radius: var(--radius-sm); font: 600 12px/1.4 var(--font-text); }
@@ -188,7 +192,7 @@
 .it-ccy--full i { font-style: normal; font-size: 10px; color: var(--text-subtle); padding: 0 6px; }
 .it-ccy--full span { font-weight: 400; color: var(--text-secondary); }
 .it-tag { display: inline-flex; align-items: center; gap: 3px; padding: 2px var(--space-xs); border-radius: var(--radius-badge); font: 500 12px/1.4 var(--font-text); color: var(--c); background: color-mix(in srgb, var(--c) 10%, transparent); }
-.it-tag--strong { font-weight: 600; background: color-mix(in srgb, var(--c) 15%, transparent); }
+.it-tag--strong { font-weight: 600; background: color-mix(in srgb, var(--tint, var(--c)) 15%, transparent); }
 .it-tag--closed { font-weight: 600; background: color-mix(in srgb, var(--it-grey) 20%, transparent); color: var(--it-grey); }
 
 /* ---------- Chips ---------- */
@@ -312,7 +316,7 @@
 .it-tag__t { min-width: 0; overflow-wrap: anywhere; }
 .it-inv__chev { display: inline-flex; color: var(--neutral-400-light); }   /* Icons.chevron_right_rounded: neutral400Light, neutral400Dark in dark */
 [data-theme="dark"] .it-inv__chev { color: var(--neutral-400-dark); }
-.it-inv__badge { padding: 2px 6px; border-radius: var(--radius-badge); font: 600 10px/1.4 var(--font-text); color: var(--c); background: color-mix(in srgb, var(--c) 10%, transparent); }
+.it-inv__badge { padding: 2px 6px; border-radius: var(--radius-badge); font: 600 10px/1.4 var(--font-text); color: var(--c); background: color-mix(in srgb, var(--tint, var(--c)) 10%, transparent); }
 .it-inv__strip { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--space-md); padding: var(--space-sm) var(--space-md); background: var(--it-tint-03); border-radius: 0 0 var(--radius-xl) var(--radius-xl); font: 400 12px/1.4 var(--font-text); color: var(--text-muted); }
 .it-inv__strip > span { display: inline-flex; align-items: center; gap: 4px; }
 .it-inv__strip > .it-sp { flex: 1; }

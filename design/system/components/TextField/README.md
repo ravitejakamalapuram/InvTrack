@@ -6,7 +6,7 @@ Use it for every text input in a form. In a dialog the bare Material `TextFormFi
 
 - Label above: `body-large` (18px) at weight 600 in `text`, at least 44 x 44 so tapping it focuses the field, 8px above the box. It is excluded from the semantics tree because the field carries the same label.
 - Box: `surface` fill, 1px `field-border`, `radius-field` 14, padding 16 x 16 (56px tall), text `body` 16 in `text`. Hint `body` in `text-subtle`. Prefix icon 24px in `text-muted`, or prefix text (for example "₹") in `text`. A 20px clear button (cancel icon, `neutral-400-light`; `neutral-400-dark` in dark) appears while the field has text and is editable.
-- Focus: a 2px border in `primary` (`#5b4cdb` in light, `#8b7cf6` in dark). Error: 1px `error` border (2px when focused; `#ef4444` in light, `#f87171` in dark) and a message below.
+- Focus: a 2px border in `primary` (`#5b4cdb` in light, `#8b7cf6` in dark). Error: 1px `error` border (2px when focused; `#cc1926` in light, `#f87171` in dark) and a message below.
 - Multi-line: `maxLines` greater than 1; icons align to the top.
 - Read-only and disabled fields keep the clear button hidden.
 

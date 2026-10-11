@@ -3,8 +3,10 @@
 /// when a grey is changed in one place and not the other. Plain file check, like
 /// design_tokens_layout_test.dart.
 ///
-/// Only the greys: the other colours are named differently in the tokens, so
-/// there is no name to match them by.
+/// The greys are matched by name. The green and red status colours are named
+/// differently in the code (`successLight`, `successTintLight`) and in the
+/// tokens (`success`, `success-tint`), so they are matched by a short table.
+/// The other colours have no test yet.
 library;
 
 import 'dart:convert';
@@ -27,7 +29,59 @@ void _collect(Object? node, Map<String, Object?> into) {
   }
 }
 
+/// `static const Color name = Color(0xFFrrggbb);` as `name: #rrggbb`.
+Map<String, String> _hexes(String source) => {
+  for (final m in RegExp(
+    r'static const Color (\w+) = Color\(0xFF([0-9A-Fa-f]{6})\);',
+  ).allMatches(source))
+    m.group(1)!: '#${m.group(2)!.toLowerCase()}',
+};
+
 void main() {
+  test('the green and red tokens are the colours app_colors.dart paints', () {
+    final hexes = _hexes(
+      File('lib/core/theme/app_colors.dart').readAsStringSync(),
+    );
+    final tokens = <String, Object?>{};
+    _collect(
+      jsonDecode(File('design/system/tokens.json').readAsStringSync()),
+      tokens,
+    );
+    // Token, the constant it paints in light and the one in dark. The tint
+    // sources are the same in both themes.
+    const table = [
+      ('success', 'successLight', 'successDark'),
+      ('success-tint', 'successTintLight', 'successTintLight'),
+      ('success-bg', 'successBgLight', 'successBgLight'),
+      ('danger', 'dangerLight', 'dangerDark'),
+      ('danger-tint', 'dangerTintLight', 'dangerTintLight'),
+      ('danger-bg', 'dangerBgLight', 'dangerBgLight'),
+    ];
+    final drift = <String>[];
+    for (final (token, light, dark) in table) {
+      final value = tokens[token];
+      if (value is! Map) {
+        drift.add('$token: missing from tokens.json');
+        continue;
+      }
+      if (value['light'] != hexes[light]) {
+        drift.add(
+          '$token light: tokens.json ${value['light']}, $light ${hexes[light]}',
+        );
+      }
+      if (value['dark'] != hexes[dark]) {
+        drift.add(
+          '$token dark: tokens.json ${value['dark']}, $dark ${hexes[dark]}',
+        );
+      }
+    }
+    expect(
+      drift,
+      isEmpty,
+      reason: 'Change both in the same commit:\n${drift.join('\n')}',
+    );
+  });
+
   test('every neutral grey in app_colors.dart is a token with the same hex', () {
     final source = File('lib/core/theme/app_colors.dart').readAsStringSync();
     final greys = RegExp(
