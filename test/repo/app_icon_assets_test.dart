@@ -261,6 +261,30 @@ void main() {
     });
   });
 
+  group('every shipped raster export', () {
+    final paths = [
+      '$_iconDir/app_icon.png',
+      '$_iconDir/play_store_512.png',
+      '$_iconDir/app_icon_foreground.png',
+      '$_iconDir/app_icon_monochrome.png',
+      '$_iconDir/app_icon_mark.png',
+      for (final d in _densities) ...[
+        '$_res/drawable-$d/ic_launcher_foreground.png',
+        '$_res/drawable-$d/ic_launcher_monochrome.png',
+        '$_res/mipmap-$d/ic_launcher.png',
+      ],
+    ];
+    for (final path in paths) {
+      test('$path has no watermark in its bottom-right corner', () async {
+        expect(
+          await _watermarkPixels(await _png(path)),
+          isEmpty,
+          reason: '$path contains pixels that look like a corner watermark',
+        );
+      });
+    }
+  });
+
   group('app_icon_mark.png (lock screen, tinted with srcIn)', () {
     test('has fully transparent corners', () async {
       final p = await _png('$_iconDir/app_icon_mark.png');
@@ -310,9 +334,17 @@ void main() {
 
     // Launchers mask the layer with a circle, a squircle or a rounded square.
     // The circle is the strictest, with a radius of 33 of the 108 units.
-    for (final name in ['app_icon_foreground.png', 'app_icon_monochrome.png']) {
-      test('$name draws only inside the circular safe zone', () async {
-        final p = await _png('$_iconDir/$name');
+    final safeZonePaths = [
+      '$_iconDir/app_icon_foreground.png',
+      '$_iconDir/app_icon_monochrome.png',
+      for (final d in _densities) ...[
+        '$_res/drawable-$d/ic_launcher_foreground.png',
+        '$_res/drawable-$d/ic_launcher_monochrome.png',
+      ],
+    ];
+    for (final path in safeZonePaths) {
+      test('$path draws only inside the circular safe zone', () async {
+        final p = await _png(path);
         expect(p.countVisible(), greaterThan(0), reason: 'nothing drawn');
         final unit = p.width / _canvas;
         // One unit of tolerance for anti-aliasing at the edge of the zone.
