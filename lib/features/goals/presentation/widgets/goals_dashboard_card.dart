@@ -172,7 +172,8 @@ class _GoalsDashboardCardState extends ConsumerState<GoalsDashboardCard> {
         // PageView carousel with peek and scale animation
         if (summary.allCarouselGoals.isNotEmpty)
           SizedBox(
-            height: 110, // Compact height
+            // Compact, and as tall as the card needs at this text size.
+            height: GoalCarouselCard.heightFor(context),
             child: PageView.builder(
               controller: _pageController,
               onPageChanged: _onPageChanged,

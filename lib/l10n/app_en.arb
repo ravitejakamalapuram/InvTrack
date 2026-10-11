@@ -2377,6 +2377,17 @@
     "description": "Hint text for investment start date"
   },
 
+  "hintExpectedRateExample": "e.g. {rate}",
+  "@hintExpectedRateExample": {
+    "description": "Grey hint in the empty expected-return-rate field of the add investment form. The rate is a typical annual percentage for the chosen type, written without a percent sign, for example 7 or 6.5. It is only an example and is never saved.",
+    "placeholders": {
+      "rate": {
+        "type": "String",
+        "example": "7.5"
+      }
+    }
+  },
+
   "archive": "Archive",
   "@archive": {
     "description": "Archive action label"
@@ -6219,6 +6230,15 @@
   "goalAlsoCountedIn": "{count, plural, =1{Also counted in 1 other goal} other{Also counted in {count} other goals}}",
   "@goalAlsoCountedIn": {
     "description": "Goal card and details: the goal's investments also count towards other goals",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goalAlsoInGoals": "{count, plural, =1{Also in 1 goal} other{Also in {count} goals}}",
+  "@goalAlsoInGoals": {
+    "description": "Goal card chip: the goal's investments also count towards other goals. The short form of goalAlsoCountedIn, which a screen reader hears.",
     "placeholders": {
       "count": {
         "type": "int"

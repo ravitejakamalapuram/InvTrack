@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/calculations/investment_projector.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
@@ -10,6 +11,8 @@ import 'package:inv_tracker/core/utils/number_format_utils.dart';
 import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
+import 'package:inv_tracker/core/widgets/spread_row.dart';
+import 'package:inv_tracker/core/widgets/stat_columns.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/presentation/utils/return_display.dart';
@@ -122,55 +125,54 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: 10),
-        // XIRR and MOIC row
-        Row(
-          children: [
-            Expanded(
-              child: _MiniStatCard(
-                label: display.metricLabel(l10n),
-                value: display.primaryText(l10n),
-                color: !hasReturnFigure
-                    ? _neutralColor
-                    : returnIsPositive
-                    ? AppColors.graphCyan
-                    : (isDark ? AppColors.errorDark : AppColors.errorLight),
-                isDark: isDark,
-                subtitle: xirrSubtitle,
-                isPrivacyMode: isPrivacyMode,
-                semanticsLabel: display.isSoFar && hasReturnFigure
-                    ? display.semanticsFigure(
-                        l10n,
-                        _withSubtitle(
-                          '${display.metricLabel(l10n, qualified: false)}: '
-                          '${isPrivacyMode ? l10n.hiddenPercentage : display.primaryText(l10n)}',
-                          xirrSubtitle,
-                        ),
-                      )
-                    : null,
-              ),
+        // XIRR and MOIC: two tiles that share a top, a height and the baseline
+        // of their values, whatever the label or note says.
+        StatColumns(
+          align: StatColumnsAlign.center,
+          gap: 10,
+          tileBuilder: (context, index) => GlassCard(
+            padding: EdgeInsets.zero,
+            child: const SizedBox.expand(),
+          ),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          columns: [
+            _statColumn(
+              label: display.metricLabel(l10n),
+              value: display.primaryText(l10n),
+              color: !hasReturnFigure
+                  ? _neutralColor
+                  : returnIsPositive
+                  ? AppColors.graphCyan
+                  : (isDark ? AppColors.errorDark : AppColors.errorLight),
+              subtitle: xirrSubtitle,
+              semanticsLabel: display.isSoFar && hasReturnFigure
+                  ? display.semanticsFigure(
+                      l10n,
+                      _withSubtitle(
+                        '${display.metricLabel(l10n, qualified: false)}: '
+                        '${isPrivacyMode ? l10n.hiddenPercentage : display.primaryText(l10n)}',
+                        xirrSubtitle,
+                      ),
+                    )
+                  : null,
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _MiniStatCard(
-                label: display.moicLabel(l10n),
-                value: display.isAwaitingValue ? ReturnDisplay.dash : moicText,
-                color: AppColors.graphPurple,
-                isDark: isDark,
-                subtitle: moicSubtitle,
-                isPrivacyMode: isPrivacyMode,
-                // A multiple is not a percentage: it keeps the neutral hidden
-                // string the Overview quick-stats tile uses.
-                semanticsLabel: display.isSoFar
-                    ? display.semanticsFigure(
-                        l10n,
-                        _withSubtitle(
-                          '${l10n.moicLabel}: '
-                          '${isPrivacyMode ? l10n.hiddenAmount : moicText}',
-                          moicSubtitle,
-                        ),
-                      )
-                    : null,
-              ),
+            _statColumn(
+              label: display.moicLabel(l10n),
+              value: display.isAwaitingValue ? ReturnDisplay.dash : moicText,
+              color: AppColors.graphPurple,
+              subtitle: moicSubtitle,
+              // A multiple is not a percentage: it keeps the neutral hidden
+              // string the Overview quick-stats tile uses.
+              semanticsLabel: display.isSoFar
+                  ? display.semanticsFigure(
+                      l10n,
+                      _withSubtitle(
+                        '${l10n.moicLabel}: '
+                        '${isPrivacyMode ? l10n.hiddenAmount : moicText}',
+                        moicSubtitle,
+                      ),
+                    )
+                  : null,
             ),
           ],
         ),
@@ -185,6 +187,49 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
 
   Color get _neutralColor =>
       isDark ? AppColors.neutral400Dark : AppColors.neutral500Light;
+
+  /// One XIRR / MOIC figure for [StatColumns]: the label, the value in
+  /// [color], and the subtitle under the value.
+  ///
+  /// [semanticsLabel] is what a screen reader says instead of the texts, when
+  /// they need more than the label and the value.
+  StatColumn _statColumn({
+    required String label,
+    required String value,
+    required Color color,
+    String? subtitle,
+    String? semanticsLabel,
+  }) {
+    final valueStyle = AppTypography.bodyMedium.copyWith(
+      color: color,
+      fontWeight: FontWeight.w700,
+    );
+    return StatColumn(
+      labelText: label,
+      label: Text(
+        label,
+        style: AppTypography.small.copyWith(
+          color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+          fontSize: 11,
+        ),
+      ),
+      value: isPrivacyMode
+          ? MaskedAmountText(text: value, style: valueStyle)
+          : Text(value, style: valueStyle),
+      note: subtitle == null
+          ? null
+          : Text(
+              subtitle,
+              style: AppTypography.small.copyWith(
+                color: isDark
+                    ? AppColors.neutral500Dark
+                    : AppColors.neutral400Light,
+                fontSize: 10,
+              ),
+            ),
+      semanticsLabel: semanticsLabel,
+    );
+  }
 
   /// [figure] followed by the card's visible subtitle, which a card that
   /// replaces its texts with one semantics label would otherwise drop.
@@ -240,54 +285,63 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
 
     return GlassCard(
       padding: const EdgeInsets.all(16),
-      child: Row(
+      // The badge drops below the amount at large text sizes instead of
+      // overflowing.
+      child: SpreadRow(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              status != null
-                  ? Icons.hourglass_top_rounded
-                  : isPositive
-                  ? Icons.trending_up_rounded
-                  : Icons.trending_down_rounded,
-              size: 28,
-              color: accent,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  investment.isOpen ? l10n.netCashFlowSoFar : l10n.netPosition,
-                  style: AppTypography.small.copyWith(
-                    color: isDark
-                        ? AppColors.neutral400Dark
-                        : AppColors.neutral500Light,
-                  ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(height: 4),
-                isPrivacyMode
-                    ? MaskedAmountText(
-                        text: currencyFormat.formatSmart(stats.netCashFlow),
-                        style: netPositionStyle,
-                      )
-                    : CompactAmountText(
-                        amount: stats.netCashFlow,
-                        compactText: currencyFormat.formatSmart(
-                          stats.netCashFlow,
-                        ),
-                        currencySymbol: currencyFormat.currencySymbol,
-                        locale: currencyFormat.locale,
-                        style: netPositionStyle,
+                child: Icon(
+                  status != null
+                      ? Icons.hourglass_top_rounded
+                      : isPositive
+                      ? Icons.trending_up_rounded
+                      : Icons.trending_down_rounded,
+                  size: 28,
+                  color: accent,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      investment.isOpen
+                          ? l10n.netCashFlowSoFar
+                          : l10n.netPosition,
+                      style: AppTypography.small.copyWith(
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral500Light,
                       ),
-              ],
-            ),
+                    ),
+                    const SizedBox(height: 4),
+                    isPrivacyMode
+                        ? MaskedAmountText(
+                            text: currencyFormat.formatSmart(stats.netCashFlow),
+                            style: netPositionStyle,
+                          )
+                        : CompactAmountText(
+                            amount: stats.netCashFlow,
+                            compactText: currencyFormat.formatSmart(
+                              stats.netCashFlow,
+                            ),
+                            currencySymbol: currencyFormat.currencySymbol,
+                            locale: currencyFormat.locale,
+                            style: netPositionStyle,
+                          ),
+                  ],
+                ),
+              ),
+            ],
           ),
           // Return percentage badge
           _buildReturnBadge(isPositive, status, display.badgeText(l10n)),
@@ -352,68 +406,91 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
 
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
+      child: SpreadRow(
         children: [
-          // Cash Out
-          Icon(
-            Icons.arrow_upward_rounded,
-            size: 16,
-            color: isDark ? AppColors.errorDark : AppColors.errorLight,
-          ),
-          const SizedBox(width: 4),
-          isPrivacyMode
-              ? MaskedAmountText(
-                  text: currencyFormat.formatCompact(stats.totalInvested),
-                  style: cashFlowStyle,
-                )
-              : CompactAmountText(
-                  amount: stats.totalInvested,
-                  compactText: currencyFormat.formatCompact(
-                    stats.totalInvested,
+          // Cash out and cash in stay together; at large text sizes "in" drops
+          // below "out" instead of overflowing.
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.xxs,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Cash Out
+                  Icon(
+                    Icons.arrow_upward_rounded,
+                    size: 16,
+                    color: isDark ? AppColors.errorDark : AppColors.errorLight,
                   ),
-                  currencySymbol: currencyFormat.currencySymbol,
-                  locale: currencyFormat.locale,
-                  style: cashFlowStyle,
-                ),
-          Text(
-            ' out',
-            style: AppTypography.small.copyWith(
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Cash In
-          Icon(
-            Icons.arrow_downward_rounded,
-            size: 16,
-            color: isDark ? AppColors.successDark : AppColors.successLight,
-          ),
-          const SizedBox(width: 4),
-          isPrivacyMode
-              ? MaskedAmountText(
-                  text: currencyFormat.formatCompact(stats.totalReturned),
-                  style: cashFlowStyle,
-                )
-              : CompactAmountText(
-                  amount: stats.totalReturned,
-                  compactText: currencyFormat.formatCompact(
-                    stats.totalReturned,
+                  const SizedBox(width: 4),
+                  isPrivacyMode
+                      ? MaskedAmountText(
+                          text: currencyFormat.formatCompact(
+                            stats.totalInvested,
+                          ),
+                          style: cashFlowStyle,
+                        )
+                      : CompactAmountText(
+                          amount: stats.totalInvested,
+                          compactText: currencyFormat.formatCompact(
+                            stats.totalInvested,
+                          ),
+                          currencySymbol: currencyFormat.currencySymbol,
+                          locale: currencyFormat.locale,
+                          style: cashFlowStyle,
+                        ),
+                  Text(
+                    ' out',
+                    style: AppTypography.small.copyWith(
+                      color: isDark
+                          ? AppColors.neutral400Dark
+                          : AppColors.neutral500Light,
+                    ),
                   ),
-                  currencySymbol: currencyFormat.currencySymbol,
-                  locale: currencyFormat.locale,
-                  style: cashFlowStyle,
-                ),
-          Text(
-            ' in',
-            style: AppTypography.small.copyWith(
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
-            ),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Cash In
+                  Icon(
+                    Icons.arrow_downward_rounded,
+                    size: 16,
+                    color: isDark
+                        ? AppColors.successDark
+                        : AppColors.successLight,
+                  ),
+                  const SizedBox(width: 4),
+                  isPrivacyMode
+                      ? MaskedAmountText(
+                          text: currencyFormat.formatCompact(
+                            stats.totalReturned,
+                          ),
+                          style: cashFlowStyle,
+                        )
+                      : CompactAmountText(
+                          amount: stats.totalReturned,
+                          compactText: currencyFormat.formatCompact(
+                            stats.totalReturned,
+                          ),
+                          currencySymbol: currencyFormat.currencySymbol,
+                          locale: currencyFormat.locale,
+                          style: cashFlowStyle,
+                        ),
+                  Text(
+                    ' in',
+                    style: AppTypography.small.copyWith(
+                      color: isDark
+                          ? AppColors.neutral400Dark
+                          : AppColors.neutral500Light,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          const Spacer(),
           Text(
             '${stats.cashFlowCount} txns',
             style: AppTypography.small.copyWith(
@@ -460,39 +537,37 @@ class _CurrentValueCard extends StatelessWidget {
 
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
+      child: SpreadRow(
         children: [
-          Expanded(
-            child: Semantics(
-              container: true,
-              label: semanticsLabel,
-              child: ExcludeSemantics(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.currentValueLabel,
-                      style: AppTypography.small.copyWith(color: mutedColor),
-                    ),
-                    if (amountText != null) ...[
-                      const SizedBox(height: 2),
-                      MaskedAmountText(
-                        text: amountText,
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: isDark
-                              ? Colors.white
-                              : AppColors.neutral900Light,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+          Semantics(
+            container: true,
+            label: semanticsLabel,
+            child: ExcludeSemantics(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.currentValueLabel,
+                    style: AppTypography.small.copyWith(color: mutedColor),
+                  ),
+                  if (amountText != null) ...[
                     const SizedBox(height: 2),
-                    Text(
-                      basis,
-                      style: AppTypography.small.copyWith(color: mutedColor),
+                    MaskedAmountText(
+                      text: amountText,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: isDark
+                            ? Colors.white
+                            : AppColors.neutral900Light,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
-                ),
+                  const SizedBox(height: 2),
+                  Text(
+                    basis,
+                    style: AppTypography.small.copyWith(color: mutedColor),
+                  ),
+                ],
               ),
             ),
           ),
@@ -523,81 +598,6 @@ class _CurrentValueCard extends StatelessWidget {
   }
 }
 
-/// Mini stat card for XIRR/MOIC display.
-class _MiniStatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  final bool isDark;
-  final String? subtitle;
-  final bool isPrivacyMode;
-
-  /// What a screen reader says instead of the texts, when they need more
-  /// than the label and the value.
-  final String? semanticsLabel;
-
-  const _MiniStatCard({
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.isDark,
-    this.subtitle,
-    this.isPrivacyMode = false,
-    this.semanticsLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final valueStyle = AppTypography.bodyMedium.copyWith(
-      color: color,
-      fontWeight: FontWeight.w700,
-    );
-
-    final card = GlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: AppTypography.small.copyWith(
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
-              fontSize: 11,
-            ),
-          ),
-          const SizedBox(height: 4),
-          isPrivacyMode
-              ? MaskedAmountText(text: value, style: valueStyle)
-              : Text(value, style: valueStyle),
-          if (subtitle != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                subtitle!,
-                textAlign: TextAlign.center,
-                style: AppTypography.small.copyWith(
-                  color: isDark
-                      ? AppColors.neutral500Dark
-                      : AppColors.neutral400Light,
-                  fontSize: 10,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-    final description = semanticsLabel;
-    if (description == null) return card;
-    return Semantics(
-      container: true,
-      label: description,
-      excludeSemantics: true,
-      child: card,
-    );
-  }
-}
-
 /// Maturity card showing days until maturity.
 class _MaturityCard extends StatelessWidget {
   final DateTime maturityDate;
@@ -622,39 +622,42 @@ class _MaturityCard extends StatelessWidget {
 
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
+      child: SpreadRow(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(statusIcon, size: 18, color: statusColor),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Maturity Date',
-                  style: AppTypography.small.copyWith(
-                    color: isDark
-                        ? AppColors.neutral400Dark
-                        : AppColors.neutral500Light,
-                  ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  AppDateUtils.formatShort(maturityDate),
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: isDark ? Colors.white : AppColors.neutral900Light,
-                    fontWeight: FontWeight.w600,
+                child: Icon(statusIcon, size: 18, color: statusColor),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Maturity Date',
+                    style: AppTypography.small.copyWith(
+                      color: isDark
+                          ? AppColors.neutral400Dark
+                          : AppColors.neutral500Light,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(height: 2),
+                  Text(
+                    AppDateUtils.formatShort(maturityDate),
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: isDark ? Colors.white : AppColors.neutral900Light,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

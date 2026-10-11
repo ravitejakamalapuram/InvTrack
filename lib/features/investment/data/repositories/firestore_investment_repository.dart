@@ -50,11 +50,22 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   /// If the operation times out (likely offline), we consider it successful
   /// since Firestore will sync when back online
   Future<void> _executeWrite(Future<void> Function() writeOperation) async {
+    await _executeConfirmedWrite(writeOperation);
+  }
+
+  /// [_executeWrite] that says whether the server confirmed in time: true if
+  /// it did, false if the write timed out and is pending in the local cache.
+  /// A rejected write still throws.
+  Future<bool> _executeConfirmedWrite(
+    Future<void> Function() writeOperation,
+  ) async {
     try {
       await writeOperation().timeout(_writeTimeout);
+      return true;
     } on TimeoutException {
       // Write is cached locally, will sync when online
       // This is expected behavior for offline-first apps
+      return false;
     }
   }
 
@@ -715,6 +726,36 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     }
 
     return (investments: investmentCount, cashFlows: cashFlowCount);
+  }
+
+  @override
+  Future<bool> createInvestmentWithFirstCashFlow(
+    InvestmentEntity investment,
+    CashFlowEntity? firstFlow,
+  ) async {
+    if (firstFlow != null) {
+      _requireStorable(firstFlow);
+      if (firstFlow.investmentId != investment.id) {
+        // It would be saved without its investment.
+        throw ArgumentError(
+          'The first cash flow belongs to another investment',
+        );
+      }
+    }
+    // One batch: the investment and its flow land together or not at all.
+    // Dates and currency go through the same mappers as every other write.
+    final batch = _firestore.batch()
+      ..set(
+        _investmentsRef.doc(investment.id),
+        _investmentToFirestore(investment),
+      );
+    if (firstFlow != null) {
+      batch.set(
+        _cashFlowsRef.doc(firstFlow.id),
+        _cashFlowToFirestore(firstFlow),
+      );
+    }
+    return _executeConfirmedWrite(batch.commit);
   }
 
   @override

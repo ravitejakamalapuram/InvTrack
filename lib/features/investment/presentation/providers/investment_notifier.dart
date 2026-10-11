@@ -12,6 +12,7 @@ import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
@@ -48,7 +49,22 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   AsyncValue<void> build() => const AsyncValue.data(null);
 
   /// Create a new investment.
-  /// Throws [ValidationException] if name is empty or exceeds max length.
+  /// Throws [ValidationException] if name is empty or exceeds max length, or
+  /// if [initialAmount] is given and is not a positive amount.
+  ///
+  /// With [initialAmount] the investment and its first cash flow, an INVEST of
+  /// that amount dated [startDate] (today when null), are saved in one atomic
+  /// write. A caller that may retry passes the same [id] each time, so the
+  /// retry replaces the first write instead of adding a duplicate; [id] is
+  /// minted when null. The flow's id is always derived from the investment's,
+  /// as `'<investment id>-first-flow'`, so one id decides both records: a retry
+  /// cannot add a second flow (and double the invested amount), and a flow id
+  /// cannot be moved to another investment. Retry only an unresolved attempt:
+  /// a retry after the user deleted the first flow brings it back.
+  ///
+  /// Only the write can fail the call. What follows it (analytics, reminders,
+  /// the goal check) is logged when it fails and never rethrown, because by
+  /// then the record exists.
   Future<InvestmentEntity> addInvestment({
     required String name,
     required InvestmentType type,
@@ -68,17 +84,44 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     String? currency,
     // Text typed in the "Custom type" field of an investment of type Other
     String? customTypeLabel,
+    String? id,
+    double? initialAmount,
   }) async {
     // Input validation
     _validateName(name);
     _validateNotes(notes);
     _validateCustomTypeLabel(type, customTypeLabel);
 
+    // Multi-currency (defaults to the user's base currency)
+    final String investmentCurrency =
+        currency ?? ref.read(currencyCodeProvider);
+    // The first flow's amount and day, checked before anything is written.
+    double? firstAmount;
+    DateTime? firstDay;
+    if (initialAmount != null) {
+      _validateInitialAmount(initialAmount);
+      firstAmount = MoneyPrecision.round(
+        initialAmount,
+        currencyCode: _requireCurrency(investmentCurrency),
+      );
+      _validateInitialAmount(firstAmount);
+      final day = startDate ?? DateTime.now();
+      firstDay = DateTime(day.year, day.month, day.day);
+      // A payment dated after today would feed XIRR a flow that has not
+      // happened (the form's date picker stops at today as well).
+      final now = DateTime.now();
+      if (firstDay.isAfter(DateTime(now.year, now.month, now.day))) {
+        throw ValidationException.invalidDate(day);
+      }
+    }
+
     state = const AsyncValue.loading();
+    final InvestmentEntity investment;
+    final CashFlowEntity? firstFlow;
     try {
       final customType = await _resolveCustomType(type, customTypeLabel);
-      final investment = InvestmentEntity(
-        id: const Uuid().v4(),
+      investment = InvestmentEntity(
+        id: id ?? const Uuid().v4(),
         name: name.trim(),
         type: type,
         status: InvestmentStatus.open,
@@ -88,7 +131,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         maturityDate: maturityDate,
         incomeFrequency: incomeFrequency,
         // New enhanced data capture fields
-        startDate: startDate,
+        // With a first flow the start date is its date, on both records.
+        startDate: firstDay ?? startDate,
         expectedRate: expectedRate,
         tenureMonths: tenureMonths,
         platform: platform,
@@ -96,53 +140,75 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         autoRenewal: autoRenewal,
         riskLevel: riskLevel,
         compoundingFrequency: compoundingFrequency,
-        // Multi-currency (defaults to the user's base currency)
-        currency: currency ?? ref.read(currencyCodeProvider),
+        currency: investmentCurrency,
         customTypeId: customType.id,
         customTypeLabel: customType.label,
       );
+      firstFlow = firstAmount == null
+          ? null
+          : CashFlowEntity(
+              id: '${investment.id}-first-flow',
+              investmentId: investment.id,
+              type: CashFlowType.invest,
+              amount: firstAmount,
+              date: firstDay!,
+              createdAt: DateTime.now(),
+              currency: investment.currency,
+            );
 
       // Track performance of investment creation
-      await ref
-          .read(performanceServiceProvider)
-          .trackOperation(
-            'investment_create',
-            () => ref
-                .read(investmentRepositoryProvider)
-                .createInvestment(investment),
-            attributes: {'investment_type': type.name},
-          );
-
-      // Track analytics event
-      ref
-          .read(analyticsServiceProvider)
-          .logInvestmentCreated(
-            investmentType: type.name,
-            hasNotes: notes != null && notes.trim().isNotEmpty,
-            // Add Investment takes no amount yet: A40 sets this.
-            hasAmount: false,
-          );
-
-      // Schedule income reminder if frequency is set
-      if (incomeFrequency != null) {
-        await _scheduleIncomeReminder(investment);
-      }
-
-      // Schedule maturity reminders if maturity date is set
-      if (maturityDate != null) {
-        await _scheduleMaturityReminders(investment);
-      }
-
-      // Cancel new user activation nudges since user has added an investment
-      await ref.read(notificationServiceProvider).cancelActivationSequence();
-
-      _invalidateAll();
-      state = const AsyncValue.data(null);
-      return investment;
+      await ref.read(performanceServiceProvider).trackOperation(
+        'investment_create',
+        () async {
+          final repository = ref.read(investmentRepositoryProvider);
+          if (firstFlow == null) {
+            await repository.createInvestment(investment);
+          } else {
+            await repository.createInvestmentWithFirstCashFlow(
+              investment,
+              firstFlow,
+            );
+          }
+        },
+        attributes: {'investment_type': type.name},
+      );
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       rethrow;
     }
+
+    // The record exists from here. None of this may fail the save, and none of
+    // it makes the caller wait: each step starts at once and is guarded.
+    unawaited(
+      _afterSave(
+        () => ref
+            .read(analyticsServiceProvider)
+            .logInvestmentCreated(
+              investmentType: type.name,
+              hasNotes: notes != null && notes.trim().isNotEmpty,
+              hasAmount: firstFlow != null,
+            ),
+      ),
+    );
+    // Schedule income reminder if frequency is set
+    if (incomeFrequency != null) {
+      unawaited(_afterSave(() => _scheduleIncomeReminder(investment)));
+    }
+    // Schedule maturity reminders if maturity date is set
+    if (maturityDate != null) {
+      unawaited(_afterSave(() => _scheduleMaturityReminders(investment)));
+    }
+    // Cancel new user activation nudges since user has added an investment
+    unawaited(
+      _afterSave(
+        () => ref.read(notificationServiceProvider).cancelActivationSequence(),
+      ),
+    );
+    if (firstFlow != null) unawaited(_afterCashFlowSaved(firstFlow));
+
+    unawaited(_afterSave(_invalidateAll));
+    state = const AsyncValue.data(null);
+    return investment;
   }
 
   /// Update an existing investment.
@@ -628,35 +694,62 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     _validateAmount(roundedAmount);
 
     state = const AsyncValue.loading();
+    final cashFlow = CashFlowEntity(
+      id: const Uuid().v4(),
+      investmentId: investmentId,
+      type: type,
+      amount: roundedAmount,
+      date: date,
+      notes: notes?.trim(),
+      createdAt: DateTime.now(),
+      currency: flowCurrency,
+    );
     try {
-      final cashFlow = CashFlowEntity(
-        id: const Uuid().v4(),
-        investmentId: investmentId,
-        type: type,
-        amount: roundedAmount,
-        date: date,
-        notes: notes?.trim(),
-        createdAt: DateTime.now(),
-        currency: flowCurrency,
-      );
       await ref.read(investmentRepositoryProvider).addCashFlow(cashFlow);
-
-      _logCashFlowAdded(cashFlow);
-
-      // Check for milestone achievements after adding return cash flows
-      if (type == CashFlowType.income || type == CashFlowType.returnFlow) {
-        await _checkMilestoneAfterCashFlow(investmentId);
-      }
-
-      // Check for goal milestone achievements after any cash flow
-      await _checkGoalMilestonesAfterCashFlow(cashFlow.id);
-
-      _invalidateAll();
-      state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       rethrow;
     }
+
+    // The flow is saved: what follows cannot fail the call.
+    await _afterCashFlowSaved(cashFlow);
+    await _afterSave(_invalidateAll);
+    state = const AsyncValue.data(null);
+  }
+
+  /// Runs [step], which follows a write that already reached the repository.
+  /// The record exists, so nothing here may report the save as failed: a
+  /// failure is logged, by its type only (never a name, an amount or an id),
+  /// and dropped. The step starts at once; a caller that must not wait for it
+  /// passes the result to unawaited().
+  Future<void> _afterSave(FutureOr<void> Function() step) async {
+    try {
+      await step();
+    } catch (e, st) {
+      LoggerService.warn(
+        'A step after saving failed',
+        metadata: {'errorType': e.runtimeType.toString()},
+        stackTrace: st,
+      );
+    }
+  }
+
+  /// What follows a saved cash flow, whichever path saved it (money rule 3:
+  /// one implementation): the cashflow_added event and the milestone checks.
+  /// It never throws, for the flow is saved.
+  Future<void> _afterCashFlowSaved(CashFlowEntity cashFlow) async {
+    await _afterSave(() => _logCashFlowAdded(cashFlow));
+
+    // Check for milestone achievements after adding return cash flows
+    if (cashFlow.type == CashFlowType.income ||
+        cashFlow.type == CashFlowType.returnFlow) {
+      await _afterSave(
+        () => _checkMilestoneAfterCashFlow(cashFlow.investmentId),
+      );
+    }
+
+    // Check for goal milestone achievements after any cash flow
+    await _afterSave(() => _checkGoalMilestonesAfterCashFlow(cashFlow.id));
   }
 
   /// Logs cashflow_added with the amount bucketed in the base currency. The
@@ -675,17 +768,19 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         converter = null;
       }
     }
-    unawaited(() async {
-      final range = await getBaseCurrencyAmountRange(
-        cashFlow: cashFlow,
-        baseCurrency: baseCurrency,
-        converter: converter,
-      );
-      await analytics.logCashFlowAdded(
-        flowType: cashFlow.type.name,
-        amountRange: range,
-      );
-    }());
+    unawaited(
+      _afterSave(() async {
+        final range = await getBaseCurrencyAmountRange(
+          cashFlow: cashFlow,
+          baseCurrency: baseCurrency,
+          converter: converter,
+        );
+        await analytics.logCashFlowAdded(
+          flowType: cashFlow.type.name,
+          amountRange: range,
+        );
+      }),
+    );
   }
 
   /// Update a cash flow.
@@ -1014,6 +1109,17 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   void _validateAmount(double amount) {
     if (!amount.isFinite || amount <= 0) {
       throw ValidationException.invalidAmount(amount);
+    }
+  }
+
+  /// Validates the amount of a new investment's first cash flow: positive,
+  /// finite and below 15 digits (invtrack_rules 19.1). It is checked before
+  /// and after rounding, for rounding can carry an amount up to 16 digits.
+  /// Throws [ValidationException] otherwise.
+  void _validateInitialAmount(double amount) {
+    _validateAmount(amount);
+    if (amount >= ValidationConstants.maxAmount) {
+      throw ValidationException.amountTooLarge();
     }
   }
 

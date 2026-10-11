@@ -120,6 +120,16 @@ class AppSizes {
   /// [minTouchTarget], so the chip sits 6px inside the box on every side.
   static const double tonalActionChip = 36.0;
 
+  /// Narrowest a column of a stat row (`StatColumns`) may get at text x1.0
+  /// before the row drops to fewer columns. The widest compact amount in a
+  /// 14sp column ("₹36.83 Cr") is about 64px, plus slack; the check scales it
+  /// with the text size.
+  static const double statColumnMinWidth = 72.0;
+
+  /// Same, for a stat row whose values are dates ("Sep 30, 2026" in 14sp is
+  /// about 90px), such as the Overview Investment Period.
+  static const double statColumnDateMinWidth = 104.0;
+
   /// Divider thickness
   static const double dividerThickness = 1.0;
 
