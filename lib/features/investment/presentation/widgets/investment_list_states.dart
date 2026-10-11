@@ -202,7 +202,7 @@ class InvestmentErrorState extends StatelessWidget {
             Container(
               padding: EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
-                color: AppColors.errorLight.withValues(alpha: 0.1),
+                color: AppColors.dangerTintLight.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(

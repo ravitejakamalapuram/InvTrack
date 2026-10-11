@@ -578,7 +578,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.errorLight.withValues(alpha: 0.1),
+                color: AppColors.dangerTintLight.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(

@@ -592,6 +592,15 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                             : (isDark
                                   ? AppColors.errorDark
                                   : AppColors.errorLight),
+                        // The tile is tinted with the brighter hue, so the
+                        // figure on it keeps 4.5:1.
+                        tint: closed.netCashFlow >= 0
+                            ? (isDark
+                                  ? AppColors.successDark
+                                  : AppColors.successTintLight)
+                            : (isDark
+                                  ? AppColors.errorDark
+                                  : AppColors.dangerTintLight),
                         icon: Icons.check_circle,
                         isDark: isDark,
                         isPrivacyMode: isPrivacyMode,
@@ -616,6 +625,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
     required double value,
     required NumberFormat currencyFormat,
     required Color color,
+    Color? tint,
     required IconData icon,
     required bool isDark,
     required bool isPrivacyMode,
@@ -632,7 +642,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: (tint ?? color).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

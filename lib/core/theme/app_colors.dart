@@ -22,6 +22,13 @@ class AppColors {
   static const Color dangerLight = Color(0xFFEF4444);
   static const Color dangerBgLight = Color(0xFFFEE2E2);
 
+  // Tint sources for green and red. Make every 10 to 30% tint of green or red
+  // from these, not from `successLight` and `dangerLight`, so a tint keeps its
+  // hue when those two are deepened for text. Never paint them as text; a scan
+  // test enforces both.
+  static const Color successTintLight = Color(0xFF10B981);
+  static const Color dangerTintLight = Color(0xFFEF4444);
+
   // Warning - Rich Amber
   static const Color warningLight = Color(0xFFF59E0B);
   static const Color warningBgLight = Color(0xFFFEF3C7);

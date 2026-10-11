@@ -101,7 +101,9 @@ class GoalCarouselCard extends ConsumerWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.successLight.withValues(alpha: 0.15),
+                            color: AppColors.successTintLight.withValues(
+                              alpha: 0.15,
+                            ),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Row(

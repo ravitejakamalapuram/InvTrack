@@ -57,6 +57,10 @@ class FireMilestoneCard extends ConsumerWidget {
     final progressColor = isAchieved
         ? (isDark ? AppColors.successDark : AppColors.successLight)
         : (isDark ? AppColors.neutral500Dark : AppColors.neutral400Light);
+    // The disc behind the check is tinted with the brighter green.
+    final achievedTint = isDark
+        ? AppColors.successDark
+        : AppColors.successTintLight;
 
     return Padding(
       key: key,
@@ -70,7 +74,7 @@ class FireMilestoneCard extends ConsumerWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isAchieved
-                  ? progressColor.withValues(alpha: 0.2)
+                  ? achievedTint.withValues(alpha: 0.2)
                   : Colors.transparent,
               border: Border.all(color: progressColor, width: 2),
             ),

@@ -59,9 +59,11 @@ class _DeletionRequestBannerState extends ConsumerState<DeletionRequestBanner> {
         AppSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: AppColors.errorLight.withValues(alpha: 0.1),
+        color: AppColors.dangerTintLight.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.errorLight.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: AppColors.dangerTintLight.withValues(alpha: 0.3),
+        ),
       ),
       // The message (a live region) and the Withdraw button stay separate
       // nodes: Flutter keeps a focusable button out of a merged node anyway.

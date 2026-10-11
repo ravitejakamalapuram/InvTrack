@@ -45,6 +45,10 @@ class OverviewQuickStats extends StatelessWidget {
                       ? AppColors.neutral400Dark
                       : AppColors.neutral500Light)
                 : (isDark ? AppColors.successDark : AppColors.successLight),
+            // The disc keeps the brighter green it was tinted with.
+            tint: awaiting
+                ? null
+                : (isDark ? AppColors.successDark : AppColors.successTintLight),
             subtitle: awaiting
                 ? display.secondaryText(l10n)
                 : stats.durationFormatted != null

@@ -97,7 +97,7 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                                           color:
                                               (isDark
                                                       ? AppColors.errorDark
-                                                      : AppColors.errorLight)
+                                                      : AppColors.dangerTintLight)
                                                   .withValues(alpha: 0.7),
                                           borderRadius:
                                               const BorderRadius.vertical(
@@ -116,7 +116,7 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                                           color:
                                               (isDark
                                                       ? AppColors.successDark
-                                                      : AppColors.successLight)
+                                                      : AppColors.successTintLight)
                                                   .withValues(alpha: 0.7),
                                           borderRadius:
                                               const BorderRadius.vertical(
@@ -532,6 +532,10 @@ class YoYComparisonCard extends ConsumerWidget {
     final color = isUp
         ? (isDark ? AppColors.successDark : AppColors.successLight)
         : neutral;
+    // The pill is tinted with the brighter green, so the label keeps 4.5:1.
+    final tint = isUp
+        ? (isDark ? AppColors.successDark : AppColors.successTintLight)
+        : neutral;
     final icon = isUp
         ? Icons.trending_up
         : change < 0
@@ -543,7 +547,7 @@ class YoYComparisonCard extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: tint.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(

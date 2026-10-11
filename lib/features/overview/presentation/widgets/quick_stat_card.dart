@@ -13,6 +13,10 @@ class QuickStatCard extends ConsumerWidget {
   final String label;
   final String value;
   final Color color;
+
+  /// The colour the icon disc is tinted with, or null for [color]. A status
+  /// colour that got deeper for text tints with its brighter hue.
+  final Color? tint;
   final String? subtitle;
 
   /// Whether this value should be masked in privacy mode.
@@ -25,6 +29,7 @@ class QuickStatCard extends ConsumerWidget {
     required this.label,
     required this.value,
     required this.color,
+    this.tint,
     this.subtitle,
     this.isSensitive = true,
   });
@@ -54,7 +59,7 @@ class QuickStatCard extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: (tint ?? color).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 24),
