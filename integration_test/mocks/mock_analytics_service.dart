@@ -32,10 +32,10 @@ class FakeAnalyticsService implements AnalyticsService {
   Future<void> setUserId(String? userId) async {}
 
   @override
-  Future<void> setUserProperty({
+  Future<bool> setUserProperty({
     required String name,
     required String? value,
-  }) async {}
+  }) async => true;
 
   @override
   Future<void> logSignIn({required String method}) async =>
@@ -64,6 +64,10 @@ class FakeAnalyticsService implements AnalyticsService {
   @override
   Future<void> logAccountLinkSuccess({required String method}) async =>
       _log('account_link_success', {'method': method});
+
+  @override
+  Future<void> logAccountLinkFailure({required String reason}) async =>
+      _log('account_link_failure', {'reason': reason});
 
   @override
   Future<void> logValuationSet({
@@ -106,16 +110,13 @@ class FakeAnalyticsService implements AnalyticsService {
       _log('goal_created', {'type': goalType, 'tracking_mode': trackingMode});
 
   @override
-  Future<void> logGoalUpdated({required String goalId}) async =>
-      _log('goal_updated', {'goal_id': goalId});
+  Future<void> logGoalUpdated() async => _log('goal_updated');
 
   @override
-  Future<void> logGoalArchived({required String goalId}) async =>
-      _log('goal_archived', {'goal_id': goalId});
+  Future<void> logGoalArchived() async => _log('goal_archived');
 
   @override
-  Future<void> logGoalDeleted({required String goalId}) async =>
-      _log('goal_deleted', {'goal_id': goalId});
+  Future<void> logGoalDeleted() async => _log('goal_deleted');
 
   @override
   void trackDocumentAdded({

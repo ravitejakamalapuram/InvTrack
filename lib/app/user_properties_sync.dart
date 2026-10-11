@@ -11,7 +11,8 @@ import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.d
 ///
 /// The one place these properties are set. Each is sent when it changes, not
 /// on every emission: linking a guest to Google keeps the UID, so only the
-/// property changes. Nothing about the portfolio (how many investments, goals)
+/// property changes. A write that fails is sent again at the next sync.
+/// Nothing about the portfolio (how many investments, goals)
 /// is sent until the user can turn analytics off (A34). Watch it once, from
 /// the app root.
 final userPropertiesSyncProvider = Provider<void>((ref) {
@@ -30,8 +31,17 @@ final userPropertiesSyncProvider = Provider<void>((ref) {
     };
     for (final MapEntry(:key, :value) in desired.entries) {
       if (sent.containsKey(key) && sent[key] == value) continue;
+      // Marked at once, so a sync while the write is in flight does not repeat
+      // it. A failed write is unmarked, so the next sync sends it again, unless
+      // a newer value has been sent since.
       sent[key] = value;
-      unawaited(_set(ref, key, value));
+      unawaited(
+        _set(ref, key, value).then((written) {
+          if (!written && sent.containsKey(key) && sent[key] == value) {
+            sent.remove(key);
+          }
+        }),
+      );
     }
   }
 
@@ -39,9 +49,10 @@ final userPropertiesSyncProvider = Provider<void>((ref) {
   ref.listen(currencyCodeProvider, (_, _) => sync());
 });
 
-Future<void> _set(Ref ref, String name, String? value) async {
+/// Whether the property was written. Never throws.
+Future<bool> _set(Ref ref, String name, String? value) async {
   try {
-    await ref
+    return await ref
         .read(analyticsServiceProvider)
         .setUserProperty(name: name, value: value);
   } catch (e, st) {
@@ -51,5 +62,6 @@ Future<void> _set(Ref ref, String name, String? value) async {
       error: e,
       stackTrace: st,
     );
+    return false;
   }
 }

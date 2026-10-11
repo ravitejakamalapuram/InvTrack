@@ -38,7 +38,7 @@ void main() {
           name: any(named: 'name'),
           value: any(named: 'value'),
         ),
-      ).thenAnswer((_) async {});
+      ).thenAnswer((_) async => true);
       when(() => crashlytics.clearUserIdentifier()).thenAnswer((_) async {});
 
       await tester.pumpWidget(

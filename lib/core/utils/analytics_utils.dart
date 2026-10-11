@@ -8,6 +8,9 @@
 /// privacy-safe ranges for monetary values.
 library;
 
+import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
+import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
+
 /// Get privacy-safe amount range bucket for analytics.
 ///
 /// Converts exact monetary amounts into range buckets to prevent logging
@@ -57,4 +60,44 @@ String getAmountRange(double amount) {
   if (amount < 500000) return '1L_5L';
   if (amount < 1000000) return '5L_10L';
   return 'over_10L';
+}
+
+/// `amount_range` value for an amount that could not be put in the user's base
+/// currency (offline with no cached rate, an unknown currency, signed out).
+const unknownAmountRange = 'unknown';
+
+/// Privacy-safe bucket of [cashFlow]'s amount in [baseCurrency].
+///
+/// Buckets compare amounts in one currency (money rule 2), so a flow in
+/// another currency is converted with [converter] first, as the app's totals
+/// are. When that is not possible the result is [unknownAmountRange]: never
+/// the native amount under the base currency's buckets. Never throws.
+Future<String> getBaseCurrencyAmountRange({
+  required CashFlowEntity cashFlow,
+  required String baseCurrency,
+  required BatchCurrencyConverter? converter,
+}) async {
+  if (cashFlow.currency == baseCurrency) {
+    return getAmountRange(cashFlow.amount);
+  }
+  if (converter == null) return unknownAmountRange;
+  try {
+    final converted = await converter.batchConvert(
+      cashFlows: [cashFlow],
+      baseCurrency: baseCurrency,
+    );
+    // Without a rate the converter hands the flow back unconverted. Only a
+    // flow now in the base currency may be bucketed, and a bad rate (zero,
+    // negative, NaN, infinite) must not fall into a real bucket.
+    final flow = converted.singleOrNull;
+    if (flow == null ||
+        flow.currency != baseCurrency ||
+        !flow.amount.isFinite ||
+        flow.amount <= 0) {
+      return unknownAmountRange;
+    }
+    return getAmountRange(flow.amount);
+  } catch (_) {
+    return unknownAmountRange;
+  }
 }

@@ -233,7 +233,10 @@ void main() {
     handlerResult = null;
   });
 
-  Future<void> pumpAndStartBackupMerge(WidgetTester tester) async {
+  Future<void> pumpAndStartBackupMerge(
+    WidgetTester tester, {
+    bool confirm = true,
+  }) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(
@@ -284,7 +287,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Google Account Already Exists'), findsOneWidget);
 
-    await tester.tap(find.text('Backup & Sign In'));
+    await tester.tap(
+      confirm
+          ? find.text('Backup & Sign In')
+          : find.widgetWithText(TextButton, 'Cancel'),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -370,13 +377,11 @@ void main() {
         find.text('Your guest data has been added to your Google account.'),
         findsOneWidget,
       );
-      final linkFailures = analytics.loggedEvents.where(
-        (e) => e.name == 'account_link_failure',
+      expect(
+        eventNames(),
+        isNot(contains('account_link_failure')),
+        reason: 'a merge that moved every record is not a failure (#980)',
       );
-      expect(linkFailures, hasLength(1));
-      expect(linkFailures.single.parameters, {
-        'reason': 'google_account_exists',
-      });
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(handlerResult, isTrue);
     },
@@ -788,4 +793,134 @@ void main() {
       expect(linkSuccesses(), isEmpty);
     });
   }
+
+  // #980: account_link_failure{google_account_exists} was logged on every
+  // merge sign-in, even a complete one, and not at all when the sign-in
+  // failed. It now counts a merge the guest went through with that did not
+  // complete, exactly once; a guest who backs out is not a failure.
+  Iterable<({String name, Map<String, Object>? parameters})> linkFailures() =>
+      analytics.loggedEvents.where((e) => e.name == 'account_link_failure');
+
+  final mergeOutcomes =
+      <
+        String,
+        ({Future<void> Function(WidgetTester) run, int failures, int successes})
+      >{
+        'the merge completes': (
+          run: (tester) async {
+            authRepo.onSignInWithGoogle = () async {
+              authRepo.emit(googleUser);
+              return googleUser;
+            };
+            await pumpAndStartBackupMerge(tester);
+          },
+          failures: 0,
+          successes: 1,
+        ),
+        'the guest declines the "already exists" dialog': (
+          run: (tester) => pumpAndStartBackupMerge(tester, confirm: false),
+          failures: 0,
+          successes: 0,
+        ),
+        'the guest cancels the Google account picker': (
+          run: (tester) async {
+            authRepo.onSignInWithGoogle = () async => null;
+            await pumpAndStartBackupMerge(tester);
+          },
+          failures: 0,
+          successes: 0,
+        ),
+        'the guest backs out at the "details will not move" warning': (
+          run: (tester) async {
+            exportService.export = detailsLeftBehind.values.first;
+            await pumpAndStartBackupMerge(tester);
+            await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+            await tester.pumpAndSettle();
+          },
+          failures: 0,
+          successes: 0,
+        ),
+        'the sign-in fails': (
+          run: (tester) async {
+            authRepo.onSignInWithGoogle = () async =>
+                throw Exception('network');
+            await pumpAndStartBackupMerge(tester);
+          },
+          failures: 1,
+          successes: 0,
+        ),
+        'the import fails after sign-in': (
+          run: (tester) async {
+            importError = Exception('Firestore unavailable');
+            authRepo.onSignInWithGoogle = () async {
+              authRepo.emit(googleUser);
+              return googleUser;
+            };
+            await pumpAndStartBackupMerge(tester);
+            await tester.tap(find.widgetWithText(TextButton, 'Close'));
+            await tester.pumpAndSettle();
+          },
+          failures: 1,
+          successes: 0,
+        ),
+        'some records are not added': (
+          run: (tester) async {
+            importResult = const ZipImportResult(
+              investmentsImported: 1,
+              cashflowsImported: 5,
+              goalsImported: 1,
+              documentsImported: 0,
+            );
+            authRepo.onSignInWithGoogle = () async {
+              authRepo.emit(googleUser);
+              return googleUser;
+            };
+            await pumpAndStartBackupMerge(tester);
+            await tester.tap(find.widgetWithText(TextButton, 'Close'));
+            await tester.pumpAndSettle();
+          },
+          failures: 1,
+          successes: 0,
+        ),
+        'details are left behind and the guest goes ahead': (
+          run: (tester) async {
+            exportService.export = detailsLeftBehind.values.first;
+            authRepo.onSignInWithGoogle = () async {
+              authRepo.emit(googleUser);
+              return googleUser;
+            };
+            await pumpAndStartBackupMerge(tester);
+            await tester.tap(
+              find.widgetWithText(FilledButton, 'Sign in without them'),
+            );
+            await tester.pumpAndSettle();
+            await tester.tap(find.widgetWithText(TextButton, 'OK'));
+            await tester.pumpAndSettle();
+          },
+          failures: 1,
+          successes: 0,
+        ),
+      };
+  group('merge outcomes', () {
+    for (final MapEntry(key: what, value: outcome) in mergeOutcomes.entries) {
+      testWidgets('when $what, ${outcome.failures} account_link_failure and '
+          '${outcome.successes} account_link_success are logged', (
+        tester,
+      ) async {
+        await outcome.run(tester);
+
+        expect(linkFailures(), hasLength(outcome.failures));
+        expect(linkSuccesses(), hasLength(outcome.successes));
+        for (final failure in linkFailures()) {
+          expect(failure.parameters, {'reason': 'google_account_exists'});
+          expectPrivacySafe(
+            failure,
+            allowedStrings: {
+              'reason': {'google_account_exists'},
+            },
+          );
+        }
+      });
+    }
+  });
 }

@@ -56,11 +56,12 @@ class FakeAnalyticsService implements AnalyticsService {
   }
 
   @override
-  Future<void> setUserProperty({
+  Future<bool> setUserProperty({
     required String name,
     required String? value,
   }) async {
     userProperties[name] = value;
+    return true;
   }
 
   @override
@@ -100,6 +101,14 @@ class FakeAnalyticsService implements AnalyticsService {
     await logEvent(
       name: AnalyticsEvents.accountLinkSuccess,
       parameters: {'method': method},
+    );
+  }
+
+  @override
+  Future<void> logAccountLinkFailure({required String reason}) async {
+    await logEvent(
+      name: AnalyticsEvents.accountLinkFailure,
+      parameters: {'reason': reason},
     );
   }
 
@@ -172,27 +181,18 @@ class FakeAnalyticsService implements AnalyticsService {
   }
 
   @override
-  Future<void> logGoalUpdated({required String goalId}) async {
-    await logEvent(
-      name: AnalyticsEvents.goalUpdated,
-      parameters: {'goal_id': goalId},
-    );
+  Future<void> logGoalUpdated() async {
+    await logEvent(name: AnalyticsEvents.goalUpdated);
   }
 
   @override
-  Future<void> logGoalArchived({required String goalId}) async {
-    await logEvent(
-      name: AnalyticsEvents.goalArchived,
-      parameters: {'goal_id': goalId},
-    );
+  Future<void> logGoalArchived() async {
+    await logEvent(name: AnalyticsEvents.goalArchived);
   }
 
   @override
-  Future<void> logGoalDeleted({required String goalId}) async {
-    await logEvent(
-      name: AnalyticsEvents.goalDeleted,
-      parameters: {'goal_id': goalId},
-    );
+  Future<void> logGoalDeleted() async {
+    await logEvent(name: AnalyticsEvents.goalDeleted);
   }
 
   @override
