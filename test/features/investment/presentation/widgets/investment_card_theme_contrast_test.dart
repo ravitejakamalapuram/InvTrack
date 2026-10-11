@@ -122,24 +122,22 @@ Future<void> _pump(
 Color _textColor(WidgetTester tester, Finder text) =>
     tester.widget<Text>(text).style!.color!;
 
-/// The tint behind [text]: the decoration colour of the Container around it,
-/// over [ground], the way it is painted.
+/// The tint behind [text]: the fill of the nearest Container around it that
+/// has one, over [ground], the way it is painted.
 Color _tintBehind(WidgetTester tester, Finder text, Color ground) {
-  final box = tester.widget<Container>(
-    find.ancestor(of: text, matching: find.byType(Container)).first,
-  );
-  return composeOver((box.decoration! as BoxDecoration).color!, ground);
+  for (final element
+      in find.ancestor(of: text, matching: find.byType(Container)).evaluate()) {
+    final decoration = (element.widget as Container).decoration;
+    if (decoration is BoxDecoration && decoration.color != null) {
+      return composeOver(decoration.color!, ground);
+    }
+  }
+  throw StateError('No filled Container around the text.');
 }
 
 void main() {
   const dark = Brightness.dark;
   const light = Brightness.light;
-
-  // The strip along the card's foot is 3% white over the card in dark.
-  final strip = composeOver(
-    Colors.white.withValues(alpha: 0.03),
-    AppColors.cardDark,
-  );
 
   group('View Details (nothing invested yet) in dark', () {
     final none = _stats(invested: 0, returned: 0);
@@ -173,14 +171,17 @@ void main() {
           stats: none,
           brightness: dark,
         );
-        final color = _textColor(tester, find.text('View Details'));
+        final link = find.text('View Details');
+        final color = _textColor(tester, link);
         expect(
           contrastRatio(color, AppColors.cardDark),
           closeTo(5.39, 0.01),
           reason: 'primary-light-in-dark@card',
         );
+        // The strip along the card's foot, read from the widget: a faint white
+        // veil over the card in dark.
         expect(
-          contrastRatio(color, strip),
+          contrastRatio(color, _tintBehind(tester, link, AppColors.cardDark)),
           closeTo(5.01, 0.01),
           reason: 'primary-light-in-dark@card-strip',
         );
