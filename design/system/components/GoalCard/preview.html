@@ -1,0 +1,37 @@
+<!-- @dsCard group="Cards" height=1180 subtitle="Goal list card, its footer and chip, and the Overview carousel card" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+  // Illustrative figures only.
+  var of = function (a, b) { return F.compact(a) + ' of ' + F.compact(b); };
+  document.getElementById('root').innerHTML = I.panes(function () {
+    return '<div class="it-stack" style="gap:12px">' +
+      '<div>' + I.GoalCard({ name: 'Emergency Fund', emoji: '🛡️', color: 'var(--success)', status: 'achieved', percent: 100, progress: of(1000000, 1000000) }) +
+        cap('Achieved: the footer message ends on the same edge as the ring, whatever its length.') + '</div>' +
+      '<div>' + I.GoalCard({ name: 'Retirement', emoji: '🏖️', color: 'var(--accent)', status: 'on-track', percent: 42, progress: of(4200000, 10000000), others: 2 }) +
+        cap('The chip is short on a card (“Also in 2 goals”); a screen reader hears “Also counted in 2 other goals”.') + '</div>' +
+      '<div>' + I.GoalCard({ name: 'House by the sea in Goa', emoji: '🏠', color: 'var(--warning)', status: 'behind', percent: 20, progress: of(2000000, 10000000), others: 12 }) +
+        cap('A long message wraps and stays end-aligned; it is never cut with an ellipsis.') + '</div>' +
+      '<div data-privacy="on">' + I.GoalCard({ name: 'Emergency Fund', emoji: '🛡️', color: 'var(--accent)', status: 'ahead', percent: 60, progress: of(600000, 1000000), others: 1, privacy: true }) +
+        cap('Privacy mode: the progress text is masked and the ring shows ••%; the footer and the chip hold no amount.') + '</div>' +
+      '<div>' + I.GoalCard({ kind: 'carousel', name: 'Emergency Fund', emoji: '🛡️', color: 'var(--accent)', status: 'on-track', percent: 45, progress: of(450000, 1000000) }) +
+        cap('Overview carousel card. Its slot grows with the text size: 41dp + 45dp per unit of scale, at least 110dp.') + '</div>' +
+      '</div>';
+  });
+  I.wire(document);
+})();
+</script>
+</body>
+</html>
