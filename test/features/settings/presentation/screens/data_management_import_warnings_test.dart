@@ -149,178 +149,182 @@ void main() {
       .map((text) => text.data ?? '')
       .toList();
 
-  testWidgets('two warnings: says so, with the count and no warning text, '
-      'and not the plain success message', (tester) async {
-    final semantics = tester.ensureSemantics();
-    await importZip(
-      tester,
-      _result(
-        warnings: const [
-          'Archived goals not imported: goals_archived.csv is invalid',
-          'FIRE settings not imported: fire_settings.json is invalid',
-        ],
-      ),
-    );
-
-    expect(find.text('Imported with 2 warnings'), findsOneWidget);
-    expect(
-      tester.getSemantics(find.text('Imported with 2 warnings')).label,
-      'Imported with 2 warnings\n'
-      'Some items in the backup were not imported.',
-    );
-    expect(find.textContaining('Imported 3 investments'), findsNothing);
-    expect(find.textContaining('goals_archived'), findsNothing);
-    expect(find.textContaining('fire_settings'), findsNothing);
-    semantics.dispose();
-  });
-
-  testWidgets('the text can be read on the warning background in both '
-      'themes (4.5:1)', (tester) async {
-    for (final brightness in Brightness.values) {
+  group('ZIP import warnings', () {
+    testWidgets('two warnings: says so, with the count and no warning text, '
+        'and not the plain success message', (tester) async {
+      final semantics = tester.ensureSemantics();
       await importZip(
         tester,
-        _result(warnings: const ['Archived goals not imported: invalid']),
-        brightness: brightness,
+        _result(
+          warnings: const [
+            'Archived goals not imported: goals_archived.csv is invalid',
+            'FIRE settings not imported: fire_settings.json is invalid',
+          ],
+        ),
       );
 
-      final background = tester
-          .widget<SnackBar>(find.byType(SnackBar))
-          .backgroundColor!;
-      final text = DefaultTextStyle.of(
-        tester.element(find.text('Imported with 1 warning')),
-      ).style.color!;
-      final lighter = math.max(
-        background.computeLuminance(),
-        text.computeLuminance(),
-      );
-      final darker = math.min(
-        background.computeLuminance(),
-        text.computeLuminance(),
-      );
+      expect(find.text('Imported with 2 warnings'), findsOneWidget);
       expect(
-        (lighter + 0.05) / (darker + 0.05),
-        greaterThanOrEqualTo(4.5),
-        reason: '$brightness',
+        tester.getSemantics(find.text('Imported with 2 warnings')).label,
+        'Imported with 2 warnings\n'
+        'Some items in the backup were not imported.',
       );
-    }
-  });
+      expect(find.textContaining('Imported 3 investments'), findsNothing);
+      expect(find.textContaining('goals_archived'), findsNothing);
+      expect(find.textContaining('fire_settings'), findsNothing);
+      semantics.dispose();
+    });
 
-  testWidgets('shows for 8 seconds, so it is not missed', (tester) async {
-    await importZip(
+    testWidgets('the text can be read on the warning background in both '
+        'themes (4.5:1)', (tester) async {
+      for (final brightness in Brightness.values) {
+        await importZip(
+          tester,
+          _result(warnings: const ['Archived goals not imported: invalid']),
+          brightness: brightness,
+        );
+
+        final background = tester
+            .widget<SnackBar>(find.byType(SnackBar))
+            .backgroundColor!;
+        final text = DefaultTextStyle.of(
+          tester.element(find.text('Imported with 1 warning')),
+        ).style.color!;
+        final lighter = math.max(
+          background.computeLuminance(),
+          text.computeLuminance(),
+        );
+        final darker = math.min(
+          background.computeLuminance(),
+          text.computeLuminance(),
+        );
+        expect(
+          (lighter + 0.05) / (darker + 0.05),
+          greaterThanOrEqualTo(4.5),
+          reason: '$brightness',
+        );
+      }
+    });
+
+    testWidgets('shows for 8 seconds, so it is not missed', (tester) async {
+      await importZip(
+        tester,
+        _result(warnings: const ['Dated values not imported: invalid']),
+      );
+
+      expect(
+        tester.widget<SnackBar>(find.byType(SnackBar)).duration,
+        const Duration(seconds: 8),
+      );
+    });
+
+    // A Merge adds one 'Skipped ... already exists' warning per duplicate, so
+    // re-importing a backup shows this snackbar. Deliberate for now: the count
+    // cannot tell a duplicate from a damaged file until warnings have kinds.
+    testWidgets('a Merge that only skipped duplicates shows the count, never '
+        'their names', (tester) async {
+      await importZip(
+        tester,
+        _result(
+          warnings: const [
+            'Skipped "Alpha Bond" - already exists',
+            'Skipped goal "Retirement" - already exists',
+          ],
+        ),
+      );
+
+      expect(snackBarTexts(tester), [
+        'Imported with 2 warnings',
+        'Some items in the backup were not imported.',
+      ]);
+      expect(find.textContaining('Alpha'), findsNothing);
+      expect(find.textContaining('Retirement'), findsNothing);
+    });
+
+    testWidgets('one warning is singular', (tester) async {
+      await importZip(
+        tester,
+        _result(warnings: const ['Dated values not imported: invalid']),
+      );
+
+      expect(find.text('Imported with 1 warning'), findsOneWidget);
+      expect(find.textContaining('1 warnings'), findsNothing);
+    });
+
+    // A damaged file stops Replace before anything is deleted (an error, not a
+    // warning). Replace warnings come from saves that fail after the delete.
+    testWidgets('Replace says so too, when a save fails after the delete', (
       tester,
-      _result(warnings: const ['Dated values not imported: invalid']),
-    );
+    ) async {
+      await importZip(
+        tester,
+        _result(
+          warnings: const [
+            'Dated values not imported: they could not be saved',
+          ],
+        ),
+        strategy: ImportStrategy.replace,
+      );
 
-    expect(
-      tester.widget<SnackBar>(find.byType(SnackBar)).duration,
-      const Duration(seconds: 8),
-    );
-  });
+      expect(find.text('Imported with 1 warning'), findsOneWidget);
+      expect(find.textContaining('Imported 3 investments'), findsNothing);
+    });
 
-  // A Merge adds one 'Skipped ... already exists' warning per duplicate, so
-  // re-importing a backup shows this snackbar. Deliberate for now: the count
-  // cannot tell a duplicate from a damaged file until warnings have kinds.
-  testWidgets('a Merge that only skipped duplicates shows the count, never '
-      'their names', (tester) async {
-    await importZip(
+    testWidgets('no warnings: still the plain success text', (tester) async {
+      await importZip(tester, _result());
+
+      expect(
+        find.text('Imported 3 investments, 12 cashflows, 1 goals, 0 documents'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('warning'), findsNothing);
+    });
+
+    // The screen does not read privacy mode here: the guarantee is that warning
+    // texts are never rendered, so there is nothing for privacy mode to hide.
+    testWidgets('privacy mode on: the message holds no names, file names or '
+        'amounts', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await importZip(
+        tester,
+        _result(
+          warnings: const [
+            'Goal "Retirement Fund" not imported: Rs 5,00,000 target invalid',
+            'Failed to import document: /data/user/0/app/files/payslip.pdf',
+          ],
+        ),
+        privacy: true,
+      );
+
+      expect(snackBarTexts(tester), [
+        'Imported with 2 warnings',
+        'Some items in the backup were not imported.',
+      ]);
+      final label = tester
+          .getSemantics(find.text('Imported with 2 warnings'))
+          .label;
+      for (final leaked in ['Retirement', '5,00,000', 'payslip', 'Rs']) {
+        expect(label, isNot(contains(leaked)));
+      }
+      semantics.dispose();
+    });
+
+    testWidgets('errors still win: the errors message is shown as before', (
       tester,
-      _result(
-        warnings: const [
-          'Skipped "Alpha Bond" - already exists',
-          'Skipped goal "Retirement" - already exists',
-        ],
-      ),
-    );
+    ) async {
+      await importZip(
+        tester,
+        _result(
+          errors: const ['Invalid backup'],
+          warnings: const ['Archived goals not imported: invalid'],
+        ),
+      );
 
-    expect(snackBarTexts(tester), [
-      'Imported with 2 warnings',
-      'Some items in the backup were not imported.',
-    ]);
-    expect(find.textContaining('Alpha'), findsNothing);
-    expect(find.textContaining('Retirement'), findsNothing);
-  });
-
-  testWidgets('one warning is singular', (tester) async {
-    await importZip(
-      tester,
-      _result(warnings: const ['Dated values not imported: invalid']),
-    );
-
-    expect(find.text('Imported with 1 warning'), findsOneWidget);
-    expect(find.textContaining('1 warnings'), findsNothing);
-  });
-
-  // A damaged file stops Replace before anything is deleted (an error, not a
-  // warning). Replace warnings come from saves that fail after the delete.
-  testWidgets('Replace says so too, when a save fails after the delete', (
-    tester,
-  ) async {
-    await importZip(
-      tester,
-      _result(
-        warnings: const ['Dated values not imported: they could not be saved'],
-      ),
-      strategy: ImportStrategy.replace,
-    );
-
-    expect(find.text('Imported with 1 warning'), findsOneWidget);
-    expect(find.textContaining('Imported 3 investments'), findsNothing);
-  });
-
-  testWidgets('no warnings: still the plain success text', (tester) async {
-    await importZip(tester, _result());
-
-    expect(
-      find.text('Imported 3 investments, 12 cashflows, 1 goals, 0 documents'),
-      findsOneWidget,
-    );
-    expect(find.textContaining('warning'), findsNothing);
-  });
-
-  // The screen does not read privacy mode here: the guarantee is that warning
-  // texts are never rendered, so there is nothing for privacy mode to hide.
-  testWidgets('privacy mode on: the message holds no names, file names or '
-      'amounts', (tester) async {
-    final semantics = tester.ensureSemantics();
-    await importZip(
-      tester,
-      _result(
-        warnings: const [
-          'Goal "Retirement Fund" not imported: Rs 5,00,000 target invalid',
-          'Failed to import document: /data/user/0/app/files/payslip.pdf',
-        ],
-      ),
-      privacy: true,
-    );
-
-    expect(snackBarTexts(tester), [
-      'Imported with 2 warnings',
-      'Some items in the backup were not imported.',
-    ]);
-    final label = tester
-        .getSemantics(find.text('Imported with 2 warnings'))
-        .label;
-    for (final leaked in ['Retirement', '5,00,000', 'payslip', 'Rs']) {
-      expect(label, isNot(contains(leaked)));
-    }
-    semantics.dispose();
-  });
-
-  testWidgets('errors still win: the errors message is shown as before', (
-    tester,
-  ) async {
-    await importZip(
-      tester,
-      _result(
-        errors: const ['Invalid backup'],
-        warnings: const ['Archived goals not imported: invalid'],
-      ),
-    );
-
-    expect(
-      find.text('Import completed with errors: Invalid backup'),
-      findsOneWidget,
-    );
-    expect(find.textContaining('warning'), findsNothing);
+      expect(
+        find.text('Import completed with errors: Invalid backup'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('warning'), findsNothing);
+    });
   });
 }
