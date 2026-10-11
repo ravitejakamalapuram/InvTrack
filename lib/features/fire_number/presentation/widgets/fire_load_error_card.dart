@@ -22,7 +22,10 @@ class FireLoadErrorCard extends StatelessWidget {
     return GlassCard(
       child: Row(
         children: [
-          const Icon(Icons.cloud_off_rounded, color: AppColors.errorLight),
+          Icon(
+            Icons.cloud_off_rounded,
+            color: isDark ? AppColors.errorDark : AppColors.errorLight,
+          ),
           SizedBox(width: AppSpacing.md),
           Expanded(
             child: Semantics(

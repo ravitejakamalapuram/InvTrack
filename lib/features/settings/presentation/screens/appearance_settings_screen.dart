@@ -113,6 +113,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                         child: Container(
                           height: 60,
                           decoration: BoxDecoration(
+                            // theme-neutral: swatch under a white label.
                             color: AppColors.successLight,
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -131,6 +132,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                         child: Container(
                           height: 60,
                           decoration: BoxDecoration(
+                            // theme-neutral: swatch under a white label.
                             color: AppColors.errorLight,
                             borderRadius: BorderRadius.circular(8),
                           ),

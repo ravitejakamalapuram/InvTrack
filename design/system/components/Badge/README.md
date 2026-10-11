@@ -4,7 +4,7 @@ Use a badge for one short fact beside a value. Use a `Chip` when the label can b
 
 ## Kinds (`InvTrack.Badge({ kind })`)
 
-- `change` (ChangeBadge): sizes small (10px, padding 6 x 2, 6px radius), medium (12px, 8 x 4), large (`percentage` 16px, 12 x 6, 10px radius). A leading arrow (10, 12, 16px) unless the value is zero; the text is the value to two decimals with a `+` for positive and the suffix `%`. Positive `success` on `success-bg`, negative `danger` on `danger-bg`, zero `neutral-500-light` on `neutral-200-light`. Outlined mode: transparent with a 30% border. The widget does not read the theme: the pastel fills appear in dark mode too.
+- `change` (ChangeBadge): sizes small (10px, padding 6 x 2, 6px radius), medium (12px, 8 x 4), large (`percentage` 16px, 12 x 6, 10px radius). A leading arrow (10, 12, 16px) unless the value is zero; the text is the value to two decimals with a `+` for positive and the suffix `%`. Positive `success` on `success-bg`, negative `danger` on `danger-bg`, zero `neutral-600-light` on `neutral-200-light` (6.08:1). Outlined mode: transparent with a 30% border. The widget does not read the theme, so the pastel fills appear in dark mode too, with one exception: an outlined zero badge has no fill and sits on the page, so in dark its text is `neutral-500-dark` (5.23:1 on the page, 4.74:1 on `card`).
 - `status` (StatusBadge): pill (20px radius), 10px/600 with +0.5 spacing, padding 10 x 4, the colour at 15% fill (outlined: a 50% border). Also the neutral chip that replaces a return % ("Awaiting first payout").
 - `currency` (CurrencyBadge): compact is the code on `primary` 20% with a 30% border (4px radius, 11px/600, themed `primary`); full adds a separator and the rate, "USD | 1 $ = ₹83.12", rate to two decimals, on `input-fill` at 80% (50% in dark). Use it wherever a non-base currency appears.
 - `maturity`: 6px radius, padding 8 x 2, an optional 10px icon, 12px/600 in the tone colour on its 15% tint: `MATURED`, `MATURES TODAY`, `7d TO MATURITY`.
@@ -23,7 +23,7 @@ Use a badge for one short fact beside a value. Use a `Chip` when the label can b
 
 ## Contrast
 
-`success` on `success-bg` 2.24:1, `danger` on `danger-bg` 3.08:1, `neutral-500-light` on `neutral-200-light` 3.82:1; `warning` on its tint 1.91:1, `accent` 2.39:1, the grey `CLOSED` 2.27:1; the compact currency badge's `primary` on its 20% tint is 4.45:1. Kept as drawn; the arrow, the sign and the words carry the meaning.
+`success` on `success-bg` 2.24:1, `danger` on `danger-bg` 3.08:1; `warning` on its tint 1.91:1, `accent` 2.39:1, the grey `CLOSED` 2.27:1; the compact currency badge's `primary` on its 20% tint is 4.45:1. Kept as drawn; the arrow, the sign and the words carry the meaning. An outlined zero badge passes: `neutral-600-light` on the light page 7.30:1, `neutral-500-dark` on the dark page 5.23:1.
 
 ## Source
 

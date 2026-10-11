@@ -113,15 +113,15 @@ class IncomeCell extends ConsumerWidget {
   Color _getStatusColor(ExpectedCashFlowStatus status) {
     switch (status) {
       case ExpectedCashFlowStatus.received:
-        return AppColors.successLight;
+        return isDark ? AppColors.successDark : AppColors.successLight;
       case ExpectedCashFlowStatus.upcoming:
-        return AppColors.accentLight;
+        return isDark ? AppColors.accentDark : AppColors.accentLight;
       case ExpectedCashFlowStatus.dueSoon:
         return AppColors.warningDark;
       case ExpectedCashFlowStatus.gracePeriod:
-        return AppColors.warningLight;
+        return isDark ? AppColors.warningDark : AppColors.warningLight;
       case ExpectedCashFlowStatus.overdue:
-        return AppColors.errorLight;
+        return isDark ? AppColors.errorDark : AppColors.errorLight;
       case ExpectedCashFlowStatus.dismissed:
         return isDark ? AppColors.neutral600Dark : AppColors.neutral400Light;
     }

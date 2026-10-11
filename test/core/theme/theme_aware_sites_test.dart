@@ -1,26 +1,39 @@
 // Source scan: a colour made for the light theme must not be painted
-// unconditionally.
+// unconditionally, nor in the dark theme.
 //
 // The nine constants below are the light-theme text colours (and the one dark
 // grey) that the contrast PRs change. A site that reads one of them without a
 // theme check paints it in both themes, so changing its value would also change
 // the dark theme, where the old value was the readable one. A site passes when
 //
-//  1. it sits in a branch of a ternary whose condition mentions the theme
-//     (`isDark` or `brightness`). The ternary may be several brackets out, and
-//     it need not be the nearest one: in `isDark ? a : ok ? x : y` the theme
-//     governs `x`. A theme word anywhere else near the site does not count; or
+//  1. it sits in a branch of a ternary whose condition tests the theme, and the
+//     colour is in the branch of its own theme: a `...Light` colour in the
+//     light branch, `neutral500Dark` in the dark one. A condition tests the
+//     theme when it is `isDark`, `!isDark`, `isDark == false` or a comparison
+//     of `brightness` with `Brightness.dark` or `Brightness.light`, alone or
+//     inside a larger condition (`isDark && ok`). The ternary may be several
+//     brackets out, and it need not be the nearest one: in
+//     `isDark ? a : ok ? x : y` the theme governs `x`. A theme word anywhere
+//     else near the site does not count, and neither does a longer name that
+//     contains one (`screenBrightness`, `isDarkChartEnabled`); or
 //  2. it is a tint: `.withValues(alpha: 0.5)` or less applied to it; or
 //  3. the line carries a `theme-neutral:` comment, or the comment line just
 //     above it does, saying why the same colour belongs in both themes (a
 //     fill under a white label). Each file's count of these is a literal in
 //     [_neutral], so adding one shows in the test diff.
 //
+// A colour in the wrong branch (`isDark ? errorLight : errorDark`) fails with
+// no allowlist, tint apart. The direction is read only when the condition is
+// one theme test: `isDark && ok ? a : b` passes either way.
+//
 // The check reads text, not types. It cannot tell a label from a fill, so rule
-// 1 passes a colour in the wrong branch (`isDark ? successLight : x`), rule 2
-// passes a translucent text colour, and rule 3 is the author's word. A colour
+// 2 passes a translucent text colour and rule 3 is the author's word. A colour
 // inside a string interpolation is not seen (none exists in lib/). A reviewer
 // reads the `theme-neutral:` comments.
+//
+// A new constant in app_colors.dart that is an alias of a listed one is found
+// by [unlistedAliases]. One with a value of its own is not: the PR that adds it
+// adds it to [_constants].
 //
 // Files still to fix are counted in [_unfixed]. The count must match exactly:
 // a new site in a listed file fails, and so does a fixed one that is still
@@ -44,53 +57,11 @@ const _constants = [
 /// Sites not yet fixed, by file: how many are left. Raising a number, or adding
 /// a file, needs a reason in the PR body.
 const _unfixed = <String, int>{
-  // PR 3 contrast-theme-aware-screens: settings, auth, goals, FIRE, onboarding.
-  'lib/features/auth/presentation/dialogs/backup_merge_dialog.dart': 1,
-  'lib/features/auth/presentation/widgets/pending_guest_backup_notice.dart': 1,
-  'lib/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart':
-      5,
-  'lib/features/fire_number/presentation/screens/fire_dashboard_screen.dart': 1,
-  'lib/features/fire_number/presentation/screens/fire_settings_screen.dart': 4,
-  'lib/features/goals/presentation/screens/goal_details_screen.dart': 4,
-  'lib/features/goals/presentation/screens/goals_screen.dart': 1,
-  'lib/features/goals/presentation/widgets/goal_card.dart': 1,
-  'lib/features/goals/presentation/widgets/goal_carousel_card.dart': 1,
-  'lib/features/goals/presentation/widgets/goals_dashboard_card.dart': 1,
-  'lib/features/goals/presentation/widgets/goals_list_action_bar.dart': 1,
-  'lib/features/onboarding/presentation/screens/onboarding_screen.dart': 2,
-  'lib/features/settings/presentation/screens/about_screen.dart': 4,
-  'lib/features/settings/presentation/screens/appearance_settings_screen.dart':
-      2,
-  'lib/features/settings/presentation/screens/data_management_screen.dart': 15,
-  'lib/features/settings/presentation/screens/debug_settings_screen.dart': 8,
-  'lib/features/settings/presentation/screens/notifications_settings_screen.dart':
-      1,
-  'lib/features/settings/presentation/screens/security_settings_screen.dart': 1,
-  'lib/features/settings/presentation/screens/settings_screen.dart': 6,
-  'lib/features/settings/presentation/widgets/crashlytics_settings_section.dart':
-      2,
-  'lib/features/settings/presentation/widgets/deletion_request_banner.dart': 1,
-  'lib/features/settings/presentation/widgets/saved_guest_backup_tile.dart': 2,
-  // PR 3, separate commit: hidden until A42 (Income Guardian).
-  'lib/features/income_projection/presentation/screens/income_calendar_screen.dart':
-      1,
-  'lib/features/income_projection/presentation/screens/income_guardian_settings_screen.dart':
-      3,
-  'lib/features/income_projection/presentation/screens/income_trend_report_screen.dart':
-      1,
-  'lib/features/income_projection/presentation/widgets/expected_income_section.dart':
-      13,
-  'lib/features/income_projection/presentation/widgets/income_cell.dart': 4,
-  'lib/features/income_projection/presentation/widgets/income_guardian_dashboard_card.dart':
-      11,
-  // PR 3 takes these two as well (they were in no file list): if it skipped
-  // them, PR 4 and PR 5 would dim them in dark, and the counts below would
-  // still match.
-  'lib/core/widgets/metric_tile.dart': 2,
-  'lib/features/fire_number/presentation/widgets/fire_load_error_card.dart': 1,
   // Deliberately kept: no screen uses ChangeBadge (the plan's W2), and its pale
-  // fill is the same in both themes. PR 4 edits only its zero-badge text.
-  'lib/core/widgets/change_badge.dart': 3,
+  // fill is the same in both themes. Two sites are left, its green and red. Its
+  // zero-change text is neutral600Light, which this scan does not list, and
+  // neutral500Dark for an outlined badge in dark, which is themed.
+  'lib/core/widgets/change_badge.dart': 2,
 };
 
 /// Sites kept on a `theme-neutral:` comment, by file: how many. A comment in
@@ -99,6 +70,13 @@ const _unfixed = <String, int>{
 const _neutral = <String, int>{
   // The selected fill of the frequency chip, under a white label in both themes.
   'lib/features/investment/presentation/screens/add_investment_screen.dart': 1,
+  // The page gradients behind a white icon, the same in both themes.
+  'lib/features/onboarding/presentation/screens/onboarding_screen.dart': 2,
+  // The Success and Error swatches of the theme preview, under white labels.
+  'lib/features/settings/presentation/screens/appearance_settings_screen.dart':
+      2,
+  // The import-warnings snackbar: amber fill under fixed dark ink text.
+  'lib/features/settings/presentation/screens/data_management_screen.dart': 1,
 };
 
 /// Never scanned: they define the constants and build both themes explicitly.
@@ -185,16 +163,19 @@ String blankCommentsAndStrings(String source) {
   return (from + 1, to);
 }
 
-final _theme = RegExp('isDark|brightness', caseSensitive: false);
-final _tint = RegExp(r'\s*\.withValues\(\s*alpha:\s*([0-9.]+)\s*\)');
-final _occurrence = RegExp('\\bAppColors\\.(${_constants.join('|')})\\b');
+final _tint = RegExp(r'\s*\.withValues\(\s*alpha:\s*([0-9.]+)\s*,?\s*\)');
+// Comments are blanked before the scan, so whitespace is all that can sit
+// between the class and the name.
+final _occurrence = RegExp(
+  '\\bAppColors\\s*\\.\\s*(${_constants.join('|')})\\b',
+);
 
 bool _isTint(String code, int at) {
   final m = _tint.matchAsPrefix(code, at);
   return m != null && double.parse(m.group(1)!) <= 0.5;
 }
 
-/// What is open at one bracket level while [_inThemeBranch] reads along: where
+/// What is open at one bracket level while [_themeBranch] reads along: where
 /// the current operand began, and the condition text of each ternary whose
 /// branch we are in.
 class _Level {
@@ -210,13 +191,83 @@ class _Level {
   }
 }
 
-/// Whether the text at [pos] in [code] (comments and strings blanked) sits in a
-/// branch of a ternary whose condition mentions the theme. Reads from the start
-/// of the file with one [_Level] per open bracket, so a ternary in a sibling
-/// argument is gone by the time its bracket closes, and one around the site
-/// still counts from inside nested calls. A `,` or `;` ends the ternaries of
-/// its level.
-bool _inThemeBranch(String code, int pos) {
+/// The theme a ternary condition is true in: [mixed] for a condition that tests
+/// the theme and something else, [none] for one that does not test it.
+enum _Theme { none, mixed, dark, light }
+
+/// Where a site sits: in no theme branch, in one whose direction is not known,
+/// or in the light or dark branch of a theme ternary. A larger value wins when
+/// several ternaries govern the site.
+enum _Branch { none, themed, light, dark }
+
+final _isDarkWord = RegExp(r'(?<![\w$])isDark(?![\w$])');
+final _brightnessCompare = RegExp(
+  r'(?<![\w$])brightness\s*[!=]=\s*Brightness\.(?:dark|light)\b',
+);
+final _pureIsDark = RegExp(r'^(?:\w+\.)*isDark(?:==(true|false))?$');
+final _pureBrightness = RegExp(
+  r'^(?:[\w.()]*\.)?brightness(==|!=)Brightness\.(dark|light)$',
+);
+
+/// Whether [word] stands at [at] in [code] as a whole word.
+bool _isKeyword(String code, int at, String word) {
+  bool wordChar(String ch) => RegExp(r'[\w$]').hasMatch(ch);
+  final end = at + word.length;
+  return code.startsWith(word, at) &&
+      (at == 0 || !wordChar(code[at - 1])) &&
+      (end >= code.length || !wordChar(code[end]));
+}
+
+/// [s] without the brackets that wrap all of it.
+String _unwrap(String s) {
+  while (s.length > 1 && s.startsWith('(') && s.endsWith(')')) {
+    var depth = 0;
+    var wraps = true;
+    for (var i = 0; i < s.length - 1 && wraps; i++) {
+      if (s[i] == '(') depth++;
+      if (s[i] == ')') wraps = --depth > 0;
+    }
+    if (!wraps) break;
+    s = s.substring(1, s.length - 1);
+  }
+  return s;
+}
+
+_Theme _themeOf(String condition) {
+  var c = condition.replaceAll(RegExp(r'\s+'), '');
+  var negated = false;
+  c = _unwrap(c);
+  while (c.startsWith('!')) {
+    negated = !negated;
+    c = _unwrap(c.substring(1));
+  }
+  _Theme? pure;
+  final isDark = _pureIsDark.firstMatch(c);
+  final brightness = _pureBrightness.firstMatch(c);
+  if (isDark != null) {
+    pure = isDark.group(1) == 'false' ? _Theme.light : _Theme.dark;
+  } else if (brightness != null) {
+    final dark =
+        (brightness.group(1) == '==') == (brightness.group(2) == 'dark');
+    pure = dark ? _Theme.dark : _Theme.light;
+  }
+  if (pure == null) {
+    return _isDarkWord.hasMatch(condition) ||
+            _brightnessCompare.hasMatch(condition)
+        ? _Theme.mixed
+        : _Theme.none;
+  }
+  if (!negated) return pure;
+  return pure == _Theme.dark ? _Theme.light : _Theme.dark;
+}
+
+/// Where the text at [pos] in [code] (comments and strings blanked) sits among
+/// the ternaries whose condition tests the theme. Reads from the start of the
+/// file with one [_Level] per open bracket, so a ternary in a sibling argument
+/// is gone by the time its bracket closes, and one around the site still
+/// counts from inside nested calls. A `,` or `;` ends the ternaries of its
+/// level.
+_Branch _themeBranch(String code, int pos) {
   final levels = [_Level(0)];
   for (var i = 0; i < pos; i++) {
     final c = code[i];
@@ -229,6 +280,8 @@ bool _inThemeBranch(String code, int pos) {
       if (levels.length > 1) levels.removeLast();
     } else if (',;'.contains(c)) {
       level.reset(i + 1);
+    } else if (c == 'r' && _isKeyword(code, i, 'return')) {
+      level.reset(i + 'return'.length); // a statement of its own
     } else if (c == '?' && ' \n'.contains(prev) && !'?.['.contains(next)) {
       level.conditions.add(code.substring(level.operand, i));
       level.inThen.add(true);
@@ -245,21 +298,44 @@ bool _inThemeBranch(String code, int pos) {
       level.operand = i + 1;
     }
   }
-  return levels.any((l) => l.conditions.any(_theme.hasMatch));
+  var branch = _Branch.none;
+  for (final level in levels) {
+    for (var k = 0; k < level.conditions.length; k++) {
+      final inThen = level.inThen[k];
+      final here = switch (_themeOf(level.conditions[k])) {
+        _Theme.none => _Branch.none,
+        _Theme.mixed => _Branch.themed,
+        _Theme.dark => inThen ? _Branch.dark : _Branch.light,
+        _Theme.light => inThen ? _Branch.light : _Branch.dark,
+      };
+      if (here.index > branch.index) branch = here;
+    }
+  }
+  return branch;
 }
 
-typedef Scan = ({List<Site> unguarded, List<Site> neutral});
+typedef Scan = ({
+  List<Site> unguarded,
+  List<Site> neutral,
+  List<Site> reversed,
+});
 
-/// The sites in [source] that read one of the nine constants and are not in a
-/// theme branch or a tint: the ones with no `theme-neutral:` comment, and the
-/// ones that have it.
+/// The sites in [source] that read one of the nine constants. A site in the
+/// wrong branch of a theme ternary is reversed. One in no theme branch and not
+/// a tint is unguarded, or neutral when it has a `theme-neutral:` comment.
 Scan scan(String source) {
   final code = blankCommentsAndStrings(source);
   final lines = source.split('\n');
   final unguarded = <Site>[];
   final neutral = <Site>[];
+  final reversed = <Site>[];
   for (final m in _occurrence.allMatches(code)) {
-    if (_inThemeBranch(code, m.start)) continue;
+    final constant = m.group(1)!;
+    final branch = _themeBranch(code, m.start);
+    final wrongWay = constant.endsWith('Light')
+        ? branch == _Branch.dark
+        : branch == _Branch.light;
+    if (branch != _Branch.none && !wrongWay) continue;
     final (from, to) = expressionAround(code, m.start, m.end);
     // `(a ? x : y).withValues(...)` tints the whole group.
     final closes = to < code.length && code[to] == ')';
@@ -267,7 +343,7 @@ Scan scan(String source) {
     final line = '\n'.allMatches(code.substring(0, m.start)).length;
     final site = (
       line: line + 1,
-      constant: m.group(1)!,
+      constant: constant,
       expression: code
           .substring(from, to)
           .trim()
@@ -278,9 +354,14 @@ Scan scan(String source) {
         (line > 0 &&
             lines[line - 1].trimLeft().startsWith('//') &&
             lines[line - 1].contains('theme-neutral:'));
-    (marked ? neutral : unguarded).add(site);
+    (wrongWay
+            ? reversed
+            : marked
+            ? neutral
+            : unguarded)
+        .add(site);
   }
-  return (unguarded: unguarded, neutral: neutral);
+  return (unguarded: unguarded, neutral: neutral, reversed: reversed);
 }
 
 /// The sites that read one of the nine constants with no theme branch, no tint
@@ -289,6 +370,29 @@ List<Site> unguardedSites(String source) => scan(source).unguarded;
 
 /// The sites that pass only because of a `theme-neutral:` comment.
 List<Site> neutralSites(String source) => scan(source).neutral;
+
+/// The sites that read a light colour in the dark branch of a theme ternary, or
+/// the dark grey in the light branch.
+List<Site> reversedSites(String source) => scan(source).reversed;
+
+/// The constants in [source] (app_colors.dart) that are plain aliases of one of
+/// [listed], or of an alias, and are not in [listed].
+List<String> unlistedAliases(String source, Iterable<String> listed) {
+  final alias = RegExp(r'static const Color (\w+) = (\w+);');
+  final known = {...listed};
+  final found = <String>[];
+  var grew = true;
+  while (grew) {
+    grew = false;
+    for (final m in alias.allMatches(source)) {
+      if (known.contains(m.group(2)) && known.add(m.group(1)!)) {
+        found.add(m.group(1)!);
+        grew = true;
+      }
+    }
+  }
+  return found;
+}
 
 void main() {
   group('the scan', () {
@@ -338,6 +442,21 @@ final a = AppColors.errorLight.withValues(alpha: 0.1);
 final b = AppColors.errorLight.withValues(alpha: 0.5);
 final c = (up ? AppColors.successLight : AppColors.errorLight).withValues(alpha: 0.15);
 final d = AppColors.errorLight.withValues(alpha: 0.7);
+'''),
+        [4],
+      );
+    });
+
+    test('reads a tint that the formatter split over lines', () {
+      // dart format puts a long argument on its own line and adds a comma.
+      expect(
+        found('''
+final a = AppColors.successLight.withValues(
+  alpha: 0.15,
+);
+final b = AppColors.successLight.withValues(
+  alpha: 0.7,
+);
 '''),
         [4],
       );
@@ -420,6 +539,94 @@ Text('x', style: TextStyle(color: isDark ? y : AppColors.warningLight, fontSize:
       );
     });
 
+    group('direction', () {
+      List<int> reversed(String source) => [
+        for (final s in reversedSites(source)) s.line,
+      ];
+
+      test('flags a light colour in the dark branch, whatever the form', () {
+        const source = '''
+final a = isDark ? AppColors.errorLight : AppColors.errorDark;
+final b = !isDark ? AppColors.successDark : AppColors.successLight;
+final c = Theme.of(context).brightness == Brightness.light ? AppColors.accentDark : AppColors.accentLight;
+final d = brightness != Brightness.dark ? AppColors.warningDark : AppColors.warningLight;
+final e = widget.isDark ? AppColors.errorLight : null;
+final f = isDark == false ? AppColors.errorDark : AppColors.errorLight;
+final g = !(Theme.of(context).brightness == Brightness.dark) ? AppColors.errorDark : AppColors.errorLight;
+''';
+        expect(reversed(source), [1, 2, 3, 4, 5, 6, 7]);
+        expect(found(source), isEmpty);
+      });
+
+      test('flags the dark grey in the light branch', () {
+        expect(
+          reversed('''
+final a = isDark ? AppColors.neutral400Light : AppColors.neutral500Dark;
+final b = !isDark ? AppColors.neutral500Dark : AppColors.neutral400Light;
+'''),
+          [1, 1, 2, 2],
+        );
+      });
+
+      test('passes each colour in the branch of its own theme', () {
+        const source = '''
+final a = isDark ? AppColors.neutral500Dark : AppColors.neutral400Light;
+final b = !isDark ? AppColors.successLight : AppColors.successDark;
+final c = Theme.of(context).brightness == Brightness.light ? AppColors.accentLight : AppColors.accentDark;
+final d = isDark == false ? AppColors.warningLight : AppColors.warningDark;
+final e = brightness != Brightness.light ? 1 : AppColors.errorLight;
+final f = !(Theme.of(context).brightness == Brightness.dark) ? AppColors.errorLight : 1;
+final g = isDark ? 1 : ok ? AppColors.errorLight : AppColors.successLight;
+Widget h() {
+  return isDark ? 1 : AppColors.errorLight;
+}
+''';
+        expect(reversed(source), isEmpty);
+        expect(found(source), isEmpty);
+      });
+
+      test('does not judge a tint, or a condition that tests more', () {
+        const source = '''
+final a = isDark ? AppColors.accentLight.withValues(alpha: 0.15) : AppColors.accentLight.withValues(alpha: 0.1);
+final b = isDark && ok ? AppColors.successLight : AppColors.errorLight;
+final c = ok || isDark ? AppColors.successLight : AppColors.errorLight;
+''';
+        expect(reversed(source), isEmpty);
+        expect(found(source), isEmpty);
+      });
+    });
+
+    test('a name that only contains a theme word is not a theme check', () {
+      expect(
+        found('''
+final a = screenBrightness > 3 ? AppColors.successLight : AppColors.errorLight;
+final b = isDarkChartEnabled ? AppColors.successLight : AppColors.errorLight;
+final c = brightness > 3 ? AppColors.accentLight : AppColors.warningLight;
+final d = x.isDarkish ? AppColors.accentLight : AppColors.warningLight;
+'''),
+        [1, 1, 2, 2, 3, 3, 4, 4],
+      );
+    });
+
+    test('reads a name split from its class by a line break or a comment', () {
+      // The formatter joins these, but an unformatted file must not slip past.
+      const source = '''
+final a = AppColors
+    .neutral500Light;
+final b = AppColors /* why */ . successLight;
+final c = AppColors // why
+    .errorLight;
+final d = AppColors . accentLight;
+final e = isDark ? AppColors
+    .neutral400Light : AppColors.neutral500Dark;
+final f = isDark ? AppColors
+    .neutral500Dark : AppColors
+    .neutral400Light;
+''';
+      expect(found(source), [1, 3, 4, 6]);
+      expect([for (final s in reversedSites(source)) s.line], [7, 8]);
+    });
+
     test('a bracket or comma inside a string does not end the expression', () {
       expect(
         found('''
@@ -459,6 +666,54 @@ final a = isDark ? 'a, (b' : AppColors.successLight;
       isEmpty,
       reason: 'Delete the entry: the file is fixed or gone.',
     );
+  });
+
+  test(
+    'no light colour is painted in the dark theme, nor the dark grey in the light',
+    () {
+      final reversed = <String>[];
+      for (final entity in Directory('lib').listSync(recursive: true)) {
+        if (entity is! File || !entity.path.endsWith('.dart')) continue;
+        final path = entity.path.replaceAll(r'\', '/');
+        if (_skipped.contains(path)) continue;
+        for (final s in reversedSites(entity.readAsStringSync())) {
+          reversed.add(
+            '$path:${s.line} AppColors.${s.constant}  ${s.expression}',
+          );
+        }
+      }
+      expect(
+        reversed,
+        isEmpty,
+        reason: 'The colour is in the wrong branch of the theme check.',
+      );
+    },
+  );
+
+  group('the colour file', () {
+    test('finds an alias of a listed constant that is not listed', () {
+      expect(
+        unlistedAliases('''
+static const Color errorLight = dangerLight;
+static const Color lossText = dangerLight;
+static const Color deepLoss = lossText;
+static const Color other = Color(0xFF000000);
+static const Color same = successDark;
+''', _constants),
+        ['lossText', 'deepLoss'],
+      );
+    });
+
+    test('lists every alias of a listed constant', () {
+      expect(
+        unlistedAliases(
+          File('lib/core/theme/app_colors.dart').readAsStringSync(),
+          _constants,
+        ),
+        isEmpty,
+        reason: 'Add the alias to _constants: it paints the same light colour.',
+      );
+    });
   });
 
   test('the sites kept on a theme-neutral comment are the ones listed', () {

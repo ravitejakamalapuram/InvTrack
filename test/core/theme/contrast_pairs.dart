@@ -95,6 +95,9 @@ class ContrastPair {
 const _cardTest =
     'test/features/investment/presentation/widgets/investment_card_theme_contrast_test.dart';
 
+// The test that pumps the zero-change ChangeBadge and measures its text.
+const _zeroBadgeTest = 'test/core/widgets/change_badge_zero_contrast_test.dart';
+
 // Grounds the audit used. Dark input fill is the theme's, `neutral800Dark`.
 const _bgL = AppColors.backgroundLight;
 const _cardL = AppColors.cardLight;
@@ -323,16 +326,14 @@ List<ContrastPair> _build() {
       ground: _tint(AppColors.warningLight, 0.15, _cardL),
       audit: 1.91,
     ),
-    // ChangeBadge text for a zero change, on its fill. fg and ground repeat
-    // the constants change_badge.dart picks for a zero change (neutral500Light
-    // on neutral200Light), which a token pair cannot read from the widget. PR
-    // 4 changes the widget and this pair together.
-    ContrastPair.token(
+    // ChangeBadge text for a zero change, on its fill. The widget picks both
+    // colours itself, so a pair that repeated them here could pass while the
+    // badge painted something else: a test pumps the badge and measures it.
+    ContrastPair.widget(
       'zero-badge-text-light@fill',
       rows: [62],
-      fg: AppColors.neutral500Light,
-      ground: AppColors.neutral200Light,
       audit: 3.82,
+      widgetTest: _zeroBadgeTest,
     ),
     ContrastPair.token(
       'on-primary-container-light',

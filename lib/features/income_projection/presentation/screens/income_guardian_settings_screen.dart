@@ -36,7 +36,9 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
             children: [
               SettingsToggleTile(
                 icon: Icons.security,
-                iconColor: AppColors.successLight,
+                iconColor: isDark
+                    ? AppColors.successDark
+                    : AppColors.successLight,
                 title: l10n.incomeGuardianSettings,
                 subtitle: settings.enabled
                     ? l10n.incomeGuardianEnabled
@@ -73,7 +75,7 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
               ),
               _SliderTile(
                 icon: Icons.warning_amber_rounded,
-                iconColor: AppColors.errorLight,
+                iconColor: isDark ? AppColors.errorDark : AppColors.errorLight,
                 title: l10n.overduePaymentAlert,
                 subtitle: l10n.overduePaymentAlertSubtitle(
                   settings.overdueDaysAfter,
@@ -133,7 +135,9 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
               ),
               _SliderTile(
                 icon: Icons.tune,
-                iconColor: AppColors.warningLight,
+                iconColor: isDark
+                    ? AppColors.warningDark
+                    : AppColors.warningLight,
                 title: l10n.confidenceThreshold,
                 subtitle: l10n.confidenceThresholdSubtitle(settings.confidenceThresholdPercent),
                 value: settings.confidenceThresholdPercent.toDouble(),

@@ -161,7 +161,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
               ),
               child: Icon(
                 Icons.shield_rounded,
-                color: AppColors.successLight,
+                color: isDark ? AppColors.successDark : AppColors.successLight,
                 size: 28,
               ),
             ),
@@ -284,10 +284,10 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
     final isOverdue = payment.status == ExpectedCashFlowStatus.overdue;
     final isDueSoon = payment.status == ExpectedCashFlowStatus.dueSoon;
     final statusColor = isOverdue
-        ? AppColors.errorLight
+        ? (isDark ? AppColors.errorDark : AppColors.errorLight)
         : isDueSoon
         ? Colors.orange
-        : AppColors.successLight;
+        : (isDark ? AppColors.successDark : AppColors.successLight);
     final statusIcon = isOverdue
         ? Icons.error_outline_rounded
         : isDueSoon
@@ -374,7 +374,9 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                   child: Text(
                     l10n.dashboardOverdueBadge,
                     style: AppTypography.small.copyWith(
-                      color: AppColors.errorLight,
+                      color: isDark
+                          ? AppColors.errorDark
+                          : AppColors.errorLight,
                       fontWeight: FontWeight.bold,
                       fontSize: 10,
                       letterSpacing: 0.5,
@@ -554,7 +556,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
             child: Icon(
               Icons.verified_rounded,
               size: 40,
-              color: AppColors.successLight,
+              color: isDark ? AppColors.successDark : AppColors.successLight,
             ),
           ),
           SizedBox(height: AppSpacing.md),
@@ -562,7 +564,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
           Text(
             l10n.dashboardAllCaughtUp,
             style: AppTypography.h3.copyWith(
-              color: AppColors.successLight,
+              color: isDark ? AppColors.successDark : AppColors.successLight,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
@@ -599,13 +601,17 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                 Icon(
                   Icons.info_outline_rounded,
                   size: 14,
-                  color: AppColors.successLight,
+                  color: isDark
+                      ? AppColors.successDark
+                      : AppColors.successLight,
                 ),
                 SizedBox(width: 6),
                 Text(
                   l10n.dashboardAllIncomeOnTrack,
                   style: AppTypography.small.copyWith(
-                    color: AppColors.successLight,
+                    color: isDark
+                        ? AppColors.successDark
+                        : AppColors.successLight,
                     fontWeight: FontWeight.w600,
                     fontSize: 11,
                   ),
@@ -642,8 +648,8 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
             label: l10n.dashboardOverdue,
             value: overdueCount.toString(),
             color: overdueCount > 0
-                ? AppColors.errorLight
-                : AppColors.successLight,
+                ? (isDark ? AppColors.errorDark : AppColors.errorLight)
+                : (isDark ? AppColors.successDark : AppColors.successLight),
             isDark: isDark,
           ),
         ),
@@ -715,7 +721,11 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.errorLight),
+          Icon(
+            Icons.cloud_off_rounded,
+            size: 48,
+            color: isDark ? AppColors.errorDark : AppColors.errorLight,
+          ),
           SizedBox(height: AppSpacing.sm),
           Text(
             l10n.dashboardLoadFailed,

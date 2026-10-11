@@ -21,6 +21,7 @@ class NotificationsSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(notificationSettingsProvider);
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -104,7 +105,9 @@ class NotificationsSettingsScreen extends ConsumerWidget {
             children: [
               SettingsToggleTile(
                 icon: Icons.flag,
-                iconColor: AppColors.successLight,
+                iconColor: isDark
+                    ? AppColors.successDark
+                    : AppColors.successLight,
                 title: l10n.goalMilestones,
                 subtitle: l10n.celebrateAtMilestones,
                 value: settings.goalMilestonesEnabled,

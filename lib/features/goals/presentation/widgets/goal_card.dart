@@ -201,7 +201,9 @@ class GoalCard extends ConsumerWidget {
                         Text(
                           'Error loading progress',
                           style: AppTypography.small.copyWith(
-                            color: AppColors.errorLight,
+                            color: isDark
+                                ? AppColors.errorDark
+                                : AppColors.errorLight,
                           ),
                         ),
                       ],

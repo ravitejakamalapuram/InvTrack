@@ -84,7 +84,7 @@ class FireSettingsScreen extends ConsumerWidget {
               child: Icon(
                 Icons.cloud_off_rounded,
                 size: AppSizes.iconXl,
-                color: AppColors.errorLight,
+                color: isDark ? AppColors.errorDark : AppColors.errorLight,
               ),
             ),
             SizedBox(height: AppSpacing.lg),
@@ -544,13 +544,15 @@ class FireSettingsScreen extends ConsumerWidget {
     FireSettingsError.monthlySipNegative => l10n.fireErrorMonthlySipNegative,
   };
 
-  Widget _sheetError(String? error) {
+  Widget _sheetError(String? error, bool isDark) {
     if (error == null) return const SizedBox.shrink();
     return Padding(
       padding: EdgeInsets.only(top: AppSpacing.sm),
       child: Text(
         error,
-        style: AppTypography.small.copyWith(color: AppColors.errorLight),
+        style: AppTypography.small.copyWith(
+          color: isDark ? AppColors.errorDark : AppColors.errorLight,
+        ),
       ),
     );
   }
@@ -625,7 +627,7 @@ class FireSettingsScreen extends ConsumerWidget {
                   label: '$selectedAge',
                   onChanged: (v) => setState(() => selectedAge = v.round()),
                 ),
-                _sheetError(error),
+                _sheetError(error, isDark),
                 SizedBox(height: AppSpacing.lg),
                 SizedBox(
                   width: double.infinity,
@@ -819,7 +821,7 @@ class FireSettingsScreen extends ConsumerWidget {
                   label: valueLabel,
                   onChanged: (v) => setState(() => selectedValue = v),
                 ),
-                _sheetError(error),
+                _sheetError(error, isDark),
                 SizedBox(height: AppSpacing.lg),
                 SizedBox(
                   width: double.infinity,
@@ -842,6 +844,7 @@ class FireSettingsScreen extends ConsumerWidget {
   }
 
   void _confirmReset(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (ctx) {
@@ -866,7 +869,9 @@ class FireSettingsScreen extends ConsumerWidget {
               },
               child: Text(
                 l10n.reset,
-                style: TextStyle(color: AppColors.dangerLight),
+                style: TextStyle(
+                  color: isDark ? AppColors.dangerDark : AppColors.dangerLight,
+                ),
               ),
             ),
           ],
@@ -975,7 +980,7 @@ class _AmountEditorSheetState extends State<_AmountEditorSheet> {
               child: Text(
                 error,
                 style: AppTypography.small.copyWith(
-                  color: AppColors.errorLight,
+                  color: isDark ? AppColors.errorDark : AppColors.errorLight,
                 ),
               ),
             ),

@@ -532,7 +532,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
               child: Icon(
                 Icons.cloud_off_rounded,
                 size: AppSizes.iconXl,
-                color: AppColors.errorLight,
+                color: isDark ? AppColors.errorDark : AppColors.errorLight,
               ),
             ),
             SizedBox(height: AppSpacing.lg),

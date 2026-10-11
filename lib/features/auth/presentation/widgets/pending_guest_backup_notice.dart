@@ -140,6 +140,7 @@ class _PendingGuestBackupNoticeState
     final navigator = rootNavigatorKey.currentState;
     if (navigator == null || !navigator.mounted) return null;
     final l10n = AppLocalizations.of(navigator.context);
+    final isDark = Theme.of(navigator.context).brightness == Brightness.dark;
     final messenger = ScaffoldMessenger.maybeOf(navigator.context);
     final loading = DialogRoute<void>(
       context: navigator.context,
@@ -168,7 +169,9 @@ class _PendingGuestBackupNoticeState
         messenger?.showSnackBar(
           SnackBar(
             content: Text(l10n.guestDataMerged),
-            backgroundColor: AppColors.successLight,
+            backgroundColor: isDark
+                ? AppColors.successDark
+                : AppColors.successLight,
           ),
         );
       case GuestBackupImport.incomplete:

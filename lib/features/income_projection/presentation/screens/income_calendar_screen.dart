@@ -159,7 +159,7 @@ class IncomeCalendarScreen extends ConsumerWidget {
           Icon(
             Icons.cloud_off_rounded,
             size: 64,
-            color: AppColors.errorLight,
+            color: isDark ? AppColors.errorDark : AppColors.errorLight,
           ),
           const SizedBox(height: 16),
           Text(

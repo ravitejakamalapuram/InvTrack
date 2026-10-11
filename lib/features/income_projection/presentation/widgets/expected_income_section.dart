@@ -73,7 +73,11 @@ class ExpectedIncomeSection extends ConsumerWidget {
         if (overduePayments.isNotEmpty) {
           allSections.addAll([
             SizedBox(height: AppSpacing.md),
-            _buildSectionHeader(l10n.expectedIncomeOverduePayments, AppColors.errorLight, isDark),
+            _buildSectionHeader(
+              l10n.expectedIncomeOverduePayments,
+              isDark ? AppColors.errorDark : AppColors.errorLight,
+              isDark,
+            ),
             SizedBox(height: AppSpacing.sm),
           ]);
           for (final payment in overduePayments) {
@@ -88,7 +92,11 @@ class ExpectedIncomeSection extends ConsumerWidget {
         if (futurePayments.isNotEmpty) {
           allSections.addAll([
             SizedBox(height: AppSpacing.md),
-            _buildSectionHeader(l10n.expectedIncomeUpcomingPayments, AppColors.successLight, isDark),
+            _buildSectionHeader(
+              l10n.expectedIncomeUpcomingPayments,
+              isDark ? AppColors.successDark : AppColors.successLight,
+              isDark,
+            ),
             SizedBox(height: AppSpacing.sm),
           ]);
           for (final payment in futurePayments.take(5)) {
@@ -175,7 +183,7 @@ class ExpectedIncomeSection extends ConsumerWidget {
         child: Text(
           l10n.expectedIncomeLoadFailed,
           style: AppTypography.body.copyWith(
-            color: AppColors.errorLight,
+            color: isDark ? AppColors.errorDark : AppColors.errorLight,
           ),
         ),
       ),
@@ -192,20 +200,17 @@ class ExpectedIncomeSection extends ConsumerWidget {
     final reliabilityPercent = totalCount > 0
         ? ((receivedCount / totalCount) * 100).toInt()
         : 0;
+    final reliabilityColor = reliabilityPercent >= 80
+        ? (isDark ? AppColors.successDark : AppColors.successLight)
+        : reliabilityPercent >= 50
+        ? (isDark ? AppColors.warningDark : AppColors.warningLight)
+        : (isDark ? AppColors.errorDark : AppColors.errorLight);
 
     return GlassCard(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Icon(
-            Icons.verified_rounded,
-            color: reliabilityPercent >= 80
-                ? AppColors.successLight
-                : reliabilityPercent >= 50
-                    ? AppColors.warningLight
-                    : AppColors.errorLight,
-            size: 32,
-          ),
+          Icon(Icons.verified_rounded, color: reliabilityColor, size: 32),
           SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(
@@ -220,13 +225,7 @@ class ExpectedIncomeSection extends ConsumerWidget {
                 SizedBox(height: 4),
                 Text(
                   '$reliabilityPercent%',
-                  style: AppTypography.h2.copyWith(
-                    color: reliabilityPercent >= 80
-                        ? AppColors.successLight
-                        : reliabilityPercent >= 50
-                            ? AppColors.warningLight
-                            : AppColors.errorLight,
-                  ),
+                  style: AppTypography.h2.copyWith(color: reliabilityColor),
                 ),
                 SizedBox(height: 2),
                 Text(
@@ -279,10 +278,10 @@ class ExpectedIncomeSection extends ConsumerWidget {
     bool isPast = false,
   }) {
     final statusColor = isOverdue
-        ? AppColors.errorLight
+        ? (isDark ? AppColors.errorDark : AppColors.errorLight)
         : isPast
-            ? AppColors.graphCyan
-            : AppColors.successLight;
+        ? AppColors.graphCyan
+        : (isDark ? AppColors.successDark : AppColors.successLight);
 
     final variance = payment.actualAmount != null
         ? ((payment.actualAmount! - payment.expectedAmount) / payment.expectedAmount * 100)
@@ -317,8 +316,12 @@ class ExpectedIncomeSection extends ConsumerWidget {
                             : Icons.info_outline_rounded,
                         size: 16,
                         color: variance.abs() < 5
-                            ? AppColors.successLight
-                            : AppColors.warningLight,
+                            ? (isDark
+                                  ? AppColors.successDark
+                                  : AppColors.successLight)
+                            : (isDark
+                                  ? AppColors.warningDark
+                                  : AppColors.warningLight),
                       ),
                   ],
                 ),

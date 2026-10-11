@@ -112,7 +112,9 @@ class MetricTile extends StatelessWidget {
 
   Widget _buildChangeIndicator(bool isDark) {
     final positive = isPositive ?? true;
-    final color = positive ? AppColors.successLight : AppColors.dangerLight;
+    final color = positive
+        ? (isDark ? AppColors.successDark : AppColors.successLight)
+        : (isDark ? AppColors.dangerDark : AppColors.dangerLight);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
