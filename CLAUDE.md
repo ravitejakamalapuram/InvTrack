@@ -29,7 +29,7 @@ These came out of the October 2026 review (`docs/review-2026-10/`). Breaking one
 1. Never default a missing currency to `'USD'`. Use the user's base currency (`currencyCodeProvider`), or fail visibly.
 2. Convert every cash flow to the base currency (`BatchCurrencyConverter` / `batchConvert`) before summing or computing XIRR. Never sum unconverted amounts, and never show a native amount under the base-currency symbol.
 3. One implementation per metric. Invested, returned, net, XIRR, MOIC and current value come from `lib/core/calculations`; screens and services must not re-derive them.
-4. An open investment needs a current value for XIRR, MOIC and return %. Without one, show “—” or “Awaiting first payout”, never 0% or −100%.
+4. An open investment needs a current value for XIRR, MOIC and return %. Without one, show “—”, “Awaiting first payout” or “Awaiting current value”, never 0% or −100%. One exception (owner decision 2026-10-10, #954): an open investment with no current value that has already returned at least its cost (money out and money in compared to the paisa, in one currency) keeps its cash-only return %, XIRR and MOIC, labelled “so far” (they are minimums: they leave out whatever is still held), and its detail page adds “Fully paid back? Mark it closed”. Closed investments are unchanged. `CurrentValueCalculator.terminalValues` decides this (`cashOnlyCount`) and `ReturnDisplay` words it; screens must not re-derive either.
 5. Cash-flow dates are date-only; normalise them before saving and before computing. XIRR uses actual/365 like Excel. The Indian FY is the half-open range [1 Apr, next 1 Apr).
 6. Every Firestore collection must be covered by account deletion (`AccountDataDeletionService`; a test enforces this) and by export/import.
 7. Never send names, amounts, file names or paths to Analytics or Crashlytics. Amounts may be sent only as buckets. Analytics parameter values are String or num only (send flags as 1/0, never bool). Screen names come from `AnalyticsScreens`, never a path or id.
@@ -80,6 +80,7 @@ Tickets are GitHub issues labelled `review-2026-10` and titled `[Axx] …`. The 
 - 2026-10-02: archived investments stay excluded from totals; add explicit warnings and disclosure (A17).
 - 2026-10-02: iOS is deferred until Android activation and retention targets are met.
 - 2026-10-03: records saved without a currency are stamped once, after the user confirms which currency they are in (A03-F1).
+- 2026-10-10: an open investment that has returned its cost and has no current value keeps its figures, labelled “so far” (#954).
 - Plan defaults that hold until the founder says otherwise: Premium is built from new features only, and nothing free today becomes paid (A58); the dormant ads SDK is removed (A34, A57); Income Guardian is hidden until something generates expected payouts (A42).
 - Account deletion builds on the existing pipeline: `deletionRequests` rules (APP-331), the processing job in `scripts/account-deletion` (APP-332) and in-app requests (APP-334). Extend that work; don't replace it.
 

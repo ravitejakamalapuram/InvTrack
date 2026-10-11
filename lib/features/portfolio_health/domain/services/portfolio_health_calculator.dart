@@ -128,13 +128,7 @@ class PortfolioHealthCalculator {
       }
       // Open, with no current value and less back than was put in: its
       // return is unknown until it has a value.
-      final hasValue = terminalValues[investment.id]?.flows.isNotEmpty ?? false;
-      if (stat.needsCurrentValue ||
-          (investment.isOpen &&
-              !hasValue &&
-              stat.totalReturned < stat.totalInvested)) {
-        return null;
-      }
+      if (investment.isOpen && stat.awaitsValue) return null;
       included.add(investment.id);
       if (investment.isOpen) {
         open.add(investment.id);

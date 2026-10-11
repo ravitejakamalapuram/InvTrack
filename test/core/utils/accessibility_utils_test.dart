@@ -264,6 +264,62 @@ void main() {
         expect(label, isNot(contains('800,000')));
         expect(label, isNot(contains('25.5')));
       });
+
+      group('returnQualifier (#954)', () {
+        String qualify(String returns) => '$returns so far (note)';
+
+        test('qualifies the returns sentence', () {
+          final label = AccessibilityUtils.investmentCardLabel(
+            name: 'Bhive RBF',
+            type: 'P2P Lending',
+            currentValue: 114000,
+            returnPercent: 4.9,
+            currencySymbol: '₹',
+            currencyLocale: 'en_IN',
+            isClosed: false,
+            returnQualifier: qualify,
+          );
+
+          expect(
+            label,
+            contains('Returns: positive 4.9 percent so far (note)'),
+          );
+        });
+
+        test('still hides the percentage when masked', () {
+          final label = AccessibilityUtils.investmentCardLabel(
+            name: 'Bhive RBF',
+            type: 'P2P Lending',
+            currentValue: 114000,
+            returnPercent: 4.9,
+            currencySymbol: '₹',
+            currencyLocale: 'en_IN',
+            isClosed: false,
+            shouldMask: true,
+            returnQualifier: qualify,
+          );
+
+          expect(label, contains('Returns: Hidden percentage so far (note)'));
+          expect(label, isNot(contains('4.9')));
+        });
+
+        test('leaves out a figure that is not there', () {
+          final label = AccessibilityUtils.investmentCardLabel(
+            name: 'Bhive RBF',
+            type: 'P2P Lending',
+            currentValue: 0,
+            returnPercent: null,
+            returnStatus: 'Awaiting first payout',
+            currencySymbol: '₹',
+            currencyLocale: 'en_IN',
+            isClosed: false,
+            returnQualifier: qualify,
+          );
+
+          expect(label, contains('Returns: Awaiting first payout'));
+          expect(label, isNot(contains('so far')));
+        });
+      });
     });
   });
 }

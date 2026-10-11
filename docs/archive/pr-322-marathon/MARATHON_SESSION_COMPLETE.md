@@ -118,12 +118,12 @@ git log --oneline -5
 
 ### **Step 2: Create V2 GitHub Issue** ⏳ Template ready
 ```bash
-# Use the template in docs/GITHUB_ISSUE_DOMAIN_LOCALIZATION.md
+# Use the template in docs/archive/GITHUB_ISSUE_DOMAIN_LOCALIZATION.md
 gh issue create \
   --title "[V2] Refactor domain layer to support full localization" \
   --label "enhancement,v2,localization,breaking-change" \
   --milestone "V2" \
-  --body-file docs/GITHUB_ISSUE_DOMAIN_LOCALIZATION.md
+  --body-file docs/archive/GITHUB_ISSUE_DOMAIN_LOCALIZATION.md
 ```
 
 ### **Step 3: Enable Feature Flag** ⏳ After merge
