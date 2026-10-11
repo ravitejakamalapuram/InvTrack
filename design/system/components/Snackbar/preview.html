@@ -1,0 +1,32 @@
+<!-- @dsCard group="Feedback" height=420 subtitle="Success, error, info and the exact-amount toast" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+
+  document.getElementById('root').innerHTML = I.panes(function (theme) {
+    return '<div class="it-stack" style="gap:12px">' +
+      I.Snackbar({ kind: 'success', message: 'Investment deleted' }) +
+      I.Snackbar({ kind: 'error', message: 'Could not save the current value. Try again.' }) +
+      I.Snackbar({ kind: 'info', message: 'Sample data loaded! Explore the app.' }) +
+      I.Snackbar({ kind: 'exact', message: '₹3,25,000.00' }) +
+      cap('AppFeedback snackbars: floating, 12px radius, 20px white icon, message. The message is card-coloured: white in light (below 4.5:1 on the success fill), #171717 in dark. The source copy of the info message starts with an emoji (legacy). The exact-amount toast comes from a long-press on a compact amount.') +
+    '</div>';
+  });
+
+  I.wire(document);
+})();
+</script>
+</body>
+</html>

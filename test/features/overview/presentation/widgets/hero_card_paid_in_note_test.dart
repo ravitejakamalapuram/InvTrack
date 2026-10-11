@@ -6,12 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+
+import '../../../../mocks/mock_analytics_service.dart';
 
 class _PrivacyOff extends PrivacyModeNotifier {
   @override
@@ -41,6 +44,8 @@ Future<void> _pumpHero(WidgetTester tester, InvestmentStats stats) async {
       overrides: [
         privacyModeProvider.overrideWith(_PrivacyOff.new),
         currencyCodeProvider.overrideWith((ref) => 'INR'),
+        // The hero reports xirr_viewed when it shows a real XIRR.
+        analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,

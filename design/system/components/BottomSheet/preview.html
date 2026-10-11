@@ -1,0 +1,32 @@
+<!-- @dsCard group="Overlays" height=565 subtitle="Modal bottom sheet: handle, header, option list" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+
+  document.getElementById('root').innerHTML = I.panes(function () {
+    return I.BottomSheet({ title: 'Sort By', icon: 'sort', reset: true, height: 520, options: [
+      { icon: 'schedule', base: true, label: 'Last Activity', selected: false, isDefault: true },
+      { icon: 'sort_by_alpha', base: true, label: 'Name (A-Z)', selected: true },
+      { icon: 'payments', base: true, label: 'Total Invested (High)' },
+      { icon: 'percent', base: true, label: 'Return % (High)' },
+      { icon: 'trending_up', base: true, label: 'Net Position (High)' },
+      { icon: 'event', label: 'Maturity Date (Soonest)' } ] });
+  });
+
+  I.wire(document);
+})();
+</script>
+</body>
+</html>

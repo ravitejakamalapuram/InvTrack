@@ -15,6 +15,7 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/overview/presentation/screens/overview_screen.dart';
+import 'package:inv_tracker/features/overview/presentation/widgets/overview_all_archived_card.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_empty_state.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -100,8 +101,8 @@ void main() {
   });
 
   testWidgets('offline, a portfolio whose investments are all archived shows '
-      'the empty state at once from the cache, without the sample-data offer '
-      'or empty_state_viewed', (tester) async {
+      'the all-archived card at once from the cache, not the first-run empty '
+      'state, sample-data offer or empty_state_viewed (A17)', (tester) async {
     final (analytics, firestore) = await pumpOverview(tester);
 
     firestore.activeSnapshots.add(querySnapshot(fromCache: true));
@@ -112,7 +113,8 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.byType(HeroCardSkeleton), findsNothing);
-    expect(find.byType(OverviewEmptyState), findsOneWidget);
+    expect(find.byType(OverviewAllArchivedCard), findsOneWidget);
+    expect(find.byType(OverviewEmptyState), findsNothing);
     expect(find.text(l10n.trySampleData), findsNothing);
     expect(_emptyStateEvents(analytics), 0);
   });

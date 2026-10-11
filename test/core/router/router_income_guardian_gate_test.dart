@@ -9,6 +9,7 @@ import 'package:inv_tracker/features/onboarding/presentation/screens/onboarding_
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 
 import '../../mocks/fake_auth_repository.dart';
+import '../../mocks/mock_analytics_service.dart';
 
 class _TestSecurityNotifier extends SecurityNotifier {
   @override
@@ -26,7 +27,7 @@ void main() {
         ),
         securityProvider.overrideWith(_TestSecurityNotifier.new),
         onboardingCompleteProvider.overrideWith((ref) async => true),
-        analyticsObserverProvider.overrideWithValue(null),
+        analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
         isReportsTabEnabledProvider.overrideWithValue(false),
         isIncomeGuardianEnabledProvider.overrideWithValue(enabled),
       ],

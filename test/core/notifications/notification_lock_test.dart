@@ -105,7 +105,6 @@ void main() {
         securityProvider.overrideWith(_LockedSecurity.new),
         onboardingCompleteProvider.overrideWith((ref) async => true),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
-        analyticsObserverProvider.overrideWithValue(null),
         isReportsTabEnabledProvider.overrideWithValue(false),
         allInvestmentsProvider.overrideWith(
           (ref) => investments ?? Stream.value([_fd]),

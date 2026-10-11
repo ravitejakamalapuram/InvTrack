@@ -20,6 +20,12 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   /// The user's base currency, for documents with no `currency` field.
   final String Function() _baseCurrency;
 
+  /// Asked for when an investment is deleted while the server gave no answer
+  /// about its expected payments, so that the one-off orphan sweep runs again
+  /// at the next Income Guardian start (#917). Best effort: a failure here
+  /// never stops the delete.
+  final Future<void> Function()? _onExpectedPaymentsUnverified;
+
   /// Timeout for write operations - allows offline writes to complete quickly
   static const Duration _writeTimeout = Duration(seconds: 3);
 
@@ -34,9 +40,11 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     required FirebaseFirestore firestore,
     required String userId,
     required String Function() baseCurrency,
+    Future<void> Function()? onExpectedPaymentsUnverified,
   }) : _firestore = firestore,
        _userId = userId,
-       _baseCurrency = baseCurrency;
+       _baseCurrency = baseCurrency,
+       _onExpectedPaymentsUnverified = onExpectedPaymentsUnverified;
 
   /// Execute a write operation with timeout
   /// If the operation times out (likely offline), we consider it successful
@@ -61,6 +69,14 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   // collection name is a literal for the account deletion coverage test).
   CollectionReference<Map<String, dynamic>> get _valuationsRef =>
       _firestore.collection('users').doc(_userId).collection('valuations');
+
+  // Expected payments of active and archived investments alike (the collection
+  // name is a literal for the account deletion coverage test).
+  CollectionReference<Map<String, dynamic>> get _expectedCashFlowsRef =>
+      _firestore
+          .collection('users')
+          .doc(_userId)
+          .collection('expectedCashFlows');
 
   // Collection references for ARCHIVED data (complete isolation)
   CollectionReference<Map<String, dynamic>> get _archivedInvestmentsRef =>
@@ -284,8 +300,9 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     investmentId: id,
   );
 
-  /// Deletes [investment], its cash flows in [cashFlowsRef] and its valuation
-  /// snapshots, tombstones included, so that none is left behind.
+  /// Deletes [investment], its cash flows in [cashFlowsRef], its valuation
+  /// snapshots (tombstones included) and its expected payments, so that none
+  /// is left behind.
   ///
   /// Everything that has to go is found first, so that a failure to find it
   /// deletes nothing. The investment is removed last, in the final batch: if
@@ -296,10 +313,16 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     required String investmentId,
   }) async {
     final cashFlows = await _getDocsForDeletion(cashFlowsRef, investmentId);
-    final snapshots = await _valuationRefsForDeletion(investmentId);
+    final snapshots = await _refsForDeletion(_valuationsRef, investmentId);
+    final expected = await _refsForDeletion(
+      _expectedCashFlowsRef,
+      investmentId,
+      onUnanswered: _onExpectedPaymentsUnverified,
+    );
     final refs = <DocumentReference>[
       for (final doc in cashFlows.docs) doc.reference,
       ...snapshots,
+      ...expected,
       investment,
     ];
     for (var i = 0; i < refs.length; i += _deleteBatchSize) {
@@ -350,23 +373,34 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     }
   }
 
-  /// Every valuation snapshot of [investmentId], tombstones included.
+  /// Every document of [ref] for [investmentId]: its valuation snapshots,
+  /// tombstones included, or its expected payments.
   ///
-  /// Unlike cash flows, snapshots are not kept in the local cache by a
-  /// listener: none runs with the feature flag off, on a fresh install or
-  /// after an account switch, and an empty cache answers with no documents
-  /// rather than an error. So the server is asked as well, and the cache adds
-  /// what it holds that the server has not seen yet (writes made offline).
+  /// Unlike cash flows, these are not kept in the local cache by a listener:
+  /// none runs with the feature flag off, on a fresh install or after an
+  /// account switch, and an empty cache answers with no documents rather than
+  /// an error. So the server is asked as well, and the cache adds what it
+  /// holds that the server has not seen yet (writes made offline).
   ///
   /// Throws [NetworkException], like [_getDocsForDeletion], when neither can
-  /// answer: nothing is deleted then, rather than orphaning snapshots.
-  Future<Set<DocumentReference>> _valuationRefsForDeletion(
-    String investmentId,
-  ) async {
+  /// answer: nothing is deleted then, rather than orphaning them.
+  ///
+  /// Known limit: offline with an empty cache, the cache answers with no
+  /// documents and the delete goes ahead, exactly as it does for cash flows.
+  /// Requiring a server answer would fail every offline delete. Documents the
+  /// server holds but this device never saw then stay behind. [onUnanswered]
+  /// is called in that case (the server gave no answer) so the caller can
+  /// arrange for them to be found later; it is best effort and never stops
+  /// the delete.
+  Future<Set<DocumentReference>> _refsForDeletion(
+    CollectionReference<Map<String, dynamic>> ref,
+    String investmentId, {
+    Future<void> Function()? onUnanswered,
+  }) async {
     final refs = <DocumentReference>{};
     var serverAnswered = false;
     try {
-      final server = await _valuationsRef
+      final server = await ref
           .where('investmentId', isEqualTo: investmentId)
           .get(const GetOptions(source: Source.server))
           .timeout(_serverReadTimeout);
@@ -376,10 +410,17 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       // Offline or too slow: the cache is all there is.
     }
     try {
-      final cached = await _getDocsForDeletion(_valuationsRef, investmentId);
+      final cached = await _getDocsForDeletion(ref, investmentId);
       refs.addAll(cached.docs.map((doc) => doc.reference));
     } catch (_) {
       if (!serverAnswered) rethrow;
+    }
+    if (!serverAnswered && onUnanswered != null) {
+      try {
+        await onUnanswered();
+      } catch (_) {
+        // Only a hint for a later sweep: the delete must still happen.
+      }
     }
     return refs;
   }
@@ -705,14 +746,22 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       } on TimeoutException {
         // Continue without cash flows - they'll be orphaned but filtered out
       }
-      // Valuation snapshots are not best-effort: when they cannot be listed
-      // this throws before anything is deleted, so none is orphaned.
+      // Valuation snapshots and expected payments are not best-effort: when
+      // they cannot be listed this throws before anything is deleted, so none
+      // is orphaned.
       cashFlowDocsToDelete.addAll(
-        await _valuationRefsForDeletion(investmentId),
+        await _refsForDeletion(_valuationsRef, investmentId),
+      );
+      cashFlowDocsToDelete.addAll(
+        await _refsForDeletion(
+          _expectedCashFlowsRef,
+          investmentId,
+          onUnanswered: _onExpectedPaymentsUnverified,
+        ),
       );
     }
 
-    // Delete cash flows (and valuation snapshots) in batches
+    // Delete cash flows (and valuation snapshots, expected payments) in batches
     for (var i = 0; i < cashFlowDocsToDelete.length; i += batchLimit) {
       final batch = _firestore.batch();
       final end = (i + batchLimit < cashFlowDocsToDelete.length)
