@@ -5,6 +5,7 @@ import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/income_projection/data/repositories/firestore_expected_cash_flow_repository.dart';
+import 'package:inv_tracker/features/income_projection/data/services/orphaned_expected_cash_flow_cleanup_service.dart';
 import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
 import 'package:inv_tracker/features/investment/data/repositories/firestore_custom_investment_type_repository.dart';
 import 'package:inv_tracker/features/investment/data/repositories/firestore_document_repository.dart';
@@ -58,6 +59,14 @@ final investmentRepositoryProvider = Provider<InvestmentRepository>((ref) {
     firestore: firestore,
     userId: user.id,
     baseCurrency: baseCurrencyReader(ref),
+    // An investment deleted while the server gave no answer about its expected
+    // payments may leave some behind: sweep for them again at the next Income
+    // Guardian start (#917). Read when asked, so building this never needs it.
+    onExpectedPaymentsUnverified: () async =>
+        OrphanedExpectedCashFlowCleanupService.requestSweep(
+          ref.read(sharedPreferencesProvider),
+          user.id,
+        ),
   );
 });
 
