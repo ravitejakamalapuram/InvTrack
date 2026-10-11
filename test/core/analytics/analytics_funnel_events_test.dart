@@ -101,7 +101,10 @@ void main() {
       await service.logAccountLinkFailure(reason: 'google_account_exists');
 
       expect(sent.single.name, 'account_link_failure');
-      expect(sent.single.parameters, {'reason': 'google_account_exists'});
+      expect(
+        sent.single.parameters,
+        equals({'reason': 'google_account_exists'}),
+      );
       expectPrivacySafe(
         sent.single,
         allowedStrings: {
@@ -109,5 +112,18 @@ void main() {
         },
       );
     });
+  });
+
+  test('account_link_failure carries only the reason', () async {
+    await service.logAccountLinkFailure(reason: 'google_account_exists');
+
+    expect(sent.single.name, 'account_link_failure');
+    expect(sent.single.parameters, equals({'reason': 'google_account_exists'}));
+    expectPrivacySafe(
+      sent.single,
+      allowedStrings: {
+        'reason': {'google_account_exists'},
+      },
+    );
   });
 }

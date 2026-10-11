@@ -58,7 +58,14 @@ enum FeatureFlag {
   /// - Saved labels come back as suggestions
   /// - Off by default; saved labels are still exported, imported and deleted
   ///   with the account while it is off
-  customInvestmentTypes('custom_investment_types', 'Custom Investment Types');
+  customInvestmentTypes('custom_investment_types', 'Custom Investment Types'),
+
+  /// First Investment Flow (A40, #783).
+  /// - Add Investment takes an optional amount and start date, and saves the
+  ///   investment with its first cash flow in one write
+  /// - Off by default; it ships by changing the default in a release PR, and
+  ///   release builds read only that default
+  firstInvestmentFlow('first_investment_flow', 'First Investment Flow');
 
   const FeatureFlag(this.key, this.displayName, {this.defaultEnabled = false});
 
@@ -231,6 +238,16 @@ final isCustomInvestmentTypesEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.customInvestmentTypes] ?? false,
+    ),
+  );
+});
+
+/// Convenience provider for checking if the first investment flow (A40) is
+/// enabled
+final isFirstInvestmentFlowEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagsProvider.select(
+      (flags) => flags[FeatureFlag.firstInvestmentFlow] ?? false,
     ),
   );
 });

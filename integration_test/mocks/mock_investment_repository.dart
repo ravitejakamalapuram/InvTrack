@@ -331,6 +331,24 @@ class FakeInvestmentRepository implements InvestmentRepository {
     return (investments: investments.length, cashFlows: cashFlows.length);
   }
 
+  /// Like Firestore's set, writing an id again replaces the record, so a retry
+  /// with the same ids leaves one investment and one flow.
+  @override
+  Future<bool> createInvestmentWithFirstCashFlow(
+    InvestmentEntity investment,
+    CashFlowEntity? firstFlow,
+  ) async {
+    _investments
+      ..removeWhere((i) => i.id == investment.id)
+      ..add(investment);
+    if (firstFlow != null) {
+      _cashFlows
+        ..removeWhere((cf) => cf.id == firstFlow.id)
+        ..add(firstFlow);
+    }
+    return true;
+  }
+
   @override
   Future<int> bulkDelete(List<String> investmentIds) async {
     final count = investmentIds.length;

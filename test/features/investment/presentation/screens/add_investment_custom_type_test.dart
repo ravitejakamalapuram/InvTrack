@@ -50,6 +50,8 @@ class _RecordingNotifier extends InvestmentNotifier {
     CompoundingFrequency? compoundingFrequency,
     String? currency,
     String? customTypeLabel,
+    String? id,
+    double? initialAmount,
   }) async {
     adds.add({'name': name, 'type': type, 'customTypeLabel': customTypeLabel});
     return InvestmentEntity(
