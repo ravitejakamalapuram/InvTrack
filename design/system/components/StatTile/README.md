@@ -4,7 +4,7 @@ Use a tile for a single headline number. Use `HeroCard` for the Overview headlin
 
 ## Kinds (`InvTrack.StatTile({ kind })`)
 
-- `metric` (MetricTile): `card` fill, 1px `field-border`, `radius-lg` 16, padding 16; optional 16px icon in a tinted 8px-radius chip; label `caption` 14 in `text-secondary`; value `number-small` (Plus Jakarta Sans 20/600); optional trend line (14px trend icon, 12px/500, green up or red down) which the screen reader hears as "Trending up +17.6%".
+- `metric` (MetricTile): `card` fill, 1px `field-border`, `radius-lg` 16, padding 16; optional 16px icon in a tinted 8px-radius chip; label `caption` 14 in `text-secondary`; value `number-small` (Plus Jakarta Sans 20/600); optional trend line (14px trend icon, 12px/500, `success` up or `danger` down, the dark value in dark mode) which the screen reader hears as "Trending up +17.6%".
 - `quick` (QuickStatCard): a GlassCard, padding 16: a 24px icon in a tinted 12px-radius tile, label 12px (`#757575`), value 18px bold in the inherited body colour (`text-secondary`, not `text`), subtitle 11px (`#9e9e9e`, up to three lines). The subtitle fades out in privacy mode; sensitive values are masked.
 - `mini` (detail screen XIRR / MOIC): GlassCard padding 12, centred: label 11px `text-muted`, value 15px/700 in the metric colour (`graph-cyan` XIRR, `graph-purple` MOIC, `text-muted` when unknown), subtitle 10px `text-subtle`.
 - `net`: the detail screen's first card: a 28px trend or hourglass icon in a tinted 14px tile, label 12px, value 20px/700 (compact, `formatSmart`), and on the right the return badge or a neutral status chip.
