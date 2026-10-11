@@ -108,6 +108,8 @@ class InvestmentCard extends ConsumerWidget {
               ? display.secondaryText(l10n)
               : null,
           returnStatus: display.statusLabel(l10n),
+          // "So far", and what the figure leaves out, when it is a minimum.
+          returnQualifier: (returns) => display.semanticsFigure(l10n, returns),
           currencySymbol: currencySymbol,
           currencyLocale: currencyFormat.locale,
           isClosed: isClosed,
@@ -536,11 +538,7 @@ class _InvestmentValueColumn extends StatelessWidget {
                       (isShortHolding ? stats.absoluteReturn : xirr!) >= 0
                       ? AppColors.graphEmerald
                       : AppColors.errorLight;
-                  final xirrFormatted = isShortHolding
-                      ? display.primaryText(l10n)
-                      : display.isEstimate
-                      ? '${display.primaryText(l10n)} ${display.metricLabel(l10n)}'
-                      : '${display.primaryText(l10n)} IRR';
+                  final xirrFormatted = display.pillText(l10n);
 
                   return AnimatedOpacity(
                     duration: const Duration(milliseconds: 200),

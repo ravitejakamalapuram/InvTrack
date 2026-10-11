@@ -67,6 +67,20 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
                 stats.currentValueIsEstimate)
         ? _projectedMaturityText(l10n)
         : null;
+    // An archived investment cannot be closed from here.
+    final paidBackHint = investment.isArchived
+        ? null
+        : display.paidBackHint(l10n);
+    final moicText = formatMultiplier(stats.moic);
+    // The annualised rate is a return figure: hide it in privacy mode like the
+    // primary value. The hint is not sensitive. No holding period while MOIC
+    // waits for a current value.
+    final xirrSubtitle = isPrivacyMode && !display.isAwaitingValue
+        ? null
+        : display.secondaryText(l10n);
+    final moicSubtitle = display.isAwaitingValue
+        ? null
+        : stats.durationFormatted;
 
     return Column(
       children: [
@@ -82,10 +96,10 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
             onUpdate: onUpdateCurrentValue,
           ),
         ],
-        if (projection != null) ...[
+        for (final caption in [?projection, ?paidBackHint]) ...[
           const SizedBox(height: 6),
           Text(
-            projection,
+            caption,
             style: AppTypography.small.copyWith(
               color: isDark
                   ? AppColors.neutral400Dark
@@ -121,28 +135,41 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
                     ? AppColors.graphCyan
                     : AppColors.errorLight,
                 isDark: isDark,
-                // The annualised rate is a return figure: hide it in privacy
-                // mode like the primary value. The hint is not sensitive.
-                subtitle: isPrivacyMode && !display.isAwaitingValue
-                    ? null
-                    : display.secondaryText(l10n),
+                subtitle: xirrSubtitle,
                 isPrivacyMode: isPrivacyMode,
+                semanticsLabel: display.isSoFar && hasReturnFigure
+                    ? display.semanticsFigure(
+                        l10n,
+                        _withSubtitle(
+                          '${display.metricLabel(l10n, qualified: false)}: '
+                          '${isPrivacyMode ? l10n.hiddenPercentage : display.primaryText(l10n)}',
+                          xirrSubtitle,
+                        ),
+                      )
+                    : null,
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: _MiniStatCard(
-                label: 'MOIC',
-                value: display.isAwaitingValue
-                    ? ReturnDisplay.dash
-                    : formatMultiplier(stats.moic),
+                label: display.moicLabel(l10n),
+                value: display.isAwaitingValue ? ReturnDisplay.dash : moicText,
                 color: AppColors.graphPurple,
                 isDark: isDark,
-                // No holding period while MOIC waits for a current value.
-                subtitle: display.isAwaitingValue
-                    ? null
-                    : stats.durationFormatted,
+                subtitle: moicSubtitle,
                 isPrivacyMode: isPrivacyMode,
+                // A multiple is not a percentage: it keeps the neutral hidden
+                // string the Overview quick-stats tile uses.
+                semanticsLabel: display.isSoFar
+                    ? display.semanticsFigure(
+                        l10n,
+                        _withSubtitle(
+                          '${l10n.moicLabel}: '
+                          '${isPrivacyMode ? l10n.hiddenAmount : moicText}',
+                          moicSubtitle,
+                        ),
+                      )
+                    : null,
               ),
             ),
           ],
@@ -158,6 +185,11 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
 
   Color get _neutralColor =>
       isDark ? AppColors.neutral400Dark : AppColors.neutral500Light;
+
+  /// [figure] followed by the card's visible subtitle, which a card that
+  /// replaces its texts with one semantics label would otherwise drop.
+  static String _withSubtitle(String figure, String? subtitle) =>
+      subtitle == null ? figure : '$figure, $subtitle';
 
   /// "Projected at maturity ₹1,23,144 (7.19% p.a.)" for an open investment
   /// that has not paid out yet, when its rate and tenure are known. Periodic
@@ -258,13 +290,13 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
             ),
           ),
           // Return percentage badge
-          _buildReturnBadge(isPositive, status),
+          _buildReturnBadge(isPositive, status, display.badgeText(l10n)),
         ],
       ),
     );
   }
 
-  Widget _buildReturnBadge(bool isPositive, String? status) {
+  Widget _buildReturnBadge(bool isPositive, String? status, String text) {
     if (status != null) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -301,7 +333,7 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        '${stats.absoluteReturn >= 0 ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}%',
+        text,
         style: AppTypography.bodyMedium.copyWith(
           color: isPositive ? AppColors.successLight : AppColors.errorLight,
           fontWeight: FontWeight.w600,
@@ -498,6 +530,10 @@ class _MiniStatCard extends StatelessWidget {
   final String? subtitle;
   final bool isPrivacyMode;
 
+  /// What a screen reader says instead of the texts, when they need more
+  /// than the label and the value.
+  final String? semanticsLabel;
+
   const _MiniStatCard({
     required this.label,
     required this.value,
@@ -505,6 +541,7 @@ class _MiniStatCard extends StatelessWidget {
     required this.isDark,
     this.subtitle,
     this.isPrivacyMode = false,
+    this.semanticsLabel,
   });
 
   @override
@@ -514,7 +551,7 @@ class _MiniStatCard extends StatelessWidget {
       fontWeight: FontWeight.w700,
     );
 
-    return GlassCard(
+    final card = GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       child: Column(
         children: [
@@ -547,6 +584,14 @@ class _MiniStatCard extends StatelessWidget {
             ),
         ],
       ),
+    );
+    final description = semanticsLabel;
+    if (description == null) return card;
+    return Semantics(
+      container: true,
+      label: description,
+      excludeSemantics: true,
+      child: card,
     );
   }
 }

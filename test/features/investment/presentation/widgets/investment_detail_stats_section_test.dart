@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
@@ -32,7 +33,10 @@ final _inr = NumberFormat.currency(
 );
 
 InvestmentEntity _investment({
+  InvestmentType type = InvestmentType.fixedDeposit,
   InvestmentStatus status = InvestmentStatus.open,
+  bool isArchived = false,
+  double? currentValue,
   double? expectedRate,
   int? tenureMonths,
   CompoundingFrequency? compounding,
@@ -42,8 +46,11 @@ InvestmentEntity _investment({
   return InvestmentEntity(
     id: 'fd-1',
     name: 'Cumulative FD',
-    type: InvestmentType.fixedDeposit,
+    type: type,
     status: status,
+    isArchived: isArchived,
+    currentValue: currentValue,
+    currentValueDate: currentValue == null ? null : DateTime(2026, 10, 1),
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
     startDate: DateTime(2026, 1, 1),
@@ -377,6 +384,297 @@ void main() {
 
       expect(find.text('-100.0%'), findsOneWidget);
       expect(find.text('Awaiting first payout'), findsNothing);
+    });
+  });
+
+  // #954 (owner decision, option 1): the Bhive RBF screenshot of #942. Rs10 L
+  // in, Rs11.14 L back after a year, no current value: the figures are
+  // cash-only minimums, so they say "so far", and the page hints that a fully
+  // paid back investment can be closed.
+  group('InvestmentDetailStatsSection returns that are so far (#954)', () {
+    final flows = [
+      CashFlowEntity(
+        id: 'in',
+        investmentId: 'fd-1',
+        date: DateTime(2025, 10, 10),
+        type: CashFlowType.invest,
+        amount: 1000000,
+        currency: 'INR',
+        createdAt: DateTime(2025, 10, 10),
+      ),
+      CashFlowEntity(
+        id: 'out',
+        investmentId: 'fd-1',
+        date: DateTime(2026, 10, 10),
+        type: CashFlowType.returnFlow,
+        amount: 1114000,
+        currency: 'INR',
+        createdAt: DateTime(2026, 10, 10),
+      ),
+    ];
+
+    /// The stats the app builds: terminal values first, then the one stats
+    /// implementation.
+    InvestmentStats statsOf(
+      InvestmentEntity investment, [
+      List<CashFlowEntity>? from,
+    ]) {
+      final cashFlows = from ?? flows;
+      final terminal = CurrentValueCalculator.terminalValues(
+        investments: [investment],
+        cashFlows: cashFlows,
+        asOf: DateTime(2026, 10, 11),
+      );
+      return FinancialCalculatorModule().calculateStats(
+        cashFlows,
+        terminalValues: terminal,
+      );
+    }
+
+    // Rs1,00,000 in, Rs1,02,000 back 3 days later: a short holding that has
+    // returned its cost, so its figures are so far and carry subtitles.
+    final shortFlows = [
+      CashFlowEntity(
+        id: 'in',
+        investmentId: 'fd-1',
+        date: DateTime(2026, 10, 1),
+        type: CashFlowType.invest,
+        amount: 100000,
+        currency: 'INR',
+        createdAt: DateTime(2026, 10, 1),
+      ),
+      CashFlowEntity(
+        id: 'out',
+        investmentId: 'fd-1',
+        date: DateTime(2026, 10, 4),
+        type: CashFlowType.returnFlow,
+        amount: 102000,
+        currency: 'INR',
+        createdAt: DateTime(2026, 10, 4),
+      ),
+    ];
+
+    const soFarNote =
+        'so far. Counts money received only, not any value still held.';
+
+    testWidgets('label the XIRR, MOIC and return badge, and hint at closing', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final investment = _investment(type: InvestmentType.gold);
+      await _pump(tester, investment: investment, stats: statsOf(investment));
+
+      expect(find.text('No current value yet'), findsOneWidget);
+      expect(find.text('XIRR so far'), findsOneWidget);
+      expect(find.text('+11.4%'), findsOneWidget);
+      expect(find.text('MOIC so far'), findsOneWidget);
+      expect(find.text('1.11x'), findsOneWidget);
+      expect(find.text('+11.4% so far'), findsOneWidget);
+      expect(find.text('Fully paid back? Mark it closed'), findsOneWidget);
+      expect(find.text('XIRR'), findsNothing);
+      expect(find.text('MOIC'), findsNothing);
+      expect(find.bySemanticsLabel('XIRR: +11.4% $soFarNote'), findsOneWidget);
+      // The visible "1.0y" under the MOIC is read too, before the qualifier.
+      expect(
+        find.bySemanticsLabel('MOIC: 1.11x, 1.0y $soFarNote'),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('keep privacy mode: no figure as text or in semantics', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final investment = _investment(type: InvestmentType.gold);
+      await _pump(
+        tester,
+        investment: investment,
+        stats: statsOf(investment),
+        privacy: true,
+      );
+
+      // The labels and the hint hold no amount, so they stay.
+      expect(find.text('XIRR so far'), findsOneWidget);
+      expect(find.text('MOIC so far'), findsOneWidget);
+      expect(find.text('Fully paid back? Mark it closed'), findsOneWidget);
+      expect(find.textContaining('11.4'), findsNothing);
+      expect(find.textContaining('1.11'), findsNothing);
+      expect(
+        find.bySemanticsLabel(RegExp(r'11\.4|1\.11|1,114|11\.14')),
+        findsNothing,
+      );
+      // A hidden percentage is announced as one, like the list card and the
+      // Overview hero do; the multiple keeps the neutral hidden string.
+      expect(
+        find.bySemanticsLabel('XIRR: Hidden percentage $soFarNote'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('MOIC: Hidden amount, 1.0y $soFarNote'),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('read the subtitle under the return and the MOIC', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final investment = _investment(type: InvestmentType.gold);
+      await _pump(
+        tester,
+        investment: investment,
+        stats: statsOf(investment, shortFlows),
+      );
+
+      // What is on screen under the figures is part of what is announced.
+      expect(find.text('annualised >1000%'), findsOneWidget);
+      expect(find.text('<1mo'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          'Return: +2.0% in 3 days, annualised >1000% $soFarNote',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('MOIC: 1.02x, <1mo $soFarNote'),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('hide the short holding return and its subtitle in privacy', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final investment = _investment(type: InvestmentType.gold);
+      await _pump(
+        tester,
+        investment: investment,
+        stats: statsOf(investment, shortFlows),
+        privacy: true,
+      );
+
+      // The annualised hint is a return figure: not shown, not read.
+      expect(find.textContaining('annualised'), findsNothing);
+      expect(
+        find.bySemanticsLabel(RegExp(r'2\.0|1\.02|102|1000|annualised')),
+        findsNothing,
+      );
+      expect(
+        find.bySemanticsLabel('Return: Hidden percentage $soFarNote'),
+        findsOneWidget,
+      );
+      // The holding period is not an amount, so it stays.
+      expect(
+        find.bySemanticsLabel('MOIC: Hidden amount, <1mo $soFarNote'),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('are not labelled on a closed investment', (tester) async {
+      final investment = _investment(
+        type: InvestmentType.gold,
+        status: InvestmentStatus.closed,
+      );
+      await _pump(tester, investment: investment, stats: statsOf(investment));
+
+      expect(find.text('XIRR'), findsOneWidget);
+      expect(find.text('MOIC'), findsOneWidget);
+      expect(find.text('+11.4%'), findsNWidgets(2));
+      expect(find.text('XIRR so far'), findsNothing);
+      expect(find.text('MOIC so far'), findsNothing);
+      expect(find.textContaining('% so far'), findsNothing);
+      expect(find.text('Fully paid back? Mark it closed'), findsNothing);
+    });
+
+    testWidgets('are not labelled while a holding still awaits a value', (
+      tester,
+    ) async {
+      final investment = _investment(type: InvestmentType.gold);
+      final stats = statsOf(investment).copyWith(missingValueCount: 1);
+      await _pump(tester, investment: investment, stats: stats);
+
+      expect(find.text('Awaiting current value'), findsOneWidget);
+      expect(find.text('XIRR so far'), findsNothing);
+      expect(find.text('MOIC so far'), findsNothing);
+      expect(find.textContaining('% so far'), findsNothing);
+      expect(find.text('Fully paid back? Mark it closed'), findsNothing);
+    });
+
+    testWidgets('are not labelled once the investment has a value', (
+      tester,
+    ) async {
+      final investment = _investment(
+        type: InvestmentType.gold,
+        currentValue: 50000,
+      );
+      await _pump(tester, investment: investment, stats: statsOf(investment));
+
+      expect(find.text('XIRR'), findsOneWidget);
+      expect(find.text('Fully paid back? Mark it closed'), findsNothing);
+      expect(find.text('XIRR so far'), findsNothing);
+      expect(find.text('MOIC so far'), findsNothing);
+      expect(find.textContaining('% so far'), findsNothing);
+    });
+
+    testWidgets('keep the label but drop the hint when archived', (
+      tester,
+    ) async {
+      // An archived investment cannot be closed from here.
+      final investment = _investment(
+        type: InvestmentType.gold,
+        isArchived: true,
+      );
+      await _pump(tester, investment: investment, stats: statsOf(investment));
+
+      expect(find.text('XIRR so far'), findsOneWidget);
+      expect(find.text('Fully paid back? Mark it closed'), findsNothing);
+    });
+
+    testWidgets('fit a 320dp screen at 1.3x text without overflow', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final investment = _investment(type: InvestmentType.gold);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currencyCodeProvider.overrideWith((ref) => 'INR'),
+            analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
+            privacyModeProvider.overrideWith(_PrivacyOff.new),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(1.3)),
+              child: child!,
+            ),
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: InvestmentDetailStatsSection(
+                  stats: statsOf(investment),
+                  investment: investment,
+                  isDark: false,
+                  currencyFormat: _inr,
+                  isPrivacyMode: false,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Fully paid back? Mark it closed'), findsOneWidget);
     });
   });
 }
