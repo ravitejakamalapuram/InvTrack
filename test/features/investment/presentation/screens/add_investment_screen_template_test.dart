@@ -1,7 +1,8 @@
 // #994: picking a template must not put a rate or a term into the form.
 // A template sets the type and the structural defaults (payout mode,
-// compounding, income frequency, risk). Its typical rate is a grey hint in the
-// empty rate field and is never saved. A rate and a tenure left empty mean no
+// compounding, income frequency, risk). Its typical rate is the hint of the
+// empty rate field (AppTextField shows a hint while the field is focused) and
+// is never saved. A rate and a tenure left empty mean no
 // maturity date, no maturity reminder, no estimated value, and an XIRR that is
 // "—" until a current value exists (money rule 4).
 import 'package:flutter/material.dart';
@@ -58,6 +59,43 @@ Future<void> _enter(WidgetTester tester, String label, String text) async {
     scrollable: find.byType(Scrollable).first,
   );
   await tester.enterText(field, text);
+  await tester.pumpAndSettle();
+}
+
+/// Taps the field so it is focused: AppTextField keeps its label inline and
+/// withholds the hint until then.
+Future<void> _focus(WidgetTester tester, String label) async {
+  final field = _field(label);
+  await tester.scrollUntilVisible(
+    field,
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.tap(field);
+  await tester.pumpAndSettle();
+}
+
+/// The opacity of [hint] in the field named [label]: 1.0 when the field shows
+/// it. `find.text` also matches the hint at opacity 0, so it cannot tell.
+double _hintOpacity(WidgetTester tester, String label, String hint) {
+  final text = find.descendant(
+    of: find.widgetWithText(AppTextField, label),
+    matching: find.text(hint),
+  );
+  return tester
+      .widget<AnimatedOpacity>(
+        find.ancestor(of: text, matching: find.byType(AnimatedOpacity)).first,
+      )
+      .opacity;
+}
+
+/// Picks today in the start date picker.
+Future<void> _pickToday(WidgetTester tester) async {
+  final when = find.text('When did you invest?');
+  await _scrollTo(tester, when);
+  await tester.tap(when);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('OK'));
   await tester.pumpAndSettle();
 }
 
@@ -165,6 +203,17 @@ void main() {
       );
     });
 
+    testWidgets('the FD hint is shown once the empty rate field is focused', (
+      tester,
+    ) async {
+      await pumpForm(tester, template: InvestmentTemplates.fixedDeposit);
+      await _focus(tester, _rateLabel);
+
+      expect(_hintOpacity(tester, _rateLabel, 'e.g. 7'), 1.0);
+      // Showing the hint puts nothing in the field.
+      expect(_textOf(tester, _rateLabel), isEmpty);
+    });
+
     for (final entry in _hintByTemplate.entries) {
       testWidgets('${entry.key} hints "${entry.value}" in the empty rate field '
           'and fills no number', (tester) async {
@@ -178,6 +227,9 @@ void main() {
           ),
           findsOneWidget,
         );
+        await _focus(tester, _rateLabel);
+        expect(_hintOpacity(tester, _rateLabel, entry.value), 1.0);
+        expect(_textOf(tester, _rateLabel), isEmpty);
         // A form without the tenure field has no tenure to be filled.
         if (find
             .widgetWithText(AppTextField, _tenureLabel)
@@ -291,42 +343,72 @@ void main() {
       });
     }
 
-    testWidgets('an FD without a rate has no estimated value and its XIRR '
-        'and MOIC are "—" until a current value exists', (tester) async {
-      await pumpForm(tester, template: InvestmentTemplates.fixedDeposit);
-      final stored = await saveNamed(tester);
+    // The headline promise of #994: no maturity date and no reminder unless the
+    // user typed a tenure. A start date alone must not invent one (a "default
+    // tenure" in the maturity calculation would).
+    for (final template in InvestmentTemplates.all) {
+      testWidgets('${template.id}: a start date without a typed tenure stores '
+          'no maturity date and schedules no reminder', (tester) async {
+        await pumpForm(tester, template: template);
+        await _pickToday(tester);
 
-      final invested = CashFlowEntity(
-        id: 'cf-1',
-        investmentId: stored.id,
-        type: CashFlowType.invest,
-        amount: 100000.00,
-        currency: 'INR',
-        date: DateTime(2026, 1, 1),
-        createdAt: DateTime(2026, 1, 1),
-      );
-      final asOf = DateTime(2026, 10, 11);
+        final stored = await saveNamed(tester);
 
-      // No estimate: a cumulative deposit needs a rate to accrue.
-      expect(
-        CurrentValueCalculator.valuationOf(stored, [invested], asOf: asOf),
-        isNull,
-      );
-      final terminalValues = CurrentValueCalculator.terminalValues(
-        investments: [stored],
-        cashFlows: [invested],
-        asOf: asOf,
-      );
-      final stats = FinancialCalculatorModule().calculateStats([
-        invested,
-      ], terminalValues: terminalValues);
-      expect(stats.currentValue, isNull);
-      expect(stats.xirr, isNull);
-      expect(stats.xirrMethod, XirrMethod.undefined);
-      // The screens show "—" for XIRR, MOIC and return % while this is set.
-      expect(stats.missingValueCount, 1);
-      expect(stats.totalInvested, 100000.00);
-    });
+        expect(stored.startDate, isNotNull, reason: 'the date was picked');
+        expect(stored.expectedRate, isNull);
+        expect(stored.tenureMonths, isNull);
+        expect(stored.maturityDate, isNull);
+        expect(stored.calculatedMaturityDate, isNull);
+        expect(notifications.scheduledMaturityReminders, isEmpty);
+      });
+    }
+
+    for (final template in const [
+      InvestmentTemplates.fixedDeposit,
+      InvestmentTemplates.recurringDeposit,
+    ]) {
+      testWidgets('${template.id}: a deposit without a rate has no estimated '
+          'value and its XIRR and MOIC are "—" until a current value exists', (
+        tester,
+      ) async {
+        await pumpForm(tester, template: template);
+        final stored = await saveNamed(tester);
+
+        final invested = CashFlowEntity(
+          id: 'cf-1',
+          investmentId: stored.id,
+          type: CashFlowType.invest,
+          amount: 100000.00,
+          currency: 'INR',
+          date: DateTime(2026, 1, 1),
+          createdAt: DateTime(2026, 1, 1),
+        );
+        final asOf = DateTime(2026, 10, 11);
+
+        // No estimate: a deposit whose interest accrues until maturity needs a
+        // rate. (P2P and Bonds pay out periodically, so the calculator values
+        // them at their outstanding principal whatever the rate: that is
+        // existing behaviour and does not depend on the template.)
+        expect(
+          CurrentValueCalculator.valuationOf(stored, [invested], asOf: asOf),
+          isNull,
+        );
+        final terminalValues = CurrentValueCalculator.terminalValues(
+          investments: [stored],
+          cashFlows: [invested],
+          asOf: asOf,
+        );
+        final stats = FinancialCalculatorModule().calculateStats([
+          invested,
+        ], terminalValues: terminalValues);
+        expect(stats.currentValue, isNull);
+        expect(stats.xirr, isNull);
+        expect(stats.xirrMethod, XirrMethod.undefined);
+        // The screens show "—" for XIRR, MOIC and return % while this is set.
+        expect(stats.missingValueCount, 1);
+        expect(stats.totalInvested, 100000.00);
+      });
+    }
 
     testWidgets('a typed rate and tenure still set the maturity date, the '
         'reminder and an estimate', (tester) async {
@@ -335,12 +417,7 @@ void main() {
       await _enter(tester, _tenureLabel, '12');
 
       // Pick today as the start date: the maturity date follows from it.
-      final when = find.text('When did you invest?');
-      await _scrollTo(tester, when);
-      await tester.tap(when);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('OK'));
-      await tester.pumpAndSettle();
+      await _pickToday(tester);
 
       final stored = await saveNamed(tester);
       final start = stored.startDate!;
@@ -370,6 +447,31 @@ void main() {
       expect(valuation, isNotNull);
       expect(valuation!.source, ValuationSource.accruedInterest);
       expect(valuation.rate, 7.25);
+    });
+  });
+
+  group('template cards', () {
+    testWidgets('say the typical rate the rate hint says', (tester) async {
+      tester.view.physicalSize = const Size(3000, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: TemplateSelector(onTemplateSelected: (_) {})),
+        ),
+      );
+
+      // Recurring Deposit (6.5) and Gold (2.5) are not rounded to 7 and 3:
+      // the card and the hint spell the same number.
+      expect(find.text('~6.5% p.a.'), findsOneWidget);
+      expect(find.text('~2.5% p.a.'), findsOneWidget);
+      expect(find.text('~7% p.a.'), findsOneWidget);
+      expect(find.text('~3% p.a.'), findsOneWidget);
+      for (final entry in _hintByTemplate.entries) {
+        final rate = entry.value.substring('e.g. '.length);
+        expect(find.text('~$rate% p.a.'), findsWidgets, reason: entry.key);
+      }
     });
   });
 }

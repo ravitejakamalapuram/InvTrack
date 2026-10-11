@@ -24,9 +24,10 @@ class InvestmentTemplate {
   /// Suggested name prefix (e.g., "SBI FD", "LenDenClub")
   final String? suggestedNamePrefix;
 
-  /// Typical annual return % for this type. Display only: the form shows it as
-  /// the grey hint in the empty rate field and the template cards as
-  /// "~7% p.a.". It is never put in a field or saved (#994).
+  /// Typical annual return % for this type. Display only: the form uses it as
+  /// the hint of the empty rate field (AppTextField shows a hint while the
+  /// field is focused) and the template cards as "~7% p.a.". It is never put
+  /// in a field or saved (#994).
   final double? typicalRate;
 
   /// Default income frequency

@@ -71,7 +71,7 @@ void main() {
       expect(unknown, isNull);
     });
 
-    // #994: typicalRate is the rate field's grey hint and the card's "~7% p.a."
+    // #994: typicalRate is the rate field's hint and the card's "~7% p.a."
     // text only, and templates carry no tenure at all: the form never writes
     // either into a field (add_investment_screen_template_test.dart).
     group('fixedDeposit template', () {
