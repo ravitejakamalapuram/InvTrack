@@ -142,7 +142,9 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
 
               // Shown while a deletion request exists, whatever the
               // portfolio state (A88).
-              const SliverToBoxAdapter(child: DeletionRequestBanner()),
+              const SliverToBoxAdapter(
+                child: ScreenEdge(child: DeletionRequestBanner()),
+              ),
 
               // Content
               ScreenSliver(

@@ -49,10 +49,9 @@ class _DeletionRequestBannerState extends ConsumerState<DeletionRequestBanner> {
         : l10n.deletionRequestBannerScheduled;
 
     return Container(
-      margin: EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenEdge,
-        vertical: AppSpacing.sm,
-      ),
+      // Vertical only: the screen that shows the banner owns the edge
+      // (ScreenEdge), so the banner lines up with the cards around it.
+      margin: EdgeInsets.symmetric(vertical: AppSpacing.sm),
       padding: EdgeInsets.fromLTRB(
         AppSpacing.md,
         AppSpacing.xs,
