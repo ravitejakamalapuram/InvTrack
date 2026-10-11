@@ -208,6 +208,25 @@ void main() {
       ),
     );
     expect(label, isNot(contains('11.4')));
+
+    // What a sighted user sees: the net amount is drawn behind the blur and
+    // the return badge, which stays in the tree, is faded out.
+    expect(
+      find.ancestor(
+        of: find.byKey(const ValueKey('hero-net-cash-flow')),
+        matching: find.byType(ImageFiltered),
+      ),
+      findsOneWidget,
+    );
+    final badgeOpacity = tester.widget<AnimatedOpacity>(
+      find
+          .ancestor(
+            of: find.text('+11.4% so far'),
+            matching: find.byType(AnimatedOpacity),
+          )
+          .first,
+    );
+    expect(badgeOpacity.opacity, 0.0);
   });
 
   testWidgets('a holding that still awaits a value wins over so far', (
