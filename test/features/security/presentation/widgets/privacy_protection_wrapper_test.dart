@@ -217,4 +217,68 @@ void main() {
       expect(semantics.label, contains('privacy screen active'));
     });
   });
+
+  // A53: the lock screen draws the transparent mark. The opaque launcher
+  // icon painted a solid square under the light-mode white tint, and its asset
+  // was not bundled, so the real app showed the fallback shield instead.
+  group('PrivacyProtectionWrapper lock screen mark', () {
+    const markAsset = 'assets/icons/app_icon_mark.png';
+
+    Future<Image> pumpOverlay(
+      WidgetTester tester,
+      Brightness brightness,
+    ) async {
+      await pumpApp(
+        tester,
+        MaterialApp(
+          theme: ThemeData(brightness: brightness),
+          home: const PrivacyProtectionWrapper(
+            child: Scaffold(body: Center(child: Text('Content'))),
+          ),
+        ),
+      );
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pump();
+      return tester.widget<Image>(find.byType(Image));
+    }
+
+    testWidgets('draws the transparent mark asset', (tester) async {
+      final image = await pumpOverlay(tester, Brightness.light);
+
+      expect((image.image as AssetImage).assetName, markAsset);
+    });
+
+    testWidgets('light mode tints the mark white', (tester) async {
+      final image = await pumpOverlay(tester, Brightness.light);
+
+      expect(image.color, Colors.white);
+      expect(image.colorBlendMode, BlendMode.srcIn);
+    });
+
+    testWidgets('dark mode keeps the mark\'s own colours', (tester) async {
+      final image = await pumpOverlay(tester, Brightness.dark);
+
+      expect(image.color, isNull);
+    });
+
+    testWidgets(
+      'the mark asset is bundled, so the fallback shield is not shown',
+      (tester) async {
+        await pumpOverlay(tester, Brightness.light);
+
+        Object? loadError;
+        await tester.runAsync(
+          () => precacheImage(
+            const AssetImage(markAsset),
+            tester.element(find.byType(Image)),
+            onError: (error, stack) => loadError = error,
+          ),
+        );
+        await tester.pump();
+
+        expect(loadError, isNull, reason: '$markAsset failed to load');
+        expect(find.byIcon(Icons.shield_rounded), findsNothing);
+      },
+    );
+  });
 }
