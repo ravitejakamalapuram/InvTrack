@@ -13,51 +13,82 @@
 library;
 
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 
 import 'fab_clearance_scan_test.dart'
     show libDartFiles, stripCommentsAndStrings;
 
-final _spacer = RegExp(r'\bSpacer\s*\(');
-final _flexible = RegExp(r'\bFlexible\s*\(');
+/// Cards that lay figures out side by side, a footer, or tiles in a row, and
+/// the shared widget (lib/core/widgets) each one must use. A new card of that
+/// shape is added here, with the widget, in the PR that adds it.
+const mustUse = <String, List<String>>{
+  'lib/features/overview/presentation/widgets/hero_card.dart': ['StatColumns'],
+  'lib/features/overview/presentation/screens/overview_screen.dart': [
+    'StatColumns',
+  ],
+  'lib/features/investment/presentation/widgets/investment_detail_stats_section.dart':
+      ['StatColumns'],
+  'lib/features/goals/presentation/widgets/goal_card.dart': ['CardFooterRow'],
+  'lib/features/overview/presentation/widgets/overview_quick_stats.dart': [
+    'TileRow',
+  ],
+  'lib/features/income_projection/presentation/screens/income_trend_report_screen.dart':
+      ['TileRow'],
+};
 
-/// How many lines after a `Spacer(` a `Flexible(` still counts as its sibling
-/// in the same Row.
+final _spacer = RegExp(r'\bSpacer\s*\(');
+
+/// What takes a share of the free space beside a `Spacer()`: a `Flexible(`, or
+/// an `Expanded(` around a text (an optional `flex:` first). Both split the
+/// space with the Spacer, so the text starts half way.
+final _sibling = RegExp(
+  r'\bFlexible\s*\('
+  r'|\bExpanded\s*\(\s*(?:flex\s*:\s*\d+\s*,\s*)?child\s*:\s*(?:const\s+)?'
+  r'(?:Text|MaskedAmountText|CompactAmountText)\b',
+);
+
+/// How many lines after a `Spacer(` a sibling still counts as being in the
+/// same Row.
 const _window = 12;
 
 /// Files that may keep the pair, by path, each with the reason. Empty today;
 /// adding a path needs a reason next to it.
 const _allowed = <String, String>{};
 
-String _problem(String path, int line, int flexibleLine) =>
-    '$path:$line has Spacer() and, ${flexibleLine - line} lines later, '
-    'Flexible(. In a Row both take half of the free space, so the text starts '
-    'half way and ends short of the card padding. Use CardFooterRow '
-    '(lib/core/widgets/card_footer_row.dart), or allow the file in '
-    'test/repo/card_alignment_scan_test.dart with a reason.';
+String _problem(String path, int line, int siblingLine, String sibling) =>
+    '$path:$line has Spacer() and, ${siblingLine - line} lines later, '
+    '${sibling.trimRight()}. In a Row both take half of the free space, so '
+    'the text starts half way and ends short of the card padding. Use '
+    'CardFooterRow (lib/core/widgets/card_footer_row.dart), or allow the file '
+    'in test/repo/card_alignment_scan_test.dart with a reason.';
 
-/// Every Spacer-then-Flexible pair in the presentation files of [sources]
-/// (raw file text by `/`-separated path).
+/// Whether [path] holds cards or widgets that cards are built from.
+bool _scanned(String path) =>
+    path.contains('/presentation/') || path.startsWith('lib/core/widgets/');
+
+/// Every Spacer-then-Flexible (or Spacer-then-Expanded-text) pair in the
+/// presentation files and core widgets of [sources] (raw file text by
+/// `/`-separated path).
 List<String> spacerFlexibleProblems(Map<String, String> sources) {
   final problems = <String>[];
   for (final entry in sources.entries) {
     final path = entry.key;
-    if (!path.contains('/presentation/') || _allowed.containsKey(path)) {
-      continue;
-    }
+    if (!_scanned(path) || _allowed.containsKey(path)) continue;
     final lines = stripCommentsAndStrings(entry.value).split('\n');
     for (var i = 0; i < lines.length; i++) {
       final spacer = _spacer.firstMatch(lines[i]);
       if (spacer == null) continue;
       // On the Spacer's own line only what comes after it counts.
-      for (var j = i; j < lines.length && j <= i + _window; j++) {
-        final text = j == i ? lines[j].substring(spacer.end) : lines[j];
-        if (_flexible.hasMatch(text)) {
-          problems.add(_problem(path, i + 1, j + 1));
-          break;
-        }
-      }
+      final text = [
+        lines[i].substring(spacer.end),
+        ...lines.sublist(i + 1, math.min(lines.length, i + _window + 1)),
+      ].join('\n');
+      final hit = _sibling.firstMatch(text);
+      if (hit == null) continue;
+      final line = i + 1 + '\n'.allMatches(text.substring(0, hit.start)).length;
+      problems.add(_problem(path, i + 1, line, hit.group(0)!));
     }
   }
   return problems;
@@ -86,6 +117,31 @@ void main() {
       reason: 'the goal card no longer lays its footer out with CardFooterRow',
     );
   });
+
+  test(
+    'the cards in the registry lay their figures out with the shared widget',
+    () {
+      for (final entry in mustUse.entries) {
+        expect(
+          sources.keys,
+          contains(entry.key),
+          reason: 'the scan lost ${entry.key}',
+        );
+        final code = stripCommentsAndStrings(sources[entry.key]!);
+        for (final widget in entry.value) {
+          expect(
+            code,
+            contains('$widget('),
+            reason:
+                '${entry.key} no longer uses $widget: figures side by side '
+                'go in StatColumns, a footer in CardFooterRow and tiles that '
+                'sit in a row in TileRow, so the alignment rules hold. Add a '
+                'new card to mustUse in test/repo/card_alignment_scan_test.dart.',
+          );
+        }
+      }
+    },
+  );
 
   test('every allowed file exists and says why', () {
     for (final entry in _allowed.entries) {
@@ -155,10 +211,58 @@ const a = 'Spacer() Flexible(';
       );
     });
 
-    test('a file outside presentation is not scanned', () {
+    test(
+      'finds Spacer and Expanded around a text: it splits the space too',
+      () {
+        expect(
+          scan('''
+Row(children: [
+  Icon(a),
+  const Spacer(),
+  Expanded(
+    child: Text('b', textAlign: TextAlign.end),
+  ),
+]);
+'''),
+          hasLength(1),
+        );
+        expect(
+          scan('Row(children: [Spacer(), Expanded(flex: 2, child: Text(b))]);'),
+          hasLength(1),
+        );
+        expect(
+          scan(
+            'Row(children: [Spacer(), Expanded(child: MaskedAmountText(b))]);',
+          ),
+          hasLength(1),
+        );
+      },
+    );
+
+    test('Spacer and an Expanded around something else pass', () {
+      expect(
+        scan(
+          'Row(children: [Spacer(), Expanded(child: Column(children: x))]);',
+        ),
+        isEmpty,
+      );
+    });
+
+    test('a file outside presentation and core widgets is not scanned', () {
+      expect(
+        scan('Spacer(),\nFlexible(child: x),', path: 'lib/core/utils/a.dart'),
+        isEmpty,
+      );
+      expect(
+        scan('Spacer(),\nFlexible(child: x),', path: 'lib/data/a.dart'),
+        isEmpty,
+      );
+    });
+
+    test('a shared widget in core is scanned like a card', () {
       expect(
         scan('Spacer(),\nFlexible(child: x),', path: 'lib/core/widgets/a.dart'),
-        isEmpty,
+        hasLength(1),
       );
     });
 
