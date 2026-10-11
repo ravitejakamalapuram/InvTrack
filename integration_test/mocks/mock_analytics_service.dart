@@ -48,16 +48,18 @@ class FakeAnalyticsService implements AnalyticsService {
     bool hasAmount = false,
   }) async => _log('investment_created', {
     'type': investmentType,
-    'has_notes': hasNotes,
-    'has_amount': hasAmount,
+    'has_notes': hasNotes ? 1 : 0,
+    'has_amount': hasAmount ? 1 : 0,
   });
 
   @override
   Future<void> logXirrViewed({
     required String surface,
     required bool isEstimate,
-  }) async =>
-      _log('xirr_viewed', {'surface': surface, 'is_estimate': isEstimate});
+  }) async => _log('xirr_viewed', {
+    'surface': surface,
+    'is_estimate': isEstimate ? 1 : 0,
+  });
 
   @override
   Future<void> logAccountLinkSuccess({required String method}) async =>
