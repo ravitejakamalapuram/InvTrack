@@ -99,14 +99,20 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     double? firstAmount;
     DateTime? firstDay;
     if (initialAmount != null) {
-      _validateAmount(initialAmount);
+      _validateInitialAmount(initialAmount);
       firstAmount = MoneyPrecision.round(
         initialAmount,
         currencyCode: _requireCurrency(investmentCurrency),
       );
-      _validateAmount(firstAmount);
+      _validateInitialAmount(firstAmount);
       final day = startDate ?? DateTime.now();
       firstDay = DateTime(day.year, day.month, day.day);
+      // A payment dated after today would feed XIRR a flow that has not
+      // happened (the form's date picker stops at today as well).
+      final now = DateTime.now();
+      if (firstDay.isAfter(DateTime(now.year, now.month, now.day))) {
+        throw ValidationException.invalidDate(day);
+      }
     }
 
     state = const AsyncValue.loading();
@@ -1103,6 +1109,17 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   void _validateAmount(double amount) {
     if (!amount.isFinite || amount <= 0) {
       throw ValidationException.invalidAmount(amount);
+    }
+  }
+
+  /// Validates the amount of a new investment's first cash flow: positive,
+  /// finite and below 15 digits (invtrack_rules 19.1). It is checked before
+  /// and after rounding, for rounding can carry an amount up to 16 digits.
+  /// Throws [ValidationException] otherwise.
+  void _validateInitialAmount(double amount) {
+    _validateAmount(amount);
+    if (amount >= ValidationConstants.maxAmount) {
+      throw ValidationException.amountTooLarge();
     }
   }
 

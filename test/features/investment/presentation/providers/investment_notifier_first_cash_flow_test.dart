@@ -252,7 +252,16 @@ void main() {
       expect(repo.cashFlows.map((f) => f.amount), [1235.0, 1.235]);
     });
 
-    for (final bad in <double>[0, -1, double.nan, double.infinity, 0.004]) {
+    // 15 digits is the most an amount may have (invtrack_rules 19.1).
+    for (final bad in <double>[
+      0,
+      -1,
+      double.nan,
+      double.infinity,
+      0.004,
+      1e15,
+      1e20,
+    ]) {
       test('$bad is refused, and nothing is written or logged', () async {
         await expectLater(
           add(initialAmount: bad),
@@ -268,6 +277,24 @@ void main() {
         expect(notifications.activationCancelled, 0);
       });
     }
+
+    test('the largest 15-digit amount is accepted', () async {
+      await add(initialAmount: 999999999999999);
+
+      expect(repo.cashFlows.single.amount, 999999999999999);
+    });
+
+    test('an amount that rounds up to 16 digits is refused', () async {
+      // 999999999999999.5 has 15 digits as typed; a currency without minor
+      // units rounds it to 1000000000000000.
+      await expectLater(
+        add(initialAmount: 999999999999999.5, currency: 'JPY'),
+        throwsA(isA<ValidationException>()),
+      );
+
+      expect(repo.investments, isEmpty);
+      expect(repo.cashFlows, isEmpty);
+    });
 
     test('a blank currency is refused, never defaulted', () async {
       await expectLater(
@@ -297,6 +324,45 @@ void main() {
     });
   });
 
+  group('the start date', () {
+    final today = DateTime.now();
+
+    test('a day after today is refused, and nothing is written', () async {
+      await expectLater(
+        add(
+          initialAmount: 100000,
+          startDate: today.add(const Duration(days: 2)),
+        ),
+        throwsA(isA<ValidationException>()),
+      );
+      await pumpEventQueue();
+
+      expect(repo.investments, isEmpty);
+      expect(repo.cashFlows, isEmpty);
+      expect(repo.atomicCreates, isEmpty);
+      expect(analytics.loggedEvents, isEmpty);
+    });
+
+    test('today and earlier days are accepted', () async {
+      await add(initialAmount: 100000, startDate: today);
+      await add(
+        initialAmount: 100000,
+        startDate: today.subtract(const Duration(days: 400)),
+      );
+
+      expect(repo.cashFlows, hasLength(2));
+    });
+
+    // Characterisation: without an amount nothing is dated, so a future start
+    // date is accepted as it is on main.
+    test('without an amount a later start date is not checked', () async {
+      final created = await add(startDate: today.add(const Duration(days: 2)));
+
+      expect(repo.investments.single.id, created.id);
+      expect(repo.cashFlows, isEmpty);
+    });
+  });
+
   group('the first flow', () {
     test('is an INVEST dated the start date, date-only', () async {
       final created = await add(
@@ -317,8 +383,8 @@ void main() {
     // test cannot change the process zone, so under a UTC runner the two dates
     // agree; run with TZ=America/Los_Angeles to exercise the difference.
     for (final (:local, :day) in [
-      (local: DateTime(2026, 10, 11, 23, 30), day: DateTime(2026, 10, 11)),
-      (local: DateTime(2026, 10, 12, 1, 0), day: DateTime(2026, 10, 12)),
+      (local: DateTime(2026, 10, 9, 23, 30), day: DateTime(2026, 10, 9)),
+      (local: DateTime(2026, 10, 10, 1, 0), day: DateTime(2026, 10, 10)),
     ]) {
       test('a start date of $local is the local day $day on both records, '
           'whatever its UTC date', () async {
