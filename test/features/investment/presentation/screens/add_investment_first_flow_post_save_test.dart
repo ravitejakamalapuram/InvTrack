@@ -1,7 +1,6 @@
 // A40 (#783) PR-2: once the record is written, nothing after it may tell the
 // user "Nothing was saved". Only the write can fail the save; the analytics of
 // the new investment, and the navigation, come after it.
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
