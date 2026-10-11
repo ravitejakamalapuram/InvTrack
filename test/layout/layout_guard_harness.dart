@@ -530,6 +530,35 @@ Future<void> _checkOverview(LayoutGuard g, {required bool withPrivacy}) async {
     ),
     screen,
   );
+  _checkInvestmentPeriod(g);
+}
+
+/// The two dates of the "Investment Period" card are equal columns, the last
+/// of which ends on the card padding (the geometry of the columns themselves is
+/// measured in card_guard_*_test.dart; this is the card on the real screen).
+void _checkInvestmentPeriod(LayoutGuard g) {
+  final card = find.ancestor(
+    of: find.text('Investment Period'),
+    matching: find.byType(GlassCard),
+  );
+  // StatColumns.cellKey(1), written out so the guard states what it expects.
+  final last = find.descendant(
+    of: card,
+    matching: find.byKey(const ValueKey('stat-column-1')),
+  );
+  if (card.evaluate().isEmpty || last.evaluate().isEmpty) {
+    g.fault('Investment Period: its two date columns are not on screen');
+    return;
+  }
+  // The card's 1dp border and its 16dp padding.
+  final contentEnd = g.tester.getRect(card.first).right - 1 - 16;
+  final end = g.tester.getRect(last.first).right;
+  if ((end - contentEnd).abs() > guardTolerance) {
+    g.fault(
+      'Investment Period: the last date column ends at ${g._dp(end)}dp, '
+      'want ${g._dp(contentEnd)}dp',
+    );
+  }
 }
 
 // -- Goals ---------------------------------------------------------------

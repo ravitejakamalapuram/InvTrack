@@ -176,10 +176,10 @@ class _TemplateCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              if (template.typicalRate != null) ...[
+              if (template.typicalRateText != null) ...[
                 const SizedBox(height: 2),
                 Text(
-                  '~${template.typicalRate!.toStringAsFixed(0)}% p.a.',
+                  '~${template.typicalRateText}% p.a.',
                   style: AppTypography.caption.copyWith(
                     color: isDark
                         ? AppColors.neutral400Dark

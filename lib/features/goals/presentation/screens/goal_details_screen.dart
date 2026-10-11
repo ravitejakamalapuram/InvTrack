@@ -320,7 +320,7 @@ class GoalDetailsScreen extends ConsumerWidget {
           ],
           if (progress != null && progress.otherGoalsCount > 0) ...[
             SizedBox(height: AppSpacing.sm),
-            SharedGoalsChip(count: progress.otherGoalsCount),
+            SharedGoalsChip(count: progress.otherGoalsCount, compact: false),
           ],
         ],
       ),

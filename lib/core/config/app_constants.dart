@@ -22,6 +22,10 @@ class ValidationConstants {
 
   /// Maximum length for amount fields (prevents DoS/Overflow)
   static const int maxAmountLength = 20;
+
+  /// An amount must be below this: at most 15 digits before the decimal point
+  /// (invtrack_rules 19.1).
+  static const double maxAmount = 1e15;
 }
 
 /// Animation duration constants

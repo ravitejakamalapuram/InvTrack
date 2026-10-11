@@ -40,6 +40,17 @@ void main() {
         expect(FeatureFlag.valuationSnapshots.defaultEnabled, isFalse);
       });
 
+      test('$build: the first investment flow (A40) is off', () async {
+        final c = await _container(overridesAllowed: overridesAllowed);
+        expect(c.read(isFirstInvestmentFlowEnabledProvider), isFalse);
+        expect(FeatureFlag.firstInvestmentFlow.defaultEnabled, isFalse);
+        expect(FeatureFlag.firstInvestmentFlow.key, 'first_investment_flow');
+        expect(
+          FeatureFlag.firstInvestmentFlow.displayName,
+          'First Investment Flow',
+        );
+      });
+
       test('$build: custom investment types (#936) stay hidden', () async {
         final c = await _container(overridesAllowed: overridesAllowed);
         expect(c.read(isCustomInvestmentTypesEnabledProvider), isFalse);
@@ -70,6 +81,7 @@ void main() {
       'feature_flag_portfolio_health_score': true,
       'feature_flag_valuation_snapshots': true,
       'feature_flag_custom_investment_types': true,
+      'feature_flag_first_investment_flow': true,
     };
 
     test('release ignores them and uses the code defaults', () async {
@@ -80,6 +92,7 @@ void main() {
       expect(c.read(isPortfolioHealthEnabledProvider), isFalse);
       expect(c.read(isValuationSnapshotsEnabledProvider), isFalse);
       expect(c.read(isCustomInvestmentTypesEnabledProvider), isFalse);
+      expect(c.read(isFirstInvestmentFlowEnabledProvider), isFalse);
     });
 
     test('release ignores a toggle too', () async {
@@ -106,6 +119,7 @@ void main() {
       expect(c.read(isPortfolioHealthEnabledProvider), isTrue);
       expect(c.read(isValuationSnapshotsEnabledProvider), isTrue);
       expect(c.read(isCustomInvestmentTypesEnabledProvider), isTrue);
+      expect(c.read(isFirstInvestmentFlowEnabledProvider), isTrue);
     });
   });
 }

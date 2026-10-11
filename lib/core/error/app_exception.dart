@@ -266,6 +266,15 @@ class ValidationException extends AppException {
     );
   }
 
+  /// An amount of 15 digits or more. The amount is left out of both messages,
+  /// for they may reach logs (money rule 7).
+  factory ValidationException.amountTooLarge() {
+    return ValidationException(
+      userMessage: 'Amount is too large.',
+      technicalMessage: 'Validation failed: amount has more than 15 digits',
+    );
+  }
+
   factory ValidationException.invalidDate(DateTime date) {
     return ValidationException(
       userMessage: 'Date cannot be in the future.',

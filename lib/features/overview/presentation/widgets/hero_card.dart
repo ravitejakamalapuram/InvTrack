@@ -6,12 +6,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
+import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/utils/text_measure.dart';
 import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/core/widgets/privacy_toggle_button.dart';
+import 'package:inv_tracker/core/widgets/stat_columns.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/presentation/utils/return_display.dart';
 import 'package:inv_tracker/features/investment/presentation/utils/xirr_viewed_logger.dart';
@@ -182,7 +185,6 @@ class HeroCardContent extends ConsumerWidget {
               stats,
               status,
               display.badgeText(l10n),
-              display.isSoFar,
               ref,
             ),
             const SizedBox(height: 16),
@@ -320,7 +322,6 @@ class HeroCardContent extends ConsumerWidget {
     InvestmentStats stats,
     String? status,
     String badgeText,
-    bool isSoFar,
     WidgetRef ref,
   ) {
     final isPrivacyMode = ref.watch(privacyModeProvider);
@@ -337,40 +338,42 @@ class HeroCardContent extends ConsumerWidget {
         ? Colors.greenAccent
         : Colors.redAccent;
 
+    const figureStyle = TextStyle(
+      color: Colors.white,
+      fontSize: 36,
+      fontWeight: FontWeight.bold,
+    );
+    final figureText = currencyFormat.formatSmart(netPosition);
     final value = PrivacyMask(
       child: CompactAmountText(
         key: const ValueKey('hero-net-cash-flow'),
         amount: netPosition,
-        compactText: currencyFormat.formatSmart(netPosition),
+        compactText: figureText,
         currencySymbol: currencyFormat.currencySymbol,
         locale: currencyFormat.locale,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 36,
-          fontWeight: FontWeight.bold,
-        ),
+        style: figureStyle,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
     );
 
+    final badgeStyle = TextStyle(
+      color: badgeTextColor,
+      fontWeight: FontWeight.w600,
+      fontSize: 14,
+    );
+    const badgePadding = EdgeInsets.symmetric(horizontal: 8, vertical: 4);
     final badge = AnimatedOpacity(
+      key: const ValueKey('hero-return-badge'),
       duration: const Duration(milliseconds: 200),
       opacity: isPrivacyMode ? 0.0 : 1.0,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: badgePadding,
         decoration: BoxDecoration(
           color: badgeColor,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(
-          status ?? badgeText,
-          style: TextStyle(
-            color: badgeTextColor,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-        ),
+        child: Text(status ?? badgeText, style: badgeStyle),
       ),
     );
 
@@ -387,24 +390,37 @@ class HeroCardContent extends ConsumerWidget {
       );
     }
 
-    // "+123.5% so far" is wider than a bare percent: with a crore amount and
-    // large text it moves below the amount rather than squeezing it.
-    if (isSoFar) {
-      return Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 10,
-        runSpacing: 6,
-        children: [value, if (stats.hasData) badge],
-      );
-    }
+    if (!stats.hasData) return Row(children: [Flexible(child: value)]);
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
-      children: [
-        Flexible(child: value),
-        if (stats.hasData) ...[const SizedBox(width: 10), badge],
-      ],
+    // One rule for every return badge ("+12.3%", "+123.5% so far"): it sits
+    // beside the figure on the figure's baseline when both fit on one line,
+    // and drops below it, on the start edge, when they do not. The decision is
+    // made on the figure as it would be written, so privacy mode, which draws
+    // dots in its place, decides the same way and nothing moves.
+    const gap = 10.0;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final needed =
+            measureTextWidth(context, figureText, figureStyle) +
+            gap +
+            badgePadding.horizontal +
+            measureTextWidth(context, badgeText, badgeStyle);
+        if (needed + 0.5 > constraints.maxWidth) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [value, const SizedBox(height: 6), badge],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Flexible(child: value),
+            const SizedBox(width: gap),
+            badge,
+          ],
+        );
+      },
     );
   }
 
@@ -420,83 +436,63 @@ class HeroCardContent extends ConsumerWidget {
         display.kind == ReturnDisplayKind.annualised &&
         display.isEstimate;
 
-    // A Wrap, not a Row with a Spacer: with Realised and Expected XIRR side
-    // by side the figures move to their own line on narrow phones.
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.end,
-      spacing: 16,
-      runSpacing: 8,
-      children: [
-        // Wraps, so "in" drops below "out" when large text leaves no room.
-        Wrap(
-          spacing: 16,
-          runSpacing: 4,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            // Cash Out with up arrow
-            _buildCashFlowStat(
-              icon: Icons.arrow_upward_rounded,
-              amount: stats.totalInvested,
-              value: currencyFormat.formatCompact(stats.totalInvested),
-              label: 'out',
-              isPrivacyMode: isPrivacyMode,
-            ),
-            // Cash In with down arrow
-            _buildCashFlowStat(
-              icon: Icons.arrow_downward_rounded,
-              amount: stats.totalReturned,
-              value: currencyFormat.formatCompact(stats.totalReturned),
-              label: 'in',
-              isPrivacyMode: isPrivacyMode,
-            ),
-          ],
+    // Equal columns that end on the card padding, like the buttons above:
+    // out, in, XIRR. Large text drops them to fewer per row, the last one
+    // alone on a line of label and value; see StatColumns.
+    return StatColumns(
+      minColumnWidth: AppSizes.statColumnMinWidth,
+      columns: [
+        // Cash Out with up arrow
+        _buildCashFlowStat(
+          icon: Icons.arrow_upward_rounded,
+          amount: stats.totalInvested,
+          value: currencyFormat.formatCompact(stats.totalInvested),
+          label: 'out',
+          isPrivacyMode: isPrivacyMode,
         ),
-        Wrap(
-          spacing: 16,
-          runSpacing: 8,
-          children: [
-            // Realised XIRR of closed investments next to the expected one
-            if (showRealised) ...[
-              _buildXirrStat(
-                l10n.realisedXirrLabel,
-                ReturnDisplay.resolve(
-                  stats: closedStats,
-                ).primaryText(l10n, showSign: false),
-              ),
-            ],
-            // XIRR
-            _buildXirrStat(
-              display.metricLabel(l10n),
-              display.primaryText(l10n, showSign: false),
-            ),
-          ],
+        // Cash In with down arrow
+        _buildCashFlowStat(
+          icon: Icons.arrow_downward_rounded,
+          amount: stats.totalReturned,
+          value: currencyFormat.formatCompact(stats.totalReturned),
+          label: 'in',
+          isPrivacyMode: isPrivacyMode,
         ),
+        // XIRR
+        _buildXirrStat(
+          display.metricLabel(l10n),
+          display.primaryText(l10n, showSign: false),
+        ),
+        // Realised XIRR of closed investments after the expected one
+        if (showRealised)
+          _buildXirrStat(
+            l10n.realisedXirrLabel,
+            ReturnDisplay.resolve(
+              stats: closedStats,
+            ).primaryText(l10n, showSign: false),
+          ),
       ],
     );
   }
 
-  Widget _buildXirrStat(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.6),
-            fontSize: 12,
-          ),
+  StatColumn _buildXirrStat(String label, String value) {
+    return StatColumn(
+      labelText: label,
+      label: Text(
+        label,
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.6),
+          fontSize: 12,
         ),
-        const SizedBox(height: 2),
-        MaskedAmountText(
-          text: value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+      ),
+      value: MaskedAmountText(
+        text: value,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
         ),
-      ],
+      ),
     );
   }
 
@@ -529,54 +525,64 @@ class HeroCardContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildCashFlowStat({
+  StatColumn _buildCashFlowStat({
     required IconData icon,
     required double amount,
     required String value,
     required String label,
     required bool isPrivacyMode,
   }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: Colors.white.withValues(alpha: 0.8), size: 14),
-        const SizedBox(width: 4),
-        // Flexible, so one very large amount shrinks instead of overflowing.
-        Flexible(
-          child: isPrivacyMode
-              ? MaskedAmountText(
-                  text: value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                )
-              : CompactAmountText(
-                  amount: amount,
-                  compactText: value,
-                  currencySymbol: currencyFormat.currencySymbol,
-                  locale: currencyFormat.locale,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-        ),
-        const SizedBox(width: 3),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.6),
-            fontSize: 12,
+    return StatColumn(
+      labelText: label,
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // The arrow has no baseline of its own: the label's is its text's.
+          IgnoreBaseline(
+            child: Icon(
+              icon,
+              color: Colors.white.withValues(alpha: 0.8),
+              size: 14,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+      // maxLines and the ellipsis are a last resort, so one very large amount
+      // shrinks instead of overflowing.
+      value: isPrivacyMode
+          ? MaskedAmountText(
+              text: value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          : CompactAmountText(
+              amount: amount,
+              compactText: value,
+              currencySymbol: currencyFormat.currencySymbol,
+              locale: currencyFormat.locale,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
     );
   }
 }

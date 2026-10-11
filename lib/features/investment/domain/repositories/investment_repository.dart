@@ -167,6 +167,18 @@ abstract class InvestmentRepository {
     required List<CashFlowEntity> cashFlows,
   });
 
+  /// Creates [investment] and, when given, its [firstFlow] in ONE batch, so
+  /// that a failure leaves neither and a retry with the same ids leaves exactly
+  /// one of each (writing an id again replaces the record).
+  ///
+  /// Returns true when the server confirmed within the write timeout, and
+  /// false when it did not: the write is then pending in the local cache and
+  /// syncs when back online. Throws when the write is rejected.
+  Future<bool> createInvestmentWithFirstCashFlow(
+    InvestmentEntity investment,
+    CashFlowEntity? firstFlow,
+  );
+
   /// Bulk delete multiple investments and their cash flows.
   /// This is optimized for deleting multiple items efficiently using batches.
   /// Returns the number of successfully deleted investments.
