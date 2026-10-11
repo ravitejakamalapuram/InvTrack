@@ -284,7 +284,7 @@
     }
     if (k === 'maturity') {
       var tone = { success: 'var(--it-success-l)', warning: 'var(--it-warning-l)', accent: 'var(--it-accent-l)' }[o.tone || 'accent'];
-      return '<span class="it-tag it-tag--strong"' + sty({ '--c': tone }) + '>' + (o.icon ? icon(o.icon, { size: 10 }) : '') + esc(o.label) + '</span>';
+      return '<span class="it-tag it-tag--strong"' + sty({ '--c': tone }) + '>' + (o.icon ? icon(o.icon, { size: 10 }) : '') + '<span class="it-tag__t">' + esc(o.label) + '</span></span>';
     }
     if (k === 'type') return '<span class="it-tag"' + sty({ '--c': o.color }) + '>' + esc(o.label) + '</span>';
     if (k === 'closed') return '<span class="it-tag it-tag--closed">CLOSED</span>';
@@ -466,13 +466,18 @@
     o = o || {};
     var t = TYPES[o.type] || TYPES.other, col = o.closed ? 'var(--it-grey)' : 'var(--inv-' + (TYPES[o.type] ? o.type : 'other') + ')';
     var tagCol = 'var(--inv-' + (TYPES[o.type] ? o.type : 'other') + ')';
-    var netCol = o.neutral ? 'var(--text-muted)' : (o.positive === false ? 'var(--it-danger-l)' : 'var(--graph-emerald)');
+    var netCol = o.positive === false ? 'var(--it-danger-l)' : 'var(--graph-emerald)';
+    // A card that awaits its value (`status`) shows what went in and what came back, with no net, sign or percent.
+    var awaiting = !!o.status && !o.empty;
     var tags = Badge({ kind: 'type', label: o.typeName || t[0], color: tagCol }) + (o.closed ? Badge({ kind: 'closed' }) : '') + (o.maturity && !o.closed ? Badge(Object.assign({ kind: 'maturity' }, o.maturity)) : '');
-    var right = o.empty ? '<span class="it-inv__chev">' + icon('chevron_right', { size: 24 }) + '</span>' : '<div class="it-inv__val"><div class="it-inv__net" style="color:' + netCol + '">' + amount((o.positive === false ? '-' : '+') + o.net.replace(/^[-+]/, '')) + '</div>' +
-      (o.status ? '<span class="it-inv__badge" style="--c:var(--text-muted)">' + esc(o.status) + '</span>'
-        : o.badge ? '<span class="it-inv__badge it-hide-private" style="--c:' + (o.badge.positive === false ? 'var(--it-danger-l)' : 'var(--graph-emerald)') + '">' + esc(o.badge.text) + '</span>' : '') + '</div>';
-    var strip = '<div class="it-inv__strip"><span>' + icon('update', { size: 12 }) + esc(o.last) + '</span><span>' + icon('receipt_long', { size: 12 }) + esc(o.entries) + '</span><span class="it-sp"></span>' +
-      (o.invested ? '<span><b>Invested: </b>' + amount(o.invested) + '</span>' : '<a href="#" onclick="return false">View Details</a>') + '</div>';
+    var right = o.empty ? '<span class="it-inv__chev">' + icon('chevron_right', { size: 24 }) + '</span>'
+      : awaiting ? '<div class="it-inv__val"><div class="it-inv__ledger"><span class="it-inv__net it-inv__net--ink">' + amount(o.invested) + '</span><span class="it-inv__w">invested</span>' +
+        '<span class="it-inv__got">' + amount(o.received) + '</span><span class="it-inv__w">received</span></div>' +
+        '<span class="it-inv__badge it-inv__badge--status">' + esc(o.status) + '</span></div>'
+      : '<div class="it-inv__val"><div class="it-inv__net" style="color:' + netCol + '">' + amount((o.positive === false ? '-' : '+') + o.net.replace(/^[-+]/, '')) + '</div>' +
+        (o.badge ? '<span class="it-inv__badge it-hide-private" style="--c:' + (o.badge.positive === false ? 'var(--it-danger-l)' : 'var(--graph-emerald)') + '">' + esc(o.badge.text) + '</span>' : '') + '</div>';
+    var strip = '<div class="it-inv__strip"><span>' + icon('update', { size: 12 }) + esc(o.last) + '</span><span>' + icon('receipt_long', { size: 12 }) + esc(o.entries) + '</span>' +
+      (awaiting ? '' : '<span class="it-sp"></span>' + (o.invested ? '<span><b>Invested: </b>' + amount(o.invested) + '</span>' : '<a href="#" onclick="return false">View Details</a>')) + '</div>';
     var label = (o.closed ? 'Closed' : 'Open') + ' investment: ' + (o.name || '') + '. Type: ' + (o.typeName || t[0]);
     return '<div class="it-glass it-glass--flat it-glass--tap it-inv" role="button" tabindex="0" aria-label="' + esc(label) + '">' +
       '<div class="it-inv__main">' + (o.selectionMode ? '<input class="it-inv__check" type="checkbox" aria-label="Select"' + (o.selected ? ' checked' : '') + '>' : '') +

@@ -320,6 +320,72 @@ void main() {
           expect(label, isNot(contains('so far')));
         });
       });
+
+      // #977: an open investment awaiting a value speaks what went in and what
+      // came back, not a net "Current value".
+      group('awaiting a value', () {
+        test('speaks invested and received, not a current value', () {
+          final label = AccessibilityUtils.investmentCardLabel(
+            name: 'Pool',
+            type: 'P2P Lending',
+            currentValue: null,
+            receivedSegment: 'Received: 2.52 lakh rupees',
+            returnPercent: null,
+            returnStatus: 'Awaiting current value',
+            currencySymbol: '₹',
+            currencyLocale: 'en_IN',
+            isClosed: false,
+            totalInvested: 400000,
+          );
+
+          expect(
+            label,
+            'Open investment: Pool. Type: P2P Lending. '
+            'Invested: 4 lakh rupees. Received: 2.52 lakh rupees. '
+            'Returns: Awaiting current value',
+          );
+        });
+
+        test('keeps the last activity and maturity after the returns', () {
+          final label = AccessibilityUtils.investmentCardLabel(
+            name: 'Pool',
+            type: 'P2P Lending',
+            currentValue: null,
+            receivedSegment: 'Received: 0 rupees',
+            returnPercent: null,
+            returnStatus: 'Awaiting first payout',
+            currencySymbol: '₹',
+            currencyLocale: 'en_IN',
+            isClosed: false,
+            totalInvested: 150000,
+            lastActivityDate: DateTime(2026, 9, 27),
+          );
+
+          expect(
+            label,
+            'Open investment: Pool. Type: P2P Lending. '
+            'Invested: 1.5 lakh rupees. Received: 0 rupees. '
+            'Returns: Awaiting first payout. '
+            'Last activity: September 27, 2026',
+          );
+        });
+
+        test('other states keep the current value and have no received', () {
+          final label = AccessibilityUtils.investmentCardLabel(
+            name: 'Pool',
+            type: 'P2P Lending',
+            currentValue: -100000,
+            returnPercent: 7.2,
+            currencySymbol: '₹',
+            currencyLocale: 'en_IN',
+            isClosed: false,
+            totalInvested: 100000,
+          );
+
+          expect(label, contains('Current value: negative 1 lakh rupees'));
+          expect(label, isNot(contains('Received')));
+        });
+      });
     });
   });
 }

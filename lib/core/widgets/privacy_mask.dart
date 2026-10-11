@@ -148,6 +148,21 @@ class MaskedAmountText extends ConsumerWidget {
   }
 }
 
+/// What [MaskedAmountText] draws in place of an amount drawn in [style]: the
+/// dots and their style. Layout code that sizes itself to the figures measures
+/// this, so a masked figure counts as the dots it is and never as the amount.
+({String text, TextStyle style}) maskedAmountDots(TextStyle? style) {
+  final effectiveStyle = style ?? const TextStyle();
+  final fontSize = effectiveStyle.fontSize ?? 14;
+
+  // Determine number of dots based on font size
+  final dotCount = fontSize > 24 ? 6 : 5;
+  return (
+    text: '•' * dotCount,
+    style: effectiveStyle.copyWith(letterSpacing: 2),
+  );
+}
+
 /// Internal widget for displaying masked text pattern.
 class _MaskedText extends StatelessWidget {
   final TextStyle? style;
@@ -166,19 +181,14 @@ class _MaskedText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Use a stylish asterisk pattern
-    final effectiveStyle = style ?? const TextStyle();
-    final fontSize = effectiveStyle.fontSize ?? 14;
-
-    // Determine number of dots based on font size
-    final dotCount = fontSize > 24 ? 6 : 5;
-    final maskedPattern = '•' * dotCount;
+    final dots = maskedAmountDots(style);
 
     // OPTIMIZATION: Removed ShaderMask which triggers saveLayer and is expensive in lists.
     // Also fixed bug where dots were white-on-white in light mode.
     return Text(
-      maskedPattern,
+      dots.text,
       semanticsLabel: 'Hidden amount',
-      style: effectiveStyle.copyWith(letterSpacing: 2),
+      style: dots.style,
       maxLines: maxLines,
       overflow: overflow,
       textAlign: textAlign,
