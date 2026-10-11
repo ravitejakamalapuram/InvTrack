@@ -2496,6 +2496,16 @@
   "@firstInvestmentFlowDisabled": {
     "description": "Debug Settings: message after turning the first investment flow off (A40)"
   },
+  "hintExpectedRateExample": "e.g. {rate}",
+  "@hintExpectedRateExample": {
+    "description": "Grey hint in the empty expected-return-rate field of the add investment form. The rate is a typical annual percentage for the chosen type, written without a percent sign, for example 7 or 6.5. It is only an example and is never saved.",
+    "placeholders": {
+      "rate": {
+        "type": "String",
+        "example": "7.5"
+      }
+    }
+  },
 
   "archive": "Archive",
   "@archive": {

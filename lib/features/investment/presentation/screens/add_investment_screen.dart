@@ -27,6 +27,7 @@ import 'package:inv_tracker/features/investment/domain/models/investment_form_co
 import 'package:inv_tracker/features/investment/domain/models/investment_template.dart';
 import 'package:inv_tracker/features/investment/domain/models/investment_type_defaults.dart';
 import 'package:inv_tracker/features/investment/presentation/utils/investment_amount_input.dart';
+import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_template_ui.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/add_investment_keys.dart';
@@ -250,7 +251,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     if (derivable) _tenureController.clear();
   }
 
-  /// Apply template defaults to the form
+  /// Apply the template's type and structural defaults to the form
   void _applyTemplate(InvestmentTemplate template) {
     setState(() {
       _selectedTemplate = template;
@@ -260,13 +261,10 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       _riskLevel = template.defaultRiskLevel;
       _compoundingFrequency = template.defaultCompoundingFrequency;
 
-      // Update controllers with template values
-      if (template.typicalRate != null) {
-        _expectedRateController.text = template.typicalRate!.toString();
-      }
-      if (template.defaultTenureMonths != null) {
-        _tenureController.text = template.defaultTenureMonths!.toString();
-      }
+      // The rate and the tenure stay as the user left them (empty, unless they
+      // typed): a number the user never typed would set a maturity date and
+      // reminder and an estimated value (#994). The template's typical rate is
+      // only the rate field's hint.
 
       // Pre-fill name with suggested prefix if name is empty
       if (_nameController.text.isEmpty &&
@@ -1352,11 +1350,24 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     );
   }
 
+  /// The example in the rate field's hint on the classic form: the typical rate
+  /// of the template picked, as long as the type is still the template's, else
+  /// a generic one.
+  String get _rateHintExample {
+    final template = _selectedTemplate;
+    return (template?.type == _selectedType
+            ? template?.typicalRateText
+            : null) ??
+        '7.5';
+  }
+
   Widget _buildExpectedRateField({String? hint}) {
     return AppTextField(
       controller: _expectedRateController,
       label: 'Expected Return Rate (% p.a.)',
-      hint: hint ?? 'e.g. 7.5',
+      hint:
+          hint ??
+          AppLocalizations.of(context).hintExpectedRateExample(_rateHintExample),
       showHintWhenEmpty: _firstInvestmentForm,
       prefixIcon: Icons.percent_rounded,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
