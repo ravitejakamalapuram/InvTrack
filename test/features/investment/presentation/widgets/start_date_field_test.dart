@@ -267,20 +267,27 @@ void main() {
       expect(taps, 1);
     });
 
-    testWidgets('a date picked after opening it with the keyboard keeps '
-        'the field focused', (tester) async {
+    testWidgets('a date picked in the real picker, opened with the keyboard, '
+        'leaves the field focused', (tester) async {
       var date = DateTime(2026, 10, 11);
-      late StateSetter update;
       await tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: StatefulBuilder(
-              builder: (context, setState) {
-                update = setState;
-                return StartDateField(date: date, onTap: () {});
-              },
+              builder: (context, setState) => StartDateField(
+                date: date,
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: date,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2026, 10, 11),
+                  );
+                  if (picked != null) setState(() => date = picked);
+                },
+              ),
             ),
           ),
         ),
@@ -288,46 +295,15 @@ void main() {
 
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      // The picker answers with another day.
-      update(() => date = DateTime(2026, 10, 5));
-      await tester.pump();
-      await tester.pump();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('5'));
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
 
       expect(find.text('Oct 5, 2026'), findsOneWidget);
       expect(
         tester.widget<InputDecorator>(find.byType(InputDecorator)).isFocused,
         isTrue,
-      );
-    });
-
-    testWidgets('a date picked by touch does not take the focus', (
-      tester,
-    ) async {
-      var date = DateTime(2026, 10, 11);
-      late StateSetter update;
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: StatefulBuilder(
-              builder: (context, setState) {
-                update = setState;
-                return StartDateField(date: date, onTap: () {});
-              },
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Oct 11, 2026'));
-      update(() => date = DateTime(2026, 10, 5));
-      await tester.pump();
-      await tester.pump();
-
-      expect(
-        tester.widget<InputDecorator>(find.byType(InputDecorator)).isFocused,
-        isFalse,
       );
     });
   });

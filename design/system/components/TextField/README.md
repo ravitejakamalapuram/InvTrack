@@ -26,6 +26,7 @@ Empty with hint · filled with clear button · focused · error with message · 
 - Show the error as text, not only a red border.
 - Amount fields name their currency in the label ("Value in INR", "Amount invested in EUR") and show that currency's symbol as the prefix, never another's.
 - An optional amount stays optional: say so under the empty field and never default it. A start date that defaults to today says what it is for.
+- A read-only field that opens a picker (the start date) is still on the keyboard's path: Tab reaches it, it shows the focus border, and Enter or Space opens the picker.
 - Keep 20px (`form-field-gap`) between fields.
 
 ## Contrast

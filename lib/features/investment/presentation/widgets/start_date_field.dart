@@ -37,15 +37,6 @@ class _StartDateFieldState extends State<StartDateField> {
   late TextEditingController _controller = _controllerFor(widget.date);
   late final FocusNode _focusNode = FocusNode(onKeyEvent: _onKey);
 
-  /// The field had the focus when the picker was opened (a keyboard user's
-  /// place), so it takes the focus back once the date it shows has changed.
-  bool _restoreFocus = false;
-
-  void _openPicker() {
-    _restoreFocus = _focusNode.hasFocus;
-    widget.onTap();
-  }
-
   static TextEditingController _controllerFor(DateTime date) =>
       TextEditingController(text: AppDateUtils.formatShort(date));
 
@@ -59,7 +50,7 @@ class _StartDateFieldState extends State<StartDateField> {
         key != LogicalKeyboardKey.space) {
       return KeyEventResult.ignored;
     }
-    _openPicker();
+    widget.onTap();
     return KeyEventResult.handled;
   }
 
@@ -73,13 +64,7 @@ class _StartDateFieldState extends State<StartDateField> {
       // controller goes once the old field has let go of it.
       final old = _controller;
       _controller = _controllerFor(widget.date);
-      final restoreFocus = _restoreFocus;
-      _restoreFocus = false;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        old.dispose();
-        // The field below is new, and the focus did not move to it.
-        if (restoreFocus && mounted) _focusNode.requestFocus();
-      });
+      WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
     }
   }
 
@@ -101,13 +86,13 @@ class _StartDateFieldState extends State<StartDateField> {
       label: l10n.semanticSelectStartDate,
       value: helper == null ? spoken : '$spoken. $helper',
       excludeSemantics: true,
-      onTap: _openPicker,
+      onTap: widget.onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: _openPicker,
+            onTap: widget.onTap,
             child: IgnorePointer(
               child: AppTextField(
                 key: ValueKey(widget.date),
