@@ -161,7 +161,7 @@ String blankCommentsAndStrings(String source) {
 }
 
 final _theme = RegExp('isDark|brightness', caseSensitive: false);
-final _tint = RegExp(r'\s*\.withValues\(\s*alpha:\s*([0-9.]+)\s*\)');
+final _tint = RegExp(r'\s*\.withValues\(\s*alpha:\s*([0-9.]+)\s*,?\s*\)');
 final _occurrence = RegExp('\\bAppColors\\.(${_constants.join('|')})\\b');
 
 bool _isTint(String code, int at) {
@@ -313,6 +313,21 @@ final a = AppColors.errorLight.withValues(alpha: 0.1);
 final b = AppColors.errorLight.withValues(alpha: 0.5);
 final c = (up ? AppColors.successLight : AppColors.errorLight).withValues(alpha: 0.15);
 final d = AppColors.errorLight.withValues(alpha: 0.7);
+'''),
+        [4],
+      );
+    });
+
+    test('reads a tint that the formatter split over lines', () {
+      // dart format puts a long argument on its own line and adds a comma.
+      expect(
+        found('''
+final a = AppColors.successLight.withValues(
+  alpha: 0.15,
+);
+final b = AppColors.successLight.withValues(
+  alpha: 0.7,
+);
 '''),
         [4],
       );
