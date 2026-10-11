@@ -33,8 +33,12 @@ import 'package:inv_tracker/core/widgets/metric_tile.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/cash_flow_card_widget.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_card.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
+import 'package:inv_tracker/features/overview/presentation/widgets/overview_analytics.dart';
+import 'package:inv_tracker/features/overview/presentation/widgets/overview_empty_state.dart';
+import 'package:inv_tracker/features/overview/presentation/widgets/overview_quick_stats.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 import '../../mocks/mock_analytics_service.dart';
@@ -242,6 +246,41 @@ final _cards = [
   ),
 ];
 
+// An investment with no cash flow yet: its card shows the View Details link.
+final _noCashFlows = _card(
+  _investment('demo-6', 'Demo mutual fund', InvestmentType.mutualFunds),
+  InvestmentStats.empty(),
+  const XirrResult.undefined(XirrUndefinedReason.insufficientFlows),
+);
+
+// Demo figures only: six months of money in and out.
+final _trend = [
+  for (final (i, (inflows, outflows)) in [
+    (42000.0, 30000.0),
+    (0.0, 65000.0),
+    (88000.0, 12000.0),
+    (25000.0, 54000.0),
+    (61000.0, 20000.0),
+    (35000.0, 47000.0),
+  ].indexed)
+    MonthlyCashFlowData(
+      month: DateTime(2026, 5 + i, 1),
+      inflows: inflows,
+      outflows: outflows,
+    ),
+];
+
+CashFlowEntity _cashFlow(String id, CashFlowType type, double amount) =>
+    CashFlowEntity(
+      id: id,
+      investmentId: 'demo-1',
+      date: DateTime(2026, 9, 15),
+      type: type,
+      amount: amount,
+      currency: 'INR',
+      createdAt: DateTime(2026, 9, 15),
+    );
+
 /// Scene name and content. The names are the file names.
 final _scenes = <String, _Scene>{
   'investment_cards': _Scene(
@@ -391,6 +430,79 @@ final _scenes = <String, _Scene>{
     build: () => Padding(
       padding: const EdgeInsets.all(16),
       child: _hero(_loss, realizedOnly: true),
+    ),
+  ),
+  'view_details_card': _Scene(
+    height: 300,
+    overrides: _noCashFlows.overrides,
+    build: () => Padding(
+      padding: const EdgeInsets.all(16),
+      child: InvestmentCard(
+        investment: _noCashFlows.investment,
+        isSelectionMode: false,
+        isSelected: false,
+        onTap: () {},
+        referenceDate: _today,
+      ),
+    ),
+  ),
+  'overview_tiles': _Scene(
+    height: 500,
+    build: () => Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          OverviewQuickStats(
+            stats: _paidOut(1000000, 1114000, 0.114),
+            openStats: InvestmentStats.empty(),
+          ),
+          const SizedBox(height: 12),
+          OverviewQuickStats(
+            stats: _awaitingPayout,
+            openStats: _awaitingPayout,
+          ),
+          const SizedBox(height: 12),
+          OverviewLoadErrorState(onRetry: () {}),
+        ],
+      ),
+    ),
+  ),
+  'cash_flow_chart': _Scene(
+    height: 400,
+    overrides: [
+      monthlyCashFlowTrendProvider.overrideWithValue(AsyncValue.data(_trend)),
+    ],
+    build: () => Padding(
+      padding: const EdgeInsets.all(16),
+      child: MonthlyCashFlowTrend(currencyFormat: _inr),
+    ),
+  ),
+  'cash_flow_rows': _Scene(
+    height: 300,
+    build: () => Padding(
+      padding: const EdgeInsets.all(16),
+      child: Builder(
+        builder: (context) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return Column(
+            children: [
+              for (final flow in [
+                _cashFlow('cf-1', CashFlowType.invest, 100000),
+                _cashFlow('cf-2', CashFlowType.returnFlow, 114000),
+              ])
+                CashFlowCardWidget(
+                  cashFlow: flow,
+                  isDark: isDark,
+                  currencyFormat: _inr,
+                  onTap: () {},
+                  onEdit: () {},
+                  onConfirmDelete: () async => false,
+                  onDeleted: () {},
+                ),
+            ],
+          );
+        },
+      ),
     ),
   ),
 };
