@@ -31,6 +31,13 @@
 // inside a string interpolation is not seen (none exists in lib/). A reviewer
 // reads the `theme-neutral:` comments.
 //
+// The tint rule ([tintedStatusSites]) reads text too. It sees a tint written on
+// the deeper green or red, or on `colorScheme.error`, directly or on a group. It
+// does not see a tint of a colour held in a variable (`color.withValues(...)`
+// where `color` was picked from `successLight` a few lines up): those sites
+// carry a separate tint by hand (`_MaturityInfo.tint`, `_tint`, `tint:`), and
+// widget tests that pump them read the real text and the real tint.
+//
 // A new constant in app_colors.dart that is an alias of a listed one is found
 // by [unlistedAliases]. One with a value of its own is not: the PR that adds it
 // adds it to [_constants].
