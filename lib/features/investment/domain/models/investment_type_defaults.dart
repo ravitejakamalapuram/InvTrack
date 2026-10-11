@@ -47,28 +47,23 @@ class InvestmentTypeDefaults {
   /// Typical annual return % of the type. A hint only; never saved.
   final double? typicalRate;
 
-  /// The payout mode and compounding after the user chooses a chip whose
-  /// defaults are [next], given what the form holds now. A value that is still
-  /// what this chip set follows [next]; one the user changed stays.
+  /// The payout mode and compounding the form holds once the chip with these
+  /// defaults is chosen. A field the user picked ([payoutModeChosen],
+  /// [compoundingChosen], which the form tracks) keeps its value; every other
+  /// field takes this chip's value, or none when the chip has no structure.
+  ///
+  /// The form tracks the picks because comparing a value with what the last
+  /// chip set cannot tell a pick from a chip's value once they are equal.
   ({InterestPayoutMode? payoutMode, CompoundingFrequency? compounding})
-  reapplyTo(
-    InvestmentTypeDefaults next, {
+  applyOver({
     required InterestPayoutMode? payoutMode,
+    required bool payoutModeChosen,
     required CompoundingFrequency? compounding,
+    required bool compoundingChosen,
   }) => (
-    payoutMode: payoutMode == this.payoutMode ? next.payoutMode : payoutMode,
-    compounding: compounding == this.compounding
-        ? next.compounding
-        : compounding,
+    payoutMode: payoutModeChosen ? payoutMode : this.payoutMode,
+    compounding: compoundingChosen ? compounding : this.compounding,
   );
-
-  /// Whether [current] is a payout mode the user chose, not what the chip set.
-  bool isPayoutModeUserChoice(InterestPayoutMode? current) =>
-      current != null && current != payoutMode;
-
-  /// Whether [current] is a compounding the user chose, not what the chip set.
-  bool isCompoundingUserChoice(CompoundingFrequency? current) =>
-      current != null && current != compounding;
 
   @override
   bool operator ==(Object other) =>

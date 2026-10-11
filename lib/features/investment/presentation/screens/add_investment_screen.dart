@@ -114,9 +114,11 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   /// The user picked the start date; a default of today is not a field used.
   bool _startDatePicked = false;
 
-  /// What the type chips have set so far, to tell a structural choice the user
-  /// made in More details from one a chip set.
-  InvestmentTypeDefaults _appliedDefaults = InvestmentTypeDefaults.none;
+  /// Whether the user picked the payout mode or the compounding themselves, as
+  /// opposed to a chip or template setting it. Tracked, not inferred from the
+  /// value: a pick can equal what another chip sets.
+  bool _payoutModeChosen = false;
+  bool _compoundingChosen = false;
 
   /// The typical rate of the chosen type: the hint of the empty rate field,
   /// never a value that is saved.
@@ -295,7 +297,6 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       _selectedType = template.type;
       _interestPayoutMode = defaults.payoutMode;
       _compoundingFrequency = defaults.compounding;
-      _appliedDefaults = defaults;
       _typicalRateHint = defaults.typicalRate;
     });
 
@@ -309,20 +310,19 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   }
 
   /// A type chip sets the type and the structure that goes with it (never an
-  /// income frequency). A value that is no longer what the last chip set is the
-  /// user's choice and stays.
+  /// income frequency). A payout mode or compounding the user picked stays.
   void _onTypeChipSelected(InvestmentType type) {
     final next = InvestmentTypeDefaults.forType(type);
     setState(() {
-      final structure = _appliedDefaults.reapplyTo(
-        next,
+      final structure = next.applyOver(
         payoutMode: _interestPayoutMode,
+        payoutModeChosen: _payoutModeChosen,
         compounding: _compoundingFrequency,
+        compoundingChosen: _compoundingChosen,
       );
       _selectedType = type;
       _interestPayoutMode = structure.payoutMode;
       _compoundingFrequency = structure.compounding;
-      _appliedDefaults = next;
       _typicalRateHint = next.typicalRate;
     });
   }
@@ -403,17 +403,19 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     if (expectedRate != null) enhancedFields.add('expected_rate');
     if (tenureMonths != null) enhancedFields.add('tenure_months');
     if (platform != null) enhancedFields.add('platform');
-    // What a type chip set is not a field the user used. (_appliedDefaults is
-    // empty on the form of today, so nothing is left out there.)
-    final applied = _appliedDefaults;
-    if (applied.isPayoutModeUserChoice(_interestPayoutMode)) {
-      enhancedFields.add('payout_mode');
-    }
+    // What a type chip set is not a field the user used, so the first
+    // investment form counts only the user's picks. The form of today counts
+    // any value, as it always has.
+    final payoutModeUsed = _firstInvestmentForm
+        ? _payoutModeChosen
+        : _interestPayoutMode != null;
+    final compoundingUsed = _firstInvestmentForm
+        ? _compoundingChosen
+        : _compoundingFrequency != null;
+    if (payoutModeUsed) enhancedFields.add('payout_mode');
     if (_autoRenewal != null) enhancedFields.add('auto_renewal');
     if (_riskLevel != null) enhancedFields.add('risk_level');
-    if (applied.isCompoundingUserChoice(_compoundingFrequency)) {
-      enhancedFields.add('compounding');
-    }
+    if (compoundingUsed) enhancedFields.add('compounding');
 
     if (enhancedFields.isNotEmpty) {
       ref
@@ -712,7 +714,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
           ),
           SizedBox(height: AppSpacing.sectionSpacing),
           ..._buildDynamicFields(isDark, l10n, includeStartDate: false),
-          _buildProjectionCard(isDark),
+          // No estimate without an amount: nothing is invented (design
+          // system rule 9).
+          if (_amountTyped) _buildProjectionCard(isDark),
           _buildMaturityDatePicker(isDark),
           SizedBox(height: AppSpacing.formFieldSpacing),
           _buildIncomeFrequencySelector(isDark),
@@ -1006,6 +1010,15 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   bool get _isRecurringDeposit =>
       _selectedTemplate?.id == InvestmentTemplates.recurringDeposit.id &&
       _selectedType == InvestmentType.fixedDeposit;
+
+  /// Whether the amount field holds an amount that can be saved. Without one
+  /// the first investment form shows no estimate.
+  bool get _amountTyped =>
+      InvestmentAmountInput.parse(
+        _amountController.text,
+        currencyCode: _selectedCurrency,
+      ).amount !=
+      null;
 
   /// Builds the live projection card showing estimated maturity value
   Widget _buildProjectionCard(bool isDark) {
@@ -1429,7 +1442,10 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   isSelected: _interestPayoutMode == mode,
                   label: mode.displayName,
                   icon: mode.icon,
-                  onTap: () => setState(() => _interestPayoutMode = mode),
+                  onTap: () => setState(() {
+                    _interestPayoutMode = mode;
+                    _payoutModeChosen = true;
+                  }),
                   isDark: isDark,
                 ),
               )
@@ -1470,7 +1486,10 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   isSelected: _compoundingFrequency == freq,
                   label: freq.displayName,
                   icon: Icons.autorenew_rounded,
-                  onTap: () => setState(() => _compoundingFrequency = freq),
+                  onTap: () => setState(() {
+                    _compoundingFrequency = freq;
+                    _compoundingChosen = true;
+                  }),
                   isDark: isDark,
                 ),
               )

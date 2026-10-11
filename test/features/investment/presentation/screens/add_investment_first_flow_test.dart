@@ -423,6 +423,57 @@ void main() {
     });
   });
 
+  group('the estimate card needs an amount (design system rule 9)', () {
+    Future<void> typeRateAndTenure(WidgetTester tester) async {
+      await _openMore(tester);
+      await tester.enterText(
+        _fieldLabelled('Expected Return Rate (% p.a.)'),
+        '7.25',
+      );
+      await tester.enterText(_fieldLabelled('Tenure (Months)'), '12');
+      await tester.pump();
+    }
+
+    testWidgets('a rate and a tenure with no amount show no estimate', (
+      tester,
+    ) async {
+      await _open(tester);
+      await typeRateAndTenure(tester);
+
+      expect(find.text('Estimated Returns'), findsNothing);
+      expect(find.text('Maturity Value'), findsNothing);
+    });
+
+    testWidgets('an unreadable or non-positive amount shows no estimate', (
+      tester,
+    ) async {
+      await _open(tester);
+      await typeRateAndTenure(tester);
+
+      for (final typed in ['-5', '0', 'abc']) {
+        await _fill(tester, amount: typed);
+        expect(
+          find.text('Estimated Returns'),
+          findsNothing,
+          reason: '"$typed" is not an amount',
+        );
+      }
+    });
+
+    testWidgets('a typed amount shows the estimate, and clearing it hides it', (
+      tester,
+    ) async {
+      await _open(tester);
+      await typeRateAndTenure(tester);
+
+      await _fill(tester, amount: '50000');
+      expect(find.text('Estimated Returns'), findsOneWidget);
+
+      await _fill(tester, amount: '');
+      expect(find.text('Estimated Returns'), findsNothing);
+    });
+  });
+
   group('what is refused', () {
     for (final (typed, message) in [
       ('0', 'Enter an amount above 0'),
@@ -1106,6 +1157,31 @@ void main() {
       expect(call.incomeFrequency, isNull);
     });
 
+    testWidgets('a pick that equals another chip\'s default survives a round '
+        'trip of chips', (tester) async {
+      final harness = await _open(tester);
+
+      // Fixed Deposit sets Cumulative and Quarterly. The user picks Periodic
+      // and Simple Interest, which are what P2P Lending sets.
+      await _tapChip(tester, InvestmentType.fixedDeposit);
+      await _openMore(tester);
+      await tester.ensureVisible(find.text('Periodic'));
+      await tester.tap(find.text('Periodic'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Simple Interest'));
+      await tester.tap(find.text('Simple Interest'));
+      await tester.pumpAndSettle();
+      await _tapChip(tester, InvestmentType.p2pLending);
+      await _tapChip(tester, InvestmentType.fixedDeposit);
+      await _fill(tester, name: 'Grip FD');
+      await _tapSubmit(tester);
+
+      final call = harness.adds.single;
+      expect(call.type, InvestmentType.fixedDeposit);
+      expect(call.interestPayoutMode, InterestPayoutMode.periodic);
+      expect(call.compoundingFrequency, CompoundingFrequency.none);
+    });
+
     testWidgets('a chip never sets an income frequency, whatever the type', (
       tester,
     ) async {
@@ -1292,6 +1368,35 @@ void main() {
       await _tapSubmit(tester);
 
       expect(enhanced(harness).single['fields'], 'payout_mode');
+    });
+
+    testWidgets('picking the value the chip set is still counted', (
+      tester,
+    ) async {
+      final harness = await _open(tester);
+
+      await _tapChip(tester, InvestmentType.fixedDeposit);
+      await _openMore(tester);
+      await tester.ensureVisible(find.text('Cumulative'));
+      await tester.tap(find.text('Cumulative'));
+      await tester.pumpAndSettle();
+      // Quarterly is also an income frequency: take the compounding one.
+      final quarterly = find.descendant(
+        of: find
+            .ancestor(
+              of: find.text('Compounding Frequency (Optional)'),
+              matching: find.byType(Column),
+            )
+            .first,
+        matching: find.text('Quarterly'),
+      );
+      await tester.ensureVisible(quarterly);
+      await tester.tap(quarterly);
+      await tester.pumpAndSettle();
+      await _fill(tester, name: 'Grip FD');
+      await _tapSubmit(tester);
+
+      expect(enhanced(harness).single['fields'], 'payout_mode,compounding');
     });
 
     testWidgets('a rate the user typed is counted, alone', (tester) async {

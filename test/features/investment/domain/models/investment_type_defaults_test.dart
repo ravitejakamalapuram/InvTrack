@@ -111,33 +111,36 @@ void main() {
     final fd = InvestmentTypeDefaults.forType(InvestmentType.fixedDeposit);
     final p2p = InvestmentTypeDefaults.forType(InvestmentType.p2pLending);
 
-    test('values still set by the previous chip follow the new chip', () {
-      final structure = fd.reapplyTo(
-        p2p,
+    test('fields the user did not pick follow the new chip', () {
+      final structure = p2p.applyOver(
         payoutMode: InterestPayoutMode.cumulative,
+        payoutModeChosen: false,
         compounding: CompoundingFrequency.quarterly,
+        compoundingChosen: false,
       );
 
       expect(structure.payoutMode, InterestPayoutMode.periodic);
       expect(structure.compounding, CompoundingFrequency.none);
     });
 
-    test('a payout mode the user changed stays, compounding still follows', () {
-      final structure = fd.reapplyTo(
-        p2p,
+    test('a payout mode the user picked stays, compounding still follows', () {
+      final structure = p2p.applyOver(
         payoutMode: InterestPayoutMode.atMaturity,
+        payoutModeChosen: true,
         compounding: CompoundingFrequency.quarterly,
+        compoundingChosen: false,
       );
 
       expect(structure.payoutMode, InterestPayoutMode.atMaturity);
       expect(structure.compounding, CompoundingFrequency.none);
     });
 
-    test('a compounding the user changed stays, payout mode still follows', () {
-      final structure = fd.reapplyTo(
-        p2p,
+    test('a compounding the user picked stays, payout mode still follows', () {
+      final structure = p2p.applyOver(
         payoutMode: InterestPayoutMode.cumulative,
+        payoutModeChosen: false,
         compounding: CompoundingFrequency.monthly,
+        compoundingChosen: true,
       );
 
       expect(structure.payoutMode, InterestPayoutMode.periodic);
@@ -145,10 +148,11 @@ void main() {
     });
 
     test('from nothing set, empty fields take the new chip', () {
-      final structure = InvestmentTypeDefaults.none.reapplyTo(
-        fd,
+      final structure = fd.applyOver(
         payoutMode: null,
+        payoutModeChosen: false,
         compounding: null,
+        compoundingChosen: false,
       );
 
       expect(structure.payoutMode, InterestPayoutMode.cumulative);
@@ -156,33 +160,38 @@ void main() {
     });
 
     test('a chip without structure clears what the last chip set', () {
-      final structure = fd.reapplyTo(
-        InvestmentTypeDefaults.none,
+      final structure = InvestmentTypeDefaults.none.applyOver(
         payoutMode: InterestPayoutMode.cumulative,
+        payoutModeChosen: false,
         compounding: CompoundingFrequency.quarterly,
+        compoundingChosen: false,
       );
 
       expect(structure.payoutMode, isNull);
       expect(structure.compounding, isNull);
     });
 
-    test('only a value that differs from what the chip set is a choice', () {
-      expect(fd.isPayoutModeUserChoice(null), isFalse);
-      expect(fd.isPayoutModeUserChoice(InterestPayoutMode.cumulative), isFalse);
-      expect(fd.isPayoutModeUserChoice(InterestPayoutMode.periodic), isTrue);
-      expect(fd.isCompoundingUserChoice(null), isFalse);
-      expect(
-        fd.isCompoundingUserChoice(CompoundingFrequency.quarterly),
-        isFalse,
+    test('a pick that equals another chip\'s default is still a pick', () {
+      // Fixed Deposit, the user picks Periodic and Simple Interest (which
+      // are what P2P Lending sets), then P2P Lending, then Fixed Deposit
+      // again. Comparing with the last chip's values could not tell these
+      // picks from what the P2P chip set, and Fixed Deposit would overwrite
+      // them with Cumulative and Quarterly.
+      final onP2p = p2p.applyOver(
+        payoutMode: InterestPayoutMode.periodic,
+        payoutModeChosen: true,
+        compounding: CompoundingFrequency.none,
+        compoundingChosen: true,
       );
-      expect(fd.isCompoundingUserChoice(CompoundingFrequency.monthly), isTrue);
-      // Nothing was set by a chip: any value is the user's.
-      expect(
-        InvestmentTypeDefaults.none.isPayoutModeUserChoice(
-          InterestPayoutMode.periodic,
-        ),
-        isTrue,
+      final backOnFd = fd.applyOver(
+        payoutMode: onP2p.payoutMode,
+        payoutModeChosen: true,
+        compounding: onP2p.compounding,
+        compoundingChosen: true,
       );
+
+      expect(backOnFd.payoutMode, InterestPayoutMode.periodic);
+      expect(backOnFd.compounding, CompoundingFrequency.none);
     });
   });
 }
