@@ -157,7 +157,11 @@ class DebugSettingsScreen extends ConsumerWidget {
                   .toggle(FeatureFlag.portfolioHealthScore);
 
               // Verify the toggle succeeded
-              final newState = ref.read(featureFlagsProvider)[FeatureFlag.portfolioHealthScore] ?? false;
+              final newState =
+                  ref.read(
+                    featureFlagsProvider,
+                  )[FeatureFlag.portfolioHealthScore] ??
+                  false;
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -193,7 +197,9 @@ class DebugSettingsScreen extends ConsumerWidget {
                   .toggle(FeatureFlag.reportsTab);
 
               // Verify the toggle succeeded
-              final newState = ref.read(featureFlagsProvider)[FeatureFlag.reportsTab] ?? false;
+              final newState =
+                  ref.read(featureFlagsProvider)[FeatureFlag.reportsTab] ??
+                  false;
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -229,7 +235,9 @@ class DebugSettingsScreen extends ConsumerWidget {
                   .toggle(FeatureFlag.incomeGuardian);
 
               // Verify the toggle succeeded
-              final newState = ref.read(featureFlagsProvider)[FeatureFlag.incomeGuardian] ?? false;
+              final newState =
+                  ref.read(featureFlagsProvider)[FeatureFlag.incomeGuardian] ??
+                  false;
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -265,8 +273,9 @@ class DebugSettingsScreen extends ConsumerWidget {
                   .toggle(FeatureFlag.customInvestmentTypes);
 
               final newState =
-                  ref.read(featureFlagsProvider)[FeatureFlag
-                      .customInvestmentTypes] ??
+                  ref.read(
+                    featureFlagsProvider,
+                  )[FeatureFlag.customInvestmentTypes] ??
                   false;
 
               if (context.mounted) {
@@ -335,6 +344,45 @@ class DebugSettingsScreen extends ConsumerWidget {
                       newState
                           ? l10n.valuationSnapshotsEnabled
                           : l10n.valuationSnapshotsDisabled,
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
+            }
+          },
+        ),
+
+        // First investment flow feature flag (A40, #783)
+        SettingsToggleTile(
+          icon: Icons.add_card_rounded,
+          iconColor: Colors.indigo,
+          title: l10n.firstInvestmentFlowFeature,
+          subtitle: l10n.firstInvestmentFlowSubtitle,
+          value: featureFlags[FeatureFlag.firstInvestmentFlow] ?? false,
+          onChanged: (value) async {
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.firstInvestmentFlow);
+
+              final newState =
+                  ref.read(
+                    featureFlagsProvider,
+                  )[FeatureFlag.firstInvestmentFlow] ??
+                  false;
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      newState
+                          ? l10n.firstInvestmentFlowEnabled
+                          : l10n.firstInvestmentFlowDisabled,
                     ),
                     duration: const Duration(seconds: 2),
                   ),
@@ -529,7 +577,8 @@ class DebugSettingsScreen extends ConsumerWidget {
                   child: CircularProgressIndicator(),
                 ),
               ),
-              error: (error, stack) => Text(l10n.errorOccurred(error.toString())),
+              error: (error, stack) =>
+                  Text(l10n.errorOccurred(error.toString())),
             ),
             actions: [
               TextButton(
@@ -560,7 +609,4 @@ class DebugSettingsScreen extends ConsumerWidget {
       ),
     );
   }
-
-
-
 }
