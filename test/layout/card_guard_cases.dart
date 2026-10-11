@@ -7,7 +7,9 @@
 //    and the chip is never cut in the middle of a word; the carousel card fits
 //    its slot;
 //  - the Investment detail: the XIRR and MOIC tiles share a top, a height and a
-//    value baseline.
+//    value baseline;
+//  - the Overview quick stats (MOIC, cash flows): two tiles share a top and a
+//    height.
 // Each is also checked with privacy mode on and read right to left, and fails on
 // any overflow. The rules are in design/system/README.md ("Card alignment").
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +18,7 @@ import 'card_guard_detail.dart';
 import 'card_guard_goals.dart';
 import 'card_guard_harness.dart';
 import 'card_guard_hero.dart';
+import 'card_guard_quickstats.dart';
 import 'layout_guard_harness.dart' show guardTextScales;
 
 /// One `testWidgets` per card and text scale at [width] dp.
@@ -46,6 +49,15 @@ void defineCardGuardTests({required double width}) {
         width: width,
         textScale: scale,
         body: checkGoalCarousel,
+      );
+    });
+    testWidgets('quick stats tiles share a top and a height at ${w}dp, '
+        'text x$scale', (tester) async {
+      await runCardGuard(
+        tester,
+        width: width,
+        textScale: scale,
+        body: checkQuickStats,
       );
     });
     testWidgets('detail XIRR and MOIC tiles line up at ${w}dp, '
