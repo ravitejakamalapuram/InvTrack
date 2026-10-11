@@ -120,11 +120,13 @@ Row(children: [
       );
     });
 
-    test('finds the pair as far apart as the window allows, not further', () {
+    test('finds the pair 12 lines apart, not 13', () {
+      // The numbers are written out, so the window cannot be changed without
+      // changing this test.
       String gap(int lines) =>
           'Spacer(),\n${'x,\n' * (lines - 1)}Flexible(child: x),';
-      expect(scan(gap(_window)), hasLength(1));
-      expect(scan(gap(_window + 1)), isEmpty);
+      expect(scan(gap(12)), hasLength(1));
+      expect(scan(gap(13)), isEmpty);
     });
 
     test('a comment or a string that names the pair does not count', () {
