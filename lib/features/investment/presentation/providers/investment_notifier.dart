@@ -2,6 +2,8 @@
 /// Handles all write operations for investments and cash flows.
 library;
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
@@ -639,13 +641,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       );
       await ref.read(investmentRepositoryProvider).addCashFlow(cashFlow);
 
-      // Track analytics event
-      ref
-          .read(analyticsServiceProvider)
-          .logCashFlowAdded(
-            flowType: type.name,
-            amountRange: getAmountRange(roundedAmount),
-          );
+      _logCashFlowAdded(cashFlow);
 
       // Check for milestone achievements after adding return cash flows
       if (type == CashFlowType.income || type == CashFlowType.returnFlow) {
@@ -661,6 +657,35 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       state = AsyncValue.error(e, st);
       rethrow;
     }
+  }
+
+  /// Logs cashflow_added with the amount bucketed in the base currency. The
+  /// save does not wait for an exchange rate, and analytics never fails it.
+  void _logCashFlowAdded(CashFlowEntity cashFlow) {
+    // Read now: the notifier may be gone when the rate arrives.
+    final analytics = ref.read(analyticsServiceProvider);
+    final baseCurrency = ref.read(currencyCodeProvider);
+    // Only a flow in another currency needs a rate. If the converter cannot
+    // be had, the bucket is unknown: it must not fail the save.
+    BatchCurrencyConverter? converter;
+    if (cashFlow.currency != baseCurrency) {
+      try {
+        converter = ref.read(batchCurrencyConverterProvider);
+      } catch (_) {
+        converter = null;
+      }
+    }
+    unawaited(() async {
+      final range = await getBaseCurrencyAmountRange(
+        cashFlow: cashFlow,
+        baseCurrency: baseCurrency,
+        converter: converter,
+      );
+      await analytics.logCashFlowAdded(
+        flowType: cashFlow.type.name,
+        amountRange: range,
+      );
+    }());
   }
 
   /// Update a cash flow.

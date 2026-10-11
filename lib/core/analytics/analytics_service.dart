@@ -120,6 +120,7 @@ class AnalyticsEvents {
   // Activation funnel
   static const String xirrViewed = 'xirr_viewed';
   static const String accountLinkSuccess = 'account_link_success';
+  static const String accountLinkFailure = 'account_link_failure';
 
   // Investment lifecycle
   static const String investmentClosed = 'investment_closed';
@@ -332,6 +333,12 @@ class AnalyticsService {
   /// - [name]: Property name (max 24 chars, alphanumeric + underscore)
   /// - [value]: Property value (max 36 chars, null to clear)
   ///
+  /// ## Result
+  ///
+  /// Never throws. Returns true when the property was written and false when
+  /// the write failed (logged and swallowed), so a caller that keeps track of
+  /// what it sent can send it again.
+  ///
   /// ## Properties in use
   ///
   /// Set by `userPropertiesSyncProvider`, the one place that sets them:
@@ -347,17 +354,19 @@ class AnalyticsService {
   /// // Clear property
   /// await analyticsService.setUserProperty(name: 'is_guest', value: null);
   /// ```
-  Future<void> setUserProperty({
+  Future<bool> setUserProperty({
     required String name,
     required String? value,
   }) async {
     try {
       await _analytics.setUserProperty(name: name, value: value);
+      return true;
     } catch (e) {
       LoggerService.warn(
         'Analytics error setting user property',
         metadata: {'property': name, 'error': e.toString()},
       );
+      return false;
     }
   }
 
@@ -449,7 +458,10 @@ class AnalyticsService {
   /// ## Parameters
   ///
   /// - [flowType]: Type of cash flow (e.g., "buy", "sell", "dividend", "interest")
-  /// - [amountRange]: Amount range (e.g., "under_1k", "1k_10k", "10k_50k", "50k_1L", "1L_5L", "5L_10L", "over_10L")
+  /// - [amountRange]: Range of the amount in the user's base currency (e.g.,
+  ///   "under_1k", "1k_10k", "10k_50k", "50k_1L", "1L_5L", "5L_10L",
+  ///   "over_10L"), or "unknown" when it could not be converted to it (see
+  ///   `getBaseCurrencyAmountRange`)
   ///
   /// ## Privacy
   ///
@@ -513,6 +525,25 @@ class AnalyticsService {
     );
   }
 
+  /// Log that a guest who went through with moving into an existing Google
+  /// account did not end up with a complete merge (activation funnel).
+  ///
+  /// Not logged when the guest backs out: declining, cancelling the Google
+  /// account picker or the "details will not move" warning. Logged at most
+  /// once per merge attempt, and never for a merge that logged
+  /// [logAccountLinkSuccess].
+  ///
+  /// ## Parameters
+  ///
+  /// - [reason]: Why linking failed: "google_account_exists" (the only reason
+  ///   so far; the guest's own account could not be linked to it)
+  Future<void> logAccountLinkFailure({required String reason}) async {
+    await logEvent(
+      name: AnalyticsEvents.accountLinkFailure,
+      parameters: {'reason': reason},
+    );
+  }
+
   /// Log CSV import completed
   Future<void> logCsvImportCompleted({
     required int rowCount,
@@ -550,28 +581,19 @@ class AnalyticsService {
     );
   }
 
-  /// Log goal updated
-  Future<void> logGoalUpdated({required String goalId}) async {
-    await logEvent(
-      name: AnalyticsEvents.goalUpdated,
-      parameters: {'goal_id': goalId},
-    );
+  /// Log goal updated. Carries no parameters: ids never go to Analytics.
+  Future<void> logGoalUpdated() async {
+    await logEvent(name: AnalyticsEvents.goalUpdated);
   }
 
-  /// Log goal archived
-  Future<void> logGoalArchived({required String goalId}) async {
-    await logEvent(
-      name: AnalyticsEvents.goalArchived,
-      parameters: {'goal_id': goalId},
-    );
+  /// Log goal archived. Carries no parameters: ids never go to Analytics.
+  Future<void> logGoalArchived() async {
+    await logEvent(name: AnalyticsEvents.goalArchived);
   }
 
-  /// Log goal deleted
-  Future<void> logGoalDeleted({required String goalId}) async {
-    await logEvent(
-      name: AnalyticsEvents.goalDeleted,
-      parameters: {'goal_id': goalId},
-    );
+  /// Log goal deleted. Carries no parameters: ids never go to Analytics.
+  Future<void> logGoalDeleted() async {
+    await logEvent(name: AnalyticsEvents.goalDeleted);
   }
 
   /// Track document added
