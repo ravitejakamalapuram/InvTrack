@@ -9,6 +9,7 @@
 // A failed check is collected, not thrown, so one run lists every screen that
 // is off. The message names the element and the measured value in dp.
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
@@ -31,6 +32,7 @@ import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dar
 
 import '../../integration_test/mocks/store_demo_data.dart';
 import '../store_screenshots/store_screenshot_harness.dart';
+import 'guarded_screens.dart';
 
 const _pixelRatio = 2.625;
 
@@ -67,13 +69,42 @@ void defineEdgeGuardTests({required double width}) {
   }
 }
 
+/// One run of the main screens with a [inset] dp system bar under the screen
+/// at [width], text x1.0: the foot must still clear the add button.
+///
+/// All four screens sit above the shell's NavigationBar, which takes the inset
+/// itself, so this run does not see the inset term of AppSpacing.fabClearance
+/// (screen_layout_test.dart does). It catches a change that makes the inset
+/// reach a body differently: a bar that stops taking it, or a body that sets
+/// its own bottom padding.
+void defineInsetGuardTest({required double width, required double inset}) {
+  testWidgets('main screens clear the add button over a ${inset.toInt()}dp '
+      'system bar at ${width.toInt()}dp', (tester) async {
+    await runLayoutGuard(
+      tester,
+      width: width,
+      textScale: 1.0,
+      bottomInset: inset,
+      body: (guard) => _checkMainScreens(guard, withPrivacy: false),
+    );
+  });
+}
+
 /// Runs [body] on the real app at [width] x [guardHeight] dp and [textScale],
 /// then fails with every violation [body] collected.
+///
+/// The app starts on the store demo data unless [demo] builds another
+/// portfolio; [overrides] put a provider into another state; [bottomInset]
+/// is a system bar (dp) under the screen, like a gesture bar or a 3-button
+/// navigation bar.
 Future<void> runLayoutGuard(
   WidgetTester tester, {
   required double width,
   required double textScale,
   required Future<void> Function(LayoutGuard guard) body,
+  StoreDemoData Function(DateTime now)? demo,
+  List<Override> overrides = const [],
+  double bottomInset = 0,
 }) async {
   // The test font makes every glyph a same-width square, which hides and
   // invents overflows at large text scales.
@@ -88,11 +119,24 @@ Future<void> runLayoutGuard(
   final previousOnError = FlutterError.onError;
   FlutterError.onError = guard._record;
   try {
-    await pumpStoreApp(tester, StoreDemoData.build(DateTime.now()));
+    await pumpStoreApp(
+      tester,
+      (demo ?? StoreDemoData.build)(DateTime.now()),
+      extraOverrides: overrides,
+    );
     tester.view.physicalSize = Size(
       width * _pixelRatio,
       guardHeight * _pixelRatio,
     );
+    if (bottomInset > 0) {
+      final padding = FakeViewPadding(
+        top: tester.view.padding.top,
+        bottom: bottomInset * _pixelRatio,
+      );
+      tester.view
+        ..padding = padding
+        ..viewPadding = padding;
+    }
     tester.platformDispatcher.textScaleFactorTestValue = textScale;
     await guard.pumpFrames(6);
     await body(guard);
@@ -113,6 +157,7 @@ class LayoutGuard {
   final double textScale;
 
   final _violations = <String>[];
+  final _clearanceChecks = <String>{};
   final _ownedOverflows = <String>[];
   final _otherOverflows = <String>{};
   final _otherErrors = <String>[];
@@ -269,6 +314,41 @@ class LayoutGuard {
     }
   }
 
+  /// [finder]'s own box fills the width between the two screen edges.
+  void expectSpan(String what, Finder finder) {
+    if (finder.evaluate().isEmpty) {
+      fault('$what: not found, so its edges could not be measured');
+      return;
+    }
+    final rect = tester.getRect(finder.first);
+    expectStartAt(what, rect.left);
+    expectEndAt(what, rect.right);
+  }
+
+  /// [finder] is on screen: the state a check is about really rendered.
+  void expectFound(String what, Finder finder) {
+    if (finder.evaluate().isEmpty) fault('$what: not on screen');
+  }
+
+  /// [finder] is not on screen: the state a check is about is not mixed with
+  /// another one.
+  void expectAbsent(String what, Finder finder) {
+    if (finder.evaluate().isNotEmpty) fault('$what: unexpectedly on screen');
+  }
+
+  /// Every screen in [guardedFabScreens] had its last item measured against
+  /// the add button in this run, so a screen cannot be listed and skipped.
+  void expectEveryGuardedScreenMeasured() {
+    for (final label in guardedFabScreens.values) {
+      if (!_clearanceChecks.any((w) => w == label || w.startsWith('$label '))) {
+        fault(
+          '$label: listed in guardedFabScreens, but this run never measured '
+          'that its last item clears the add button',
+        );
+      }
+    }
+  }
+
   /// [finder] ends on the screen edge.
   void expectEnd(String what, Finder finder) {
     final rect = _rect(what, finder);
@@ -327,6 +407,7 @@ class LayoutGuard {
   /// After scrolling to the end, [last] must clear the FAB, and the body must
   /// leave at least AppSpacing.fabBottomPadding below it.
   void expectClearOfFab(String what, Finder last, Finder screen) {
+    _clearanceChecks.add(what);
     final count = last.evaluate().length;
     final button = fab;
     if (count == 0) {
@@ -388,6 +469,7 @@ Future<void> _checkMainScreens(
   await _checkOverview(g, withPrivacy: withPrivacy);
   await _checkGoals(g);
   await _checkInvestmentsAndDetail(g);
+  g.expectEveryGuardedScreenMeasured();
 }
 
 // -- Overview ------------------------------------------------------------
@@ -447,27 +529,34 @@ Future<void> _checkOverview(LayoutGuard g, {required bool withPrivacy}) async {
 
 // -- Goals ---------------------------------------------------------------
 
-Future<void> _checkGoals(LayoutGuard g) async {
-  await g.goToTab(Icons.flag_outlined);
+/// The Goals app bar and filter tabs start on the edge, and the add action is
+/// a 48dp box whose chip ends on the other edge. Used for every Goals state.
+Future<void> checkGoalsHeader(LayoutGuard g, String label) async {
   final screen = find.byType(GoalsScreen);
   await g.scrollToStart(screen);
-
   g.expectStart(
-    'Goals app bar title',
+    '$label app bar title',
     find.descendant(of: screen, matching: find.text('Goals')),
   );
   g.expectStart(
-    'Goals first filter tab',
+    '$label first filter tab',
     find.ancestor(
       of: find.descendant(of: screen, matching: find.text('Active')),
       matching: find.byType(GestureDetector),
     ),
   );
-  g.expectStart('Goals first card', find.byType(GoalCard));
-
   final add = g.action('Add Goal', screen);
-  g.expectTapBox('Goals add action', add.box);
-  if (add.chip != null) g.expectEndAt('Goals add action chip', add.chip!.right);
+  g.expectTapBox('$label add action', add.box);
+  if (add.chip != null) {
+    g.expectEndAt('$label add action chip', add.chip!.right);
+  }
+}
+
+Future<void> _checkGoals(LayoutGuard g) async {
+  await g.goToTab(Icons.flag_outlined);
+  final screen = find.byType(GoalsScreen);
+  await checkGoalsHeader(g, 'Goals');
+  g.expectStart('Goals first card', find.byType(GoalCard));
 
   await g.scrollToEnd(screen);
   g.expectClearOfFab('Goals', find.byType(GoalCard), screen);
@@ -589,6 +678,10 @@ Future<void> _checkOpenDetail(LayoutGuard g, Finder list) async {
         : find.byType(ExpectedIncomeSection);
     await g.reveal(content, screen);
     g.expectStart('Detail $segment content', content);
+    if (segment == 'Docs') {
+      // The demo investments have no documents: this is the empty state.
+      g.expectFound('Detail Docs empty state', find.text('No documents yet'));
+    }
     await g.scrollToEnd(screen);
     if (segment == 'Docs') {
       g.expectClearOfFab('Detail (docs)', content, screen);
