@@ -172,7 +172,7 @@ Since UID is preserved, security rules continue to work without changes.
 
 ## 📚 Related Documentation
 
-- **Architecture**: `docs/ANONYMOUS_AUTH_GUEST_MODE.md`
+- **Architecture**: `docs/archive/ANONYMOUS_AUTH_GUEST_MODE.md`
 - **Firebase Docs**: [Link Anonymous Accounts](https://firebase.google.com/docs/auth/android/anonymous-auth#convert-an-anonymous-account-to-a-permanent-account)
 - **InvTrack Rules**: `.augment/rules/invtrack_rules.md` (Rule 21: Multi-Currency Compliance)
 

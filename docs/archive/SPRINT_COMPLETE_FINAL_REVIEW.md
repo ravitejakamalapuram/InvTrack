@@ -172,8 +172,8 @@ main
 - `lib/core/ads/ad_provider.dart`
 - `lib/core/widgets/native_ad_widget.dart`
 - `lib/core/ads/ad_placement_strategy.dart`
-- `docs/AD_INTEGRATION_IMPLEMENTATION_GUIDE.md`
-- `docs/AD_INTEGRATION_SUMMARY.md`
+- `docs/archive/AD_INTEGRATION_IMPLEMENTATION_GUIDE.md`
+- `docs/archive/AD_INTEGRATION_SUMMARY.md`
 
 **Notification Reports**:
 - `lib/features/notifications/presentation/widgets/` (3 widgets)
@@ -189,7 +189,7 @@ main
 - `docs/VERSION_UPDATE_POPUP_FIX.md`
 
 **Final Review**:
-- `docs/SPRINT_COMPLETE_FINAL_REVIEW.md` (this file)
+- `docs/archive/SPRINT_COMPLETE_FINAL_REVIEW.md` (this file)
 
 ---
 

@@ -105,7 +105,7 @@ users/{userId}/healthScores/{snapshotId}
 **New Files** (3):
 1. `lib/features/portfolio_health/data/models/health_score_snapshot_model.dart` (145 lines)
 2. `lib/features/portfolio_health/data/repositories/health_score_repository.dart` (166 lines)
-3. `docs/WEEK_2_PROGRESS.md` (this file)
+3. `docs/archive/WEEK_2_PROGRESS.md` (this file)
 
 **Modified Files** (5):
 1. `lib/features/portfolio_health/presentation/providers/portfolio_health_provider.dart` (+60 lines)

@@ -167,7 +167,7 @@
 
 - **MBA-Level Analysis**: `docs/research/MBA_LEVEL_INNOVATION_ANALYSIS.md`
 - **Implementation Details**: `TODO.md`
-- **Product Roadmap**: `docs/PRODUCT_ROADMAP.md`
+- **Product Roadmap**: `docs/archive/PRODUCT_ROADMAP.md`
 
 ---
 

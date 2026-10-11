@@ -36,7 +36,7 @@
 
 ## 📋 **Implementation Guide**
 
-✅ `docs/AD_INTEGRATION_IMPLEMENTATION_GUIDE.md` (495 lines)
+✅ `docs/archive/AD_INTEGRATION_IMPLEMENTATION_GUIDE.md` (495 lines)
 
 **Complete production-ready guide with**:
 - ✅ Phase 1: Setup & Dependencies
@@ -234,7 +234,7 @@ Add section on ad monetization:
 
 ## 🚀 **Next Steps**
 
-1. **Review**: Read `docs/AD_INTEGRATION_IMPLEMENTATION_GUIDE.md`
+1. **Review**: Read `docs/archive/AD_INTEGRATION_IMPLEMENTATION_GUIDE.md`
 2. **Setup**: Create AdMob account and get ad unit IDs
 3. **Implement**: Follow Phase 1-3 in implementation guide
 4. **Test**: Verify ads in debug mode (Google test ads)

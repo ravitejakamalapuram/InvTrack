@@ -200,24 +200,24 @@ CodeRabbit learns from your project documentation:
 - `.augment/rules/invtrack_rules.md`
 
 **Technical Specifications:**
-- `docs/InvTracker_TechSpec.md`
-- `docs/InvTracker_PRD.md`
+- `docs/archive/InvTracker_TechSpec.md`
+- `docs/archive/InvTracker_PRD.md`
 
 **Localization Guides:**
 - `docs/LOCALIZATION.md`
-- `docs/LOCALIZATION_QUICKSTART.md`
+- `docs/archive/LOCALIZATION_QUICKSTART.md`
 - `docs/CURRENCY_LOCALIZATION_GUIDE.md`
 
 **Multi-Currency Implementation:**
-- `docs/MULTI_CURRENCY_IMPLEMENTATION.md`
-- `docs/MULTI_CURRENCY_PR_CHECKLIST.md`
+- `docs/archive/MULTI_CURRENCY_IMPLEMENTATION.md`
+- `docs/archive/MULTI_CURRENCY_PR_CHECKLIST.md`
 
 **Accessibility:**
 - `docs/ACCESSIBILITY.md`
 
 **Feature Plans:**
-- `docs/FIRE_NUMBER_FEATURE_PLAN.md`
-- `docs/GOALS_FEATURE_PLAN.md`
+- `docs/archive/FIRE_NUMBER_FEATURE_PLAN.md`
+- `docs/archive/GOALS_FEATURE_PLAN.md`
 
 **Project Overview:**
 - `README.md`

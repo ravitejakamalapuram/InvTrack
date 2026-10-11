@@ -106,8 +106,8 @@ Successfully implemented comprehensive currency conversion optimizations with en
 
 **Documentation Created:**
 - `docs/CURRENCY_CONVERSION_ARCHITECTURE.md` - Comprehensive architecture guide
-- `docs/CURRENCY_API_OPTIMIZATION.md` - Updated with new improvements
-- `docs/OPTIMIZATION_SUMMARY.md` - This file
+- `docs/archive/CURRENCY_API_OPTIMIZATION.md` - Updated with new improvements
+- `docs/archive/OPTIMIZATION_SUMMARY.md` - This file
 
 ---
 

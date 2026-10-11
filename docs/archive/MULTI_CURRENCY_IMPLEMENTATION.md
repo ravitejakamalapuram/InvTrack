@@ -1810,9 +1810,9 @@ match /users/{userId}/investments/{investmentId}/cashFlows/{cashFlowId} {
 ## 📚 **References**
 
 - [Frankfurter API Documentation](https://www.frankfurter.app/docs/)
-- [MULTI_CURRENCY_STRATEGY.md](./MULTI_CURRENCY_STRATEGY.md)
-- [EXCHANGE_RATES_API_RESEARCH.md](./EXCHANGE_RATES_API_RESEARCH.md)
-- [InvTrack Enterprise Rules](../.augment/rules/invtrack_rules.md)
+- [MULTI_CURRENCY_STRATEGY.md](MULTI_CURRENCY_STRATEGY.md)
+- [EXCHANGE_RATES_API_RESEARCH.md](EXCHANGE_RATES_API_RESEARCH.md)
+- [InvTrack Enterprise Rules](../../.augment/rules/invtrack_rules.md)
 
 ---
 

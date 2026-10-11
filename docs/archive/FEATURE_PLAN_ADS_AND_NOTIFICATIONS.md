@@ -718,7 +718,7 @@ When app launches and a newer version is available (per `latestBuildNumber` in F
 
 #### **✅ Step 1: Firestore Document Exists**
 
-Per `docs/VERSION_UPDATE_TROUBLESHOOTING.md`, the Firestore document structure is correct:
+Per `docs/archive/VERSION_UPDATE_TROUBLESHOOTING.md`, the Firestore document structure is correct:
 
 ```json
 {

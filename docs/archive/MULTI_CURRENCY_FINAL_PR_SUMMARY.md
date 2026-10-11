@@ -256,9 +256,9 @@ final stats = ref.watch(multiCurrencyGlobalStatsProvider);
 ## 📝 **Documentation Updates**
 
 **New Files:**
-- `docs/MULTI_CURRENCY_STATS_FIX_PLAN.md` - Implementation plan
-- `docs/MULTI_CURRENCY_UI_UPDATE_SUMMARY.md` - UI changes summary
-- `docs/MULTI_CURRENCY_FINAL_PR_SUMMARY.md` - This file
+- `docs/archive/MULTI_CURRENCY_STATS_FIX_PLAN.md` - Implementation plan
+- `docs/archive/MULTI_CURRENCY_UI_UPDATE_SUMMARY.md` - UI changes summary
+- `docs/archive/MULTI_CURRENCY_FINAL_PR_SUMMARY.md` - This file
 
 **Updated Files:**
 - `.augment/rules/invtrack_rules.md` - Rule 21 compliance requirements

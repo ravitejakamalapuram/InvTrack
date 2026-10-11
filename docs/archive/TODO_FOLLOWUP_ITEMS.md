@@ -72,7 +72,7 @@ git log --oneline -5
 ### **3. Create V2 GitHub Issue** ⏳ BLOCKED BY: PR merge
 **Issue**: Domain Localization Refactor
 
-**Template Ready**: `docs/GITHUB_ISSUE_DOMAIN_LOCALIZATION.md`
+**Template Ready**: `docs/archive/GITHUB_ISSUE_DOMAIN_LOCALIZATION.md`
 
 **Command**:
 ```bash
@@ -80,7 +80,7 @@ gh issue create \
   --title "[V2] Refactor domain layer to support full localization" \
   --label "enhancement,v2,localization,breaking-change" \
   --milestone "V2" \
-  --body-file docs/GITHUB_ISSUE_DOMAIN_LOCALIZATION.md
+  --body-file docs/archive/GITHUB_ISSUE_DOMAIN_LOCALIZATION.md
 ```
 
 **Details**:
@@ -88,7 +88,7 @@ gh issue create \
 - Return stable keys instead of English strings
 - Requires breaking API changes
 - Estimated effort: 5-7 hours
-- Fully documented in `docs/DOMAIN_LOCALIZATION_DECISION.md`
+- Fully documented in `docs/archive/DOMAIN_LOCALIZATION_DECISION.md`
 
 ---
 
@@ -301,8 +301,8 @@ open coverage/html/index.html
 - Feature-flagged for safe rollout
 
 ### **Key Documents**:
-- `docs/DOMAIN_LOCALIZATION_DECISION.md` - Why V2 deferral is OK
-- `docs/GITHUB_ISSUE_DOMAIN_LOCALIZATION.md` - V2 tracking template
+- `docs/archive/DOMAIN_LOCALIZATION_DECISION.md` - Why V2 deferral is OK
+- `docs/archive/GITHUB_ISSUE_DOMAIN_LOCALIZATION.md` - V2 tracking template
 - `docs/MARATHON_SESSION_COMPLETE.md` - Session overview
 - `.augment/rules/invtrack_rules.md` - All project rules
 

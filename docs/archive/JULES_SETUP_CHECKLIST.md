@@ -168,9 +168,9 @@
 
 ## 📚 Quick Documentation Links
 
-- **Quick Setup:** `docs/JULES_QUICK_SETUP.md`
+- **Quick Setup:** `docs/archive/JULES_QUICK_SETUP.md`
 - **Full Guide:** `docs/JULES_CRASH_FIX_AUTOMATION.md`
-- **Implementation:** `docs/JULES_IMPLEMENTATION_SUMMARY.md`
+- **Implementation:** `docs/archive/JULES_IMPLEMENTATION_SUMMARY.md`
 - **Workflow README:** `.github/workflows/README.md`
 
 ---
@@ -234,6 +234,6 @@
 ---
 
 **Need Help?**
-- See `docs/JULES_QUICK_SETUP.md` for step-by-step guide
+- See `docs/archive/JULES_QUICK_SETUP.md` for step-by-step guide
 - See `docs/JULES_CRASH_FIX_AUTOMATION.md` for troubleshooting
 - Check workflow logs in GitHub Actions tab

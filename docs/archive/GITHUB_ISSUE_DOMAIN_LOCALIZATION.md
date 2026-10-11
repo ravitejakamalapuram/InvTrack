@@ -17,7 +17,7 @@ Refactor the Portfolio Health Score domain layer to support full localization by
 - Requires breaking API changes
 - Better suited for post-V1 feedback
 
-**Reference**: `docs/DOMAIN_LOCALIZATION_DECISION.md`
+**Reference**: `docs/archive/DOMAIN_LOCALIZATION_DECISION.md`
 
 ---
 
@@ -162,7 +162,7 @@ If `HealthScoreSnapshotModel` persists `ComponentScore`:
 
 - **PR #322**: Portfolio Health Score V1 (where this was deferred)
 - **CodeRabbit Comment #36**: Original identification
-- **Doc**: `docs/DOMAIN_LOCALIZATION_DECISION.md`
+- **Doc**: `docs/archive/DOMAIN_LOCALIZATION_DECISION.md`
 
 ---
 

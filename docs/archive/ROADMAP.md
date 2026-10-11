@@ -1465,7 +1465,7 @@ The following areas passed review:
 
 ### 1. Architecture Documentation
 **Status:** ✅ Partially Complete
-**Files:** `docs/PRODUCT_ROADMAP.md`, `AGENT_CONTEXT.md`
+**Files:** `docs/archive/PRODUCT_ROADMAP.md`, `AGENT_CONTEXT.md`
 
 **Action Items:**
 - [ ] Create architecture decision records (ADRs)

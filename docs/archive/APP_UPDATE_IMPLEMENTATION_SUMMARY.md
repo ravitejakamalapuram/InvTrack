@@ -71,7 +71,7 @@
 
 ### 4. Documentation
 
-**File:** `docs/TWO_TRACK_VERSION_SYSTEM.md`
+**File:** `docs/archive/TWO_TRACK_VERSION_SYSTEM.md`
 - ✅ Complete explanation of two-track system
 - ✅ Firestore document structure for both tracks
 - ✅ Beta detection logic explanation

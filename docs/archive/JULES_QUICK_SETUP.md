@@ -168,7 +168,7 @@ Jules AI will now automatically:
 
 ## Next Steps
 
-- **Read full guide:** [JULES_CRASH_FIX_AUTOMATION.md](./JULES_CRASH_FIX_AUTOMATION.md)
+- **Read full guide:** [JULES_CRASH_FIX_AUTOMATION.md](../JULES_CRASH_FIX_AUTOMATION.md)
 - **Monitor workflow:** GitHub Actions tab
 - **Review summary issues:** Check for PRs created
 - **Track crash metrics:** Firebase Crashlytics Console
@@ -208,4 +208,4 @@ Jules AI will now automatically:
 **First Run Time:** ~15-30 minutes  
 **Daily Automation:** Runs at 9 AM UTC automatically
 
-**Need Help?** See [JULES_CRASH_FIX_AUTOMATION.md](./JULES_CRASH_FIX_AUTOMATION.md) for detailed troubleshooting.
+**Need Help?** See [JULES_CRASH_FIX_AUTOMATION.md](../JULES_CRASH_FIX_AUTOMATION.md) for detailed troubleshooting.

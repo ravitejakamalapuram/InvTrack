@@ -100,8 +100,8 @@ If CodeRabbit finds new issues:
 ### **Scenario 3: Clarification Needed** 💬
 If CodeRabbit needs clarification on the V2 deferral:
 - Point to documentation:
-  - `docs/DOMAIN_LOCALIZATION_DECISION.md`
-  - `docs/GITHUB_ISSUE_DOMAIN_LOCALIZATION.md`
+  - `docs/archive/DOMAIN_LOCALIZATION_DECISION.md`
+  - `docs/archive/GITHUB_ISSUE_DOMAIN_LOCALIZATION.md`
 - Explain UI is 100% localized (users see no hardcoded text)
 - Emphasize breaking API change better suited for V2
 
