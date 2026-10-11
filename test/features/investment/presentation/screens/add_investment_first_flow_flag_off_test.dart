@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
+import 'package:inv_tracker/core/widgets/more_details_tile.dart';
+import 'package:inv_tracker/core/widgets/sticky_form_action.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 
@@ -33,6 +35,9 @@ void main() {
       expect(find.text('When did you invest?'), findsOneWidget);
       expect(find.widgetWithText(GradientButton, 'Add Investment'), findsOne);
       expect(find.text('Amount invested in INR'), findsNothing);
+      expect(find.byType(MoreDetailsTile), findsNothing);
+      expect(find.byType(StickyFormAction), findsNothing);
+      expect(find.text('Optional. You can add it later.'), findsNothing);
     });
 
     testWidgets('saves with no id, no amount and no write callback', (

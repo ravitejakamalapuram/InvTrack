@@ -9,13 +9,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
+import 'package:inv_tracker/core/theme/app_theme.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/features/investment/domain/models/investment_template.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/add_investment_keys.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../mocks/mock_analytics_service.dart';
 
@@ -175,6 +178,32 @@ enum Opener {
   goRoute,
 }
 
+/// The routes on the navigator, in order, so a test can tell how deep it is.
+class RouteStack extends NavigatorObserver {
+  final routes = <Route<dynamic>>[];
+
+  int get depth => routes.length;
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      routes.add(route);
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      routes.remove(route);
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      routes.remove(route);
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    final at = routes.indexOf(oldRoute!);
+    if (at < 0 || newRoute == null) return;
+    routes[at] = newRoute;
+  }
+}
+
 /// A running form: what it sent, and where it navigated.
 class FormHarness {
   FormHarness({
@@ -185,6 +214,7 @@ class FormHarness {
     required this.router,
     required this.detailVisits,
     required this.navigatorKey,
+    required this.stack,
   });
 
   final List<AddCall> adds;
@@ -193,6 +223,7 @@ class FormHarness {
   final FakeAnalyticsService analytics;
   final GoRouter router;
   final GlobalKey<NavigatorState> navigatorKey;
+  final RouteStack stack;
 
   /// The stub `/investments/:id` route, one entry for each time it was built.
   final List<({String id, Object? extra})> detailVisits;
@@ -216,6 +247,16 @@ Future<FormHarness> pumpAddForm(
   InvestmentEntity? edit,
   ThemeMode themeMode = ThemeMode.light,
   bool settle = true,
+
+  /// Stored shared preferences. When given, the flag and privacy mode are read
+  /// from them by the real providers ([flagOn] and [privacy] are ignored).
+  Map<String, Object>? storedPrefs,
+
+  /// The app's own themes instead of the plain Material ones.
+  bool appTheme = false,
+
+  /// Drawn over the bottom of the screen, for a stand-in keyboard in a render.
+  Widget? overlay,
 }) async {
   tester.view.physicalSize = size * devicePixelRatio;
   tester.view.devicePixelRatio = devicePixelRatio;
@@ -227,6 +268,12 @@ Future<FormHarness> pumpAddForm(
   final notifier = RecordingInvestmentNotifier(adds, updates);
   final analytics = FakeAnalyticsService();
   final rootKey = GlobalKey<NavigatorState>();
+  final stack = RouteStack();
+  SharedPreferences? prefs;
+  if (storedPrefs != null) {
+    SharedPreferences.setMockInitialValues(storedPrefs);
+    prefs = await SharedPreferences.getInstance();
+  }
 
   Widget form() => AddInvestmentScreen(
     investmentToEdit: edit,
@@ -235,6 +282,7 @@ Future<FormHarness> pumpAddForm(
 
   final router = GoRouter(
     navigatorKey: rootKey,
+    observers: [stack],
     initialLocation: '/',
     routes: [
       GoRoute(
@@ -274,28 +322,36 @@ Future<FormHarness> pumpAddForm(
 
   await tester.pumpWidget(
     ProviderScope(
+      // A new scope for every pump, or a second form in one test would keep the
+      // first one's providers.
+      key: UniqueKey(),
       overrides: [
         currencyCodeProvider.overrideWithValue(baseCurrency),
         analyticsServiceProvider.overrideWithValue(analytics),
         isAuthenticatedProvider.overrideWithValue(true),
         isCustomInvestmentTypesEnabledProvider.overrideWithValue(false),
-        firstInvestmentFormEnabledProvider.overrideWithValue(flagOn),
-        isPrivacyModeActiveProvider.overrideWithValue(privacy),
+        if (prefs != null)
+          sharedPreferencesProvider.overrideWithValue(prefs)
+        else ...[
+          firstInvestmentFormEnabledProvider.overrideWithValue(flagOn),
+          isPrivacyModeActiveProvider.overrideWithValue(privacy),
+        ],
         if (now != null) valuationClockProvider.overrideWithValue(() => now),
         investmentNotifierProvider.overrideWith(() => notifier),
       ],
       child: MaterialApp.router(
+        debugShowCheckedModeBanner: false,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         themeMode: themeMode,
-        theme: ThemeData.light(),
-        darkTheme: ThemeData.dark(),
+        theme: appTheme ? AppTheme.lightTheme : ThemeData.light(),
+        darkTheme: appTheme ? AppTheme.darkTheme : ThemeData.dark(),
         routerConfig: router,
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(
             context,
           ).copyWith(textScaler: TextScaler.linear(textScale)),
-          child: child!,
+          child: overlay == null ? child! : Stack(children: [child!, overlay]),
         ),
       ),
     ),
@@ -317,6 +373,7 @@ Future<FormHarness> pumpAddForm(
     router: router,
     detailVisits: detailVisits,
     navigatorKey: rootKey,
+    stack: stack,
   );
 }
 

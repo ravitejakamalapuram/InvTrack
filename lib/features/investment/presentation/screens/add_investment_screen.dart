@@ -20,14 +20,22 @@ import 'package:inv_tracker/core/widgets/app_text_field.dart';
 import 'package:inv_tracker/core/widgets/currency_selector.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
+import 'package:inv_tracker/core/widgets/more_details_tile.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/investment/domain/models/investment_form_config.dart';
 import 'package:inv_tracker/features/investment/domain/models/investment_template.dart';
+import 'package:inv_tracker/features/investment/domain/models/investment_type_defaults.dart';
+import 'package:inv_tracker/features/investment/presentation/utils/investment_amount_input.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/add_investment_keys.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/amount_invested_field.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/custom_type_field.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/first_investment_form_view.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/start_date_field.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/template_selector.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:uuid/uuid.dart';
 
 /// Combined screen for adding and editing investments.
 /// Pass [investmentToEdit] to edit an existing investment, or leave null to add a new one.
@@ -87,6 +95,34 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   /// work out again, so the tenure was cleared with it (A119).
   bool _tenureClearedWithMaturity = false;
 
+  // First investment flow (A40, #783). Only used when [_firstInvestmentForm].
+
+  /// The form behind the first investment flow, decided once when the screen
+  /// opens: a new investment, with the flag on.
+  late final bool _firstInvestmentForm;
+
+  /// The id of the investment this form saves. Minted when the form opens and
+  /// kept for as long as it lives, so a retry after a failed save sends the
+  /// same id and replaces the first attempt instead of adding a second one.
+  final String _investmentId = const Uuid().v4();
+  final _amountController = TextEditingController();
+  final _amountFocusNode = FocusNode();
+  bool _moreDetailsOpen = false;
+
+  /// The user picked the start date; a default of today is not a field used.
+  bool _startDatePicked = false;
+
+  /// What the type chips have set so far, to tell a structural choice the user
+  /// made in More details from one a chip set.
+  InvestmentTypeDefaults _appliedDefaults = InvestmentTypeDefaults.none;
+
+  /// The typical rate of the chosen type: the hint of the empty rate field,
+  /// never a value that is saved.
+  double? _typicalRateHint;
+
+  /// Today, date-only, when the form opened.
+  late DateTime _today;
+
   @override
   void initState() {
     super.initState();
@@ -135,11 +171,26 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       _selectedCurrency = ref.read(currencyCodeProvider);
     }
 
+    _firstInvestmentForm =
+        investment == null && ref.read(firstInvestmentFormEnabledProvider);
+    if (_firstInvestmentForm) {
+      final now = ref.read(valuationClockProvider)();
+      _today = DateTime(now.year, now.month, now.day);
+      _startDate = _today;
+      _typicalRateHint = InvestmentTypeDefaults.forType(
+        _selectedType,
+      ).typicalRate;
+    }
+
     // Apply preselected template if provided (from empty state quick-add)
     if (widget.preselectedTemplate != null && investment == null) {
       // Defer template application to after first frame so setState works
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _applyTemplate(widget.preselectedTemplate!);
+        if (_firstInvestmentForm) {
+          _applyStructuralDefaults(widget.preselectedTemplate!);
+        } else {
+          _applyTemplate(widget.preselectedTemplate!);
+        }
       });
       // Hide template selector since user already chose a template
       _showTemplateSelector = false;
@@ -232,6 +283,52 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         );
   }
 
+  /// A template on the first investment flow form sets the type and its
+  /// structure and nothing else: no rate, no term, no name, no risk level. A
+  /// number the user never typed would set a maturity date, a reminder and an
+  /// estimated value for them.
+  void _applyStructuralDefaults(InvestmentTemplate template) {
+    final defaults = InvestmentTypeDefaults.forTemplate(template);
+    setState(() {
+      _selectedTemplate = template;
+      _selectedType = template.type;
+      _incomeFrequency = defaults.incomeFrequency;
+      _interestPayoutMode = defaults.payoutMode;
+      _compoundingFrequency = defaults.compounding;
+      _appliedDefaults = defaults;
+      _typicalRateHint = defaults.typicalRate;
+    });
+
+    // Track analytics (the catalogue's id and name, nothing the user typed)
+    ref
+        .read(analyticsServiceProvider)
+        .logTemplateSelected(
+          templateId: template.id,
+          templateName: template.name,
+        );
+  }
+
+  /// A type chip sets the type and the structure that goes with it. A value
+  /// that is no longer what the last chip set is the user's choice and stays.
+  void _onTypeChipSelected(InvestmentType type) {
+    final next = InvestmentTypeDefaults.forType(type);
+    setState(() {
+      final applied = _appliedDefaults;
+      _selectedType = type;
+      if (_incomeFrequency == applied.incomeFrequency) {
+        _incomeFrequency = next.incomeFrequency;
+      }
+      if (_interestPayoutMode == applied.payoutMode) {
+        _interestPayoutMode = next.payoutMode;
+      }
+      if (_compoundingFrequency == applied.compounding) {
+        _compoundingFrequency = next.compounding;
+      }
+      _appliedDefaults = next;
+      _typicalRateHint = next.typicalRate;
+    });
+  }
+
   @override
   void dispose() {
     // Remove listeners before disposing
@@ -244,6 +341,8 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     _platformController.dispose();
     _expectedRateController.dispose();
     _tenureController.dispose();
+    _amountController.dispose();
+    _amountFocusNode.dispose();
     _nameFocusNode.dispose();
     _notesFocusNode.dispose();
     disposeScreenAnimation();
@@ -291,6 +390,41 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     }
     final typed = _customTypeController.text.trim();
     return typed.isEmpty ? null : typed;
+  }
+
+  /// Tracks which of the optional fields a new investment was saved with. Only
+  /// flags go out, never what was typed.
+  void _trackNewInvestment({
+    required bool startDateUsed,
+    required double? expectedRate,
+    required int? tenureMonths,
+    required String? platform,
+  }) {
+    final enhancedFields = <String>[];
+    if (startDateUsed) enhancedFields.add('start_date');
+    if (expectedRate != null) enhancedFields.add('expected_rate');
+    if (tenureMonths != null) enhancedFields.add('tenure_months');
+    if (platform != null) enhancedFields.add('platform');
+    if (_interestPayoutMode != null) enhancedFields.add('payout_mode');
+    if (_autoRenewal != null) enhancedFields.add('auto_renewal');
+    if (_riskLevel != null) enhancedFields.add('risk_level');
+    if (_compoundingFrequency != null) enhancedFields.add('compounding');
+
+    if (enhancedFields.isNotEmpty) {
+      ref
+          .read(analyticsServiceProvider)
+          .logEnhancedFieldsUsed(
+            investmentType: _selectedType.name,
+            fieldsUsed: enhancedFields,
+          );
+    }
+
+    // Track smart default usage
+    if (_maturityDateAutoCalculated && _maturityDate != null) {
+      ref
+          .read(analyticsServiceProvider)
+          .logSmartDefaultApplied(fieldName: 'maturity_date');
+    }
   }
 
   Future<void> _submit() async {
@@ -358,32 +492,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               customTypeLabel: _customTypeForSave(),
             );
 
-        // Track enhanced fields usage for new investments
-        final enhancedFields = <String>[];
-        if (_startDate != null) enhancedFields.add('start_date');
-        if (expectedRate != null) enhancedFields.add('expected_rate');
-        if (tenureMonths != null) enhancedFields.add('tenure_months');
-        if (platform != null) enhancedFields.add('platform');
-        if (_interestPayoutMode != null) enhancedFields.add('payout_mode');
-        if (_autoRenewal != null) enhancedFields.add('auto_renewal');
-        if (_riskLevel != null) enhancedFields.add('risk_level');
-        if (_compoundingFrequency != null) enhancedFields.add('compounding');
-
-        if (enhancedFields.isNotEmpty) {
-          ref
-              .read(analyticsServiceProvider)
-              .logEnhancedFieldsUsed(
-                investmentType: _selectedType.name,
-                fieldsUsed: enhancedFields,
-              );
-        }
-
-        // Track smart default usage
-        if (_maturityDateAutoCalculated && _maturityDate != null) {
-          ref
-              .read(analyticsServiceProvider)
-              .logSmartDefaultApplied(fieldName: 'maturity_date');
-        }
+        _trackNewInvestment(
+          startDateUsed: _startDate != null,
+          expectedRate: expectedRate,
+          tenureMonths: tenureMonths,
+          platform: platform,
+        );
       }
 
       if (mounted) {
@@ -407,8 +521,206 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     }
   }
 
+  /// Saves the investment of the first investment flow form: with the amount
+  /// typed, if any, as its first cash flow dated the start date, in one write.
+  /// A failure keeps the form as it is. The retry sends the same id.
+  Future<void> _submitFirstInvestment() async {
+    if (_isLoading) return;
+    if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context);
+    final amount = InvestmentAmountInput.parse(
+      _amountController.text,
+      currencyCode: _selectedCurrency,
+    ).amount;
+
+    setState(() => _isLoading = true);
+    HapticFeedback.lightImpact();
+
+    try {
+      final notes = _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim();
+      final platform = _platformController.text.trim().isEmpty
+          ? null
+          : _platformController.text.trim();
+      final expectedRate = double.tryParse(_expectedRateController.text.trim());
+      final tenureMonths = int.tryParse(_tenureController.text.trim());
+
+      var confirmed = true;
+      final investment = await ref
+          .read(investmentNotifierProvider.notifier)
+          .addInvestment(
+            name: _nameController.text.trim(),
+            type: _selectedType,
+            notes: notes,
+            maturityDate: _maturityDate,
+            incomeFrequency: _incomeFrequency,
+            startDate: _startDate,
+            expectedRate: expectedRate,
+            tenureMonths: tenureMonths,
+            platform: platform,
+            interestPayoutMode: _interestPayoutMode,
+            autoRenewal: _autoRenewal,
+            riskLevel: _riskLevel,
+            compoundingFrequency: _compoundingFrequency,
+            currency: _selectedCurrency,
+            customTypeLabel: _customTypeForSave(),
+            id: _investmentId,
+            initialAmount: amount,
+            onWriteResult: (value) => confirmed = value,
+          );
+
+      _trackNewInvestment(
+        startDateUsed: _startDatePicked,
+        expectedRate: expectedRate,
+        tenureMonths: tenureMonths,
+        platform: platform,
+      );
+
+      if (!mounted) return;
+      if (confirmed) {
+        AppFeedback.showSuccess(context, l10n.investmentCreated);
+      } else {
+        AppFeedback.showInfo(context, l10n.investmentSavedOffline);
+      }
+      // The form gives way to the investment it made. This form was opened
+      // with Navigator.push, which GoRouter does not know, so it is popped and
+      // the detail pushed on the router: Back lands on the page that opened
+      // the form, and the stack is no deeper than before.
+      final router = GoRouter.of(context);
+      context.safePop();
+      router.push(
+        '/investments/${Uri.encodeComponent(investment.id)}',
+        extra: investment,
+      );
+    } catch (_) {
+      if (mounted) AppFeedback.showError(context, l10n.investmentCreateFailed);
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// The form behind the first investment flow (A40, #783): the same State and
+  /// the same field builders as the form below, laid out by
+  /// [FirstInvestmentFormView]. The type, name, amount and start date come
+  /// first; the rest is behind More details.
+  Widget _buildFirstInvestmentForm(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final showCustomType =
+        _selectedType == InvestmentType.other &&
+        ref.watch(isCustomInvestmentTypesEnabledProvider);
+    // The date also dates the first cash flow, which exists only with an amount.
+    final startDateHelper = _amountController.text.trim().isEmpty
+        ? null
+        : (DateUtils.isSameDay(_startDate, _today)
+              ? l10n.startDateHelperToday
+              : l10n.startDateHelper);
+
+    return FirstInvestmentFormView(
+      formKey: _formKey,
+      title: l10n.addInvestment,
+      closeTooltip: l10n.tooltipClose,
+      onClose: () => context.safePop(),
+      typeLabel: l10n.investmentType,
+      typeRow: TypeSelector<InvestmentType>(
+        values: InvestmentType.values,
+        selectedValue: _selectedType,
+        onSelected: _onTypeChipSelected,
+        colorBuilder: (type) => type.color,
+        iconBuilder: (type) => type.icon,
+        labelBuilder: (type) => type.displayName,
+        compactMode: true,
+        scrollingRow: true,
+        rowPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenPaddingHorizontal,
+        ),
+        rowSemanticsLabel: l10n.investmentTypeRowSemantics(
+          InvestmentType.values.length,
+        ),
+        itemKeyBuilder: AddInvestmentKeys.typeChip,
+      ),
+      customType: showCustomType
+          ? CustomTypeField(controller: _customTypeController)
+          : null,
+      name: AppTextField(
+        key: AddInvestmentKeys.name,
+        controller: _nameController,
+        focusNode: _nameFocusNode,
+        label: 'Investment Name',
+        hint: 'e.g. LenDenClub, Grip Invest',
+        showHintWhenEmpty: true,
+        prefixIcon: Icons.business_rounded,
+        // Limited here, not with maxLength, which prints a counter.
+        inputFormatters: [
+          LengthLimitingTextInputFormatter(ValidationConstants.maxNameLength),
+        ],
+        validator: (value) => value == null || value.trim().isEmpty
+            ? l10n.investmentNameRequired
+            : null,
+        onSubmitted: (_) => _amountFocusNode.requestFocus(),
+      ),
+      amount: AmountInvestedField(
+        controller: _amountController,
+        currencyCode: _selectedCurrency,
+        focusNode: _amountFocusNode,
+        // The start date's helper depends on whether an amount is typed.
+        onChanged: (_) => setState(() {}),
+      ),
+      startDate: StartDateField(
+        date: _startDate!,
+        helper: startDateHelper,
+        onTap: () => _selectStartDate(context, isDark),
+      ),
+      moreDetails: MoreDetailsTile(
+        key: AddInvestmentKeys.moreDetails,
+        title: l10n.moreDetailsTitle,
+        summary: l10n.moreDetailsSummary,
+        expanded: _moreDetailsOpen,
+        onChanged: (open) => setState(() => _moreDetailsOpen = open),
+        children: [
+          CurrencySelector(
+            selectedCurrency: _selectedCurrency,
+            onCurrencySelected: (code) {
+              setState(() => _selectedCurrency = code);
+              ref
+                  .read(analyticsServiceProvider)
+                  .logCurrencySelected(currency: code, context: 'investment');
+            },
+            label: 'Investment Currency',
+            subtitle: 'Primary currency for this investment',
+          ),
+          SizedBox(height: AppSpacing.sectionSpacing),
+          ..._buildDynamicFields(isDark, l10n, includeStartDate: false),
+          _buildProjectionCard(isDark),
+          _buildMaturityDatePicker(isDark),
+          SizedBox(height: AppSpacing.formFieldSpacing),
+          _buildIncomeFrequencySelector(isDark),
+          SizedBox(height: AppSpacing.sectionSpacing),
+          AppTextField(
+            key: AddInvestmentKeys.notes,
+            controller: _notesController,
+            focusNode: _notesFocusNode,
+            label: 'Notes (Optional)',
+            hint: 'Add any details about this investment',
+            prefixIcon: Icons.edit_note_rounded,
+            textCapitalization: TextCapitalization.sentences,
+            maxLines: 2,
+            maxLength: ValidationConstants.maxNotesLength,
+          ),
+        ],
+      ),
+      submitLabel: l10n.addInvestment,
+      isLoading: _isLoading,
+      onSubmit: _submitFirstInvestment,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_firstInvestmentForm) return _buildFirstInvestmentForm(context);
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // The flag is read only while Other is selected.
@@ -499,6 +811,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                         compactMode: true,
                         spacing: 10,
                         runSpacing: 10,
+                        itemKeyBuilder: AddInvestmentKeys.typeChip,
                       ),
 
                       SizedBox(height: AppSpacing.sectionSpacing),
@@ -511,6 +824,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
 
                       // Name Field
                       AppTextField(
+                        key: AddInvestmentKeys.name,
                         controller: _nameController,
                         focusNode: _nameFocusNode,
                         label: 'Investment Name',
@@ -532,6 +846,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
 
                       // Notes Field - reduced to 2 lines for more compact form
                       AppTextField(
+                        key: AddInvestmentKeys.notes,
                         controller: _notesController,
                         focusNode: _notesFocusNode,
                         label: 'Notes (Optional)',
@@ -581,6 +896,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
 
                       // Submit Button
                       GradientButton(
+                        key: AddInvestmentKeys.submit,
                         onPressed: _submit,
                         isLoading: _isLoading,
                         icon: widget.isEditing
@@ -604,19 +920,27 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   }
 
   /// Builds dynamic form fields based on the selected investment type
-  List<Widget> _buildDynamicFields(bool isDark, AppLocalizations l10n) {
+  List<Widget> _buildDynamicFields(
+    bool isDark,
+    AppLocalizations l10n, {
+    bool includeStartDate = true,
+  }) {
     final config = InvestmentFormConfig.forType(_selectedType);
     final fields = <Widget>[];
 
-    // Start Date
-    if (config.showStartDate) {
+    // Start Date (the first investment flow form has its own, above)
+    if (config.showStartDate && includeStartDate) {
       fields.add(_buildStartDatePicker(isDark, l10n));
       fields.add(SizedBox(height: AppSpacing.formFieldSpacing));
     }
 
     // Expected Rate
     if (config.showExpectedRate) {
-      fields.add(_buildExpectedRateField());
+      fields.add(
+        _buildExpectedRateField(
+          hint: _firstInvestmentForm ? _rateHint(l10n) : null,
+        ),
+      );
       fields.add(SizedBox(height: AppSpacing.formFieldSpacing));
     }
 
@@ -967,9 +1291,10 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     HapticFeedback.selectionClick();
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _startDate ?? DateTime.now(),
+      initialDate:
+          _startDate ?? (_firstInvestmentForm ? _today : DateTime.now()),
       firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
+      lastDate: _firstInvestmentForm ? _today : DateTime.now(),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -985,17 +1310,32 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       },
     );
     if (picked != null) {
-      setState(() => _startDate = picked);
+      setState(() {
+        _startDate = picked;
+        _startDatePicked = true;
+      });
       // Auto-calculate maturity date with new start date
       _updateAutoCalculatedMaturityDate();
     }
   }
 
-  Widget _buildExpectedRateField() {
+  /// The hint of the empty rate field on the first investment flow form: the
+  /// typical rate of the type as an example ("e.g. 7"). Null when the type has
+  /// none, which leaves the generic hint.
+  String? _rateHint(AppLocalizations l10n) {
+    final rate = _typicalRateHint;
+    if (rate == null) return null;
+    return l10n.hintExample(
+      rate == rate.roundToDouble() ? rate.toStringAsFixed(0) : rate.toString(),
+    );
+  }
+
+  Widget _buildExpectedRateField({String? hint}) {
     return AppTextField(
       controller: _expectedRateController,
       label: 'Expected Return Rate (% p.a.)',
-      hint: 'e.g. 7.5',
+      hint: hint ?? 'e.g. 7.5',
+      showHintWhenEmpty: _firstInvestmentForm,
       prefixIcon: Icons.percent_rounded,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
