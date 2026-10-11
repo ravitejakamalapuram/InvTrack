@@ -350,7 +350,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                                 shaderCallback: (bounds) =>
                                     AppColors.heroGradient.createShader(bounds),
                                 child: Text(
-                                  'InvTracker',
+                                  'InvTrack',
                                   style: AppTypography.displayLarge.copyWith(
                                     color: Colors.white,
                                     letterSpacing: -1,
