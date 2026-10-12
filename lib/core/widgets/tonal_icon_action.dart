@@ -11,7 +11,9 @@ enum TonalIconActionTone {
   /// On the app bar surface: a 10% tint, solid when selected.
   surface,
 
-  /// On a coloured hero: a 20% black scrim with a white icon.
+  /// On a coloured hero: a 20% black scrim with a white icon; on a hero whose
+  /// colour is given as [TonalIconAction.heroFill], the foreground that reads
+  /// better on it and a 20% scrim of the opposite tone.
   onHero,
 }
 
@@ -40,6 +42,7 @@ class TonalIconAction extends StatelessWidget {
     required this.onPressed,
     this.selected = false,
     this.tone = TonalIconActionTone.surface,
+    this.heroFill,
   });
 
   final IconData icon;
@@ -51,6 +54,12 @@ class TonalIconAction extends StatelessWidget {
   /// Shows the action as switched on (a mode is active, a filter is set).
   final bool selected;
   final TonalIconActionTone tone;
+
+  /// The colour of the hero an [TonalIconActionTone.onHero] action sits on. The
+  /// icon is white or ink, whichever has the higher contrast on it
+  /// ([AppColors.onFill]), and the chip is a 20% scrim of the other tone. Left
+  /// out, the action is a black 20% scrim with a white icon.
+  final Color? heroFill;
 
   /// Key of the visible 36px chip, for tests that measure it.
   static const chipKey = ValueKey<String>('tonal-action-chip');
@@ -76,8 +85,11 @@ class TonalIconAction extends StatelessWidget {
     final Color ink;
     switch (tone) {
       case TonalIconActionTone.onHero:
-        fill = Colors.black.withValues(alpha: 0.2);
-        ink = Colors.white;
+        final hero = heroFill;
+        ink = hero == null ? Colors.white : AppColors.onFill(hero);
+        fill = (ink == Colors.white ? Colors.black : Colors.white).withValues(
+          alpha: 0.2,
+        );
       case TonalIconActionTone.surface:
         if (selected) {
           fill = AppColors.primaryLight;
