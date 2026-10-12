@@ -234,13 +234,22 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       if (!pendingIds.contains(NotificationIds.incomeReminder(investmentId))) {
         continue;
       }
-      final due = DateTime.tryParse(_prefs.getString(key) ?? '');
-      if (due == null) continue;
-      await _recordReminderDue(
-        investmentId,
-        DateTime(due.year, due.month, due.day - 1),
-      );
+      await _moveReminderDueBack(investmentId);
     }
+  }
+
+  /// Moves the recorded due date back a day, so the reminder counts as not
+  /// delivered if the alarm is scheduled again on that due day after 09:00.
+  Future<void> _moveReminderDueBack(String investmentId) async {
+    final due = DateTime.tryParse(
+      _prefs.getString(NotificationPrefsKeys.incomeReminderDue(investmentId)) ??
+          '',
+    );
+    if (due == null) return;
+    await _recordReminderDue(
+      investmentId,
+      DateTime(due.year, due.month, due.day - 1),
+    );
   }
 
   /// Cancel income reminder for a specific investment.
@@ -487,6 +496,9 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     }
 
     final wantedIds = <int>{};
+    // Open investments whose income alarm is not wanted (the payout mode pays
+    // nothing before maturity), by alarm id.
+    final unwantedIncomeIds = <int, String>{};
     for (final investment in investments) {
       if (cancelled()) return;
       if (!investment.isOpen) continue;
@@ -498,6 +510,9 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       }
       if (investment.needsIncomeReminder) {
         wantedIds.add(NotificationIds.incomeReminder(investment.id));
+      } else {
+        unwantedIncomeIds[NotificationIds.incomeReminder(investment.id)] =
+            investment.id;
       }
 
       try {
@@ -535,6 +550,10 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
           NotificationIds.isIncomeReminderId(request.id) ||
           NotificationIds.isMaturityReminderId(request.id);
       if (isInvestmentReminder && !wantedIds.contains(request.id)) {
+        // If the payout mode is corrected to periodic later on the due day,
+        // after 09:00, that day's reminder must still be shown.
+        final unwantedFor = unwantedIncomeIds[request.id];
+        if (unwantedFor != null) await _moveReminderDueBack(unwantedFor);
         await _plugin.cancel(id: request.id);
       }
     }

@@ -205,6 +205,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     // Schedule an income reminder if the investment pays periodic income
     if (investment.needsIncomeReminder) {
       unawaited(_afterSave(() => _scheduleIncomeReminder(investment)));
+    } else {
+      // A retried create with the same id replaces the record, so a reminder
+      // left by the earlier one must not outlive it.
+      unawaited(_afterSave(() => _cancelIncomeReminder(investment.id)));
     }
     // Schedule maturity reminders if maturity date is set
     if (maturityDate != null) {

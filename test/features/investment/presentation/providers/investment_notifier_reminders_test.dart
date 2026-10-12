@@ -189,6 +189,25 @@ void main() {
       },
     );
 
+    test(
+      'a retried create with the same id cancels a reminder left by the record it replaces',
+      () async {
+        await notifier.addInvestment(
+          id: 'inv-retry',
+          name: 'Bank FD',
+          type: InvestmentType.fixedDeposit,
+          incomeFrequency: IncomeFrequency.quarterly,
+          interestPayoutMode: InterestPayoutMode.cumulative,
+          startDate: DateTime(2026, 3, 10),
+          currency: 'INR',
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(notifications.scheduledIncomeReminders, isEmpty);
+        expect(notifications.cancelledIncomeReminders, ['inv-retry']);
+      },
+    );
+
     test('creating an at-maturity FD schedules no income reminder', () async {
       await addFd(InterestPayoutMode.atMaturity);
       await Future<void>.delayed(Duration.zero);
