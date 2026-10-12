@@ -6,7 +6,6 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
@@ -203,56 +202,54 @@ void main() {
       return c;
     }
 
-    test('tries again after a delay and stops once it finishes', () {
-      fakeAsync((async) {
-        final service = _MockSweepService();
-        final results = [false, true];
-        when(service.runOnce).thenAnswer((_) async => results.removeAt(0));
-        final c = retryContainer(service);
+    testWidgets('tries again after a delay and stops once it finishes', (
+      tester,
+    ) async {
+      final service = _MockSweepService();
+      final results = [false, true];
+      when(service.runOnce).thenAnswer((_) async => results.removeAt(0));
+      final c = retryContainer(service);
 
-        c.listen(orphanedValuationSweepProvider, (_, _) {});
-        async.flushMicrotasks();
-        verify(service.runOnce).called(1);
+      c.listen(orphanedValuationSweepProvider, (_, _) {});
+      await tester.pump();
+      verify(service.runOnce).called(1);
 
-        async.elapse(const Duration(seconds: 29));
-        verifyNever(service.runOnce);
+      await tester.pump(const Duration(seconds: 29));
+      verifyNever(service.runOnce);
 
-        async.elapse(const Duration(seconds: 2));
-        verify(service.runOnce).called(1);
+      await tester.pump(const Duration(seconds: 2));
+      verify(service.runOnce).called(1);
 
-        async.elapse(const Duration(hours: 1));
-        verifyNever(service.runOnce);
-      });
+      await tester.pump(const Duration(hours: 1));
+      verifyNever(service.runOnce);
     });
 
-    test('gives up after three retries', () {
-      fakeAsync((async) {
-        final service = _MockSweepService();
-        when(service.runOnce).thenAnswer((_) async => false);
-        final c = retryContainer(service);
+    testWidgets('gives up after three retries', (tester) async {
+      final service = _MockSweepService();
+      when(service.runOnce).thenAnswer((_) async => false);
+      final c = retryContainer(service);
 
-        c.listen(orphanedValuationSweepProvider, (_, _) {});
-        async.flushMicrotasks();
-        async.elapse(const Duration(hours: 1));
+      c.listen(orphanedValuationSweepProvider, (_, _) {});
+      await tester.pump();
+      await tester.pump(const Duration(hours: 1));
 
-        verify(service.runOnce).called(4);
-      });
+      verify(service.runOnce).called(4);
     });
 
-    test('signing out or switching account cancels a pending retry', () {
-      fakeAsync((async) {
-        final service = _MockSweepService();
-        when(service.runOnce).thenAnswer((_) async => false);
-        final c = retryContainer(service);
-        c.listen(orphanedValuationSweepProvider, (_, _) {});
-        async.flushMicrotasks();
-        verify(service.runOnce).called(1);
+    testWidgets('signing out or switching account cancels a pending retry', (
+      tester,
+    ) async {
+      final service = _MockSweepService();
+      when(service.runOnce).thenAnswer((_) async => false);
+      final c = retryContainer(service);
+      c.listen(orphanedValuationSweepProvider, (_, _) {});
+      await tester.pump();
+      verify(service.runOnce).called(1);
 
-        c.dispose();
-        async.elapse(const Duration(hours: 1));
+      c.dispose();
+      await tester.pump(const Duration(hours: 1));
 
-        verifyNever(service.runOnce);
-      });
+      verifyNever(service.runOnce);
     });
   });
 }
