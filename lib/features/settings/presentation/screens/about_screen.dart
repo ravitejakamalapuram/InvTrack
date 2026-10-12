@@ -52,13 +52,16 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     // Haptic feedback
     HapticFeedback.lightImpact();
 
-    // Reset timer
-    _resetTimer?.cancel();
-    _resetTimer = Timer(_tapWindow, () {
-      if (mounted) {
-        setState(() => _tapCount = 0);
-      }
-    });
+    // One window for all the taps: it starts on the first tap and is not
+    // restarted by the later ones.
+    if (_tapCount == 1) {
+      _resetTimer?.cancel();
+      _resetTimer = Timer(_tapWindow, () {
+        if (mounted) {
+          setState(() => _tapCount = 0);
+        }
+      });
+    }
 
     // Check if activated
     if (_tapCount >= _requiredTaps) {

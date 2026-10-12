@@ -138,6 +138,19 @@ void main() {
       await tester.pump(const Duration(seconds: 4));
     });
 
+    testWidgets('five slow taps, each under 3 s apart but over 3 s in all, '
+        'unlock nothing', (tester) async {
+      final c = await pumpAbout(tester);
+
+      for (var i = 0; i < 5; i++) {
+        await tester.tap(find.text(_versionText), warnIfMissed: false);
+        await tester.pump(const Duration(milliseconds: 2000));
+      }
+
+      expect(c.read(featureFlagUnlockProvider), isFalse);
+      await tester.pump(const Duration(seconds: 4));
+    });
+
     testWidgets('sends no analytics event and no log for the unlock', (
       tester,
     ) async {
