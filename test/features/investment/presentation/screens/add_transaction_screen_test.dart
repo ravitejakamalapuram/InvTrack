@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -38,6 +40,25 @@ class _RecordingInvestmentNotifier extends InvestmentNotifier {
     required double amount,
     required DateTime date,
     String? notes,
+    String? currency,
+  }) async {
+    saved.add(_SavedCashFlow(amount, currency));
+  }
+}
+
+/// Also records edits, so a test can tell an edit was saved.
+class _RecordingEditNotifier extends _RecordingInvestmentNotifier {
+  _RecordingEditNotifier(super.saved);
+
+  @override
+  Future<void> updateCashFlow({
+    required String id,
+    required String investmentId,
+    required CashFlowType type,
+    required double amount,
+    required DateTime date,
+    String? notes,
+    required DateTime createdAt,
     String? currency,
   }) async {
     saved.add(_SavedCashFlow(amount, currency));
@@ -464,6 +485,276 @@ void main() {
       expect(find.text('Failed to update transaction'), findsOneWidget);
       expect(repo.cashFlows.single.currency, '');
       expect(repo.cashFlows.single.amount, 500);
+    });
+  });
+  // #919: a reminder tapped from cached data can open Add Cash Flow for an
+  // investment that was closed on another device. Once the live status says
+  // closed, the screen must say so and refuse to add new income.
+  group('AddTransactionScreen closed investment', () {
+    const closedMessage = 'This investment is closed';
+
+    InvestmentEntity investment(
+      InvestmentStatus status, {
+      String id = 'inv-fd',
+    }) => InvestmentEntity(
+      id: id,
+      name: 'Bank FD',
+      type: InvestmentType.fixedDeposit,
+      status: status,
+      createdAt: DateTime(2026, 4, 1),
+      updatedAt: DateTime(2026, 4, 1),
+      currency: 'INR',
+    );
+
+    final existingCashFlow = CashFlowEntity(
+      id: 'cf-1',
+      investmentId: 'inv-fd',
+      type: CashFlowType.income,
+      amount: 1500.50,
+      currency: 'INR',
+      date: DateTime(2026, 5, 1),
+      createdAt: DateTime(2026, 5, 1),
+    );
+
+    Future<void> pump(
+      WidgetTester tester, {
+      required Stream<List<InvestmentEntity>> investments,
+      required List<_SavedCashFlow> saved,
+      CashFlowEntity? cashFlowToEdit,
+    }) async {
+      tester.view.physicalSize = const Size(1080, 4000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final router = GoRouter(
+        initialLocation: '/add',
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const SizedBox()),
+          GoRoute(
+            path: '/add',
+            builder: (_, _) => AddTransactionScreen(
+              investmentId: 'inv-fd',
+              initialType: CashFlowType.income,
+              cashFlowToEdit: cashFlowToEdit,
+            ),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currencyCodeProvider.overrideWithValue('INR'),
+            isAuthenticatedProvider.overrideWithValue(true),
+            allInvestmentsProvider.overrideWith((ref) => investments),
+            investmentByIdProvider(
+              'inv-fd',
+            ).overrideWith((ref) async => investment(InvestmentStatus.open)),
+            investmentNotifierProvider.overrideWith(
+              () => _RecordingEditNotifier(saved),
+            ),
+          ],
+          child: MaterialApp.router(
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Finder saveButton() =>
+        find.widgetWithText(ElevatedButton, 'Save Cash Flow');
+
+    bool saveEnabled(WidgetTester tester) =>
+        tester.widget<ElevatedButton>(saveButton()).onPressed != null;
+
+    Future<void> enterAmount(WidgetTester tester, String text) async {
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Amount').first,
+        text,
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('an open investment still saves new income', (tester) async {
+      final saved = <_SavedCashFlow>[];
+      final investments = StreamController<List<InvestmentEntity>>();
+      addTearDown(() => unawaited(investments.close()));
+      await pump(tester, investments: investments.stream, saved: saved);
+      investments.add([investment(InvestmentStatus.open)]);
+      await tester.pumpAndSettle();
+
+      expect(find.text(closedMessage), findsNothing);
+      expect(saveEnabled(tester), isTrue);
+
+      await enterAmount(tester, '1500.50');
+      await tester.tap(saveButton());
+      await tester.pumpAndSettle();
+
+      expect(saved, hasLength(1));
+      expect(saved.single.amount, 1500.50);
+      expect(saved.single.currency, 'INR');
+    });
+
+    testWidgets('an unknown status (nothing emitted yet) does not block', (
+      tester,
+    ) async {
+      final saved = <_SavedCashFlow>[];
+      final investments = StreamController<List<InvestmentEntity>>();
+      addTearDown(() => unawaited(investments.close()));
+      await pump(tester, investments: investments.stream, saved: saved);
+
+      expect(find.text(closedMessage), findsNothing);
+      expect(saveEnabled(tester), isTrue);
+    });
+
+    testWidgets('closing the investment while the form is open blocks saving', (
+      tester,
+    ) async {
+      final saved = <_SavedCashFlow>[];
+      final investments = StreamController<List<InvestmentEntity>>();
+      addTearDown(() => unawaited(investments.close()));
+      await pump(tester, investments: investments.stream, saved: saved);
+      investments.add([investment(InvestmentStatus.open)]);
+      await tester.pumpAndSettle();
+      await enterAmount(tester, '1500.50');
+      expect(saveEnabled(tester), isTrue);
+
+      // The server snapshot arrives and says the investment was closed.
+      investments.add([investment(InvestmentStatus.closed)]);
+      await tester.pumpAndSettle();
+
+      expect(find.text(closedMessage), findsOneWidget);
+      expect(find.bySemanticsLabel(closedMessage), findsOneWidget);
+      expect(saveEnabled(tester), isFalse);
+
+      await tester.tap(saveButton(), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(saved, isEmpty);
+    });
+
+    testWidgets('an investment that is already closed shows the message', (
+      tester,
+    ) async {
+      final saved = <_SavedCashFlow>[];
+      await pump(
+        tester,
+        investments: Stream.value([investment(InvestmentStatus.closed)]),
+        saved: saved,
+      );
+
+      expect(find.text(closedMessage), findsOneWidget);
+      expect(saveEnabled(tester), isFalse);
+    });
+
+    testWidgets('reopening the investment unblocks saving', (tester) async {
+      final saved = <_SavedCashFlow>[];
+      final investments = StreamController<List<InvestmentEntity>>();
+      addTearDown(() => unawaited(investments.close()));
+      await pump(tester, investments: investments.stream, saved: saved);
+      investments.add([investment(InvestmentStatus.closed)]);
+      await tester.pumpAndSettle();
+      expect(saveEnabled(tester), isFalse);
+
+      investments.add([investment(InvestmentStatus.open)]);
+      await tester.pumpAndSettle();
+
+      expect(find.text(closedMessage), findsNothing);
+      expect(saveEnabled(tester), isTrue);
+    });
+
+    testWidgets('a save started from a stale tap handler is refused', (
+      tester,
+    ) async {
+      final saved = <_SavedCashFlow>[];
+      final investments = StreamController<List<InvestmentEntity>>();
+      addTearDown(() => unawaited(investments.close()));
+      await pump(tester, investments: investments.stream, saved: saved);
+      investments.add([investment(InvestmentStatus.open)]);
+      await tester.pumpAndSettle();
+      await enterAmount(tester, '1500.50');
+      final staleOnPressed = tester
+          .widget<ElevatedButton>(saveButton())
+          .onPressed!;
+
+      investments.add([investment(InvestmentStatus.closed)]);
+      await tester.pumpAndSettle();
+      staleOnPressed();
+      await tester.pumpAndSettle();
+
+      expect(saved, isEmpty);
+    });
+
+    testWidgets('another investment being closed does not block this one', (
+      tester,
+    ) async {
+      final saved = <_SavedCashFlow>[];
+      await pump(
+        tester,
+        investments: Stream.value([
+          investment(InvestmentStatus.closed, id: 'inv-other'),
+          investment(InvestmentStatus.open),
+        ]),
+        saved: saved,
+      );
+
+      expect(find.text(closedMessage), findsNothing);
+      expect(saveEnabled(tester), isTrue);
+    });
+
+    testWidgets('another investment being open does not hide this one closed', (
+      tester,
+    ) async {
+      final saved = <_SavedCashFlow>[];
+      await pump(
+        tester,
+        investments: Stream.value([
+          investment(InvestmentStatus.open, id: 'inv-other'),
+          investment(InvestmentStatus.closed),
+        ]),
+        saved: saved,
+      );
+
+      expect(find.text(closedMessage), findsOneWidget);
+      expect(saveEnabled(tester), isFalse);
+    });
+
+    testWidgets('the closed message is announced as a live region', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pump(
+        tester,
+        investments: Stream.value([investment(InvestmentStatus.closed)]),
+        saved: <_SavedCashFlow>[],
+      );
+
+      expect(
+        tester.getSemantics(find.bySemanticsLabel(closedMessage)),
+        matchesSemantics(label: closedMessage, isLiveRegion: true),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('editing an existing cash flow stays allowed when closed', (
+      tester,
+    ) async {
+      final saved = <_SavedCashFlow>[];
+      await pump(
+        tester,
+        investments: Stream.value([investment(InvestmentStatus.closed)]),
+        saved: saved,
+        cashFlowToEdit: existingCashFlow,
+      );
+
+      expect(find.text(closedMessage), findsNothing);
+      expect(saveEnabled(tester), isTrue);
+
+      await tester.tap(saveButton());
+      await tester.pumpAndSettle();
+      expect(saved, hasLength(1));
+      expect(saved.single.amount, 1500.50);
     });
   });
 }

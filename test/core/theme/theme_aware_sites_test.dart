@@ -73,6 +73,9 @@ const _constants = [
   // is `accentDark` and `warningDark`.
   'accentTextLight',
   'warningTextLight',
+  // The grey of the word CLOSED on the investment card. Light only: in dark
+  // the text is `Colors.grey`.
+  'closedTextLight',
   // The old, brighter green and red. They are kept as tint sources, so they
   // may be painted translucent, or in a branch of a theme check; never bare.
   'successTintLight',
@@ -129,6 +132,10 @@ const _bright = <String, int>{
   'lib/features/investment/presentation/widgets/investment_card.dart': 3,
   'lib/features/investment/presentation/widgets/investment_detail_stats_section.dart':
       3,
+  // The tint behind the closed-investment banner (its icon takes the text
+  // colour).
+  'lib/features/investment/presentation/screens/add_transaction_screen.dart':
+      1,
   // A gradient behind a white icon.
   'lib/features/onboarding/presentation/screens/onboarding_screen.dart': 1,
   // The tile's tint source (its icon takes the text colour).
