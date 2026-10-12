@@ -84,7 +84,11 @@ void main() {
   });
 
   group('opened from About', () {
-    Future<void> openHelp(WidgetTester tester, {required bool flag}) async {
+    Future<void> openHelp(
+      WidgetTester tester, {
+      required bool flag,
+      bool portfolioHealthFlag = false,
+    }) async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       await tester.pumpWidget(
@@ -93,6 +97,9 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             developerToolsAvailableProvider.overrideWithValue(false),
             isIncomeGuardianEnabledProvider.overrideWithValue(flag),
+            isPortfolioHealthEnabledProvider.overrideWithValue(
+              portfolioHealthFlag,
+            ),
             packageInfoProvider.overrideWith((ref) async => _packageInfo),
           ],
           child: _app(const AboutScreen()),
@@ -112,6 +119,22 @@ void main() {
     testWidgets('flag off: no section', (tester) async {
       await openHelp(tester, flag: false);
       _expectSection(visible: false);
+    });
+
+    // A105 and A129 both add a flag-driven parameter to the same screen. Each
+    // flag must reach its own parameter, independent of the other.
+    testWidgets('each flag drives only its own FAQ', (tester) async {
+      Finder portfolioHealthHint() =>
+          find.text(_l10n.whereToFindPortfolioHealth, skipOffstage: false);
+
+      await openHelp(tester, flag: true, portfolioHealthFlag: false);
+      _expectSection(visible: true);
+      expect(portfolioHealthHint(), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      await openHelp(tester, flag: false, portfolioHealthFlag: true);
+      _expectSection(visible: false);
+      expect(portfolioHealthHint(), findsOneWidget);
     });
   });
 }
