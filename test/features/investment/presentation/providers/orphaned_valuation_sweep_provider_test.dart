@@ -6,9 +6,11 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/features/investment/data/services/orphaned_valuation_cleanup_service.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/valuation_repository.dart';
@@ -26,6 +28,9 @@ class _MockDoc extends Mock
 class _MockInvestmentRepository extends Mock implements InvestmentRepository {}
 
 class _MockValuationRepository extends Mock implements ValuationRepository {}
+
+class _MockSweepService extends Mock
+    implements OrphanedValuationCleanupService {}
 
 class _Flag extends Notifier<bool> {
   @override
@@ -181,5 +186,73 @@ void main() {
     await pumpEventQueue();
 
     expect(idListens, 2);
+  });
+
+  // A sweep that failed (the server was out of reach) is tried again later in
+  // the same session instead of waiting for the next app start.
+  group('after a failed sweep', () {
+    ProviderContainer retryContainer(_MockSweepService service) {
+      final c = ProviderContainer(
+        overrides: [
+          valuationSnapshotsActiveProvider.overrideWithValue(true),
+          isAuthenticatedProvider.overrideWithValue(true),
+          orphanedValuationCleanupServiceProvider.overrideWithValue(service),
+        ],
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    test('tries again after a delay and stops once it finishes', () {
+      fakeAsync((async) {
+        final service = _MockSweepService();
+        final results = [false, true];
+        when(service.runOnce).thenAnswer((_) async => results.removeAt(0));
+        final c = retryContainer(service);
+
+        c.listen(orphanedValuationSweepProvider, (_, _) {});
+        async.flushMicrotasks();
+        verify(service.runOnce).called(1);
+
+        async.elapse(const Duration(seconds: 29));
+        verifyNever(service.runOnce);
+
+        async.elapse(const Duration(seconds: 2));
+        verify(service.runOnce).called(1);
+
+        async.elapse(const Duration(hours: 1));
+        verifyNever(service.runOnce);
+      });
+    });
+
+    test('gives up after three retries', () {
+      fakeAsync((async) {
+        final service = _MockSweepService();
+        when(service.runOnce).thenAnswer((_) async => false);
+        final c = retryContainer(service);
+
+        c.listen(orphanedValuationSweepProvider, (_, _) {});
+        async.flushMicrotasks();
+        async.elapse(const Duration(hours: 1));
+
+        verify(service.runOnce).called(4);
+      });
+    });
+
+    test('signing out or switching account cancels a pending retry', () {
+      fakeAsync((async) {
+        final service = _MockSweepService();
+        when(service.runOnce).thenAnswer((_) async => false);
+        final c = retryContainer(service);
+        c.listen(orphanedValuationSweepProvider, (_, _) {});
+        async.flushMicrotasks();
+        verify(service.runOnce).called(1);
+
+        c.dispose();
+        async.elapse(const Duration(hours: 1));
+
+        verifyNever(service.runOnce);
+      });
+    });
   });
 }

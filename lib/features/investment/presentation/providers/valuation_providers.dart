@@ -133,8 +133,36 @@ final orphanedValuationSweepProvider = Provider<void>((ref) {
   if (!ref.watch(valuationSnapshotsActiveProvider)) return;
   if (!ref.watch(isAuthenticatedProvider)) return;
   final service = ref.watch(orphanedValuationCleanupServiceProvider);
-  if (service != null) unawaited(service.runOnce());
+  if (service == null) return;
+
+  // A sweep that failed (the server was out of reach) is tried again a few
+  // times later in the session. Sign-out, an account switch or the flag going
+  // off disposes this provider, which ends any pending retry.
+  var disposed = false;
+  Timer? retryTimer;
+  ref.onDispose(() {
+    disposed = true;
+    retryTimer?.cancel();
+  });
+  Future<void> attempt(int retry) async {
+    if (await service.runOnce() || disposed) return;
+    if (retry >= _orphanedValuationSweepRetryDelays.length) return;
+    retryTimer = Timer(
+      _orphanedValuationSweepRetryDelays[retry],
+      () => unawaited(attempt(retry + 1)),
+    );
+  }
+
+  unawaited(attempt(0));
 });
+
+/// Waits between the retries of a failed sweep; after the last one it waits
+/// for the next app start.
+const _orphanedValuationSweepRetryDelays = [
+  Duration(seconds: 30),
+  Duration(minutes: 2),
+  Duration(minutes: 10),
+];
 
 /// The ids of snapshots this device edited that another device's write has
 /// since replaced on the server (the last write to reach the server wins, so
