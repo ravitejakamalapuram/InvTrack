@@ -2621,6 +2621,22 @@
     "description": "Diagnostics section title"
   },
 
+  "featureFlagsScreenTitle": "Feature flags",
+  "@featureFlagsScreenTitle": {
+    "description": "Title of the screen with switches for features that are not released yet, and of the Settings entry that opens it"
+  },
+  "featureFlagsTileSubtitle": "Try features that are not released yet",
+  "@featureFlagsTileSubtitle": {
+    "description": "Subtitle of the Settings entry that opens the feature flags screen"
+  },
+  "featureFlagsUnlocked": "Feature flags unlocked",
+  "@featureFlagsUnlocked": {
+    "description": "Toast shown after tapping the app version five times unlocks the feature flags screen"
+  },
+  "featureFlagsLocked": "Feature flags locked",
+  "@featureFlagsLocked": {
+    "description": "Toast shown when tapping the app version five times locks the feature flags screen again"
+  },
   "developer": "Developer",
   "@developer": {
     "description": "Developer section title"
@@ -2641,7 +2657,7 @@
     "description": "Success message after clearing sample data"
   },
 
-  "tapVersionToEnable": "Tap version 7 times to enable debug mode",
+  "tapVersionToEnable": "Tap version 5 times to enable debug mode",
   "@tapVersionToEnable": {
     "description": "Hint for enabling debug mode"
   },

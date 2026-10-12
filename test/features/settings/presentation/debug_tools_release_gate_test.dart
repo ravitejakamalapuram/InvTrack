@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
+import 'package:inv_tracker/core/providers/feature_flag_unlock_provider.dart';
 import 'package:inv_tracker/core/providers/package_info_provider.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
@@ -35,7 +36,7 @@ class _TestSecurityNotifier extends SecurityNotifier {
 
 const _debugPrefKey = 'debug_mode_enabled';
 const _versionText = 'Version 1.2.3 (45)';
-const _tapHint = 'Tap version 7 times to enable debug mode';
+const _tapHint = 'Tap version 5 times to enable debug mode';
 
 final _packageInfo = PackageInfo(
   appName: 'InvTrack',
@@ -106,7 +107,7 @@ void main() {
     });
   });
 
-  group('About: 7-tap unlock', () {
+  group('About: 5-tap unlock', () {
     Future<ProviderContainer> pumpAbout(
       WidgetTester tester, {
       required bool toolsAvailable,
@@ -130,28 +131,31 @@ void main() {
       return c;
     }
 
-    Future<void> tapVersion7Times(WidgetTester tester) async {
-      for (var i = 0; i < 7; i++) {
+    Future<void> tapVersion5Times(WidgetTester tester) async {
+      for (var i = 0; i < 5; i++) {
         await tester.tap(find.text(_versionText), warnIfMissed: false);
         await tester.pump(const Duration(milliseconds: 50));
       }
       await tester.pump();
     }
 
-    testWidgets('release: 7 taps do nothing and nothing hints at them', (
+    testWidgets('release: 5 taps open no debug mode and nothing hints at them', (
       tester,
     ) async {
       final handle = tester.ensureSemantics();
       final c = await pumpAbout(tester, toolsAvailable: false);
 
-      await tapVersion7Times(tester);
+      await tapVersion5Times(tester);
 
+      // Only the feature-flag screen unlocks (#1012); debug mode stays off.
       expect(c.read(debugModeProvider), isFalse);
       expect(prefs.getBool(_debugPrefKey), isNull);
       expect(find.text('🛠️ Debug mode enabled'), findsNothing);
+      expect(c.read(featureFlagUnlockProvider), isTrue);
+      expect(find.text('Feature flags unlocked'), findsOneWidget);
 
       // The version is plain text: no button role, no "tap 7 times" hint.
-      expect(find.bySemanticsLabel(RegExp('7 times')), findsNothing);
+      expect(find.bySemanticsLabel(RegExp('5 times')), findsNothing);
       final versionNode = tester.getSemantics(find.text(_versionText));
       expect(versionNode.label, contains(_versionText));
       expect(versionNode, containsSemantics(isButton: false));
@@ -161,14 +165,14 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('debug build: 7 taps still enable debug mode (control)', (
+    testWidgets('debug build: 5 taps enable debug mode (control)', (
       tester,
     ) async {
       final handle = tester.ensureSemantics();
       final c = await pumpAbout(tester, toolsAvailable: true);
-      expect(find.bySemanticsLabel(RegExp('7 times')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('5 times')), findsOneWidget);
 
-      await tapVersion7Times(tester);
+      await tapVersion5Times(tester);
 
       expect(c.read(debugModeProvider), isTrue);
       expect(find.text('🛠️ Debug mode enabled'), findsOneWidget);

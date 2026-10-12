@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
+import 'package:inv_tracker/core/providers/feature_flag_unlock_provider.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/package_info_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
@@ -36,7 +37,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
   int _tapCount = 0;
   Timer? _resetTimer;
 
-  static const _requiredTaps = 7;
+  static const _requiredTaps = 5;
   static const _tapWindow = Duration(seconds: 3);
 
   @override
@@ -65,9 +66,30 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       setState(() => _tapCount = 0);
       _resetTimer?.cancel();
 
-      // Activate debug mode with proper error handling
-      await _activateDebugMode();
+      // Debug builds toggle debug mode. A release build only unlocks or
+      // locks the feature-flag screen (#1012); it has no other developer tool.
+      if (ref.read(developerToolsAvailableProvider)) {
+        await _activateDebugMode();
+      } else {
+        _toggleFeatureFlagUnlock();
+      }
     }
+  }
+
+  void _toggleFeatureFlagUnlock() {
+    final l10n = AppLocalizations.of(context);
+    ref.read(featureFlagUnlockProvider.notifier).toggle();
+    HapticFeedback.mediumImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ref.read(featureFlagUnlockProvider)
+              ? l10n.featureFlagsUnlocked
+              : l10n.featureFlagsLocked,
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _activateDebugMode() async {
@@ -279,7 +301,8 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
     final packageInfoAsync = ref.watch(packageInfoProvider);
-    // Release builds have no debug tools, so no 7-tap unlock (A35).
+    // Debug builds show the tap hint to screen readers. A release build has
+    // the same five-tap gesture (#1012) but announces nothing about it.
     final toolsAvailable = ref.watch(developerToolsAvailableProvider);
 
     return Scaffold(
@@ -333,7 +356,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                     excludeSemantics: true,
                     onTap: toolsAvailable ? _handleVersionTap : null,
                     child: GestureDetector(
-                      onTap: toolsAvailable ? _handleVersionTap : null,
+                      onTap: _handleVersionTap,
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(
                           minWidth: 44,
