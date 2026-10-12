@@ -23,6 +23,7 @@ import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
+import 'package:inv_tracker/features/portfolio_health/presentation/ui_extensions/score_tier_ui.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/widgets/health_score_trend_chart.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/widgets/score_improvement_badge.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -214,7 +215,8 @@ class _PortfolioHealthDetailsScreenState
 
   Widget _buildOverallScoreCard(bool isDark, PortfolioHealthScore score) {
     final tier = score.tier;
-    final color = _getTierColor(tier, isDark);
+    final color = tier.textColor(isDark);
+    final tint = tier.tintColor(isDark);
 
     return GlassCard(
       child: Column(
@@ -227,8 +229,8 @@ class _PortfolioHealthDetailsScreenState
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  color.withValues(alpha: 0.1),
-                  color.withValues(alpha: 0.0),
+                  tint.withValues(alpha: 0.1),
+                  tint.withValues(alpha: 0.0),
                 ],
               ),
               border: Border.all(color: color, width: 8),
@@ -249,7 +251,7 @@ class _PortfolioHealthDetailsScreenState
                     '/ 100',
                     style: TextStyle(
                       fontSize: 16,
-                      color: color.withValues(alpha: 0.7),
+                      color: color,
                     ),
                   ),
                 ],
@@ -353,7 +355,9 @@ class _PortfolioHealthDetailsScreenState
     ComponentScore component,
     IconData icon,
   ) {
-    final color = _getScoreColor(component.displayScore.toDouble(), isDark);
+    final tier = ScoreTier.fromScore(component.displayScore.toDouble());
+    final color = tier.textColor(isDark);
+    final tint = tier.tintColor(isDark);
 
     return GlassCard(
       child: Column(
@@ -393,7 +397,9 @@ class _PortfolioHealthDetailsScreenState
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
+                  // 10%, not 20%: the number reads at 4.5:1 or more on it in
+                  // every tier and theme.
+                  color: tint.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -413,7 +419,7 @@ class _PortfolioHealthDetailsScreenState
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: component.score / 100,
-              backgroundColor: color.withValues(alpha: 0.1),
+              backgroundColor: tint.withValues(alpha: 0.1),
               valueColor: AlwaysStoppedAnimation(color),
               minHeight: 8,
             ),
@@ -460,6 +466,7 @@ class _PortfolioHealthDetailsScreenState
   }
 
   Widget _buildSuggestionCard(bool isDark, int number, String suggestion) {
+    final fill = isDark ? AppColors.accentDark : AppColors.accentLight;
     return GlassCard(
       child: Row(
         children: [
@@ -468,13 +475,15 @@ class _PortfolioHealthDetailsScreenState
             height: 32,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isDark ? AppColors.accentDark : AppColors.accentLight,
+              color: fill,
             ),
             child: Center(
               child: Text(
                 number.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  // White on the bright blue is 2.77:1, and on the dark blue
+                  // 2.0:1; whichever of white and ink reads better on it.
+                  color: AppColors.onFill(fill),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -494,31 +503,6 @@ class _PortfolioHealthDetailsScreenState
         ],
       ),
     );
-  }
-
-  Color _getTierColor(ScoreTier tier, bool isDark) {
-    switch (tier) {
-      case ScoreTier.excellent:
-        return isDark ? const Color(0xFF10B981) : const Color(0xFF059669);
-      case ScoreTier.good:
-        return isDark ? const Color(0xFFFBBF24) : const Color(0xFFF59E0B);
-      case ScoreTier.fair:
-        return isDark ? const Color(0xFFFB923C) : const Color(0xFFF97316);
-      case ScoreTier.poor:
-        return isDark ? const Color(0xFFEF4444) : const Color(0xFFDC2626);
-    }
-  }
-
-  Color _getScoreColor(double score, bool isDark) {
-    if (score >= 80) {
-      return isDark ? const Color(0xFF10B981) : const Color(0xFF059669);
-    } else if (score >= 60) {
-      return isDark ? const Color(0xFFFBBF24) : const Color(0xFFF59E0B);
-    } else if (score >= 40) {
-      return isDark ? const Color(0xFFFB923C) : const Color(0xFFF97316);
-    } else {
-      return isDark ? const Color(0xFFEF4444) : const Color(0xFFDC2626);
-    }
   }
 
   Future<void> _shareScore(

@@ -78,7 +78,7 @@ const _allowlistMax = 50;
 
 /// The size of the pair table. A fixing PR that retires a pair or drops a
 /// ground it cannot fix changes this literal, so the change is in the diff.
-const _pairCount = 238;
+const _pairCount = 262;
 
 /// Files that can never be the measurement of a widget pair: the helper's own
 /// test, this guard and the table. Each mentions pair ids or `contrastRatio`.
@@ -220,6 +220,30 @@ void main() {
         'gradient-button-tail-dark@page',
         'quick-stat-label-light@card',
         'quick-stat-subtitle-dark@card',
+        'health-tier-excellent-light@card',
+        'health-tier-excellent-dark@card',
+        'health-tier-good-light@card',
+        'health-tier-good-dark@card',
+        'health-tier-fair-light@card',
+        'health-tier-fair-dark@card',
+        'health-tier-poor-light@card',
+        'health-tier-poor-dark@card',
+        'health-badge-excellent-light@tint10',
+        'health-badge-excellent-dark@tint10',
+        'health-badge-good-light@tint10',
+        'health-badge-good-dark@tint10',
+        'health-badge-fair-light@tint10',
+        'health-badge-fair-dark@tint10',
+        'health-badge-poor-light@tint10',
+        'health-badge-poor-dark@tint10',
+        'health-suggestion-digit-light@fill',
+        'health-suggestion-digit-dark@fill',
+        'health-chart-lines-light@card',
+        'health-chart-lines-dark@card',
+        'score-change-positive-light@tint10',
+        'score-change-positive-dark@tint10',
+        'score-change-negative-light@tint10',
+        'score-change-negative-dark@tint10',
         'goal-status-not-started-light@card',
         'goal-status-not-started-dark@card',
         'goal-status-in-progress-light@card',
