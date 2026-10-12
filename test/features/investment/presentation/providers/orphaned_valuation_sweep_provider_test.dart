@@ -236,20 +236,57 @@ void main() {
       verify(service.runOnce).called(4);
     });
 
-    testWidgets('signing out or switching account cancels a pending retry', (
-      tester,
-    ) async {
+    // The container stays mounted and the account id changes, so the real
+    // provider rebuild (not a container dispose) has to end the pending retry.
+    ProviderContainer accountContainer(Map<String, _MockSweepService> byUid) {
+      final c = ProviderContainer(
+        overrides: [
+          valuationSnapshotsActiveProvider.overrideWithValue(true),
+          isAuthenticatedProvider.overrideWith(
+            (ref) => ref.watch(_uidProvider) != null,
+          ),
+          orphanedValuationCleanupServiceProvider.overrideWith((ref) {
+            final uid = ref.watch(_uidProvider);
+            return uid == null ? null : byUid[uid];
+          }),
+        ],
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    testWidgets('signing out cancels a pending retry', (tester) async {
       final service = _MockSweepService();
       when(service.runOnce).thenAnswer((_) async => false);
-      final c = retryContainer(service);
+      final c = accountContainer({'u1': service});
       c.listen(orphanedValuationSweepProvider, (_, _) {});
       await tester.pump();
       verify(service.runOnce).called(1);
 
-      c.dispose();
+      c.read(_uidProvider.notifier).set(null);
       await tester.pump(const Duration(hours: 1));
 
       verifyNever(service.runOnce);
+    });
+
+    testWidgets('switching account cancels the old retry and sweeps for the '
+        'new account', (tester) async {
+      final oldService = _MockSweepService();
+      final newService = _MockSweepService();
+      when(oldService.runOnce).thenAnswer((_) async => false);
+      when(newService.runOnce).thenAnswer((_) async => true);
+      final c = accountContainer({'u1': oldService, 'u2': newService});
+      c.listen(orphanedValuationSweepProvider, (_, _) {});
+      await tester.pump();
+      verify(oldService.runOnce).called(1);
+
+      c.read(_uidProvider.notifier).set('u2');
+      await tester.pump(const Duration(seconds: 1));
+      verify(newService.runOnce).called(1);
+
+      await tester.pump(const Duration(hours: 1));
+      verifyNever(oldService.runOnce);
+      verifyNever(newService.runOnce);
     });
   });
 }
