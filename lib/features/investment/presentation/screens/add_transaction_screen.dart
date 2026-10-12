@@ -579,6 +579,10 @@ class _ClosedInvestmentBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final warning = isDark ? AppColors.warningDark : AppColors.warningLight;
+    // The icon is a graphic on a pale tint: light mode uses the deeper amber.
+    final warningIcon = isDark
+        ? AppColors.warningDark
+        : AppColors.warningTextLight;
     return Semantics(
       container: true,
       liveRegion: true,
@@ -593,7 +597,7 @@ class _ClosedInvestmentBanner extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(Icons.lock_outline_rounded, color: warning),
+              Icon(Icons.lock_outline_rounded, color: warningIcon),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
