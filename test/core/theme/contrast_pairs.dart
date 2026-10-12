@@ -127,6 +127,11 @@ const _fireInsightTest =
     'test/features/fire_number/presentation/screens/fire_dashboard_hero_colour_test.dart';
 const _feedbackTest = 'test/core/utils/app_feedback_theme_contrast_test.dart';
 
+// PR 8: the test that pumps the currency badge, the gradient button and the
+// quick stat card.
+const _badgeStatTest =
+    'test/core/widgets/quick_stat_and_badge_contrast_test.dart';
+
 // PR 6: the tests that pump a blue or amber label or icon on its tint.
 const _overviewEmptyTest =
     'test/features/overview/presentation/widgets/overview_empty_state_theme_contrast_test.dart';
@@ -761,11 +766,13 @@ List<ContrastPair> _build() {
       'currency-badge-compact-light@tint20',
       rows: [54],
       audit: 4.45,
+      widgetTest: _badgeStatTest,
     ),
     ContrastPair.widget(
       'gradient-button-tail-light@page',
       rows: [55],
       audit: 4.04,
+      widgetTest: _badgeStatTest,
     ),
     ContrastPair.widget(
       'hero-secondary-dark-50@stop-312e81',
@@ -864,8 +871,14 @@ List<ContrastPair> _build() {
       'quick-stat-subtitle-light@card',
       rows: [74],
       audit: 2.68,
+      widgetTest: _badgeStatTest,
     ),
-    ContrastPair.widget('quick-stat-label-dark@card', rows: [75], audit: 3.89),
+    ContrastPair.widget(
+      'quick-stat-label-dark@card',
+      rows: [75],
+      audit: 3.89,
+      widgetTest: _badgeStatTest,
+    ),
 
     // ---- Controls: pass today, must keep passing ----
     ContrastPair.control(
@@ -1096,5 +1109,21 @@ List<ContrastPair> _build() {
             ground: type.tintColor(isDark ? Brightness.dark : Brightness.light),
           ),
     ],
+    // ---- PR 8: hard-coded colours, pumped ----
+    // The audit had no row for these. [audit] is the ratio before PR 8.
+    for (final (id, audit, test, min) in [
+      ('currency-badge-compact-dark@tint20', 4.08, _badgeStatTest, kMinText),
+      ('gradient-button-tail-dark@page', 7.94, _badgeStatTest, kMinText),
+      ('quick-stat-label-light@card', 4.61, _badgeStatTest, kMinText),
+      ('quick-stat-subtitle-dark@card', 6.69, _badgeStatTest, kMinText),
+    ])
+      ContrastPair.widget(
+        id,
+        rows: const [],
+        audit: audit,
+        min: min,
+        addedByPlan: true,
+        widgetTest: test,
+      ),
   ];
 }

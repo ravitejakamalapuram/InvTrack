@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
+import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 
@@ -36,6 +37,7 @@ class QuickStatCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isPrivacyMode = ref.watch(privacyModeProvider);
     final shouldMask = isSensitive && isPrivacyMode;
 
@@ -71,7 +73,12 @@ class QuickStatCard extends ConsumerWidget {
                 children: [
                   Text(
                     label,
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    style: TextStyle(
+                      color: isDark
+                          ? AppColors.neutral400Dark
+                          : AppColors.neutral500Light,
+                      fontSize: 12,
+                    ),
                   ),
                   shouldMask
                       ? MaskedAmountText(
@@ -94,7 +101,12 @@ class QuickStatCard extends ConsumerWidget {
                       opacity: shouldMask ? 0.0 : 1.0,
                       child: Text(
                         subtitle!,
-                        style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                        style: TextStyle(
+                          color: isDark
+                              ? AppColors.neutral500Dark
+                              : AppColors.neutral400Light,
+                          fontSize: 11,
+                        ),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
