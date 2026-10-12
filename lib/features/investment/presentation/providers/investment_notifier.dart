@@ -1219,15 +1219,21 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
   // ============ Income Reminder Helpers ============
 
+  /// Counts the cancellations of each investment's income reminder, so a
+  /// schedule that waited on a slow read can tell a newer cancel came first.
+  final _incomeReminderCancels = <String, int>{};
+
   /// Schedule an income reminder for an investment
   Future<void> _scheduleIncomeReminder(InvestmentEntity investment) async {
     if (!investment.needsIncomeReminder) return;
 
     try {
+      final cancelsBefore = _incomeReminderCancels[investment.id] ?? 0;
       // Get the last income date from cash flows
       final cashFlows = await ref
           .read(investmentRepositoryProvider)
           .getCashFlowsByInvestment(investment.id);
+      if ((_incomeReminderCancels[investment.id] ?? 0) != cancelsBefore) return;
 
       DateTime? lastIncomeDate;
       for (final cf in cashFlows) {
@@ -1257,6 +1263,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
   /// Cancel income reminder for an investment
   Future<void> _cancelIncomeReminder(String investmentId) async {
+    _incomeReminderCancels[investmentId] =
+        (_incomeReminderCancels[investmentId] ?? 0) + 1;
     try {
       await ref
           .read(notificationServiceProvider)

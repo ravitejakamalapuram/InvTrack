@@ -2,12 +2,15 @@
 // its income and maturity reminders; only an open, active investment has
 // them. A17 (#762, GAP1-11): the same holds when a closed investment is
 // unarchived, and when an archived one is reopened.
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_notifier.dart';
 
@@ -35,6 +38,21 @@ InvestmentEntity _fd({
   startDate: DateTime(2026, 1, 1),
   currency: 'INR',
 );
+
+/// Holds every cash-flow read until [release] is called, to mimic a slow read.
+class _GatedRepository extends FakeInvestmentRepository {
+  final gate = Completer<void>();
+
+  void release() => gate.complete();
+
+  @override
+  Future<List<CashFlowEntity>> getCashFlowsByInvestment(
+    String investmentId,
+  ) async {
+    await gate.future;
+    return super.getCashFlowsByInvestment(investmentId);
+  }
+}
 
 void main() {
   late FakeInvestmentRepository repository;
@@ -205,6 +223,48 @@ void main() {
 
         expect(notifications.scheduledIncomeReminders, isEmpty);
         expect(notifications.cancelledIncomeReminders, ['inv-retry']);
+      },
+    );
+
+
+    test(
+      'a slow cash-flow read cannot recreate a reminder after a newer create cancelled it',
+      () async {
+        final gated = _GatedRepository();
+        final c = ProviderContainer(
+          overrides: [
+            investmentRepositoryProvider.overrideWithValue(gated),
+            analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
+            notificationServiceProvider.overrideWithValue(notifications),
+            currencyCodeProvider.overrideWithValue('INR'),
+          ],
+        );
+        addTearDown(c.dispose);
+        final gatedNotifier = c.read(investmentNotifierProvider.notifier);
+        Future<void> addWith(InterestPayoutMode mode) =>
+            gatedNotifier.addInvestment(
+              id: 'inv-race',
+              name: 'Bank FD',
+              type: InvestmentType.fixedDeposit,
+              incomeFrequency: IncomeFrequency.quarterly,
+              interestPayoutMode: mode,
+              startDate: DateTime(2026, 3, 10),
+              currency: 'INR',
+            );
+
+        // The first create is periodic: its reminder waits on the slow read.
+        await addWith(InterestPayoutMode.periodic);
+        await Future<void>.delayed(Duration.zero);
+        // A retry with the same id turns out cumulative and cancels it.
+        await addWith(InterestPayoutMode.cumulative);
+        await Future<void>.delayed(Duration.zero);
+        expect(notifications.cancelledIncomeReminders, ['inv-race']);
+
+        gated.release();
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(notifications.scheduledIncomeReminders, isEmpty);
       },
     );
 
