@@ -190,6 +190,50 @@ void main() {
         Colors.white,
       );
     });
+
+    testWidgets('onHero tone on a bright hero: an ink icon on a white 20% '
+        'scrim', (tester) async {
+      await _pumpAction(
+        tester,
+        TonalIconAction(
+          icon: Icons.arrow_back_rounded,
+          tooltip: 'Back',
+          tone: TonalIconActionTone.onHero,
+          heroFill: const Color(0xFFFFD700),
+          onPressed: () {},
+        ),
+      );
+      expect(
+        _chipDecoration(tester).color,
+        Colors.white.withValues(alpha: 0.2),
+      );
+      expect(
+        tester.widget<Icon>(find.byIcon(Icons.arrow_back_rounded)).color,
+        AppColors.neutral900Light,
+      );
+    });
+
+    testWidgets('onHero tone on a dark hero: a white icon on a black 20% '
+        'scrim', (tester) async {
+      await _pumpAction(
+        tester,
+        TonalIconAction(
+          icon: Icons.arrow_back_rounded,
+          tooltip: 'Back',
+          tone: TonalIconActionTone.onHero,
+          heroFill: const Color(0xFF2A70E3),
+          onPressed: () {},
+        ),
+      );
+      expect(
+        _chipDecoration(tester).color,
+        Colors.black.withValues(alpha: 0.2),
+      );
+      expect(
+        tester.widget<Icon>(find.byIcon(Icons.arrow_back_rounded)).color,
+        Colors.white,
+      );
+    });
   });
 
   for (final direction in TextDirection.values) {
