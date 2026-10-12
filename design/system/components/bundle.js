@@ -292,7 +292,8 @@
       var toneTint = { success: 'var(--it-success-tint)', warning: 'var(--warning)', accent: 'var(--accent)' }[o.tone || 'accent'];
       return '<span class="it-tag it-tag--strong"' + sty({ '--c': tone, '--tint': toneTint }) + '>' + (o.icon ? icon(o.icon, { size: 10 }) : '') + '<span class="it-tag__t">' + esc(o.label) + '</span></span>';
     }
-    if (k === 'type') return '<span class="it-tag"' + sty({ '--c': o.color }) + '>' + esc(o.label) + '</span>';
+    // A type badge reads in the type's text colour on an opaque 10% tint: var(--inv-x) gives var(--inv-x-text) and var(--inv-x) as the tint.
+    if (k === 'type') { var tm = /^var\(--inv-([a-z0-9-]+)\)$/.exec(o.color || ''); return '<span class="it-tag it-tag--type"' + sty({ '--c': tm ? 'var(--inv-' + tm[1] + '-text)' : o.color, '--tint': o.color }) + '>' + esc(o.label) + '</span>'; }
     if (k === 'closed') return '<span class="it-tag it-tag--closed">CLOSED</span>';
     return '';
   }
@@ -306,7 +307,9 @@
         '<span>' + esc(o.label) + '</span>' + (o.count > 0 ? '<span class="it-fchip__n">' + o.count + '</span>' : '') + '</button>';
     }
     if (k === 'type') {
-      return '<button type="button" class="' + cls('it-tchip', o.compact && 'it-tchip--compact', o.selected && 'is-on', o.focus && 'is-focus') + '"' + sty({ '--c': o.color }) + ' data-it-single aria-pressed="' + (o.selected ? 'true' : 'false') + '">' +
+      // The selected label and icon are white or ink by contrast: var(--inv-x) gives var(--inv-x-on-fill).
+      var cm = /^var\(--inv-([a-z0-9-]+)\)$/.exec(o.color || '');
+      return '<button type="button" class="' + cls('it-tchip', o.compact && 'it-tchip--compact', o.selected && 'is-on', o.focus && 'is-focus') + '"' + sty({ '--c': o.color, '--on': cm ? 'var(--inv-' + cm[1] + '-on-fill)' : '' }) + ' data-it-single aria-pressed="' + (o.selected ? 'true' : 'false') + '">' +
         '<span class="it-tchip__ic">' + icon(o.icon, { size: o.compact ? 16 : 18 }) + '</span><span class="it-tchip__t">' + esc(o.label) + '</span></button>';
     }
     if (k === 'typeRow') {       // TypeSelector scrollingRow: one sideways row, each chip at least 48 x 48
@@ -523,6 +526,8 @@
   function InvestmentCard(o) {
     o = o || {};
     var t = TYPES[o.type] || TYPES.other, col = o.closed ? 'var(--it-grey)' : 'var(--inv-' + (TYPES[o.type] ? o.type : 'other') + ')';
+    // The tile icon is white or ink by contrast on the fill (ink on the closed grey).
+    var onCol = o.closed ? 'var(--it-ink)' : 'var(--inv-' + (TYPES[o.type] ? o.type : 'other') + '-on-fill)';
     var tagCol = 'var(--inv-' + (TYPES[o.type] ? o.type : 'other') + ')';
     var netCol = o.positive === false ? 'var(--danger)' : 'var(--graph-emerald)';
     // A card that awaits its value (`status`) shows what went in and what came back, with no net, sign or percent.
@@ -539,7 +544,7 @@
     var label = (o.closed ? 'Closed' : 'Open') + ' investment: ' + (o.name || '') + '. Type: ' + (o.typeName || t[0]);
     return '<div class="it-glass it-glass--flat it-glass--tap it-inv" role="button" tabindex="0" aria-label="' + esc(label) + '">' +
       '<div class="it-inv__main">' + (o.selectionMode ? '<input class="it-inv__check" type="checkbox" aria-label="Select"' + (o.selected ? ' checked' : '') + '>' : '') +
-      '<span class="it-inv__tile"' + sty({ '--c': col }) + '>' + icon(t[1], { size: 24 }) + '</span>' +
+      '<span class="it-inv__tile"' + sty({ '--c': col, '--on': onCol }) + '>' + icon(t[1], { size: 24 }) + '</span>' +
       '<div class="it-inv__info"><p class="it-inv__name">' + esc(o.name) + '</p><div class="it-inv__tags">' + tags + '</div></div>' + right + '</div>' + strip + '</div>';
   }
 
