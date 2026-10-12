@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
+import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/utils/money_precision.dart';
@@ -110,11 +111,11 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
       }
 
       final snapshot =
-          sameDay?.copyWith(amount: _rounded(amount, currency)) ??
+          sameDay?.copyWith(amount: _roundedInput(amount, currency)) ??
           InvestmentValuationSnapshot(
             id: const Uuid().v4(),
             investmentId: investmentId,
-            amount: _rounded(amount, currency),
+            amount: _roundedInput(amount, currency),
             currency: currency,
             effectiveDate: day,
             kind: kind ?? CurrentValueCalculator.defaultKind(investment.type),
@@ -151,7 +152,7 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
       final edited = current.copyWith(
         amount: amount == null
             ? null
-            : _rounded(amount, _requireCurrency(current.currency)),
+            : _roundedInput(amount, _requireCurrency(current.currency)),
         effectiveDate: day,
         kind: kind,
       );
@@ -477,6 +478,23 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
       // No amount in the message: it may reach logs (money rule 7).
       throw _rejected('Enter a value of 0 or more.', 'amount is invalid');
     }
+    _requireBelowMax(amount);
+  }
+
+  /// Throws for an amount of 15 digits or more (invtrack_rules 19.1). The
+  /// amount is left out of the messages: they may reach logs (money rule 7).
+  void _requireBelowMax(double amount) {
+    if (amount >= ValidationConstants.maxAmount) {
+      throw ValidationException.amountTooLarge();
+    }
+  }
+
+  /// [amount] rounded to the minor unit of [currency], for a value the user
+  /// typed: rounding can carry 15 digits up to 16, which is refused.
+  double _roundedInput(double amount, String currency) {
+    final rounded = _rounded(amount, currency);
+    _requireBelowMax(rounded);
+    return rounded;
   }
 
   DateTime _validatedDay(DateTime date) {
