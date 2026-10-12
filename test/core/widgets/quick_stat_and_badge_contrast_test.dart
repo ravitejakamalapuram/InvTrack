@@ -7,7 +7,6 @@
 // The ids in the names are rows of test/core/theme/contrast_pairs.dart; the
 // guard finds them here.
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
@@ -105,6 +104,41 @@ void main() {
           expect(find.text('Save'), findsOneWidget);
         },
       );
+    }
+  });
+
+  group('GradientButton with a custom colour', () {
+    // Add Transaction's Save button is green for money in and red for money
+    // out; its label read at 2.46:1 on the dark green.
+    for (final (brightness, fill, id) in [
+      (Brightness.light, AppColors.successLight, 'success-light'),
+      (Brightness.dark, AppColors.successDark, 'success-dark'),
+      (Brightness.light, AppColors.errorLight, 'error-light'),
+      (Brightness.dark, AppColors.errorDark, 'error-dark'),
+    ]) {
+      testWidgets('$id: the label reads over the whole gradient', (
+        tester,
+      ) async {
+        await pumpThemed(
+          tester,
+          GradientButton(onPressed: () {}, label: 'Save', color: fill),
+          brightness: brightness,
+        );
+        final box = tester
+            .widgetList<Container>(find.byType(Container))
+            .map((c) => c.decoration)
+            .whereType<BoxDecoration>()
+            .firstWhere((d) => d.gradient != null);
+        final colors = (box.gradient! as LinearGradient).colors;
+        final label = paintedTextColor(tester, find.text('Save'));
+        for (final end in colors) {
+          expect(
+            contrastRatio(label, composeOver(end, _page(brightness))),
+            greaterThanOrEqualTo(kMinText),
+            reason: id,
+          );
+        }
+      });
     }
   });
 

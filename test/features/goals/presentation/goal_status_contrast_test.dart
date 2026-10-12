@@ -8,7 +8,6 @@
 // The ids are rows of test/core/theme/contrast_pairs.dart; the guard finds
 // them here.
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
@@ -184,13 +183,16 @@ void main() {
     }
   }
 
-  test('the light statuses keep the greys and take the deeper text colours', () {
-    expect(GoalStatus.ahead.textColor(false), AppColors.successLight);
-    expect(GoalStatus.achieved.textColor(false), AppColors.successLight);
-    expect(GoalStatus.behind.textColor(false), AppColors.warningTextLight);
-    expect(GoalStatus.onTrack.textColor(false), AppColors.accentTextLight);
-    expect(GoalStatus.notStarted.textColor(true), AppColors.neutral400Dark);
-    expect(GoalStatus.inProgress.textColor(true), AppColors.neutral400Dark);
-    expect(GoalStatus.archived.textColor(true), AppColors.neutral400Dark);
-  });
+  test(
+    'the light statuses keep the greys and take the deeper text colours',
+    () {
+      expect(GoalStatus.ahead.textColor(false), AppColors.successLight);
+      expect(GoalStatus.achieved.textColor(false), AppColors.successLight);
+      expect(GoalStatus.behind.textColor(false), AppColors.warningTextLight);
+      expect(GoalStatus.onTrack.textColor(false), AppColors.accentTextLight);
+      expect(GoalStatus.notStarted.textColor(true), AppColors.neutral400Dark);
+      expect(GoalStatus.inProgress.textColor(true), AppColors.neutral400Dark);
+      expect(GoalStatus.archived.textColor(true), AppColors.neutral400Dark);
+    },
+  );
 }

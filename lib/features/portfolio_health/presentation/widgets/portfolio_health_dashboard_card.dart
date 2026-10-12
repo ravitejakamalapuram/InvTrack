@@ -214,11 +214,7 @@ class _PortfolioHealthDashboardCardState
         children: [
           Row(
             children: [
-              Icon(
-                Icons.favorite,
-                color: color,
-                size: 24,
-              ),
+              Icon(Icons.favorite, color: color, size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -230,10 +226,7 @@ class _PortfolioHealthDashboardCardState
                   ),
                 ),
               ),
-              Text(
-                tier.emoji,
-                style: const TextStyle(fontSize: 20),
-              ),
+              Text(tier.emoji, style: const TextStyle(fontSize: 20)),
             ],
           ),
           const SizedBox(height: 24),
@@ -263,10 +256,7 @@ class _HealthScoreRing extends StatelessWidget {
   final int score;
   final Color color;
 
-  const _HealthScoreRing({
-    required this.score,
-    required this.color,
-  });
+  const _HealthScoreRing({required this.score, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -319,13 +309,7 @@ class _HealthScoreRing extends StatelessWidget {
                     color: color,
                   ),
                 ),
-                Text(
-                  '/ 100',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: color.withValues(alpha: 0.7),
-                  ),
-                ),
+                Text('/ 100', style: TextStyle(fontSize: 14, color: color)),
               ],
             ),
           ),

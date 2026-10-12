@@ -33,6 +33,13 @@ class GradientButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final buttonColor = color ?? AppColors.primaryLight;
+    // The default indigo keeps the white label. A custom fill (the green and
+    // red of Add Transaction) takes the label colour with the higher contrast
+    // and stays solid, so the label reads over the whole gradient.
+    final onButton = color == null
+        ? Colors.white
+        : AppColors.onFill(buttonColor);
+    final tailAlpha = color == null ? 0.87 : 1.0;
 
     return Container(
       width: double.infinity,
@@ -44,7 +51,10 @@ class GradientButton extends StatelessWidget {
                 // The tail is 87% so that the white label reads over it on the
                 // light page (4.63:1; at 80% it was 4.04:1). The fill stays the
                 // button colour in both themes.
-                colors: [buttonColor, buttonColor.withValues(alpha: 0.87)],
+                colors: [
+                  buttonColor,
+                  buttonColor.withValues(alpha: tailAlpha),
+                ],
               ),
         color: isLoading
             ? (isDark ? AppColors.neutral700Dark : AppColors.neutral300Light)
@@ -88,7 +98,7 @@ class GradientButton extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, color: Colors.white),
+                    Icon(icon, color: onButton),
                     const SizedBox(width: 8),
                   ],
                   // At a large text size on a narrow screen the label shrinks to
@@ -99,7 +109,7 @@ class GradientButton extends StatelessWidget {
                       child: Text(
                         label,
                         style: AppTypography.button.copyWith(
-                          color: Colors.white,
+                          color: onButton,
                           fontSize: 16,
                         ),
                       ),

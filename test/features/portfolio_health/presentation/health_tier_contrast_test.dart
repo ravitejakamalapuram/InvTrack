@@ -8,7 +8,6 @@
 // them here.
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
@@ -198,6 +197,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       paintedTextColor(tester, find.text('Fair')),
+      ScoreTier.fair.textColor(false),
+    );
+    // The ring's "/ 100" is the tier colour itself, not a 70% tint of it
+    // (2.95:1 on the light card).
+    expect(
+      paintedTextColor(tester, find.text('/ 100')),
       ScoreTier.fair.textColor(false),
     );
   });
