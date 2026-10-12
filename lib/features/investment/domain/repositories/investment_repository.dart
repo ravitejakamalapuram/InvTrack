@@ -89,6 +89,15 @@ abstract class InvestmentRepository {
   /// [watchArchivedInvestments], which show the cache as it is.
   Stream<bool> watchHasNoInvestments();
 
+  /// The ids of every active and archived investment, as the server has them.
+  ///
+  /// Emits only when neither collection's snapshot comes from the cache and
+  /// neither holds a write of this device that the server has not confirmed
+  /// yet, so a partially loaded list can never pass for the whole account.
+  /// Emits nothing while offline. Nothing but id-based clean-up should use it;
+  /// lists use [watchAllInvestments] and [watchArchivedInvestments].
+  Stream<Set<String>> watchServerConfirmedInvestmentIds();
+
   /// Whether the server holds at least one active or archived investment.
   ///
   /// Reads the server only, never the cache, so an unsynced empty cache

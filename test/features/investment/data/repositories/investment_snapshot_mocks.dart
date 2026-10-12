@@ -55,6 +55,7 @@ QuerySnapshot<Map<String, dynamic>> querySnapshot({
   Map<String, Map<String, dynamic>> docs = const {},
   required bool fromCache,
   bool? changed,
+  bool hasPendingWrites = false,
 }) {
   final snapshot = _MockQuerySnapshot();
   final queryDocs = <QueryDocumentSnapshot<Map<String, dynamic>>>[
@@ -62,7 +63,7 @@ QuerySnapshot<Map<String, dynamic>> querySnapshot({
   ];
   final metadata = _MockMetadata();
   when(() => metadata.isFromCache).thenReturn(fromCache);
-  when(() => metadata.hasPendingWrites).thenReturn(false);
+  when(() => metadata.hasPendingWrites).thenReturn(hasPendingWrites);
   when(() => snapshot.docs).thenReturn(queryDocs);
   when(() => snapshot.size).thenReturn(queryDocs.length);
   when(() => snapshot.metadata).thenReturn(metadata);
