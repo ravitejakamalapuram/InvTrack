@@ -350,6 +350,45 @@ class DebugSettingsScreen extends ConsumerWidget {
           },
         ),
 
+        // First investment flow feature flag (A40, #783)
+        SettingsToggleTile(
+          icon: Icons.add_card_rounded,
+          iconColor: Colors.indigo,
+          title: l10n.firstInvestmentFlowFeature,
+          subtitle: l10n.firstInvestmentFlowSubtitle,
+          value: featureFlags[FeatureFlag.firstInvestmentFlow] ?? false,
+          onChanged: (value) async {
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.firstInvestmentFlow);
+
+              final newState =
+                  ref.read(
+                    featureFlagsProvider,
+                  )[FeatureFlag.firstInvestmentFlow] ??
+                  false;
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      newState
+                          ? l10n.firstInvestmentFlowEnabled
+                          : l10n.firstInvestmentFlowDisabled,
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
+            }
+          },
+        ),
+
         // Future features (disabled - coming soon)
         Opacity(
           opacity: 0.5,

@@ -88,11 +88,18 @@ class GradientButton extends StatelessWidget {
                     Icon(icon, color: Colors.white),
                     const SizedBox(width: 8),
                   ],
-                  Text(
-                    label,
-                    style: AppTypography.button.copyWith(
-                      color: Colors.white,
-                      fontSize: 16,
+                  // At a large text size on a narrow screen the label shrinks to
+                  // fit the button instead of overflowing it.
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        label,
+                        style: AppTypography.button.copyWith(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
                     ),
                   ),
                 ],

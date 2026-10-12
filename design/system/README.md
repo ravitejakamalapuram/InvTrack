@@ -53,6 +53,7 @@ These come from the project's money and privacy rules; breaking one is a bug eve
 6. **Every tappable element is at least 48 x 48dp** (`touch-target-min`), and text meets 4.5:1 (3:1 for text 24px and larger, borders, focus rings and icons that carry meaning). Text scaled to 1.8x must not overflow at 320dp (the hero card tests pin this): use `Wrap` instead of a `Row` with a `Spacer` (a Row of `Spacer` and `Flexible` also leaves its text short of the card padding: use `CardFooterRow`), `StatColumns` for figures side by side, `Flexible` with ellipsis for names, put long status text below the amount, never in the same row as it.
 7. **Never colour alone.** Direction is an arrow, a sign or a word as well as green or red. Status chips carry text. Types carry an icon and a name (several share a colour).
 8. **All user-facing text lives in `lib/l10n/app_en.arb`.** Several widgets still hard-code English ("Sort By", "Select All", "Hidden amount"); new text goes in the ARB file.
+9. **An optional amount stays optional.** Add Investment takes an amount invested and a start date; the amount may be left empty, and then nothing is invented: no first cash flow and no estimate (the estimate card appears only once an amount is typed). A maturity date comes only from a tenure the user typed. The start date defaults to today and, when an amount is given, is also the date of the first cash flow; editing the investment's start date later never moves that cash flow.
 
 ## Visual foundations
 

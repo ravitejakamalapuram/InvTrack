@@ -52,6 +52,7 @@ class _RecordingNotifier extends InvestmentNotifier {
     String? customTypeLabel,
     String? id,
     double? initialAmount,
+    void Function(bool confirmed)? onWriteResult,
   }) async {
     adds.add({'name': name, 'type': type, 'customTypeLabel': customTypeLabel});
     return InvestmentEntity(
