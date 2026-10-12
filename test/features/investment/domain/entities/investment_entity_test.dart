@@ -174,4 +174,68 @@ void main() {
       expect(investment1, isNot(investment3));
     });
   });
+
+  // #1001: an income reminder is owed only when a frequency is set and the
+  // payout mode pays something before maturity. No mode (older records,
+  // stocks, rental) keeps the frequency decisive.
+  group('needsIncomeReminder', () {
+    InvestmentEntity withTerms({
+      IncomeFrequency? frequency,
+      InterestPayoutMode? mode,
+    }) => InvestmentEntity(
+      id: 'inv-1',
+      name: 'FD',
+      type: InvestmentType.fixedDeposit,
+      status: InvestmentStatus.open,
+      createdAt: DateTime(2026, 1, 1),
+      updatedAt: DateTime(2026, 1, 1),
+      incomeFrequency: frequency,
+      interestPayoutMode: mode,
+    );
+
+    test('is false for a cumulative investment with a frequency', () {
+      expect(
+        withTerms(
+          frequency: IncomeFrequency.quarterly,
+          mode: InterestPayoutMode.cumulative,
+        ).needsIncomeReminder,
+        isFalse,
+      );
+    });
+
+    test('is false for an at-maturity investment with a frequency', () {
+      expect(
+        withTerms(
+          frequency: IncomeFrequency.quarterly,
+          mode: InterestPayoutMode.atMaturity,
+        ).needsIncomeReminder,
+        isFalse,
+      );
+    });
+
+    test('is true for a periodic investment with a frequency', () {
+      expect(
+        withTerms(
+          frequency: IncomeFrequency.quarterly,
+          mode: InterestPayoutMode.periodic,
+        ).needsIncomeReminder,
+        isTrue,
+      );
+    });
+
+    test('is true when the payout mode is not set', () {
+      expect(
+        withTerms(frequency: IncomeFrequency.monthly).needsIncomeReminder,
+        isTrue,
+      );
+    });
+
+    test('is false without a frequency, whatever the mode', () {
+      expect(
+        withTerms(mode: InterestPayoutMode.periodic).needsIncomeReminder,
+        isFalse,
+      );
+      expect(withTerms().needsIncomeReminder, isFalse);
+    });
+  });
 }
