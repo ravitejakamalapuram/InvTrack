@@ -105,6 +105,13 @@ class CashFlowEntity implements ICashFlow {
   @override
   final String currency;
 
+  /// True when [currency] was not stored on the record but filled in from the
+  /// user's base currency when it was read (records saved before
+  /// multi-currency support, until the user confirms their currency). Screens
+  /// show [currency] either way; a backup leaves the currency out of such a
+  /// record, so a restore does not turn the guess into a stored value.
+  final bool currencyAssumed;
+
   const CashFlowEntity({
     required this.id,
     required this.investmentId,
@@ -114,6 +121,7 @@ class CashFlowEntity implements ICashFlow {
     this.notes,
     required this.createdAt,
     this.currency = 'USD', // Default for backward compatibility
+    this.currencyAssumed = false,
   });
 
   @override
@@ -144,6 +152,7 @@ class CashFlowEntity implements ICashFlow {
     String? notes,
     DateTime? createdAt,
     String? currency,
+    bool? currencyAssumed,
   }) {
     return CashFlowEntity(
       id: id ?? this.id,
@@ -154,6 +163,9 @@ class CashFlowEntity implements ICashFlow {
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       currency: currency ?? this.currency,
+      // Choosing a currency makes it a stored one.
+      currencyAssumed:
+          currencyAssumed ?? (currency == null && this.currencyAssumed),
     );
   }
 
@@ -168,7 +180,8 @@ class CashFlowEntity implements ICashFlow {
         other.amount == amount &&
         other.notes == notes &&
         other.createdAt == createdAt &&
-        other.currency == currency;
+        other.currency == currency &&
+        other.currencyAssumed == currencyAssumed;
   }
 
   @override
@@ -180,6 +193,7 @@ class CashFlowEntity implements ICashFlow {
         amount.hashCode ^
         notes.hashCode ^
         createdAt.hashCode ^
-        currency.hashCode;
+        currency.hashCode ^
+        currencyAssumed.hashCode;
   }
 }

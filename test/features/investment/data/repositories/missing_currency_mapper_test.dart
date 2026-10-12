@@ -28,6 +28,7 @@ void main() {
             );
 
         expect(investment.currency, 'INR');
+        expect(investment.currencyAssumed, isTrue);
       });
 
       test('cash flow document', () {
@@ -44,6 +45,7 @@ void main() {
         );
 
         expect(cashFlow.currency, 'INR');
+        expect(cashFlow.currencyAssumed, isTrue);
         expect(cashFlow.amount, 100000.0);
       });
 
@@ -61,6 +63,7 @@ void main() {
         );
 
         expect(goal.currency, 'INR');
+        expect(goal.currencyAssumed, isTrue);
       });
 
       test('expected cash flow document', () {
@@ -104,6 +107,56 @@ void main() {
         );
 
         expect(cashFlow.currency, 'USD');
+        expect(cashFlow.currencyAssumed, isFalse);
+      });
+
+      test('a stored currency is not marked as assumed (all three)', () {
+        final investment =
+            FirestoreInvestmentRepository.investmentFromFirestore(
+              {
+                'name': 'US ETF',
+                'type': 'stocks',
+                'status': 'open',
+                'createdAt': created,
+                'currency': 'EUR',
+              },
+              'inv-2',
+              baseCurrency: 'INR',
+            );
+        final goal = GoalModel.fromFirestore(
+          {
+            'name': 'House',
+            'type': 'targetAmount',
+            'targetAmount': 1000,
+            'trackingMode': 'all',
+            'createdAt': created,
+            'currency': 'EUR',
+          },
+          'goal-2',
+          baseCurrency: 'INR',
+        );
+
+        expect(investment.currency, 'EUR');
+        expect(investment.currencyAssumed, isFalse);
+        expect(goal.currency, 'EUR');
+        expect(goal.currencyAssumed, isFalse);
+      });
+
+      test('choosing a currency on an assumed record clears the mark', () {
+        final cashFlow = FirestoreInvestmentRepository.cashFlowFromFirestore(
+          {
+            'investmentId': 'inv-1',
+            'date': created,
+            'type': 'INVEST',
+            'amount': 100,
+            'createdAt': created,
+          },
+          'cf-3',
+          baseCurrency: 'INR',
+        );
+
+        expect(cashFlow.copyWith(notes: 'n').currencyAssumed, isTrue);
+        expect(cashFlow.copyWith(currency: 'USD').currencyAssumed, isFalse);
       });
     },
   );

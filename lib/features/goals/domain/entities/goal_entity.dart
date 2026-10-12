@@ -128,6 +128,13 @@ class GoalEntity {
   final DateTime updatedAt;
   final String currency; // Multi-currency support (Rule 21.2)
 
+  /// True when [currency] was not stored on the record but filled in from the
+  /// user's base currency when it was read (records saved before
+  /// multi-currency support, until the user confirms their currency). Screens
+  /// show [currency] either way; a backup leaves the currency out of such a
+  /// record, so a restore does not turn the guess into a stored value.
+  final bool currencyAssumed;
+
   const GoalEntity({
     required this.id,
     required this.name,
@@ -144,6 +151,7 @@ class GoalEntity {
     required this.createdAt,
     required this.updatedAt,
     this.currency = 'USD', // Default for backward compatibility
+    this.currencyAssumed = false,
   });
 
   /// Check if goal has a deadline
@@ -181,6 +189,7 @@ class GoalEntity {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? currency,
+    bool? currencyAssumed,
   }) {
     return GoalEntity(
       id: id ?? this.id,
@@ -198,6 +207,9 @@ class GoalEntity {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       currency: currency ?? this.currency,
+      // Choosing a currency makes it a stored one.
+      currencyAssumed:
+          currencyAssumed ?? (currency == null && this.currencyAssumed),
     );
   }
 
@@ -221,7 +233,8 @@ class GoalEntity {
         other.isArchived == isArchived &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt &&
-        other.currency == currency;
+        other.currency == currency &&
+        other.currencyAssumed == currencyAssumed;
   }
 
   @override
@@ -241,6 +254,7 @@ class GoalEntity {
     createdAt,
     updatedAt,
     currency,
+    currencyAssumed,
   );
 }
 
