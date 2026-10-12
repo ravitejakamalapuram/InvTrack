@@ -44,6 +44,7 @@ import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_carousel_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_card.dart';
+import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/cash_flow_card_widget.dart';
@@ -274,6 +275,27 @@ final _noCashFlows = _card(
   const XirrResult.undefined(XirrUndefinedReason.insufficientFlows),
 );
 
+// One card per investment type, each with a gain and no maturity chip, and a
+// closed one, to show every type's chip and tile (demo figures only).
+final _typeCards = [
+  for (final type in InvestmentType.values)
+    _card(
+      _investment('type-${type.name}', 'Demo ${type.displayName}', type),
+      _paidOut(100000, 112000, 0.08),
+      const XirrResult.exact(0.08),
+    ),
+  _card(
+    _investment(
+      'type-closed',
+      'Demo closed',
+      InvestmentType.gold,
+      status: InvestmentStatus.closed,
+    ),
+    _paidOut(100000, 112000, 0.08),
+    const XirrResult.exact(0.08),
+  ),
+];
+
 // Demo figures only: six months of money in and out.
 final _trend = [
   for (final (i, (inflows, outflows)) in [
@@ -321,6 +343,25 @@ final _scenes = <String, _Scene>{
             ),
             const SizedBox(height: 12),
           ],
+        ],
+      ),
+    ),
+  ),
+  'type_cards': _Scene(
+    height: 2400,
+    overrides: [for (final c in _typeCards) ...c.overrides],
+    build: () => Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          for (final c in _typeCards)
+            InvestmentCard(
+              investment: c.investment,
+              isSelectionMode: false,
+              isSelected: false,
+              onTap: () {},
+              referenceDate: _today,
+            ),
         ],
       ),
     ),
@@ -438,6 +479,38 @@ final _scenes = <String, _Scene>{
         colorBuilder: (t) => t.color,
         iconBuilder: (t) => t.icon,
         labelBuilder: (t) => t.displayName,
+      ),
+    ),
+  ),
+  'type_chips_more': _Scene(
+    height: 1200,
+    build: () => Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          for (final selected in [
+            InvestmentType.gold,
+            InvestmentType.crypto,
+          ]) ...[
+            TypeSelector<InvestmentType>(
+              values: InvestmentType.values,
+              selectedValue: selected,
+              onSelected: (_) {},
+              colorBuilder: (t) => t.color,
+              iconBuilder: (t) => t.icon,
+              labelBuilder: (t) => t.displayName,
+            ),
+            const SizedBox(height: 16),
+          ],
+          TypeSelector<DocumentType>(
+            values: DocumentType.values,
+            selectedValue: DocumentType.certificate,
+            onSelected: (_) {},
+            colorBuilder: (t) => t.color,
+            iconBuilder: (t) => t.icon,
+            labelBuilder: (t) => t.name,
+          ),
+        ],
       ),
     ),
   ),
