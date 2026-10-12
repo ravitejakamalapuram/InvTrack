@@ -44,7 +44,6 @@ import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_carousel_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_card.dart';
-import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/cash_flow_card_widget.dart';
