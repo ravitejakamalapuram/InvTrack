@@ -70,6 +70,9 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
     return _run(() async {
       final investment = await _writableInvestment(investmentId);
       final currency = _requireCurrency(investment.currency);
+      // Before anything is written: an amount that rounds up to 16 digits is
+      // refused here, not after the older value below has been adopted.
+      final roundedAmount = _roundedInput(amount, currency);
       var existing = await _liveSnapshotsOf(investmentId);
 
       // A value an older app version stored is kept as a snapshot, so that
@@ -111,11 +114,11 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
       }
 
       final snapshot =
-          sameDay?.copyWith(amount: _roundedInput(amount, currency)) ??
+          sameDay?.copyWith(amount: roundedAmount) ??
           InvestmentValuationSnapshot(
             id: const Uuid().v4(),
             investmentId: investmentId,
-            amount: _roundedInput(amount, currency),
+            amount: roundedAmount,
             currency: currency,
             effectiveDate: day,
             kind: kind ?? CurrentValueCalculator.defaultKind(investment.type),

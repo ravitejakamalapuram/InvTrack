@@ -172,11 +172,15 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
               validator: (text) {
                 final value = _parse(text);
                 if (value == null) return l10n.currentValueInvalid;
-                // 15 digits at most, also after rounding (rules 19.1).
-                final rounded = MoneyPrecision.round(
-                  value,
-                  currencyCode: widget.currency,
-                );
+                // 15 digits at most, also after rounding (rules 19.1). A
+                // record with no currency cannot be rounded; the notifier
+                // refuses its save with its own message.
+                final rounded = widget.currency.trim().isEmpty
+                    ? value
+                    : MoneyPrecision.round(
+                        value,
+                        currencyCode: widget.currency,
+                      );
                 return rounded >= ValidationConstants.maxAmount
                     ? l10n.amountInvestedTooLarge
                     : null;

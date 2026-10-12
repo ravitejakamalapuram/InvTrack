@@ -62,6 +62,14 @@ void main() {
       investments: [
         testInvestment('inr', type: InvestmentType.p2pLending),
         testInvestment('jpy', type: InvestmentType.p2pLending, currency: 'JPY'),
+        // An older app version stored this value in the investment itself.
+        testInvestment(
+          'legacy',
+          type: InvestmentType.p2pLending,
+          currency: 'JPY',
+          compatValue: 5000,
+          compatDate: DateTime(2026, 1, 5),
+        ),
       ],
     );
   });
@@ -241,6 +249,21 @@ void main() {
         expect(valuations.docs, isEmpty);
       },
     );
+
+    test('a refused amount does not first adopt the value an older app '
+        'version stored', () async {
+      await expectLater(
+        notifier().setValuation(
+          investmentId: 'legacy',
+          amount: _roundsUp,
+          date: today,
+        ),
+        throwsA(isA<ValidationException>()),
+      );
+
+      expect(valuations.docs, isEmpty);
+      expect(valuations.mirrors, isEmpty);
+    });
 
     test('setValuation accepts the largest 15-digit amount', () async {
       final saved = await notifier().setValuation(
