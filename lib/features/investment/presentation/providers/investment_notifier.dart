@@ -202,8 +202,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             ),
       ),
     );
-    // Schedule income reminder if frequency is set
-    if (incomeFrequency != null) {
+    // Schedule an income reminder if the investment pays periodic income
+    if (investment.needsIncomeReminder) {
       unawaited(_afterSave(() => _scheduleIncomeReminder(investment)));
     }
     // Schedule maturity reminders if maturity date is set
@@ -1201,7 +1201,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   /// never gets reminders.
   Future<void> _syncReminders(InvestmentEntity investment) async {
     final active = investment.isOpen && !investment.isArchived;
-    if (active && investment.incomeFrequency != null) {
+    if (active && investment.needsIncomeReminder) {
       await _scheduleIncomeReminder(investment);
     } else {
       await _cancelIncomeReminder(investment.id);
@@ -1217,7 +1217,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
   /// Schedule an income reminder for an investment
   Future<void> _scheduleIncomeReminder(InvestmentEntity investment) async {
-    if (investment.incomeFrequency == null) return;
+    if (!investment.needsIncomeReminder) return;
 
     try {
       // Get the last income date from cash flows

@@ -496,7 +496,7 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
           ..add(NotificationIds.maturityReminder7Days(investment.id))
           ..add(NotificationIds.maturityReminder1Day(investment.id));
       }
-      if (investment.incomeFrequency != null) {
+      if (investment.needsIncomeReminder) {
         wantedIds.add(NotificationIds.incomeReminder(investment.id));
       }
 
@@ -509,7 +509,7 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
           );
         }
 
-        if (investment.incomeFrequency != null) {
+        if (investment.needsIncomeReminder) {
           await scheduleIncomeReminder(
             investmentId: investment.id,
             investmentName: investment.name,
