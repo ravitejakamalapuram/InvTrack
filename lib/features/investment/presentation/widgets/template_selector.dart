@@ -5,6 +5,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/investment/domain/models/investment_template.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_template_ui.dart';
+import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 
 /// A horizontal scrollable selector for investment templates.
 /// Displays template cards with emoji, name, and description.
@@ -121,6 +122,11 @@ class _TemplateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The card takes the colours of the investment type it creates, so the
+    // same investment is the same colour here and on its card.
+    final type = template.type;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
+    final fill = type.color;
     return Semantics(
       button: true,
       selected: isSelected,
@@ -136,12 +142,12 @@ class _TemplateCard extends StatelessWidget {
           padding: EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
             color: isSelected
-                ? template.color.withValues(alpha: 0.15)
+                ? type.tintColor(brightness)
                 : (isDark ? AppColors.surfaceDark : Colors.white),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected
-                  ? template.color
+                  ? fill
                   : (isDark
                         ? AppColors.neutral700Dark
                         : AppColors.neutral200Light),
@@ -150,7 +156,7 @@ class _TemplateCard extends StatelessWidget {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: template.color.withValues(alpha: 0.3),
+                      color: fill.withValues(alpha: 0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -170,7 +176,7 @@ class _TemplateCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
                   color: isSelected
-                      ? template.color
+                      ? type.textColor(brightness)
                       : (isDark ? Colors.white : AppColors.neutral900Light),
                 ),
                 maxLines: 1,
