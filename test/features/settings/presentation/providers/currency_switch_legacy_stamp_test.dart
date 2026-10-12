@@ -586,6 +586,43 @@ void main() {
       );
     });
 
+    test(
+      'leaving Settings during the rate fetch still finishes the change',
+      () async {
+        final rateGate = Completer<double>();
+        when(
+          () => conversion.getRate(
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+            date: any(named: 'date'),
+          ),
+        ).thenAnswer((_) => rateGate.future);
+        container.dispose();
+        container = makeContainer(
+          cashFlows: [
+            FirestoreInvestmentRepository.cashFlowFromFirestore(
+              {...legacyFdInvest(), 'currency': 'INR'},
+              'cf-1',
+              baseCurrency: 'INR',
+            ),
+          ],
+        );
+        final tile = container.listen(currencySwitchProvider, (_, _) {});
+        final change = container
+            .read(currencySwitchProvider.notifier)
+            .switchCurrencyImmediate('USD');
+        await pumpEventQueue(); // now waiting for the exchange rate
+
+        tile.close(); // the user leaves Settings
+        await pumpEventQueue();
+        rateGate.complete(0.012);
+        await change; // must not throw UnmountedRefException
+
+        expect(container.read(currencyCodeProvider), 'USD');
+        expect(prefs.getString('currency'), 'USD');
+      },
+    );
+
     test('the provider is released once the change is over', () async {
       final tile = container.listen(currencySwitchProvider, (_, _) {});
       await container
