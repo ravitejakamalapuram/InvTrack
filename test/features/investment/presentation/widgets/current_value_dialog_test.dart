@@ -12,6 +12,7 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 Future<CurrentValueEdit?> _open(
   WidgetTester tester, {
   bool canRemove = false,
+  String currency = 'INR',
   DateTime? firstDate,
   required Future<void> Function() interact,
 }) async {
@@ -26,7 +27,7 @@ Future<CurrentValueEdit?> _open(
             result = await showDialog<CurrentValueEdit>(
               context: context,
               builder: (_) => CurrentValueDialog(
-                currency: 'INR',
+                currency: currency,
                 canRemove: canRemove,
                 today: DateTime(2026, 10, 2),
                 firstDate: firstDate,
@@ -112,6 +113,83 @@ void main() {
       },
     );
     expect(result, isNull);
+  });
+
+  // 15 digits is the most a value may have (invtrack_rules 19.1). The editor
+  // says so instead of closing and showing the generic save failure.
+  for (final (text, currency) in [
+    ('1000000000000000', 'INR'),
+    ('99999999999999999999', 'INR'),
+    // 15 digits as typed; INR rounds it to 1000000000000000.00.
+    ('999999999999999.996', 'INR'),
+    // Below the cap as typed; JPY has no minor units, so it rounds up to it.
+    ('999999999999999.5', 'JPY'),
+  ]) {
+    testWidgets('$text in $currency is refused with a specific message', (
+      tester,
+    ) async {
+      final result = await _open(
+        tester,
+        currency: currency,
+        interact: () async {
+          await tester.enterText(find.byType(TextFormField), text);
+          await tester.tap(find.text('Save'));
+          await tester.pumpAndSettle();
+          expect(find.text('That amount is too large'), findsOneWidget);
+          expect(find.text('Enter a value of 0 or more'), findsNothing);
+          await tester.tap(find.text('Cancel'));
+        },
+      );
+      expect(result, isNull);
+    });
+  }
+
+  // A record saved before currencies were stored has none. The editor cannot
+  // round without one, so it must not throw while validating; the notifier
+  // refuses the save with its own message.
+  testWidgets('a blank currency does not throw while validating', (
+    tester,
+  ) async {
+    final result = await _open(
+      tester,
+      currency: '',
+      interact: () async {
+        await tester.enterText(find.byType(TextFormField), '1250');
+        await tester.tap(find.text('Save'));
+      },
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(result!.value, 1250);
+  });
+
+  testWidgets('a blank currency still refuses an amount of 16 digits', (
+    tester,
+  ) async {
+    final result = await _open(
+      tester,
+      currency: '',
+      interact: () async {
+        await tester.enterText(find.byType(TextFormField), '1000000000000000');
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+        expect(find.text('That amount is too large'), findsOneWidget);
+        await tester.tap(find.text('Cancel'));
+      },
+    );
+    expect(result, isNull);
+  });
+
+  testWidgets('the largest 15-digit value is saved', (tester) async {
+    final result = await _open(
+      tester,
+      interact: () async {
+        await tester.enterText(find.byType(TextFormField), '999999999999999');
+        await tester.tap(find.text('Save'));
+      },
+    );
+
+    expect(result!.value, 999999999999999);
   });
 
   testWidgets('offers to go back to the estimate when the user set a value', (

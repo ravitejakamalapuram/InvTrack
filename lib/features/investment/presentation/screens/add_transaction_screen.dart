@@ -413,12 +413,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                   if (parsed <= 0) return 'Must be positive';
                   // A sub-unit amount (JPY 0.4) is saved as zero, which the
                   // notifier rejects; say so here instead of failing later.
-                  if (MoneyPrecision.round(
-                        parsed,
-                        currencyCode: displayCurrency,
-                      ) <=
-                      0) {
+                  final rounded = MoneyPrecision.round(
+                    parsed,
+                    currencyCode: displayCurrency,
+                  );
+                  if (rounded <= 0) {
                     return l10n.cashFlowAmountRoundsToZero(displayCurrency);
+                  }
+                  // 15 digits at most, also after rounding (rules 19.1).
+                  if (rounded >= ValidationConstants.maxAmount) {
+                    return l10n.amountInvestedTooLarge;
                   }
                   return null;
                 },
@@ -464,58 +468,68 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _selectedType.isOutflow ? 'Cash Out' : 'Cash In',
-                          style: AppTypography.body.copyWith(
-                            color: isDark
-                                ? AppColors.neutral400Dark
-                                : AppColors.neutral500Light,
+                    // Flexible and scaled down: a 15-digit amount is wider
+                    // than the card.
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _selectedType.isOutflow ? 'Cash Out' : 'Cash In',
+                            style: AppTypography.body.copyWith(
+                              color: isDark
+                                  ? AppColors.neutral400Dark
+                                  : AppColors.neutral500Light,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: AppSpacing.xxs),
-                        ListenableBuilder(
-                          listenable: _amountController,
-                          builder: (context, _) {
-                            final typed =
-                                double.tryParse(_amountController.text) ?? 0;
-                            // Show the amount as it will be stored: rounded
-                            // to the currency's minor unit, not always 2 dp.
-                            final amount = typed.isFinite
-                                ? MoneyPrecision.round(
-                                    typed,
-                                    currencyCode: displayCurrency,
-                                  )
-                                : 0.0;
-                            final prefix = _selectedType.isOutflow ? '-' : '+';
-                            final formattedAmount = formatCurrency(
-                              amount,
-                              currencySymbol,
-                              currencyLocale,
-                              decimalDigits: MoneyPrecision.fractionDigitsFor(
-                                displayCurrency,
-                              ),
-                            );
-                            final color = _selectedType.isOutflow
-                                ? (isDark
-                                      ? AppColors.errorDark
-                                      : AppColors.errorLight)
-                                : (isDark
-                                      ? AppColors.successDark
-                                      : AppColors.successLight);
+                          SizedBox(height: AppSpacing.xxs),
+                          ListenableBuilder(
+                            listenable: _amountController,
+                            builder: (context, _) {
+                              final typed =
+                                  double.tryParse(_amountController.text) ?? 0;
+                              // Show the amount as it will be stored: rounded
+                              // to the currency's minor unit, not always 2 dp.
+                              final amount = typed.isFinite
+                                  ? MoneyPrecision.round(
+                                      typed,
+                                      currencyCode: displayCurrency,
+                                    )
+                                  : 0.0;
+                              final prefix = _selectedType.isOutflow
+                                  ? '-'
+                                  : '+';
+                              final formattedAmount = formatCurrency(
+                                amount,
+                                currencySymbol,
+                                currencyLocale,
+                                decimalDigits: MoneyPrecision.fractionDigitsFor(
+                                  displayCurrency,
+                                ),
+                              );
+                              final color = _selectedType.isOutflow
+                                  ? (isDark
+                                        ? AppColors.errorDark
+                                        : AppColors.errorLight)
+                                  : (isDark
+                                        ? AppColors.successDark
+                                        : AppColors.successLight);
 
-                            return Text(
-                              '$prefix$formattedAmount',
-                              style: AppTypography.numberLarge.copyWith(
-                                color: color,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                              return FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  '$prefix$formattedAmount',
+                                  style: AppTypography.numberLarge.copyWith(
+                                    color: color,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                     Container(
                       padding: EdgeInsets.all(AppSpacing.sm),

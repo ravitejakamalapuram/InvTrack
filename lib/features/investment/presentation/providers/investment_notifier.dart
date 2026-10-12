@@ -105,12 +105,12 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     double? firstAmount;
     DateTime? firstDay;
     if (initialAmount != null) {
-      _validateInitialAmount(initialAmount);
+      _validateAmount(initialAmount);
       firstAmount = MoneyPrecision.round(
         initialAmount,
         currencyCode: _requireCurrency(investmentCurrency),
       );
-      _validateInitialAmount(firstAmount);
+      _validateAmount(firstAmount);
       final day = startDate ?? DateTime.now();
       firstDay = DateTime(day.year, day.month, day.day);
       // A payment dated after today would feed XIRR a flow that has not
@@ -357,8 +357,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   /// Sets the user's current value of an open investment, in the
   /// investment's currency, as of [date] (date-only, not in the future).
   /// It becomes the terminal inflow of its XIRR, MOIC and return %.
-  /// Throws [ValidationException] for a negative or non-finite value, a
-  /// future date, or an investment that is not open.
+  /// Throws [ValidationException] for a negative or non-finite value, one of
+  /// 15 digits or more, a future date, or an investment that is not open.
   Future<void> setCurrentValue({
     required String id,
     required double value,
@@ -373,6 +373,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             'not finite',
       );
     }
+    _validateBelowMax(value);
     final day = DateTime(date.year, date.month, date.day);
     final now = DateTime.now();
     if (day.isAfter(DateTime(now.year, now.month, now.day))) {
@@ -404,6 +405,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         value,
         currencyCode: _requireCurrency(existing.currency),
       );
+      _validateBelowMax(rounded);
       return _withCurrentValue(existing, rounded, day);
     });
   }
@@ -1120,20 +1122,19 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     return currency;
   }
 
-  /// Validates amount for cash flows.
-  /// Throws [ValidationException] if amount is not positive.
+  /// Validates an amount to save as a cash flow: positive, finite and below
+  /// 15 digits (invtrack_rules 19.1). Callers check it before and after
+  /// rounding, for rounding can carry an amount up to 16 digits.
+  /// Throws [ValidationException] otherwise.
   void _validateAmount(double amount) {
     if (!amount.isFinite || amount <= 0) {
       throw ValidationException.invalidAmount(amount);
     }
+    _validateBelowMax(amount);
   }
 
-  /// Validates the amount of a new investment's first cash flow: positive,
-  /// finite and below 15 digits (invtrack_rules 19.1). It is checked before
-  /// and after rounding, for rounding can carry an amount up to 16 digits.
-  /// Throws [ValidationException] otherwise.
-  void _validateInitialAmount(double amount) {
-    _validateAmount(amount);
+  /// Throws [ValidationException] for an amount of 15 digits or more.
+  void _validateBelowMax(double amount) {
     if (amount >= ValidationConstants.maxAmount) {
       throw ValidationException.amountTooLarge();
     }

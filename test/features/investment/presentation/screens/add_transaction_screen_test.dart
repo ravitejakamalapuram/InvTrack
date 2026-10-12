@@ -327,6 +327,51 @@ void main() {
       expect(saved, isEmpty);
     });
 
+    // 15 digits is the most an amount may have (invtrack_rules 19.1). The form
+    // says so, instead of letting the notifier refuse with the generic
+    // "Failed to add transaction".
+    for (final text in ['1000000000000000', '99999999999999999999']) {
+      testWidgets('$text is refused with a specific message', (tester) async {
+        final saved = <_SavedCashFlow>[];
+
+        await saveAmount(tester, currency: 'INR', text: text, saved: saved);
+
+        expect(find.text('That amount is too large'), findsOneWidget);
+        expect(find.text('Failed to add transaction'), findsNothing);
+        expect(saved, isEmpty);
+      });
+    }
+
+    testWidgets('an amount that rounds up to 16 digits is refused', (
+      tester,
+    ) async {
+      final saved = <_SavedCashFlow>[];
+
+      await saveAmount(
+        tester,
+        currency: 'JPY',
+        text: '999999999999999.5',
+        saved: saved,
+      );
+
+      expect(find.text('That amount is too large'), findsOneWidget);
+      expect(saved, isEmpty);
+    });
+
+    testWidgets('the largest 15-digit amount is saved', (tester) async {
+      final saved = <_SavedCashFlow>[];
+
+      await saveAmount(
+        tester,
+        currency: 'INR',
+        text: '999999999999999',
+        saved: saved,
+      );
+
+      expect(find.text('That amount is too large'), findsNothing);
+      expect(saved, hasLength(1));
+    });
+
     testWidgets('a zero amount keeps the "Must be positive" message', (
       tester,
     ) async {
