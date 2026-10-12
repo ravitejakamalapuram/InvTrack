@@ -448,8 +448,11 @@ void main() {
   group('AddTransactionScreen closed investment', () {
     const closedMessage = 'This investment is closed';
 
-    InvestmentEntity investment(InvestmentStatus status) => InvestmentEntity(
-      id: 'inv-fd',
+    InvestmentEntity investment(
+      InvestmentStatus status, {
+      String id = 'inv-fd',
+    }) => InvestmentEntity(
+      id: id,
       name: 'Bank FD',
       type: InvestmentType.fixedDeposit,
       status: status,
@@ -636,6 +639,57 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(saved, isEmpty);
+    });
+
+    testWidgets('another investment being closed does not block this one', (
+      tester,
+    ) async {
+      final saved = <_SavedCashFlow>[];
+      await pump(
+        tester,
+        investments: Stream.value([
+          investment(InvestmentStatus.closed, id: 'inv-other'),
+          investment(InvestmentStatus.open),
+        ]),
+        saved: saved,
+      );
+
+      expect(find.text(closedMessage), findsNothing);
+      expect(saveEnabled(tester), isTrue);
+    });
+
+    testWidgets('another investment being open does not hide this one closed', (
+      tester,
+    ) async {
+      final saved = <_SavedCashFlow>[];
+      await pump(
+        tester,
+        investments: Stream.value([
+          investment(InvestmentStatus.open, id: 'inv-other'),
+          investment(InvestmentStatus.closed),
+        ]),
+        saved: saved,
+      );
+
+      expect(find.text(closedMessage), findsOneWidget);
+      expect(saveEnabled(tester), isFalse);
+    });
+
+    testWidgets('the closed message is announced as a live region', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pump(
+        tester,
+        investments: Stream.value([investment(InvestmentStatus.closed)]),
+        saved: <_SavedCashFlow>[],
+      );
+
+      expect(
+        tester.getSemantics(find.bySemanticsLabel(closedMessage)),
+        matchesSemantics(label: closedMessage, isLiveRegion: true),
+      );
+      handle.dispose();
     });
 
     testWidgets('editing an existing cash flow stays allowed when closed', (
