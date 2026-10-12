@@ -131,6 +131,10 @@ const _feedbackTest = 'test/core/utils/app_feedback_theme_contrast_test.dart';
 const _goalStatusTest =
     'test/features/goals/presentation/goal_status_contrast_test.dart';
 
+// PR 8: _healthTierTest
+const _healthTierTest =
+    'test/features/portfolio_health/presentation/health_tier_contrast_test.dart';
+
 // PR 8: the test that pumps the currency badge, the gradient button and the
 // quick stat card.
 const _badgeStatTest =
@@ -1134,6 +1138,30 @@ List<ContrastPair> _build() {
       ('goal-status-achieved-dark@card', 7.07, _goalStatusTest, kMinText),
       ('goal-status-archived-light@card', 4.83, _goalStatusTest, kMinText),
       ('goal-status-archived-dark@card', 3.56, _goalStatusTest, kMinText),
+      ('health-tier-excellent-light@card', 3.77, _healthTierTest, kMinText),
+      ('health-tier-excellent-dark@card', 7.07, _healthTierTest, kMinText),
+      ('health-tier-good-light@card', 2.15, _healthTierTest, kMinText),
+      ('health-tier-good-dark@card', 10.74, _healthTierTest, kMinText),
+      ('health-tier-fair-light@card', 2.80, _healthTierTest, kMinText),
+      ('health-tier-fair-dark@card', 7.92, _healthTierTest, kMinText),
+      ('health-tier-poor-light@card', 4.83, _healthTierTest, kMinText),
+      ('health-tier-poor-dark@card', 4.76, _healthTierTest, kMinText),
+      ('health-badge-excellent-light@tint10', 2.95, _healthTierTest, kMinText),
+      ('health-badge-excellent-dark@tint10', 5.12, _healthTierTest, kMinText),
+      ('health-badge-good-light@tint10', 1.85, _healthTierTest, kMinText),
+      ('health-badge-good-dark@tint10', 6.79, _healthTierTest, kMinText),
+      ('health-badge-fair-light@tint10', 2.28, _healthTierTest, kMinText),
+      ('health-badge-fair-dark@tint10', 5.48, _healthTierTest, kMinText),
+      ('health-badge-poor-light@tint10', 3.53, _healthTierTest, kMinText),
+      ('health-badge-poor-dark@tint10', 3.82, _healthTierTest, kMinText),
+      ('health-suggestion-digit-light@fill', 2.77, _healthTierTest, kMinText),
+      ('health-suggestion-digit-dark@fill', 2.14, _healthTierTest, kMinText),
+      ('health-chart-lines-light@card', 3.77, _healthTierTest, graphic),
+      ('health-chart-lines-dark@card', 7.07, _healthTierTest, graphic),
+      ('score-change-positive-light@tint10', 2.53, _healthTierTest, kMinText),
+      ('score-change-positive-dark@tint10', 5.62, _healthTierTest, kMinText),
+      ('score-change-negative-light@tint10', 3.23, _healthTierTest, kMinText),
+      ('score-change-negative-dark@tint10', 4.44, _healthTierTest, kMinText),
     ])
       ContrastPair.widget(
         id,

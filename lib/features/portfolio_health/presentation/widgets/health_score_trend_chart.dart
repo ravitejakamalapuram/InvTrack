@@ -11,7 +11,9 @@ import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
+import 'package:inv_tracker/features/portfolio_health/presentation/ui_extensions/score_tier_ui.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Trend chart showing health score over time
@@ -302,17 +304,15 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
                 ))
             .toList(),
         isCurved: true,
-        color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
+        color: ScoreTier.excellent.textColor(isDark),
         barWidth: 3,
         dotData: const FlDotData(show: true),
         belowBarData: BarAreaData(
           show: true,
           gradient: LinearGradient(
             colors: [
-              (isDark ? const Color(0xFF10B981) : const Color(0xFF059669))
-                  .withValues(alpha: 0.2),
-              (isDark ? const Color(0xFF10B981) : const Color(0xFF059669))
-                  .withValues(alpha: 0.0),
+              ScoreTier.excellent.tintColor(isDark).withValues(alpha: 0.2),
+              ScoreTier.excellent.tintColor(isDark).withValues(alpha: 0.0),
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,

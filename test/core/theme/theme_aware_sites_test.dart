@@ -136,8 +136,11 @@ const _bright = <String, int>{
   'lib/features/onboarding/presentation/screens/onboarding_screen.dart': 1,
   // The tile's tint source (its icon takes the text colour).
   'lib/features/overview/presentation/widgets/overview_empty_state.dart': 1,
-  // The suggestion number's circle: a white digit on a fill.
+  // The suggestion number's circle: the digit takes `onFill` of it.
   'lib/features/portfolio_health/presentation/screens/portfolio_health_details_screen.dart':
+      1,
+  // The Good tier's tint source: the pale fill behind a score.
+  'lib/features/portfolio_health/presentation/ui_extensions/score_tier_ui.dart':
       1,
   // The tint behind the insight icon.
   'lib/features/reports/presentation/widgets/smart_insight_card.dart': 1,
