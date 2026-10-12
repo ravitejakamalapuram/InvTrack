@@ -32,6 +32,10 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
   /// none.
   final VoidCallback? onUpdateCurrentValue;
 
+  /// The moment the maturity card counts from; the real clock when null. Only
+  /// the golden gallery passes one, so its picture does not change daily.
+  final DateTime? now;
+
   const InvestmentDetailStatsSection({
     super.key,
     required this.stats,
@@ -40,6 +44,7 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
     required this.currencyFormat,
     required this.isPrivacyMode,
     this.onUpdateCurrentValue,
+    this.now,
   });
 
   @override
@@ -179,7 +184,11 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
         // Maturity date card (if applicable)
         if (investment.hasMaturityDate) ...[
           const SizedBox(height: 10),
-          _MaturityCard(maturityDate: investment.maturityDate!, isDark: isDark),
+          _MaturityCard(
+            maturityDate: investment.maturityDate!,
+            isDark: isDark,
+            now: now,
+          ),
         ],
       ],
     );
@@ -613,12 +622,17 @@ class _CurrentValueCard extends StatelessWidget {
 class _MaturityCard extends StatelessWidget {
   final DateTime maturityDate;
   final bool isDark;
+  final DateTime? now;
 
-  const _MaturityCard({required this.maturityDate, required this.isDark});
+  const _MaturityCard({
+    required this.maturityDate,
+    required this.isDark,
+    this.now,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
+    final now = this.now ?? DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final maturity = DateTime(
       maturityDate.year,
