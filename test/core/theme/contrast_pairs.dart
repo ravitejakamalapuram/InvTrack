@@ -584,6 +584,7 @@ List<ContrastPair> _build() {
       ('closed-chip-text-dark@grey20', 4.79, _typeCardTest, kMinText),
       ('inv-tile-icon-light@gradient', 1.40, _typeCardTest, graphic),
       ('inv-tile-icon-dark@gradient', 1.40, _typeCardTest, graphic),
+      ('inv-detail-header@fill', 1.40, _typeHeaderTest, kMinText),
       ('type-selector-label@fill', 1.40, _typeSelectorTest, kMinText),
     ])
       ContrastPair.widget(

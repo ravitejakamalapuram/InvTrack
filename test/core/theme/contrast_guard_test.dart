@@ -83,7 +83,7 @@ const _allowlistMax = 54;
 
 /// The size of the pair table. A fixing PR that retires a pair or drops a
 /// ground it cannot fix changes this literal, so the change is in the diff.
-const _pairCount = 219;
+const _pairCount = 220;
 
 /// Files that can never be the measurement of a widget pair: the helper's own
 /// test, this guard and the table. Each mentions pair ids or `contrastRatio`.
@@ -223,6 +223,7 @@ void main() {
         'closed-chip-text-dark@grey20',
         'inv-tile-icon-light@gradient',
         'inv-tile-icon-dark@gradient',
+        'inv-detail-header@fill',
         'type-selector-label@fill',
       ]),
     );
