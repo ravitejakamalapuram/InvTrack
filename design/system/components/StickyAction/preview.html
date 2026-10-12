@@ -1,0 +1,28 @@
+<!-- @dsCard group="Containers" height=420 subtitle="The submit bar pinned at the foot of a long form" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+  document.getElementById('root').innerHTML = I.panes(function () {
+    return '<div class="it-stack" style="gap:18px">' +
+      I.TextField({ label: 'Amount invested in INR', hint: 'e.g. 1,00,000', prefixText: '₹', mode: 'decimal', helper: 'Optional. You can add it later.' }) +
+      I.StickyAction({ body: I.Button({ variant: 'gradient', label: 'Add Investment', icon: 'add' }) }) +
+      cap('The bar has the screen background and a 1px line above it; the form scrolls behind it and the bar rides above the keyboard.') +
+    '</div>';
+  });
+  I.wire(document);
+})();
+</script>
+</body>
+</html>

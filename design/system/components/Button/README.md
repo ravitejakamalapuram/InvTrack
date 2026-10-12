@@ -4,7 +4,7 @@ Use one GradientButton per screen for the primary action (Add Investment, Save, 
 
 ## Variants
 
-- `gradient` (GradientButton): full width, 56px (`button-h-xl`), `radius-lg` 16, a 90-degree gradient from the colour to the same colour at 80%, a glow `shadow-button-gradient`, label Inter 600 16px with +0.2 spacing, white, an optional 24px leading icon with an 8px gap. The colour defaults to the light-mode primary `#5b4cdb` in both themes and can be set (a red delete button). Loading swaps the gradient for a flat fill (`neutral-300-light`, or `neutral-700-dark`), removes the glow and shows a 24px spinner announced as "Loading <label>".
+- `gradient` (GradientButton): full width, 56px (`button-h-xl`), `radius-lg` 16, a 90-degree gradient from the colour to the same colour at 80%, a glow `shadow-button-gradient`, label Inter 600 16px with +0.2 spacing, white, an optional 24px leading icon with an 8px gap. The colour defaults to the light-mode primary `#5b4cdb` in both themes and can be set (a red delete button). At a large text size on a narrow screen (320dp at 1.8x) the label shrinks to fit the button on one line instead of overflowing it. Loading swaps the gradient for a flat fill (`neutral-300-light`, or `neutral-700-dark`), removes the glow and shows a 24px spinner announced as "Loading <label>".
 - `elevated`: `primary` fill, `on-primary` text (white in light, #0a0a0a in dark), `radius-md` 12, padding 24 x 16, `button-large` text, no elevation.
 - `outlined`: transparent, `primary` text, 1.5px `outline` border, same shape and padding.
 - `text`: `primary` text, `button` 14/600, padding 16 x 12; the tap target extends to 48dp.

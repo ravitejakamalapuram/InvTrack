@@ -17,6 +17,9 @@ export 'investment_analytics_provider.dart';
 // Notifier for mutations (CRUD operations)
 export 'investment_notifier.dart';
 
+// Whether the add form is the first investment flow form (A40)
+export 'first_investment_form_provider.dart';
+
 // Investment list screen state
 export 'investment_list_state_provider.dart';
 
