@@ -41,7 +41,10 @@ class GradientButton extends StatelessWidget {
         gradient: isLoading
             ? null
             : LinearGradient(
-                colors: [buttonColor, buttonColor.withValues(alpha: 0.8)],
+                // The tail is 87% so that the white label reads over it on the
+                // light page (4.63:1; at 80% it was 4.04:1). The fill stays the
+                // button colour in both themes.
+                colors: [buttonColor, buttonColor.withValues(alpha: 0.87)],
               ),
         color: isLoading
             ? (isDark ? AppColors.neutral700Dark : AppColors.neutral300Light)

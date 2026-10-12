@@ -60,7 +60,11 @@ class CurrencyBadge extends StatelessWidget {
           style: AppTypography.caption.copyWith(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+            // On the badge's own 20% tint of the primary colour: the plain
+            // primary colour is 4.45:1 in light and 4.08:1 in dark.
+            color: isDark
+                ? AppColors.primaryLightDark
+                : AppColors.primaryDarkLight,
           ),
         ),
       );
