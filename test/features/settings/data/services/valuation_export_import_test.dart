@@ -624,6 +624,16 @@ void main() {
       expect(snapshot.amount, 100);
     });
 
+    test('a non-blank currency that is not a code is not replaced by the '
+        'base currency (Merge)', () async {
+      final result = await importRows(
+        'SGB 2031,false,2026-01-01,100,??,,carryingValue,manual,,gold,open\n',
+        strategy: ImportStrategy.merge,
+      );
+      expect(result.errors, isEmpty);
+      expect((await imported()).where((s) => s.currency == 'INR'), isEmpty);
+    });
+
     test('a blank currency takes the base currency (Replace)', () async {
       final result = await importRows(blankCurrency);
       expect(result.errors, isEmpty);

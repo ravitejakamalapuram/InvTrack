@@ -8,7 +8,10 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/features/goals/data/models/goal_model.dart';
+import 'package:inv_tracker/features/investment/data/repositories/firestore_investment_repository.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
@@ -269,14 +272,82 @@ void main() {
     );
   });
 
+  group('from Firestore documents to the ZIP', () {
+    // The entities come from the production mappers, so a mapper that stops
+    // marking a missing currency (or an export that stops reading the mark)
+    // fails here and not only in the single-step tests above.
+    final created = Timestamp.fromDate(DateTime(2024, 1, 15));
+
+    test('documents with no currency export an empty cell; a stored one '
+        'keeps its code', () async {
+      final investment = FirestoreInvestmentRepository.investmentFromFirestore(
+        {
+          'name': 'Legacy FD',
+          'type': 'fixedDeposit',
+          'status': 'open',
+          'createdAt': created,
+        },
+        'inv-1',
+        baseCurrency: 'INR',
+      );
+      final legacyFlow = FirestoreInvestmentRepository.cashFlowFromFirestore(
+        {
+          'investmentId': 'inv-1',
+          'date': created,
+          'type': 'INVEST',
+          'amount': 10000,
+          'createdAt': created,
+        },
+        'cf-1',
+        baseCurrency: 'INR',
+      );
+      final euroFlow = FirestoreInvestmentRepository.cashFlowFromFirestore(
+        {
+          'investmentId': 'inv-1',
+          'date': created,
+          'type': 'INVEST',
+          'amount': 500,
+          'currency': 'EUR',
+          'createdAt': created,
+        },
+        'cf-2',
+        baseCurrency: 'INR',
+      );
+      final goal = GoalModel.fromFirestore(
+        {
+          'name': 'House',
+          'type': 'targetAmount',
+          'targetAmount': 2500000,
+          'trackingMode': 'all',
+          'createdAt': created,
+        },
+        'goal-1',
+        baseCurrency: 'INR',
+      );
+      source.investments.seed(
+        investments: [investment],
+        cashFlows: [legacyFlow, euroFlow],
+      );
+      source.goals.seed(goals: [goal]);
+
+      final export = await source.export.exportAsZipBytes();
+
+      expect(_column(export.bytes, 'cashflows.csv', 'Currency'), ['', 'EUR']);
+      expect(_column(export.bytes, 'goals.csv', 'Currency'), ['']);
+    });
+  });
+
   group('guest merge', () {
-    // The merge exports the guest's data and imports it into the Google
-    // account with the base currency the provider passes (the guest's,
-    // read before the sign-in): the same two calls as below. The guest's
-    // device guessed INR for the unconfirmed record; the merge must apply
-    // its own base currency (USD), not carry the guess over.
-    test('a guest legacy cash flow with no stored currency is stored as the '
-        'base currency of the merge, never a stamped guess', () async {
+    // The merge exports the guest's data and imports it with the base
+    // currency the provider passes (the guest's, read before the sign-in
+    // and kept by google_sign_in_handler_backup_merge_test): the same two
+    // calls as below. This pins that the import applies the base it is given
+    // to a row with no stored currency instead of carrying a guess over. It
+    // does not cover a Google account whose own base differs from the
+    // guest's; the provider does not read that one (open question, see the
+    // pull request).
+    test('an export with no stored currency is imported as the base '
+        'currency it is given', () async {
       source.investments.seed(
         investments: [_investment(assumed: true)],
         cashFlows: [_cashFlow(assumed: true)],
