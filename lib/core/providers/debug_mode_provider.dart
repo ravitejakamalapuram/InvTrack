@@ -1,7 +1,7 @@
 /// Debug mode provider for enabling/disabling developer features.
 ///
 /// Debug mode is a hidden feature that can be activated by tapping the version
-/// number 7 times on the About screen. When enabled, it reveals developer tools
+/// number 5 times on the About screen. When enabled, it reveals developer tools
 /// and diagnostics in the Settings screen.
 ///
 /// This is separate from Flutter's kDebugMode (build configuration). It is a
@@ -32,7 +32,7 @@ final debugModeProvider = NotifierProvider<DebugModeNotifier, bool>(
 ///
 /// Debug mode is persisted in SharedPreferences and survives app restarts.
 /// It can be toggled via:
-/// 1. Tapping version number 7 times on About screen
+/// 1. Tapping version number 5 times on About screen
 /// 2. Using the toggle in Debug Settings screen
 class DebugModeNotifier extends Notifier<bool> {
   static const _prefKey = 'debug_mode_enabled';
