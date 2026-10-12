@@ -215,7 +215,8 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: document.type.color.withValues(alpha: 0.3),
+                    // The overlay is dark in either theme: the dark pair.
+                    color: document.type.tintColor(Brightness.dark),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
@@ -224,13 +225,13 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
                       Icon(
                         document.type.icon,
                         size: 14,
-                        color: document.type.color,
+                        color: document.type.textColor(Brightness.dark),
                       ),
                       SizedBox(width: 4),
                       Text(
                         document.type.displayName,
                         style: AppTypography.caption.copyWith(
-                          color: document.type.color,
+                          color: document.type.textColor(Brightness.dark),
                         ),
                       ),
                     ],

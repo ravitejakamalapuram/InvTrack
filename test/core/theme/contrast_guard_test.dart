@@ -17,40 +17,6 @@ import 'contrast_pairs.dart';
 
 /// Pairs that still fail. Grouped by the PR in the stack that fixes them.
 const _allowlist = <String>{
-  // PR 7 contrast-type-colours (33)
-  'closed-chip-text-light@grey20',
-  'inv-angel-investing-label@fill',
-  'inv-bonds-label@fill',
-  'inv-chit-funds-label@fill',
-  'inv-crypto-label@fill',
-  'inv-financing-label@fill',
-  'inv-fixed-deposit-label@fill',
-  'inv-gold-label@fill',
-  'inv-invoice-discounting-label@fill',
-  'inv-mutual-funds-label@fill',
-  'inv-p2p-lending-label@fill',
-  'inv-private-equity-label@fill',
-  'inv-real-estate-label@fill',
-  'inv-stocks-label@fill',
-  'inv-angel-investing-light@tint10',
-  'inv-bonds-light@tint10',
-  'inv-chit-funds-light@tint10',
-  'inv-crypto-dark@tint10',
-  'inv-crypto-light@tint10',
-  'inv-financing-light@tint10',
-  'inv-fixed-deposit-light@tint10',
-  'inv-gold-light@tint10',
-  'inv-invoice-discounting-light@tint10',
-  'inv-mutual-funds-dark@tint10',
-  'inv-mutual-funds-light@tint10',
-  'inv-other-dark@tint10',
-  'inv-other-light@tint10',
-  'inv-p2p-lending-dark@tint10',
-  'inv-p2p-lending-light@tint10',
-  'inv-private-equity-dark@tint10',
-  'inv-private-equity-light@tint10',
-  'inv-real-estate-light@tint10',
-  'inv-stocks-light@tint10',
   // PR 8 contrast-hardcoded (4)
   'currency-badge-compact-light@tint20',
   'gradient-button-tail-light@page',
@@ -113,11 +79,11 @@ const _allowlist = <String>{
 
 /// The size of [_allowlist]. Lower it with the list; raising it needs a reason
 /// in the PR body.
-const _allowlistMax = 87;
+const _allowlistMax = 54;
 
 /// The size of the pair table. A fixing PR that retires a pair or drops a
 /// ground it cannot fix changes this literal, so the change is in the diff.
-const _pairCount = 215;
+const _pairCount = 220;
 
 /// Files that can never be the measurement of a widget pair: the helper's own
 /// test, this guard and the table. Each mentions pair ids or `contrastRatio`.
@@ -197,7 +163,8 @@ void main() {
     // The plan's three light dividers, the four the PR 1 review found on the
     // investment card's XIRR pill and the danger tint, and the twenty-six widget
     // pairs PR 5 added for green and red on the tints and fills they sit on,
-    // and the nineteen PR 6 added for blue and amber text and icons.
+    // the nineteen PR 6 added for blue and amber text and icons, and the five
+    // PR 7 added for the widgets that paint a type's colours.
     expect(
       pairs.where((p) => p.addedByPlan).map((p) => p.id),
       unorderedEquals([
@@ -253,6 +220,11 @@ void main() {
         'insight-warning-icon-light@tint20',
         'settings-tile-warning-icon-light@tint15',
         'import-option-warning-icon-light@tint15',
+        'closed-chip-text-dark@grey20',
+        'inv-tile-icon-light@gradient',
+        'inv-tile-icon-dark@gradient',
+        'inv-detail-header@fill',
+        'type-selector-label@fill',
       ]),
     );
   });

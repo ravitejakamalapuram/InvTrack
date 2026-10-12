@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
+import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
@@ -19,6 +20,19 @@ String investmentTypeName(WidgetRef ref, InvestmentEntity investment) =>
         ref.watch(isCustomInvestmentTypesEnabledProvider)
     ? investment.typeLabel
     : investment.type.displayName;
+
+/// [fill] at 10% over the card of the theme, opaque.
+Color _tintOver(Color fill, Brightness brightness) => Color.alphaBlend(
+  fill.withValues(alpha: 0.1),
+  brightness == Brightness.dark ? AppColors.cardDark : AppColors.cardLight,
+);
+
+// The purple and the blue of four investment types and of the certificate
+// document type, deepened so that a white label on them reaches 4.5:1 (4.62
+// and 4.64). The bright #8B5CF6 and #3B82F6 were 4.23:1 and 3.68:1 with white;
+// the purple is 4.13:1 with ink, so no label colour could reach 4.5:1 on it.
+const Color _deepPurple = Color(0xFF8555EF);
+const Color _deepBlue = Color(0xFF2A70E3);
 
 /// Extension providing UI-specific properties for [InvestmentType].
 extension InvestmentTypeUI on InvestmentType {
@@ -56,11 +70,13 @@ extension InvestmentTypeUI on InvestmentType {
     }
   }
 
-  /// Color representing this investment type
+  /// Color representing this investment type: the fill of its tile and of its
+  /// selected chip, and the source of its tint. A label or an icon on it takes
+  /// [AppColors.onFill]. Text and icons on the pale tint take [textColor].
   Color get color {
     switch (this) {
       case InvestmentType.p2pLending:
-        return const Color(0xFF3B82F6); // Blue
+        return _deepBlue;
       case InvestmentType.fixedDeposit:
         return const Color(0xFF10B981); // Emerald
       case InvestmentType.bonds:
@@ -68,7 +84,7 @@ extension InvestmentTypeUI on InvestmentType {
       case InvestmentType.realEstate:
         return const Color(0xFFEC4899); // Pink
       case InvestmentType.privateEquity:
-        return const Color(0xFF8B5CF6); // Purple
+        return _deepPurple;
       case InvestmentType.angelInvesting:
         return const Color(0xFF06B6D4); // Cyan
       case InvestmentType.chitFunds:
@@ -76,9 +92,9 @@ extension InvestmentTypeUI on InvestmentType {
       case InvestmentType.gold:
         return const Color(0xFFFFD700); // Gold
       case InvestmentType.crypto:
-        return const Color(0xFF8B5CF6); // Purple
+        return _deepPurple;
       case InvestmentType.mutualFunds:
-        return const Color(0xFF3B82F6); // Blue
+        return _deepBlue;
       case InvestmentType.stocks:
         return const Color(0xFF10B981); // Emerald
       case InvestmentType.invoiceDiscounting:
@@ -87,6 +103,46 @@ extension InvestmentTypeUI on InvestmentType {
         return const Color(0xFF14B8A6); // Teal
       case InvestmentType.other:
         return const Color(0xFF6B7280); // Gray
+    }
+  }
+
+  /// The pale fill behind this type's name or icon: [color] at 10% over the
+  /// card of the theme, opaque, so the text on it keeps the same ratio on the
+  /// card, on the page and on a sheet. [textColor] reaches 4.5:1 on it.
+  Color tintColor(Brightness brightness) => _tintOver(color, brightness);
+
+  /// The colour of this type's name, and of its icon, on [tintColor]: 4.5:1 or
+  /// more in both themes. It keeps the hue of [color], deeper in light, where
+  /// the fill itself is 1.4:1 to 4.3:1 on its tint; in dark most fills already
+  /// read, so five lighter variants stand in for the rest.
+  Color textColor(Brightness brightness) {
+    final dark = brightness == Brightness.dark;
+    switch (this) {
+      case InvestmentType.p2pLending:
+      case InvestmentType.mutualFunds:
+        return dark ? const Color(0xFF4087FB) : const Color(0xFF2168DA);
+      case InvestmentType.privateEquity:
+      case InvestmentType.crypto:
+        return dark ? const Color(0xFF976EFF) : const Color(0xFF7D4CE5);
+      case InvestmentType.other:
+        return dark ? const Color(0xFF818997) : const Color(0xFF666D7A);
+      case InvestmentType.fixedDeposit:
+      case InvestmentType.stocks:
+        return dark ? color : const Color(0xFF007E56);
+      case InvestmentType.bonds:
+        return dark ? color : const Color(0xFF9D6300);
+      case InvestmentType.realEstate:
+        return dark ? color : const Color(0xFFCA227D);
+      case InvestmentType.angelInvesting:
+        return dark ? color : const Color(0xFF00798E);
+      case InvestmentType.chitFunds:
+        return dark ? color : const Color(0xFFB64F00);
+      case InvestmentType.gold:
+        return dark ? color : const Color(0xFF867000);
+      case InvestmentType.invoiceDiscounting:
+        return dark ? color : const Color(0xFF0075A8);
+      case InvestmentType.financing:
+        return dark ? color : const Color(0xFF007D70);
     }
   }
 }
@@ -198,11 +254,39 @@ extension DocumentTypeUI on DocumentType {
       case DocumentType.statement:
         return const Color(0xFFF59E0B); // Amber
       case DocumentType.certificate:
-        return const Color(0xFF8B5CF6); // Purple
+        return _deepPurple;
       case DocumentType.image:
         return const Color(0xFFEC4899); // Pink
       case DocumentType.other:
         return const Color(0xFF6B7280); // Gray
+    }
+  }
+
+  /// The pale fill behind this type's name or icon: [color] at 10% over the
+  /// card of the theme, opaque, so [textColor] keeps the same ratio wherever
+  /// it sits.
+  Color tintColor(Brightness brightness) => _tintOver(color, brightness);
+
+  /// The colour of this type's name, and of its icon, on [tintColor]: 4.5:1 or
+  /// more in both themes. It keeps the hue of [color], deeper in light, where
+  /// the fill itself is 1.9:1 to 4.3:1 on its tint; in dark most fills already
+  /// read, so three lighter variants stand in for the rest. The same values as
+  /// the investment types that share a fill.
+  Color textColor(Brightness brightness) {
+    final dark = brightness == Brightness.dark;
+    switch (this) {
+      case DocumentType.receipt:
+        return dark ? color : const Color(0xFF007E56);
+      case DocumentType.contract:
+        return dark ? const Color(0xFF4087FB) : const Color(0xFF2168DA);
+      case DocumentType.statement:
+        return dark ? color : const Color(0xFF9D6300);
+      case DocumentType.certificate:
+        return dark ? const Color(0xFF976EFF) : const Color(0xFF7D4CE5);
+      case DocumentType.image:
+        return dark ? color : const Color(0xFFCA227D);
+      case DocumentType.other:
+        return dark ? const Color(0xFF818997) : const Color(0xFF666D7A);
     }
   }
 }
