@@ -144,7 +144,18 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     }
   }
 
+  /// A new cash flow cannot be added to an investment known to be closed.
+  /// Editing an existing cash flow stays allowed. An unknown status (the
+  /// list is still loading) counts as open so the form never flashes blocked.
+  bool get _isClosedForNewCashFlow =>
+      !widget.isEditing &&
+      ref.read(investmentStatusProvider(widget.investmentId)) ==
+          InvestmentStatus.closed;
+
   Future<void> _submit() async {
+    // The closed banner and the disabled button are the visible guard; this
+    // refuses a tap handler that was built before the status changed.
+    if (_isClosedForNewCashFlow) return;
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -233,6 +244,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           ?.currency;
       if (investmentCurrency != null) _selectedCurrency = investmentCurrency;
     }
+    final status = ref.watch(investmentStatusProvider(widget.investmentId));
+    final isClosed = !widget.isEditing && status == InvestmentStatus.closed;
     // The amount is entered in the selected currency, so show its symbol
     final displayCurrency = _displayCurrency(ref.watch(currencyCodeProvider));
     final currencySymbol = getCurrencySymbol(displayCurrency);
@@ -276,6 +289,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           child: ListView(
             padding: AppSpacing.screenPadding,
             children: [
+              if (isClosed) ...[
+                _ClosedInvestmentBanner(
+                  message: l10n.notificationInvestmentClosed,
+                ),
+                SizedBox(height: AppSpacing.lg),
+              ],
+
               // Cash Flow Type Selector - Using TypeSelector widget for robustness
               // The logic for colors and icons is passed via builders
               TypeSelector<CashFlowType>(
@@ -520,7 +540,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               SizedBox(height: AppSpacing.xxl),
 
               // Submit Button
-              _buildSubmitButton(isDark),
+              _buildSubmitButton(isDark, enabled: !isClosed),
 
               const SizedBox(height: 20),
             ],
@@ -530,19 +550,63 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     );
   }
 
-  Widget _buildSubmitButton(bool isDark) {
+  Widget _buildSubmitButton(bool isDark, {required bool enabled}) {
     final color = _selectedType.isOutflow
         ? (isDark ? AppColors.errorDark : AppColors.errorLight)
         : (isDark ? AppColors.successDark : AppColors.successLight);
 
-    return GradientButton(
-      onPressed: _submit,
+    final button = GradientButton(
+      onPressed: enabled ? _submit : null,
       isLoading: _isLoading,
       icon: _selectedType.isOutflow
           ? Icons.arrow_upward_rounded
           : Icons.arrow_downward_rounded,
       label: 'Save Cash Flow',
       color: color,
+    );
+    return enabled ? button : Opacity(opacity: 0.4, child: button);
+  }
+}
+
+/// Tells the user the investment was closed (for example on another device),
+/// so no new cash flow can be added to it. Announced to screen readers.
+class _ClosedInvestmentBanner extends StatelessWidget {
+  const _ClosedInvestmentBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final warning = isDark ? AppColors.warningDark : AppColors.warningLight;
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: message,
+      child: ExcludeSemantics(
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: warning.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: warning.withValues(alpha: 0.5)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.lock_outline_rounded, color: warning),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  message,
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: isDark ? Colors.white : AppColors.neutral900Light,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
