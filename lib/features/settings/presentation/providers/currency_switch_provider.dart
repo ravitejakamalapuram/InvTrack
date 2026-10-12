@@ -236,11 +236,16 @@ class CurrencySwitch extends _$CurrencySwitch {
       );
       return;
     }
+    // Only the Settings tile listens to this auto-dispose provider. Keep it
+    // alive until the change ends, so leaving Settings mid-change cannot
+    // dispose it under the stamp, the rate fetch or the rollback (A132).
+    final keepAlive = ref.keepAlive();
     _inFlight = true;
     try {
       await _runSwitch(currentCurrency, newCurrency, askLegacyCurrency);
     } finally {
       _inFlight = false;
+      keepAlive.close();
     }
   }
 
