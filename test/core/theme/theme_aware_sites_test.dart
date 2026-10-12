@@ -44,6 +44,8 @@
 // a theme check; [brightSites] counts the reads that are not a tint, so a text
 // or an icon that goes back to the bright colour changes a count in [_bright].
 // A site that reads `accentLight` for a text is a contrast bug in light.
+// `colorScheme.secondary` is `accentLight` in the light theme, so [brightSites]
+// counts it as well; none is read in lib/.
 //
 // A new constant in app_colors.dart that is an alias of a listed one is found
 // by [unlistedAliases]. One with a value of its own is not: the PR that adds it
@@ -55,6 +57,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 
 const _constants = [
   'neutral500Light',
@@ -94,7 +97,8 @@ const _deepStatusConstants = [
 
 /// The bright blue and amber, for fills, tints, borders and gradients. A read
 /// of one that is not a tint is a fill, a tint source held in a variable, or a
-/// text that still needs fixing.
+/// text that still needs fixing. `colorScheme.secondary` counts too: it is
+/// `accentLight` in the light theme.
 const _brightConstants = ['accentLight', 'warningLight'];
 
 /// How many reads of [_brightConstants] that are not a tint each file keeps
@@ -487,11 +491,15 @@ List<Site> tintedStatusSites(String source) {
   return sites;
 }
 
+// `colorScheme.secondary` is `accentLight` in the light theme, so it is the
+// bright blue under another name (how the PDF export icon got it).
 final _brightOccurrence = RegExp(
-  '\\bAppColors\\s*\\.\\s*(${_brightConstants.join('|')})\\b',
+  '\\bAppColors\\s*\\.\\s*(${_brightConstants.join('|')})\\b'
+  r'|\bcolorScheme\s*\.\s*(secondary)\b',
 );
 
-/// The sites in [source] that read the bright blue or amber and are not a tint
+/// The sites in [source] that read the bright blue or amber (or
+/// `colorScheme.secondary`, which is the blue in light) and are not a tint
 /// of half strength or less, whatever the theme branch. What is left is a fill,
 /// a tint source held in a variable, a ring, or a text that is not fixed.
 List<Site> brightSites(String source) {
@@ -504,7 +512,7 @@ List<Site> brightSites(String source) {
     if (_isTint(code, m.end) || (closes && _isTint(code, to + 1))) continue;
     sites.add((
       line: '\n'.allMatches(code.substring(0, m.start)).length + 1,
-      constant: m.group(1)!,
+      constant: m.group(1) ?? 'colorScheme.${m.group(2)}',
       expression: code
           .substring(from, to)
           .trim()
@@ -943,6 +951,21 @@ final d = AppColors.accentLight.withAlpha(128);
       );
     });
 
+    test('are counted when read as colorScheme.secondary, the light blue', () {
+      expect(
+        found('''
+final a = Theme.of(context).colorScheme.secondary;
+final b = Theme.of(context).colorScheme.secondaryContainer;
+final c = Theme.of(context).colorScheme
+    .secondary;
+final d = Theme.of(context).colorScheme.secondary.withValues(alpha: 0.2);
+final e = SwitchListTile(secondary: const Icon(Icons.add));
+final f = ColorScheme.light(secondary: AppColors.accentTextLight);
+'''),
+        [1, 3],
+      );
+    });
+
     test('ignore the text colours, the dark colours, comments and strings', () {
       expect(
         found('''
@@ -977,6 +1000,25 @@ final c = 'AppColors.warningLight';
       );
     },
   );
+
+  test('the hidden Income Guardian files are split before the flag ships', () {
+    // _bright counts reads; it cannot tell a fill from a text. These files
+    // paint the bright blue and amber as text too (2.77:1 and 2.15:1 in light),
+    // and are counted only because the feature is off. Turning the flag on
+    // needs their text on accentTextLight and warningTextLight and their
+    // entries out of _bright.
+    final hidden = [
+      for (final path in _bright.keys)
+        if (path.startsWith('lib/features/income_projection/')) path,
+    ];
+    expect(
+      FeatureFlag.incomeGuardian.defaultEnabled && hidden.isNotEmpty,
+      isFalse,
+      reason:
+          'Income Guardian is on by default but these files still read the '
+          'bright blue or amber for text: ${hidden.join(', ')}',
+    );
+  });
 
   test('every site that reads a light colour checks the theme', () {
     final failures = <String>[];
