@@ -250,6 +250,48 @@ void main() {
       expect(pendingReminderDate(), DateTime(2026, 11, 3, 9));
     });
 
+    // #1001: the resync cancels the alarm of an FD whose payout mode pays no
+    // income before maturity. If the mode is fixed to periodic later on the
+    // due day, after 09:00, that day's reminder is still owed.
+    test('an alarm cancelled for a cumulative payout mode is still owed when '
+        'the mode becomes periodic after 09:00 on the due day', () async {
+      InvestmentEntity p2p(InterestPayoutMode mode) => InvestmentEntity(
+        id: investmentId,
+        name: 'P2P Monthly',
+        type: InvestmentType.p2pLending,
+        status: InvestmentStatus.open,
+        createdAt: DateTime(2026, 9, 3),
+        updatedAt: DateTime(2026, 9, 3),
+        startDate: anchor,
+        incomeFrequency: IncomeFrequency.monthly,
+        interestPayoutMode: mode,
+      );
+      final lastIncomeDates = {investmentId: anchor};
+
+      fakeNow = DateTime(2026, 9, 20, 10);
+      await schedule();
+      expect(pendingReminderDate(), DateTime(2026, 10, 3, 9));
+
+      // Due day, 08:00: the sweep cancels the alarm of a cumulative record.
+      fakeNow = DateTime(2026, 10, 3, 8);
+      await service.rescheduleAllNotifications([
+        p2p(InterestPayoutMode.cumulative),
+      ], lastIncomeDates: lastIncomeDates);
+      expect(
+        fakePlugin.scheduledNotifications.where((n) => n.id == reminderId),
+        isEmpty,
+      );
+
+      // The same day at 10:30 the payout mode is corrected to periodic.
+      fakeNow = DateTime(2026, 10, 3, 10, 30);
+      await service.rescheduleAllNotifications([
+        p2p(InterestPayoutMode.periodic),
+      ], lastIncomeDates: lastIncomeDates);
+
+      expect(shownReminders(), hasLength(1));
+      expect(pendingReminderDate(), DateTime(2026, 11, 3, 9));
+    });
+
     test('cancelling the reminder (investment closed or removed) forgets '
         'its due date', () async {
       fakeNow = DateTime(2026, 9, 20, 10);
