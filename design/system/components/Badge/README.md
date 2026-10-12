@@ -8,7 +8,7 @@ Use a badge for one short fact beside a value. Use a `Chip` when the label can b
 - `status` (StatusBadge): pill (20px radius), 10px/600 with +0.5 spacing, padding 10 x 4, the colour at 15% fill (outlined: a 50% border). Also the neutral chip that replaces a return % ("Awaiting first payout").
 - `currency` (CurrencyBadge): compact is the code on `primary` 20% with a 30% border (4px radius, 11px/600, themed `primary`); full adds a separator and the rate, "USD | 1 $ = ₹83.12", rate to two decimals, on `input-fill` at 80% (50% in dark). Use it wherever a non-base currency appears.
 - `maturity`: 6px radius, padding 8 x 2, an optional 10px icon, 12px/600 in the tone's text colour on its 15% tint: `MATURED`, `MATURES TODAY`, `7d TO MATURITY`. The text is `success`, `warning-text` or `accent-text`; the tint is `success-tint`, `warning` or `accent`.
-- `type` and `closed`: the investment type name in its colour on 10%, and the grey `CLOSED`.
+- `type` and `closed`: the investment type name in `inv-*-text` on an opaque 10% tint of its colour over the card, and `CLOSED` in `closed-text` (grey in dark) on grey 20%.
 
 ## Consumer provides
 

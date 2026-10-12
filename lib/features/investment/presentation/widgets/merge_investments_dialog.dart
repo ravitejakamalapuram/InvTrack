@@ -148,9 +148,12 @@ class _MergeInvestmentsDialogState extends State<MergeInvestmentsDialog> {
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOutCubic,
               builder: (context, value, child) {
+                // The selected chip is the type's pale tint with its text
+                // colour (4.5:1 or more); the border keeps the fill.
+                final brightness = isDark ? Brightness.dark : Brightness.light;
                 final bgColor = Color.lerp(
                   isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                  type.color.withValues(alpha: 0.2),
+                  type.tintColor(brightness),
                   value,
                 )!;
                 final borderColor = Color.lerp(
@@ -160,12 +163,12 @@ class _MergeInvestmentsDialogState extends State<MergeInvestmentsDialog> {
                 )!;
                 final iconColor = Color.lerp(
                   isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-                  type.color,
+                  type.textColor(brightness),
                   value,
                 )!;
                 final textColor = Color.lerp(
                   isDark ? AppColors.neutral300Dark : AppColors.neutral600Light,
-                  type.color,
+                  type.textColor(brightness),
                   value,
                 )!;
 
@@ -198,7 +201,7 @@ class _MergeInvestmentsDialogState extends State<MergeInvestmentsDialog> {
                         Icon(
                           Icons.check_circle,
                           size: 12,
-                          color: type.color.withValues(alpha: 0.7),
+                          color: type.textColor(brightness),
                         ),
                       ],
                     ],

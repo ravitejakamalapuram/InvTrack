@@ -125,6 +125,8 @@ class _DocumentCard extends ConsumerWidget {
     required this.l10n,
   });
 
+  Brightness get _brightness => isDark ? Brightness.dark : Brightness.light;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cardContent = Material(
@@ -166,13 +168,13 @@ class _DocumentCard extends ConsumerWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: document.type.color.withValues(alpha: 0.15),
+                            color: document.type.tintColor(_brightness),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             document.type.displayName,
                             style: AppTypography.caption.copyWith(
-                              color: document.type.color,
+                              color: document.type.textColor(_brightness),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -339,12 +341,12 @@ class _DocumentCard extends ConsumerWidget {
       width: 48,
       height: 48,
       decoration: BoxDecoration(
-        color: document.type.color.withValues(alpha: 0.15),
+        color: document.type.tintColor(_brightness),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(
         document.isPdf ? Icons.picture_as_pdf_rounded : document.type.icon,
-        color: document.type.color,
+        color: document.type.textColor(_brightness),
         size: 24,
       ),
     );

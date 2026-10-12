@@ -141,6 +141,13 @@ const _dataManagementTest =
 const _reportsCountTest =
     'test/features/reports/presentation/screens/reports_home_attention_contrast_test.dart';
 
+// PR 7: the tests that pump the widgets that paint a type's colours.
+const _typeCardTest =
+    'test/features/investment/presentation/widgets/investment_card_type_contrast_test.dart';
+const _typeHeaderTest =
+    'test/features/investment/presentation/screens/investment_detail_header_contrast_test.dart';
+const _typeSelectorTest = 'test/core/widgets/type_selector_contrast_test.dart';
+
 // Grounds the audit used. Dark input fill is the theme's, `neutral800Dark`.
 const _bgL = AppColors.backgroundLight;
 const _cardL = AppColors.cardLight;
@@ -152,7 +159,7 @@ const _inputD = AppColors.neutral800Dark;
 Color _tint(Color c, double alpha, Color over) =>
     composeOver(c.withValues(alpha: alpha), over);
 
-// Label on a type fill (white today): id, type, audit row, audit ratio.
+// Label on a type fill (white before PR 7): id, type, audit row, audit ratio.
 final _typeFills = <(String, InvestmentType, int, double)>[
   ('angel-investing', InvestmentType.angelInvesting, 21, 2.43),
   ('bonds', InvestmentType.bonds, 23, 2.15),
@@ -550,11 +557,16 @@ List<ContrastPair> _build() {
       ),
 
     // ---- P1 investment-type colours ----
+    // The label on a type's fill is `AppColors.onFill` of it, and the type
+    // name on its tint is `textColor` on `tintColor`: the getters the card,
+    // the filter chip, the merge dialog and the goal picker paint. [audit] is
+    // the ratio of the colours before PR 7 (white on the fill, the fill on a
+    // translucent 10% tint).
     for (final (id, type, row, audit) in _typeFills)
       ContrastPair.token(
         'inv-$id-label@fill',
         rows: [row],
-        fg: white,
+        fg: AppColors.onFill(type.color),
         ground: type.color,
         audit: audit,
       ),
@@ -562,9 +574,26 @@ List<ContrastPair> _build() {
       ContrastPair.token(
         'inv-$id-${isDark ? 'dark' : 'light'}@tint10',
         rows: [row],
-        fg: type.color,
-        ground: _tint(type.color, 0.1, isDark ? _cardD : _cardL),
+        fg: type.textColor(isDark ? Brightness.dark : Brightness.light),
+        ground: type.tintColor(isDark ? Brightness.dark : Brightness.light),
         audit: audit,
+      ),
+    // The widgets that paint them, pumped for every type in both themes. The
+    // audit had no row for these; [audit] is the worst ratio before PR 7.
+    for (final (id, audit, test, min) in [
+      ('closed-chip-text-dark@grey20', 4.79, _typeCardTest, kMinText),
+      ('inv-tile-icon-light@gradient', 1.40, _typeCardTest, graphic),
+      ('inv-tile-icon-dark@gradient', 1.40, _typeCardTest, graphic),
+      ('inv-detail-header@fill', 1.40, _typeHeaderTest, kMinText),
+      ('type-selector-label@fill', 1.40, _typeSelectorTest, kMinText),
+    ])
+      ContrastPair.widget(
+        id,
+        rows: const [],
+        audit: audit,
+        min: min,
+        addedByPlan: true,
+        widgetTest: test,
       ),
 
     // ---- P2 outlines of fields, buttons and chips ----
@@ -678,6 +707,7 @@ List<ContrastPair> _build() {
       'closed-chip-text-light@grey20',
       rows: [17],
       audit: 2.27,
+      widgetTest: _typeCardTest,
     ),
     for (final (stop, audit) in [
       ('1e1b4b', 3.55),
@@ -1048,12 +1078,12 @@ List<ContrastPair> _build() {
       ContrastPair.control(id, fg: color, ground: _tint(color, alpha, _cardD)),
 
     // Every investment type and theme the audit passed: its label on its
-    // fill and its name on its own 10% tint. PR 7 recolours the types.
+    // fill and its name on its own 10% tint, as PR 7 paints them.
     for (final type in InvestmentType.values) ...[
       if (!_failingTypeIds.contains('inv-${_typeId(type)}-label@fill'))
         ContrastPair.control(
           'inv-${_typeId(type)}-label@fill',
-          fg: white,
+          fg: AppColors.onFill(type.color),
           ground: type.color,
         ),
       for (final isDark in [false, true])
@@ -1062,8 +1092,8 @@ List<ContrastPair> _build() {
         ))
           ContrastPair.control(
             'inv-${_typeId(type)}-${isDark ? 'dark' : 'light'}@tint10',
-            fg: type.color,
-            ground: _tint(type.color, 0.1, isDark ? _cardD : _cardL),
+            fg: type.textColor(isDark ? Brightness.dark : Brightness.light),
+            ground: type.tintColor(isDark ? Brightness.dark : Brightness.light),
           ),
     ],
   ];
