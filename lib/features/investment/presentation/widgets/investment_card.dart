@@ -571,7 +571,10 @@ class _InvestmentInfo extends StatelessWidget {
     if (daysUntilMaturity == 0) {
       return _MaturityInfo(
         label: 'MATURES TODAY',
-        color: isDark ? AppColors.warningDark : AppColors.warningLight,
+        color: isDark ? AppColors.warningDark : AppColors.warningTextLight,
+        // Tinted with the bright amber: on a tint of the deeper text amber the
+        // label would be 4.25:1.
+        tint: isDark ? AppColors.warningDark : AppColors.warningLight,
         icon: Icons.schedule_rounded,
       );
     }
@@ -580,7 +583,8 @@ class _InvestmentInfo extends StatelessWidget {
     if (daysUntilMaturity <= 7) {
       return _MaturityInfo(
         label: '${daysUntilMaturity}d TO MATURITY',
-        color: isDark ? AppColors.warningDark : AppColors.warningLight,
+        color: isDark ? AppColors.warningDark : AppColors.warningTextLight,
+        tint: isDark ? AppColors.warningDark : AppColors.warningLight,
         icon: Icons.schedule_rounded,
       );
     }
@@ -589,7 +593,8 @@ class _InvestmentInfo extends StatelessWidget {
     if (daysUntilMaturity <= 30) {
       return _MaturityInfo(
         label: '${daysUntilMaturity}d TO MATURITY',
-        color: isDark ? AppColors.accentDark : AppColors.accentLight,
+        color: isDark ? AppColors.accentDark : AppColors.accentTextLight,
+        tint: isDark ? AppColors.accentDark : AppColors.accentLight,
         icon: Icons.event_rounded,
       );
     }

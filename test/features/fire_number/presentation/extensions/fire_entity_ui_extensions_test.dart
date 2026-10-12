@@ -78,6 +78,88 @@ void main() {
       });
     });
 
+    group('textColor', () {
+      // Coasting paints a chart teal (2.49:1 on white) that no token covers
+      // yet; every other status is text on the card.
+      final readable = FireProgressStatus.values.where(
+        (status) => status != FireProgressStatus.coasting,
+      );
+
+      test('behind and on track take the deeper amber and blue in light', () {
+        expect(
+          FireProgressStatus.behind.textColor(false),
+          AppColors.warningTextLight,
+        );
+        expect(
+          FireProgressStatus.onTrack.textColor(false),
+          AppColors.accentTextLight,
+        );
+      });
+
+      test('every other status is its plain colour, in either theme', () {
+        for (final status in FireProgressStatus.values) {
+          expect(
+            status.textColor(true),
+            status.colorForBrightness(Brightness.dark),
+            reason: '${status.name} in dark',
+          );
+          if (status == FireProgressStatus.behind ||
+              status == FireProgressStatus.onTrack) {
+            continue;
+          }
+          expect(
+            status.textColor(false),
+            status.colorForBrightness(Brightness.light),
+            reason: '${status.name} in light',
+          );
+        }
+      });
+
+      test('the fill hue stays the bright one: .color is not the text', () {
+        expect(FireProgressStatus.behind.color, AppColors.warningLight);
+        expect(FireProgressStatus.onTrack.color, AppColors.accentLight);
+        expect(
+          FireProgressStatus.behind.vividColorForBrightness(Brightness.light),
+          AppColors.warningLight,
+        );
+        expect(
+          FireProgressStatus.onTrack.vividColorForBrightness(Brightness.light),
+          AppColors.accentLight,
+        );
+      });
+
+      test('reads at least 4.5:1 on the card, in both themes', () {
+        for (final status in readable) {
+          expect(
+            contrastRatio(status.textColor(false), AppColors.cardLight),
+            greaterThanOrEqualTo(kMinText),
+            reason: '${status.name} in light',
+          );
+          expect(
+            contrastRatio(status.textColor(true), AppColors.cardDark),
+            greaterThanOrEqualTo(kMinText),
+            reason: '${status.name} in dark',
+          );
+        }
+      });
+
+      test('reads at least 4.5:1 on a 15% tint of its vivid colour', () {
+        for (final status in readable) {
+          final tint = composeOver(
+            status
+                .vividColorForBrightness(Brightness.light)
+                .withValues(alpha: 0.15),
+            AppColors.cardLight,
+          );
+          expect(
+            contrastRatio(status.textColor(false), tint),
+            greaterThanOrEqualTo(kMinText),
+            reason: '${status.name} on a 15% tint',
+          );
+        }
+      });
+    });
+
     group('vividColorForBrightness', () {
       // The status colour for a tint and for the purple hero card: the
       // original, brighter hue. Only the two green statuses differ in light,

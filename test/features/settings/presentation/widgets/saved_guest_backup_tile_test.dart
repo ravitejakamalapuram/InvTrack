@@ -3,6 +3,9 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_theme.dart';
 import 'package:inv_tracker/features/auth/data/services/guest_backup_store.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
@@ -11,6 +14,8 @@ import 'package:inv_tracker/features/settings/data/providers/data_export_provide
 import 'package:inv_tracker/features/settings/data/services/data_export_service.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/saved_guest_backup_tile.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+
+import '../../../../helpers/contrast.dart';
 
 /// Backups kept on the device, all owned by [_owner].
 class _FakeBackupStore implements GuestBackupStore {
@@ -52,6 +57,10 @@ class _FakeExportService extends Fake implements DataExportService {
 /// A05-F1 / auth-account-02: a guest backup left after a partial merge must
 /// stay reachable after the merge prompt is gone, even after a restart.
 void main() {
+  // The icon test builds AppTheme, which builds text styles from fonts.
+  TestWidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = false;
+
   const backups = [
     '/data/app/files/guest_backups/InvTrack_Guest_Backup_1.zip',
     '/data/app/files/guest_backups/InvTrack_Guest_Backup_2.zip',
@@ -59,7 +68,11 @@ void main() {
   late _FakeBackupStore store;
   late _FakeExportService exportService;
 
-  Future<void> pumpTile(WidgetTester tester, {UserEntity user = _owner}) async {
+  Future<void> pumpTile(
+    WidgetTester tester, {
+    UserEntity user = _owner,
+    ThemeData? theme,
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -68,6 +81,7 @@ void main() {
           dataExportServiceProvider.overrideWithValue(exportService),
         ],
         child: MaterialApp(
+          theme: theme,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(body: SavedGuestBackupTile()),
@@ -87,6 +101,38 @@ void main() {
     expect(find.text('Saved guest backup'), findsNothing);
     expect(find.byType(ListTile), findsNothing);
   });
+
+  testWidgets(
+    'saved-guest-backup-icon-light@card: the icon is the deeper amber and '
+    'reads, in dark it is the dark amber',
+    (tester) async {
+      store = _FakeBackupStore(List.of(backups));
+
+      await pumpTile(tester, theme: AppTheme.lightTheme);
+      final light = tester.widget<Icon>(find.byIcon(Icons.restore_page)).color!;
+      expect(light, AppColors.warningTextLight);
+      // On the card and on the page the card sits on.
+      expect(
+        contrastRatio(light, AppColors.cardLight),
+        greaterThanOrEqualTo(kMinGraphic),
+        reason: 'saved-guest-backup-icon-light@card',
+      );
+      expect(
+        contrastRatio(light, AppColors.backgroundLight),
+        greaterThanOrEqualTo(kMinGraphic),
+      );
+      // Colour is not the only carrier: the tile is titled.
+      expect(find.text('Saved guest backup'), findsOneWidget);
+
+      await pumpTile(tester, theme: AppTheme.darkTheme);
+      final dark = tester.widget<Icon>(find.byIcon(Icons.restore_page)).color!;
+      expect(dark, AppColors.warningDark);
+      expect(
+        contrastRatio(dark, AppColors.cardDark),
+        greaterThanOrEqualTo(kMinGraphic),
+      );
+    },
+  );
 
   testWidgets('offers every kept backup for sharing', (tester) async {
     store = _FakeBackupStore(List.of(backups));

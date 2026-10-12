@@ -10,7 +10,7 @@ Use a tile for a single headline number. Use `HeroCard` for the Overview headlin
 - `net`: the detail screen's first card: a 28px trend or hourglass icon in a tinted 14px tile, label 12px, value 20px/700 (compact, `formatSmart`), and on the right the return badge or a neutral status chip.
 - `current`: label "Current value", the amount, its basis ("Updated Oct 11, 2026", "Estimated at 7% p.a.", "No current value yet") and a text button ("Add current value" / "Update").
 - `flows`: arrow-up money out, arrow-down money in, then "N txns" at the end.
-- `maturity`: a status icon, "Maturity Date", the date, and a status pill ("Matured 296 days ago", "Matures today!", "21 days until maturity").
+- `maturity`: a status icon, "Maturity Date", the date, and a status pill ("Matured 296 days ago", "Matures today!", "21 days until maturity"). The icon and the pill text are `success`, `warning-text` or `accent-text` (`text-muted` beyond 30 days), tinted at 15% with `success-tint`, `warning` or `accent`.
 - `hero` (HeroMetric): white label 14px, `number-large` 40px value, caption, for use on a gradient.
 
 ## Detail-screen arrangement

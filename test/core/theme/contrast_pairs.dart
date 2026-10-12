@@ -126,6 +126,18 @@ const _fireMilestoneTest =
 const _fireInsightTest =
     'test/features/fire_number/presentation/screens/fire_dashboard_hero_colour_test.dart';
 const _feedbackTest = 'test/core/utils/app_feedback_theme_contrast_test.dart';
+
+// PR 6: the tests that pump a blue or amber label or icon on its tint.
+const _overviewEmptyTest =
+    'test/features/overview/presentation/widgets/overview_empty_state_theme_contrast_test.dart';
+const _sampleBannerTest =
+    'test/features/overview/presentation/widgets/sample_data_banner_theme_contrast_test.dart';
+const _guestTileTest =
+    'test/features/settings/presentation/widgets/saved_guest_backup_tile_test.dart';
+const _insightCardTest =
+    'test/features/reports/presentation/widgets/smart_insight_card_theme_contrast_test.dart';
+const _dataManagementTest =
+    'test/features/settings/presentation/screens/data_management_theme_contrast_test.dart';
 const _reportsCountTest =
     'test/features/reports/presentation/screens/reports_home_attention_contrast_test.dart';
 
@@ -204,16 +216,16 @@ List<ContrastPair> _build() {
   return [
     // ---- P1 text on the token grounds ----
     ContrastPair.token(
-      'accent-light@card',
+      'accent-text-light@card',
       rows: [0],
-      fg: AppColors.accentLight,
+      fg: AppColors.accentTextLight,
       ground: _cardL,
       audit: 2.77,
     ),
     ContrastPair.token(
-      'accent-light@tint15',
+      'accent-text-light@tint15',
       rows: [0],
-      fg: AppColors.accentLight,
+      fg: AppColors.accentTextLight,
       ground: _tint(AppColors.accentLight, 0.15, _cardL),
       audit: 2.39,
     ),
@@ -330,16 +342,16 @@ List<ContrastPair> _build() {
       audit: 4.40,
     ),
     ContrastPair.token(
-      'warning-light@card',
+      'warning-text-light@card',
       rows: [16],
-      fg: AppColors.warningLight,
+      fg: AppColors.warningTextLight,
       ground: _cardL,
       audit: 2.15,
     ),
     ContrastPair.token(
-      'warning-light@tint15',
+      'warning-text-light@tint15',
       rows: [16],
-      fg: AppColors.warningLight,
+      fg: AppColors.warningTextLight,
       ground: _tint(AppColors.warningLight, 0.15, _cardL),
       audit: 1.91,
     ),
@@ -475,6 +487,57 @@ List<ContrastPair> _build() {
         5.26,
         _changeBadgeStatusTest,
         kMinText,
+      ),
+    ])
+      ContrastPair.widget(
+        id,
+        rows: const [],
+        audit: audit,
+        min: min,
+        addedByPlan: true,
+        widgetTest: test,
+      ),
+
+    // ---- P1 blue and amber text and icons on their tints (PR 6) ----
+    // Each is measured by a test that pumps the widget and reads its real
+    // colour and its real tint. [audit] is the ratio before the text colours
+    // were added. The chips are tinted with `accentLight` and `warningLight`,
+    // the colours they had: on a tint of the text colour itself the label
+    // falls to 4.45 and 4.25.
+    for (final (id, audit, test, min) in [
+      ('maturity-soon-light@tint15', 1.91, _cardTest, kMinText),
+      ('maturity-upcoming-light@tint15', 2.39, _cardTest, kMinText),
+      ('detail-maturity-soon-light@tint15', 1.91, _detailStatsTest, kMinText),
+      (
+        'detail-maturity-upcoming-light@tint15',
+        2.39,
+        _detailStatsTest,
+        kMinText,
+      ),
+      ('fire-status-behind-light@tint15', 1.91, _fireCardTest, kMinText),
+      ('fire-status-on-track-light@tint15', 2.39, _fireCardTest, kMinText),
+      ('fire-stats-icon-fire-light@tint15', 2.39, _fireCardTest, graphic),
+      ('fire-stats-icon-barista-light@tint15', 1.91, _fireCardTest, graphic),
+      ('sample-data-banner-light@tint10', 2.41, _sampleBannerTest, kMinText),
+      ('sample-data-icon-light@tint20', 2.02, _sampleBannerTest, graphic),
+      ('sample-data-try-it-light@gradient', 2.31, _overviewEmptyTest, kMinText),
+      ('sample-data-tile-icon-light@tint20', 2.02, _overviewEmptyTest, graphic),
+      ('quick-start-csv-icon-light@tint20', 2.09, _overviewEmptyTest, graphic),
+      ('xirr-demo-highlight-light@tint5', 1.92, _overviewEmptyTest, kMinText),
+      ('saved-guest-backup-icon-light@card', 2.15, _guestTileTest, graphic),
+      ('insight-warning-value-light@card', 2.15, _insightCardTest, kMinText),
+      ('insight-warning-icon-light@tint20', 1.85, _insightCardTest, graphic),
+      (
+        'settings-tile-warning-icon-light@tint15',
+        1.91,
+        _dataManagementTest,
+        graphic,
+      ),
+      (
+        'import-option-warning-icon-light@tint15',
+        1.91,
+        _dataManagementTest,
+        graphic,
       ),
     ])
       ContrastPair.widget(
@@ -903,6 +966,42 @@ List<ContrastPair> _build() {
           fg: fg,
           ground: _tint(source, 0.1, ground),
         ),
+    // Blue and amber text (PR 6) on the other grounds it sits on. A 10% tint
+    // reads on the page (4.79 and 4.65); on surface blue reads (4.59) and amber
+    // is a hair under (4.45), so an amber chip on a sheet is not tinted. A 15%
+    // tint reads on the card (4.75 and 4.64); on the page blue reads (4.54) and
+    // amber does not (4.47), on surface neither does (4.37 and 4.31), so a 15%
+    // chip belongs in a GlassCard. `accent-text` also reads on the primary tint
+    // that ends the sample-data banner's gradient.
+    for (final (id, color) in [
+      ('accent-text-light', AppColors.accentTextLight),
+      ('warning-text-light', AppColors.warningTextLight),
+    ])
+      for (final (groundName, ground) in [
+        ('background', _bgL),
+        ('surface', _surfaceL),
+      ])
+        ContrastPair.control('$id@$groundName', fg: color, ground: ground),
+    ContrastPair.control(
+      'accent-text-light@tint10-on-background',
+      fg: AppColors.accentTextLight,
+      ground: _tint(AppColors.accentLight, 0.1, _bgL),
+    ),
+    ContrastPair.control(
+      'accent-text-light@primary-tint10-on-background',
+      fg: AppColors.accentTextLight,
+      ground: _tint(AppColors.primaryLight, 0.1, _bgL),
+    ),
+    ContrastPair.control(
+      'warning-text-light@tint10-on-background',
+      fg: AppColors.warningTextLight,
+      ground: _tint(AppColors.warningLight, 0.1, _bgL),
+    ),
+    ContrastPair.control(
+      'warning-text-light@warning-bg',
+      fg: AppColors.warningTextLight,
+      ground: AppColors.warningBgLight,
+    ),
     // A white label on the green fill: snackbars, onboarding, the Copied toast.
     ContrastPair.control(
       'white-on-success-light-fill',

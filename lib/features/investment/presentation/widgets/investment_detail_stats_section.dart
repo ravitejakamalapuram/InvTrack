@@ -641,13 +641,8 @@ class _MaturityCard extends StatelessWidget {
     );
     final daysUntilMaturity = maturity.difference(today).inDays;
 
-    final (statusColor, statusIcon, statusText) = _getMaturityStatus(
-      daysUntilMaturity,
-    );
-    // A matured row is tinted with the brighter green, not the text green.
-    final statusTint = daysUntilMaturity < 0
-        ? (isDark ? AppColors.successDark : AppColors.successTintLight)
-        : statusColor;
+    final (statusColor, statusTint, statusIcon, statusText) =
+        _getMaturityStatus(daysUntilMaturity);
 
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -707,7 +702,10 @@ class _MaturityCard extends StatelessWidget {
     );
   }
 
-  (Color, IconData, String) _getMaturityStatus(int daysUntilMaturity) {
+  /// The text and icon colour, the colour the row is tinted with, the icon and
+  /// the words. The tint is the bright hue the row always had: tinted with the
+  /// deeper green, amber or blue, the words would fall under 4.5:1.
+  (Color, Color, IconData, String) _getMaturityStatus(int daysUntilMaturity) {
     final bool isMatured = daysUntilMaturity < 0;
     final bool isUrgent = daysUntilMaturity >= 0 && daysUntilMaturity <= 7;
     final bool isUpcoming = daysUntilMaturity > 7 && daysUntilMaturity <= 30;
@@ -715,30 +713,38 @@ class _MaturityCard extends StatelessWidget {
     if (isMatured) {
       return (
         isDark ? AppColors.successDark : AppColors.successLight,
+        isDark ? AppColors.successDark : AppColors.successTintLight,
         Icons.check_circle_rounded,
         'Matured ${-daysUntilMaturity} days ago',
       );
     } else if (daysUntilMaturity == 0) {
       return (
+        isDark ? AppColors.warningDark : AppColors.warningTextLight,
         isDark ? AppColors.warningDark : AppColors.warningLight,
         Icons.schedule_rounded,
         'Matures today!',
       );
     } else if (isUrgent) {
       return (
+        isDark ? AppColors.warningDark : AppColors.warningTextLight,
         isDark ? AppColors.warningDark : AppColors.warningLight,
         Icons.schedule_rounded,
         '$daysUntilMaturity days until maturity',
       );
     } else if (isUpcoming) {
       return (
+        isDark ? AppColors.accentDark : AppColors.accentTextLight,
         isDark ? AppColors.accentDark : AppColors.accentLight,
         Icons.event_rounded,
         '$daysUntilMaturity days until maturity',
       );
     } else {
+      final neutral = isDark
+          ? AppColors.neutral400Dark
+          : AppColors.neutral500Light;
       return (
-        isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+        neutral,
+        neutral,
         Icons.event_rounded,
         '$daysUntilMaturity days until maturity',
       );

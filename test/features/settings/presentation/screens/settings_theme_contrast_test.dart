@@ -288,9 +288,15 @@ void main() {
       expect(_icon(tester, Icons.restore_page), AppColors.warningDark);
     });
 
-    testWidgets('in light: unchanged, the light amber', (tester) async {
+    // The bright amber was 2.15:1 on the card; the icon takes the deeper amber
+    // text colour (PR 6).
+    testWidgets('in light: the deeper amber', (tester) async {
       await pump(tester, AppTheme.lightTheme);
-      expect(_icon(tester, Icons.restore_page), AppColors.warningLight);
+      expect(_icon(tester, Icons.restore_page), AppColors.warningTextLight);
+      expect(
+        contrastRatio(_icon(tester, Icons.restore_page), AppColors.cardLight),
+        greaterThanOrEqualTo(kMinGraphic),
+      );
     });
   });
 

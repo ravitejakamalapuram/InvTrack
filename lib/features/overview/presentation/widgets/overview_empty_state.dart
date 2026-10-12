@@ -261,7 +261,7 @@ class _XIRRDemoCard extends StatelessWidget {
                         color: isComplete
                             ? (isDark
                                   ? AppColors.warningDark
-                                  : AppColors.warningLight)
+                                  : AppColors.warningTextLight)
                             : primaryColor,
                         isDark: isDark,
                         highlight: isComplete,
@@ -393,6 +393,9 @@ class _QuickStartSection extends StatelessWidget {
                   label: l10n.importCsv,
                   sublabel: l10n.bulkUpload,
                   color: isDark ? AppColors.accentDark : AppColors.accentLight,
+                  iconColor: isDark
+                      ? AppColors.accentDark
+                      : AppColors.accentTextLight,
                   isDark: isDark,
                   onTap: onImportCsv,
                 ),
@@ -410,7 +413,13 @@ class _QuickStartButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final String sublabel;
+
+  /// The colour of the tile's tint, its border and its disc.
   final Color color;
+
+  /// The colour of the icon, when it is not [color]: in light the deeper blue
+  /// reads on the tinted disc where the bright one does not.
+  final Color? iconColor;
   final bool isDark;
   final VoidCallback? onTap;
 
@@ -419,6 +428,7 @@ class _QuickStartButton extends StatelessWidget {
     required this.label,
     required this.sublabel,
     required this.color,
+    this.iconColor,
     required this.isDark,
     this.onTap,
   });
@@ -455,7 +465,7 @@ class _QuickStartButton extends StatelessWidget {
                     color: color.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(icon, color: color, size: 24),
+                  child: Icon(icon, color: iconColor ?? color, size: 24),
                 ),
                 SizedBox(height: AppSpacing.sm),
                 Text(
@@ -634,7 +644,7 @@ class _SampleDataSection extends StatelessWidget {
             ),
             child: Icon(
               Icons.science_rounded,
-              color: isDark ? AppColors.accentDark : AppColors.accentLight,
+              color: isDark ? AppColors.accentDark : AppColors.accentTextLight,
               size: 24,
             ),
           ),
@@ -670,7 +680,7 @@ class _SampleDataSection extends StatelessWidget {
             style: TextButton.styleFrom(
               foregroundColor: isDark
                   ? AppColors.accentDark
-                  : AppColors.accentLight,
+                  : AppColors.accentTextLight,
               padding: EdgeInsets.symmetric(
                 horizontal: AppSpacing.md,
                 vertical: AppSpacing.sm,

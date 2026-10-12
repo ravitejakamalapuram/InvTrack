@@ -147,6 +147,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
                   icon: Icons.person_remove_outlined,
                   iconColor: isDark
                       ? AppColors.warningDark
+                      : AppColors.warningTextLight,
+                  iconTint: isDark
+                      ? AppColors.warningDark
                       : AppColors.warningLight,
                   title: l10n.deleteGuestData,
                   subtitle: _isDeleting
@@ -305,7 +308,8 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
               icon: Icons.swap_horiz_rounded,
               iconColor: isDark
                   ? AppColors.warningDark
-                  : AppColors.warningLight,
+                  : AppColors.warningTextLight,
+              iconTint: isDark ? AppColors.warningDark : AppColors.warningLight,
               title: 'Replace',
               description: 'Delete existing data first',
               onTap: () => Navigator.pop(dialogContext, ImportStrategy.replace),
@@ -817,6 +821,9 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
 class _ImportOptionTile extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
+
+  /// The colour of the icon's disc, when it is not [iconColor].
+  final Color? iconTint;
   final String title;
   final String description;
   final VoidCallback onTap;
@@ -825,6 +832,7 @@ class _ImportOptionTile extends StatelessWidget {
   const _ImportOptionTile({
     required this.icon,
     required this.iconColor,
+    this.iconTint,
     required this.title,
     required this.description,
     required this.onTap,
@@ -858,7 +866,7 @@ class _ImportOptionTile extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.15),
+                  color: (iconTint ?? iconColor).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: iconColor, size: 24),

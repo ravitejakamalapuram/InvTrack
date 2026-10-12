@@ -35,11 +35,15 @@ class FireStatsCard extends ConsumerWidget {
         formatCompactCurrency(amount, symbol: currencySymbol, locale: locale);
 
     // Theme-aware colors for FIRE type icons
-    final fireColor = isDark ? AppColors.accentDark : AppColors.accentLight;
+    // The icons of the FIRE and Barista rows are the deeper blue and amber in
+    // light; their discs keep the bright hue.
+    final fireColor = isDark ? AppColors.accentDark : AppColors.accentTextLight;
+    final fireTint = isDark ? AppColors.accentDark : AppColors.accentLight;
     final coastColor = isDark ? AppColors.successDark : AppColors.successLight;
     final baristaColor = isDark
         ? AppColors.warningDark
-        : AppColors.warningLight;
+        : AppColors.warningTextLight;
+    final baristaTint = isDark ? AppColors.warningDark : AppColors.warningLight;
 
     return GlassCard(
       child: Column(
@@ -49,6 +53,7 @@ class FireStatsCard extends ConsumerWidget {
             isDark,
             icon: Icons.local_fire_department,
             iconColor: fireColor,
+            iconTint: fireTint,
             label: 'FIRE Number',
             value: formatCompactCurrency(
               calculation.fireNumber,
@@ -124,6 +129,7 @@ class FireStatsCard extends ConsumerWidget {
             isDark,
             icon: Icons.coffee_outlined,
             iconColor: baristaColor,
+            iconTint: baristaTint,
             label: 'Barista FIRE',
             value: formatCompactCurrency(
               calculation.baristaFireNumber,
@@ -165,6 +171,7 @@ class FireStatsCard extends ConsumerWidget {
     bool isDark, {
     required IconData icon,
     required Color iconColor,
+    Color? iconTint,
     required String label,
     required String value,
     required String subtitle,
@@ -175,7 +182,7 @@ class FireStatsCard extends ConsumerWidget {
         Container(
           padding: EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.15),
+            color: (iconTint ?? iconColor).withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, color: iconColor, size: 24),

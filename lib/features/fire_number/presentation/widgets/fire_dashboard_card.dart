@@ -56,7 +56,11 @@ class FireDashboardCard extends ConsumerWidget {
   }
 
   Widget _buildSetupCard(BuildContext context, bool isDark, AppLocalizations l10n) {
-    final accentColor = isDark ? AppColors.accentDark : AppColors.accentLight;
+    // The icon is the deeper blue in light; its disc keeps the bright blue.
+    final accentTint = isDark ? AppColors.accentDark : AppColors.accentLight;
+    final accentColor = isDark
+        ? AppColors.accentDark
+        : AppColors.accentTextLight;
 
     return GlassCard(
       onTap: () {
@@ -68,7 +72,7 @@ class FireDashboardCard extends ConsumerWidget {
           Container(
             padding: EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.15),
+              color: accentTint.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -125,7 +129,10 @@ class FireDashboardCard extends ConsumerWidget {
   ) {
     final progress = calculation.displayProgress;
     final status = calculation.status;
-    final statusColor = status.colorForBrightness(
+    // Text and icons take the text colour. The bar is a fill and keeps the
+    // status colour.
+    final statusColor = status.textColor(isDark);
+    final barColor = status.colorForBrightness(
       isDark ? Brightness.dark : Brightness.light,
     );
     // The chip is tinted with the brighter hue: on a tint of the deeper green
@@ -183,7 +190,7 @@ class FireDashboardCard extends ConsumerWidget {
               backgroundColor: isDark
                   ? AppColors.neutral700Dark
                   : AppColors.neutral200Light,
-              valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+              valueColor: AlwaysStoppedAnimation<Color>(barColor),
               minHeight: 8,
             ),
           ),

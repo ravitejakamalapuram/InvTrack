@@ -165,7 +165,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
                         size: 48,
                         color: isDark
                             ? AppColors.accentDark
-                            : AppColors.accentLight,
+                            : AppColors.accentTextLight,
                       ),
                       const SizedBox(height: AppSpacing.md),
                       Text(
@@ -347,7 +347,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
             const SizedBox(width: AppSpacing.md),
             Icon(
               icon,
-              color: isDark ? AppColors.accentDark : AppColors.accentLight,
+              color: isDark ? AppColors.accentDark : AppColors.accentTextLight,
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(

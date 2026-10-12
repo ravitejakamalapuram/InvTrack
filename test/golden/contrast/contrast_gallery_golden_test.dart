@@ -37,6 +37,7 @@ import 'package:inv_tracker/features/fire_number/domain/services/fire_calculatio
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_dashboard_card.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_load_error_card.dart';
+import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_stats_card.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
@@ -52,6 +53,8 @@ import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dar
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_analytics.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_empty_state.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_quick_stats.dart';
+import 'package:inv_tracker/features/overview/presentation/widgets/sample_data_banner.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 import '../../mocks/mock_analytics_service.dart';
@@ -62,6 +65,11 @@ import '../golden_test_helper.dart';
 class _PrivacyOff extends PrivacyModeNotifier {
   @override
   bool build() => false;
+}
+
+class _SampleModeOn extends SampleDataModeNotifier {
+  @override
+  SampleDataState build() => const SampleDataState(isActive: true);
 }
 
 final _inr = NumberFormat.currency(
@@ -528,6 +536,41 @@ final _scenes = <String, _Scene>{
       ),
     ),
   ),
+  // Behind schedule: the status icon, label and percentage in the deeper amber
+  // on a chip tinted with the bright amber, and the FIRE and Barista icons.
+  'fire_cards_behind': _Scene(
+    height: 700,
+    overrides: [
+      currencyLocaleProvider.overrideWith((ref) => 'en_IN'),
+      fireSettingsProvider.overrideWith((ref) => Stream.value(_fireSettings)),
+      fireCalculationProvider.overrideWithValue(AsyncValue.data(_fireBehind)),
+    ],
+    build: () => Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          const FireDashboardCard(),
+          const SizedBox(height: 12),
+          FireStatsCard(calculation: _fireBehind, currencySymbol: '₹'),
+        ],
+      ),
+    ),
+  ),
+  // The empty Overview: the XIRR demo's amber figure, the Import CSV tile and
+  // the sample-data tile with its "Try It" button.
+  'overview_empty_state': _Scene(
+    height: 1700,
+    build: () => Padding(
+      padding: const EdgeInsets.all(16),
+      child: OverviewEmptyState(onImportCsv: () {}, onTrySampleData: () {}),
+    ),
+  ),
+  'sample_data_banner': _Scene(
+    height: 200,
+    overrides: [sampleDataModeProvider.overrideWith(_SampleModeOn.new)],
+    build: () =>
+        const Padding(padding: EdgeInsets.all(16), child: SampleDataBanner()),
+  ),
   // The investment detail: the net position, the return badge and the
   // maturity row, for a gain that has matured and for a loss.
   'detail_stats': _Scene(
@@ -673,6 +716,20 @@ final _fireAhead = FireCalculationService().calculate(
   asOf: DateTime(2026, 10, 2),
   inputs: const FireInputsSummary(
     investmentsValue: 3660000,
+    principalWithoutValue: 0,
+    otherAssets: 0,
+    savingsSource: MonthlySavingsSource.history,
+  ),
+);
+
+// 14 lakh saved and nothing added: behind schedule.
+final _fireBehind = FireCalculationService().calculate(
+  settings: _fireSettings,
+  currentPortfolioValue: 1402551.73,
+  currentMonthlySavings: 0,
+  asOf: DateTime(2026, 10, 2),
+  inputs: const FireInputsSummary(
+    investmentsValue: 1402551.73,
     principalWithoutValue: 0,
     otherAssets: 0,
     savingsSource: MonthlySavingsSource.history,

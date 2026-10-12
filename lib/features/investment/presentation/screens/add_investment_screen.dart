@@ -1155,7 +1155,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                         '${projection.nominalRate.toStringAsFixed(2)}% nominal → ${projection.effectiveRate.toStringAsFixed(2)}% effective',
                     valueColor: isDark
                         ? AppColors.accentDark
-                        : AppColors.accentLight,
+                        : AppColors.accentTextLight,
                   ),
                 ],
               ],
@@ -1735,7 +1735,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                       size: 12,
                       color: isDark
                           ? AppColors.accentDark
-                          : AppColors.accentLight,
+                          : AppColors.accentTextLight,
                     ),
                     SizedBox(width: 2),
                     Text(
@@ -1743,7 +1743,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                       style: AppTypography.caption.copyWith(
                         color: isDark
                             ? AppColors.accentDark
-                            : AppColors.accentLight,
+                            : AppColors.accentTextLight,
                         fontWeight: FontWeight.w500,
                         fontSize: 10,
                       ),

@@ -253,10 +253,11 @@
         icon('arrow_downward', { size: 16, color: 'var(--success)' }) + amount(o.inn) + '<small>&nbsp;in</small><span class="it-sp"></span><small>' + esc(o.count) + '</small></div>', { padding: '0' });
     }
     if (k === 'maturity') {
-      var col = o.color || 'var(--accent)';
-      return GlassCard('<div class="it-cvalue"><span class="it-metric__icon"' + sty({ '--c': col }) + '>' + icon(o.icon || 'event', { size: 18 }) + '</span>' +
+      // The icon and the words are the text tone; the disc and the pill are tinted with the brighter hue.
+      var col = o.color || 'var(--accent-text)', tint = o.tint || (o.color ? col : 'var(--accent)');
+      return GlassCard('<div class="it-cvalue"><span class="it-metric__icon"' + sty({ '--c': col, '--tint': tint }) + '>' + icon(o.icon || 'event', { size: 18 }) + '</span>' +
         '<div class="it-cvalue__main"><div class="it-cvalue__label">Maturity Date</div><div class="it-cvalue__amt">' + esc(o.date) + '</div></div>' +
-        '<span class="it-pill" style="color:' + col + ';background:color-mix(in srgb,' + col + ' 15%,transparent)">' + esc(o.status) + '</span></div>', { padding: '0' });
+        '<span class="it-pill" style="color:' + col + ';background:color-mix(in srgb,' + tint + ' 15%,transparent)">' + esc(o.status) + '</span></div>', { padding: '0' });
     }
     if (k === 'hero') {
       return '<div><div style="font:500 14px/1.4 var(--font-text);color:rgba(255,255,255,.8)">' + esc(o.label) + '</div>' +
@@ -286,9 +287,9 @@
       return '<span class="it-ccy it-ccy--full">' + esc(o.code) + '<i>|</i><span>1 ' + esc(sym[o.code] || o.code) + ' = ' + esc(sym[o.target] || o.target) + Number(o.rate).toFixed(2) + '</span></span>';
     }
     if (k === 'maturity') {
-      var tone = { success: 'var(--success)', warning: 'var(--warning)', accent: 'var(--accent)' }[o.tone || 'accent'];
-      // MATURED is tinted with the brighter green, not the text green (4.67:1 against 4.34:1).
-      var toneTint = { success: 'var(--it-success-tint)' }[o.tone || 'accent'] || tone;
+      var tone = { success: 'var(--success)', warning: 'var(--warning-text)', accent: 'var(--accent-text)' }[o.tone || 'accent'];
+      // The chip is tinted with the brighter hue, not the text tone: MATURED 4.67:1 against 4.34:1, MATURES TODAY 4.64:1 against 4.25:1, 8-30 days 4.75:1 against 4.45:1.
+      var toneTint = { success: 'var(--it-success-tint)', warning: 'var(--warning)', accent: 'var(--accent)' }[o.tone || 'accent'];
       return '<span class="it-tag it-tag--strong"' + sty({ '--c': tone, '--tint': toneTint }) + '>' + (o.icon ? icon(o.icon, { size: 10 }) : '') + '<span class="it-tag__t">' + esc(o.label) + '</span></span>';
     }
     if (k === 'type') return '<span class="it-tag"' + sty({ '--c': o.color }) + '>' + esc(o.label) + '</span>';
@@ -335,14 +336,14 @@
       return GlassCard('<div class="it-demo"><span class="it-demo__disc">' + icon('insights', { size: 40 }) + '</span><h3 class="it-demo__title">' + esc(o.title) + '</h3><p class="it-demo__sub">' + esc(o.subtitle) + '</p>' +
         '<div class="it-demo__cmp" role="img" aria-label="' + esc(o.sr) + '"><div class="it-demo__col">' + icon('campaign', { size: 24, color: 'var(--text-muted)' }) + '<b>' + esc(o.advertised) + '</b><small>Advertised</small></div>' +
         icon('arrow_forward', { size: 24, color: 'var(--text-subtle)' }) +
-        '<div class="it-demo__col">' + icon('trending_down', { size: 24, color: 'var(--warning)' }) + '<b style="color:var(--warning)">' + esc(o.real) + '</b><small>Your XIRR</small></div></div>' +
+        '<div class="it-demo__col">' + icon('trending_down', { size: 24, color: 'var(--warning-text)' }) + '<b style="color:var(--warning-text)">' + esc(o.real) + '</b><small>Your XIRR</small></div></div>' +
         '<p class="it-demo__cap">' + esc(o.caption) + '</p></div>');
     }
     if (k === 'quickstart') {
-      var tile = function (ic2, label, sub, col) {
-        return '<button type="button" class="it-qs"' + sty({ '--c': col }) + ' aria-label="' + esc(label + ', ' + sub) + '"><span class="it-qs__disc">' + icon(ic2, { size: 24 }) + '</span><b>' + esc(label) + '</b><small>' + esc(sub) + '</small></button>';
+      var tile = function (ic2, label, sub, col, iconCol) {
+        return '<button type="button" class="it-qs"' + sty({ '--c': col, '--ic': iconCol }) + ' aria-label="' + esc(label + ', ' + sub) + '"><span class="it-qs__disc">' + icon(ic2, { size: 24 }) + '</span><b>' + esc(label) + '</b><small>' + esc(sub) + '</small></button>';
       };
-      return GlassCard('<h3 class="it-h4">Get Started</h3><div class="it-tile2">' + tile('add', 'Add Manually', 'Step by step', 'var(--primary)') + tile('upload_file', 'Import CSV', 'Bulk upload', 'var(--accent)') + '</div>');
+      return GlassCard('<h3 class="it-h4">Get Started</h3><div class="it-tile2">' + tile('add', 'Add Manually', 'Step by step', 'var(--primary)') + tile('upload_file', 'Import CSV', 'Bulk upload', 'var(--accent)', 'var(--accent-text)') + '</div>');
     }
     if (k === 'sample') {
       return '<div class="it-banner"><span class="it-banner__disc">' + icon('science', { size: 24 }) + '</span><div class="it-banner__txt"><b>Try Sample Data</b><small>Explore with realistic Indian investments</small></div>' + Button({ variant: 'text', label: 'Try It' }) + '</div>';

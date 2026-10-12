@@ -38,6 +38,15 @@
 // carry a separate tint by hand (`_MaturityInfo.tint`, `_tint`, `tint:`), and
 // widget tests that pump them read the real text and the real tint.
 //
+// The blue and amber text colours (`accentTextLight`, `warningTextLight`) are
+// scanned like the others. `accentLight` and `warningLight` keep their bright
+// value for fills, tints, borders and gradients, and they are still scanned for
+// a theme check; [brightSites] counts the reads that are not a tint, so a text
+// or an icon that goes back to the bright colour changes a count in [_bright].
+// A site that reads `accentLight` for a text is a contrast bug in light.
+// `colorScheme.secondary` is `accentLight` in the light theme, so [brightSites]
+// counts it as well; none is read in lib/.
+//
 // A new constant in app_colors.dart that is an alias of a listed one is found
 // by [unlistedAliases]. One with a value of its own is not: the PR that adds it
 // adds it to [_constants].
@@ -48,6 +57,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 
 const _constants = [
   'neutral500Light',
@@ -59,6 +69,10 @@ const _constants = [
   'errorLight',
   'accentLight',
   'warningLight',
+  // The deeper blue and amber for text and icons. Light only: in dark the text
+  // is `accentDark` and `warningDark`.
+  'accentTextLight',
+  'warningTextLight',
   // The old, brighter green and red. They are kept as tint sources, so they
   // may be painted translucent, or in a branch of a theme check; never bare.
   'successTintLight',
@@ -70,7 +84,64 @@ const _constants = [
 /// back under 4.5:1 (4.34 for green, 4.38 for red at 15%); tints are made of
 /// `successTintLight` and `dangerTintLight`, which keep the old hue.
 /// `colorScheme.error` is `dangerLight` in the light theme, so it counts too.
-const _deepStatusConstants = ['successLight', 'errorLight', 'dangerLight'];
+/// The blue and amber text colours are in the list for the same reason: a tint
+/// of one is 4.45 and 4.25 under its own label at 15%, and the chip is tinted with
+/// `accentLight` or `warningLight` instead.
+const _deepStatusConstants = [
+  'successLight',
+  'errorLight',
+  'dangerLight',
+  'accentTextLight',
+  'warningTextLight',
+];
+
+/// The bright blue and amber, for fills, tints, borders and gradients. A read
+/// of one that is not a tint is a fill, a tint source held in a variable, or a
+/// text that still needs fixing. `colorScheme.secondary` counts too: it is
+/// `accentLight` in the light theme.
+const _brightConstants = ['accentLight', 'warningLight'];
+
+/// How many reads of [_brightConstants] that are not a tint each file keeps
+/// (see [brightSites]). Each is a fill, a tint source or a ring, never a text
+/// or an icon. Raising a number, or adding a file, needs a reason in the PR
+/// body.
+const _bright = <String, int>{
+  // The step number's circle: a white digit on a fill, twice (unjudged by the
+  // audit: white on the bright blue is 2.77).
+  'lib/features/bulk_import/presentation/screens/bulk_import_screen.dart': 2,
+  // colorForBrightness is the fill and tint hue; textColor is the text.
+  'lib/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart':
+      2,
+  // The milestone's progress ring.
+  'lib/features/fire_number/presentation/screens/fire_dashboard_screen.dart': 1,
+  // The tint behind the setup card's icon.
+  'lib/features/fire_number/presentation/widgets/fire_dashboard_card.dart': 1,
+  // The tints behind the FIRE and Barista icons.
+  'lib/features/fire_number/presentation/widgets/fire_stats_card.dart': 2,
+  // Hidden until the Income Guardian flag is on (A42): the status colour is
+  // text and tint at once there. Split before the flag is turned on.
+  'lib/features/income_projection/presentation/screens/income_guardian_settings_screen.dart':
+      1,
+  'lib/features/income_projection/presentation/widgets/expected_income_section.dart':
+      2,
+  'lib/features/income_projection/presentation/widgets/income_cell.dart': 2,
+  // The tints of the maturity chip and the maturity row.
+  'lib/features/investment/presentation/widgets/investment_card.dart': 3,
+  'lib/features/investment/presentation/widgets/investment_detail_stats_section.dart':
+      3,
+  // A gradient behind a white icon.
+  'lib/features/onboarding/presentation/screens/onboarding_screen.dart': 1,
+  // The tile's tint source (its icon takes the text colour).
+  'lib/features/overview/presentation/widgets/overview_empty_state.dart': 1,
+  // The suggestion number's circle: a white digit on a fill.
+  'lib/features/portfolio_health/presentation/screens/portfolio_health_details_screen.dart':
+      1,
+  // The tint behind the insight icon.
+  'lib/features/reports/presentation/widgets/smart_insight_card.dart': 1,
+  // The tint of the danger-zone tile and the Replace option, the amber
+  // snackbar fill and the amber button fill.
+  'lib/features/settings/presentation/screens/data_management_screen.dart': 4,
+};
 
 /// Sites not yet fixed, by file: how many are left. Raising a number, or adding
 /// a file, needs a reason in the PR body. None are left.
@@ -408,6 +479,37 @@ List<Site> tintedStatusSites(String source) {
         !(closes && _tintCall.matchAsPrefix(code, to + 1) != null)) {
       continue;
     }
+    sites.add((
+      line: '\n'.allMatches(code.substring(0, m.start)).length + 1,
+      constant: m.group(1) ?? 'colorScheme.${m.group(2)}',
+      expression: code
+          .substring(from, to)
+          .trim()
+          .replaceAll(RegExp(r'\s+'), ' '),
+    ));
+  }
+  return sites;
+}
+
+// `colorScheme.secondary` is `accentLight` in the light theme, so it is the
+// bright blue under another name (how the PDF export icon got it).
+final _brightOccurrence = RegExp(
+  '\\bAppColors\\s*\\.\\s*(${_brightConstants.join('|')})\\b'
+  r'|\bcolorScheme\s*\.\s*(secondary)\b',
+);
+
+/// The sites in [source] that read the bright blue or amber (or
+/// `colorScheme.secondary`, which is the blue in light) and are not a tint
+/// of half strength or less, whatever the theme branch. What is left is a fill,
+/// a tint source held in a variable, a ring, or a text that is not fixed.
+List<Site> brightSites(String source) {
+  final code = blankCommentsAndStrings(source);
+  final sites = <Site>[];
+  for (final m in _brightOccurrence.allMatches(code)) {
+    final (from, to) = expressionAround(code, m.start, m.end);
+    // `(a ? x : y).withValues(...)` tints the whole group.
+    final closes = to < code.length && code[to] == ')';
+    if (_isTint(code, m.end) || (closes && _isTint(code, to + 1))) continue;
     sites.add((
       line: '\n'.allMatches(code.substring(0, m.start)).length + 1,
       constant: m.group(1) ?? 'colorScheme.${m.group(2)}',
@@ -779,6 +881,145 @@ final a = 'AppColors.successLight.withValues(alpha: 0.1)';
     });
   });
 
+  group('the blue and amber text colours', () {
+    List<int> found(String source) => [
+      for (final s in unguardedSites(source)) s.line,
+    ];
+
+    test('are light colours: bare, they are flagged', () {
+      expect(
+        found('''
+final a = AppColors.accentTextLight;
+final b = Icon(Icons.add, color: AppColors.warningTextLight);
+final c = isDark ? AppColors.accentDark : AppColors.accentTextLight;
+final d = isDark ? AppColors.warningDark : AppColors.warningTextLight;
+'''),
+        [1, 2],
+      );
+    });
+
+    test('in the dark branch they are reversed', () {
+      expect(
+        [
+          for (final s in reversedSites(
+            'final a = isDark ? AppColors.accentTextLight : AppColors.accentDark;',
+          ))
+            s.line,
+        ],
+        [1],
+      );
+    });
+
+    test('are not tinted: a tint of one puts its label under 4.5', () {
+      expect(
+        tintedStatusSites('''
+final a = AppColors.accentTextLight.withValues(alpha: 0.15);
+final b = (isDark ? AppColors.warningDark : AppColors.warningTextLight).withValues(alpha: 0.1);
+final c = AppColors.accentLight.withValues(alpha: 0.15);
+final d = AppColors.warningLight.withValues(alpha: 0.15);
+''').map((s) => s.line).toList(),
+        [1, 2],
+      );
+    });
+  });
+
+  group('the bright blue and amber', () {
+    List<int> found(String source) => [
+      for (final s in brightSites(source)) s.line,
+    ];
+
+    test('are counted when read as a colour, in any theme branch', () {
+      expect(
+        found('''
+final a = AppColors.accentLight;
+final b = isDark ? AppColors.warningDark : AppColors.warningLight;
+Text('x', style: TextStyle(color: AppColors.accentLight));
+'''),
+        [1, 2, 3],
+      );
+    });
+
+    test('are not counted as a tint of half strength or less', () {
+      expect(
+        found('''
+final a = AppColors.accentLight.withValues(alpha: 0.15);
+final b = (isDark ? AppColors.warningDark : AppColors.warningLight).withValues(alpha: 0.5);
+final c = AppColors.warningLight.withValues(alpha: 0.7);
+final d = AppColors.accentLight.withAlpha(128);
+'''),
+        [3, 4],
+      );
+    });
+
+    test('are counted when read as colorScheme.secondary, the light blue', () {
+      expect(
+        found('''
+final a = Theme.of(context).colorScheme.secondary;
+final b = Theme.of(context).colorScheme.secondaryContainer;
+final c = Theme.of(context).colorScheme
+    .secondary;
+final d = Theme.of(context).colorScheme.secondary.withValues(alpha: 0.2);
+final e = SwitchListTile(secondary: const Icon(Icons.add));
+final f = ColorScheme.light(secondary: AppColors.accentTextLight);
+'''),
+        [1, 3],
+      );
+    });
+
+    test('ignore the text colours, the dark colours, comments and strings', () {
+      expect(
+        found('''
+final a = AppColors.accentTextLight;
+final b = AppColors.warningDark;
+// AppColors.accentLight in a comment
+final c = 'AppColors.warningLight';
+'''),
+        isEmpty,
+      );
+    });
+  });
+
+  test(
+    'the bright blue and amber are read only where a fill or tint needs them',
+    () {
+      final found = <String, int>{};
+      for (final entity in Directory('lib').listSync(recursive: true)) {
+        if (entity is! File || !entity.path.endsWith('.dart')) continue;
+        final path = entity.path.replaceAll(r'\', '/');
+        if (_skipped.contains(path)) continue;
+        final n = brightSites(entity.readAsStringSync()).length;
+        if (n > 0) found[path] = n;
+      }
+      expect(
+        found,
+        _bright,
+        reason:
+            'A read of accentLight or warningLight that is not a tint is a fill. '
+            'A text or an icon takes accentTextLight or warningTextLight in '
+            'light. A new fill needs its file and count in _bright.',
+      );
+    },
+  );
+
+  test('the hidden Income Guardian files are split before the flag ships', () {
+    // _bright counts reads; it cannot tell a fill from a text. These files
+    // paint the bright blue and amber as text too (2.77:1 and 2.15:1 in light),
+    // and are counted only because the feature is off. Turning the flag on
+    // needs their text on accentTextLight and warningTextLight and their
+    // entries out of _bright.
+    final hidden = [
+      for (final path in _bright.keys)
+        if (path.startsWith('lib/features/income_projection/')) path,
+    ];
+    expect(
+      FeatureFlag.incomeGuardian.defaultEnabled && hidden.isNotEmpty,
+      isFalse,
+      reason:
+          'Income Guardian is on by default but these files still read the '
+          'bright blue or amber for text: ${hidden.join(', ')}',
+    );
+  });
+
   test('every site that reads a light colour checks the theme', () {
     final failures = <String>[];
     final stale = <String>[];
@@ -850,8 +1091,8 @@ final a = 'AppColors.successLight.withValues(alpha: 0.1)';
       tinted,
       isEmpty,
       reason:
-          'Tint successTintLight or dangerTintLight: a tint of the deeper '
-          'value puts text on it under 4.5:1.',
+          'Tint successTintLight, dangerTintLight, accentLight or warningLight: '
+          'a tint of the deeper value puts text on it under 4.5:1.',
     );
   });
 

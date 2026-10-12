@@ -17,11 +17,6 @@ import 'contrast_pairs.dart';
 
 /// Pairs that still fail. Grouped by the PR in the stack that fixes them.
 const _allowlist = <String>{
-  // PR 6 contrast-warning-accent (4)
-  'accent-light@card',
-  'accent-light@tint15',
-  'warning-light@card',
-  'warning-light@tint15',
   // PR 7 contrast-type-colours (33)
   'closed-chip-text-light@grey20',
   'inv-angel-investing-label@fill',
@@ -118,11 +113,11 @@ const _allowlist = <String>{
 
 /// The size of [_allowlist]. Lower it with the list; raising it needs a reason
 /// in the PR body.
-const _allowlistMax = 91;
+const _allowlistMax = 87;
 
 /// The size of the pair table. A fixing PR that retires a pair or drops a
 /// ground it cannot fix changes this literal, so the change is in the diff.
-const _pairCount = 188;
+const _pairCount = 215;
 
 /// Files that can never be the measurement of a widget pair: the helper's own
 /// test, this guard and the table. Each mentions pair ids or `contrastRatio`.
@@ -201,7 +196,8 @@ void main() {
   test('the pairs the audit had no row for are exactly these', () {
     // The plan's three light dividers, the four the PR 1 review found on the
     // investment card's XIRR pill and the danger tint, and the twenty-six widget
-    // pairs PR 5 added for green and red on the tints and fills they sit on.
+    // pairs PR 5 added for green and red on the tints and fills they sit on,
+    // and the nineteen PR 6 added for blue and amber text and icons.
     expect(
       pairs.where((p) => p.addedByPlan).map((p) => p.id),
       unorderedEquals([
@@ -238,6 +234,25 @@ void main() {
         'overview-cash-out-bar-dark@card',
         'change-badge-outlined-success-dark@page',
         'change-badge-outlined-danger-dark@page',
+        'maturity-soon-light@tint15',
+        'maturity-upcoming-light@tint15',
+        'detail-maturity-soon-light@tint15',
+        'detail-maturity-upcoming-light@tint15',
+        'fire-status-behind-light@tint15',
+        'fire-status-on-track-light@tint15',
+        'fire-stats-icon-fire-light@tint15',
+        'fire-stats-icon-barista-light@tint15',
+        'sample-data-banner-light@tint10',
+        'sample-data-icon-light@tint20',
+        'sample-data-try-it-light@gradient',
+        'sample-data-tile-icon-light@tint20',
+        'quick-start-csv-icon-light@tint20',
+        'xirr-demo-highlight-light@tint5',
+        'saved-guest-backup-icon-light@card',
+        'insight-warning-value-light@card',
+        'insight-warning-icon-light@tint20',
+        'settings-tile-warning-icon-light@tint15',
+        'import-option-warning-icon-light@tint15',
       ]),
     );
   });

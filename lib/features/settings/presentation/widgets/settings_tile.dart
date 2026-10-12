@@ -10,6 +10,10 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 class SettingsNavTile extends StatelessWidget {
   final IconData icon;
   final Color? iconColor;
+
+  /// The colour the icon's disc is tinted with, when it is not [iconColor]: an
+  /// icon in the deeper amber keeps the bright amber disc it always had.
+  final Color? iconTint;
   final String title;
   final String? subtitle;
   final VoidCallback onTap;
@@ -20,6 +24,7 @@ class SettingsNavTile extends StatelessWidget {
     super.key,
     required this.icon,
     this.iconColor,
+    this.iconTint,
     required this.title,
     this.subtitle,
     required this.onTap,
@@ -37,7 +42,9 @@ class SettingsNavTile extends StatelessWidget {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: (iconColor ?? AppColors.primaryLight).withValues(alpha: 0.15),
+          color: (iconTint ?? iconColor ?? AppColors.primaryLight).withValues(
+            alpha: 0.15,
+          ),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, size: 18, color: iconColor ?? AppColors.primaryLight),

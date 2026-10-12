@@ -5,6 +5,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/features/reports/domain/services/report_export_service.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/report_export_providers.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -66,7 +67,11 @@ class ReportExportButton extends ConsumerWidget {
             children: [
               Icon(
                 Icons.picture_as_pdf_rounded,
-                color: Theme.of(context).colorScheme.secondary,
+                // The accent as an icon: the deeper blue in light, where the
+                // bright blue (`colorScheme.secondary`) is 2.77:1 on the menu.
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.accentDark
+                    : AppColors.accentTextLight,
               ),
               const SizedBox(width: 12),
               Column(
