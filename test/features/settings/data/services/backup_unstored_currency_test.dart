@@ -156,8 +156,11 @@ void main() {
 
       final export = await source.export.exportAsZipBytes();
 
-      expect(_column(export.bytes, 'cashflows.csv', 'Currency'), ['']);
-      expect(_column(export.bytes, 'cashflows.csv', 'Amount'), ['10000.0']);
+      expect(_column(export.bytes, 'cashflows.csv', 'Currency'), equals(['']));
+      expect(
+        _column(export.bytes, 'cashflows.csv', 'Amount'),
+        equals(['10000.0']),
+      );
     });
 
     test('imported into a USD account it is stored as USD 10000.00', () async {
@@ -186,7 +189,10 @@ void main() {
           );
           final export = await source.export.exportAsZipBytes();
 
-          expect(_column(export.bytes, 'cashflows.csv', 'Currency'), ['EUR']);
+          expect(
+            _column(export.bytes, 'cashflows.csv', 'Currency'),
+            equals(['EUR']),
+          );
 
           await restore(export.bytes, base);
 
@@ -207,7 +213,7 @@ void main() {
 
       final export = await source.export.exportAsZipBytes();
 
-      expect(_column(export.bytes, 'goals.csv', 'Currency'), ['']);
+      expect(_column(export.bytes, 'goals.csv', 'Currency'), equals(['']));
     });
 
     test('imported into a USD account it is stored as USD', () async {
@@ -228,7 +234,10 @@ void main() {
           source.goals.seed(goals: [_goal(currency: 'EUR')]);
           final export = await source.export.exportAsZipBytes();
 
-          expect(_column(export.bytes, 'goals.csv', 'Currency'), ['EUR']);
+          expect(
+            _column(export.bytes, 'goals.csv', 'Currency'),
+            equals(['EUR']),
+          );
 
           await restore(export.bytes, base);
 
@@ -247,7 +256,7 @@ void main() {
       );
       final export = await source.export.exportAsZipBytes();
 
-      expect(_column(export.bytes, 'valuations.csv', 'Currency'), ['']);
+      expect(_column(export.bytes, 'valuations.csv', 'Currency'), equals(['']));
 
       final result = await restore(export.bytes, 'USD');
 
@@ -267,7 +276,10 @@ void main() {
         );
         final export = await source.export.exportAsZipBytes();
 
-        expect(_column(export.bytes, 'valuations.csv', 'Currency'), ['EUR']);
+        expect(
+          _column(export.bytes, 'valuations.csv', 'Currency'),
+          equals(['EUR']),
+        );
       },
     );
   });
@@ -332,8 +344,11 @@ void main() {
 
       final export = await source.export.exportAsZipBytes();
 
-      expect(_column(export.bytes, 'cashflows.csv', 'Currency'), ['', 'EUR']);
-      expect(_column(export.bytes, 'goals.csv', 'Currency'), ['']);
+      expect(
+        _column(export.bytes, 'cashflows.csv', 'Currency'),
+        equals(['', 'EUR']),
+      );
+      expect(_column(export.bytes, 'goals.csv', 'Currency'), equals(['']));
     });
   });
 
