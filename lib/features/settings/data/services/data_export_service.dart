@@ -466,7 +466,9 @@ class DataExportService {
         CsvUtils.sanitizeField(item.investment.name),
         _typeToExportString(item.cashFlow.type),
         item.cashFlow.amount,
-        item.cashFlow.currency, // Preserve original currency (Rule 21.2)
+        // The stored currency (Rule 21.2). A guessed one is left empty, so
+        // the account that imports the backup applies its own base currency.
+        item.cashFlow.currencyAssumed ? '' : item.cashFlow.currency,
         CsvUtils.sanitizeField(item.cashFlow.notes ?? ''),
         item.investment.type.name,
         item.investment.status.name,
@@ -522,7 +524,8 @@ class DataExportService {
         goal.linkedTypes.map((t) => t.name).join(';'),
         CsvUtils.sanitizeField(goal.icon),
         goal.colorValue,
-        goal.currency, // Preserve original currency (Rule 21.2)
+        // The stored currency (Rule 21.2); empty when it was only a guess.
+        goal.currencyAssumed ? '' : goal.currency,
       ]);
     }
 
@@ -569,7 +572,7 @@ class DataExportService {
           isArchived,
           row.date.toIso8601String().split('T').first,
           row.value,
-          row.currency,
+          row.currency ?? '',
           row.snapshotId ?? '',
           row.kind.name,
           row.provenance.storageName,
@@ -619,7 +622,8 @@ class DataExportService {
           // The day the pair was saved on, as the selector reads it.
           date: StoredDate.fromStorage(date),
           value: value,
-          currency: inv.currency,
+          // Empty when the investment's currency was only a guess.
+          currency: inv.currencyAssumed ? null : inv.currency,
           kind: ValuationKind.carryingValue,
           provenance: ValuationProvenance.manual,
         ),
@@ -751,7 +755,10 @@ class DataExportService {
 class _ValuationRow {
   final DateTime date;
   final double value;
-  final String currency;
+
+  /// Null when the currency was never stored (see
+  /// [InvestmentEntity.currencyAssumed]): the row is written without one.
+  final String? currency;
 
   /// Null for a legacy value, which has no snapshot.
   final String? snapshotId;

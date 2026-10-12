@@ -536,13 +536,12 @@ void main() {
         'SGB 2031,false,2999-01-01,77777,INR,,carryingValue,manual,,gold,open\n'
         'SGB 2031,false,2026-01-03,88888,INR,,fairValue,manual,,gold,open\n'
         'SGB 2031,false,2026-01-04,99999,INR,,carryingValue,estimate,,gold,open\n'
-        'SGB 2031,false,2026-01-05,66666,,,carryingValue,manual,,gold,open\n'
         'SGB 2031,false,2026-01-06,55555,USD,,carryingValue,manual,,gold,open\n',
       );
       expect(await imported(), isEmpty);
-      expect(result.warnings, hasLength(greaterThanOrEqualTo(6)));
+      expect(result.warnings, hasLength(greaterThanOrEqualTo(5)));
       final text = result.warnings.join('\n');
-      for (final amount in ['77777', '88888', '99999', '66666', '55555']) {
+      for (final amount in ['77777', '88888', '99999', '55555']) {
         expect(text, isNot(contains(amount)));
       }
       expect(result.errors, isEmpty);
@@ -610,27 +609,27 @@ void main() {
       expect(valuations.log, isEmpty);
     }
 
-    test('a blank currency never reaches money rounding (Merge)', () async {
+    // A80: a backup leaves the currency empty for a value whose currency the
+    // user never stored. Such a row is not damaged: it takes the importing
+    // account's base currency (INR here), as cash flows and goals do.
+    test('a blank currency takes the base currency (Merge)', () async {
       final result = await importRows(
         blankCurrency,
         strategy: ImportStrategy.merge,
       );
       expect(result.errors, isEmpty);
-      expect(result.warnings, [skipped]);
-      expect(await imported(), isEmpty);
+      expect(result.warnings, isEmpty);
+      final snapshot = (await imported()).single;
+      expect(snapshot.currency, 'INR');
+      expect(snapshot.amount, 100);
     });
 
-    test('a blank currency stops a Replace', () async {
-      seedAccount();
-      final result = await importZip(
-        _zip({
-          'cashflows.csv':
-              '${_cashFlowsHeader}2025-10-01,SGB 2031,INVEST,100000,INR,,gold,open\n',
-          'valuations.csv': '$_newHeader$blankCurrency',
-        }),
-      );
-      expect(result.errors, [damaged]);
-      expectAccountKept();
+    test('a blank currency takes the base currency (Replace)', () async {
+      final result = await importRows(blankCurrency);
+      expect(result.errors, isEmpty);
+      final snapshot = (await imported()).single;
+      expect(snapshot.currency, 'INR');
+      expect(snapshot.amount, 100);
     });
 
     test(
