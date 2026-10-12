@@ -271,8 +271,10 @@ void main() {
 
   group('guest merge', () {
     // The merge exports the guest's data and imports it into the Google
-    // account with the guest's base currency (read before the sign-in
-    // switches accounts, #823): the same two calls as below.
+    // account with the base currency the provider passes (the guest's,
+    // read before the sign-in): the same two calls as below. The guest's
+    // device guessed INR for the unconfirmed record; the merge must apply
+    // its own base currency (USD), not carry the guess over.
     test('a guest legacy cash flow with no stored currency is stored as the '
         'base currency of the merge, never a stamped guess', () async {
       source.investments.seed(
