@@ -113,12 +113,16 @@ final orphanedValuationCleanupServiceProvider =
     Provider<OrphanedValuationCleanupService?>((ref) {
       final userId = ref.watch(valuationAccountIdProvider);
       if (userId == null) return null;
-      return OrphanedValuationCleanupService(
+      final service = OrphanedValuationCleanupService(
         firestore: ref.watch(firestoreProvider),
         userId: userId,
         investmentRepository: ref.read(investmentRepositoryProvider),
         valuationRepository: ref.read(valuationRepositoryProvider),
       );
+      // Sign-out or an account switch ends a sweep still waiting on the
+      // server, so its listeners do not outlive the session.
+      ref.onDispose(service.cancel);
+      return service;
     });
 
 /// Starts the sweep of orphaned valuation snapshots (#964) while dated

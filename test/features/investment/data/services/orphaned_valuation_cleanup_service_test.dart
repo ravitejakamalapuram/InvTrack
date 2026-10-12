@@ -81,6 +81,9 @@ void main() {
   late int inFlightReads;
   late int maxInFlightReads;
 
+  /// Runs at the start of every server read of an investment.
+  late void Function()? onRead;
+
   OrphanedValuationCleanupService service({
     Duration readTimeout = const Duration(seconds: 20),
     Duration writeTimeout = const Duration(seconds: 3),
@@ -127,6 +130,7 @@ void main() {
     commitHangs = false;
     inFlightReads = 0;
     maxInFlightReads = 0;
+    onRead = null;
 
     when(() => investments.watchServerConfirmedInvestmentIds()).thenAnswer((_) {
       idListens++;
@@ -161,6 +165,7 @@ void main() {
         final ref = _MockDoc();
         when(() => ref.get(server)).thenAnswer((_) async {
           readIds.add(investmentId);
+          onRead?.call();
           inFlightReads++;
           maxInFlightReads = math.max(maxInFlightReads, inFlightReads);
           await Future<void>.delayed(Duration.zero);
@@ -442,4 +447,50 @@ void main() {
       expect(await second, isTrue);
     },
   );
+
+  test('cancel stops waiting for the server, closes both listeners and '
+      'deletes nothing even if the server answers later', () async {
+    final sweep = service();
+    final run = sweep.runOnce();
+    await pumpEventQueue();
+    expect(idStream.hasListener, isTrue);
+    expect(valuationStream.hasListener, isTrue);
+
+    sweep.cancel();
+
+    expect(await run, isFalse);
+    expect(idStream.hasListener, isFalse);
+    expect(valuationStream.hasListener, isFalse);
+    serverSays(
+      investmentIds: const {},
+      snapshots: [_snapshot('v-gone', 'gone')],
+    );
+    await pumpEventQueue();
+    expect(readIds, isEmpty);
+    expect(deletedPerBatch, isEmpty);
+  });
+
+  test(
+    'cancel while the candidates are being checked deletes nothing',
+    () async {
+      final sweep = service();
+      onRead = sweep.cancel;
+      final run = sweep.runOnce();
+      serverSays(
+        investmentIds: const {},
+        snapshots: [_snapshot('v-gone', 'gone')],
+      );
+
+      expect(await run, isFalse);
+      expect(deletedPerBatch, isEmpty);
+    },
+  );
+
+  test('a cancelled service does not listen again', () async {
+    final sweep = service()..cancel();
+
+    expect(await sweep.runOnce(), isFalse);
+    expect(idListens, 0);
+    expect(valuationListens, 0);
+  });
 }

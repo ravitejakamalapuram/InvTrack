@@ -28,7 +28,9 @@ import 'package:inv_tracker/features/investment/domain/repositories/valuation_re
 /// it against.
 ///
 /// Nothing is deleted when any step fails, and a failed run does not count:
-/// the next call tries again.
+/// the next call tries again. [cancel] (sign-out, account switch) ends a run
+/// that is waiting on the server and closes its listeners; a cancelled
+/// service never runs again.
 class OrphanedValuationCleanupService {
   OrphanedValuationCleanupService({
     required FirebaseFirestore firestore,
@@ -58,12 +60,26 @@ class OrphanedValuationCleanupService {
   final Duration _readTimeout;
   final Duration _writeTimeout;
   bool _done = false;
+  bool _cancelled = false;
+  final Completer<void> _cancelSignal = Completer<void>();
   Future<bool>? _running;
+
+  /// Stops this service for good: a run that is waiting for the server ends
+  /// without deleting anything, and later calls to [runOnce] return false.
+  void cancel() {
+    _cancelled = true;
+    if (!_cancelSignal.isCompleted) _cancelSignal.complete();
+  }
+
+  void _throwIfCancelled() {
+    if (_cancelled) throw const _SweepCancelled();
+  }
 
   /// Runs [cleanup] unless it already finished in this session. Returns true
   /// when it is finished, false when it failed (the next call runs again).
   /// Calls made while a run is going share it. Never throws.
   Future<bool> runOnce() {
+    if (_cancelled) return Future.value(false);
     if (_done) return Future.value(true);
     return _running ??= _runGuarded().whenComplete(() {
       _running = null;
@@ -74,6 +90,8 @@ class OrphanedValuationCleanupService {
     try {
       await cleanup();
       return true;
+    } on _SweepCancelled {
+      return false;
     } catch (e) {
       LoggerService.warn(
         'Valuation snapshot cleanup did not finish; will retry',
@@ -114,7 +132,11 @@ class OrphanedValuationCleanupService {
         _investmentRepository.watchServerConfirmedInvestmentIds(),
       );
       final valuations = firstOf(_valuationRepository.watchServerConfirmed());
-      await Future.wait<Object>([ids, valuations], eagerError: true);
+      await Future.any<void>([
+        Future.wait<Object>([ids, valuations], eagerError: true),
+        _cancelSignal.future,
+      ]);
+      _throwIfCancelled();
       investmentIds = await ids;
       snapshots = await valuations;
     } finally {
@@ -123,6 +145,7 @@ class OrphanedValuationCleanupService {
       }
     }
 
+    _throwIfCancelled();
     final candidates = <String, List<String>>{};
     for (final snapshot in snapshots) {
       final investmentId = snapshot.investmentId;
@@ -147,6 +170,7 @@ class OrphanedValuationCleanupService {
       );
     }
 
+    _throwIfCancelled();
     final orphans = <DocumentReference>[];
     final valuations = userDoc.collection('valuations');
     var index = 0;
@@ -157,6 +181,7 @@ class OrphanedValuationCleanupService {
     }
 
     for (var i = 0; i < orphans.length; i += _batchSize) {
+      _throwIfCancelled();
       final batch = _firestore.batch();
       for (final ref in orphans.sublist(
         i,
@@ -189,4 +214,8 @@ class OrphanedValuationCleanupService {
     ]);
     return found.any((snapshot) => snapshot.exists);
   }
+}
+
+class _SweepCancelled implements Exception {
+  const _SweepCancelled();
 }

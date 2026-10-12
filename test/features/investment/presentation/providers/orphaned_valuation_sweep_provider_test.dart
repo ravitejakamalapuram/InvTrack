@@ -36,6 +36,15 @@ class _Flag extends Notifier<bool> {
 
 final _flagProvider = NotifierProvider<_Flag, bool>(_Flag.new);
 
+class _Uid extends Notifier<String?> {
+  @override
+  String? build() => 'u1';
+
+  void set(String? value) => state = value;
+}
+
+final _uidProvider = NotifierProvider<_Uid, String?>(_Uid.new);
+
 void main() {
   late _MockInvestmentRepository investments;
   late _MockValuationRepository valuations;
@@ -47,6 +56,7 @@ void main() {
     bool active = true,
     bool signedIn = true,
     bool followFlagProvider = false,
+    bool followUidProvider = false,
   }) {
     final firestore = _MockFirestore();
     final users = _MockCollection();
@@ -59,8 +69,15 @@ void main() {
         valuationSnapshotsActiveProvider.overrideWith(
           (ref) => followFlagProvider ? ref.watch(_flagProvider) : active,
         ),
-        isAuthenticatedProvider.overrideWithValue(signedIn),
-        valuationAccountIdProvider.overrideWithValue(signedIn ? 'u1' : null),
+        isAuthenticatedProvider.overrideWith(
+          (ref) =>
+              followUidProvider ? ref.watch(_uidProvider) != null : signedIn,
+        ),
+        valuationAccountIdProvider.overrideWith(
+          (ref) => followUidProvider
+              ? ref.watch(_uidProvider)
+              : (signedIn ? 'u1' : null),
+        ),
         firestoreProvider.overrideWithValue(firestore),
         investmentRepositoryProvider.overrideWithValue(investments),
         valuationRepositoryProvider.overrideWithValue(valuations),
@@ -137,5 +154,32 @@ void main() {
     await pumpEventQueue();
 
     expect(idListens, 1);
+  });
+
+  test('signing out closes the listeners of a sweep that is still waiting '
+      'for the server', () async {
+    final c = container(followUidProvider: true);
+    c.listen(orphanedValuationSweepProvider, (_, _) {});
+    await pumpEventQueue();
+    expect(idStream.hasListener, isTrue);
+
+    c.read(_uidProvider.notifier).set(null);
+    await pumpEventQueue();
+
+    expect(idStream.hasListener, isFalse);
+    expect(valuationStream.hasListener, isFalse);
+  });
+
+  test('switching account cancels the old sweep and starts one for the '
+      'new user', () async {
+    final c = container(followUidProvider: true);
+    c.listen(orphanedValuationSweepProvider, (_, _) {});
+    await pumpEventQueue();
+    expect(idListens, 1);
+
+    c.read(_uidProvider.notifier).set('u2');
+    await pumpEventQueue();
+
+    expect(idListens, 2);
   });
 }
