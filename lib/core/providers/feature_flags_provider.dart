@@ -6,8 +6,9 @@
 /// depends on the debug menu or on values left on a device.
 library;
 
-import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
+import 'package:inv_tracker/core/providers/feature_flag_unlock_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 
 /// Individual feature flags
@@ -77,11 +78,14 @@ enum FeatureFlag {
   final bool defaultEnabled;
 }
 
-/// Whether values stored on the device (set from Debug Settings) may change
-/// a flag. False in release builds, where only the code default counts.
+/// Whether values stored on the device (set from the feature-flag toggles)
+/// may change a flag. In release builds only the code default counts, unless
+/// the version-tap unlock is on for the signed-in account (#1012).
 /// Overridable so tests can exercise the release-build behaviour.
 final featureFlagOverridesAllowedProvider = Provider<bool>(
-  (ref) => !kReleaseMode,
+  (ref) =>
+      ref.watch(developerToolsAvailableProvider) ||
+      ref.watch(featureFlagUnlockProvider),
 );
 
 /// Provider for feature flag states

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
+import 'package:inv_tracker/core/providers/feature_flag_unlock_provider.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -22,6 +23,7 @@ import 'package:inv_tracker/features/settings/presentation/screens/about_screen.
 import 'package:inv_tracker/features/settings/presentation/screens/appearance_settings_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/data_management_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/debug_settings_screen.dart';
+import 'package:inv_tracker/features/settings/presentation/screens/feature_flags_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/notifications_settings_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/security_settings_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/legacy_currency_backfill_initializer.dart';
@@ -172,6 +174,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: l10n.advancedToolsAndDiagnostics,
                   onTap: () =>
                       _navigateTo(context, const DebugSettingsScreen()),
+                ),
+              ],
+            ),
+
+          // Feature flags only (#1012): a release build shows this after the
+          // version was tapped five times in About. No data tools here.
+          if (ref.watch(featureFlagUnlockProvider))
+            SettingsSection(
+              title: l10n.developer,
+              children: [
+                SettingsNavTile(
+                  icon: Icons.flag_outlined,
+                  iconColor: Colors.orange,
+                  title: l10n.featureFlagsScreenTitle,
+                  subtitle: l10n.featureFlagsTileSubtitle,
+                  onTap: () =>
+                      _navigateTo(context, const FeatureFlagsScreen()),
                 ),
               ],
             ),

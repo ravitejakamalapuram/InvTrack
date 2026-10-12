@@ -126,14 +126,17 @@ Where the source's colours miss 4.5:1 they are kept as drawn and flagged in the 
 | white snackbar icon on the dark `success` · `danger` · `primary` fills | 1.92 · 2.77 · 3.33 | icon only; the message carries the meaning |
 | `on-primary-container` #1c1917 on #8b7cf6 (`primary-container` light) · white on it | 5.26 · 3.33 | light primary container |
 | `on-error` on `error` | white on #cc1926 5.62 (light); #171717 on #f87171 6.48 (dark) | destructive fills |
-| type chip text on its 10% tint | 1.35 to 4.27 (dark 3.37 to 10.27) | investment card |
-| white on a type colour | 1.40 to 4.83 | selected type chip, type tile |
+| `inv-*-text` on its type's 10% tint over `card` (an opaque tint, so the same on the page and on a sheet) | 4.55 to 4.66 (dark 4.58 to 10.24); the bright type colour itself was 1.35 to 4.27 (dark 3.37 to 10.27) | type chip on the card, filter chip, merge dialog chip, type icons in the pickers |
+| `doc-*-text` on its document type's 10% tint over `card` (opaque) | 4.57 to 4.64 (dark 4.58 to 7.07); the bright type colour itself was 1.99 to 4.27 (dark 3.37 to 7.07) | document list pill and thumbnail, add-document file chip and type picker, and the viewer pill (always the dark pair, on the dark overlay) |
+| `inv-*-text` of the template's type on that type's tint, the selected quick-start card | 4.55 to 4.66 (dark 4.58 to 10.24); the template's own colour at 15% was 1.32 to 3.10 | add-investment quick-start cards |
+| `inv-*-on-fill`, white or ink by contrast (`AppColors.onFill`), on the type colour | 4.62 to 12.47; white was 1.40 to 4.83 | selected type chip, type tile icon (3.58 to 13.01 at the centre of its fade on the light card), detail header text, icons and buttons |
+| `closed-text` on a 20% tint of `grey` over `card` | 4.65 in light (`grey` itself 2.27), 4.79 in dark with `grey` | CLOSED chip on the investment card |
 | hero text white at 80% / 60% / 50% | 4.45 to 3.97 / 3.20 to 2.85 / 2.70 to 2.40 | hero title, notes, currency line |
 | hero return badge `#ff5252` on red 30% | 1.62 to 1.83 | negative return on the hero |
 | `field-border` / `outline` / `glass-border` | 1.26 / 1.49 / 1.12 | field and card edges (3:1 asked) |
 | `primary` light value on dark #0a0a0a / #171717 | 3.30 / 2.99 | filter chips and GradientButton in dark (a white label sits on the fill, 6.00), icons and text on the Settings, Goals and onboarding screens, and icons in the add-investment form, the Overview analytics and quick-stat tiles, and the sort and attach-document sheets; the field focus ring and the card's View Details use `primary` dark, 5.95 / 5.39 |
 
-Fixing a pair means changing the Dart widget and the token together. The greys, `success` and `danger` were deepened in place, with `success-tint` and `danger-tint` keeping the old hue for tints; `warning` and `accent` kept their fill and got a darker text-only tone, `warning-text` and `accent-text`, whose tints are still made from `warning` and `accent` (a tint of the text tone itself puts its label at 4.25 and 4.45:1).
+Fixing a pair means changing the Dart widget and the token together. The greys, `success` and `danger` were deepened in place, with `success-tint` and `danger-tint` keeping the old hue for tints; `warning` and `accent` kept their fill and got a darker text-only tone, `warning-text` and `accent-text`, whose tints are still made from `warning` and `accent` (a tint of the text tone itself puts its label at 4.25 and 4.45:1). The investment-type colours work the same way: `inv-*` stays the fill and the tint source (the purple of Crypto and Private Equity and the blue of Mutual Funds and P2P Lending are deepened to #8555ef and #2a70e3, because neither white nor ink reaches 4.5:1 on the bright values), `inv-*-text` is the name and icon on the tint, and `inv-*-on-fill` is the label on the fill. `doc-*-text` does the same for the six document types, and the selected quick-start card takes the colours of the investment type it creates, so Gold and the other templates read and the same investment is the same blue or emerald on its card. Colour never carries the type alone: the icon and the name stay.
 
 ## Not in this system
 

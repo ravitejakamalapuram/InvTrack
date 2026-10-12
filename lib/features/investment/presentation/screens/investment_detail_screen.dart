@@ -103,17 +103,15 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
     final primaryColor = isClosed ? Colors.grey : widget.investment.type.color;
 
-    // Calculate appropriate foreground color based on background luminance
-    // to ensure WCAG 4.5:1 contrast ratio (Rule 7.2)
-    final isLightBackground = primaryColor.computeLuminance() > 0.5;
-    final foregroundColor = isLightBackground
-        ? Colors.black.withValues(alpha: 0.87) // Dark text on light background
-        : Colors.white.withValues(alpha: 0.95); // Light text on dark background
-    final scrimColor = isLightBackground
-        ? Colors.black.withValues(
-            alpha: 0.08,
-          ) // Light scrim on light background
-        : Colors.white.withValues(alpha: 0.15); // Dark scrim on dark background
+    // Everything on the header takes white or ink, whichever reads better on
+    // its colour (4.5:1 or more; a luminance threshold used to leave white on
+    // gold at 1.4:1). The icon disc, the pills and the notes sit on a 20% veil
+    // of the other tone, which only adds to the margin.
+    final foregroundColor = AppColors.onFill(primaryColor);
+    final veilTone = foregroundColor == Colors.white
+        ? Colors.black
+        : Colors.white;
+    final scrimColor = veilTone.withValues(alpha: 0.2);
 
     return Scaffold(
       backgroundColor: isDark
@@ -137,6 +135,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 icon: Icons.arrow_back_rounded,
                 tooltip: l10n.tooltipBack,
                 tone: TonalIconActionTone.onHero,
+                heroFill: primaryColor,
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
@@ -151,7 +150,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               child: Text(
                 widget.investment.name,
                 style: AppTypography.body.copyWith(
-                  color: Colors.white,
+                  color: foregroundColor,
                   fontWeight: FontWeight.w600,
                 ),
                 maxLines: 1,
@@ -163,6 +162,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 icon: Icons.more_vert_rounded,
                 tooltip: l10n.tooltipMoreOptions,
                 tone: TonalIconActionTone.onHero,
+                heroFill: primaryColor,
                 onPressed: () => _showOptionsSheet(context, isDark),
               ),
             ],
@@ -197,13 +197,13 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                               width: 48,
                               height: 48,
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
+                                color: scrimColor,
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Center(
                                 child: Icon(
                                   widget.investment.type.icon,
-                                  color: Colors.white,
+                                  color: foregroundColor,
                                   size: 24,
                                 ),
                               ),
@@ -218,7 +218,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                                     child: Text(
                                       widget.investment.name,
                                       style: AppTypography.h3.copyWith(
-                                        color: Colors.white,
+                                        color: foregroundColor,
                                         fontWeight: FontWeight.w700,
                                       ),
                                       maxLines: 1,
@@ -239,9 +239,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                                           vertical: 3,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.2,
-                                          ),
+                                          color: scrimColor,
                                           borderRadius: BorderRadius.circular(
                                             6,
                                           ),
@@ -249,7 +247,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                                         child: Text(
                                           typeName,
                                           style: AppTypography.small.copyWith(
-                                            color: Colors.white,
+                                            color: foregroundColor,
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
@@ -261,7 +259,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                                             vertical: 3,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: Colors.white.withValues(
+                                            color: veilTone.withValues(
                                               alpha: 0.3,
                                             ),
                                             borderRadius: BorderRadius.circular(
@@ -271,7 +269,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                                           child: Text(
                                             'CLOSED',
                                             style: AppTypography.small.copyWith(
-                                              color: Colors.white,
+                                              color: foregroundColor,
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
@@ -541,7 +539,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             Icon(
               Icons.receipt_long_rounded,
               size: 40,
-              color: widget.investment.type.color,
+              color: widget.investment.type.textColor(
+                isDark ? Brightness.dark : Brightness.light,
+              ),
             ),
             const SizedBox(height: 12),
             Text(

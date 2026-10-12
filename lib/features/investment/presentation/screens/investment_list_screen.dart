@@ -466,6 +466,7 @@ class _TypeFilterSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
@@ -522,10 +523,14 @@ class _TypeFilterSheet extends StatelessWidget {
                       leading: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: type.color.withValues(alpha: 0.15),
+                          color: type.tintColor(brightness),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(type.icon, color: type.color, size: 20),
+                        child: Icon(
+                          type.icon,
+                          color: type.textColor(brightness),
+                          size: 20,
+                        ),
                       ),
                       title: Text(
                         type.displayName,
@@ -575,6 +580,7 @@ class _ActiveTypeFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     return Row(
       children: [
         Container(
@@ -583,19 +589,19 @@ class _ActiveTypeFilterChip extends StatelessWidget {
             vertical: AppSpacing.xs,
           ),
           decoration: BoxDecoration(
-            color: type.color.withValues(alpha: 0.15),
+            color: type.tintColor(brightness),
             borderRadius: AppSizes.borderRadiusMd,
             border: Border.all(color: type.color.withValues(alpha: 0.3)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(type.icon, color: type.color, size: 16),
+              Icon(type.icon, color: type.textColor(brightness), size: 16),
               SizedBox(width: AppSpacing.xs),
               Text(
                 type.displayName,
                 style: AppTypography.caption.copyWith(
-                  color: type.color,
+                  color: type.textColor(brightness),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -615,7 +621,7 @@ class _ActiveTypeFilterChip extends StatelessWidget {
                     padding: EdgeInsets.all(AppSpacing.xs),
                     child: Icon(
                       Icons.close_rounded,
-                      color: type.color,
+                      color: type.textColor(brightness),
                       size: 16,
                     ),
                   ),

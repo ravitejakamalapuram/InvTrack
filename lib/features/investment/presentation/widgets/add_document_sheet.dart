@@ -426,6 +426,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
 
   Widget _buildMultiFileForm(bool isDark) {
     final l10n = AppLocalizations.of(context);
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -530,8 +531,8 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: file.selectedType.color.withValues(
-                                        alpha: 0.15,
+                                      color: file.selectedType.tintColor(
+                                        brightness,
                                       ),
                                       borderRadius: BorderRadius.circular(4),
                                       border: Border.all(
@@ -546,7 +547,9 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                                         Text(
                                           file.selectedType.displayName,
                                           style: AppTypography.caption.copyWith(
-                                            color: file.selectedType.color,
+                                            color: file.selectedType.textColor(
+                                              brightness,
+                                            ),
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
@@ -554,7 +557,9 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                                         Icon(
                                           Icons.arrow_drop_down,
                                           size: 14,
-                                          color: file.selectedType.color,
+                                          color: file.selectedType.textColor(
+                                            brightness,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -690,6 +695,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
   void _showTypePickerForFile(int fileIndex, bool isDark) {
     HapticFeedback.selectionClick();
     final file = _multipleFiles[fileIndex];
+    final brightness = isDark ? Brightness.dark : Brightness.light;
 
     showModalBottomSheet(
       context: context,
@@ -753,7 +759,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? type.color.withValues(alpha: 0.15)
+                            ? type.tintColor(brightness)
                             : (isDark ? Colors.white : Colors.black).withValues(
                                 alpha: 0.05,
                               ),
@@ -773,7 +779,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                             type.icon,
                             size: 18,
                             color: isSelected
-                                ? type.color
+                                ? type.textColor(brightness)
                                 : (isDark ? Colors.white : Colors.black)
                                       .withValues(alpha: 0.6),
                           ),
@@ -782,7 +788,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                             type.displayName,
                             style: AppTypography.body.copyWith(
                               color: isSelected
-                                  ? type.color
+                                  ? type.textColor(brightness)
                                   : (isDark ? Colors.white : Colors.black)
                                         .withValues(alpha: 0.8),
                               fontWeight: isSelected

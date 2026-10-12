@@ -16,6 +16,8 @@ class HelpFaqScreen extends StatelessWidget {
     super.key,
     required this.showDeveloperFaq,
     this.showCustomTypesFaq = false,
+    this.showIncomeGuardianFaq = false,
+    this.showPortfolioHealthFaq = false,
   });
 
   /// Whether to explain the developer tools. Callers pass
@@ -26,6 +28,16 @@ class HelpFaqScreen extends StatelessWidget {
   /// pass isCustomInvestmentTypesEnabledProvider, so the FAQ never describes
   /// a feature the user cannot see.
   final bool showCustomTypesFaq;
+
+  /// Whether to explain Income Guardian (A105). Callers pass
+  /// isIncomeGuardianEnabledProvider, so the FAQ never describes a feature
+  /// the user cannot see.
+  final bool showIncomeGuardianFaq;
+
+  /// Whether to say where the Portfolio Health Score is (#903). Callers pass
+  /// isPortfolioHealthEnabledProvider, so the FAQ never points at a card the
+  /// user cannot see.
+  final bool showPortfolioHealthFaq;
 
   @override
   Widget build(BuildContext context) {
@@ -134,11 +146,12 @@ class HelpFaqScreen extends StatelessWidget {
               l10n.whatIsPortfolioHealthScoreAnswer,
               isDark,
             ),
-            _buildFaqItem(
-              l10n.howToEnablePortfolioHealth,
-              l10n.howToEnablePortfolioHealthAnswer,
-              isDark,
-            ),
+            if (showPortfolioHealthFaq)
+              _buildFaqItem(
+                l10n.whereToFindPortfolioHealth,
+                l10n.whereToFindPortfolioHealthAnswer,
+                isDark,
+              ),
             _buildFaqItem(
               l10n.whatDoScoreTiersMean,
               l10n.whatDoScoreTiersMeanAnswer,
@@ -155,38 +168,39 @@ class HelpFaqScreen extends StatelessWidget {
               isDark,
             ),
           ]),
-          _buildSection(l10n.incomeGuardianSection, [
-            _buildFaqItem(
-              l10n.whatIsIncomeGuardian,
-              l10n.whatIsIncomeGuardianAnswer,
-              isDark,
-            ),
-            _buildFaqItem(
-              l10n.howDoesIncomeProjectionWork,
-              l10n.howDoesIncomeProjectionWorkAnswer,
-              isDark,
-            ),
-            _buildFaqItem(
-              l10n.whatIsIncomeTrendAnalysis,
-              l10n.whatIsIncomeTrendAnalysisAnswer,
-              isDark,
-            ),
-            _buildFaqItem(
-              l10n.whatIsHHIScore,
-              l10n.whatIsHHIScoreAnswer,
-              isDark,
-            ),
-            _buildFaqItem(
-              l10n.whatIsPlatformReliability,
-              l10n.whatIsPlatformReliabilityAnswer,
-              isDark,
-            ),
-            _buildFaqItem(
-              l10n.howToAccessIncomeReports,
-              l10n.howToAccessIncomeReportsAnswer,
-              isDark,
-            ),
-          ]),
+          if (showIncomeGuardianFaq)
+            _buildSection(l10n.incomeGuardianSection, [
+              _buildFaqItem(
+                l10n.whatIsIncomeGuardian,
+                l10n.whatIsIncomeGuardianAnswer,
+                isDark,
+              ),
+              _buildFaqItem(
+                l10n.howDoesIncomeProjectionWork,
+                l10n.howDoesIncomeProjectionWorkAnswer,
+                isDark,
+              ),
+              _buildFaqItem(
+                l10n.whatIsIncomeTrendAnalysis,
+                l10n.whatIsIncomeTrendAnalysisAnswer,
+                isDark,
+              ),
+              _buildFaqItem(
+                l10n.whatIsHHIScore,
+                l10n.whatIsHHIScoreAnswer,
+                isDark,
+              ),
+              _buildFaqItem(
+                l10n.whatIsPlatformReliability,
+                l10n.whatIsPlatformReliabilityAnswer,
+                isDark,
+              ),
+              _buildFaqItem(
+                l10n.howToAccessIncomeReports,
+                l10n.howToAccessIncomeReportsAnswer,
+                isDark,
+              ),
+            ]),
           if (showDeveloperFaq)
             _buildSection(l10n.advancedFeatures, [
               _buildFaqItem(

@@ -129,6 +129,7 @@ class _InvestmentSelectorSheetState
     bool isDark,
   ) {
     final investmentsAsync = ref.watch(allInvestmentsProvider);
+    final brightness = isDark ? Brightness.dark : Brightness.light;
 
     return investmentsAsync.when(
       data: (investments) {
@@ -171,12 +172,12 @@ class _InvestmentSelectorSheetState
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: investment.type.color.withValues(alpha: 0.2),
+                  color: investment.type.tintColor(brightness),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   investment.type.icon,
-                  color: investment.type.color,
+                  color: investment.type.textColor(brightness),
                   size: 20,
                 ),
               ),
@@ -207,6 +208,7 @@ class _InvestmentSelectorSheetState
   }
 
   Widget _buildTypeList(ScrollController controller, bool isDark) {
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     return ListView.builder(
       controller: controller,
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -231,10 +233,10 @@ class _InvestmentSelectorSheetState
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: type.color.withValues(alpha: 0.2),
+              color: type.tintColor(brightness),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(type.icon, color: type.color, size: 20),
+            child: Icon(type.icon, color: type.textColor(brightness), size: 20),
           ),
         );
       },

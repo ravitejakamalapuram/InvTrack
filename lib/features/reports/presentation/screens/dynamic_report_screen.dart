@@ -3,6 +3,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inv_tracker/core/analytics/analytics_screens.dart';
+import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
 import 'package:inv_tracker/features/reports/domain/entities/dynamic_report_data.dart';
@@ -253,8 +255,15 @@ class DynamicReportScreen extends ConsumerWidget {
             const SizedBox(height: 32),
             FilledButton.icon(
               onPressed: () {
-                // Navigate to add investment screen
-                context.push('/investments/add');
+                // Same entry as the Investments list: the form is not a route.
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    settings: const RouteSettings(
+                      name: AnalyticsScreens.addInvestment,
+                    ),
+                    builder: (_) => const AddInvestmentScreen(),
+                  ),
+                );
               },
               icon: const Icon(Icons.add),
               label: Text(l10n.addYourFirstInvestment),

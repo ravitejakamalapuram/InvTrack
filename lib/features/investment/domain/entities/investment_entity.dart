@@ -389,6 +389,17 @@ class InvestmentEntity {
   /// Whether this investment pays regular income
   bool get hasIncomeSchedule => incomeFrequency != null;
 
+  /// Whether a "did income arrive" reminder is owed: a frequency is set and
+  /// the payout mode pays something before maturity. A cumulative or
+  /// at-maturity investment pays nothing in between, whatever frequency it
+  /// carries (the FD template does). No payout mode (older records, stocks,
+  /// rental) leaves the frequency decisive, as the current-value calculator
+  /// also treats a missing mode.
+  bool get needsIncomeReminder =>
+      incomeFrequency != null &&
+      interestPayoutMode != InterestPayoutMode.cumulative &&
+      interestPayoutMode != InterestPayoutMode.atMaturity;
+
   /// Whether this investment has start date set
   bool get hasStartDate => startDate != null;
 

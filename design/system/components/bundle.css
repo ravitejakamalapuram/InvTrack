@@ -52,6 +52,8 @@
   --it-neutral-600-l: #57534e;   /* AppColors.neutral600Light (ChangeBadge zero text) */
   --it-neutral-200-l: #e7e5e4;
   --it-grey: #9e9e9e;        /* Flutter Colors.grey (closed investments) */
+  --it-closed-text: #696969; /* AppColors.closedTextLight: CLOSED on grey 20% over the card, 4.65:1 (grey is 2.27:1); dark keeps the grey */
+  --it-ink: #1c1917;         /* AppColors.neutral900Light: the label on a bright fill (AppColors.onFill) */
   --it-grey-600: #757575;    /* Colors.grey[600] (QuickStatCard label) */
   --it-grey-500: #9e9e9e;    /* Colors.grey[500] (QuickStatCard subtitle) */
 }
@@ -219,7 +221,9 @@
 .it-ccy--full span { font-weight: 400; color: var(--text-secondary); }
 .it-tag { display: inline-flex; align-items: center; gap: 3px; padding: 2px var(--space-xs); border-radius: var(--radius-badge); font: 500 12px/1.4 var(--font-text); color: var(--c); background: color-mix(in srgb, var(--c) 10%, transparent); }
 .it-tag--strong { font-weight: 600; background: color-mix(in srgb, var(--tint, var(--c)) 15%, transparent); }
-.it-tag--closed { font-weight: 600; background: color-mix(in srgb, var(--it-grey) 20%, transparent); color: var(--it-grey); }
+.it-tag--closed { font-weight: 600; background: color-mix(in srgb, var(--it-grey) 20%, transparent); color: var(--it-closed-text); }
+[data-theme="dark"] .it-tag--closed { color: var(--it-grey); }
+.it-tag--type { background: color-mix(in srgb, var(--tint) 10%, var(--card)); }   /* InvestmentType.tintColor: opaque, the type colour at 10% over the card */
 
 /* ---------- Chips ---------- */
 .it-fchip { display: inline-flex; align-items: center; gap: 4px; padding: var(--space-xs) var(--space-md); border-radius: var(--radius-xl); border: 2px solid transparent; background: var(--it-tint-05); color: var(--it-chip-text); font: 500 12px/1.4 var(--font-text); cursor: pointer; }
@@ -232,8 +236,8 @@
 [data-theme="dark"] .it-tchip { color: var(--neutral-200-dark); }
 .it-tchip--compact { padding: 10px var(--space-sm); font-size: 13px; }
 .it-tchip__ic { display: inline-flex; padding: 4px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--c) 12%, transparent); color: var(--c); }
-.it-tchip.is-on { background: var(--c); border-color: transparent; color: #fff; font-weight: 600; box-shadow: 0 6px 16px -2px color-mix(in srgb, var(--c) 35%, transparent); }
-.it-tchip.is-on .it-tchip__ic { background: rgba(255, 255, 255, .2); color: #fff; }
+.it-tchip.is-on { background: var(--c); border-color: transparent; color: var(--on, #fff); font-weight: 600; box-shadow: 0 6px 16px -2px color-mix(in srgb, var(--c) 35%, transparent); }
+.it-tchip.is-on .it-tchip__ic { background: rgba(255, 255, 255, .2); color: var(--on, #fff); }
 .it-tchip:focus-visible, .it-tchip.is-focus { outline: none; border-color: var(--it-primary-l); box-shadow: 0 0 8px 1px color-mix(in srgb, var(--it-primary-l) 30%, transparent); }
 [data-theme="dark"] .it-tchip:focus-visible, [data-theme="dark"] .it-tchip.is-focus { border-color: #fff; box-shadow: 0 0 8px 1px rgba(255, 255, 255, .3); }
 .it-tchip__t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -325,7 +329,7 @@
 .it-inv__main { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-sm) var(--space-md); padding: var(--space-md); }
 .it-inv__check { width: 20px; height: 20px; flex: none; accent-color: var(--it-primary-l); margin: 14px 4px 0 0; }   /* the 20px box centred on the 48px target */
 .it-inv__check + .it-inv__tile { margin-top: 8px; }   /* the tile centred on the checkbox; name and figures stay on the top edge */
-.it-inv__tile { display: inline-flex; align-items: center; justify-content: center; flex: none; width: var(--icon-xl); height: var(--icon-xl); border-radius: 14px; color: #fff; font-size: 24px; background: linear-gradient(135deg, var(--c), color-mix(in srgb, var(--c) 70%, transparent)); box-shadow: 0 4px 8px color-mix(in srgb, var(--c) 30%, transparent); }
+.it-inv__tile { display: inline-flex; align-items: center; justify-content: center; flex: none; width: var(--icon-xl); height: var(--icon-xl); border-radius: 14px; color: var(--on, #fff); font-size: 24px; background: linear-gradient(135deg, var(--c), color-mix(in srgb, var(--c) 70%, transparent)); box-shadow: 0 4px 8px color-mix(in srgb, var(--c) 30%, transparent); }
 .it-inv__info { flex: 1 1 96px; min-width: 96px; }   /* the name keeps room for about eleven characters; when the figures need more, the value column wraps under it (the app measures the figures the same way) */
 .it-inv__name { margin: 0; font: 600 18px/1.6 var(--font-text); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .it-inv__tags { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-top: 4px; }
