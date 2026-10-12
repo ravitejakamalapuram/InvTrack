@@ -526,6 +526,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
         builder: (context) => HelpFaqScreen(
           showDeveloperFaq: ref.read(developerToolsAvailableProvider),
           showCustomTypesFaq: ref.read(isCustomInvestmentTypesEnabledProvider),
+          showPortfolioHealthFaq: ref.read(isPortfolioHealthEnabledProvider),
         ),
       ),
     );
