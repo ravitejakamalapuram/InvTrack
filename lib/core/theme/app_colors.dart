@@ -10,9 +10,17 @@ class AppColors {
   static const Color primaryDarkLight = Color(0xFF4338CA);
   static const Color primaryLightLight = Color(0xFF8B7CF6);
 
-  // Accent - Luxurious Teal/Cyan
+  // Accent - Luxurious Teal/Cyan. The bright blue is for fills, tints, borders
+  // and gradients; as text it is 2.77:1 on the card.
   static const Color accentLight = Color(0xFF0EA5E9);
   static const Color accentDarkLight = Color(0xFF0284C7);
+
+  // The deeper blue for text and icons on the card, the page or a tint of
+  // `accentLight`: 5.50:1 on the card, 4.75:1 on a 15% tint of `accentLight`
+  // over it, 4.58:1 on a 10% tint of the primary indigo over the page. Never a
+  // fill, and never the source of a tint: a 15% tint of this blue puts its own
+  // label at 4.45:1. Light only; dark reads `accentDark`.
+  static const Color accentTextLight = Color(0xFF00709F);
 
   // Success - Emerald Green (premium feel). Deep enough to read as text:
   // 5.37:1 on the card, 4.73:1 on `successBgLight`, 5.37:1 under a white label.
@@ -41,9 +49,17 @@ class AppColors {
   static const Color successTintLight = Color(0xFF10B981);
   static const Color dangerTintLight = Color(0xFFEF4444);
 
-  // Warning - Rich Amber
+  // Warning - Rich Amber. The bright amber is for fills, tints, borders and
+  // gradients; as text it is 2.15:1 on the card.
   static const Color warningLight = Color(0xFFF59E0B);
   static const Color warningBgLight = Color(0xFFFEF3C7);
+
+  // The deeper amber for text and icons on the card or a tint of
+  // `warningLight`: 5.21:1 on the card, 4.64:1 on a 15% tint of `warningLight`
+  // over it, 4.68:1 on `warningBgLight`. Never a fill, and never the source of
+  // a tint: a 15% tint of this amber puts its own label at 4.25:1. Light only;
+  // dark reads `warningDark`.
+  static const Color warningTextLight = Color(0xFF996000);
 
   // Neutrals - Warm Gray Scale (more premium than cool gray)
   static const Color neutral950Light = Color(0xFF0C0A09);
