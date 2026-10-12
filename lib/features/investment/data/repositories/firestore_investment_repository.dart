@@ -991,6 +991,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       ),
       // Multi-currency support; legacy documents use the base currency
       currency: data['currency'] as String? ?? baseCurrency,
+      currencyAssumed: data['currency'] == null,
       // A value without its date is ignored rather than dated today.
       currentValue: data['currentValueDate'] != null
           ? (data['currentValue'] as num?)?.toDouble()
@@ -1047,6 +1048,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       // Multi-currency support; legacy documents use the base currency
       currency: data['currency'] as String? ?? baseCurrency,
+      currencyAssumed: data['currency'] == null,
     );
   }
 }

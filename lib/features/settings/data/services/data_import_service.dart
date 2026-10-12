@@ -232,7 +232,7 @@ class DataImportService {
           _valuationsWarning,
           warnings,
           damagedFiles,
-          (text) => _parseValuationsCsv(text, warnings),
+          (text) => _parseValuationsCsv(text, baseCurrency, warnings),
         ) ??
         <(bool, String), List<_ImportedValuation>>{};
     final cashflowsArchived = _readParsed(
@@ -811,6 +811,7 @@ class DataImportService {
   /// state). Then no row warning is added: the caller reports the file alone.
   Map<(bool, String), List<_ImportedValuation>>? _parseValuationsCsv(
     String content,
+    String baseCurrency,
     List<String> warnings,
   ) {
     final List<List<dynamic>> rows;
@@ -849,7 +850,12 @@ class DataImportService {
       if (name.isEmpty) continue;
       final value = double.tryParse(cell(valueCol));
       final parsedDate = DateTime.tryParse(cell(dateCol));
-      final currency = cell(currencyCol).toUpperCase();
+      // A backup leaves the currency empty when the investment never had a
+      // stored one; the importing account's base currency applies, as for
+      // cash flows and goals without one.
+      final currency = cell(currencyCol).isEmpty
+          ? baseCurrency
+          : cell(currencyCol).toUpperCase();
       final kind = cell(kindCol).isEmpty
           ? ValuationKind.carryingValue
           : ValuationKind.tryParse(cell(kindCol));
@@ -866,7 +872,6 @@ class DataImportService {
             parsedDate.month,
             parsedDate.day,
           ).isAfter(today) ||
-          currency.isEmpty ||
           kind == null ||
           provenance == null ||
           provenance == ValuationProvenance.estimate) {

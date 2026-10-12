@@ -59,6 +59,7 @@ class GoalModel {
           data['colorValue'] as int? ?? GoalColors.defaultColor.toARGB32(),
       isArchived: data['isArchived'] as bool? ?? false,
       currency: data['currency'] as String? ?? baseCurrency,
+      currencyAssumed: data['currency'] == null,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: data['updatedAt'] != null
           ? (data['updatedAt'] as Timestamp).toDate()

@@ -687,7 +687,7 @@
     "description": "FAQ question"
   },
 
-  "howToBackupDataAnswer": "Your data is automatically backed up to Firebase when you''re signed in. You can also export a local backup anytime from Settings → Data & Account.",
+  "howToBackupDataAnswer": "Your data is automatically backed up to Firebase when you''re signed in. You can also export a local backup anytime from Settings → Data & Account. If a record never had a currency saved, the backup leaves its Currency cell empty and the record takes the currency of the account that restores it. An older version of InvTrack cannot restore a current value with an empty Currency cell, so update the app before restoring.",
   "@howToBackupDataAnswer": {
     "description": "FAQ answer"
   },

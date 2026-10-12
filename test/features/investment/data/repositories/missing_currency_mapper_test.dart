@@ -28,6 +28,7 @@ void main() {
             );
 
         expect(investment.currency, 'INR');
+        expect(investment.currencyAssumed, isTrue);
       });
 
       test('cash flow document', () {
@@ -44,6 +45,7 @@ void main() {
         );
 
         expect(cashFlow.currency, 'INR');
+        expect(cashFlow.currencyAssumed, isTrue);
         expect(cashFlow.amount, 100000.0);
       });
 
@@ -61,6 +63,7 @@ void main() {
         );
 
         expect(goal.currency, 'INR');
+        expect(goal.currencyAssumed, isTrue);
       });
 
       test('expected cash flow document', () {
@@ -104,6 +107,126 @@ void main() {
         );
 
         expect(cashFlow.currency, 'USD');
+        expect(cashFlow.currencyAssumed, isFalse);
+      });
+
+      test('a stored currency is not marked as assumed (all three)', () {
+        final investment =
+            FirestoreInvestmentRepository.investmentFromFirestore(
+              {
+                'name': 'US ETF',
+                'type': 'stocks',
+                'status': 'open',
+                'createdAt': created,
+                'currency': 'EUR',
+              },
+              'inv-2',
+              baseCurrency: 'INR',
+            );
+        final goal = GoalModel.fromFirestore(
+          {
+            'name': 'House',
+            'type': 'targetAmount',
+            'targetAmount': 1000,
+            'trackingMode': 'all',
+            'createdAt': created,
+            'currency': 'EUR',
+          },
+          'goal-2',
+          baseCurrency: 'INR',
+        );
+
+        expect(investment.currency, 'EUR');
+        expect(investment.currencyAssumed, isFalse);
+        expect(goal.currency, 'EUR');
+        expect(goal.currencyAssumed, isFalse);
+      });
+
+      test('choosing a currency on an assumed record clears the mark', () {
+        final cashFlow = FirestoreInvestmentRepository.cashFlowFromFirestore(
+          {
+            'investmentId': 'inv-1',
+            'date': created,
+            'type': 'INVEST',
+            'amount': 100,
+            'createdAt': created,
+          },
+          'cf-3',
+          baseCurrency: 'INR',
+        );
+
+        expect(cashFlow.copyWith(notes: 'n').currencyAssumed, isTrue);
+        expect(cashFlow.copyWith(currency: 'USD').currencyAssumed, isFalse);
+      });
+
+      test('choosing a currency on an assumed investment or goal clears the '
+          'mark, and other edits keep it', () {
+        final investment =
+            FirestoreInvestmentRepository.investmentFromFirestore(
+              {
+                'name': 'HDFC FD',
+                'type': 'fixedDeposit',
+                'status': 'open',
+                'createdAt': created,
+              },
+              'inv-2',
+              baseCurrency: 'INR',
+            );
+        final goal = GoalModel.fromFirestore(
+          {
+            'name': 'Retirement',
+            'type': 'targetAmount',
+            'targetAmount': 1000000,
+            'trackingMode': 'all',
+            'createdAt': created,
+          },
+          'goal-2',
+          baseCurrency: 'INR',
+        );
+
+        expect(investment.copyWith(notes: 'n').currencyAssumed, isTrue);
+        expect(investment.copyWith(currency: 'USD').currencyAssumed, isFalse);
+        expect(goal.copyWith(name: 'n').currencyAssumed, isTrue);
+        expect(goal.copyWith(currency: 'USD').currencyAssumed, isFalse);
+      });
+
+      test('the mark takes part in equality for investments and goals', () {
+        final data = {
+          'name': 'x',
+          'type': 'fixedDeposit',
+          'status': 'open',
+          'createdAt': created,
+        };
+        final assumed = FirestoreInvestmentRepository.investmentFromFirestore(
+          data,
+          'inv-3',
+          baseCurrency: 'INR',
+        );
+        final stored = FirestoreInvestmentRepository.investmentFromFirestore(
+          {...data, 'currency': 'INR'},
+          'inv-3',
+          baseCurrency: 'INR',
+        );
+        expect(assumed, isNot(stored));
+        expect(assumed.hashCode, isNot(stored.hashCode));
+
+        final goalData = {
+          'name': 'g',
+          'type': 'targetAmount',
+          'targetAmount': 1000,
+          'trackingMode': 'all',
+          'createdAt': created,
+        };
+        expect(
+          GoalModel.fromFirestore(goalData, 'g', baseCurrency: 'INR'),
+          isNot(
+            GoalModel.fromFirestore(
+              {...goalData, 'currency': 'INR'},
+              'g',
+              baseCurrency: 'INR',
+            ),
+          ),
+        );
       });
     },
   );

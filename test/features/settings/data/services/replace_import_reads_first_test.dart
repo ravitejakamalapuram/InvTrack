@@ -215,6 +215,9 @@ final _validSnapshots = '$_snapshotHeader${_snapshotRow()}';
 // The ways a valuations.csv with snapshot columns can be damaged. Rows with a
 // kind or source this app does not know are never reinterpreted, and an
 // estimate is never stored, so a file of nothing else has nothing to restore.
+// A row with no currency is not damaged: a backup leaves it empty for a value
+// whose currency the user never stored, and the importing account's base
+// currency applies (A80).
 final _damagedSnapshots = <String, List<int>>{
   'not UTF-8': _invalidUtf8(_validSnapshots),
   'header-less': utf8.encode(_snapshotRow()),
@@ -230,9 +233,6 @@ final _damagedSnapshots = <String, List<int>>{
   ),
   'only estimated rows': utf8.encode(
     '$_snapshotHeader${_snapshotRow(source: 'estimate')}',
-  ),
-  'only rows with no currency': utf8.encode(
-    '$_snapshotHeader${_snapshotRow(currency: '')}',
   ),
 };
 

@@ -313,6 +313,13 @@ class InvestmentEntity {
   /// Default: 'USD' for backward compatibility
   final String currency;
 
+  /// True when [currency] was not stored on the record but filled in from the
+  /// user's base currency when it was read (records saved before
+  /// multi-currency support, until the user confirms their currency). Screens
+  /// show [currency] either way; a backup leaves the currency out of such a
+  /// record, so a restore does not turn the guess into a stored value.
+  final bool currencyAssumed;
+
   /// The user's own current value of this investment, in [currency], kept
   /// separate from its cash flows. Null when the user has not set one; an
   /// estimate is then derived (see CurrentValueCalculator).
@@ -355,6 +362,7 @@ class InvestmentEntity {
     this.riskLevel,
     this.compoundingFrequency,
     this.currency = 'USD', // Default for backward compatibility
+    this.currencyAssumed = false,
     this.currentValue,
     this.currentValueDate,
     this.customTypeId,
@@ -445,6 +453,7 @@ class InvestmentEntity {
     RiskLevel? riskLevel,
     CompoundingFrequency? compoundingFrequency,
     String? currency,
+    bool? currencyAssumed,
     double? currentValue,
     DateTime? currentValueDate,
     String? customTypeId,
@@ -472,6 +481,9 @@ class InvestmentEntity {
       riskLevel: riskLevel ?? this.riskLevel,
       compoundingFrequency: compoundingFrequency ?? this.compoundingFrequency,
       currency: currency ?? this.currency,
+      // Choosing a currency makes it a stored one.
+      currencyAssumed:
+          currencyAssumed ?? (currency == null && this.currencyAssumed),
       currentValue: currentValue ?? this.currentValue,
       currentValueDate: currentValueDate ?? this.currentValueDate,
       customTypeId: customTypeId ?? this.customTypeId,
@@ -504,6 +516,7 @@ class InvestmentEntity {
         other.riskLevel == riskLevel &&
         other.compoundingFrequency == compoundingFrequency &&
         other.currency == currency &&
+        other.currencyAssumed == currencyAssumed &&
         other.currentValue == currentValue &&
         other.currentValueDate == currentValueDate &&
         other.customTypeId == customTypeId &&
@@ -534,6 +547,7 @@ class InvestmentEntity {
       riskLevel,
       compoundingFrequency,
       currency,
+      currencyAssumed,
       currentValue,
       currentValueDate,
       customTypeId,
