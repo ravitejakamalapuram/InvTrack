@@ -28,7 +28,7 @@ declare namespace InvTrack {
     | { kind: 'net'; label: string; value: string; positive?: boolean; neutral?: boolean; status?: string; returnText?: string }
     | { kind: 'current'; label: string; value?: string; basis: string; action?: string }
     | { kind: 'flows'; out: string; inn: string; count: string }
-    | { kind: 'maturity'; date: string; status: string; color?: Css; icon?: string }
+    | { kind: 'maturity'; date: string; status: string; color?: Css; tint?: Css; icon?: string }
     | { kind: 'hero'; label: string; value: string; subtitle?: string };
   function StatTile(props: StatTileProps): Html;
 
