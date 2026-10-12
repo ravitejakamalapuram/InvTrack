@@ -256,6 +256,79 @@ void main() {
     });
   });
 
+  // A107: Play's default listing language is en-US, so the check must not pass
+  // when that folder is gone, even if another locale is valid.
+  group('default listing locale', () {
+    const deDe = 'android/fastlane/metadata/android/de-DE';
+    const deFiles = {
+      '$deDe/title.txt': 'InvTrack Anlagen-Tracker\n',
+      '$deDe/short_description.txt': 'Anlagen mit XIRR verfolgen.\n',
+      '$deDe/full_description.txt': 'Verfolge, was du angelegt hast.\n',
+    };
+
+    test('fails when only de-DE exists', () async {
+      final root = _fixture(deFiles);
+      Directory('${root.path}/$_listing').deleteSync(recursive: true);
+      final r = await _check(root.path);
+      expect(r.exitCode, 1, reason: _output(r));
+      expect(_output(r), contains('Missing default listing locale: en-US'));
+    });
+
+    test('fails when en-US is a file, not a folder', () async {
+      final root = _fixture(deFiles);
+      Directory('${root.path}/$_listing').deleteSync(recursive: true);
+      File('${root.path}/$_listing').writeAsStringSync('not a folder\n');
+      final r = await _check(root.path);
+      expect(r.exitCode, 1, reason: _output(r));
+      expect(_output(r), contains('Missing default listing locale: en-US'));
+    });
+
+    // The folder guard only checks that en-US exists; the per-locale length
+    // loop is what requires its three files.
+    test('fails when en-US is an empty folder', () async {
+      final root = _fixture(deFiles);
+      final en = Directory('${root.path}/$_listing')
+        ..deleteSync(recursive: true)
+        ..createSync(recursive: true);
+      final r = await _check(root.path);
+      expect(en.existsSync(), isTrue);
+      expect(r.exitCode, 1, reason: _output(r));
+      expect(_output(r), contains('Missing listing file'));
+    });
+
+    // The folder guard follows symlinks; the symlink scan is what rejects a
+    // linked en-US, so this pins that scan for the default locale.
+    test('fails when en-US is a symlink to a real folder', () async {
+      final root = _fixture({
+        'docs/listing/title.txt': 'InvTrack - Investment Tracker\n',
+        'docs/listing/short_description.txt': 'Track investments.\n',
+        'docs/listing/full_description.txt': _cleanFull,
+      });
+      Directory('${root.path}/$_listing').deleteSync(recursive: true);
+      Link('${root.path}/$_listing').createSync('${root.path}/docs/listing');
+      final r = await _check(root.path);
+      expect(r.exitCode, 1, reason: _output(r));
+      expect(_output(r), contains('Symlinks found'));
+    });
+
+    test('passes with en-US and de-DE', () async {
+      final r = await _check(_fixture(deFiles).path);
+      expect(r.exitCode, 0, reason: _output(r));
+    });
+
+    test('passes with only en-US', () async {
+      final r = await _check(_fixture({}).path);
+      expect(r.exitCode, 0, reason: _output(r));
+    });
+
+    test('still checks every locale when en-US is present', () async {
+      final root = _fixture({...deFiles, '$deDe/title.txt': '${'a' * 31}\n'});
+      final r = await _check(root.path);
+      expect(r.exitCode, 1, reason: _output(r));
+      expect(_output(r), contains('de-DE/title.txt'));
+    });
+  });
+
   group('this repository', () {
     test('listing and README pass the check', () async {
       final r = await _check('.');
