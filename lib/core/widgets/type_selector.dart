@@ -390,11 +390,15 @@ class _TypeSelectorChip extends StatelessWidget {
           selectionProgress,
         )!;
 
-        final iconColor = Color.lerp(color, Colors.white, selectionProgress)!;
+        // On the selected fill the label and the icon take white or ink,
+        // whichever reads better on `color` (white was 1.4:1 on gold).
+        final onFill = AppColors.onFill(color);
+
+        final iconColor = Color.lerp(color, onFill, selectionProgress)!;
 
         final textColor = Color.lerp(
           isDark ? AppColors.neutral200Dark : AppColors.neutral700Light,
-          Colors.white,
+          onFill,
           selectionProgress,
         )!;
 

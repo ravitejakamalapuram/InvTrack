@@ -1548,6 +1548,108 @@ void main() {
     });
   });
 
+  // #1001: an FD saved from the FD template is cumulative (interest accrues
+  // to maturity) but carries a quarterly income frequency. It pays no
+  // periodic income, so no "did income arrive" reminder may be scheduled for
+  // it, and one scheduled earlier is cancelled on the next resync.
+  group(
+    'NotificationService - Income reminders follow the payout mode (#1001)',
+    () {
+      late NotificationService clockedService;
+
+      setUp(() {
+        clockedService = NotificationService(
+          fakePlugin,
+          prefs,
+          clock: () => DateTime(2026, 10, 2, 10),
+        );
+      });
+
+      InvestmentEntity fd({InterestPayoutMode? mode, String id = 'inv-fd'}) =>
+          InvestmentEntity(
+            id: id,
+            name: 'Bank FD',
+            type: InvestmentType.fixedDeposit,
+            status: InvestmentStatus.open,
+            createdAt: DateTime(2026, 1, 1),
+            updatedAt: DateTime(2026, 1, 1),
+            startDate: DateTime(2026, 3, 10),
+            incomeFrequency: IncomeFrequency.quarterly,
+            interestPayoutMode: mode,
+          );
+
+      Future<Set<int>> pendingIds() async =>
+          (await fakePlugin.pendingNotificationRequests())
+              .map((p) => p.id)
+              .toSet();
+
+      final incomeId = NotificationIds.incomeReminder('inv-fd');
+
+      test(
+        'cumulative FD with a quarterly frequency gets no income reminder',
+        () async {
+          await clockedService.rescheduleAllNotifications([
+            fd(mode: InterestPayoutMode.cumulative),
+          ], lastIncomeDates: const {});
+
+          expect(await pendingIds(), isNot(contains(incomeId)));
+        },
+      );
+
+      test(
+        'at-maturity FD with a quarterly frequency gets no income reminder',
+        () async {
+          await clockedService.rescheduleAllNotifications([
+            fd(mode: InterestPayoutMode.atMaturity),
+          ], lastIncomeDates: const {});
+
+          expect(await pendingIds(), isNot(contains(incomeId)));
+        },
+      );
+
+      test(
+        'control: periodic FD with a quarterly frequency keeps its income reminder',
+        () async {
+          await clockedService.rescheduleAllNotifications([
+            fd(mode: InterestPayoutMode.periodic),
+          ], lastIncomeDates: const {});
+
+          expect(await pendingIds(), contains(incomeId));
+        },
+      );
+
+      test(
+        'control: a record with no payout mode keeps its income reminder',
+        () async {
+          await clockedService.rescheduleAllNotifications([
+            fd(),
+          ], lastIncomeDates: const {});
+
+          expect(await pendingIds(), contains(incomeId));
+        },
+      );
+
+      test(
+        'a reminder scheduled earlier for a cumulative FD is cancelled on resync',
+        () async {
+          await clockedService.scheduleIncomeReminder(
+            investmentId: 'inv-fd',
+            investmentName: 'Bank FD',
+            monthsBetweenPayments: 3,
+            lastIncomeDate: DateTime(2026, 3, 10),
+          );
+          expect(await pendingIds(), contains(incomeId));
+
+          await clockedService.rescheduleAllNotifications([
+            fd(mode: InterestPayoutMode.cumulative),
+          ], lastIncomeDates: const {});
+
+          expect(await pendingIds(), isNot(contains(incomeId)));
+        },
+      );
+    },
+  );
+
   // A08 (#751): income reminders must stay anchored to the payout schedule
   // across launches, switching a reminder type off must remove its pending
   // alarms, and alarms for closed or removed investments must not linger.

@@ -66,6 +66,21 @@ final investmentByIdProvider = FutureProvider.family<InvestmentEntity?, String>(
   },
 );
 
+/// Live status of one investment, read from the [allInvestmentsProvider]
+/// stream so it changes when the investment is closed or reopened (on this
+/// device or another). `null` while the list is loading, on error, or when
+/// the investment is not in it; callers treat that as "not known to be
+/// closed", so a form never flashes blocked.
+final investmentStatusProvider = Provider.autoDispose
+    .family<InvestmentStatus?, String>((ref, id) {
+      final investments = ref.watch(allInvestmentsProvider).value;
+      if (investments == null) return null;
+      for (final investment in investments) {
+        if (investment.id == id) return investment.status;
+      }
+      return null;
+    });
+
 // ============ CASH FLOW STREAM PROVIDERS ============
 
 /// Watch cash flows for an investment (reactive).
