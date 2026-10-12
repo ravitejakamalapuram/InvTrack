@@ -538,4 +538,64 @@ void main() {
     expect(container.read(currencyCodeProvider), 'INR');
     expect(firestore.readOptions, isEmpty);
   });
+
+  // A132: only the Settings tile listens to the provider. If the user leaves
+  // Settings while the change is stamping records, the change must still
+  // finish or roll back instead of writing to a disposed provider.
+  group('Settings closed while a change is running', () {
+    test('a slow stamp finishes and applies the new currency', () async {
+      firestore.readGate = Completer<void>();
+      final tile = container.listen(currencySwitchProvider, (_, _) {});
+      final change = container
+          .read(currencySwitchProvider.notifier)
+          .switchCurrencyImmediate('USD');
+      await pumpEventQueue();
+
+      tile.close(); // the user leaves Settings
+      await pumpEventQueue();
+      firestore.readGate!.complete();
+      await change; // must not throw UnmountedRefException
+
+      expect(container.read(currencyCodeProvider), 'USD');
+      expect(prefs.getString('currency'), 'USD');
+      expect(firestore.stored('cashflows', 'cf-1')!['currency'], 'INR');
+    });
+
+    test('a failing stamp rolls back and is not left half-changed', () async {
+      firestore.readGate = Completer<void>();
+      final tile = container.listen(currencySwitchProvider, (_, _) {});
+      final change = container
+          .read(currencySwitchProvider.notifier)
+          .switchCurrencyImmediate('USD');
+      await pumpEventQueue();
+
+      tile.close();
+      await pumpEventQueue();
+      firestore.readError = FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'unavailable',
+      );
+      firestore.readGate!.complete();
+      await change; // must not throw UnmountedRefException
+
+      expect(container.read(currencyCodeProvider), 'INR');
+      expect(prefs.getString('currency'), 'INR');
+      expect(
+        firestore.stored('cashflows', 'cf-1')!.containsKey('currency'),
+        isFalse,
+      );
+    });
+
+    test('the provider is released once the change is over', () async {
+      final tile = container.listen(currencySwitchProvider, (_, _) {});
+      await container
+          .read(currencySwitchProvider.notifier)
+          .switchCurrencyImmediate('USD');
+      tile.close();
+      await pumpEventQueue();
+
+      // Disposed again, so a new read starts from idle (no leaked keep-alive).
+      expect(container.read(currencySwitchProvider).isIdle, isTrue);
+    });
+  });
 }
