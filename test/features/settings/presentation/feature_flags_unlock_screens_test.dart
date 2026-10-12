@@ -3,6 +3,7 @@
 //
 // A release build is simulated by overriding developerToolsAvailableProvider
 // with its release value (false).
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -242,6 +243,31 @@ void main() {
   // The feature-flag screen is compiled into release builds, so it must not
   // reach any data tool, now or after a later edit.
   group('source guards', () {
+    test('the flag switches carry no hard-coded English subtitle', () {
+      final source = File(
+        'lib/features/settings/presentation/widgets/feature_flags_section.dart',
+      ).readAsStringSync();
+      expect(
+        RegExp(r"subtitle:\s*'").hasMatch(source),
+        isFalse,
+        reason: 'Subtitles come from app_en.arb so every locale can translate',
+      );
+    });
+
+    test('the Help FAQ says five taps, like the gesture does', () {
+      final arb = jsonDecode(File('lib/l10n/app_en.arb').readAsStringSync())
+          as Map<String, dynamic>;
+      for (final key in [
+        'howToEnableDebugModeAnswer',
+        'howToDisableDebugModeAnswer',
+        'tapVersionToEnable',
+      ]) {
+        final text = arb[key] as String;
+        expect(text, contains('5 times'), reason: key);
+        expect(text, isNot(contains('7 times')), reason: key);
+      }
+    });
+
     test('Feature flags screen and section import no data tool', () {
       const banned = [
         'debug_settings_screen',

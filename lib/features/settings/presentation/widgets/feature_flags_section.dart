@@ -176,7 +176,7 @@ class FeatureFlagsSection extends ConsumerWidget {
           icon: Icons.star_outline,
           iconColor: Colors.amber,
           title: FeatureFlag.reviewPrompt.displayName,
-          subtitle: 'Ask for a Play Store review after the first recorded exit',
+          subtitle: l10n.reviewPromptFeatureSubtitle,
           value: featureFlags[FeatureFlag.reviewPrompt] ?? false,
           onChanged: (value) async {
             try {
@@ -279,7 +279,7 @@ class FeatureFlagsSection extends ConsumerWidget {
                   icon: Icons.warning_amber,
                   iconColor: Colors.orange,
                   title: FeatureFlag.predictiveAlerts.displayName,
-                  subtitle: 'Risk alerts (Coming soon)',
+                  subtitle: l10n.predictiveAlertsFeatureSubtitle,
                   value: false,
                   onChanged: (_) {}, // Disabled
                 ),
@@ -287,7 +287,7 @@ class FeatureFlagsSection extends ConsumerWidget {
                   icon: Icons.people,
                   iconColor: Colors.blue,
                   title: FeatureFlag.peerBenchmarking.displayName,
-                  subtitle: 'Compare with community (Coming soon)',
+                  subtitle: l10n.peerBenchmarkingFeatureSubtitle,
                   value: false,
                   onChanged: (_) {}, // Disabled
                 ),
@@ -295,7 +295,7 @@ class FeatureFlagsSection extends ConsumerWidget {
                   icon: Icons.smart_toy,
                   iconColor: Colors.purple,
                   title: FeatureFlag.aiAssistant.displayName,
-                  subtitle: 'Chat-based investment advisor (Coming soon)',
+                  subtitle: l10n.aiAssistantFeatureSubtitle,
                   value: false,
                   onChanged: (_) {}, // Disabled
                 ),

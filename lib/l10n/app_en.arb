@@ -1146,7 +1146,7 @@
     "description": "FAQ question about enabling debug mode"
   },
 
-  "howToEnableDebugModeAnswer": "Tap the version number on the About screen 7 times within 3 seconds. This will reveal developer tools in Settings.",
+  "howToEnableDebugModeAnswer": "Tap the version number on the About screen 5 times within 3 seconds. This will reveal developer tools in Settings.",
   "@howToEnableDebugModeAnswer": {
     "description": "FAQ answer about enabling debug mode"
   },
@@ -1166,7 +1166,7 @@
     "description": "FAQ question about disabling debug mode"
   },
 
-  "howToDisableDebugModeAnswer": "Tap the version number 7 times again, or toggle it off in Debug Settings under the Developer section in Settings.",
+  "howToDisableDebugModeAnswer": "Tap the version number 5 times again, or toggle it off in Debug Settings under the Developer section in Settings.",
   "@howToDisableDebugModeAnswer": {
     "description": "FAQ answer about disabling debug mode"
   },
@@ -2621,6 +2621,22 @@
     "description": "Diagnostics section title"
   },
 
+  "reviewPromptFeatureSubtitle": "Ask for a Play Store review after the first recorded exit",
+  "@reviewPromptFeatureSubtitle": {
+    "description": "Subtitle of the review prompt switch on the feature flags screen"
+  },
+  "predictiveAlertsFeatureSubtitle": "Risk alerts (Coming soon)",
+  "@predictiveAlertsFeatureSubtitle": {
+    "description": "Subtitle of the disabled risk alerts entry on the feature flags screen"
+  },
+  "peerBenchmarkingFeatureSubtitle": "Compare with community (Coming soon)",
+  "@peerBenchmarkingFeatureSubtitle": {
+    "description": "Subtitle of the disabled community comparison entry on the feature flags screen"
+  },
+  "aiAssistantFeatureSubtitle": "Chat-based investment advisor (Coming soon)",
+  "@aiAssistantFeatureSubtitle": {
+    "description": "Subtitle of the disabled chat advisor entry on the feature flags screen"
+  },
   "featureFlagsScreenTitle": "Feature flags",
   "@featureFlagsScreenTitle": {
     "description": "Title of the screen with switches for features that are not released yet, and of the Settings entry that opens it"
