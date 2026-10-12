@@ -136,8 +136,8 @@ const _guestTileTest =
     'test/features/settings/presentation/widgets/saved_guest_backup_tile_test.dart';
 const _insightCardTest =
     'test/features/reports/presentation/widgets/smart_insight_card_theme_contrast_test.dart';
-const _settingsTileTest =
-    'test/features/settings/presentation/widgets/settings_tile_theme_contrast_test.dart';
+const _dataManagementTest =
+    'test/features/settings/presentation/screens/data_management_theme_contrast_test.dart';
 const _reportsCountTest =
     'test/features/reports/presentation/screens/reports_home_attention_contrast_test.dart';
 
@@ -530,7 +530,13 @@ List<ContrastPair> _build() {
       (
         'settings-tile-warning-icon-light@tint15',
         1.91,
-        _settingsTileTest,
+        _dataManagementTest,
+        graphic,
+      ),
+      (
+        'import-option-warning-icon-light@tint15',
+        1.91,
+        _dataManagementTest,
         graphic,
       ),
     ])

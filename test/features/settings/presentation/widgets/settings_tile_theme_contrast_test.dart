@@ -3,16 +3,15 @@
 // the bright one: [SettingsNavTile.iconTint]. Without it the disc follows the
 // icon, as before.
 //
-// The ids in the test names are rows of test/core/theme/contrast_pairs.dart;
-// the guard finds them here.
+// This tests the tile with colours it is handed. That the shipped screens hand
+// it the right ones is measured in
+// screens/data_management_theme_contrast_test.dart, which pumps them.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_theme.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
-
-import '../../../../helpers/contrast.dart';
 
 Future<void> _pump(WidgetTester tester, Widget tile) => tester.pumpWidget(
   MaterialApp(
@@ -39,39 +38,26 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  testWidgets(
-    'settings-tile-warning-icon-light@tint15: the icon takes the amber text '
-    'colour and the disc keeps the bright amber',
-    (tester) async {
-      await _pump(
-        tester,
-        SettingsNavTile(
-          icon: Icons.person_remove_outlined,
-          iconColor: AppColors.warningTextLight,
-          iconTint: AppColors.warningLight,
-          title: 'Delete guest data',
-          onTap: () {},
-        ),
-      );
+  testWidgets('iconTint tints the disc and iconColor colours the icon', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      SettingsNavTile(
+        icon: Icons.person_remove_outlined,
+        iconColor: AppColors.warningTextLight,
+        iconTint: AppColors.warningLight,
+        title: 'Delete guest data',
+        onTap: () {},
+      ),
+    );
 
-      final icon = tester.widget<Icon>(
-        find.byIcon(Icons.person_remove_outlined),
-      );
-      expect(icon.color, AppColors.warningTextLight);
-      final disc = _disc(tester);
-      expect(disc, AppColors.warningLight.withValues(alpha: 0.15));
-      expect(
-        contrastRatio(
-          AppColors.warningTextLight,
-          composeOver(disc, AppColors.cardLight),
-        ),
-        greaterThanOrEqualTo(kMinGraphic),
-        reason: 'settings-tile-warning-icon-light@tint15',
-      );
-      // The tile is titled: colour is not the only carrier.
-      expect(find.text('Delete guest data'), findsOneWidget);
-    },
-  );
+    final icon = tester.widget<Icon>(find.byIcon(Icons.person_remove_outlined));
+    expect(icon.color, AppColors.warningTextLight);
+    expect(_disc(tester), AppColors.warningLight.withValues(alpha: 0.15));
+    // The tile is titled: colour is not the only carrier.
+    expect(find.text('Delete guest data'), findsOneWidget);
+  });
 
   testWidgets('without iconTint the disc follows the icon colour', (
     tester,
