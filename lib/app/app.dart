@@ -15,6 +15,7 @@ import 'package:inv_tracker/features/settings/presentation/providers/settings_pr
 import 'package:inv_tracker/features/settings/presentation/widgets/deletion_request_notice.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/legacy_currency_backfill_initializer.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/usd_tag_repair_prompt.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/valuation_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/notification_sync_initializer.dart';
 import 'package:inv_tracker/features/income_projection/presentation/widgets/income_guardian_service_initializer.dart';
 import 'package:inv_tracker/features/security/presentation/widgets/privacy_protection_wrapper.dart';
@@ -32,6 +33,8 @@ class InvTrackerApp extends ConsumerWidget {
     ref.watch(userIdentitySyncProvider);
     // Analytics user properties (guest or not, base currency) follow it too.
     ref.watch(userPropertiesSyncProvider);
+    // Dated valuations left behind by an investment deleted offline (#964).
+    ref.watch(orphanedValuationSweepProvider);
 
     return IncomeGuardianServiceInitializer(
       child: NotificationSyncInitializer(

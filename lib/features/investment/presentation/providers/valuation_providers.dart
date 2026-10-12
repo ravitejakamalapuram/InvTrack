@@ -3,11 +3,14 @@
 /// other base streams.
 library;
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/features/investment/data/services/orphaned_valuation_cleanup_service.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 
@@ -100,6 +103,34 @@ final valuationServerSnapshotsProvider =
       if (!ref.watch(isAuthenticatedProvider)) return Stream.value(const []);
       return ref.watch(valuationRepositoryProvider).watchServerConfirmed();
     });
+
+/// The one-off removal of snapshots whose investment no longer exists (#964).
+///
+/// Built once per signed-in user, so its "done" mark lasts the session however
+/// often the flag or the repositories rebuild. The repositories are read, not
+/// watched, for the same reason: the same user always gets equivalent ones.
+final orphanedValuationCleanupServiceProvider =
+    Provider<OrphanedValuationCleanupService?>((ref) {
+      final userId = ref.watch(valuationAccountIdProvider);
+      if (userId == null) return null;
+      return OrphanedValuationCleanupService(
+        firestore: ref.watch(firestoreProvider),
+        userId: userId,
+        investmentRepository: ref.read(investmentRepositoryProvider),
+        valuationRepository: ref.read(valuationRepositoryProvider),
+      );
+    });
+
+/// Starts the sweep of orphaned valuation snapshots (#964) while dated
+/// valuations are on and a user is signed in. Watch it once, from the app
+/// root. The sweep waits for the server, so it never runs on cache-only data,
+/// and it does nothing a second time in one session.
+final orphanedValuationSweepProvider = Provider<void>((ref) {
+  if (!ref.watch(valuationSnapshotsActiveProvider)) return;
+  if (!ref.watch(isAuthenticatedProvider)) return;
+  final service = ref.watch(orphanedValuationCleanupServiceProvider);
+  if (service != null) unawaited(service.runOnce());
+});
 
 /// The ids of snapshots this device edited that another device's write has
 /// since replaced on the server (the last write to reach the server wins, so
