@@ -78,7 +78,7 @@ const _allowlistMax = 50;
 
 /// The size of the pair table. A fixing PR that retires a pair or drops a
 /// ground it cannot fix changes this literal, so the change is in the diff.
-const _pairCount = 224;
+const _pairCount = 238;
 
 /// Files that can never be the measurement of a widget pair: the helper's own
 /// test, this guard and the table. Each mentions pair ids or `contrastRatio`.
@@ -220,6 +220,20 @@ void main() {
         'gradient-button-tail-dark@page',
         'quick-stat-label-light@card',
         'quick-stat-subtitle-dark@card',
+        'goal-status-not-started-light@card',
+        'goal-status-not-started-dark@card',
+        'goal-status-in-progress-light@card',
+        'goal-status-in-progress-dark@card',
+        'goal-status-on-track-light@card',
+        'goal-status-on-track-dark@card',
+        'goal-status-ahead-light@card',
+        'goal-status-ahead-dark@card',
+        'goal-status-behind-light@card',
+        'goal-status-behind-dark@card',
+        'goal-status-achieved-light@card',
+        'goal-status-achieved-dark@card',
+        'goal-status-archived-light@card',
+        'goal-status-archived-dark@card',
         'inv-tile-icon-light@gradient',
         'inv-tile-icon-dark@gradient',
         'inv-detail-header@fill',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
@@ -54,6 +55,28 @@ extension GoalStatusUI on GoalStatus {
         return const Color(0xFF10B981); // Emerald
       case GoalStatus.archived:
         return const Color(0xFF6B7280); // Gray
+    }
+  }
+
+  /// The colour of the status line and icon on the card of the theme it is
+  /// painted in. [color] is the hue for fills; as text it is 2.15:1 to 3.68:1
+  /// on white for amber, green and blue, and the two greys are 3.6:1 to 3.9:1
+  /// on the dark card. In light the greens, amber and blue take the deeper text
+  /// colours; in dark only the greys change, the rest already read.
+  Color textColor(bool isDark) {
+    switch (this) {
+      case GoalStatus.notStarted:
+      case GoalStatus.archived:
+        return isDark ? AppColors.neutral400Dark : color;
+      case GoalStatus.inProgress:
+        return isDark ? AppColors.neutral400Dark : AppColors.neutral500Light;
+      case GoalStatus.onTrack:
+        return isDark ? color : AppColors.accentTextLight;
+      case GoalStatus.ahead:
+      case GoalStatus.achieved:
+        return isDark ? color : AppColors.successLight;
+      case GoalStatus.behind:
+        return isDark ? color : AppColors.warningTextLight;
     }
   }
 

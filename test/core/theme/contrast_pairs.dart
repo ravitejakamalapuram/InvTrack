@@ -127,6 +127,10 @@ const _fireInsightTest =
     'test/features/fire_number/presentation/screens/fire_dashboard_hero_colour_test.dart';
 const _feedbackTest = 'test/core/utils/app_feedback_theme_contrast_test.dart';
 
+// PR 8: _goalStatusTest
+const _goalStatusTest =
+    'test/features/goals/presentation/goal_status_contrast_test.dart';
+
 // PR 8: the test that pumps the currency badge, the gradient button and the
 // quick stat card.
 const _badgeStatTest =
@@ -1116,6 +1120,20 @@ List<ContrastPair> _build() {
       ('gradient-button-tail-dark@page', 7.94, _badgeStatTest, kMinText),
       ('quick-stat-label-light@card', 4.61, _badgeStatTest, kMinText),
       ('quick-stat-subtitle-dark@card', 6.69, _badgeStatTest, kMinText),
+      ('goal-status-not-started-light@card', 4.83, _goalStatusTest, kMinText),
+      ('goal-status-not-started-dark@card', 3.56, _goalStatusTest, kMinText),
+      ('goal-status-in-progress-light@card', 4.44, _goalStatusTest, kMinText),
+      ('goal-status-in-progress-dark@card', 3.62, _goalStatusTest, kMinText),
+      ('goal-status-on-track-light@card', 3.43, _goalStatusTest, kMinText),
+      ('goal-status-on-track-dark@card', 4.87, _goalStatusTest, kMinText),
+      ('goal-status-ahead-light@card', 2.37, _goalStatusTest, kMinText),
+      ('goal-status-ahead-dark@card', 7.07, _goalStatusTest, kMinText),
+      ('goal-status-behind-light@card', 2.00, _goalStatusTest, kMinText),
+      ('goal-status-behind-dark@card', 8.35, _goalStatusTest, kMinText),
+      ('goal-status-achieved-light@card', 2.37, _goalStatusTest, kMinText),
+      ('goal-status-achieved-dark@card', 7.07, _goalStatusTest, kMinText),
+      ('goal-status-archived-light@card', 4.83, _goalStatusTest, kMinText),
+      ('goal-status-archived-dark@card', 3.56, _goalStatusTest, kMinText),
     ])
       ContrastPair.widget(
         id,

@@ -251,6 +251,9 @@ class GoalDetailsScreen extends ConsumerWidget {
   ) {
     final l10n = AppLocalizations.of(context);
     final percent = progress?.progressPercent ?? 0;
+    final statusColor = (progress?.status ?? GoalStatus.notStarted).textColor(
+      isDark,
+    );
     final progressText =
         progress?.getProgressMessage(currencySymbol, locale) ??
         'Calculating...';
@@ -294,13 +297,13 @@ class GoalDetailsScreen extends ConsumerWidget {
               Icon(
                 progress?.status.icon ?? Icons.hourglass_empty,
                 size: 16,
-                color: progress?.status.color ?? Colors.grey,
+                color: statusColor,
               ),
               SizedBox(width: 4),
               Text(
                 (progress?.status ?? GoalStatus.notStarted).label(l10n),
                 style: AppTypography.bodyMedium.copyWith(
-                  color: progress?.status.color ?? Colors.grey,
+                  color: statusColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),
