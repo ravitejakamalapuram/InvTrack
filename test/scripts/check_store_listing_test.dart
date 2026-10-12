@@ -283,6 +283,34 @@ void main() {
       expect(_output(r), contains('Missing default listing locale: en-US'));
     });
 
+    // The folder guard only checks that en-US exists; the per-locale length
+    // loop is what requires its three files.
+    test('fails when en-US is an empty folder', () async {
+      final root = _fixture(deFiles);
+      final en = Directory('${root.path}/$_listing')
+        ..deleteSync(recursive: true)
+        ..createSync(recursive: true);
+      final r = await _check(root.path);
+      expect(en.existsSync(), isTrue);
+      expect(r.exitCode, 1, reason: _output(r));
+      expect(_output(r), contains('Missing listing file'));
+    });
+
+    // The folder guard follows symlinks; the symlink scan is what rejects a
+    // linked en-US, so this pins that scan for the default locale.
+    test('fails when en-US is a symlink to a real folder', () async {
+      final root = _fixture({
+        'docs/listing/title.txt': 'InvTrack - Investment Tracker\n',
+        'docs/listing/short_description.txt': 'Track investments.\n',
+        'docs/listing/full_description.txt': _cleanFull,
+      });
+      Directory('${root.path}/$_listing').deleteSync(recursive: true);
+      Link('${root.path}/$_listing').createSync('${root.path}/docs/listing');
+      final r = await _check(root.path);
+      expect(r.exitCode, 1, reason: _output(r));
+      expect(_output(r), contains('Symlinks found'));
+    });
+
     test('passes with en-US and de-DE', () async {
       final r = await _check(_fixture(deFiles).path);
       expect(r.exitCode, 0, reason: _output(r));
