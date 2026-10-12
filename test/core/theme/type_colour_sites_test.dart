@@ -8,15 +8,16 @@
 // This scan counts, per file, the reads of a `...type.color`. Each file's count
 // is a literal below, so a new read, in a new file or an old one, shows in the
 // diff of this test and a reviewer decides whether it is a fill. The reads that
-// are not fills yet are listed apart in [_unjudged]; that list may only shrink.
+// are not fills have no list: they take `textColor` on `tintColor`.
 //
-// The scan reads text, not types. It sees `type.color`, `investment.type.color`
-// and `selectedType.color`, not the same colour reached through another name
-// (`t.color`, a variable). Widget tests that pump the screens read the real
-// colours; this scan is the net under them.
+// The scan reads text, not types. It sees `type.color`, `investment.type.color`,
+// `selectedType.color` and `InvestmentType.gold.color`, not the same colour
+// reached through another name (`t.color` in a loop, a variable). Widget tests
+// that pump the screens read the real colours; this scan is the net under them.
 //
-// It also fails any `computeLuminance()` in lib/ outside `AppColors.onFill`:
-// a threshold on luminance picks white on fills where it reads 1.4:1.
+// It also fails any `computeLuminance()` or `estimateBrightnessForColor()` in
+// lib/ outside `AppColors.onFill`: a threshold on luminance picks white on
+// fills where it reads 1.4:1.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -28,7 +29,13 @@ const _fills = <String, int>{
   'lib/features/goals/presentation/screens/create_goal_screen.dart': 1,
   'lib/features/investment/presentation/screens/add_investment_screen.dart': 2,
   'lib/features/investment/presentation/widgets/edit_document_sheet.dart': 1,
-  'lib/features/investment/presentation/widgets/add_document_sheet.dart': 1,
+  // The chip's fill in the TypeSelector, the border of a file's type chip and
+  // the border of the chosen option in the type picker (their text and icons
+  // are textColor on tintColor).
+  'lib/features/investment/presentation/widgets/add_document_sheet.dart': 3,
+  // The border and the shadow of the selected quick-start card; its name is
+  // the type's textColor on its tintColor.
+  'lib/features/investment/presentation/widgets/template_selector.dart': 1,
   // The header's fill; everything on it is onFill of it.
   'lib/features/investment/presentation/screens/investment_detail_screen.dart':
       1,
@@ -41,20 +48,16 @@ const _fills = <String, int>{
       1,
 };
 
-/// Reads of a document type's colour as a text or an icon on a 15% or 30%
-/// tint. The audit never judged them (about 2:1 to 4:1). They are not in this
-/// PR's scope, which covers document types only through the TypeSelector chip;
-/// they need the same `textColor` and `tintColor` as the investment types.
-const _unjudged = <String, int>{
-  'lib/features/investment/presentation/screens/document_viewer_screen.dart': 3,
-  'lib/features/investment/presentation/widgets/add_document_sheet.dart': 8,
-  'lib/features/investment/presentation/widgets/document_list_widget.dart': 4,
-};
-
 /// The one file that may call `computeLuminance()`: `AppColors.onFill`.
 const _luminanceFiles = {'lib/core/theme/app_colors.dart'};
 
-final _typeColourRead = RegExp(r'\b\w*[tT]ype\.color\b');
+final _typeColourRead = RegExp(
+  r'\b\w*[tT]ype\.color\b|\b(?:InvestmentType|GoalType|DocumentType)\.\w+\.color\b',
+);
+
+final _luminanceThreshold = RegExp(
+  r'\bcomputeLuminance\(|\bestimateBrightnessForColor\(',
+);
 
 /// [source] without its comments, so a doc line that mentions `type.color`
 /// does not count. A `//` inside a string is cut with the rest of its line,
@@ -65,6 +68,9 @@ String stripComments(String source) => source
 
 int typeColourReads(String source) =>
     _typeColourRead.allMatches(stripComments(source)).length;
+
+int luminanceThresholdReads(String source) =>
+    _luminanceThreshold.allMatches(stripComments(source)).length;
 
 Map<String, int> _scan(int Function(String source) count) {
   final found = <String, int>{};
@@ -84,13 +90,9 @@ Map<String, int> _scan(int Function(String source) count) {
 
 void main() {
   test('a type colour is read only where the list says it is a fill', () {
-    final merged = <String, int>{};
-    for (final map in [_fills, _unjudged]) {
-      map.forEach((path, n) => merged[path] = (merged[path] ?? 0) + n);
-    }
     expect(
       _scan(typeColourReads),
-      merged,
+      _fills,
       reason:
           'A name or an icon on a tint of a type takes '
           'type.textColor(brightness) on type.tintColor(brightness); a label '
@@ -104,9 +106,7 @@ void main() {
     for (final entity in Directory('lib').listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
       final path = entity.path.replaceAll(r'\', '/');
-      if (stripComments(
-        entity.readAsStringSync(),
-      ).contains('computeLuminance(')) {
+      if (luminanceThresholdReads(entity.readAsStringSync()) > 0) {
         found.add(path);
       }
     }
@@ -135,6 +135,23 @@ void main() {
       expect(typeColourReads('final c = type.textColor(b);'), 0);
       expect(typeColourReads('final c = type.tintColor(b);'), 0);
       expect(typeColourReads('final c = typeColor;'), 0);
+    });
+
+    test('counts a colour read through the enum value itself', () {
+      expect(typeColourReads('TextStyle(color: InvestmentType.gold.color)'), 1);
+      expect(typeColourReads('x(GoalType.retirement.color)'), 1);
+      expect(typeColourReads('x(DocumentType.receipt.color)'), 1);
+      expect(typeColourReads('x(InvestmentType.gold.displayName)'), 0);
+    });
+
+    test('counts every way to pick white or ink by brightness', () {
+      expect(luminanceThresholdReads('c.computeLuminance() > 0.5'), 1);
+      expect(
+        luminanceThresholdReads('ThemeData.estimateBrightnessForColor(c)'),
+        1,
+      );
+      expect(luminanceThresholdReads('// c.computeLuminance()'), 0);
+      expect(luminanceThresholdReads('AppColors.onFill(c)'), 0);
     });
   });
 }

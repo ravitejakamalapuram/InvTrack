@@ -73,6 +73,9 @@ const _constants = [
   // is `accentDark` and `warningDark`.
   'accentTextLight',
   'warningTextLight',
+  // The grey of the word CLOSED on the investment card. Light only: in dark
+  // the text is `Colors.grey`.
+  'closedTextLight',
   // The old, brighter green and red. They are kept as tint sources, so they
   // may be painted translucent, or in a branch of a theme check; never bare.
   'successTintLight',

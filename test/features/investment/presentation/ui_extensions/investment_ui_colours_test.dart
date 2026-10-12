@@ -185,4 +185,96 @@ void main() {
       );
     }
   });
+
+  group('a document type, which has its own name and icon, reads on its tint '
+      'like an investment type', () {
+    const lightText = <DocumentType, int>{
+      DocumentType.receipt: 0xFF007E56,
+      DocumentType.contract: 0xFF2168DA,
+      DocumentType.statement: 0xFF9D6300,
+      DocumentType.certificate: 0xFF7D4CE5,
+      DocumentType.image: 0xFFCA227D,
+      DocumentType.other: 0xFF666D7A,
+    };
+    // In dark the fill itself reads, except for three types.
+    const darkText = <DocumentType, int>{
+      DocumentType.contract: 0xFF4087FB,
+      DocumentType.certificate: 0xFF976EFF,
+      DocumentType.other: 0xFF818997,
+    };
+
+    test('the text colour of each type, in light and in dark', () {
+      for (final type in DocumentType.values) {
+        expect(
+          type.textColor(Brightness.light),
+          Color(lightText[type]!),
+          reason: '${type.name} light',
+        );
+        expect(
+          type.textColor(Brightness.dark),
+          Color(darkText[type] ?? type.color.toARGB32()),
+          reason: '${type.name} dark',
+        );
+      }
+    });
+
+    test('the tint is the fill at 10% over the card, opaque', () {
+      for (final type in DocumentType.values) {
+        expect(
+          type.tintColor(Brightness.light),
+          Color.alphaBlend(
+            type.color.withValues(alpha: 0.1),
+            AppColors.cardLight,
+          ),
+          reason: '${type.name} light',
+        );
+        expect(
+          type.tintColor(Brightness.dark),
+          Color.alphaBlend(
+            type.color.withValues(alpha: 0.1),
+            AppColors.cardDark,
+          ),
+          reason: '${type.name} dark',
+        );
+        expect(type.tintColor(Brightness.light).a, 1);
+        expect(type.tintColor(Brightness.dark).a, 1);
+      }
+    });
+
+    test('the type name reaches 4.5:1 on its tint in both themes', () {
+      for (final type in DocumentType.values) {
+        for (final b in Brightness.values) {
+          final ratio = contrastRatio(type.textColor(b), type.tintColor(b));
+          expect(
+            ratio,
+            greaterThanOrEqualTo(kMinText),
+            reason: 'doc-${type.name}-${b.name}@tint10 is $ratio',
+          );
+        }
+      }
+    });
+
+    test('a type text keeps the hue of its fill', () {
+      for (final type in DocumentType.values) {
+        for (final b in Brightness.values) {
+          expect(
+            _hueGap(type.textColor(b), type.color),
+            lessThan(8),
+            reason: '${type.name} ${b.name}',
+          );
+        }
+      }
+    });
+
+    test('every document type has its own name and icon', () {
+      expect(
+        {for (final t in DocumentType.values) t.displayName}.length,
+        DocumentType.values.length,
+      );
+      expect(
+        {for (final t in DocumentType.values) t.icon}.length,
+        DocumentType.values.length,
+      );
+    });
+  });
 }

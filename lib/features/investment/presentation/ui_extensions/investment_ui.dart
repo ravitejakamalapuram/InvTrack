@@ -21,6 +21,12 @@ String investmentTypeName(WidgetRef ref, InvestmentEntity investment) =>
     ? investment.typeLabel
     : investment.type.displayName;
 
+/// [fill] at 10% over the card of the theme, opaque.
+Color _tintOver(Color fill, Brightness brightness) => Color.alphaBlend(
+  fill.withValues(alpha: 0.1),
+  brightness == Brightness.dark ? AppColors.cardDark : AppColors.cardLight,
+);
+
 // The purple and the blue of four investment types and of the certificate
 // document type, deepened so that a white label on them reaches 4.5:1 (4.62
 // and 4.64). The bright #8B5CF6 and #3B82F6 were 4.23:1 and 3.68:1 with white;
@@ -103,10 +109,7 @@ extension InvestmentTypeUI on InvestmentType {
   /// The pale fill behind this type's name or icon: [color] at 10% over the
   /// card of the theme, opaque, so the text on it keeps the same ratio on the
   /// card, on the page and on a sheet. [textColor] reaches 4.5:1 on it.
-  Color tintColor(Brightness brightness) => Color.alphaBlend(
-    color.withValues(alpha: 0.1),
-    brightness == Brightness.dark ? AppColors.cardDark : AppColors.cardLight,
-  );
+  Color tintColor(Brightness brightness) => _tintOver(color, brightness);
 
   /// The colour of this type's name, and of its icon, on [tintColor]: 4.5:1 or
   /// more in both themes. It keeps the hue of [color], deeper in light, where
@@ -256,6 +259,34 @@ extension DocumentTypeUI on DocumentType {
         return const Color(0xFFEC4899); // Pink
       case DocumentType.other:
         return const Color(0xFF6B7280); // Gray
+    }
+  }
+
+  /// The pale fill behind this type's name or icon: [color] at 10% over the
+  /// card of the theme, opaque, so [textColor] keeps the same ratio wherever
+  /// it sits.
+  Color tintColor(Brightness brightness) => _tintOver(color, brightness);
+
+  /// The colour of this type's name, and of its icon, on [tintColor]: 4.5:1 or
+  /// more in both themes. It keeps the hue of [color], deeper in light, where
+  /// the fill itself is 1.9:1 to 4.3:1 on its tint; in dark most fills already
+  /// read, so three lighter variants stand in for the rest. The same values as
+  /// the investment types that share a fill.
+  Color textColor(Brightness brightness) {
+    final dark = brightness == Brightness.dark;
+    switch (this) {
+      case DocumentType.receipt:
+        return dark ? color : const Color(0xFF007E56);
+      case DocumentType.contract:
+        return dark ? const Color(0xFF4087FB) : const Color(0xFF2168DA);
+      case DocumentType.statement:
+        return dark ? color : const Color(0xFF9D6300);
+      case DocumentType.certificate:
+        return dark ? const Color(0xFF976EFF) : const Color(0xFF7D4CE5);
+      case DocumentType.image:
+        return dark ? color : const Color(0xFFCA227D);
+      case DocumentType.other:
+        return dark ? const Color(0xFF818997) : const Color(0xFF666D7A);
     }
   }
 }
