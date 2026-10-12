@@ -23,6 +23,8 @@
       I.TextField({ id: 'd', label: 'Value in INR', prefixText: '₹', value: '-5', error: 'Enter a value of 0 or more', mode: 'decimal' }) +
       I.TextField({ id: 'e', label: 'Notes', multiline: true, hint: 'Optional' }) +
       I.TextField({ id: 'f', label: 'Currency', value: 'INR', readonly: true }) +
+      I.TextField({ id: 'g', label: 'Amount invested in INR', prefixText: '₹', hint: 'e.g. 1,00,000', mode: 'decimal', helper: 'Optional. You can add it later.' }) +
+      I.TextField({ id: 'h', label: 'Amount invested in INR', prefixText: '₹', value: '1,50,000', mode: 'decimal', helper: '₹1.5 L', helperStrong: true }) +
       cap('Top to bottom: empty with hint, prefix text and clear button, focused (2px primary), error (red border and message), multi-line, read-only. The label is 18px/600 and tapping it focuses the field (44dp minimum).') +
     '</div>';
   });

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/add_investment_keys.dart';
 
 import 'base_robot.dart';
 
@@ -46,34 +47,47 @@ class InvestmentRobot extends BaseRobot {
 
   /// Enter investment name
   Future<void> enterName(String name) async {
-    final nameField = find.byType(TextFormField).first;
+    final nameField = find.descendant(
+      of: find.byKey(AddInvestmentKeys.name),
+      matching: find.byType(TextFormField),
+    );
     await tester.enterText(nameField, name);
     await pumpAndSettle();
   }
 
-  /// Select investment type
+  /// Select investment type. The chips of the new form scroll sideways, so the
+  /// chip is scrolled into view first.
   Future<void> selectType(InvestmentType type) async {
-    await tapText(type.displayName);
+    final chip = find.byKey(AddInvestmentKeys.typeChip(type));
+    await tester.ensureVisible(chip);
+    await pumpAndSettle();
+    await tap(chip);
   }
 
-  /// Enter notes
+  /// Enter notes. On the new form they are behind More details, which is
+  /// opened first.
   Future<void> enterNotes(String notes) async {
-    final notesField = find.byType(TextFormField).at(1);
+    if (!tester.any(find.byKey(AddInvestmentKeys.notes))) {
+      final moreDetails = find.byKey(AddInvestmentKeys.moreDetails);
+      await tester.ensureVisible(moreDetails);
+      await pumpAndSettle();
+      await tap(moreDetails);
+    }
+    final notesField = find.descendant(
+      of: find.byKey(AddInvestmentKeys.notes),
+      matching: find.byType(TextFormField),
+    );
+    await tester.ensureVisible(notesField);
     await tester.enterText(notesField, notes);
     await pumpAndSettle();
   }
 
-  /// Tap save/add button
+  /// Tap save/add button. The title of the new form reads "Add Investment"
+  /// too, so the button is found by its key; editing keeps its own button.
   Future<void> tapSave() async {
-    // Look for the gradient button with "Add Investment" or "Save Changes"
-    final addButton = find.text('Add Investment');
-    final saveButton = find.text('Save Changes');
-
-    if (tester.any(addButton)) {
-      await tapText('Add Investment');
-    } else if (tester.any(saveButton)) {
-      await tapText('Save Changes');
-    }
+    final submit = find.byKey(AddInvestmentKeys.submit);
+    await tester.ensureVisible(submit);
+    await tap(submit);
   }
 
   /// Complete add investment flow

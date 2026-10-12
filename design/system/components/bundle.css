@@ -237,6 +237,9 @@
 .it-tchip:focus-visible, .it-tchip.is-focus { outline: none; border-color: var(--it-primary-l); box-shadow: 0 0 8px 1px color-mix(in srgb, var(--it-primary-l) 30%, transparent); }
 [data-theme="dark"] .it-tchip:focus-visible, [data-theme="dark"] .it-tchip.is-focus { border-color: #fff; box-shadow: 0 0 8px 1px rgba(255, 255, 255, .3); }
 .it-tchip__t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Type row (TypeSelector scrollingRow): one sideways row, 24px in at the start, 10px between chips, 8px above and below for the glow, each chip at least 48 x 48 */
+.it-tchips { display: flex; gap: 10px; overflow-x: auto; padding: 8px var(--space-xl); }
+.it-tchips > .it-tchip { flex: none; min-height: 48px; min-width: 48px; justify-content: center; }
 .it-tmpl { display: inline-flex; align-items: center; gap: var(--space-xs); padding: var(--space-xs) var(--space-sm); border-radius: 20px; background: color-mix(in srgb, var(--c) 10%, transparent); border: 1px solid color-mix(in srgb, var(--c) 30%, transparent); font: 500 14px/1.4 var(--font-text); letter-spacing: .1px; color: var(--neutral-800-light); cursor: pointer; }
 [data-theme="dark"] .it-tmpl { color: #fff; }
 .it-ctheme { display: inline-flex; align-items: center; padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm); background: var(--neutral-100-light); color: var(--text); font: 400 12px/1.4 var(--font-text); }
@@ -295,6 +298,9 @@
 .it-field__ic { color: var(--text-muted); margin-right: 12px; }
 .it-field__pre { font: 400 16px/1.5 var(--font-text); color: var(--text); margin-right: 4px; }
 .it-field__clear { display: inline-flex; align-items: center; justify-content: center; width: var(--touch-target-min); height: var(--touch-target-min); margin-right: -12px; border: 0; background: transparent; color: var(--neutral-400-light); cursor: pointer; padding: 0; }
+/* FormHelperText: the 12px line under a field (an optional-field note, the amount readout, the date helper) */
+.it-field__helper { margin: 6px var(--space-md) 0; font: 400 12px/1.4 var(--font-text); color: var(--text-muted); }
+.it-field__helper--strong { font-weight: 600; color: var(--text-secondary); }
 [data-theme="dark"] .it-field__clear { color: var(--neutral-400-dark); }
 .it-field__err { margin: 4px var(--space-md) 0; font: 400 12px/1.4 var(--font-text); color: var(--error); }   /* Material default error text: not set in code */
 .it-field.is-readonly .it-field__box { opacity: .8; }
@@ -417,6 +423,17 @@
 
 /* ---------- Divider ---------- */
 .it-hr { height: var(--divider-thickness); background: var(--outline-variant); border: 0; margin: var(--space-md) 0; }
+
+/* MoreDetailsTile: the collapsed tile that holds a form's optional fields */
+.it-more { display: flex; align-items: center; gap: var(--space-sm); min-height: 64px; padding: var(--space-sm) var(--space-md); }
+.it-more__disc { width: 40px; height: 40px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.it-more__t { flex: 1; min-width: 0; }
+.it-more__t b { display: block; font: 600 14px/1.4 var(--font-text); color: var(--text); }
+.it-more__t small { display: block; font: 400 12px/1.4 var(--font-text); color: var(--text-muted); }
+.it-more__body { display: flex; flex-direction: column; gap: var(--space-lg); padding-top: var(--space-lg); }
+
+/* StickyFormAction: the submit bar at the foot of a long form */
+.it-sticky { padding: var(--space-md) var(--space-xl); background: var(--background); border-top: 1px solid var(--outline-variant); }
 
 /* GoalCard (lib/features/goals/presentation/widgets/goal_card.dart, goal_carousel_card.dart). Ring, badge and footer text
    all end on the content edge; the footer text is end-aligned and wraps (CardFooterRow), the chip wraps or is shortened

@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 
 /// A generic type selector widget that displays selectable chips in a wrap layout.
 ///
 /// Supports haptic feedback, animated transitions, and gradient styling.
 /// Now with improved layout options for better UX and accessibility.
+///
+/// The layout is a wrap (default), a two-column grid ([gridLayout]) or one
+/// row that scrolls sideways ([scrollingRow]).
 class TypeSelector<T> extends StatelessWidget {
   final String? label;
   final String? subtitle;
@@ -25,6 +29,27 @@ class TypeSelector<T> extends StatelessWidget {
   /// If true, chips are sized to fit a 2-column grid layout
   final bool gridLayout;
 
+  /// If true, the chips are one row that scrolls sideways, each at least
+  /// [AppSizes.minTouchTarget] wide and high, with [rowPadding] before the
+  /// first chip and after the last, so the next chip peeks at the edge. The
+  /// selected chip is scrolled into view when it is chosen, and when the row
+  /// is built with one that is off screen. Cannot be combined with
+  /// [gridLayout].
+  final bool scrollingRow;
+
+  /// Space before the first chip and after the last of a [scrollingRow]. The
+  /// row itself is as wide as its parent, so it can run to the screen edge.
+  final EdgeInsetsGeometry rowPadding;
+
+  /// What a screen reader says about a [scrollingRow] as a group, before its
+  /// chips, for example "Investment type, 14 choices. Scroll sideways to see
+  /// all."
+  final String? rowSemanticsLabel;
+
+  /// A key for the chip of an item, in every layout. Tests and the
+  /// integration robot find a chip by it.
+  final Key Function(T item)? itemKeyBuilder;
+
   const TypeSelector({
     super.key,
     this.label,
@@ -39,7 +64,14 @@ class TypeSelector<T> extends StatelessWidget {
     this.runSpacing = 10,
     this.compactMode = false,
     this.gridLayout = false,
-  });
+    this.scrollingRow = false,
+    this.rowPadding = EdgeInsets.zero,
+    this.rowSemanticsLabel,
+    this.itemKeyBuilder,
+  }) : assert(
+         !(gridLayout && scrollingRow),
+         'A grid layout cannot also be a scrolling row',
+       );
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +101,11 @@ class TypeSelector<T> extends StatelessWidget {
           ],
           const SizedBox(height: 12),
         ],
-        gridLayout ? _buildGridLayout(isDark) : _buildWrapLayout(isDark),
+        gridLayout
+            ? _buildGridLayout(isDark)
+            : scrollingRow
+            ? _buildScrollingRow(isDark)
+            : _buildWrapLayout(isDark),
       ],
     );
   }
@@ -79,6 +115,17 @@ class TypeSelector<T> extends StatelessWidget {
       spacing: spacing,
       runSpacing: runSpacing,
       children: values.map((item) => _buildChip(item, isDark)).toList(),
+    );
+  }
+
+  Widget _buildScrollingRow(bool isDark) {
+    return _ScrollingChipRow<T>(
+      values: values,
+      selectedValue: selectedValue,
+      padding: rowPadding,
+      spacing: spacing,
+      semanticsLabel: rowSemanticsLabel,
+      chipBuilder: (item) => _buildChip(item, isDark, scrolling: true),
     );
   }
 
@@ -100,12 +147,18 @@ class TypeSelector<T> extends StatelessWidget {
     );
   }
 
-  Widget _buildChip(T item, bool isDark, {bool expanded = false}) {
+  Widget _buildChip(
+    T item,
+    bool isDark, {
+    bool expanded = false,
+    bool scrolling = false,
+  }) {
     final isSelected = selectedValue == item;
     final color = colorBuilder(item);
     final itemLabel = labelBuilder(item);
 
     return Semantics(
+      key: itemKeyBuilder?.call(item),
       button: true,
       selected: isSelected,
       label: itemLabel,
@@ -126,8 +179,106 @@ class TypeSelector<T> extends StatelessWidget {
           isDark: isDark,
           expanded: expanded,
           compactMode: compactMode,
+          scrolling: scrolling,
           icon: iconBuilder(item),
           label: itemLabel,
+        ),
+      ),
+    );
+  }
+}
+
+/// The chips of a [TypeSelector.scrollingRow]: one row, scrolled sideways, that
+/// brings the selected chip into view.
+class _ScrollingChipRow<T> extends StatefulWidget {
+  final List<T> values;
+  final T selectedValue;
+  final EdgeInsetsGeometry padding;
+  final double spacing;
+  final String? semanticsLabel;
+  final Widget Function(T item) chipBuilder;
+
+  const _ScrollingChipRow({
+    required this.values,
+    required this.selectedValue,
+    required this.padding,
+    required this.spacing,
+    required this.semanticsLabel,
+    required this.chipBuilder,
+  });
+
+  @override
+  State<_ScrollingChipRow<T>> createState() => _ScrollingChipRowState<T>();
+}
+
+class _ScrollingChipRowState<T> extends State<_ScrollingChipRow<T>> {
+  final _viewportKey = GlobalKey();
+  final _chipKeys = <T, GlobalKey>{};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _reveal(animate: false),
+    );
+  }
+
+  @override
+  void didUpdateWidget(_ScrollingChipRow<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedValue != widget.selectedValue) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _reveal(animate: true),
+      );
+    }
+  }
+
+  /// Scrolls the selected chip to the middle of the row when it is not wholly
+  /// inside it. A chip that is already wholly visible does not move the row
+  /// under the finger that chose it.
+  void _reveal({required bool animate}) {
+    if (!mounted) return;
+    final chip = _chipKeys[widget.selectedValue]?.currentContext;
+    final viewport = _viewportKey.currentContext?.findRenderObject();
+    final chipBox = chip?.findRenderObject();
+    if (chip == null ||
+        viewport is! RenderBox ||
+        chipBox is! RenderBox ||
+        !chipBox.attached) {
+      return;
+    }
+    final left = chipBox.localToGlobal(Offset.zero, ancestor: viewport).dx;
+    final wholly =
+        left >= 0 && left + chipBox.size.width <= viewport.size.width;
+    if (wholly) return;
+    Scrollable.ensureVisible(
+      chip,
+      alignment: 0.5,
+      duration: animate ? const Duration(milliseconds: 200) : Duration.zero,
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      container: true,
+      label: widget.semanticsLabel,
+      child: SingleChildScrollView(
+        key: _viewportKey,
+        scrollDirection: Axis.horizontal,
+        // Room above and below for the selected chip's glow, which the
+        // scroll view would otherwise cut off.
+        padding: widget.padding.add(const EdgeInsets.symmetric(vertical: 8)),
+        child: Row(
+          spacing: widget.spacing,
+          children: [
+            for (final item in widget.values)
+              KeyedSubtree(
+                key: _chipKeys.putIfAbsent(item, GlobalKey.new),
+                child: widget.chipBuilder(item),
+              ),
+          ],
         ),
       ),
     );
@@ -178,6 +329,10 @@ class _TypeSelectorChip extends StatelessWidget {
   final bool isDark;
   final bool expanded;
   final bool compactMode;
+
+  /// In a scrolling row: at least [AppSizes.minTouchTarget] wide and high,
+  /// and a label that takes the width it needs (the row is unbounded).
+  final bool scrolling;
   final IconData icon;
   final String label;
 
@@ -188,9 +343,14 @@ class _TypeSelectorChip extends StatelessWidget {
     required this.isDark,
     required this.expanded,
     required this.compactMode,
+    this.scrolling = false,
     required this.icon,
     required this.label,
   });
+
+  /// A row that scrolls sideways gives its chips unbounded width, where a
+  /// Flexible label cannot be laid out; it shows its whole label instead.
+  Widget _labelFor(Text text) => scrolling ? text : Flexible(child: text);
 
   @override
   Widget build(BuildContext context) {
@@ -241,6 +401,13 @@ class _TypeSelectorChip extends StatelessWidget {
         final shadowOpacity = selectionProgress * 0.35;
 
         return Container(
+          constraints: scrolling
+              ? const BoxConstraints(
+                  minWidth: AppSizes.minTouchTarget,
+                  minHeight: AppSizes.minTouchTarget,
+                )
+              : null,
+          alignment: scrolling ? Alignment.center : null,
           padding: EdgeInsets.symmetric(
             horizontal: compactMode ? 12 : 16,
             vertical: compactMode ? 10 : 12,
@@ -286,8 +453,8 @@ class _TypeSelectorChip extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              Flexible(
-                child: Text(
+              _labelFor(
+                Text(
                   label,
                   style: AppTypography.body.copyWith(
                     fontSize: compactMode ? 13 : 14,
