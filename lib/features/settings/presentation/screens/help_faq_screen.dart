@@ -17,6 +17,7 @@ class HelpFaqScreen extends StatelessWidget {
     required this.showDeveloperFaq,
     this.showCustomTypesFaq = false,
     this.showIncomeGuardianFaq = false,
+    this.showPortfolioHealthFaq = false,
   });
 
   /// Whether to explain the developer tools. Callers pass
@@ -32,6 +33,11 @@ class HelpFaqScreen extends StatelessWidget {
   /// isIncomeGuardianEnabledProvider, so the FAQ never describes a feature
   /// the user cannot see.
   final bool showIncomeGuardianFaq;
+
+  /// Whether to say where the Portfolio Health Score is (#903). Callers pass
+  /// isPortfolioHealthEnabledProvider, so the FAQ never points at a card the
+  /// user cannot see.
+  final bool showPortfolioHealthFaq;
 
   @override
   Widget build(BuildContext context) {
@@ -140,11 +146,12 @@ class HelpFaqScreen extends StatelessWidget {
               l10n.whatIsPortfolioHealthScoreAnswer,
               isDark,
             ),
-            _buildFaqItem(
-              l10n.howToEnablePortfolioHealth,
-              l10n.howToEnablePortfolioHealthAnswer,
-              isDark,
-            ),
+            if (showPortfolioHealthFaq)
+              _buildFaqItem(
+                l10n.whereToFindPortfolioHealth,
+                l10n.whereToFindPortfolioHealthAnswer,
+                isDark,
+              ),
             _buildFaqItem(
               l10n.whatDoScoreTiersMean,
               l10n.whatDoScoreTiersMeanAnswer,

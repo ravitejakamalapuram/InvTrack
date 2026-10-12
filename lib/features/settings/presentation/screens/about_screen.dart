@@ -504,6 +504,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
           showDeveloperFaq: ref.read(developerToolsAvailableProvider),
           showCustomTypesFaq: ref.read(isCustomInvestmentTypesEnabledProvider),
           showIncomeGuardianFaq: ref.read(isIncomeGuardianEnabledProvider),
+          showPortfolioHealthFaq: ref.read(isPortfolioHealthEnabledProvider),
         ),
       ),
     );
