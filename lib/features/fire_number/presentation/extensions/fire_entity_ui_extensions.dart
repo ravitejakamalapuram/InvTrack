@@ -27,8 +27,9 @@ extension FireTypeUI on FireType {
 
 /// Extension providing UI-specific properties for [FireProgressStatus].
 extension FireProgressStatusUI on FireProgressStatus {
-  /// Color representing this status (light mode)
-  /// Uses the app's design system colors for consistency
+  /// Color representing this status (light mode), for fills, bars and tints.
+  /// Behind and on track are the bright amber and blue, which are too light for
+  /// text: use [textColor] for a text or an icon.
   Color get color => colorForBrightness(Brightness.light);
 
   /// Color representing this status (dark mode)
@@ -70,6 +71,19 @@ extension FireProgressStatusUI on FireProgressStatus {
     }
     return colorForBrightness(brightness);
   }
+
+  /// The status colour for text and icons on the card. In light, behind and on
+  /// track take the deeper amber and blue ([AppColors.warningTextLight],
+  /// [AppColors.accentTextLight]): the bright ones are [color], for fills,
+  /// bars and tints, and read 2.15 and 2.77:1 as text. Every other status, and
+  /// dark, is [colorForBrightness].
+  Color textColor(bool isDark) => switch (this) {
+    FireProgressStatus.behind =>
+      isDark ? AppColors.warningDark : AppColors.warningTextLight,
+    FireProgressStatus.onTrack =>
+      isDark ? AppColors.accentDark : AppColors.accentTextLight,
+    _ => colorForBrightness(isDark ? Brightness.dark : Brightness.light),
+  };
 
   /// Icon representing this status
   IconData get icon {

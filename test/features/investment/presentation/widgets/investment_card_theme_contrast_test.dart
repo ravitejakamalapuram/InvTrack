@@ -316,9 +316,9 @@ void main() {
     // Label, days from today, colour in light, colour in dark.
     final chips = [
       ('MATURED', -10, AppColors.successLight, AppColors.successDark),
-      ('MATURES TODAY', 0, AppColors.warningLight, AppColors.warningDark),
-      ('5d TO MATURITY', 5, AppColors.warningLight, AppColors.warningDark),
-      ('20d TO MATURITY', 20, AppColors.accentLight, AppColors.accentDark),
+      ('MATURES TODAY', 0, AppColors.warningTextLight, AppColors.warningDark),
+      ('5d TO MATURITY', 5, AppColors.warningTextLight, AppColors.warningDark),
+      ('20d TO MATURITY', 20, AppColors.accentTextLight, AppColors.accentDark),
     ];
 
     for (final (label, days, inLight, inDark) in chips) {
@@ -366,6 +366,65 @@ void main() {
           }
         });
       }
+    }
+
+    // The amber and blue chips: the label and the icon are the deeper text
+    // colour, the chip is tinted with the bright hue it always had. Tinted
+    // with the text colour itself the label would be 4.25 and 4.45.
+    for (final (label, days, text, tintSource, icon, id) in [
+      (
+        'MATURES TODAY',
+        0,
+        AppColors.warningTextLight,
+        AppColors.warningLight,
+        Icons.schedule_rounded,
+        'maturity-soon-light@tint15',
+      ),
+      (
+        '5d TO MATURITY',
+        5,
+        AppColors.warningTextLight,
+        AppColors.warningLight,
+        Icons.schedule_rounded,
+        'maturity-soon-light@tint15',
+      ),
+      (
+        '20d TO MATURITY',
+        20,
+        AppColors.accentTextLight,
+        AppColors.accentLight,
+        Icons.event_rounded,
+        'maturity-upcoming-light@tint15',
+      ),
+    ]) {
+      testWidgets('$label in light reads on its tint ($id)', (tester) async {
+        await _pump(
+          tester,
+          investment: _investment(
+            'm',
+            maturity: _today.add(Duration(days: days)),
+          ),
+          stats: paid,
+          xirr: xirr,
+          brightness: light,
+        );
+        final word = find.text(label);
+        expect(word, findsOneWidget, reason: 'the chip says how long it is');
+        final color = _textColor(tester, word);
+        expect(color, text);
+        final ground = _tintBehind(tester, word, AppColors.cardLight);
+        expect(
+          ground,
+          composeOver(tintSource.withValues(alpha: 0.15), AppColors.cardLight),
+        );
+        expect(
+          contrastRatio(color, ground),
+          greaterThanOrEqualTo(kMinText),
+          reason: id,
+        );
+        // The icon is the same colour as the word.
+        expect(tester.widget<Icon>(find.byIcon(icon)).color, text);
+      });
     }
   });
 }

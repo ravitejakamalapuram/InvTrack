@@ -424,7 +424,9 @@ class FireDashboardScreen extends ConsumerWidget {
             context,
             isDark,
             icon: Icons.calendar_today_outlined,
-            iconColor: isDark ? AppColors.accentDark : AppColors.accentLight,
+            iconColor: isDark
+                ? AppColors.accentDark
+                : AppColors.accentTextLight,
             label: 'Target Age',
             value: '${settings.targetFireAge}',
             subtitle: yearsToFire > 0
@@ -438,9 +440,7 @@ class FireDashboardScreen extends ConsumerWidget {
             context,
             isDark,
             icon: Icons.flag_outlined,
-            iconColor: calculation.status.colorForBrightness(
-              isDark ? Brightness.dark : Brightness.light,
-            ),
+            iconColor: calculation.status.textColor(isDark),
             label: 'Projected',
             value: projectedDate != null
                 ? AppDateUtils.formatYearMonth(projectedDate, locale: locale)
@@ -456,7 +456,9 @@ class FireDashboardScreen extends ConsumerWidget {
             context,
             isDark,
             icon: Icons.savings_outlined,
-            iconColor: isDark ? AppColors.warningDark : AppColors.warningLight,
+            iconColor: isDark
+                ? AppColors.warningDark
+                : AppColors.warningTextLight,
             label: 'Need/Month',
             value: formatCompactCurrency(
               calculation.requiredMonthlySavings,
@@ -560,9 +562,7 @@ class FireDashboardScreen extends ConsumerWidget {
     } else {
       header = status.label(l10n);
     }
-    final statusColor = status.colorForBrightness(
-      isDark ? Brightness.dark : Brightness.light,
-    );
+    final statusColor = status.textColor(isDark);
     // The card and the disc behind the icon are tinted with the brighter hue.
     final statusTint = status.vividColorForBrightness(
       isDark ? Brightness.dark : Brightness.light,
@@ -637,9 +637,14 @@ class FireDashboardScreen extends ConsumerWidget {
             SizedBox(height: AppSpacing.md),
             Builder(
               builder: (context) {
+                // The trophy is the deeper amber in light; the ring is a fill
+                // and keeps the bright one.
                 final milestoneColor = isDark
                     ? AppColors.warningDark
                     : AppColors.warningLight;
+                final milestoneIconColor = isDark
+                    ? AppColors.warningDark
+                    : AppColors.warningTextLight;
                 return Container(
                   width: double.infinity,
                   padding: EdgeInsets.all(AppSpacing.sm),
@@ -659,7 +664,7 @@ class FireDashboardScreen extends ConsumerWidget {
                         children: [
                           Icon(
                             Icons.emoji_events_outlined,
-                            color: milestoneColor,
+                            color: milestoneIconColor,
                             size: 20,
                           ),
                           SizedBox(width: AppSpacing.sm),

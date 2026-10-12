@@ -183,4 +183,69 @@ void main() {
       reason: 'fire-insight-disc-light@tint20',
     );
   });
+
+  // 14 lakh saved and nothing added: behind. The icons beside text are the
+  // deeper amber and blue in light; the milestone's ring is a fill and keeps
+  // the bright amber.
+  final behind = _calculate(corpus: 1402551.73, savings: 0);
+
+  test('the behind scenario is the status the test names', () {
+    expect(behind.status, FireProgressStatus.behind);
+    expect(behind.nextMilestone, isNotNull);
+  });
+
+  testWidgets('in light the icons beside text are the deeper blue and amber, '
+      'the ring keeps the bright amber', (tester) async {
+    await _pump(tester, behind, Brightness.light);
+
+    Color icon(IconData data) => tester.widget<Icon>(find.byIcon(data)).color!;
+
+    expect(icon(Icons.calendar_today_outlined), AppColors.accentTextLight);
+    expect(icon(Icons.savings_outlined), AppColors.warningTextLight);
+    // The projected date's icon follows the status; the banner's too.
+    expect(icon(Icons.flag_outlined), AppColors.warningTextLight);
+    expect(icon(Icons.lightbulb_outline), AppColors.warningTextLight);
+    expect(icon(Icons.emoji_events_outlined), AppColors.warningTextLight);
+    for (final data in [
+      Icons.calendar_today_outlined,
+      Icons.savings_outlined,
+      Icons.flag_outlined,
+      Icons.emoji_events_outlined,
+    ]) {
+      expect(
+        contrastRatio(icon(data), AppColors.cardLight),
+        greaterThanOrEqualTo(kMinGraphic),
+        reason: '$data on the card',
+      );
+    }
+    expect(
+      contrastRatio(
+        icon(Icons.emoji_events_outlined),
+        AppColors.neutral100Light,
+      ),
+      greaterThanOrEqualTo(kMinGraphic),
+      reason: 'the trophy sits on neutral100',
+    );
+    // Colour is not the only carrier: the banner says where the plan stands.
+    expect(find.text('Behind Schedule'), findsWidgets);
+    // The ring is a fill.
+    final ring = tester
+        .widgetList<CircularProgressIndicator>(
+          find.byType(CircularProgressIndicator),
+        )
+        .where((i) => i.strokeWidth == 4)
+        .single;
+    expect(ring.valueColor!.value, AppColors.warningLight);
+  });
+
+  testWidgets('in dark the same icons use the dark values', (tester) async {
+    await _pump(tester, behind, Brightness.dark);
+
+    Color icon(IconData data) => tester.widget<Icon>(find.byIcon(data)).color!;
+
+    expect(icon(Icons.calendar_today_outlined), AppColors.accentDark);
+    expect(icon(Icons.savings_outlined), AppColors.warningDark);
+    expect(icon(Icons.flag_outlined), AppColors.warningDark);
+    expect(icon(Icons.emoji_events_outlined), AppColors.warningDark);
+  });
 }

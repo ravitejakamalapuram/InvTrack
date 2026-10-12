@@ -117,7 +117,7 @@ const _allowlistMax = 87;
 
 /// The size of the pair table. A fixing PR that retires a pair or drops a
 /// ground it cannot fix changes this literal, so the change is in the diff.
-const _pairCount = 196;
+const _pairCount = 204;
 
 /// Files that can never be the measurement of a widget pair: the helper's own
 /// test, this guard and the table. Each mentions pair ids or `contrastRatio`.
@@ -196,7 +196,8 @@ void main() {
   test('the pairs the audit had no row for are exactly these', () {
     // The plan's three light dividers, the four the PR 1 review found on the
     // investment card's XIRR pill and the danger tint, and the twenty-six widget
-    // pairs PR 5 added for green and red on the tints and fills they sit on.
+    // pairs PR 5 added for green and red on the tints and fills they sit on,
+    // and the eight PR 6 added for blue and amber maturity chips, FIRE status and icons.
     expect(
       pairs.where((p) => p.addedByPlan).map((p) => p.id),
       unorderedEquals([
@@ -233,6 +234,14 @@ void main() {
         'overview-cash-out-bar-dark@card',
         'change-badge-outlined-success-dark@page',
         'change-badge-outlined-danger-dark@page',
+        'maturity-soon-light@tint15',
+        'maturity-upcoming-light@tint15',
+        'detail-maturity-soon-light@tint15',
+        'detail-maturity-upcoming-light@tint15',
+        'fire-status-behind-light@tint15',
+        'fire-status-on-track-light@tint15',
+        'fire-stats-icon-fire-light@tint15',
+        'fire-stats-icon-barista-light@tint15',
       ]),
     );
   });

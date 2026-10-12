@@ -15,6 +15,7 @@ import 'package:inv_tracker/features/fire_number/domain/services/fire_calculatio
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_dashboard_card.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_load_error_card.dart';
+import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_stats_card.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -101,6 +102,21 @@ Color _tintBehind(WidgetTester tester, String text, Color ground) {
   throw StateError('No filled Container around the text.');
 }
 
+/// The fill behind the 24px icon [icon]: the nearest Container around it that
+/// has one, over [ground], the way it is painted.
+Color _discBehind(WidgetTester tester, IconData icon, Color ground) {
+  for (final element
+      in find
+          .ancestor(of: find.byIcon(icon), matching: find.byType(Container))
+          .evaluate()) {
+    final decoration = (element.widget as Container).decoration;
+    if (decoration is BoxDecoration && decoration.color != null) {
+      return composeOver(decoration.color!, ground);
+    }
+  }
+  throw StateError('No filled Container around the icon.');
+}
+
 Color _barFill(WidgetTester tester) => tester
     .widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator))
     .valueColor!
@@ -115,9 +131,14 @@ void main() {
   // 14 lakh saved and nothing added: behind.
   final behind = _calculate(corpus: 1402551.73, savings: 0);
 
-  test('the two scenarios are the statuses the tests name', () {
+  // 14 lakh saved and 30,000 a month: reaches FIRE by the target age, not
+  // sooner.
+  final onTrack = _calculate(corpus: 1402551.73, savings: 30000);
+
+  test('the scenarios are the statuses the tests name', () {
     expect(ahead.status, FireProgressStatus.ahead);
     expect(behind.status, FireProgressStatus.behind);
+    expect(onTrack.status, FireProgressStatus.onTrack);
   });
 
   group('FIRE card, ahead of schedule', () {
@@ -209,6 +230,114 @@ void main() {
       expect(_fireIcon(tester), AppColors.warningDark);
       expect(_barFill(tester), AppColors.warningDark);
     });
+
+    // In light the icon, the label and the percentage are the deeper amber;
+    // the chip is tinted, and the bar filled, with the bright amber.
+    for (final (name, result, label, text, bright, id) in [
+      (
+        'behind',
+        behind,
+        'Behind Schedule',
+        AppColors.warningTextLight,
+        AppColors.warningLight,
+        'fire-status-behind-light@tint15',
+      ),
+      (
+        'on track',
+        onTrack,
+        'On Track',
+        AppColors.accentTextLight,
+        AppColors.accentLight,
+        'fire-status-on-track-light@tint15',
+      ),
+    ]) {
+      testWidgets('$name in light: the label reads on its tint ($id)', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          AppTheme.lightTheme,
+          const FireDashboardCard(),
+          result: result,
+        );
+
+        // Colour is not the only carrier: the status is written out.
+        expect(_text(tester, label), text);
+        expect(_fireIcon(tester), text);
+        final tint = _tintBehind(tester, label, AppColors.cardLight);
+        expect(
+          tint,
+          composeOver(bright.withValues(alpha: 0.15), AppColors.cardLight),
+        );
+        expect(
+          contrastRatio(_text(tester, label), tint),
+          greaterThanOrEqualTo(kMinText),
+          reason: id,
+        );
+        expect(
+          contrastRatio(_fireIcon(tester), AppColors.cardLight),
+          greaterThanOrEqualTo(kMinGraphic),
+        );
+        // The bar is a fill and keeps the bright hue.
+        expect(_barFill(tester), bright);
+      });
+    }
+  });
+
+  group('FIRE stats card', () {
+    // The icons of the FIRE number and the Barista FIRE number: the deeper
+    // blue and amber on a 15% tint of the bright hue.
+    for (final (theme, fire, barista) in [
+      (
+        AppTheme.lightTheme,
+        AppColors.accentTextLight,
+        AppColors.warningTextLight,
+      ),
+      (AppTheme.darkTheme, AppColors.accentDark, AppColors.warningDark),
+    ]) {
+      final isLight = theme.brightness == Brightness.light;
+      testWidgets('in ${isLight ? 'light' : 'dark'}: the icons read on their '
+          'discs', (tester) async {
+        await _pump(
+          tester,
+          theme,
+          FireStatsCard(calculation: behind, currencySymbol: '₹'),
+        );
+
+        expect(
+          tester.widget<Icon>(find.byIcon(Icons.local_fire_department)).color,
+          fire,
+        );
+        expect(
+          tester.widget<Icon>(find.byIcon(Icons.coffee_outlined)).color,
+          barista,
+        );
+        final card = isLight ? AppColors.cardLight : AppColors.cardDark;
+        final brightFire = isLight
+            ? AppColors.accentLight
+            : AppColors.accentDark;
+        final brightBarista = isLight
+            ? AppColors.warningLight
+            : AppColors.warningDark;
+        final fireDisc = _discBehind(tester, Icons.local_fire_department, card);
+        final baristaDisc = _discBehind(tester, Icons.coffee_outlined, card);
+        expect(fireDisc, composeOver(brightFire.withValues(alpha: 0.15), card));
+        expect(
+          baristaDisc,
+          composeOver(brightBarista.withValues(alpha: 0.15), card),
+        );
+        expect(
+          contrastRatio(fire, fireDisc),
+          greaterThanOrEqualTo(kMinGraphic),
+          reason: isLight ? 'fire-stats-icon-fire-light@tint15' : 'dark',
+        );
+        expect(
+          contrastRatio(barista, baristaDisc),
+          greaterThanOrEqualTo(kMinGraphic),
+          reason: isLight ? 'fire-stats-icon-barista-light@tint15' : 'dark',
+        );
+      });
+    }
   });
 
   group('FIRE load-error card', () {

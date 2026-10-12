@@ -241,4 +241,70 @@ void main() {
       );
     },
   );
+
+  // The maturity row of an open maturity: the status text and the icon are the
+  // deeper amber or blue, the row is tinted with the bright hue it always had.
+  // The days left depend on the day the test runs, so the text is found by its
+  // words, not by its number.
+  final now = DateTime.now();
+  DateTime inDays(int days) => DateTime(now.year, now.month, now.day + days);
+
+  for (final (name, days, words, text, tintSource, icon, id) in [
+    (
+      'maturing today',
+      0,
+      'Matures today!',
+      AppColors.warningTextLight,
+      AppColors.warningLight,
+      Icons.schedule_rounded,
+      'detail-maturity-soon-light@tint15',
+    ),
+    (
+      'maturing within a week',
+      3,
+      'days until maturity',
+      AppColors.warningTextLight,
+      AppColors.warningLight,
+      Icons.schedule_rounded,
+      'detail-maturity-soon-light@tint15',
+    ),
+    (
+      'maturing within a month',
+      20,
+      'days until maturity',
+      AppColors.accentTextLight,
+      AppColors.accentLight,
+      Icons.event_rounded,
+      'detail-maturity-upcoming-light@tint15',
+    ),
+  ]) {
+    testWidgets('$name in light: the maturity row reads on its tint ($id)', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        investment: _closed(maturity: inDays(days)),
+        stats: _stats(invested: 100000, returned: 110000),
+      );
+
+      final status = find.textContaining(words);
+      expect(status, findsOneWidget, reason: 'the status is written out');
+      expect(tester.widget<Text>(status).style!.color, text);
+      final tint = _tintBehind(tester, status, AppColors.cardLight);
+      expect(
+        tint,
+        composeOver(tintSource.withValues(alpha: 0.15), AppColors.cardLight),
+      );
+      expect(
+        contrastRatio(text, tint),
+        greaterThanOrEqualTo(kMinText),
+        reason: id,
+      );
+      // The icon sits on the same tint and is the same colour.
+      final glyph = find.byIcon(icon);
+      expect(glyph, findsOneWidget);
+      expect(tester.widget<Icon>(glyph).color, text);
+      expect(contrastRatio(text, tint), greaterThanOrEqualTo(kMinGraphic));
+    });
+  }
 }

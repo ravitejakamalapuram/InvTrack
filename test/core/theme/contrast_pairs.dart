@@ -487,6 +487,36 @@ List<ContrastPair> _build() {
         widgetTest: test,
       ),
 
+    // ---- P1 blue and amber text and icons on their tints (PR 6) ----
+    // Each is measured by a test that pumps the widget and reads its real
+    // colour and its real tint. [audit] is the ratio before the text colours
+    // were added. The chips are tinted with `accentLight` and `warningLight`,
+    // the colours they had: on a tint of the text colour itself the label
+    // falls to 4.45 and 4.25.
+    for (final (id, audit, test, min) in [
+      ('maturity-soon-light@tint15', 1.91, _cardTest, kMinText),
+      ('maturity-upcoming-light@tint15', 2.39, _cardTest, kMinText),
+      ('detail-maturity-soon-light@tint15', 1.91, _detailStatsTest, kMinText),
+      (
+        'detail-maturity-upcoming-light@tint15',
+        2.39,
+        _detailStatsTest,
+        kMinText,
+      ),
+      ('fire-status-behind-light@tint15', 1.91, _fireCardTest, kMinText),
+      ('fire-status-on-track-light@tint15', 2.39, _fireCardTest, kMinText),
+      ('fire-stats-icon-fire-light@tint15', 2.39, _fireCardTest, graphic),
+      ('fire-stats-icon-barista-light@tint15', 1.91, _fireCardTest, graphic),
+    ])
+      ContrastPair.widget(
+        id,
+        rows: const [],
+        audit: audit,
+        min: min,
+        addedByPlan: true,
+        widgetTest: test,
+      ),
+
     // ---- P1 investment-type colours ----
     for (final (id, type, row, audit) in _typeFills)
       ContrastPair.token(
