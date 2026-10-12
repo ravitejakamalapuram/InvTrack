@@ -484,6 +484,38 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   }
 
   @override
+  Stream<Set<String>> watchServerConfirmedInvestmentIds() {
+    return Rx.combineLatest2(
+      _watchServerConfirmedIds(
+        _investmentsRef.orderBy('createdAt', descending: true),
+      ),
+      _watchServerConfirmedIds(
+        _archivedInvestmentsRef.orderBy('createdAt', descending: true),
+      ),
+      (Set<String> active, Set<String> archived) => {...active, ...archived},
+    );
+  }
+
+  /// The document ids of [query] each time the server confirms them: cache
+  /// answers and answers with a write of this device pending are dropped.
+  ///
+  /// Listens to metadata changes, so that the server confirming what the cache
+  /// already showed (no document changed) still arrives. The query is the one
+  /// the lists use, so Firestore serves both from one listener.
+  Stream<Set<String>> _watchServerConfirmedIds(
+    Query<Map<String, dynamic>> query,
+  ) {
+    return query
+        .snapshots(includeMetadataChanges: true)
+        .where(
+          (snapshot) =>
+              !snapshot.metadata.isFromCache &&
+              !snapshot.metadata.hasPendingWrites,
+        )
+        .map((snapshot) => {for (final doc in snapshot.docs) doc.id});
+  }
+
+  @override
   Future<bool> hasAnyInvestmentOnServer() async {
     const serverOnly = GetOptions(source: Source.server);
     final snapshots = await Future.wait([
