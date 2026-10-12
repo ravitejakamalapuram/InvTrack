@@ -247,6 +247,23 @@ void main() {
       );
     });
 
+    testWidgets('the helper needs an amount that can be saved', (tester) async {
+      await _open(tester);
+
+      // These make no first cash flow, so the date is not one.
+      for (final typed in ['-5', '0', 'abc']) {
+        await _fill(tester, amount: typed);
+        expect(
+          find.text(_helperToday),
+          findsNothing,
+          reason: '"$typed" is not an amount',
+        );
+      }
+
+      await _fill(tester, amount: '50000');
+      expect(find.text(_helperToday), findsOneWidget);
+    });
+
     testWidgets('the helper shows once an amount is typed, not before', (
       tester,
     ) async {

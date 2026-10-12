@@ -103,10 +103,9 @@ void main() {
   });
 
   // The rule the add form applies when a type chip is chosen: a structural
-  // value that is still what the previous chip set follows the new chip; a
-  // value the user changed stays. The same comparison tells the analytics
-  // which fields the user really used. One rule, here, testable without a
-  // widget.
+  // field the user picked (tracked by the form) keeps its value; every other
+  // field follows the new chip. The same flags tell the analytics which
+  // fields the user really used. One rule, here, testable without a widget.
   group('structure after choosing another chip', () {
     final fd = InvestmentTypeDefaults.forType(InvestmentType.fixedDeposit);
     final p2p = InvestmentTypeDefaults.forType(InvestmentType.p2pLending);

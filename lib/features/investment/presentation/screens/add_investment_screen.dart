@@ -632,8 +632,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     final showCustomType =
         _selectedType == InvestmentType.other &&
         ref.watch(isCustomInvestmentTypesEnabledProvider);
-    // The date also dates the first cash flow, which exists only with an amount.
-    final startDateHelper = _amountController.text.trim().isEmpty
+    // The date also dates the first cash flow, which exists only with an amount
+    // that can be saved.
+    final startDateHelper = !_amountTyped
         ? null
         : (DateUtils.isSameDay(_startDate, _today)
               ? l10n.startDateHelperToday
