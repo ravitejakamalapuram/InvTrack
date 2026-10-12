@@ -114,6 +114,42 @@ void main() {
     expect(result, isNull);
   });
 
+  // 15 digits is the most a value may have (invtrack_rules 19.1). The editor
+  // says so instead of closing and showing the generic save failure.
+  for (final text in [
+    '1000000000000000',
+    '99999999999999999999',
+    // 15 digits as typed; INR rounds it to 1000000000000000.00.
+    '999999999999999.996',
+  ]) {
+    testWidgets('$text is refused with a specific message', (tester) async {
+      final result = await _open(
+        tester,
+        interact: () async {
+          await tester.enterText(find.byType(TextFormField), text);
+          await tester.tap(find.text('Save'));
+          await tester.pumpAndSettle();
+          expect(find.text('That amount is too large'), findsOneWidget);
+          expect(find.text('Enter a value of 0 or more'), findsNothing);
+          await tester.tap(find.text('Cancel'));
+        },
+      );
+      expect(result, isNull);
+    });
+  }
+
+  testWidgets('the largest 15-digit value is saved', (tester) async {
+    final result = await _open(
+      tester,
+      interact: () async {
+        await tester.enterText(find.byType(TextFormField), '999999999999999');
+        await tester.tap(find.text('Save'));
+      },
+    );
+
+    expect(result!.value, 999999999999999);
+  });
+
   testWidgets('offers to go back to the estimate when the user set a value', (
     tester,
   ) async {

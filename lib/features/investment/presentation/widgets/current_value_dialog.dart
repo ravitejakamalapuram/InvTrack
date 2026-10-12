@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
+import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_notifier.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -167,8 +169,18 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
               decoration: InputDecoration(
                 labelText: l10n.currentValueAmountLabel(widget.currency),
               ),
-              validator: (text) =>
-                  _parse(text) == null ? l10n.currentValueInvalid : null,
+              validator: (text) {
+                final value = _parse(text);
+                if (value == null) return l10n.currentValueInvalid;
+                // 15 digits at most, also after rounding (rules 19.1).
+                final rounded = MoneyPrecision.round(
+                  value,
+                  currencyCode: widget.currency,
+                );
+                return rounded >= ValidationConstants.maxAmount
+                    ? l10n.amountInvestedTooLarge
+                    : null;
+              },
               onFieldSubmitted: (_) => _save(),
             ),
             const SizedBox(height: 12),
