@@ -581,6 +581,9 @@ List<ContrastPair> _build() {
     // The widgets that paint them, pumped for every type in both themes. The
     // audit had no row for these; [audit] is the worst ratio before PR 7.
     for (final (id, audit, test, min) in [
+      ('closed-chip-text-dark@grey20', 4.79, _typeCardTest, kMinText),
+      ('inv-tile-icon-light@gradient', 1.40, _typeCardTest, graphic),
+      ('inv-tile-icon-dark@gradient', 1.40, _typeCardTest, graphic),
       ('type-selector-label@fill', 1.40, _typeSelectorTest, kMinText),
     ])
       ContrastPair.widget(
@@ -703,6 +706,7 @@ List<ContrastPair> _build() {
       'closed-chip-text-light@grey20',
       rows: [17],
       audit: 2.27,
+      widgetTest: _typeCardTest,
     ),
     for (final (stop, audit) in [
       ('1e1b4b', 3.55),

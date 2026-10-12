@@ -184,7 +184,6 @@ class InvestmentCard extends ConsumerWidget {
               investment: investment,
               typeName: typeName,
               isDark: isDark,
-              typeColor: typeColor,
               isClosed: isClosed,
               referenceDate: referenceDate,
             );
@@ -422,7 +421,13 @@ class _TypeIcon extends StatelessWidget {
         ],
       ),
       child: Center(
-        child: Icon(icon, color: Colors.white, size: AppSizes.iconMd),
+        // White or ink, whichever reads better on the tile's fill (grey when
+        // closed): white was 1.4:1 on gold.
+        child: Icon(
+          icon,
+          color: AppColors.onFill(isClosed ? Colors.grey : typeColor),
+          size: AppSizes.iconMd,
+        ),
       ),
     );
   }
@@ -433,7 +438,6 @@ class _InvestmentInfo extends StatelessWidget {
   final InvestmentEntity investment;
   final String typeName;
   final bool isDark;
-  final Color typeColor;
   final bool isClosed;
   final DateTime? referenceDate;
 
@@ -441,7 +445,6 @@ class _InvestmentInfo extends StatelessWidget {
     required this.investment,
     required this.typeName,
     required this.isDark,
-    required this.typeColor,
     required this.isClosed,
     this.referenceDate,
   });
@@ -449,6 +452,7 @@ class _InvestmentInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final maturityInfo = _getMaturityInfo();
+    final brightness = isDark ? Brightness.dark : Brightness.light;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -473,13 +477,13 @@ class _InvestmentInfo extends StatelessWidget {
                 vertical: 2,
               ),
               decoration: BoxDecoration(
-                color: typeColor.withValues(alpha: 0.1),
+                color: investment.type.tintColor(brightness),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 typeName,
                 style: AppTypography.small.copyWith(
-                  color: typeColor,
+                  color: investment.type.textColor(brightness),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -497,7 +501,7 @@ class _InvestmentInfo extends StatelessWidget {
                 child: Text(
                   AppLocalizations.of(context).closed,
                   style: AppTypography.small.copyWith(
-                    color: Colors.grey,
+                    color: isDark ? Colors.grey : AppColors.closedTextLight,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

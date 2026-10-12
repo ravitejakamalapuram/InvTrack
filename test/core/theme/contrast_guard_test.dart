@@ -17,8 +17,6 @@ import 'contrast_pairs.dart';
 
 /// Pairs that still fail. Grouped by the PR in the stack that fixes them.
 const _allowlist = <String>{
-  // PR 7 contrast-type-colours (the closed chip, with the investment card)
-  'closed-chip-text-light@grey20',
   // PR 8 contrast-hardcoded (4)
   'currency-badge-compact-light@tint20',
   'gradient-button-tail-light@page',
@@ -81,11 +79,11 @@ const _allowlist = <String>{
 
 /// The size of [_allowlist]. Lower it with the list; raising it needs a reason
 /// in the PR body.
-const _allowlistMax = 55;
+const _allowlistMax = 54;
 
 /// The size of the pair table. A fixing PR that retires a pair or drops a
 /// ground it cannot fix changes this literal, so the change is in the diff.
-const _pairCount = 216;
+const _pairCount = 219;
 
 /// Files that can never be the measurement of a widget pair: the helper's own
 /// test, this guard and the table. Each mentions pair ids or `contrastRatio`.
@@ -222,6 +220,9 @@ void main() {
         'insight-warning-icon-light@tint20',
         'settings-tile-warning-icon-light@tint15',
         'import-option-warning-icon-light@tint15',
+        'closed-chip-text-dark@grey20',
+        'inv-tile-icon-light@gradient',
+        'inv-tile-icon-dark@gradient',
         'type-selector-label@fill',
       ]),
     );
