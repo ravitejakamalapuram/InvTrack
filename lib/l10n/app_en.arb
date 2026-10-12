@@ -587,7 +587,7 @@
     "description": "FAQ question"
   },
 
-  "whatInvestmentTypesSupportedAnswer": "InvTrack supports Stocks, Mutual Funds, Fixed Deposits, Gold, Real Estate, Crypto, and more. You can categorize any investment type.",
+  "whatInvestmentTypesSupportedAnswer": "InvTrack is built for investments that broker apps do not track: Fixed Deposits, P2P lending, Bonds, Chit Funds, Gold and Property. Anything with money in and money back can be tracked, including Stocks, Mutual Funds and Crypto. You can categorize any investment type.",
   "@whatInvestmentTypesSupportedAnswer": {
     "description": "FAQ answer"
   },
@@ -737,7 +737,7 @@
     "description": "FAQ question about Income Guardian feature"
   },
 
-  "whatIsIncomeGuardianAnswer": "Income Guardian is an AI-powered income monitoring system that predicts when you should receive payments from your investments, tracks platform reliability, and alerts you to missed or delayed income. It transforms InvTrack from passive tracking to active wealth protection.",
+  "whatIsIncomeGuardianAnswer": "Income Guardian projects when you should receive payouts from the payment schedule you enter, tracks how reliably each platform pays, and flags income that is missed or delayed, so you can follow up early.",
   "@whatIsIncomeGuardianAnswer": {
     "description": "FAQ answer about Income Guardian feature"
   },
@@ -747,7 +747,7 @@
     "description": "FAQ question about income projection mechanism"
   },
 
-  "howDoesIncomeProjectionWorkAnswer": "Income Guardian uses Weighted Moving Average (WMA) machine learning to predict your next payment amount based on your last 6 payments. It learns platform-specific payment delays (e.g., LenDenClub pays 2 days late) and adjusts expectations automatically. For stable payments, it applies ±8% tolerance; for volatile payments, tolerance expands to match historical variance.",
+  "howDoesIncomeProjectionWorkAnswer": "Income Guardian uses a Weighted Moving Average (WMA) of your last 6 payments to estimate your next payment amount. It also notes platform-specific payment delays (e.g., LenDenClub pays 2 days late) and adjusts expectations accordingly. For stable payments, it applies ±8% tolerance; for volatile payments, tolerance expands to match historical variance.",
   "@howDoesIncomeProjectionWorkAnswer": {
     "description": "FAQ answer about income projection mechanism"
   },
@@ -3425,7 +3425,7 @@
     "description": "Income Guardian feature toggle title"
   },
 
-  "incomeGuardianFeatureSubtitle": "AI-powered income tracking with payment monitoring",
+  "incomeGuardianFeatureSubtitle": "Expected payouts from your schedule, with payment monitoring",
   "@incomeGuardianFeatureSubtitle": {
     "description": "Income Guardian feature description"
   },
@@ -3445,7 +3445,7 @@
     "description": "Beta badge for Income Guardian feature"
   },
 
-  "dashboardIncomeGuardianSubtitle": "AI-powered income tracking",
+  "dashboardIncomeGuardianSubtitle": "Expected payouts from your schedule",
   "@dashboardIncomeGuardianSubtitle": {
     "description": "Income Guardian dashboard card subtitle"
   },
