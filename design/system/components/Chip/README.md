@@ -24,6 +24,8 @@ Use filter chips to narrow a list (exactly one selected), the type selector to p
 
 Selected type chips put `inv-*-on-fill` on the type colour (4.62:1 for white on the deepened purple, 4.64:1 on the deepened blue, up to 12.47:1 for ink on gold; white was 1.40:1 to 4.83:1), and the same rule covers goal, document and cash-flow chips in the app; the filter chip's unselected text is `neutral-700-light` on a 5% tint (8.85:1) and white 70% in dark (9.22:1), both on `background`; the dark selected ChipTheme label is 11.45:1.
 
+The add-investment quick-start cards (`template_selector.dart`, not a bundle kind): 16px radius, 130px wide, an emoji above a 12px/600 name and the typical rate. Unselected on `surface` or white with a 1px neutral border. Selected: the template's investment type colour `inv-*` as a 2px border and a 12px glow at 30%, an opaque `inv-*` 10% tint over `card` as the fill, and the name in `inv-*-text` (4.55:1 to 4.66:1 in light, 4.58:1 to 10.24:1 in dark; the template's own colour at 15% was 1.32:1 to 3.10:1). The emoji and the name stay, so the template never rests on colour.
+
 ## Source
 
-`type_selector.dart`; `investment_list_filter_tabs.dart`; `overview_empty_state.dart` (`_TemplateChip`); `chipTheme` in `app_theme.dart`.
+`type_selector.dart`; `investment_list_filter_tabs.dart`; `overview_empty_state.dart` (`_TemplateChip`); `template_selector.dart` (`_TemplateCard`); `chipTheme` in `app_theme.dart`.
