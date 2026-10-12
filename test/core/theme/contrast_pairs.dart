@@ -127,6 +127,17 @@ const _fireInsightTest =
     'test/features/fire_number/presentation/screens/fire_dashboard_hero_colour_test.dart';
 const _feedbackTest = 'test/core/utils/app_feedback_theme_contrast_test.dart';
 
+// PR 6: the tests that pump a blue or amber label or icon on its tint.
+const _overviewEmptyTest =
+    'test/features/overview/presentation/widgets/overview_empty_state_theme_contrast_test.dart';
+const _sampleBannerTest =
+    'test/features/overview/presentation/widgets/sample_data_banner_theme_contrast_test.dart';
+const _guestTileTest =
+    'test/features/settings/presentation/widgets/saved_guest_backup_tile_test.dart';
+const _insightCardTest =
+    'test/features/reports/presentation/widgets/smart_insight_card_theme_contrast_test.dart';
+const _settingsTileTest =
+    'test/features/settings/presentation/widgets/settings_tile_theme_contrast_test.dart';
 const _reportsCountTest =
     'test/features/reports/presentation/screens/reports_home_attention_contrast_test.dart';
 
@@ -507,6 +518,21 @@ List<ContrastPair> _build() {
       ('fire-status-on-track-light@tint15', 2.39, _fireCardTest, kMinText),
       ('fire-stats-icon-fire-light@tint15', 2.39, _fireCardTest, graphic),
       ('fire-stats-icon-barista-light@tint15', 1.91, _fireCardTest, graphic),
+      ('sample-data-banner-light@tint10', 2.41, _sampleBannerTest, kMinText),
+      ('sample-data-icon-light@tint20', 2.02, _sampleBannerTest, graphic),
+      ('sample-data-try-it-light@gradient', 2.31, _overviewEmptyTest, kMinText),
+      ('sample-data-tile-icon-light@tint20', 2.02, _overviewEmptyTest, graphic),
+      ('quick-start-csv-icon-light@tint20', 2.09, _overviewEmptyTest, graphic),
+      ('xirr-demo-highlight-light@tint5', 1.92, _overviewEmptyTest, kMinText),
+      ('saved-guest-backup-icon-light@card', 2.15, _guestTileTest, graphic),
+      ('insight-warning-value-light@card', 2.15, _insightCardTest, kMinText),
+      ('insight-warning-icon-light@tint20', 1.85, _insightCardTest, graphic),
+      (
+        'settings-tile-warning-icon-light@tint15',
+        1.91,
+        _settingsTileTest,
+        graphic,
+      ),
     ])
       ContrastPair.widget(
         id,

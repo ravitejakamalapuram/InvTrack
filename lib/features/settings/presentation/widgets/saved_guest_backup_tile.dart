@@ -24,7 +24,7 @@ class SavedGuestBackupTile extends ConsumerWidget {
     return ListTile(
       leading: Icon(
         Icons.restore_page,
-        color: isDark ? AppColors.warningDark : AppColors.warningLight,
+        color: isDark ? AppColors.warningDark : AppColors.warningTextLight,
       ),
       title: Text(l10n.savedGuestBackupTitle),
       subtitle: Text(l10n.savedGuestBackupSubtitle),

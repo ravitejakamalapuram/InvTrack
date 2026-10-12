@@ -30,7 +30,7 @@ class SampleDataBanner extends ConsumerWidget {
         ? AppColors.accentLight.withValues(alpha: 0.15)
         : AppColors.accentLight.withValues(alpha: 0.1);
     final borderColor = AppColors.accentLight.withValues(alpha: 0.4);
-    final accent = isDark ? AppColors.accentDark : AppColors.accentLight;
+    final accent = isDark ? AppColors.accentDark : AppColors.accentTextLight;
 
     return Container(
       // The screen owns the horizontal edge (ScreenSliver).

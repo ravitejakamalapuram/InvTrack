@@ -111,7 +111,9 @@ class _PortfolioHealthDashboardCardState
             children: [
               Icon(
                 Icons.favorite_outline,
-                color: isDark ? AppColors.accentDark : AppColors.accentLight,
+                color: isDark
+                    ? AppColors.accentDark
+                    : AppColors.accentTextLight,
                 size: 24,
               ),
               const SizedBox(width: 12),
@@ -152,7 +154,9 @@ class _PortfolioHealthDashboardCardState
             children: [
               Icon(
                 Icons.favorite_outline,
-                color: isDark ? AppColors.accentDark : AppColors.accentLight,
+                color: isDark
+                    ? AppColors.accentDark
+                    : AppColors.accentTextLight,
                 size: 24,
               ),
               const SizedBox(width: 12),
@@ -170,7 +174,7 @@ class _PortfolioHealthDashboardCardState
           Center(
             child: CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(
-                isDark ? AppColors.accentDark : AppColors.accentLight,
+                isDark ? AppColors.accentDark : AppColors.accentTextLight,
               ),
             ),
           ),

@@ -38,7 +38,7 @@ class SmartInsightCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _getPriorityColor(context, isDark).withValues(alpha: 0.2),
+                  color: _getTintColor(context, isDark).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -130,15 +130,24 @@ class SmartInsightCard extends StatelessWidget {
     }
   }
   
-  /// Get color based on priority
+  /// Get color based on priority, for the icon and the value
   Color _getPriorityColor(BuildContext context, bool isDark) {
     switch (insight.priority) {
       case InsightPriority.urgent:
         return isDark ? AppColors.errorDark : AppColors.errorLight;
       case InsightPriority.warning:
-        return isDark ? AppColors.warningDark : AppColors.warningLight;
+        return isDark ? AppColors.warningDark : AppColors.warningTextLight;
       case InsightPriority.info:
         return isDark ? AppColors.successDark : AppColors.successLight;
     }
+  }
+
+  /// The colour the icon's disc is tinted with: the priority colour, except
+  /// that a warning keeps the bright amber its icon is no longer painted in.
+  Color _getTintColor(BuildContext context, bool isDark) {
+    if (insight.priority == InsightPriority.warning) {
+      return isDark ? AppColors.warningDark : AppColors.warningLight;
+    }
+    return _getPriorityColor(context, isDark);
   }
 }
