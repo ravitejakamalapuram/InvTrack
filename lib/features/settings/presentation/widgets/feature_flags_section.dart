@@ -279,7 +279,7 @@ class FeatureFlagsSection extends ConsumerWidget {
                   icon: Icons.warning_amber,
                   iconColor: Colors.orange,
                   title: FeatureFlag.predictiveAlerts.displayName,
-                  subtitle: 'AI-powered risk alerts (Coming soon)',
+                  subtitle: 'Risk alerts (Coming soon)',
                   value: false,
                   onChanged: (_) {}, // Disabled
                 ),
