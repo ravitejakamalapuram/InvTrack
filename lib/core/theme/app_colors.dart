@@ -61,6 +61,27 @@ class AppColors {
   // dark reads `warningDark`.
   static const Color warningTextLight = Color(0xFF996000);
 
+  // The word CLOSED on the investment card's grey chip (a 20% tint of
+  // `Colors.grey` over the card): 4.65:1 in this grey, 2.27:1 in `Colors.grey`
+  // itself. Light only; in dark `Colors.grey` is the readable one.
+  static const Color closedTextLight = Color(0xFF696969);
+
+  /// The colour for a label or an icon painted on [fill]: white or
+  /// [neutral900Light] (ink), whichever has the higher contrast ratio on it.
+  /// One rule for the selected type chip, the type tile and the detail header,
+  /// where a luminance threshold used to put white on gold (1.40:1).
+  ///
+  /// [fill] must be opaque. A fill whose luminance is near 0.2 reaches at most
+  /// 4.16:1 with either colour; such a fill is changed, not labelled (the
+  /// purple of crypto and private equity was).
+  static Color onFill(Color fill) {
+    final luminance = fill.computeLuminance();
+    final white = 1.05 / (luminance + 0.05);
+    final ink =
+        (luminance + 0.05) / (neutral900Light.computeLuminance() + 0.05);
+    return white >= ink ? Colors.white : neutral900Light;
+  }
+
   // Neutrals - Warm Gray Scale (more premium than cool gray)
   static const Color neutral950Light = Color(0xFF0C0A09);
   static const Color neutral900Light = Color(0xFF1C1917);
