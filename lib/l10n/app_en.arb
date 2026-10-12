@@ -3544,14 +3544,14 @@
     "description": "FAQ answer explaining portfolio health score"
   },
 
-  "howToEnablePortfolioHealth": "How do I enable Portfolio Health Score?",
-  "@howToEnablePortfolioHealth": {
-    "description": "FAQ question about enabling portfolio health"
+  "whereToFindPortfolioHealth": "Where do I find my Portfolio Health Score?",
+  "@whereToFindPortfolioHealth": {
+    "description": "FAQ question about where the portfolio health score appears. Shown only while the feature is on (#903)"
   },
 
-  "howToEnablePortfolioHealthAnswer": "Go to Settings → Debug Settings → Experimental Features and toggle ''Portfolio Health Score'' ON. The feature is currently in beta testing. You''ll see your health score on the overview screen if you have investments.",
-  "@howToEnablePortfolioHealthAnswer": {
-    "description": "FAQ answer about enabling portfolio health"
+  "whereToFindPortfolioHealthAnswer": "Once you have investments, your score appears as a card on the Overview screen. Tap the card to see the full breakdown of each area.",
+  "@whereToFindPortfolioHealthAnswer": {
+    "description": "FAQ answer about where the portfolio health score appears (#903). Must not mention Debug Settings"
   },
 
   "whatDoScoreTiersMean": "What do the score tiers mean?",
