@@ -59,6 +59,12 @@ if [ ! -d "$LISTING" ]; then
   exit 1
 fi
 
+# Play's default listing language is en-US. Without it, another locale could
+# pass the checks below and the listing would be pushed with no default text.
+if [ ! -d "$LISTING/en-US" ]; then
+  fail "Missing default listing locale: en-US"
+fi
+
 # Grep follows a symlink named on the command line but skips the ones it
 # meets while recursing, and the Play upload reads through them. Listing text
 # must be real files so the checks below see what Play gets.

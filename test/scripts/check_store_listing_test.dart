@@ -256,6 +256,51 @@ void main() {
     });
   });
 
+  // A107: Play's default listing language is en-US, so the check must not pass
+  // when that folder is gone, even if another locale is valid.
+  group('default listing locale', () {
+    const deDe = 'android/fastlane/metadata/android/de-DE';
+    const deFiles = {
+      '$deDe/title.txt': 'InvTrack Anlagen-Tracker\n',
+      '$deDe/short_description.txt': 'Anlagen mit XIRR verfolgen.\n',
+      '$deDe/full_description.txt': 'Verfolge, was du angelegt hast.\n',
+    };
+
+    test('fails when only de-DE exists', () async {
+      final root = _fixture(deFiles);
+      Directory('${root.path}/$_listing').deleteSync(recursive: true);
+      final r = await _check(root.path);
+      expect(r.exitCode, 1, reason: _output(r));
+      expect(_output(r), contains('Missing default listing locale: en-US'));
+    });
+
+    test('fails when en-US is a file, not a folder', () async {
+      final root = _fixture(deFiles);
+      Directory('${root.path}/$_listing').deleteSync(recursive: true);
+      File('${root.path}/$_listing').writeAsStringSync('not a folder\n');
+      final r = await _check(root.path);
+      expect(r.exitCode, 1, reason: _output(r));
+      expect(_output(r), contains('Missing default listing locale: en-US'));
+    });
+
+    test('passes with en-US and de-DE', () async {
+      final r = await _check(_fixture(deFiles).path);
+      expect(r.exitCode, 0, reason: _output(r));
+    });
+
+    test('passes with only en-US', () async {
+      final r = await _check(_fixture({}).path);
+      expect(r.exitCode, 0, reason: _output(r));
+    });
+
+    test('still checks every locale when en-US is present', () async {
+      final root = _fixture({...deFiles, '$deDe/title.txt': '${'a' * 31}\n'});
+      final r = await _check(root.path);
+      expect(r.exitCode, 1, reason: _output(r));
+      expect(_output(r), contains('de-DE/title.txt'));
+    });
+  });
+
   group('this repository', () {
     test('listing and README pass the check', () async {
       final r = await _check('.');
