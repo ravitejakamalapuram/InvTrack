@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
+import 'package:inv_tracker/features/portfolio_health/presentation/ui_extensions/score_tier_ui.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/widgets/score_improvement_badge.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -190,7 +191,7 @@ class _PortfolioHealthDashboardCardState
   ) {
     final l10n = AppLocalizations.of(context);
     final tier = score.tier;
-    final color = _getTierColor(tier, isDark);
+    final color = tier.textColor(isDark);
 
     return GlassCard(
       onTap: () async {
@@ -213,11 +214,7 @@ class _PortfolioHealthDashboardCardState
         children: [
           Row(
             children: [
-              Icon(
-                Icons.favorite,
-                color: color,
-                size: 24,
-              ),
+              Icon(Icons.favorite, color: color, size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -229,10 +226,7 @@ class _PortfolioHealthDashboardCardState
                   ),
                 ),
               ),
-              Text(
-                tier.emoji,
-                style: const TextStyle(fontSize: 20),
-              ),
+              Text(tier.emoji, style: const TextStyle(fontSize: 20)),
             ],
           ),
           const SizedBox(height: 24),
@@ -254,19 +248,6 @@ class _PortfolioHealthDashboardCardState
       ),
     );
   }
-
-  Color _getTierColor(ScoreTier tier, bool isDark) {
-    switch (tier) {
-      case ScoreTier.excellent:
-        return isDark ? const Color(0xFF10B981) : const Color(0xFF059669);
-      case ScoreTier.good:
-        return isDark ? const Color(0xFFFBBF24) : const Color(0xFFF59E0B);
-      case ScoreTier.fair:
-        return isDark ? const Color(0xFFFB923C) : const Color(0xFFF97316);
-      case ScoreTier.poor:
-        return isDark ? const Color(0xFFEF4444) : const Color(0xFFDC2626);
-    }
-  }
 }
 
 /// Circular progress ring showing health score
@@ -275,10 +256,7 @@ class _HealthScoreRing extends StatelessWidget {
   final int score;
   final Color color;
 
-  const _HealthScoreRing({
-    required this.score,
-    required this.color,
-  });
+  const _HealthScoreRing({required this.score, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -331,13 +309,7 @@ class _HealthScoreRing extends StatelessWidget {
                     color: color,
                   ),
                 ),
-                Text(
-                  '/ 100',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: color.withValues(alpha: 0.7),
-                  ),
-                ),
+                Text('/ 100', style: TextStyle(fontSize: 14, color: color)),
               ],
             ),
           ),

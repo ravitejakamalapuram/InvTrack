@@ -17,11 +17,6 @@ import 'contrast_pairs.dart';
 
 /// Pairs that still fail. Grouped by the PR in the stack that fixes them.
 const _allowlist = <String>{
-  // PR 8 contrast-hardcoded (4)
-  'currency-badge-compact-light@tint20',
-  'gradient-button-tail-light@page',
-  'quick-stat-subtitle-light@card',
-  'quick-stat-label-dark@card',
   // PR 9 contrast-chart-hero (26)
   'graph-emerald-light@tint10',
   'graph-cyan-light@card',
@@ -79,11 +74,11 @@ const _allowlist = <String>{
 
 /// The size of [_allowlist]. Lower it with the list; raising it needs a reason
 /// in the PR body.
-const _allowlistMax = 54;
+const _allowlistMax = 50;
 
 /// The size of the pair table. A fixing PR that retires a pair or drops a
 /// ground it cannot fix changes this literal, so the change is in the diff.
-const _pairCount = 220;
+const _pairCount = 262;
 
 /// Files that can never be the measurement of a widget pair: the helper's own
 /// test, this guard and the table. Each mentions pair ids or `contrastRatio`.
@@ -221,6 +216,48 @@ void main() {
         'settings-tile-warning-icon-light@tint15',
         'import-option-warning-icon-light@tint15',
         'closed-chip-text-dark@grey20',
+        'currency-badge-compact-dark@tint20',
+        'gradient-button-tail-dark@page',
+        'quick-stat-label-light@card',
+        'quick-stat-subtitle-dark@card',
+        'health-tier-excellent-light@card',
+        'health-tier-excellent-dark@card',
+        'health-tier-good-light@card',
+        'health-tier-good-dark@card',
+        'health-tier-fair-light@card',
+        'health-tier-fair-dark@card',
+        'health-tier-poor-light@card',
+        'health-tier-poor-dark@card',
+        'health-badge-excellent-light@tint10',
+        'health-badge-excellent-dark@tint10',
+        'health-badge-good-light@tint10',
+        'health-badge-good-dark@tint10',
+        'health-badge-fair-light@tint10',
+        'health-badge-fair-dark@tint10',
+        'health-badge-poor-light@tint10',
+        'health-badge-poor-dark@tint10',
+        'health-suggestion-digit-light@fill',
+        'health-suggestion-digit-dark@fill',
+        'health-chart-lines-light@card',
+        'health-chart-lines-dark@card',
+        'score-change-positive-light@tint10',
+        'score-change-positive-dark@tint10',
+        'score-change-negative-light@tint10',
+        'score-change-negative-dark@tint10',
+        'goal-status-not-started-light@card',
+        'goal-status-not-started-dark@card',
+        'goal-status-in-progress-light@card',
+        'goal-status-in-progress-dark@card',
+        'goal-status-on-track-light@card',
+        'goal-status-on-track-dark@card',
+        'goal-status-ahead-light@card',
+        'goal-status-ahead-dark@card',
+        'goal-status-behind-light@card',
+        'goal-status-behind-dark@card',
+        'goal-status-achieved-light@card',
+        'goal-status-achieved-dark@card',
+        'goal-status-archived-light@card',
+        'goal-status-archived-dark@card',
         'inv-tile-icon-light@gradient',
         'inv-tile-icon-dark@gradient',
         'inv-detail-header@fill',

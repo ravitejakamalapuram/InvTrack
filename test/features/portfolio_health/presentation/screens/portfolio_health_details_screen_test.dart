@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/screens/portfolio_health_details_screen.dart';
+import 'package:inv_tracker/features/portfolio_health/presentation/ui_extensions/score_tier_ui.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 ComponentScore _component(String name, double weight) => ComponentScore(
@@ -65,13 +66,14 @@ void main() {
     );
 
     // The overall score and each 79.6 component badge all read 80, and all
-    // take the colour of 80 (Excellent green), not the amber of 79.6.
+    // take the colour of 80 (Excellent green, in the deeper light-mode text
+    // green rather than the old #059669 at 3.77:1), not the amber of 79.6.
     expect(find.text('80'), findsNWidgets(6));
     expect(find.text('Excellent'), findsOneWidget);
     expect(find.text('Good'), findsNothing);
     expect(
       tester.widgetList<Text>(find.text('80')).map((t) => t.style?.color),
-      everyElement(const Color(0xFF059669)),
+      everyElement(ScoreTier.excellent.textColor(false)),
     );
   });
 

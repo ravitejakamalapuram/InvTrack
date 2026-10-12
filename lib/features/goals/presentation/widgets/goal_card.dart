@@ -323,7 +323,7 @@ class GoalCard extends ConsumerWidget {
         leadingIcon: status.icon,
         leadingText: status.label(l10n),
         leadingStyle: AppTypography.small.copyWith(
-          color: status.color,
+          color: status.textColor(isDark),
           fontWeight: FontWeight.w500,
         ),
         trailingText: progress?.statusMessage(l10n) ?? '',

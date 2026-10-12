@@ -127,6 +127,19 @@ const _fireInsightTest =
     'test/features/fire_number/presentation/screens/fire_dashboard_hero_colour_test.dart';
 const _feedbackTest = 'test/core/utils/app_feedback_theme_contrast_test.dart';
 
+// PR 8: _goalStatusTest
+const _goalStatusTest =
+    'test/features/goals/presentation/goal_status_contrast_test.dart';
+
+// PR 8: _healthTierTest
+const _healthTierTest =
+    'test/features/portfolio_health/presentation/health_tier_contrast_test.dart';
+
+// PR 8: the test that pumps the currency badge, the gradient button and the
+// quick stat card.
+const _badgeStatTest =
+    'test/core/widgets/quick_stat_and_badge_contrast_test.dart';
+
 // PR 6: the tests that pump a blue or amber label or icon on its tint.
 const _overviewEmptyTest =
     'test/features/overview/presentation/widgets/overview_empty_state_theme_contrast_test.dart';
@@ -761,11 +774,13 @@ List<ContrastPair> _build() {
       'currency-badge-compact-light@tint20',
       rows: [54],
       audit: 4.45,
+      widgetTest: _badgeStatTest,
     ),
     ContrastPair.widget(
       'gradient-button-tail-light@page',
       rows: [55],
       audit: 4.04,
+      widgetTest: _badgeStatTest,
     ),
     ContrastPair.widget(
       'hero-secondary-dark-50@stop-312e81',
@@ -864,8 +879,14 @@ List<ContrastPair> _build() {
       'quick-stat-subtitle-light@card',
       rows: [74],
       audit: 2.68,
+      widgetTest: _badgeStatTest,
     ),
-    ContrastPair.widget('quick-stat-label-dark@card', rows: [75], audit: 3.89),
+    ContrastPair.widget(
+      'quick-stat-label-dark@card',
+      rows: [75],
+      audit: 3.89,
+      widgetTest: _badgeStatTest,
+    ),
 
     // ---- Controls: pass today, must keep passing ----
     ContrastPair.control(
@@ -1096,5 +1117,59 @@ List<ContrastPair> _build() {
             ground: type.tintColor(isDark ? Brightness.dark : Brightness.light),
           ),
     ],
+    // ---- PR 8: hard-coded colours, pumped ----
+    // The audit had no row for these. [audit] is the ratio before PR 8.
+    for (final (id, audit, test, min) in [
+      ('currency-badge-compact-dark@tint20', 4.08, _badgeStatTest, kMinText),
+      ('gradient-button-tail-dark@page', 7.94, _badgeStatTest, kMinText),
+      ('quick-stat-label-light@card', 4.61, _badgeStatTest, kMinText),
+      ('quick-stat-subtitle-dark@card', 6.69, _badgeStatTest, kMinText),
+      ('goal-status-not-started-light@card', 4.83, _goalStatusTest, kMinText),
+      ('goal-status-not-started-dark@card', 3.56, _goalStatusTest, kMinText),
+      ('goal-status-in-progress-light@card', 4.44, _goalStatusTest, kMinText),
+      ('goal-status-in-progress-dark@card', 3.62, _goalStatusTest, kMinText),
+      ('goal-status-on-track-light@card', 3.43, _goalStatusTest, kMinText),
+      ('goal-status-on-track-dark@card', 4.87, _goalStatusTest, kMinText),
+      ('goal-status-ahead-light@card', 2.37, _goalStatusTest, kMinText),
+      ('goal-status-ahead-dark@card', 7.07, _goalStatusTest, kMinText),
+      ('goal-status-behind-light@card', 2.00, _goalStatusTest, kMinText),
+      ('goal-status-behind-dark@card', 8.35, _goalStatusTest, kMinText),
+      ('goal-status-achieved-light@card', 2.37, _goalStatusTest, kMinText),
+      ('goal-status-achieved-dark@card', 7.07, _goalStatusTest, kMinText),
+      ('goal-status-archived-light@card', 4.83, _goalStatusTest, kMinText),
+      ('goal-status-archived-dark@card', 3.56, _goalStatusTest, kMinText),
+      ('health-tier-excellent-light@card', 3.77, _healthTierTest, kMinText),
+      ('health-tier-excellent-dark@card', 7.07, _healthTierTest, kMinText),
+      ('health-tier-good-light@card', 2.15, _healthTierTest, kMinText),
+      ('health-tier-good-dark@card', 10.74, _healthTierTest, kMinText),
+      ('health-tier-fair-light@card', 2.80, _healthTierTest, kMinText),
+      ('health-tier-fair-dark@card', 7.92, _healthTierTest, kMinText),
+      ('health-tier-poor-light@card', 4.83, _healthTierTest, kMinText),
+      ('health-tier-poor-dark@card', 4.76, _healthTierTest, kMinText),
+      ('health-badge-excellent-light@tint10', 2.95, _healthTierTest, kMinText),
+      ('health-badge-excellent-dark@tint10', 5.12, _healthTierTest, kMinText),
+      ('health-badge-good-light@tint10', 1.85, _healthTierTest, kMinText),
+      ('health-badge-good-dark@tint10', 6.79, _healthTierTest, kMinText),
+      ('health-badge-fair-light@tint10', 2.28, _healthTierTest, kMinText),
+      ('health-badge-fair-dark@tint10', 5.48, _healthTierTest, kMinText),
+      ('health-badge-poor-light@tint10', 3.53, _healthTierTest, kMinText),
+      ('health-badge-poor-dark@tint10', 3.82, _healthTierTest, kMinText),
+      ('health-suggestion-digit-light@fill', 2.77, _healthTierTest, kMinText),
+      ('health-suggestion-digit-dark@fill', 2.14, _healthTierTest, kMinText),
+      ('health-chart-lines-light@card', 3.77, _healthTierTest, graphic),
+      ('health-chart-lines-dark@card', 7.07, _healthTierTest, graphic),
+      ('score-change-positive-light@tint10', 2.53, _healthTierTest, kMinText),
+      ('score-change-positive-dark@tint10', 5.62, _healthTierTest, kMinText),
+      ('score-change-negative-light@tint10', 3.23, _healthTierTest, kMinText),
+      ('score-change-negative-dark@tint10', 4.44, _healthTierTest, kMinText),
+    ])
+      ContrastPair.widget(
+        id,
+        rows: const [],
+        audit: audit,
+        min: min,
+        addedByPlan: true,
+        widgetTest: test,
+      ),
   ];
 }

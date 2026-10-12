@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -42,7 +43,15 @@ class ScoreImprovementBadge extends ConsumerWidget {
   Widget _buildBadge(int delta, BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isPositive = delta > 0;
-    final color = isPositive ? Colors.green : Colors.red;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // The text takes the deeper green or red in light; the tint and the border
+    // keep the bright hue so that the text reads on them.
+    final color = isPositive
+        ? (isDark ? AppColors.successDark : AppColors.successLight)
+        : (isDark ? AppColors.dangerDark : AppColors.dangerLight);
+    final tint = isPositive
+        ? (isDark ? AppColors.successDark : AppColors.successTintLight)
+        : (isDark ? AppColors.dangerDark : AppColors.dangerTintLight);
     final icon = isPositive ? Icons.trending_up : Icons.trending_down;
     final text = isPositive
         ? l10n.scoreImprovementPositive(delta)
@@ -53,9 +62,9 @@ class ScoreImprovementBadge extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: tint.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          border: Border.all(color: tint.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
