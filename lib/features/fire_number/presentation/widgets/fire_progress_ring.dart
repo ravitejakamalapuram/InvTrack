@@ -36,7 +36,8 @@ class FireProgressRing extends ConsumerWidget {
     final bgColor = isDark
         ? AppColors.neutral700Dark
         : AppColors.neutral200Light;
-    final progressColor = status.colorForBrightness(
+    // The ring sits on the purple hero card in both themes: the brighter hue.
+    final progressColor = status.vividColorForBrightness(
       isDark ? Brightness.dark : Brightness.light,
     );
     final locale = ref.watch(currencyLocaleProvider);

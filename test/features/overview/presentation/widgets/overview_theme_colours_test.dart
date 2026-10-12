@@ -1,10 +1,17 @@
 // The Overview paints the colours of the theme it is in. In dark, status text
 // and icons use the dark values; a light value there is a shade too dim on the
-// dark card, and the contrast PRs make it dimmer. In light nothing changes.
+// dark card. In light the green and red are the deeper values that read on
+// white, and anything tinted with them (the MOIC tile, the income pill) is
+// tinted with the brighter hue, so the pale fills keep their look.
 //
 // The Cash In and Out chart is the one place that paints fills, not text: its
 // bars and the legend swatches under them are one colour per series, so a
-// colour PR that changes the swatch has to change the bar with it.
+// colour PR that changes the swatch has to change the bar with it. In light
+// the bars are solid: 70% of the deeper green is 3.07:1 on the card, and a
+// tint of it is not allowed (the tints are made of the brighter hue).
+//
+// The ids in the test names are rows of test/core/theme/contrast_pairs.dart;
+// the guard finds them here.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -91,20 +98,38 @@ final _awaiting = InvestmentStats(
 );
 
 void main() {
-  for (final (brightness, success, neutral, error) in [
-    (
-      Brightness.light,
-      AppColors.successLight,
-      AppColors.neutral500Light,
-      AppColors.errorLight,
-    ),
-    (
-      Brightness.dark,
-      AppColors.successDark,
-      AppColors.neutral400Dark,
-      AppColors.errorDark,
-    ),
-  ]) {
+  for (final (
+        brightness,
+        success,
+        neutral,
+        error,
+        successTint,
+        cardGround,
+        cashOutId,
+        cashInId,
+      )
+      in [
+        (
+          Brightness.light,
+          AppColors.successLight,
+          AppColors.neutral500Light,
+          AppColors.errorLight,
+          AppColors.successTintLight,
+          AppColors.cardLight,
+          'overview-cash-out-bar-light@card',
+          'overview-cash-in-bar-light@card',
+        ),
+        (
+          Brightness.dark,
+          AppColors.successDark,
+          AppColors.neutral400Dark,
+          AppColors.errorDark,
+          AppColors.successDark,
+          AppColors.cardDark,
+          'overview-cash-out-bar-dark@card',
+          'overview-cash-in-bar-dark@card',
+        ),
+      ]) {
     group('in $brightness', () {
       testWidgets('the MOIC tile icon is the success colour', (tester) async {
         await _pump(
@@ -118,6 +143,36 @@ void main() {
         expect(
           tester.widget<Icon>(find.byIcon(Icons.trending_up)).color,
           success,
+        );
+      });
+
+      testWidgets('the MOIC tile disc is tinted with the brighter hue', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          OverviewQuickStats(
+            stats: _closed,
+            openStats: InvestmentStats.empty(),
+          ),
+          brightness,
+        );
+        final disc = tester.widget<Container>(
+          find
+              .ancestor(
+                of: find.byIcon(Icons.trending_up),
+                matching: find.byWidgetPredicate(
+                  (w) =>
+                      w is Container &&
+                      w.decoration is BoxDecoration &&
+                      (w.decoration! as BoxDecoration).color != null,
+                ),
+              )
+              .first,
+        );
+        expect(
+          (disc.decoration! as BoxDecoration).color,
+          successTint.withValues(alpha: 0.1),
         );
       });
 
@@ -165,16 +220,35 @@ void main() {
             valuationDateProvider.overrideWithValue(DateTime(2026, 10, 4)),
           ],
         );
-        final change = tester.widget<Text>(
-          find.textContaining('Income +12.5%'),
-        );
+        final label = find.textContaining('Income +12.5%');
+        final change = tester.widget<Text>(label);
         expect(change.style!.color, success);
-        if (brightness == Brightness.dark) {
-          expect(
-            contrastRatio(change.style!.color!, AppColors.cardDark),
-            greaterThanOrEqualTo(kMinText),
-          );
-        }
+        // The pill is tinted with the brighter hue; the label on it reads 4.5.
+        final pill = tester.widget<Container>(
+          find
+              .ancestor(
+                of: label,
+                matching: find.byWidgetPredicate(
+                  (w) =>
+                      w is Container &&
+                      w.decoration is BoxDecoration &&
+                      (w.decoration! as BoxDecoration).color != null,
+                ),
+              )
+              .first,
+        );
+        final fill = (pill.decoration! as BoxDecoration).color!;
+        expect(fill, successTint.withValues(alpha: 0.1));
+        expect(
+          contrastRatio(change.style!.color!, composeOver(fill, cardGround)),
+          greaterThanOrEqualTo(kMinText),
+          reason: brightness == Brightness.dark
+              ? 'income pill in dark'
+              : 'yoy-pill-success-light@tint10',
+        );
+        // Colour is not the only carrier: the label has the sign and the icon
+        // points up.
+        expect(find.byIcon(Icons.trending_up), findsWidgets);
       });
 
       testWidgets(
@@ -202,7 +276,7 @@ void main() {
               ),
             ],
           );
-          Iterable<Color> fills(bool Function(Container) isIt) => [
+          List<Color> fills(bool Function(Container) isIt) => [
             for (final w in tester.widgetList<Container>(
               find.byType(Container),
             ))
@@ -220,20 +294,26 @@ void main() {
                 c.decoration is BoxDecoration &&
                 c.constraints == BoxConstraints.tightFor(width: 12, height: 12),
           );
+          // Dark bars are 70% of the dark colour; light bars are solid.
+          final alpha = brightness == Brightness.dark ? 0.7 : 1.0;
           expect(bars, [
-            error.withValues(alpha: 0.7),
-            success.withValues(alpha: 0.7),
+            error.withValues(alpha: alpha),
+            success.withValues(alpha: alpha),
           ]);
           expect(swatches, [error, success]);
-          if (brightness == Brightness.dark) {
-            // A data graphic needs 3:1 against the card it is drawn on.
-            for (final fill in [...bars, ...swatches]) {
-              expect(
-                contrastRatio(fill, AppColors.cardDark),
-                greaterThanOrEqualTo(kMinGraphic),
-                reason: fill.toString(),
-              );
-            }
+          // A data graphic needs 3:1 against the card it is drawn on, in both
+          // themes; the swatch is the bar's colour without the alpha.
+          for (final (id, fill) in [
+            (cashOutId, bars[0]),
+            (cashInId, bars[1]),
+            (cashOutId, swatches[0]),
+            (cashInId, swatches[1]),
+          ]) {
+            expect(
+              contrastRatio(fill, cardGround),
+              greaterThanOrEqualTo(kMinGraphic),
+              reason: id,
+            );
           }
         },
       );

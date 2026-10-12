@@ -219,12 +219,12 @@
         ? '<div class="it-metric__change" style="color:' + (o.positive === false ? 'var(--danger)' : 'var(--success)') + '">' +
           icon(trend(o.positive !== false), { size: 14 }) + '<span>' + esc(o.change) + '</span></div>' : '';
       return '<div class="it-metric" role="group" aria-label="' + esc(o.label + ': ' + o.value + (o.change != null ? ', Trending ' + (o.positive === false ? 'down' : 'up') + ' ' + o.change : '')) + '">' +
-        '<div class="it-metric__head">' + (o.icon ? '<span class="it-metric__icon"' + sty({ '--c': c }) + '>' + icon(o.icon, { size: 16 }) + '</span>' : '') +
+        '<div class="it-metric__head">' + (o.icon ? '<span class="it-metric__icon"' + sty({ '--c': c, '--tint': o.tint }) + '>' + icon(o.icon, { size: 16 }) + '</span>' : '') +
         '<span class="it-metric__label">' + esc(o.label) + '</span></div>' +
         '<div class="it-metric__value">' + (o.sensitive ? amount(o.value) : esc(o.value)) + '</div>' + ch + '</div>';
     }
     if (k === 'quick') {
-      return GlassCard('<div class="it-quick"><span class="it-quick__icon"' + sty({ '--c': c }) + '>' + icon(o.icon, { size: 24 }) + '</span><div>' +
+      return GlassCard('<div class="it-quick"><span class="it-quick__icon"' + sty({ '--c': c, '--tint': o.tint }) + '>' + icon(o.icon, { size: 24 }) + '</span><div>' +
         '<div class="it-quick__label">' + esc(o.label) + '</div><div class="it-quick__value">' + (o.sensitive === false ? esc(o.value) : amount(o.value)) + '</div>' +
         (o.sub ? '<div class="it-quick__sub it-hide-private">' + esc(o.sub) + '</div>' : '') + '</div></div>', { padding: '16px' });
     }
@@ -235,10 +235,12 @@
     }
     if (k === 'net') {
       var accent = o.neutral ? 'var(--text-muted)' : (o.positive === false ? 'var(--danger)' : 'var(--success)');
+      // The disc and the badge are tinted with the brighter hue (successTintLight, dangerTintLight in light), so the text on them keeps 4.5:1.
+      var accentTint = o.neutral ? accent : (o.positive === false ? 'var(--it-danger-tint)' : 'var(--it-success-tint)');
       var badge = o.status
         ? '<span class="it-pill" style="color:var(--text-muted);background:color-mix(in srgb,var(--text-muted) 15%,transparent)">' + esc(o.status) + '</span>'
-        : '<span class="it-pill it-hide-private" style="font-size:14px;font-weight:600;color:' + accent + ';background:color-mix(in srgb,' + accent + ' 15%,transparent)">' + esc(o.returnText) + '</span>';
-      return GlassCard('<div class="it-netpos"><span class="it-netpos__icon"' + sty({ '--c': accent }) + '>' + icon(o.neutral ? 'hourglass_top' : trend(o.positive !== false), { size: 28 }) + '</span>' +
+        : '<span class="it-pill it-hide-private" style="font-size:14px;font-weight:600;color:' + accent + ';background:color-mix(in srgb,' + accentTint + ' 15%,transparent)">' + esc(o.returnText) + '</span>';
+      return GlassCard('<div class="it-netpos"><span class="it-netpos__icon"' + sty({ '--c': accent, '--tint': accentTint }) + '>' + icon(o.neutral ? 'hourglass_top' : trend(o.positive !== false), { size: 28 }) + '</span>' +
         '<div style="flex:1;min-width:0"><div class="it-netpos__label">' + esc(o.label) + '</div><div class="it-netpos__value">' + amount(o.value) + '</div></div>' + badge + '</div>', { padding: '16px' });
     }
     if (k === 'current') {
@@ -285,7 +287,9 @@
     }
     if (k === 'maturity') {
       var tone = { success: 'var(--success)', warning: 'var(--warning)', accent: 'var(--accent)' }[o.tone || 'accent'];
-      return '<span class="it-tag it-tag--strong"' + sty({ '--c': tone }) + '>' + (o.icon ? icon(o.icon, { size: 10 }) : '') + '<span class="it-tag__t">' + esc(o.label) + '</span></span>';
+      // MATURED is tinted with the brighter green, not the text green (4.67:1 against 4.34:1).
+      var toneTint = { success: 'var(--it-success-tint)' }[o.tone || 'accent'] || tone;
+      return '<span class="it-tag it-tag--strong"' + sty({ '--c': tone, '--tint': toneTint }) + '>' + (o.icon ? icon(o.icon, { size: 10 }) : '') + '<span class="it-tag__t">' + esc(o.label) + '</span></span>';
     }
     if (k === 'type') return '<span class="it-tag"' + sty({ '--c': o.color }) + '>' + esc(o.label) + '</span>';
     if (k === 'closed') return '<span class="it-tag it-tag--closed">CLOSED</span>';
@@ -528,7 +532,7 @@
         '<span class="it-inv__got">' + amount(o.received) + '</span><span class="it-inv__w">received</span></div>' +
         '<span class="it-inv__badge it-inv__badge--status">' + esc(o.status) + '</span></div>'
       : '<div class="it-inv__val"><div class="it-inv__net" style="color:' + netCol + '">' + amount((o.positive === false ? '-' : '+') + o.net.replace(/^[-+]/, '')) + '</div>' +
-        (o.badge ? '<span class="it-inv__badge it-hide-private" style="--c:' + (o.badge.positive === false ? 'var(--danger)' : 'var(--graph-emerald)') + '">' + esc(o.badge.text) + '</span>' : '') + '</div>';
+        (o.badge ? '<span class="it-inv__badge it-hide-private" style="--c:' + (o.badge.positive === false ? 'var(--danger);--tint:var(--it-danger-tint)' : 'var(--graph-emerald)') + '">' + esc(o.badge.text) + '</span>' : '') + '</div>';
     var strip = '<div class="it-inv__strip"><span>' + icon('update', { size: 12 }) + esc(o.last) + '</span><span>' + icon('receipt_long', { size: 12 }) + esc(o.entries) + '</span>' +
       (awaiting ? '' : '<span class="it-sp"></span>' + (o.invested ? '<span><b>Invested: </b>' + amount(o.invested) + '</span>' : '<a href="#" onclick="return false">View Details</a>')) + '</div>';
     var label = (o.closed ? 'Closed' : 'Open') + ' investment: ' + (o.name || '') + '. Type: ' + (o.typeName || t[0]);

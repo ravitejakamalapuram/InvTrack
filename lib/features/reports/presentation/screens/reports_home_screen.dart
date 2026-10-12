@@ -9,6 +9,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -27,6 +28,7 @@ class ReportsHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Watch smart insights (pass l10n for localization)
     final smartInsightsAsync = ref.watch(smartInsightsProvider(l10n));
@@ -151,7 +153,13 @@ class ReportsHomeScreen extends ConsumerWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2),
+                            // Light: the brighter red at 10%. The deeper error
+                            // red tinted at 20% leaves the count at 3.85:1.
+                            color: isDark
+                                ? AppColors.errorDark.withValues(alpha: 0.2)
+                                : AppColors.dangerTintLight.withValues(
+                                    alpha: 0.1,
+                                  ),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(

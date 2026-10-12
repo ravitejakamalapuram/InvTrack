@@ -6,7 +6,7 @@ Use it for every text input in a form. In a dialog the bare Material `TextFormFi
 
 - Label above: `body-large` (18px) at weight 600 in `text`, at least 44 x 44 so tapping it focuses the field, 8px above the box. It is excluded from the semantics tree because the field carries the same label.
 - Box: `surface` fill, 1px `field-border`, `radius-field` 14, padding 16 x 16 (56px tall), text `body` 16 in `text`. Hint `body` in `text-subtle`. Prefix icon 24px in `text-muted`, or prefix text (for example "₹") in `text`. A 20px clear button (cancel icon, `neutral-400-light`; `neutral-400-dark` in dark) appears while the field has text and is editable.
-- Focus: a 2px border in `primary` (`#5b4cdb` in light, `#8b7cf6` in dark). Error: 1px `error` border (2px when focused; `#ef4444` in light, `#f87171` in dark) and a message below.
+- Focus: a 2px border in `primary` (`#5b4cdb` in light, `#8b7cf6` in dark). Error: 1px `error` border (2px when focused; `#cc1926` in light, `#f87171` in dark) and a message below.
 - Multi-line: `maxLines` greater than 1; icons align to the top.
 - Read-only and disabled fields keep the clear button hidden.
 - Hint while empty (`showHintWhenEmpty`, off by default): normally the label also sits inside an empty, unfocused field, which hides the hint and a text prefix until the field is focused. With it on, the field shows its hint and prefix as they are in the HTML mock (a rupee sign and "e.g. 1,00,000"), and only the label above the box remains; a screen reader still hears the label, then the hint. Used by the add-investment fields behind the first investment flow (name, amount, rate).
@@ -31,7 +31,7 @@ Empty with hint · filled with clear button · focused · error with message · 
 
 ## Contrast
 
-`field-border` is 1.26:1 on `card` (light) and 1.31:1 on `background` (dark) against the 3:1 asked of a control boundary; the field is told apart by its fill and focus border. The hint (`text-subtle`) is 4.60:1 on `surface` in light and 5.23:1 on #0a0a0a in dark. The focus border is `#5b4cdb`, 5.50:1 on `surface`, in light and `#8b7cf6`, 5.95:1 on #0a0a0a, in dark. The `error` red is 3.45:1 on `surface` in light. Kept as drawn.
+`field-border` is 1.26:1 on `card` (light) and 1.31:1 on `background` (dark) against the 3:1 asked of a control boundary; the field is told apart by its fill and focus border. The hint (`text-subtle`) is 4.60:1 on `surface` in light and 5.23:1 on #0a0a0a in dark. The focus border is `#5b4cdb`, 5.50:1 on `surface`, in light and `#8b7cf6`, 5.95:1 on #0a0a0a, in dark. The `error` red is `#cc1926` in light, 5.15:1 on `surface`.
 
 ## Source
 

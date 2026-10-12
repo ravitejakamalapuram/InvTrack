@@ -87,6 +87,24 @@ void main() {
       expect(bar.backgroundColor, AppColors.successLight);
       expect(_iconColor(tester), Colors.white);
     });
+
+    testWidgets(
+      'copied-snackbar-label-light: the label and icon read on the deeper green',
+      (tester) async {
+        final bar = await _copied(tester, AppTheme.lightTheme);
+        final fill = bar.backgroundColor!;
+        expect(
+          contrastRatio(_labelColor(tester), fill),
+          greaterThanOrEqualTo(kMinText),
+          reason: 'copied-snackbar-label-light',
+        );
+        expect(
+          contrastRatio(_iconColor(tester), fill),
+          greaterThanOrEqualTo(kMinGraphic),
+          reason: 'the check icon on the fill',
+        );
+      },
+    );
   });
 
   group('the Copied snackbar in dark', () {

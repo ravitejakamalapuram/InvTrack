@@ -56,6 +56,21 @@ extension FireProgressStatusUI on FireProgressStatus {
     }
   }
 
+  /// The status colour for a tint (10 to 30% fills) and for the purple hero
+  /// card: the original, brighter hue. It differs from [colorForBrightness]
+  /// only for the two green statuses in light, whose text colour got deeper to
+  /// read on white. A tint of the deeper green puts the label on it under
+  /// 4.5:1, and on the purple hero the deeper green would be 1.0:1.
+  Color vividColorForBrightness(Brightness brightness) {
+    if (this == FireProgressStatus.ahead ||
+        this == FireProgressStatus.achieved) {
+      return brightness == Brightness.dark
+          ? AppColors.successDark
+          : AppColors.successTintLight;
+    }
+    return colorForBrightness(brightness);
+  }
+
   /// Icon representing this status
   IconData get icon {
     switch (this) {

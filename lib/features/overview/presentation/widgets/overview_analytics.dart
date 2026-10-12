@@ -94,11 +94,14 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                                             ? (d.outflows / maxValue * 80)
                                             : 0,
                                         decoration: BoxDecoration(
-                                          color:
-                                              (isDark
-                                                      ? AppColors.errorDark
-                                                      : AppColors.errorLight)
-                                                  .withValues(alpha: 0.7),
+                                          // Solid in light: 70% of the deeper
+                                          // red is 3.62:1 on the card, and a
+                                          // tint of it is not allowed.
+                                          color: isDark
+                                              ? AppColors.errorDark.withValues(
+                                                  alpha: 0.7,
+                                                )
+                                              : AppColors.errorLight,
                                           borderRadius:
                                               const BorderRadius.vertical(
                                                 top: Radius.circular(4),
@@ -113,11 +116,12 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                                             ? (d.inflows / maxValue * 80)
                                             : 0,
                                         decoration: BoxDecoration(
-                                          color:
-                                              (isDark
-                                                      ? AppColors.successDark
-                                                      : AppColors.successLight)
-                                                  .withValues(alpha: 0.7),
+                                          // Solid in light: 70% of the deeper
+                                          // green is 3.07:1 on the card.
+                                          color: isDark
+                                              ? AppColors.successDark
+                                                    .withValues(alpha: 0.7)
+                                              : AppColors.successLight,
                                           borderRadius:
                                               const BorderRadius.vertical(
                                                 top: Radius.circular(4),
@@ -532,6 +536,10 @@ class YoYComparisonCard extends ConsumerWidget {
     final color = isUp
         ? (isDark ? AppColors.successDark : AppColors.successLight)
         : neutral;
+    // The pill is tinted with the brighter green, so the label keeps 4.5:1.
+    final tint = isUp
+        ? (isDark ? AppColors.successDark : AppColors.successTintLight)
+        : neutral;
     final icon = isUp
         ? Icons.trending_up
         : change < 0
@@ -543,7 +551,7 @@ class YoYComparisonCard extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: tint.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(

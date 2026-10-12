@@ -241,20 +241,72 @@ void main() {
         reason: 'error-light-in-dark@tint10',
       );
     });
+  });
 
-    testWidgets('light mode keeps errorLight', (tester) async {
-      await _pump(
-        tester,
-        investment: closed,
-        stats: loss,
-        xirr: xirr,
-        brightness: light,
-      );
-      final net = tester.widget<CompactAmountText>(
-        find.byType(CompactAmountText).first,
-      );
-      expect(net.style!.color, AppColors.errorLight);
-    });
+  group('a loss in light', () {
+    final loss = _stats(invested: 100000, returned: 50000, xirr: -0.5258);
+    const xirr = XirrResult.exact(-0.5258);
+    final closed = _investment('loss', status: InvestmentStatus.closed);
+
+    testWidgets(
+      'the net figure is errorLight, reaches 4.5 and keeps its sign',
+      (tester) async {
+        await _pump(
+          tester,
+          investment: closed,
+          stats: loss,
+          xirr: xirr,
+          brightness: light,
+        );
+        final net = tester.widget<CompactAmountText>(
+          find.byType(CompactAmountText).first,
+        );
+        expect(net.style!.color, AppColors.errorLight);
+        expect(
+          contrastRatio(net.style!.color!, AppColors.cardLight),
+          greaterThanOrEqualTo(kMinText),
+          reason: 'danger-light@card',
+        );
+        // Colour is not the only carrier of a loss: the figure has a minus.
+        expect(net.prefix, '-');
+      },
+    );
+
+    testWidgets(
+      'card-xirr-pill-error-light@tint10: the return pill reaches 4.5 and keeps its sign',
+      (tester) async {
+        await _pump(
+          tester,
+          investment: closed,
+          stats: loss,
+          xirr: xirr,
+          brightness: light,
+        );
+        final text = find.descendant(
+          of: find.byType(AnimatedOpacity),
+          matching: find.byType(Text),
+        );
+        expect(text, findsOneWidget);
+        final color = _textColor(tester, text);
+        expect(color, AppColors.errorLight);
+        // The pill is tinted with the old, brighter red, not the deeper text
+        // colour: text on a tint of itself falls under 4.5.
+        final tint = _tintBehind(tester, text, AppColors.cardLight);
+        expect(
+          tint,
+          composeOver(
+            AppColors.dangerTintLight.withValues(alpha: 0.1),
+            AppColors.cardLight,
+          ),
+        );
+        expect(
+          contrastRatio(color, tint),
+          greaterThanOrEqualTo(kMinText),
+          reason: 'card-xirr-pill-error-light@tint10',
+        );
+        expect(tester.widget<Text>(text).data, startsWith('-'));
+      },
+    );
   });
 
   group('maturity chips', () {
@@ -292,6 +344,25 @@ void main() {
               contrastRatio(color, ground),
               greaterThanOrEqualTo(kMinText),
             );
+          }
+          if (theme == light && label == 'MATURED') {
+            // The chip is tinted with the old, brighter green. Tinted with
+            // the deeper text colour it would be 4.34, under 4.5.
+            final ground = _tintBehind(tester, text, AppColors.cardLight);
+            expect(
+              ground,
+              composeOver(
+                AppColors.successTintLight.withValues(alpha: 0.15),
+                AppColors.cardLight,
+              ),
+            );
+            expect(
+              contrastRatio(color, ground),
+              greaterThanOrEqualTo(kMinText),
+              reason: 'maturity-matured-light@tint15',
+            );
+            // The icon is the same colour; the word is the carrier.
+            expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
           }
         });
       }

@@ -156,7 +156,7 @@ class _GoalsDashboardCardState extends ConsumerState<GoalsDashboardCard> {
               vertical: AppSpacing.xxs,
             ),
             decoration: BoxDecoration(
-              color: AppColors.successLight.withValues(alpha: 0.1),
+              color: AppColors.successTintLight.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(

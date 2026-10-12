@@ -32,6 +32,10 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
   /// none.
   final VoidCallback? onUpdateCurrentValue;
 
+  /// The moment the maturity card counts from; the real clock when null. Only
+  /// the golden gallery passes one, so its picture does not change daily.
+  final DateTime? now;
+
   const InvestmentDetailStatsSection({
     super.key,
     required this.stats,
@@ -40,6 +44,7 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
     required this.currencyFormat,
     required this.isPrivacyMode,
     this.onUpdateCurrentValue,
+    this.now,
   });
 
   @override
@@ -179,7 +184,11 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
         // Maturity date card (if applicable)
         if (investment.hasMaturityDate) ...[
           const SizedBox(height: 10),
-          _MaturityCard(maturityDate: investment.maturityDate!, isDark: isDark),
+          _MaturityCard(
+            maturityDate: investment.maturityDate!,
+            isDark: isDark,
+            now: now,
+          ),
         ],
       ],
     );
@@ -278,6 +287,12 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
         : isPositive
         ? (isDark ? AppColors.successDark : AppColors.successLight)
         : (isDark ? AppColors.errorDark : AppColors.errorLight);
+    // The disc behind the icon is tinted with the brighter hue.
+    final accentTint = status != null
+        ? _neutralColor
+        : isPositive
+        ? (isDark ? AppColors.successDark : AppColors.successTintLight)
+        : (isDark ? AppColors.errorDark : AppColors.dangerTintLight);
     final netPositionStyle = AppTypography.h2.copyWith(
       color: isDark ? Colors.white : AppColors.neutral900Light,
       fontWeight: FontWeight.w700,
@@ -295,7 +310,7 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.1),
+                  color: accentTint.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
@@ -382,10 +397,15 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
     final color = isPositive
         ? (isDark ? AppColors.successDark : AppColors.successLight)
         : (isDark ? AppColors.errorDark : AppColors.errorLight);
+    // The badge is tinted with the brighter hue: on a tint of the deeper text
+    // colour the figure would be 4.34:1 (green) or 4.38:1 (red).
+    final tint = isPositive
+        ? (isDark ? AppColors.successDark : AppColors.successTintLight)
+        : (isDark ? AppColors.errorDark : AppColors.dangerTintLight);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: tint.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -602,12 +622,17 @@ class _CurrentValueCard extends StatelessWidget {
 class _MaturityCard extends StatelessWidget {
   final DateTime maturityDate;
   final bool isDark;
+  final DateTime? now;
 
-  const _MaturityCard({required this.maturityDate, required this.isDark});
+  const _MaturityCard({
+    required this.maturityDate,
+    required this.isDark,
+    this.now,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
+    final now = this.now ?? DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final maturity = DateTime(
       maturityDate.year,
@@ -619,6 +644,10 @@ class _MaturityCard extends StatelessWidget {
     final (statusColor, statusIcon, statusText) = _getMaturityStatus(
       daysUntilMaturity,
     );
+    // A matured row is tinted with the brighter green, not the text green.
+    final statusTint = daysUntilMaturity < 0
+        ? (isDark ? AppColors.successDark : AppColors.successTintLight)
+        : statusColor;
 
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -630,7 +659,7 @@ class _MaturityCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.15),
+                  color: statusTint.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(statusIcon, size: 18, color: statusColor),
@@ -662,7 +691,7 @@ class _MaturityCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.15),
+              color: statusTint.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(

@@ -14,13 +14,32 @@ class AppColors {
   static const Color accentLight = Color(0xFF0EA5E9);
   static const Color accentDarkLight = Color(0xFF0284C7);
 
-  // Success - Emerald Green (premium feel)
-  static const Color successLight = Color(0xFF10B981);
+  // Success - Emerald Green (premium feel). Deep enough to read as text:
+  // 5.37:1 on the card, 4.73:1 on `successBgLight`, 5.37:1 under a white label.
+  static const Color successLight = Color(0xFF007A54);
   static const Color successBgLight = Color(0xFFD1FAE5);
 
-  // Danger - Coral Red (softer, premium)
-  static const Color dangerLight = Color(0xFFEF4444);
+  // Danger - Coral Red (softer, premium). 5.62:1 on the card, 4.60:1 on
+  // `dangerBgLight`, 5.62:1 under a white label.
+  static const Color dangerLight = Color(0xFFCC1926);
   static const Color dangerBgLight = Color(0xFFFEE2E2);
+
+  // Tint sources: the brighter hues that `successLight` and `dangerLight` had
+  // before they were deepened for text. Make every 10 to 30% tint of green or
+  // red from these, so the pale fills keep their look and the text on them
+  // keeps 4.5:1 (on a tint of the deeper colour it falls to 4.34 and 4.38 at
+  // 15%). Never paint them as text.
+  //
+  // Text reaches 4.5:1 on a 15% tint only over the card (4.67 and 4.63); over
+  // the page it is 4.48 and 4.45 and over `surfaceLight` 4.31 and 4.25. A 15%
+  // chip belongs inside a GlassCard; on the page or a sheet use 10%.
+  //
+  // A scan test (theme_aware_sites_test.dart) fails a bare read of these and a
+  // direct `.withValues` on the deeper colours. It does not see a colour held
+  // in a variable, an alias, a `Color.lerp` or a hex copy: those tints are
+  // split by hand and a widget test pumps each one.
+  static const Color successTintLight = Color(0xFF10B981);
+  static const Color dangerTintLight = Color(0xFFEF4444);
 
   // Warning - Rich Amber
   static const Color warningLight = Color(0xFFF59E0B);

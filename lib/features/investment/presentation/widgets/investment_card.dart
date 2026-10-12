@@ -509,7 +509,7 @@ class _InvestmentInfo extends StatelessWidget {
                   vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: maturityInfo.color.withValues(alpha: 0.15),
+                  color: maturityInfo.tint.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
@@ -560,6 +560,9 @@ class _InvestmentInfo extends StatelessWidget {
       return _MaturityInfo(
         label: 'MATURED',
         color: isDark ? AppColors.successDark : AppColors.successLight,
+        // Tinted with the brighter green: on a tint of the deeper text green
+        // the label would be 4.34:1.
+        tint: isDark ? AppColors.successDark : AppColors.successTintLight,
         icon: Icons.check_circle_rounded,
       );
     }
@@ -598,14 +601,21 @@ class _InvestmentInfo extends StatelessWidget {
 /// Helper class for maturity badge info
 class _MaturityInfo {
   final String label;
+
+  /// The colour of the label and the icon.
   final Color color;
+
+  /// The colour the chip is tinted with: [color] unless the label's colour is
+  /// deeper than the hue the chip should have.
+  final Color tint;
   final IconData icon;
 
   const _MaturityInfo({
     required this.label,
     required this.color,
+    Color? tint,
     required this.icon,
-  });
+  }) : tint = tint ?? color;
 }
 
 /// Displays the investment value and return percentage.
@@ -706,10 +716,18 @@ class _InvestmentValueColumn extends StatelessWidget {
                 if (!isShortHolding && !isValidXirr(xirr!) && !isAboveMax) {
                   return const SizedBox.shrink();
                 }
-                final xirrColor =
-                    (isShortHolding ? stats.absoluteReturn : xirr!) >= 0
+                final isGain =
+                    (isShortHolding ? stats.absoluteReturn : xirr!) >= 0;
+                final xirrColor = isGain
                     ? AppColors.graphEmerald
                     : (isDark ? AppColors.errorDark : AppColors.errorLight);
+                // A loss is tinted with the brighter red: on a tint of the
+                // deeper text red the pill would fall under 4.5:1.
+                final xirrTint = isGain
+                    ? AppColors.graphEmerald
+                    : (isDark
+                          ? AppColors.errorDark
+                          : AppColors.dangerTintLight);
                 final xirrFormatted = display.pillText(l10n);
 
                 return AnimatedOpacity(
@@ -721,7 +739,7 @@ class _InvestmentValueColumn extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: xirrColor.withValues(alpha: 0.1),
+                      color: xirrTint.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(xirrFormatted, style: _pillStyle(xirrColor)),

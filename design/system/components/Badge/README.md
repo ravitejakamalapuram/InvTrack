@@ -23,7 +23,7 @@ Use a badge for one short fact beside a value. Use a `Chip` when the label can b
 
 ## Contrast
 
-`success` on `success-bg` 2.24:1, `danger` on `danger-bg` 3.08:1; `warning` on its tint 1.91:1, `accent` 2.39:1, the grey `CLOSED` 2.27:1; the compact currency badge's `primary` on its 20% tint is 4.45:1. Kept as drawn; the arrow, the sign and the words carry the meaning. An outlined zero badge passes: `neutral-600-light` on the light page 7.30:1, `neutral-500-dark` on the dark page 5.23:1.
+`success` on `success-bg` 4.73:1, `danger` on `danger-bg` 4.60:1 (both pass); `warning` on its tint 1.91:1, `accent` 2.39:1, the grey `CLOSED` 2.27:1; the compact currency badge's `primary` on its 20% tint is 4.45:1. Kept as drawn; the arrow, the sign and the words carry the meaning. An outlined zero badge passes: `neutral-600-light` on the light page 7.30:1, `neutral-500-dark` on the dark page 5.23:1.
 
 ## Source
 

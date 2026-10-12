@@ -140,12 +140,19 @@ class CashFlowCardWidget extends ConsumerWidget {
     );
   }
 
+  /// What the icon disc and the type label are tinted with: the brighter hue
+  /// in light. On a tint of the deeper red or green the label would be under
+  /// 4.5:1.
+  Color get _tint => cashFlow.type.isOutflow
+      ? (isDark ? AppColors.errorDark : AppColors.dangerTintLight)
+      : (isDark ? AppColors.successDark : AppColors.successTintLight);
+
   Widget _buildIcon(Color color, bool isOutflow) {
     return Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: _tint.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(
@@ -164,7 +171,7 @@ class CashFlowCardWidget extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
+            color: _tint.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(

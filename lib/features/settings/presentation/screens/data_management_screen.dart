@@ -194,10 +194,10 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
             child: Container(
               padding: EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.errorLight.withValues(alpha: 0.1),
+                color: AppColors.dangerTintLight.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.errorLight.withValues(alpha: 0.3),
+                  color: AppColors.dangerTintLight.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(

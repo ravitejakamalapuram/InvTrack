@@ -1074,7 +1074,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                     Container(
                       padding: EdgeInsets.all(AppSpacing.xs),
                       decoration: BoxDecoration(
-                        color: AppColors.successLight.withValues(alpha: 0.1),
+                        color: AppColors.successTintLight.withValues(
+                          alpha: 0.1,
+                        ),
                         borderRadius: AppSizes.borderRadiusSm,
                       ),
                       child: Icon(

@@ -42,10 +42,12 @@ import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_carousel_card.dart';
+import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/cash_flow_card_widget.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_card.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_stats_section.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_analytics.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_empty_state.dart';
@@ -525,6 +527,73 @@ final _scenes = <String, _Scene>{
         ],
       ),
     ),
+  ),
+  // The investment detail: the net position, the return badge and the
+  // maturity row, for a gain that has matured and for a loss.
+  'detail_stats': _Scene(
+    height: 1500,
+    build: () => Padding(
+      padding: const EdgeInsets.all(16),
+      child: Builder(
+        builder: (context) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          Widget section(InvestmentEntity investment, InvestmentStats stats) =>
+              InvestmentDetailStatsSection(
+                stats: stats,
+                investment: investment,
+                isDark: isDark,
+                currencyFormat: _inr,
+                isPrivacyMode: false,
+                now: _today,
+              );
+          return Column(
+            children: [
+              section(
+                _investment(
+                  'demo-7',
+                  'Demo fixed deposit',
+                  InvestmentType.fixedDeposit,
+                  status: InvestmentStatus.closed,
+                  maturity: DateTime(2025, 10, 1),
+                ),
+                _paidOut(1000000, 1114000, 0.114),
+              ),
+              const SizedBox(height: 24),
+              section(
+                _investment(
+                  'demo-8',
+                  'Demo stocks',
+                  InvestmentType.stocks,
+                  status: InvestmentStatus.closed,
+                ),
+                _paidOut(100000, 50000, -0.5258),
+              ),
+            ],
+          );
+        },
+      ),
+    ),
+  ),
+  // The goals strip on the Overview: the "achieved" count in a green chip.
+  'goals_dashboard_card': _Scene(
+    height: 300,
+    overrides: [
+      currencyLocaleProvider.overrideWith((ref) => 'en_IN'),
+      multiCurrencyGoalsSummaryProvider.overrideWith(
+        (ref) => Future.value(
+          GoalsSummary(
+            totalGoals: 2,
+            achievedGoals: 1,
+            onTrackGoals: 1,
+            behindGoals: 0,
+            averageProgress: 80,
+            completedGoals: [_goalAchieved],
+          ),
+        ),
+      ),
+    ],
+    build: () =>
+        const Padding(padding: EdgeInsets.all(16), child: GoalsDashboardCard()),
   ),
   'cash_flow_rows': _Scene(
     height: 300,

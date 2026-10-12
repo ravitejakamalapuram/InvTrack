@@ -128,6 +128,11 @@ class FireDashboardCard extends ConsumerWidget {
     final statusColor = status.colorForBrightness(
       isDark ? Brightness.dark : Brightness.light,
     );
+    // The chip is tinted with the brighter hue: on a tint of the deeper green
+    // the label would be 4.34:1.
+    final statusTint = status.vividColorForBrightness(
+      isDark ? Brightness.dark : Brightness.light,
+    );
 
     return GlassCard(
       onTap: () {
@@ -156,7 +161,7 @@ class FireDashboardCard extends ConsumerWidget {
                   vertical: AppSpacing.xxs,
                 ),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.15),
+                  color: statusTint.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(

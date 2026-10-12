@@ -14,7 +14,7 @@ Use it in the investment list, search results and selection mode. For a summary 
 
 ## States
 
-Closed · Open awaiting first payout · Open awaiting current value · Maturity chips · Selection mode · Privacy mode · No cash flows yet. A positive net cash flow and a positive return badge are `graph-emerald`; a negative net cash flow while a value exists is `danger` (#ef4444 in light, #f87171 in dark); the maturity chips use `success`, `warning` and `accent` the same way. While the investment awaits a value there is no net to colour: money still invested is not a loss, so the card shows invested and received in `text` and `text-secondary`. With no cash flows yet (`empty`) the value column is a `chevron_right` in `neutral-400-light` (`neutral-400-dark` in dark): no amount, no badge, and the strip offers View Details.
+Closed · Open awaiting first payout · Open awaiting current value · Maturity chips · Selection mode · Privacy mode · No cash flows yet. A positive net cash flow and a positive return badge are `graph-emerald`; a negative net cash flow while a value exists is `danger` (#cc1926 in light, #f87171 in dark), and a loss pill is tinted with `danger-tint` in light; the maturity chips use `success`, `warning` and `accent` the same way, and MATURED is tinted with `success-tint` in light (the label on it is 4.67:1; on a tint of `success` itself it would be 4.34:1). While the investment awaits a value there is no net to colour: money still invested is not a loss, so the card shows invested and received in `text` and `text-secondary`. With no cash flows yet (`empty`) the value column is a `chevron_right` in `neutral-400-light` (`neutral-400-dark` in dark): no amount, no badge, and the strip offers View Details.
 
 ## Consumer provides
 
@@ -30,7 +30,7 @@ Closed · Open awaiting first payout · Open awaiting current value · Maturity 
 
 ## Contrast
 
-Type chip text on its 10% tint fails in light for every type (1.35:1 gold to 4.27:1 other) and for P2P, Mutual Funds, Private Equity, Crypto and Other in dark (3.37:1 to 4.35:1); white on the type tile is 1.40:1 to 4.83:1; the closed chip (`#9e9e9e` on grey 20%) is 2.27:1 in light; maturity chips on their tint are 1.91:1 (warning), 2.19:1 (success) and 2.39:1 (accent) in light; in dark they use the dark values, and "View Details" is `primary` dark, 5.39:1 on the card. Kept as drawn; the labels carry the meaning.
+Type chip text on its 10% tint fails in light for every type (1.35:1 gold to 4.27:1 other) and for P2P, Mutual Funds, Private Equity, Crypto and Other in dark (3.37:1 to 4.35:1); white on the type tile is 1.40:1 to 4.83:1; the closed chip (`#9e9e9e` on grey 20%) is 2.27:1 in light; maturity chips on their tint are 1.91:1 (warning) and 2.39:1 (accent) in light (MATURED, in `success` on a 15% `success-tint`, is 4.67:1); in dark they use the dark values, and "View Details" is `primary` dark, 5.39:1 on the card. Kept as drawn; the labels carry the meaning.
 
 ## Source
 
