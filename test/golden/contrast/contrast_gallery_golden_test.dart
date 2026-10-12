@@ -587,6 +587,7 @@ final _scenes = <String, _Scene>{
                 isDark: isDark,
                 currencyFormat: _inr,
                 isPrivacyMode: false,
+                now: _today,
               );
           return Column(
             children: [
