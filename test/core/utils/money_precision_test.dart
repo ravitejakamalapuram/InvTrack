@@ -47,4 +47,36 @@ void main() {
       );
     });
   });
+
+  group('reachesMaxAmount', () {
+    test('is false up to the largest 15-digit amount', () {
+      expect(
+        MoneyPrecision.reachesMaxAmount(999999999999999, currencyCode: 'INR'),
+        isFalse,
+      );
+    });
+
+    test('is true from 1e15, and when rounding carries to 1e15', () {
+      expect(
+        MoneyPrecision.reachesMaxAmount(1e15, currencyCode: 'INR'),
+        isTrue,
+      );
+      expect(
+        MoneyPrecision.reachesMaxAmount(999999999999999.5, currencyCode: 'JPY'),
+        isTrue,
+      );
+    });
+
+    test('checks the amount as given when the currency is blank', () {
+      expect(MoneyPrecision.reachesMaxAmount(5, currencyCode: ' '), isFalse);
+      expect(MoneyPrecision.reachesMaxAmount(1e15, currencyCode: ''), isTrue);
+    });
+
+    test('is true for an amount that is not finite', () {
+      expect(
+        MoneyPrecision.reachesMaxAmount(double.nan, currencyCode: 'INR'),
+        isTrue,
+      );
+    });
+  });
 }

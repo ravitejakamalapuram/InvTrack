@@ -9,6 +9,7 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
+import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/widgets/currency_selector.dart';
@@ -266,7 +267,15 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
               maxLength: ValidationConstants.maxAmountLength,
               validator: (v) {
                 if (v == null || v.isEmpty) return 'Required';
-                if (double.tryParse(v) == null) return 'Invalid amount';
+                final parsed = double.tryParse(v);
+                if (parsed == null) return 'Invalid amount';
+                // 15 digits at most, also after rounding (rules 19.1, #996).
+                if (MoneyPrecision.reachesMaxAmount(
+                  parsed,
+                  currencyCode: _selectedCurrency,
+                )) {
+                  return l10n.amountInvestedTooLarge;
+                }
                 return null;
               },
             ),

@@ -5,6 +5,7 @@ import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/goals/data/repositories/firestore_goal_repository.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
@@ -139,6 +140,9 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
+      // Default to the user's base currency (Rule 21.2)
+      final String goalCurrency = currency ?? ref.read(currencyCodeProvider);
+      _validateTargetAmount(targetAmount, goalCurrency);
       final id = await _performanceService.trackOperation(
         'goal_create',
         () async {
@@ -155,8 +159,7 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
             linkedTypes: linkedTypes,
             icon: icon ?? GoalIcons.defaultIcon,
             colorValue: colorValue ?? GoalColors.defaultColor.toARGB32(),
-            // Default to the user's base currency (Rule 21.2)
-            currency: currency ?? ref.read(currencyCodeProvider),
+            currency: goalCurrency,
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );
@@ -185,6 +188,7 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
   Future<void> updateGoal(GoalEntity goal) async {
     state = const AsyncValue.loading();
     try {
+      _validateTargetAmount(goal.targetAmount, goal.currency);
       await _performanceService.trackOperation('goal_update', () async {
         final updatedGoal = goal.copyWith(updatedAt: DateTime.now());
         if (goal.isArchived) {
@@ -198,6 +202,16 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       rethrow;
+    }
+  }
+
+  /// Refuses a negative target amount and one of 16 digits or more, also one
+  /// that rounds up to 16 digits in [currencyCode] (invtrack_rules 19.1,
+  /// #996). Zero is allowed: an income goal has no target amount.
+  void _validateTargetAmount(double amount, String currencyCode) {
+    if (amount < 0) throw ValidationException.invalidAmount(amount);
+    if (MoneyPrecision.reachesMaxAmount(amount, currencyCode: currencyCode)) {
+      throw ValidationException.amountTooLarge();
     }
   }
 
