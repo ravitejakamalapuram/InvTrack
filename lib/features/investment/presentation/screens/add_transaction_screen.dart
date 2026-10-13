@@ -19,6 +19,7 @@ import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
 import 'package:inv_tracker/core/widgets/currency_selector.dart';
+import 'package:inv_tracker/core/widgets/form_helper_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
@@ -237,13 +238,22 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (!widget.isEditing && !_currencyPickedByUser) {
-      final investmentCurrency = ref
-          .watch(investmentByIdProvider(widget.investmentId))
-          .value
-          ?.currency;
-      if (investmentCurrency != null) _selectedCurrency = investmentCurrency;
+    final investmentCurrency = ref
+        .watch(investmentByIdProvider(widget.investmentId))
+        .value
+        ?.currency;
+    if (!widget.isEditing &&
+        !_currencyPickedByUser &&
+        investmentCurrency != null) {
+      _selectedCurrency = investmentCurrency;
     }
+    // Said under the selector whenever the cash flow's currency differs from
+    // the investment's, so a mis-tap is seen before saving (A90).
+    final showCurrencyMismatch =
+        investmentCurrency != null &&
+        investmentCurrency.trim().isNotEmpty &&
+        _selectedCurrency.trim().isNotEmpty &&
+        _selectedCurrency != investmentCurrency;
     final status = ref.watch(investmentStatusProvider(widget.investmentId));
     final isClosed = !widget.isEditing && status == InvestmentStatus.closed;
     // The amount is entered in the selected currency, so show its symbol
@@ -456,9 +466,21 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                       .read(analyticsServiceProvider)
                       .logCurrencySelected(currency: code, context: 'cashflow');
                 },
-                label: 'Cash Flow Currency',
-                subtitle: 'Currency for this transaction',
+                label: l10n.cashFlowCurrencyLabel,
+                subtitle: l10n.cashFlowCurrencySubtitle,
               ),
+              if (showCurrencyMismatch)
+                // Currency codes only, never an amount: safe in privacy mode.
+                Semantics(
+                  liveRegion: true,
+                  child: FormHelperText(
+                    l10n.cashFlowCurrencyMismatchNote(
+                      investmentCurrency,
+                      _selectedCurrency,
+                    ),
+                    emphasized: true,
+                  ),
+                ),
 
               SizedBox(height: AppSpacing.sectionSpacing),
 
