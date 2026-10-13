@@ -256,6 +256,7 @@ void main() {
     test('an alarm cancelled for a cumulative payout mode is still owed when '
         'the mode becomes periodic after 09:00 on the due day', () async {
       InvestmentEntity p2p(InterestPayoutMode mode) => InvestmentEntity(
+        currency: 'INR',
         id: investmentId,
         name: 'P2P Monthly',
         type: InvestmentType.p2pLending,
@@ -417,6 +418,7 @@ void main() {
 
     test('the launch reschedule shows the due reminder too', () async {
       final investment = InvestmentEntity(
+        currency: 'INR',
         id: investmentId,
         name: 'P2P Monthly',
         type: InvestmentType.p2pLending,

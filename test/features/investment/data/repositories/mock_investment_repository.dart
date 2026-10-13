@@ -179,6 +179,7 @@ class FakeInvestmentRepository implements InvestmentRepository {
       final inv = _investments[index];
       // Create new entity without closedAt since copyWith can't set it to null
       _investments[index] = InvestmentEntity(
+        currency: 'INR',
         id: inv.id,
         name: inv.name,
         type: inv.type,

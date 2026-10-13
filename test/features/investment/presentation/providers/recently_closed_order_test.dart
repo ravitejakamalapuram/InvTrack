@@ -12,6 +12,7 @@ InvestmentEntity _closed(
   DateTime? closedAt,
   required DateTime updatedAt,
 }) => InvestmentEntity(
+  currency: 'INR',
   id: id,
   name: id,
   type: InvestmentType.fixedDeposit,

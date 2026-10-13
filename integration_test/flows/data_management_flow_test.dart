@@ -93,6 +93,7 @@ void main() {
       testApp.seedInvestments(
         [
           InvestmentEntity(
+            currency: 'INR',
             id: 'inv-1',
             name: 'Test Investment',
             type: InvestmentType.stocks,
@@ -103,6 +104,7 @@ void main() {
         ],
         [
           CashFlowEntity(
+            currency: 'INR',
             id: 'cf-1',
             investmentId: 'inv-1',
             type: CashFlowType.invest,
@@ -115,6 +117,7 @@ void main() {
 
       testApp.seedGoals([
         GoalEntity(
+          currency: 'INR',
           id: 'goal-1',
           name: 'Test Goal',
           type: GoalType.targetAmount,

@@ -150,7 +150,7 @@ class GoalEntity {
     this.isArchived = false,
     required this.createdAt,
     required this.updatedAt,
-    this.currency = 'USD', // Default for backward compatibility
+    required this.currency,
     this.currencyAssumed = false,
   });
 

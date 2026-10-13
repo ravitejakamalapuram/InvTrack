@@ -7,6 +7,7 @@ import 'package:inv_tracker/features/investment/domain/entities/investment_entit
 void main() {
   group('GoalEntity', () {
     final testGoal = GoalEntity(
+      currency: 'INR',
       id: 'goal-1',
       name: 'Test Goal',
       type: GoalType.targetAmount,
@@ -63,6 +64,7 @@ void main() {
     test('equality works correctly', () {
       final goal1 = testGoal;
       final goal2 = GoalEntity(
+        currency: 'INR',
         id: 'goal-1',
         name: 'Test Goal',
         type: GoalType.targetAmount,

@@ -52,6 +52,7 @@ void main() {
       UserEntity(id: id, email: '$id@example.com', isAnonymous: isAnonymous);
 
   final p2p = InvestmentEntity(
+    currency: 'INR',
     id: 'inv-p2p',
     name: 'P2P Monthly',
     type: InvestmentType.p2pLending,
@@ -161,6 +162,7 @@ void main() {
     const ownerKey = 'notifications_reminders_owner_uid';
 
     final bond = InvestmentEntity(
+      currency: 'INR',
       id: 'inv-bond',
       name: 'Bond',
       type: InvestmentType.bonds,
@@ -312,6 +314,7 @@ void main() {
       'deleting the last investment cancels its income and maturity reminders',
       (tester) async {
         final bond = InvestmentEntity(
+          currency: 'INR',
           id: 'inv-bond',
           name: 'Bond',
           type: InvestmentType.bonds,

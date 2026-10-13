@@ -22,6 +22,7 @@ void main() {
     required double targetAmount,
   }) {
     return GoalEntity(
+      currency: 'INR',
       id: id,
       name: name,
       type: GoalType.targetAmount,

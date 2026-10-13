@@ -44,6 +44,7 @@ void main() {
       // Seed test data
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'test-1',
           name: 'My FD Investment',
           type: InvestmentType.fixedDeposit,
@@ -52,6 +53,7 @@ void main() {
           updatedAt: DateTime(2024, 1, 1),
         ),
         InvestmentEntity(
+          currency: 'INR',
           id: 'test-2',
           name: 'P2P Lending',
           type: InvestmentType.p2pLending,
@@ -76,6 +78,7 @@ void main() {
 
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'test-1',
           name: 'Detail Test Investment',
           type: InvestmentType.bonds,
@@ -111,6 +114,7 @@ void main() {
       // Add seeded data and refresh
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'ss-1',
           name: 'Screenshot FD',
           type: InvestmentType.fixedDeposit,

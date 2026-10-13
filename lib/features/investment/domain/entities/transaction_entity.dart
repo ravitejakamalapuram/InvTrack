@@ -120,7 +120,7 @@ class CashFlowEntity implements ICashFlow {
     required this.amount,
     this.notes,
     required this.createdAt,
-    this.currency = 'USD', // Default for backward compatibility
+    required this.currency,
     this.currencyAssumed = false,
   });
 

@@ -95,6 +95,7 @@ void main() {
     () async {
       // Arrange
       final investment = InvestmentEntity(
+        currency: 'INR',
         id: 'inv-1',
         name: 'Test Investment',
         type: InvestmentType.other,

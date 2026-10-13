@@ -28,6 +28,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'test_inv',
           name: 'Test Investment',
           type: InvestmentType.fixedDeposit,
@@ -59,6 +60,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'test_inv',
           name: 'FD Investment',
           type: InvestmentType.fixedDeposit,
@@ -97,6 +99,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'test_inv',
           name: 'Validation Test',
           type: InvestmentType.p2pLending,
@@ -129,6 +132,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'test_inv',
           name: 'Income Test',
           type: InvestmentType.p2pLending,

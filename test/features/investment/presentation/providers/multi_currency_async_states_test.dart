@@ -23,6 +23,7 @@ final _statsProviders =
     };
 
 final _openInvestment = InvestmentEntity(
+  currency: 'INR',
   id: 'inv-1',
   name: 'FD',
   type: InvestmentType.fixedDeposit,
@@ -32,6 +33,7 @@ final _openInvestment = InvestmentEntity(
 );
 
 final _closedInvestment = InvestmentEntity(
+  currency: 'INR',
   id: 'inv-2',
   name: 'Bond',
   type: InvestmentType.bonds,

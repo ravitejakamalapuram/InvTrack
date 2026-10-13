@@ -92,6 +92,7 @@ void main() {
   group('CashFlowEntity', () {
     test('signedAmount should be negative for invest', () {
       final cf = CashFlowEntity(
+        currency: 'INR',
         id: '1',
         investmentId: 'inv1',
         date: DateTime.now(),
@@ -105,6 +106,7 @@ void main() {
 
     test('signedAmount should be negative for fee', () {
       final cf = CashFlowEntity(
+        currency: 'INR',
         id: '1',
         investmentId: 'inv1',
         date: DateTime.now(),
@@ -118,6 +120,7 @@ void main() {
 
     test('signedAmount should be positive for returnFlow', () {
       final cf = CashFlowEntity(
+        currency: 'INR',
         id: '1',
         investmentId: 'inv1',
         date: DateTime.now(),
@@ -131,6 +134,7 @@ void main() {
 
     test('signedAmount should be positive for income', () {
       final cf = CashFlowEntity(
+        currency: 'INR',
         id: '1',
         investmentId: 'inv1',
         date: DateTime.now(),
@@ -144,6 +148,7 @@ void main() {
 
     test('copyWith should create copy with updated fields', () {
       final original = CashFlowEntity(
+        currency: 'INR',
         id: '1',
         investmentId: 'inv1',
         date: DateTime(2023, 1, 1),

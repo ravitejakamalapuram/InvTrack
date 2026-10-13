@@ -29,6 +29,7 @@ void main() {
     test('should calculate stats correctly for single investment', () {
       final cashFlows = [
         CashFlowEntity(
+          currency: 'USD',
           id: '1',
           investmentId: 'inv1',
           date: DateTime(2023, 1, 1),
@@ -52,6 +53,7 @@ void main() {
     test('should calculate stats correctly for investment with return', () {
       final cashFlows = [
         CashFlowEntity(
+          currency: 'USD',
           id: '1',
           investmentId: 'inv1',
           date: DateTime(2023, 1, 1),
@@ -60,6 +62,7 @@ void main() {
           createdAt: DateTime.now(),
         ),
         CashFlowEntity(
+          currency: 'USD',
           id: '2',
           investmentId: 'inv1',
           date: DateTime(2024, 1, 1),
@@ -84,6 +87,7 @@ void main() {
     test('should calculate stats correctly for loss scenario', () {
       final cashFlows = [
         CashFlowEntity(
+          currency: 'USD',
           id: '1',
           investmentId: 'inv1',
           date: DateTime(2023, 1, 1),
@@ -92,6 +96,7 @@ void main() {
           createdAt: DateTime.now(),
         ),
         CashFlowEntity(
+          currency: 'USD',
           id: '2',
           investmentId: 'inv1',
           date: DateTime(2024, 1, 1),
@@ -115,6 +120,7 @@ void main() {
     test('should handle fees as outflows', () {
       final cashFlows = [
         CashFlowEntity(
+          currency: 'USD',
           id: '1',
           investmentId: 'inv1',
           date: DateTime(2023, 1, 1),
@@ -123,6 +129,7 @@ void main() {
           createdAt: DateTime.now(),
         ),
         CashFlowEntity(
+          currency: 'USD',
           id: '2',
           investmentId: 'inv1',
           date: DateTime(2023, 6, 1),
@@ -131,6 +138,7 @@ void main() {
           createdAt: DateTime.now(),
         ),
         CashFlowEntity(
+          currency: 'USD',
           id: '3',
           investmentId: 'inv1',
           date: DateTime(2024, 1, 1),
@@ -151,6 +159,7 @@ void main() {
     test('should handle income as inflows', () {
       final cashFlows = [
         CashFlowEntity(
+          currency: 'USD',
           id: '1',
           investmentId: 'inv1',
           date: DateTime(2023, 1, 1),
@@ -159,6 +168,7 @@ void main() {
           createdAt: DateTime.now(),
         ),
         CashFlowEntity(
+          currency: 'USD',
           id: '2',
           investmentId: 'inv1',
           date: DateTime(2023, 6, 1),
@@ -183,6 +193,7 @@ void main() {
     late ProviderContainer container;
 
     final archivedInvestment = InvestmentEntity(
+      currency: 'USD',
       id: 'archived-inv-1',
       name: 'Archived Investment',
       type: InvestmentType.p2pLending,
@@ -194,6 +205,7 @@ void main() {
 
     final archivedCashFlows = [
       CashFlowEntity(
+        currency: 'USD',
         id: 'cf-1',
         investmentId: 'archived-inv-1',
         date: DateTime(2023, 1, 1),
@@ -202,6 +214,7 @@ void main() {
         createdAt: DateTime(2023, 1, 1),
       ),
       CashFlowEntity(
+        currency: 'USD',
         id: 'cf-2',
         investmentId: 'archived-inv-1',
         date: DateTime(2024, 1, 1),
@@ -221,7 +234,7 @@ void main() {
         overrides: [
           investmentRepositoryProvider.overrideWithValue(fakeRepository),
           isAuthenticatedProvider.overrideWith((ref) => true),
-          // The flows are in USD (the entity default): no conversion needed.
+          // The flows are in USD, the base currency: no conversion needed.
           currencyCodeProvider.overrideWith((ref) => 'USD'),
           currencyConversionServiceProvider.overrideWithValue(
             MockCurrencyConversionService(),
@@ -271,6 +284,7 @@ void main() {
     late ProviderContainer container;
 
     final activeInvestment = InvestmentEntity(
+      currency: 'USD',
       id: 'active-inv-1',
       name: 'Active Investment',
       type: InvestmentType.stocks,
@@ -281,6 +295,7 @@ void main() {
     );
 
     final archivedInvestment = InvestmentEntity(
+      currency: 'USD',
       id: 'archived-inv-1',
       name: 'Archived Investment',
       type: InvestmentType.p2pLending,

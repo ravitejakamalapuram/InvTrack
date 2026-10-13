@@ -24,6 +24,7 @@ class _PrivacyOff extends PrivacyModeNotifier {
 }
 
 final _fund = InvestmentEntity(
+  currency: 'INR',
   id: 'fund',
   name: 'Index fund',
   type: InvestmentType.stocks,

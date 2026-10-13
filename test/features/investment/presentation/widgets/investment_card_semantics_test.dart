@@ -21,6 +21,7 @@ void main() {
   ) async {
     // 1. Setup Data
     final investment = InvestmentEntity(
+      currency: 'USD',
       id: 'inv-1',
       name: 'Test Investment',
       type: InvestmentType.fixedDeposit,
@@ -110,6 +111,7 @@ void main() {
     tester,
   ) async {
     final investment = InvestmentEntity(
+      currency: 'USD',
       id: 'inv-0',
       name: 'Break-even',
       type: InvestmentType.p2pLending,
@@ -169,6 +171,7 @@ void main() {
   ) async {
     // 1. Setup Data
     final investment = InvestmentEntity(
+      currency: 'USD',
       id: 'inv-1',
       name: 'Test Investment',
       type: InvestmentType.fixedDeposit,

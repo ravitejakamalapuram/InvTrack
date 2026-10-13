@@ -90,6 +90,7 @@ void main() {
 
     test('isOpen should return true for open status', () {
       final investment = InvestmentEntity(
+        currency: 'INR',
         id: '1',
         name: 'Test Investment',
         type: InvestmentType.p2pLending,
@@ -104,6 +105,7 @@ void main() {
 
     test('isClosed should return true for closed status', () {
       final investment = InvestmentEntity(
+        currency: 'INR',
         id: '1',
         name: 'Test Investment',
         type: InvestmentType.p2pLending,
@@ -119,6 +121,7 @@ void main() {
 
     test('copyWith should create copy with updated fields', () {
       final original = InvestmentEntity(
+        currency: 'INR',
         id: '1',
         name: 'Original',
         type: InvestmentType.p2pLending,
@@ -144,6 +147,7 @@ void main() {
 
     test('equality should work correctly', () {
       final investment1 = InvestmentEntity(
+        currency: 'INR',
         id: '1',
         name: 'Test',
         type: InvestmentType.p2pLending,
@@ -153,6 +157,7 @@ void main() {
       );
 
       final investment2 = InvestmentEntity(
+        currency: 'INR',
         id: '1',
         name: 'Test',
         type: InvestmentType.p2pLending,
@@ -162,6 +167,7 @@ void main() {
       );
 
       final investment3 = InvestmentEntity(
+        currency: 'INR',
         id: '2', // Different ID
         name: 'Test',
         type: InvestmentType.p2pLending,
@@ -183,6 +189,7 @@ void main() {
       IncomeFrequency? frequency,
       InterestPayoutMode? mode,
     }) => InvestmentEntity(
+      currency: 'INR',
       id: 'inv-1',
       name: 'FD',
       type: InvestmentType.fixedDeposit,

@@ -14,6 +14,7 @@ void main() {
       'InvestmentListScreen should safely handle out of bounds indices without throwing exceptions',
       (tester) async {
     final investment = InvestmentEntity(
+      currency: 'INR',
       id: 'inv-1',
       name: 'Test Investment',
       type: InvestmentType.stocks,

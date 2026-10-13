@@ -13,6 +13,7 @@ import '../../features/investment/valuation/valuation_fixtures.dart';
 
 CashFlowEntity _terminal(String id, double amount, DateTime date) =>
     CashFlowEntity(
+      currency: 'INR',
       id: 'current-value:$id',
       investmentId: id,
       date: date,

@@ -120,6 +120,7 @@ void main() {
     test('preserves currency information in CSV export', () async {
       // Arrange: Create multi-currency investment
       final investment = InvestmentEntity(
+        currency: 'INR',
         id: 'inv-1',
         name: 'Multi-Currency Portfolio',
         type: InvestmentType.stocks,
@@ -193,6 +194,7 @@ void main() {
     test('round-trip preserves all currency data', () async {
       // Arrange: Create multi-currency investment
       final investment = InvestmentEntity(
+        currency: 'INR',
         id: 'inv-1',
         name: 'Global Portfolio',
         type: InvestmentType.stocks,
@@ -371,6 +373,7 @@ Retirement,targetAmount,1000000,all''';
       // Arrange: Create multiple investments with different currencies
       final investments = [
         InvestmentEntity(
+          currency: 'USD',
           id: 'inv-1',
           name: 'US Stocks',
           type: InvestmentType.stocks,
@@ -379,6 +382,7 @@ Retirement,targetAmount,1000000,all''';
           updatedAt: DateTime(2024, 1, 1),
         ),
         InvestmentEntity(
+          currency: 'INR',
           id: 'inv-2',
           name: 'Indian FD',
           type: InvestmentType.fixedDeposit,

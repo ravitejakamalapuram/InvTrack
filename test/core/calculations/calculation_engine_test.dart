@@ -145,6 +145,7 @@ void main() {
       test('calculateStats skips XIRR calculation when includeXirr is false', () {
         final cashFlows = [
           CashFlowEntity(
+            currency: 'INR',
             id: '1',
             investmentId: 'test',
             date: DateTime(2023, 1, 1),
@@ -153,6 +154,7 @@ void main() {
             createdAt: DateTime.now(),
           ),
           CashFlowEntity(
+            currency: 'INR',
             id: '2',
             investmentId: 'test',
             date: DateTime(2024, 1, 1),

@@ -92,6 +92,7 @@ void main() {
       final investments = List.generate(
         50,
         (i) => InvestmentEntity(
+          currency: 'INR',
           id: 'inv-$i',
           name: 'Investment ${i + 1}',
           type: InvestmentType.values[i % InvestmentType.values.length],

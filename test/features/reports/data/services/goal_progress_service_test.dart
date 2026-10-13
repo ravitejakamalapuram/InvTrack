@@ -15,6 +15,7 @@ void main() {
       final now = DateTime.now();
       
       final onTrackGoal = GoalEntity(
+        currency: 'INR',
         id: 'goal1',
         name: 'On Track Goal',
         type: GoalType.targetDate,
@@ -28,6 +29,7 @@ void main() {
       );
 
       final behindGoal = GoalEntity(
+        currency: 'INR',
         id: 'goal2',
         name: 'Behind Goal',
         type: GoalType.targetDate,
@@ -86,6 +88,7 @@ void main() {
       final goals = List.generate(
         3,
         (i) => GoalEntity(
+          currency: 'INR',
           id: 'goal$i',
           name: 'Goal $i',
           type: GoalType.targetAmount,

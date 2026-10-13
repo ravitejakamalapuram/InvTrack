@@ -31,6 +31,7 @@ final _goal = GoalEntity(
 );
 
 final _investment = InvestmentEntity(
+  currency: 'INR',
   id: 'inv-1',
   name: 'FD',
   type: InvestmentType.fixedDeposit,

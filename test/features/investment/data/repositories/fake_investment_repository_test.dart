@@ -16,6 +16,7 @@ void main() {
 
   group('FakeInvestmentRepository - Investments', () {
     final testInvestment = InvestmentEntity(
+      currency: 'INR',
       id: 'inv-1',
       name: 'Test Investment',
       type: InvestmentType.p2pLending,
@@ -97,6 +98,7 @@ void main() {
       await repository.createInvestment(testInvestment);
       await repository.addCashFlow(
         CashFlowEntity(
+          currency: 'INR',
           id: 'cf-1',
           investmentId: 'inv-1',
           date: DateTime.now(),
@@ -140,6 +142,7 @@ void main() {
 
   group('FakeInvestmentRepository - Cash Flows', () {
     final testCashFlow = CashFlowEntity(
+      currency: 'INR',
       id: 'cf-1',
       investmentId: 'inv-1',
       date: DateTime(2024, 1, 15),
@@ -190,6 +193,7 @@ void main() {
     test('bulkImport adds multiple investments and cash flows', () async {
       final investments = [
         InvestmentEntity(
+          currency: 'INR',
           id: 'inv-1',
           name: 'Investment 1',
           type: InvestmentType.p2pLending,
@@ -198,6 +202,7 @@ void main() {
           updatedAt: DateTime(2024, 1, 1),
         ),
         InvestmentEntity(
+          currency: 'INR',
           id: 'inv-2',
           name: 'Investment 2',
           type: InvestmentType.stocks,
@@ -208,6 +213,7 @@ void main() {
       ];
       final cashFlows = [
         CashFlowEntity(
+          currency: 'INR',
           id: 'cf-1',
           investmentId: 'inv-1',
           date: DateTime(2024, 1, 15),
@@ -216,6 +222,7 @@ void main() {
           createdAt: DateTime(2024, 1, 15),
         ),
         CashFlowEntity(
+          currency: 'INR',
           id: 'cf-2',
           investmentId: 'inv-2',
           date: DateTime(2024, 1, 20),
@@ -242,6 +249,7 @@ void main() {
         repository.seed(
           investments: [
             InvestmentEntity(
+              currency: 'INR',
               id: 'inv-1',
               name: 'Investment 1',
               type: InvestmentType.p2pLending,
@@ -250,6 +258,7 @@ void main() {
               updatedAt: DateTime(2024, 1, 1),
             ),
             InvestmentEntity(
+              currency: 'INR',
               id: 'inv-2',
               name: 'Investment 2',
               type: InvestmentType.stocks,
@@ -258,6 +267,7 @@ void main() {
               updatedAt: DateTime(2024, 1, 1),
             ),
             InvestmentEntity(
+              currency: 'INR',
               id: 'inv-3',
               name: 'Investment 3',
               type: InvestmentType.realEstate,
@@ -268,6 +278,7 @@ void main() {
           ],
           cashFlows: [
             CashFlowEntity(
+              currency: 'INR',
               id: 'cf-1',
               investmentId: 'inv-1',
               date: DateTime(2024, 1, 15),
@@ -276,6 +287,7 @@ void main() {
               createdAt: DateTime(2024, 1, 15),
             ),
             CashFlowEntity(
+              currency: 'INR',
               id: 'cf-2',
               investmentId: 'inv-2',
               date: DateTime(2024, 1, 20),

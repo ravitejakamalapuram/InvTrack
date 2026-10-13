@@ -16,6 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../mocks/mock_analytics_service.dart';
 
 final _fd = InvestmentEntity(
+  currency: 'INR',
   id: 'inv-1',
   name: 'FD',
   type: InvestmentType.fixedDeposit,
