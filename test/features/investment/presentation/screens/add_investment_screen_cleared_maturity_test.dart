@@ -280,6 +280,54 @@ void main() {
     expect(notesShown, 0);
   });
 
+  // #918: a date cleared before the A119 fix is stored as null with a start
+  // date and tenure, so the tenure still works it out. The form shows the
+  // derived date as auto-calculated, so it can be cleared for good.
+  testWidgets('a derived maturity date shows and can be cleared', (
+    tester,
+  ) async {
+    var clearButtons = -1;
+    final stored = await editAndSave(tester, _fd(), (scrollable) async {
+      final clear = find.byTooltip('Clear maturity date');
+      clearButtons = clear.evaluate().length;
+      if (clearButtons == 0) return;
+      await tester.scrollUntilVisible(clear, 200, scrollable: scrollable);
+      await tester.tap(clear);
+      await tester.pumpAndSettle();
+    });
+
+    expect(clearButtons, 1);
+    expect(stored.maturityDate, isNull);
+    expect(stored.tenureMonths, isNull);
+    expect(stored.calculatedMaturityDate, isNull);
+  });
+
+  testWidgets('an edit that leaves a derived date alone stores none', (
+    tester,
+  ) async {
+    final stored = await editAndSave(tester, _fd(), (_) async {
+      await tester.enterText(_editableWithText('Old notes'), 'New notes');
+      await tester.pumpAndSettle();
+    });
+
+    // The date still comes from the tenure, so a later tenure change moves it.
+    expect(stored.notes, 'New notes');
+    expect(stored.maturityDate, isNull);
+    expect(stored.tenureMonths, 12);
+    expect(stored.calculatedMaturityDate, DateTime(2026, 1, 1));
+  });
+
+  testWidgets('control: with no start date there is nothing to clear', (
+    tester,
+  ) async {
+    var clearButtons = -1;
+    await editAndSave(tester, _fd(withStartDate: false), (_) async {
+      clearButtons = find.byTooltip('Clear maturity date').evaluate().length;
+    });
+
+    expect(clearButtons, 0);
+  });
+
   testWidgets('control: an edit that keeps the date keeps the tenure', (
     tester,
   ) async {

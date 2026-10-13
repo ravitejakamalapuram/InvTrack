@@ -97,6 +97,11 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   /// work out again, so the tenure was cleared with it (A119).
   bool _tenureClearedWithMaturity = false;
 
+  /// The investment was stored with no maturity date and the form shows one
+  /// worked out from the start date and tenure (#918). While it stays
+  /// auto-calculated, saving keeps the stored date empty.
+  bool _maturityStoredEmpty = false;
+
   // First investment flow (A40, #783). Only used when [_firstInvestmentForm].
 
   /// The form behind the first investment flow, decided once when the screen
@@ -170,6 +175,17 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       _selectedCurrency = investment.currency;
       // Hide template selector when editing
       _showTemplateSelector = false;
+      // A date cleared before A119 is stored as null, yet the start date and
+      // tenure still work it out (#918). Show it as auto-calculated so the
+      // user sees the date the scores use and can clear it for good.
+      if (_maturityDate == null) {
+        _maturityDate = InvestmentProjector.calculateMaturityDate(
+          startDate: _startDate,
+          tenureMonths: investment.tenureMonths,
+        );
+        _maturityDateAutoCalculated = _maturityDate != null;
+        _maturityStoredEmpty = true;
+      }
     } else {
       // Default to user's base currency for new investments
       _selectedCurrency = ref.read(currencyCodeProvider);
@@ -461,7 +477,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               name: name,
               type: _selectedType,
               notes: notes,
-              maturityDate: _maturityDate,
+              maturityDate: _maturityStoredEmpty && _maturityDateAutoCalculated
+                  ? null
+                  : _maturityDate,
               incomeFrequency: _incomeFrequency,
               // New enhanced data capture fields
               startDate: _startDate,
