@@ -170,6 +170,16 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       _selectedCurrency = investment.currency;
       // Hide template selector when editing
       _showTemplateSelector = false;
+      // A date cleared before A119 is stored as null, yet the start date and
+      // tenure still work it out (#918). Show it as auto-calculated so the
+      // user sees the date the scores use and can clear it for good.
+      if (_maturityDate == null) {
+        _maturityDate = InvestmentProjector.calculateMaturityDate(
+          startDate: _startDate,
+          tenureMonths: investment.tenureMonths,
+        );
+        _maturityDateAutoCalculated = _maturityDate != null;
+      }
     } else {
       // Default to user's base currency for new investments
       _selectedCurrency = ref.read(currencyCodeProvider);
