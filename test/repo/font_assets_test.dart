@@ -20,17 +20,19 @@ void main() {
     expect(assets, isNotEmpty);
   });
 
-  for (final path in assets) {
-    test('$path is a TrueType or OpenType font', () {
-      final head = File(path).openSync().readSync(4);
-      final isTrueType =
-          head.length == 4 &&
-          head[0] == 0 &&
-          head[1] == 1 &&
-          head[2] == 0 &&
-          head[3] == 0;
-      final isOpenType = String.fromCharCodes(head) == 'OTTO';
-      expect(isTrueType || isOpenType, isTrue, reason: '$path is not a font');
-    });
-  }
+  group('bundled font signatures', () {
+    for (final path in assets) {
+      test('$path is a TrueType or OpenType font', () {
+        final head = File(path).openSync().readSync(4);
+        final isTrueType =
+            head.length == 4 &&
+            head[0] == 0 &&
+            head[1] == 1 &&
+            head[2] == 0 &&
+            head[3] == 0;
+        final isOpenType = String.fromCharCodes(head) == 'OTTO';
+        expect(isTrueType || isOpenType, isTrue, reason: '$path is not a font');
+      });
+    }
+  });
 }

@@ -302,6 +302,21 @@ void main() {
     expect(stored.calculatedMaturityDate, isNull);
   });
 
+  testWidgets('an edit that leaves a derived date alone stores none', (
+    tester,
+  ) async {
+    final stored = await editAndSave(tester, _fd(), (_) async {
+      await tester.enterText(_editableWithText('Old notes'), 'New notes');
+      await tester.pumpAndSettle();
+    });
+
+    // The date still comes from the tenure, so a later tenure change moves it.
+    expect(stored.notes, 'New notes');
+    expect(stored.maturityDate, isNull);
+    expect(stored.tenureMonths, 12);
+    expect(stored.calculatedMaturityDate, DateTime(2026, 1, 1));
+  });
+
   testWidgets('control: with no start date there is nothing to clear', (
     tester,
   ) async {
