@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/goals/data/repositories/firestore_goal_repository.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
@@ -139,6 +141,9 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
+      // Default to the user's base currency (Rule 21.2)
+      final String goalCurrency = currency ?? ref.read(currencyCodeProvider);
+      _validateTargetAmount(targetAmount, goalCurrency);
       final id = await _performanceService.trackOperation(
         'goal_create',
         () async {
@@ -155,8 +160,7 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
             linkedTypes: linkedTypes,
             icon: icon ?? GoalIcons.defaultIcon,
             colorValue: colorValue ?? GoalColors.defaultColor.toARGB32(),
-            // Default to the user's base currency (Rule 21.2)
-            currency: currency ?? ref.read(currencyCodeProvider),
+            currency: goalCurrency,
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );
@@ -185,6 +189,7 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
   Future<void> updateGoal(GoalEntity goal) async {
     state = const AsyncValue.loading();
     try {
+      _validateTargetAmount(goal.targetAmount, goal.currency);
       await _performanceService.trackOperation('goal_update', () async {
         final updatedGoal = goal.copyWith(updatedAt: DateTime.now());
         if (goal.isArchived) {
@@ -198,6 +203,19 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       rethrow;
+    }
+  }
+
+  /// Refuses a target amount of 16 digits or more, also one that rounds up
+  /// to 16 digits in [currencyCode] (invtrack_rules 19.1, #996). A goal with
+  /// no currency cannot be rounded, so only its amount as given is checked.
+  void _validateTargetAmount(double amount, String currencyCode) {
+    final rounded = currencyCode.trim().isEmpty
+        ? amount
+        : MoneyPrecision.round(amount, currencyCode: currencyCode);
+    if (amount >= ValidationConstants.maxAmount ||
+        rounded >= ValidationConstants.maxAmount) {
+      throw ValidationException.amountTooLarge();
     }
   }
 
