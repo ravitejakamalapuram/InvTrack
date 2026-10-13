@@ -757,4 +757,114 @@ void main() {
       expect(saved.single.amount, 1500.50);
     });
   });
+
+  // A90: picking a currency other than the investment's is said out loud, so
+  // a mis-tap (INR on a USD investment) is seen before saving.
+  group('AddTransactionScreen currency mismatch note', () {
+    const note =
+        'This investment is in USD. This cash flow will be saved in INR and '
+        'converted at the rate on its date.';
+
+    final usdInvestment = InvestmentEntity(
+      id: 'inv-usd',
+      name: 'US Treasury',
+      type: InvestmentType.bonds,
+      status: InvestmentStatus.open,
+      createdAt: DateTime(2024, 1, 1),
+      updatedAt: DateTime(2024, 1, 1),
+      currency: 'USD',
+    );
+
+    Future<void> pumpScreen(
+      WidgetTester tester, {
+      CashFlowEntity? cashFlowToEdit,
+    }) async {
+      tester.view.physicalSize = const Size(1080, 4000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currencyCodeProvider.overrideWithValue('INR'),
+            analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
+            investmentByIdProvider(
+              'inv-usd',
+            ).overrideWith((ref) async => usdInvestment),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AddTransactionScreen(
+              investmentId: 'inv-usd',
+              cashFlowToEdit: cashFlowToEdit,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> pickCurrency(WidgetTester tester, String code) async {
+      tester
+          .widget<CurrencySelector>(find.byType(CurrencySelector))
+          .onCurrencySelected(code);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('picking INR on a USD investment shows the note', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await pumpScreen(tester);
+
+      await pickCurrency(tester, 'INR');
+
+      expect(find.text(note), findsOneWidget);
+      expect(find.bySemanticsLabel(note), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('the investment currency selected shows no note', (
+      tester,
+    ) async {
+      await pumpScreen(tester);
+      expect(find.textContaining('This investment is in'), findsNothing);
+
+      await pickCurrency(tester, 'INR');
+      await pickCurrency(tester, 'USD');
+
+      expect(find.textContaining('This investment is in'), findsNothing);
+    });
+
+    testWidgets('editing an INR flow on a USD investment shows the note', (
+      tester,
+    ) async {
+      await pumpScreen(
+        tester,
+        cashFlowToEdit: CashFlowEntity(
+          id: 'cf-1',
+          investmentId: 'inv-usd',
+          type: CashFlowType.invest,
+          amount: 1000,
+          date: DateTime(2024, 1, 15),
+          createdAt: DateTime(2024, 1, 15),
+          currency: 'INR',
+        ),
+      );
+
+      expect(find.text(note), findsOneWidget);
+    });
+
+    testWidgets('the selector label and subtitle are localised', (
+      tester,
+    ) async {
+      await pumpScreen(tester);
+
+      final selector = tester.widget<CurrencySelector>(
+        find.byType(CurrencySelector),
+      );
+      expect(selector.label, 'Cash Flow Currency');
+      expect(selector.subtitle, 'Currency for this transaction');
+    });
+  });
 }

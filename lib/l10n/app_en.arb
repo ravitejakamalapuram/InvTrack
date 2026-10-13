@@ -7039,6 +7039,28 @@
   "@whatAreCustomTypesAnswer": {
     "description": "Help & FAQ answer about custom types for Other investments (#936)"
   },
+  "cashFlowCurrencyLabel": "Cash Flow Currency",
+  "@cashFlowCurrencyLabel": {
+    "description": "Add or edit cash flow: label of the currency selector"
+  },
+  "cashFlowCurrencySubtitle": "Currency for this transaction",
+  "@cashFlowCurrencySubtitle": {
+    "description": "Add or edit cash flow: subtitle of the currency selector"
+  },
+  "cashFlowCurrencyMismatchNote": "This investment is in {investmentCurrency}. This cash flow will be saved in {cashFlowCurrency} and converted at the rate on its date.",
+  "@cashFlowCurrencyMismatchNote": {
+    "description": "Add or edit cash flow: note under the currency selector when the chosen currency differs from the investment's currency (A90). Holds currency codes only, never an amount.",
+    "placeholders": {
+      "investmentCurrency": {
+        "type": "String",
+        "example": "USD"
+      },
+      "cashFlowCurrency": {
+        "type": "String",
+        "example": "INR"
+      }
+    }
+  },
   "cashFlowAmountRoundsToZero": "This amount rounds to zero in {currency}. Enter a larger amount.",
   "@cashFlowAmountRoundsToZero": {
     "description": "Add or edit cash flow: validation error for a positive amount that is smaller than the smallest unit of the selected currency, so it would be saved as zero",
