@@ -1,3 +1,5 @@
+import 'package:inv_tracker/core/config/app_constants.dart';
+
 /// Currency-aware monetary precision for values accepted or persisted by
 /// InvTrack. This policy is separate from locale formatting and from the
 /// intermediate precision used by compounding and return calculations.
@@ -109,5 +111,17 @@ class MoneyPrecision {
     final major = padded.substring(0, splitAt);
     final minor = padded.substring(splitAt);
     return double.parse('$sign$major.$minor');
+  }
+
+  /// True when [amount] is not finite, or has 16 digits or more, also after
+  /// rounding to [currencyCode]'s minor unit (invtrack_rules 19.1). A blank
+  /// currency cannot be rounded, so the amount is checked as given.
+  static bool reachesMaxAmount(double amount, {required String currencyCode}) {
+    if (!amount.isFinite) return true;
+    final rounded = currencyCode.trim().isEmpty
+        ? amount
+        : round(amount, currencyCode: currencyCode);
+    return amount >= ValidationConstants.maxAmount ||
+        rounded >= ValidationConstants.maxAmount;
   }
 }

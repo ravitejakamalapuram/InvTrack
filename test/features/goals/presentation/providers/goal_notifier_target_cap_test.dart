@@ -79,6 +79,18 @@ void main() {
       });
     }
 
+    for (final bad in [-1.0, -1e16, double.nan, double.infinity]) {
+      test('$bad is refused, and nothing is written', () async {
+        await expectLater(create(bad), throwsA(isA<ValidationException>()));
+        expect(repository.goals, isEmpty);
+      });
+    }
+
+    test('zero is accepted: an income goal has no target amount', () async {
+      await create(0);
+      expect(repository.goals.single.targetAmount, 0);
+    });
+
     test('the largest 15-digit amount is accepted', () async {
       await create(_largest);
       expect(repository.goals.single.targetAmount, _largest);
@@ -98,6 +110,17 @@ void main() {
         expect(analytics.loggedEvents, isEmpty);
       });
     }
+
+    test(
+      'a negative target is refused, and the saved goal is untouched',
+      () async {
+        await expectLater(
+          notifier().updateGoal(_saved.copyWith(targetAmount: -1e16)),
+          throwsA(isA<ValidationException>()),
+        );
+        expect(repository.goals.single.targetAmount, 500000);
+      },
+    );
 
     test('an archived goal is refused the same way', () async {
       final archived = _saved.copyWith(isArchived: true);

@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
-import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
@@ -206,15 +205,12 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
-  /// Refuses a target amount of 16 digits or more, also one that rounds up
-  /// to 16 digits in [currencyCode] (invtrack_rules 19.1, #996). A goal with
-  /// no currency cannot be rounded, so only its amount as given is checked.
+  /// Refuses a negative target amount and one of 16 digits or more, also one
+  /// that rounds up to 16 digits in [currencyCode] (invtrack_rules 19.1,
+  /// #996). Zero is allowed: an income goal has no target amount.
   void _validateTargetAmount(double amount, String currencyCode) {
-    final rounded = currencyCode.trim().isEmpty
-        ? amount
-        : MoneyPrecision.round(amount, currencyCode: currencyCode);
-    if (amount >= ValidationConstants.maxAmount ||
-        rounded >= ValidationConstants.maxAmount) {
+    if (amount < 0) throw ValidationException.invalidAmount(amount);
+    if (MoneyPrecision.reachesMaxAmount(amount, currencyCode: currencyCode)) {
       throw ValidationException.amountTooLarge();
     }
   }

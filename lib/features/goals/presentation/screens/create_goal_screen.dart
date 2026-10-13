@@ -270,14 +270,10 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
                 final parsed = double.tryParse(v);
                 if (parsed == null) return 'Invalid amount';
                 // 15 digits at most, also after rounding (rules 19.1, #996).
-                final rounded = _selectedCurrency.trim().isEmpty
-                    ? parsed
-                    : MoneyPrecision.round(
-                        parsed,
-                        currencyCode: _selectedCurrency,
-                      );
-                if (parsed >= ValidationConstants.maxAmount ||
-                    rounded >= ValidationConstants.maxAmount) {
+                if (MoneyPrecision.reachesMaxAmount(
+                  parsed,
+                  currencyCode: _selectedCurrency,
+                )) {
                   return l10n.amountInvestedTooLarge;
                 }
                 return null;
