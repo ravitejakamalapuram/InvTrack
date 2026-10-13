@@ -109,6 +109,7 @@ void main() {
       test('should handle single cash flow', () {
         final cashFlows = [
           CashFlowEntity(
+            currency: 'INR',
             id: '1',
             investmentId: '1',
             date: DateTime(2023, 1, 1),
@@ -124,6 +125,7 @@ void main() {
       test('should handle same-day transactions', () {
         final cashFlows = [
           CashFlowEntity(
+            currency: 'INR',
             id: '1',
             investmentId: '1',
             date: DateTime(2023, 1, 1),
@@ -132,6 +134,7 @@ void main() {
             createdAt: DateTime.now(),
           ),
           CashFlowEntity(
+            currency: 'INR',
             id: '2',
             investmentId: '1',
             date: DateTime(2023, 1, 1),

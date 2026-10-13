@@ -14,6 +14,7 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final _investment = InvestmentEntity(
+  currency: 'INR',
   id: 'inv-1',
   name: 'Test Investment',
   type: InvestmentType.stocks,

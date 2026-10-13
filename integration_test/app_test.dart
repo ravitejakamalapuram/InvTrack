@@ -210,6 +210,7 @@ void main() {
       fakeInvestmentRepository.seed(
         investments: [
           InvestmentEntity(
+            currency: 'INR',
             id: 'inv-1',
             name: 'Test FD',
             type: InvestmentType.fixedDeposit,
@@ -218,6 +219,7 @@ void main() {
             updatedAt: DateTime(2024, 1, 1),
           ),
           InvestmentEntity(
+            currency: 'INR',
             id: 'inv-2',
             name: 'Test P2P',
             type: InvestmentType.p2pLending,
@@ -300,6 +302,7 @@ void main() {
       fakeInvestmentRepository.seed(
         investments: [
           InvestmentEntity(
+            currency: 'INR',
             id: 'inv-1',
             name: 'Test Investment',
             type: InvestmentType.fixedDeposit,
@@ -310,6 +313,7 @@ void main() {
         ],
         cashFlows: [
           CashFlowEntity(
+            currency: 'INR',
             id: 'cf-1',
             investmentId: 'inv-1',
             type: CashFlowType.invest,
@@ -318,6 +322,7 @@ void main() {
             createdAt: DateTime(2024, 1, 1),
           ),
           CashFlowEntity(
+            currency: 'INR',
             id: 'cf-2',
             investmentId: 'inv-1',
             type: CashFlowType.income,

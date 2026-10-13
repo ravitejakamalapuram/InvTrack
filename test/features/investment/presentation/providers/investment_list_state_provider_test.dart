@@ -11,6 +11,7 @@ void main() {
   late ProviderContainer container;
 
   final openInvestment = InvestmentEntity(
+    currency: 'INR',
     id: 'open-1',
     name: 'Open Investment',
     type: InvestmentType.stocks,
@@ -21,6 +22,7 @@ void main() {
   );
 
   final closedInvestment = InvestmentEntity(
+    currency: 'INR',
     id: 'closed-1',
     name: 'Closed Investment',
     type: InvestmentType.bonds,
@@ -31,6 +33,7 @@ void main() {
   );
 
   final archivedOpenInvestment = InvestmentEntity(
+    currency: 'INR',
     id: 'archived-open-1',
     name: 'Archived Open Investment',
     type: InvestmentType.p2pLending,
@@ -41,6 +44,7 @@ void main() {
   );
 
   final archivedClosedInvestment = InvestmentEntity(
+    currency: 'INR',
     id: 'archived-closed-1',
     name: 'Archived Closed Investment',
     type: InvestmentType.mutualFunds,

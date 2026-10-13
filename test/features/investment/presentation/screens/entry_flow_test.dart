@@ -6,6 +6,7 @@ void main() {
   group('InvestmentEntity', () {
     test('creates investment with correct properties', () {
       final investment = InvestmentEntity(
+        currency: 'INR',
         id: '1',
         name: 'P2P Lending Investment',
         type: InvestmentType.p2pLending,
@@ -35,6 +36,7 @@ void main() {
   group('CashFlowEntity', () {
     test('creates cash flow with correct properties', () {
       final cashFlow = CashFlowEntity(
+        currency: 'INR',
         id: 'cf1',
         investmentId: '1',
         date: DateTime.now(),

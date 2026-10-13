@@ -51,6 +51,7 @@ void main() {
 
   group('GoalProgress', () {
     final testGoal = GoalEntity(
+      currency: 'INR',
       id: 'goal-1',
       name: 'Test Goal',
       type: GoalType.targetAmount,

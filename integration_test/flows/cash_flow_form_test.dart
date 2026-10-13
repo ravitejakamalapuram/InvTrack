@@ -29,6 +29,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'test_inv_1',
           name: 'Test Investment',
           type: InvestmentType.fixedDeposit,
@@ -62,6 +63,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'test_inv_1',
           name: 'Test Investment',
           type: InvestmentType.fixedDeposit,
@@ -94,6 +96,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'test_inv_1',
           name: 'My FD',
           type: InvestmentType.fixedDeposit,
@@ -130,6 +133,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'test_inv_1',
           name: 'Test Investment',
           type: InvestmentType.fixedDeposit,
@@ -162,6 +166,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'test_inv_1',
           name: 'Test Investment',
           type: InvestmentType.fixedDeposit,

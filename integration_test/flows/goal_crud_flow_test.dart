@@ -53,6 +53,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedGoals([
         GoalEntity(
+          currency: 'INR',
           id: 'goal_1',
           name: 'Emergency Fund',
           type: GoalType.targetAmount,
@@ -64,6 +65,7 @@ void main() {
           updatedAt: now,
         ),
         GoalEntity(
+          currency: 'INR',
           id: 'goal_2',
           name: 'House Down Payment',
           type: GoalType.targetDate,
@@ -95,6 +97,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedGoals([
         GoalEntity(
+          currency: 'INR',
           id: 'goal_1',
           name: 'Retirement Fund',
           type: GoalType.targetAmount,
@@ -125,6 +128,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedGoals([
         GoalEntity(
+          currency: 'INR',
           id: 'goal_to_delete',
           name: 'Goal to Delete',
           type: GoalType.targetAmount,

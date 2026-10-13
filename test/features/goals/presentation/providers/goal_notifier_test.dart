@@ -13,6 +13,7 @@ void main() {
   late ProviderContainer container;
 
   final testGoal1 = GoalEntity(
+    currency: 'INR',
     id: 'goal-1',
     name: 'Goal 1',
     type: GoalType.targetAmount,
@@ -25,6 +26,7 @@ void main() {
   );
 
   final testGoal2 = GoalEntity(
+    currency: 'INR',
     id: 'goal-2',
     name: 'Goal 2',
     type: GoalType.targetAmount,
@@ -37,6 +39,7 @@ void main() {
   );
 
   final testGoal3 = GoalEntity(
+    currency: 'INR',
     id: 'goal-3',
     name: 'Goal 3',
     type: GoalType.incomeTarget,
@@ -156,6 +159,7 @@ void main() {
 
   group('GoalNotifier - deleteArchivedGoal', () {
     final archivedGoal = GoalEntity(
+      currency: 'INR',
       id: 'archived-goal-1',
       name: 'Archived Goal',
       type: GoalType.targetAmount,
@@ -192,6 +196,7 @@ void main() {
 
   group('GoalNotifier - bulkDelete with isArchived', () {
     final archivedGoal1 = GoalEntity(
+      currency: 'INR',
       id: 'archived-1',
       name: 'Archived 1',
       type: GoalType.targetAmount,
@@ -205,6 +210,7 @@ void main() {
     );
 
     final archivedGoal2 = GoalEntity(
+      currency: 'INR',
       id: 'archived-2',
       name: 'Archived 2',
       type: GoalType.targetAmount,

@@ -556,6 +556,7 @@ void main() {
       final now = DateTime.now();
       final investments = <InvestmentEntity>[
         InvestmentEntity(
+          currency: 'INR',
           id: 'inv-1',
           name: 'Bond with Maturity',
           type: InvestmentType.bonds,
@@ -566,6 +567,7 @@ void main() {
           incomeFrequency: IncomeFrequency.monthly,
         ),
         InvestmentEntity(
+          currency: 'INR',
           id: 'inv-2',
           name: 'Stock (no maturity)',
           type: InvestmentType.stocks,
@@ -574,6 +576,7 @@ void main() {
           updatedAt: now,
         ),
         InvestmentEntity(
+          currency: 'INR',
           id: 'inv-3',
           name: 'Closed Investment',
           type: InvestmentType.fixedDeposit,
@@ -598,6 +601,7 @@ void main() {
       final now = DateTime.now();
       final investments = <InvestmentEntity>[
         InvestmentEntity(
+          currency: 'INR',
           id: 'inv-closed',
           name: 'Closed Bond',
           type: InvestmentType.bonds,
@@ -1567,6 +1571,7 @@ void main() {
 
       InvestmentEntity fd({InterestPayoutMode? mode, String id = 'inv-fd'}) =>
           InvestmentEntity(
+            currency: 'INR',
             id: id,
             name: 'Bank FD',
             type: InvestmentType.fixedDeposit,
@@ -1673,6 +1678,7 @@ void main() {
       DateTime? maturityDate,
       InvestmentStatus status = InvestmentStatus.open,
     }) => InvestmentEntity(
+      currency: 'INR',
       id: id,
       name: 'P2P Monthly',
       type: InvestmentType.p2pLending,

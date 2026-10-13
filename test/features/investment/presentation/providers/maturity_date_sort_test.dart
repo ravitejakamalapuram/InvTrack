@@ -8,6 +8,7 @@ void main() {
     final now = DateTime(2026, 1, 7);
 
     final investmentWithEarlyMaturity = InvestmentEntity(
+      currency: 'INR',
       id: 'early',
       name: 'Early Maturity FD',
       type: InvestmentType.fixedDeposit,
@@ -19,6 +20,7 @@ void main() {
     );
 
     final investmentWithLateMaturity = InvestmentEntity(
+      currency: 'INR',
       id: 'late',
       name: 'Late Maturity Bond',
       type: InvestmentType.bonds,
@@ -30,6 +32,7 @@ void main() {
     );
 
     final investmentWithMidMaturity = InvestmentEntity(
+      currency: 'INR',
       id: 'mid',
       name: 'Mid Maturity P2P',
       type: InvestmentType.p2pLending,
@@ -41,6 +44,7 @@ void main() {
     );
 
     final investmentWithNoMaturity = InvestmentEntity(
+      currency: 'INR',
       id: 'no-maturity',
       name: 'Stock Investment',
       type: InvestmentType.stocks,
@@ -52,6 +56,7 @@ void main() {
     );
 
     final anotherWithNoMaturity = InvestmentEntity(
+      currency: 'INR',
       id: 'no-maturity-2',
       name: 'Crypto Investment',
       type: InvestmentType.crypto,

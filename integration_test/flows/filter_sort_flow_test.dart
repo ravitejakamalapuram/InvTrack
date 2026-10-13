@@ -25,6 +25,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'fd_1',
           name: 'HDFC FD',
           type: InvestmentType.fixedDeposit,
@@ -33,6 +34,7 @@ void main() {
           updatedAt: now,
         ),
         InvestmentEntity(
+          currency: 'INR',
           id: 'p2p_1',
           name: 'Lending Kart',
           type: InvestmentType.p2pLending,
@@ -41,6 +43,7 @@ void main() {
           updatedAt: now,
         ),
         InvestmentEntity(
+          currency: 'INR',
           id: 'stock_1',
           name: 'HDFC Bank Stock',
           type: InvestmentType.stocks,
@@ -69,6 +72,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'open_1',
           name: 'Open Investment',
           type: InvestmentType.fixedDeposit,
@@ -77,6 +81,7 @@ void main() {
           updatedAt: now,
         ),
         InvestmentEntity(
+          currency: 'INR',
           id: 'closed_1',
           name: 'Closed Investment',
           type: InvestmentType.fixedDeposit,
@@ -106,6 +111,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'old_1',
           name: 'Old Investment',
           type: InvestmentType.fixedDeposit,
@@ -114,6 +120,7 @@ void main() {
           updatedAt: now.subtract(const Duration(days: 30)),
         ),
         InvestmentEntity(
+          currency: 'INR',
           id: 'new_1',
           name: 'New Investment',
           type: InvestmentType.p2pLending,
@@ -141,6 +148,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'test_1',
           name: 'Test Investment',
           type: InvestmentType.fixedDeposit,

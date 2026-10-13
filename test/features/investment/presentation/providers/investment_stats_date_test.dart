@@ -9,6 +9,7 @@ void main() {
       () {
         final cashFlows = [
           CashFlowEntity(
+            currency: 'INR',
             id: '2',
             investmentId: 'inv1',
             date: DateTime(2024, 1, 1),
@@ -17,6 +18,7 @@ void main() {
             createdAt: DateTime.now(),
           ),
           CashFlowEntity(
+            currency: 'INR',
             id: '1',
             investmentId: 'inv1',
             date: DateTime(2023, 1, 1),
@@ -25,6 +27,7 @@ void main() {
             createdAt: DateTime.now(),
           ),
           CashFlowEntity(
+            currency: 'INR',
             id: '3',
             investmentId: 'inv1',
             date: DateTime(2025, 1, 1),
@@ -45,6 +48,7 @@ void main() {
     test('should handle single cash flow', () {
       final cashFlows = [
         CashFlowEntity(
+          currency: 'INR',
           id: '1',
           investmentId: 'inv1',
           date: DateTime(2023, 1, 1),
@@ -63,6 +67,7 @@ void main() {
     test('should handle identical dates', () {
       final cashFlows = [
         CashFlowEntity(
+          currency: 'INR',
           id: '1',
           investmentId: 'inv1',
           date: DateTime(2023, 1, 1),
@@ -71,6 +76,7 @@ void main() {
           createdAt: DateTime.now(),
         ),
         CashFlowEntity(
+          currency: 'INR',
           id: '2',
           investmentId: 'inv1',
           date: DateTime(2023, 1, 1),

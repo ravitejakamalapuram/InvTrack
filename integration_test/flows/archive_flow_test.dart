@@ -24,6 +24,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'test_inv_1',
           name: 'My FD to Archive',
           type: InvestmentType.fixedDeposit,
@@ -64,6 +65,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'test_active',
           name: 'Active Investment',
           type: InvestmentType.stocks,
@@ -72,6 +74,7 @@ void main() {
           updatedAt: now,
         ),
         InvestmentEntity(
+          currency: 'INR',
           id: 'test_archived',
           name: 'Archived Investment',
           type: InvestmentType.mutualFunds,
@@ -113,6 +116,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'test_archived',
           name: 'Archived FD',
           type: InvestmentType.fixedDeposit,

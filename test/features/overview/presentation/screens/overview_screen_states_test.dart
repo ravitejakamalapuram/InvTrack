@@ -27,6 +27,7 @@ import '../../../../mocks/mock_analytics_service.dart';
 const _emptyStateEvent = 'empty_state_viewed';
 
 final _investment = InvestmentEntity(
+  currency: 'INR',
   id: 'inv-1',
   name: 'FD',
   type: InvestmentType.fixedDeposit,

@@ -48,6 +48,7 @@ void main() {
     test('calculateTotalInvested', () {
       final cashFlows = [
         CashFlowEntity(
+          currency: 'INR',
           id: '1',
           investmentId: '1',
           date: DateTime.now(),
@@ -56,6 +57,7 @@ void main() {
           createdAt: DateTime.now(),
         ),
         CashFlowEntity(
+          currency: 'INR',
           id: '2',
           investmentId: '1',
           date: DateTime.now(),

@@ -15,6 +15,7 @@ void main() {
   });
 
   final testGoal = GoalEntity(
+    currency: 'INR',
     id: 'goal-1',
     name: 'Test Goal',
     type: GoalType.targetAmount,

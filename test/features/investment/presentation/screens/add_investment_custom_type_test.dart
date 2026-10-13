@@ -56,6 +56,7 @@ class _RecordingNotifier extends InvestmentNotifier {
   }) async {
     adds.add({'name': name, 'type': type, 'customTypeLabel': customTypeLabel});
     return InvestmentEntity(
+      currency: 'INR',
       id: 'new',
       name: name,
       type: type,

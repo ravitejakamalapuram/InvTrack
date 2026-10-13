@@ -22,6 +22,7 @@ void main() {
   final sent = <({String name, Map<String, Object>? parameters})>[];
 
   GoalEntity goal(String id) => GoalEntity(
+    currency: 'INR',
     id: id,
     name: 'House fund $id',
     type: GoalType.targetAmount,

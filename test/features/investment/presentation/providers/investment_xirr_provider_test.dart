@@ -12,6 +12,7 @@ void main() {
     // Investment 1: +50% return over 1 year
     final cashFlows1 = [
       CashFlowEntity(
+        currency: 'USD',
         id: 'cf1-1',
         investmentId: 'inv1',
         date: DateTime(2023, 1, 1),
@@ -20,6 +21,7 @@ void main() {
         createdAt: DateTime(2023, 1, 1),
       ),
       CashFlowEntity(
+        currency: 'USD',
         id: 'cf1-2',
         investmentId: 'inv1',
         date: DateTime(2024, 1, 1),
@@ -33,6 +35,7 @@ void main() {
     // Investment 2: +10% return over 1 year
     final cashFlows2 = [
       CashFlowEntity(
+        currency: 'USD',
         id: 'cf2-1',
         investmentId: 'inv2',
         date: DateTime(2023, 1, 1),
@@ -41,6 +44,7 @@ void main() {
         createdAt: DateTime(2023, 1, 1),
       ),
       CashFlowEntity(
+        currency: 'USD',
         id: 'cf2-2',
         investmentId: 'inv2',
         date: DateTime(2024, 1, 1),
@@ -54,6 +58,7 @@ void main() {
     // the solver finds this root exactly.
     final cashFlows4 = [
       CashFlowEntity(
+        currency: 'USD',
         id: 'cf4-1',
         investmentId: 'inv4',
         date: DateTime(2026, 1, 1),
@@ -62,6 +67,7 @@ void main() {
         createdAt: DateTime(2026, 1, 1),
       ),
       CashFlowEntity(
+        currency: 'USD',
         id: 'cf4-2',
         investmentId: 'inv4',
         date: DateTime(2026, 1, 4),
@@ -75,6 +81,7 @@ void main() {
     // bound the solver searches to, so it comes from the approximate fallback.
     final cashFlows5 = [
       CashFlowEntity(
+        currency: 'USD',
         id: 'cf5-1',
         investmentId: 'inv5',
         date: DateTime(2026, 1, 1),
@@ -83,6 +90,7 @@ void main() {
         createdAt: DateTime(2026, 1, 1),
       ),
       CashFlowEntity(
+        currency: 'USD',
         id: 'cf5-2',
         investmentId: 'inv5',
         date: DateTime(2026, 1, 2),
@@ -105,7 +113,7 @@ void main() {
             ]),
           ),
           isAuthenticatedProvider.overrideWith((ref) => true),
-          // The flows are in USD (the entity default): no conversion needed.
+          // The flows are in USD, the base currency: no conversion needed.
           currencyCodeProvider.overrideWith((ref) => 'USD'),
         ],
       );

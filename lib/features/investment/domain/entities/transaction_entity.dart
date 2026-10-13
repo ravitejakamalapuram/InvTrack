@@ -101,7 +101,6 @@ class CashFlowEntity implements ICashFlow {
 
   /// Currency of this cash flow
   /// Each cash flow can have its own currency (not inherited from investment)
-  /// Default: 'USD' for backward compatibility
   @override
   final String currency;
 
@@ -120,7 +119,7 @@ class CashFlowEntity implements ICashFlow {
     required this.amount,
     this.notes,
     required this.createdAt,
-    this.currency = 'USD', // Default for backward compatibility
+    required this.currency,
     this.currencyAssumed = false,
   });
 

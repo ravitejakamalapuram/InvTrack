@@ -104,6 +104,7 @@ void main() {
       final now = DateTime.now();
       testApp.seedInvestments([
         InvestmentEntity(
+          currency: 'INR',
           id: 'test_inv_1',
           name: 'Original FD',
           type: InvestmentType.fixedDeposit,

@@ -85,6 +85,7 @@ void main() {
     tester,
   ) async {
     final investment = InvestmentEntity(
+      currency: 'USD',
       id: 'closed',
       name: 'Closed loss',
       type: InvestmentType.stocks,
@@ -129,6 +130,7 @@ void main() {
       'undefined one shows no IRR', (tester) async {
     InvestmentWithStats closed(String id, double? xirr) => InvestmentWithStats(
       investment: InvestmentEntity(
+        currency: 'USD',
         id: id,
         name: 'Closed $id',
         type: InvestmentType.stocks,

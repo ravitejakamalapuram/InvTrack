@@ -361,7 +361,7 @@ class InvestmentEntity {
     this.autoRenewal,
     this.riskLevel,
     this.compoundingFrequency,
-    this.currency = 'USD', // Default for backward compatibility
+    required this.currency,
     this.currencyAssumed = false,
     this.currentValue,
     this.currentValueDate,

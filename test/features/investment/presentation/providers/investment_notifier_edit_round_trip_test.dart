@@ -63,6 +63,8 @@ final _everyField = InvestmentEntity(
 
 /// Only the required fields; everything else at its default.
 final _requiredOnly = InvestmentEntity(
+  // Required since A82; differs from _everyField so the guard still sees it.
+  currency: 'USD',
   id: 'inv-fd',
   name: 'Other',
   type: InvestmentType.bonds,

@@ -262,6 +262,7 @@ void main() {
       CashFlowType type,
       double amt,
     ) => CashFlowEntity(
+      currency: 'INR',
       id: id,
       investmentId: 'p2p',
       date: date,
