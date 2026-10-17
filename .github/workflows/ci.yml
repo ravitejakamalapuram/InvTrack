@@ -199,10 +199,10 @@ jobs:
   # reaches platform-ci (which must stay secret-free) or the PR-controlled analysis steps.
   notify-failure:
     name: Notify Slack of Failure
-    needs: [platform-ci, ci-checks]
+    needs: [platform-ci, ci-checks, timezone-tests]
     if: |
       always() &&
-      (needs.platform-ci.result == 'failure' || needs.ci-checks.result == 'failure')
+      (needs.platform-ci.result == 'failure' || needs.ci-checks.result == 'failure' || needs.timezone-tests.result == 'failure')
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack
