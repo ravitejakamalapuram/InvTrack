@@ -106,8 +106,8 @@ class _FilterChip extends StatelessWidget {
               color: isSelected
                   ? Colors.transparent
                   : (isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light),
+                      ? AppColors.fieldBorderDark
+                      : AppColors.fieldBorderLight),
               width: 1,
             ),
             boxShadow: isSelected

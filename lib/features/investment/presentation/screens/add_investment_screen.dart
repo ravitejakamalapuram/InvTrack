@@ -1653,7 +1653,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               progress,
             )!;
             final borderColor = Color.lerp(
-              isDark ? AppColors.neutral700Dark : AppColors.neutral300Light,
+              isDark ? AppColors.fieldBorderDark : AppColors.fieldBorderLight,
               Colors.transparent,
               progress,
             )!;
@@ -1961,7 +1961,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               progress,
             )!;
             final borderColor = Color.lerp(
-              isDark ? AppColors.neutral700Dark : AppColors.neutral300Light,
+              isDark ? AppColors.fieldBorderDark : AppColors.fieldBorderLight,
               Colors.transparent,
               progress,
             )!;

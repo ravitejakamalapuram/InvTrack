@@ -83,4 +83,34 @@ void main() {
       expect(_change(tester), AppColors.dangerLight);
     });
   });
+
+  group('the tile edge', () {
+    Color edge(WidgetTester tester) {
+      final ink = tester.widget<Ink>(find.byType(Ink));
+      final box = ink.decoration! as BoxDecoration;
+      return (box.border! as Border).top.color;
+    }
+
+    testWidgets('in light it is fieldBorderLight, 3:1 on the card', (
+      tester,
+    ) async {
+      await _pump(tester, AppTheme.lightTheme, positive: true);
+      expect(edge(tester), AppColors.fieldBorderLight);
+      expect(
+        contrastRatio(edge(tester), AppColors.cardLight),
+        greaterThanOrEqualTo(kMinGraphic),
+      );
+    });
+
+    testWidgets('in dark it is fieldBorderDark, 3:1 on the card', (
+      tester,
+    ) async {
+      await _pump(tester, AppTheme.darkTheme, positive: true);
+      expect(edge(tester), AppColors.fieldBorderDark);
+      expect(
+        contrastRatio(edge(tester), AppColors.cardDark),
+        greaterThanOrEqualTo(kMinGraphic),
+      );
+    });
+  });
 }

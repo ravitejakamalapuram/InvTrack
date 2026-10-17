@@ -31,7 +31,7 @@ Empty with hint · filled with clear button · focused · error with message · 
 
 ## Contrast
 
-`field-border` is #8d8b8a in light and #6b6765 in dark: 3.25:1 on `card` (light) and 3.54:1 on `background` (dark), above the 3:1 asked of a control boundary. The hint (`text-subtle`) is 4.60:1 on `surface` in light and 5.23:1 on #0a0a0a in dark. The focus border is `#5b4cdb`, 5.50:1 on `surface`, in light and `#8b7cf6`, 5.95:1 on #0a0a0a, in dark. The `error` red is `#cc1926` in light, 5.15:1 on `surface`.
+`field-border` is #8d8b8a in light and #6b6765 in dark: 3.25:1 on `background` (light) and 3.54:1 on `background` (dark), above the 3:1 asked of a control boundary. The hint (`text-subtle`) is 4.60:1 on `surface` in light and 5.23:1 on #0a0a0a in dark. The focus border is `#5b4cdb`, 5.50:1 on `surface`, in light and `#8b7cf6`, 5.95:1 on #0a0a0a, in dark. The `error` red is `#cc1926` in light, 5.15:1 on `surface`.
 
 ## Source
 
