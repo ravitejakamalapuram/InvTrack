@@ -709,15 +709,14 @@ List<ContrastPair> _build() {
       tier: 'P3',
       addedByPlan: true,
     ),
-    // White glyph on the start of the archive swipe gradient.
-    ContrastPair.token(
+    // The archive swipe glyph on the start of its gradient (white was 2.15).
+    ContrastPair.widget(
       'archive-gradient-start-light',
       rows: [76],
-      fg: AppColors.onFill(AppColors.archiveGradient.colors.first),
-      ground: AppColors.archiveGradient.colors.first,
       audit: 2.15,
       min: graphic,
       tier: 'P3',
+      widgetTest: 'test/core/widgets/swipe_actions_archive_contrast_test.dart',
     ),
 
     // ---- Colours hard-coded in widgets (no live measurement yet) ----

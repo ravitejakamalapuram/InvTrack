@@ -113,6 +113,7 @@ class _ConnectedToastState extends State<_ConnectedToast>
 
   @override
   Widget build(BuildContext context) {
+    final fill = widget.isDark ? AppColors.successDark : AppColors.successLight;
     return SlideTransition(
       position: _slideAnimation,
       child: FadeTransition(
@@ -122,9 +123,7 @@ class _ConnectedToastState extends State<_ConnectedToast>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: widget.isDark
-                  ? AppColors.successDark
-                  : AppColors.successLight,
+              color: fill,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
@@ -137,13 +136,17 @@ class _ConnectedToastState extends State<_ConnectedToast>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.wifi_rounded, color: Colors.white, size: 20),
+                Icon(
+                  Icons.wifi_rounded,
+                  color: AppColors.onFill(fill),
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Back online',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.onFill(fill),
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
