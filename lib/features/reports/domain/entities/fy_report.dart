@@ -97,8 +97,7 @@ class FYReport {
   }
 
   /// Total capital gains (short-term + long-term)
-  double get totalCapitalGains =>
-      shortTermCapitalGains + longTermCapitalGains;
+  double get totalCapitalGains => shortTermCapitalGains + longTermCapitalGains;
 
   /// Total taxable income (dividends + interest + capital gains)
   double get totalTaxableIncome =>
@@ -154,7 +153,7 @@ class MonthlyFYData {
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
     return months[month - 1];
   }
@@ -169,10 +168,15 @@ class InvestmentWithReturns {
   final double? xirr;
   final double percentageGain;
 
+  /// An open investment with no current value that has returned its cost: its
+  /// figures are cash-only minimums, labelled "so far".
+  final bool isSoFar;
+
   const InvestmentWithReturns({
     required this.investment,
     required this.absoluteReturns,
     required this.xirr,
     required this.percentageGain,
+    this.isSoFar = false,
   });
 }

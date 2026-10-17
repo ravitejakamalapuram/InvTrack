@@ -66,10 +66,20 @@ class InvestmentPerformance {
   /// XIRR as a decimal, or null when undefined (shown as "—", never 0%).
   final double? xirr;
   final double absoluteReturn;
-  final double percentageReturn;
+
+  /// Return % on cost, or null for an open investment that awaits its current
+  /// value (shown as "—", never -100%).
+  final double? percentageReturn;
   final double totalInvested;
   final double totalReturned;
-  final double currentValue;
+
+  /// What is still held: 0 for a closed investment, null for an open one,
+  /// because this report knows no current values (never invented).
+  final double? currentValue;
+
+  /// An open investment with no current value that has returned its cost: its
+  /// XIRR and return % are cash-only minimums, labelled "so far".
+  final bool returnsAreSoFar;
 
   const InvestmentPerformance({
     required this.investment,
@@ -79,6 +89,7 @@ class InvestmentPerformance {
     required this.totalInvested,
     required this.totalReturned,
     required this.currentValue,
+    this.returnsAreSoFar = false,
   });
 
   /// Returns true if this investment is profitable

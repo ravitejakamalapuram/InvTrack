@@ -42,18 +42,24 @@ class PerformanceReportService {
       // Calculate stats for this investment
       final stats = calculateStats(investmentCFs);
 
-      // Estimate current value (invested - returned)
-      final currentValue = stats.totalInvested - stats.totalReturned;
+      // Money rule 4: an open investment with no current value has no
+      // current value, return % or XIRR to show; one that has returned its
+      // cost keeps its cash-only figures, labelled "so far".
+      final awaitsValue = investment.isOpen && stats.awaitsValue;
+      final soFar = investment.isOpen && stats.returnsAreSoFar;
 
       performances.add(
         InvestmentPerformance(
           investment: investment,
-          xirr: stats.xirr,
+          xirr: awaitsValue ? null : stats.xirr,
           absoluteReturn: stats.netCashFlow,
-          percentageReturn: stats.absoluteReturn,
+          percentageReturn: awaitsValue ? null : stats.absoluteReturn,
           totalInvested: stats.totalInvested,
           totalReturned: stats.totalReturned,
-          currentValue: currentValue.abs(), // Use absolute value
+          // This report knows no current values: closed holds nothing, an
+          // open one is unknown (never |invested - returned|).
+          currentValue: investment.isClosed ? 0 : null,
+          returnsAreSoFar: soFar,
         ),
       );
     }
@@ -124,6 +130,7 @@ class PerformanceReportService {
     for (final perf in performances) {
       // Check if percentage return crossed a milestone threshold
       final percentageGain = perf.percentageReturn;
+      if (percentageGain == null) continue;
 
       // Determine which milestones were achieved
       final achievedMilestones = <double>[];

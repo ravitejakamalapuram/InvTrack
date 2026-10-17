@@ -261,12 +261,18 @@ class FYReportService {
       // Calculate stats
       final stats = calculateStats(investmentCFs);
 
+      // Money rule 4: an open investment with no current value is not
+      // ranked (its net cash is not a return); one that has returned its cost
+      // keeps its cash-only figures, flagged "so far".
+      if (investment.isOpen && stats.awaitsValue) continue;
+
       performers.add(
         InvestmentWithReturns(
           investment: investment,
           absoluteReturns: stats.netCashFlow,
           xirr: stats.xirr,
           percentageGain: stats.absoluteReturn,
+          isSoFar: investment.isOpen && stats.returnsAreSoFar,
         ),
       );
     }
