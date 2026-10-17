@@ -9,6 +9,8 @@ import 'package:inv_tracker/features/investment/domain/entities/investment_stats
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
+import '../../../../helpers/sentinel_localizations.dart';
+
 class _PrivacyOff extends PrivacyModeNotifier {
   @override
   bool build() => false;
@@ -44,7 +46,7 @@ Future<void> _pump(WidgetTester tester, {required bool privacy}) async {
         currencyCodeProvider.overrideWith((ref) => 'INR'),
       ],
       child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: sentinelLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: HeroCardContent(
@@ -82,8 +84,8 @@ void main() {
 
     expect(find.text('-₹99.95 L'), findsNothing);
     final label = tester.getSemantics(find.byType(HeroCardContent)).label;
-    expect(label, contains('Net cash flow so far: Hidden amount'));
-    expect(label, contains('Return: Hidden percentage'));
+    expect(label, contains('Net cash flow so far: $sentinelHiddenAmount'));
+    expect(label, contains('Return: $sentinelHiddenPercentage'));
     expect(label, isNot(contains('lakh')));
     expect(label, isNot(contains('99')));
   });

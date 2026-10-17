@@ -122,19 +122,21 @@ class AccessibilityUtils {
     double? totalInvested,
     DateTime? lastActivityDate,
     bool shouldMask = false,
+    required String hiddenAmountLabel,
+    required String hiddenPercentageLabel,
   }) {
     final status = isClosed ? 'Closed investment' : 'Open investment';
     final value = currentValue == null
         ? null
         : shouldMask
-        ? 'Hidden amount'
+        ? hiddenAmountLabel
         : formatCurrencyForScreenReader(
             currentValue,
             currencySymbol,
             locale: currencyLocale,
           );
     final invested = totalInvested != null && totalInvested > 0
-        ? 'Invested: ${shouldMask ? "Hidden amount" : formatCurrencyForScreenReader(totalInvested, currencySymbol, locale: currencyLocale)}'
+        ? 'Invested: ${shouldMask ? hiddenAmountLabel : formatCurrencyForScreenReader(totalInvested, currencySymbol, locale: currencyLocale)}'
         : '';
     final approx = returnIsApproximate ? 'approximately ' : '';
     final expected = expectedReturnBasis != null ? 'expected ' : '';
@@ -142,7 +144,7 @@ class AccessibilityUtils {
         ? ', $expectedReturnBasis'
         : '';
     final figure = returnStatus == null && returnPercent != null
-        ? 'Returns: $expected${shouldMask ? "Hidden percentage" : '$approx${formatPercentageForScreenReader(returnPercent)}'}$basis'
+        ? 'Returns: $expected${shouldMask ? hiddenPercentageLabel : '$approx${formatPercentageForScreenReader(returnPercent)}'}$basis'
         : null;
     final returns = returnStatus != null
         ? 'Returns: $returnStatus'

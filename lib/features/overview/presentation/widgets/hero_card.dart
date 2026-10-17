@@ -153,7 +153,7 @@ class HeroCardContent extends ConsumerWidget {
     final semanticLabel = AccessibilityUtils.statCardLabel(
       title: showRealizedOnly ? 'Realized Net Position' : l10n.netCashFlowSoFar,
       value: isPrivacyMode
-          ? 'Hidden amount'
+          ? l10n.hiddenAmount
           : AccessibilityUtils.formatCurrencyForScreenReader(
               netPosition,
               currencyFormat.currencySymbol,
@@ -166,7 +166,7 @@ class HeroCardContent extends ConsumerWidget {
           : display.semanticsFigure(
               l10n,
               isPrivacyMode
-                  ? 'Return: Hidden percentage'
+                  ? 'Return: ${l10n.hiddenPercentage}'
                   : 'Return: ${AccessibilityUtils.formatPercentageForScreenReader(stats.absoluteReturn)}',
             ),
     );
