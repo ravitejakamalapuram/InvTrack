@@ -17,7 +17,8 @@ import 'contrast_pairs.dart';
 
 /// Pairs that still fail. Grouped by the PR in the stack that fixes them.
 const _allowlist = <String>{
-  // PR 11 contrast-card-edges (6): dividers and glass borders, held for a decision
+  // Decorative edges kept as drawn (owner decision 2026-10-17, #977): dividers
+  // and the glass card border. Text, icons and controls carry the meaning.
   'outline-variant-dark@background',
   'outline-variant-light@background',
   'outline-variant-light@card',
