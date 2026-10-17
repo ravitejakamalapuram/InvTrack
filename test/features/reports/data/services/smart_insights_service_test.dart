@@ -52,13 +52,15 @@ void main() {
           .where((i) => i.type == InsightType.decliningInvestment)
           .toList();
 
-  test('an open holding gets no declining alert from cash alone', () {
-    expect(declining(InvestmentStatus.open), isEmpty);
-  });
+  group('declining alerts', () {
+    test('an open holding gets no declining alert from cash alone', () {
+      expect(declining(InvestmentStatus.open), isEmpty);
+    });
 
-  test('a closed holding still gets the declining alert', () {
-    final alerts = declining(InvestmentStatus.closed);
-    expect(alerts, hasLength(1));
-    expect(alerts.single.value, '-75.0%');
+    test('a closed holding still gets the declining alert', () {
+      final alerts = declining(InvestmentStatus.closed);
+      expect(alerts, hasLength(1));
+      expect(alerts.single.value, '-75.0%');
+    });
   });
 }
