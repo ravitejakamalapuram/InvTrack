@@ -238,4 +238,40 @@ void main() {
       fill: _fillBehind(tester, label),
     );
   });
+
+  testWidgets('the status chip (awaiting a value) reads on every stop', (
+    tester,
+  ) async {
+    final open = _stats(invested: 100000, returned: 0);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          privacyModeProvider.overrideWith(_PrivacyOff.new),
+          currencyCodeProvider.overrideWith((ref) => 'INR'),
+          analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: HeroCardContent(
+              globalStats: open,
+              openStats: open,
+              closedStats: InvestmentStats.empty(),
+              currencyFormat: _inr,
+              showRealizedOnly: false,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final label = find.text('Awaiting first payout');
+    expect(label, findsOneWidget);
+    _expectReadable(
+      {for (final k in _stops.keys) 'status chip on $k': k},
+      _textColor(tester, label),
+      fill: _fillBehind(tester, label),
+    );
+  });
 }

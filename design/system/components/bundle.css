@@ -111,7 +111,7 @@
 .it-hero__amount { font: 700 36px/1.4 var(--font-text); color: #fff; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .it-hero__badge { display: inline-block; padding: 4px 8px; border-radius: var(--radius-sm); font: 600 14px/1.4 var(--font-text); }
 .it-hero__badge--up, .it-hero__badge--down { background: rgba(0, 0, 0, .2); color: rgba(255, 255, 255, .9); }   /* hero-chip-fill, hero-secondary-text: the sign carries gain or loss */
-.it-hero__badge--status { background: rgba(255, 255, 255, .15); color: rgba(255, 255, 255, .9); margin-top: 6px; }
+.it-hero__badge--status { background: rgba(0, 0, 0, .2); color: rgba(255, 255, 255, .9); margin-top: 6px; }
 /* StatColumns (lib/core/widgets/stat_columns.dart): equal columns of label over value. Each column is a subgrid over two
    shared rows, label and value, so the labels of a row share a last line and the values one baseline, whatever the
    sizes of the values; a label that wraps grows upward. The wrapper is the container; the breakpoints are in rem so

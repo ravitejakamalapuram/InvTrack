@@ -399,8 +399,9 @@ List<ContrastPair> _build() {
     // ---- P1 text the audit had no row for, found in the PR 1 review ----
     // The investment card's XIRR pill paints successLight or errorLight on a
     // 10% tint (investment_card.dart, `xirrColor`). The green is tinted with
-    // the brighter graphEmerald; the red with `dangerTintLight`, the brighter red that
-    // `errorLight` had before it was deepened. Dark has the pair below.
+    // the brighter graphEmerald; the red with `dangerTintLight`, the brighter
+    // red that `errorLight` had before it was deepened. Dark has the pair
+    // below.
     ContrastPair.token(
       'graph-emerald-light@tint10',
       rows: [],

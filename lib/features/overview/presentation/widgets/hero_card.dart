@@ -322,9 +322,7 @@ class HeroCardContent extends ConsumerWidget {
     final isPrivacyMode = ref.watch(privacyModeProvider);
     // A neutral chip replaces the return % while open investments have no
     // terminal value; otherwise the badge would show a fake loss.
-    final badgeColor = status != null
-        ? Colors.white.withValues(alpha: 0.15)
-        : AppColors.heroChipFill;
+    const badgeColor = AppColors.heroChipFill;
     // White on a dark scrim: green and red text on a tint of itself fell to
     // 1.6:1. The badge starts with + or -, so colour is not the only carrier.
     final badgeTextColor = AppColors.heroSecondaryText;
