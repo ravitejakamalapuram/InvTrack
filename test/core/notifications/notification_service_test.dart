@@ -226,7 +226,12 @@ void main() {
       expect(scheduled.id, NotificationIds.monthlySummary);
       expect(scheduled.title, '📈 Monthly Income Summary');
       // Verify it's scheduled for end of month (day 28, 29, 30, or 31)
-      expect(scheduled.scheduledDate.day, greaterThanOrEqualTo(28));
+      // The handler builds the date in the device zone; tz.local stays UTC in
+      // tests, so read the day in the process zone, not the tz location.
+      final localDay = DateTime.fromMillisecondsSinceEpoch(
+        scheduled.scheduledDate.millisecondsSinceEpoch,
+      ).day;
+      expect(localDay, greaterThanOrEqualTo(28));
     });
 
     test('should not schedule monthly summary when disabled', () async {

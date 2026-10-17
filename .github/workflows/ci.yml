@@ -164,15 +164,45 @@ jobs:
           git diff --name-status FETCH_HEAD^1 FETCH_HEAD | bash "$RUNNER_TEMP/guard.sh"
         shell: bash
 
+  # Money rule 5: cash-flow dates are date-only. A change that reads UTC fields instead of the local
+  # calendar day passes under UTC (the runner default) and Asia/Kolkata, and fails only in a zone
+  # behind UTC. platform-ci runs the full suite once in the default zone, so this reruns just the
+  # date-heavy folders in America/Los_Angeles.
+  timezone-tests:
+    name: Date tests in America/Los_Angeles
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: '3.38.4' # keep in step with release.yaml
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get && flutter gen-l10n
+      - name: Date tests in America/Los_Angeles
+        env:
+          TZ: America/Los_Angeles
+        run: flutter test --exclude-tags=golden test/core/calculations test/core/utils test/core/notifications test/features/investment
+
   # Preserves the old workflow's single "notify Slack on any CI failure" behavior now that the
   # checks are split across two jobs. Kept as its own job so the Slack webhook secret never
   # reaches platform-ci (which must stay secret-free) or the PR-controlled analysis steps.
   notify-failure:
     name: Notify Slack of Failure
-    needs: [platform-ci, ci-checks]
+    needs: [platform-ci, ci-checks, timezone-tests]
     if: |
       always() &&
-      (needs.platform-ci.result == 'failure' || needs.ci-checks.result == 'failure')
+      (needs.platform-ci.result == 'failure' || needs.ci-checks.result == 'failure' || needs.timezone-tests.result == 'failure')
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack
