@@ -122,8 +122,8 @@ class AccessibilityUtils {
     double? totalInvested,
     DateTime? lastActivityDate,
     bool shouldMask = false,
-    String hiddenAmountLabel = 'Hidden amount',
-    String hiddenPercentageLabel = 'Hidden percentage',
+    required String hiddenAmountLabel,
+    required String hiddenPercentageLabel,
   }) {
     final status = isClosed ? 'Closed investment' : 'Open investment';
     final value = currentValue == null

@@ -22,6 +22,7 @@ import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_card.dart';
+import '../../../../helpers/sentinel_localizations.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class _PrivacyOff extends PrivacyModeNotifier {
@@ -323,7 +324,7 @@ Future<void> _pumpCards(
       ],
       child: MaterialApp(
         theme: ThemeData(brightness: brightness),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: sentinelLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(
@@ -625,7 +626,8 @@ void main() {
         expect(
           label,
           contains(
-            'Invested: Hidden amount. Received: Hidden amount. Returns: '
+            'Invested: $sentinelHiddenAmount. Received: $sentinelHiddenAmount. '
+            'Returns: '
             'Awaiting',
           ),
         );

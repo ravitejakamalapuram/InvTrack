@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../../helpers/sentinel_localizations.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/quick_stat_card.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
@@ -23,7 +24,7 @@ void main() {
       ProviderScope(
         overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: sentinelLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: child),
         ),
@@ -80,7 +81,7 @@ void main() {
       // Verify masked label contains ONLY label and "Hidden amount".
       // Subtitle should be excluded to match visual hiding and prevent data leakage.
       expect(
-        find.semantics.byLabel('Total Returns: Hidden amount'),
+        find.semantics.byLabel('Total Returns: $sentinelHiddenAmount'),
         findsOneWidget,
       );
 

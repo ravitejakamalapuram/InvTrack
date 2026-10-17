@@ -79,6 +79,8 @@ void main() {
     group('investmentCardLabel', () {
       test('generates correct label for open investment', () {
         final label = AccessibilityUtils.investmentCardLabel(
+          hiddenAmountLabel: 'Hidden amount',
+          hiddenPercentageLabel: 'Hidden percentage',
           name: 'Tech Stocks',
           type: 'Stock',
           currentValue: 50000,
@@ -96,6 +98,8 @@ void main() {
 
       test('generates correct label for closed investment', () {
         final label = AccessibilityUtils.investmentCardLabel(
+          hiddenAmountLabel: 'Hidden amount',
+          hiddenPercentageLabel: 'Hidden percentage',
           name: 'Old Bond',
           type: 'Bond',
           currentValue: 10000,
@@ -113,6 +117,8 @@ void main() {
 
       test('generates correct label without returns', () {
         final label = AccessibilityUtils.investmentCardLabel(
+          hiddenAmountLabel: 'Hidden amount',
+          hiddenPercentageLabel: 'Hidden percentage',
           name: 'New Fund',
           type: 'Mutual Fund',
           currentValue: 2000,
@@ -132,6 +138,8 @@ void main() {
         final lastActivity = DateTime(2023, 10, 15);
 
         final label = AccessibilityUtils.investmentCardLabel(
+          hiddenAmountLabel: 'Hidden amount',
+          hiddenPercentageLabel: 'Hidden percentage',
           name: 'Active Stock',
           type: 'Stock',
           currentValue: 55000,
@@ -157,6 +165,8 @@ void main() {
         final maturityDate = now.subtract(const Duration(days: 5));
 
         final label = AccessibilityUtils.investmentCardLabel(
+          hiddenAmountLabel: 'Hidden amount',
+          hiddenPercentageLabel: 'Hidden percentage',
           name: 'Expired Bond',
           type: 'Bond',
           currentValue: 1000,
@@ -175,6 +185,8 @@ void main() {
         final now = DateTime.now();
 
         final label = AccessibilityUtils.investmentCardLabel(
+          hiddenAmountLabel: 'Hidden amount',
+          hiddenPercentageLabel: 'Hidden percentage',
           name: 'Maturing Bond',
           type: 'Bond',
           currentValue: 1000,
@@ -193,6 +205,8 @@ void main() {
         final maturityDate = now.add(const Duration(days: 15));
 
         final label = AccessibilityUtils.investmentCardLabel(
+          hiddenAmountLabel: 'Hidden amount',
+          hiddenPercentageLabel: 'Hidden percentage',
           name: 'Soon Bond',
           type: 'Bond',
           currentValue: 1000,
@@ -211,6 +225,8 @@ void main() {
         final maturityDate = now.add(const Duration(days: 40));
 
         final label = AccessibilityUtils.investmentCardLabel(
+          hiddenAmountLabel: 'Hidden amount',
+          hiddenPercentageLabel: 'Hidden percentage',
           name: 'Long Bond',
           type: 'Bond',
           currentValue: 1000,
@@ -226,6 +242,8 @@ void main() {
 
       test('reads an INR card value in lakh', () {
         final label = AccessibilityUtils.investmentCardLabel(
+          hiddenAmountLabel: 'Hidden amount',
+          hiddenPercentageLabel: 'Hidden percentage',
           name: 'HDFC FD',
           type: 'Fixed Deposit',
           currentValue: 512000,
@@ -246,6 +264,8 @@ void main() {
 
       test('masks sensitive values when shouldMask is true', () {
         final label = AccessibilityUtils.investmentCardLabel(
+          hiddenAmountLabel: 'Hidden amount',
+          hiddenPercentageLabel: 'Hidden percentage',
           name: 'Secret Fund',
           type: 'Stock',
           currentValue: 1000000,
@@ -270,6 +290,8 @@ void main() {
 
         test('qualifies the returns sentence', () {
           final label = AccessibilityUtils.investmentCardLabel(
+            hiddenAmountLabel: 'Hidden amount',
+            hiddenPercentageLabel: 'Hidden percentage',
             name: 'Bhive RBF',
             type: 'P2P Lending',
             currentValue: 114000,
@@ -288,6 +310,8 @@ void main() {
 
         test('still hides the percentage when masked', () {
           final label = AccessibilityUtils.investmentCardLabel(
+            hiddenAmountLabel: 'Hidden amount',
+            hiddenPercentageLabel: 'Hidden percentage',
             name: 'Bhive RBF',
             type: 'P2P Lending',
             currentValue: 114000,
@@ -305,6 +329,8 @@ void main() {
 
         test('leaves out a figure that is not there', () {
           final label = AccessibilityUtils.investmentCardLabel(
+            hiddenAmountLabel: 'Hidden amount',
+            hiddenPercentageLabel: 'Hidden percentage',
             name: 'Bhive RBF',
             type: 'P2P Lending',
             currentValue: 0,
@@ -326,6 +352,8 @@ void main() {
       group('awaiting a value', () {
         test('speaks invested and received, not a current value', () {
           final label = AccessibilityUtils.investmentCardLabel(
+            hiddenAmountLabel: 'Hidden amount',
+            hiddenPercentageLabel: 'Hidden percentage',
             name: 'Pool',
             type: 'P2P Lending',
             currentValue: null,
@@ -348,6 +376,8 @@ void main() {
 
         test('keeps the last activity and maturity after the returns', () {
           final label = AccessibilityUtils.investmentCardLabel(
+            hiddenAmountLabel: 'Hidden amount',
+            hiddenPercentageLabel: 'Hidden percentage',
             name: 'Pool',
             type: 'P2P Lending',
             currentValue: null,
@@ -372,6 +402,8 @@ void main() {
 
         test('other states keep the current value and have no received', () {
           final label = AccessibilityUtils.investmentCardLabel(
+            hiddenAmountLabel: 'Hidden amount',
+            hiddenPercentageLabel: 'Hidden percentage',
             name: 'Pool',
             type: 'P2P Lending',
             currentValue: -100000,
