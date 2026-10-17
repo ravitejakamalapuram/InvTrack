@@ -94,6 +94,8 @@ class AppColors {
   static const Color neutral400Light = Color(0xFF746E6A);
   static const Color neutral300Light = Color(0xFFD6D3D1);
   static const Color neutral200Light = Color(0xFFE7E5E4);
+  // Input and button outlines: 3:1 or more on the page, card, surface and input fill.
+  static const Color fieldBorderLight = Color(0xFF8D8B8A);
   static const Color neutral100Light = Color(0xFFF5F5F4);
   static const Color whiteLight = Color(0xFFFFFFFF);
   static const Color backgroundLight = Color(0xFFFAFAF9);
@@ -133,6 +135,8 @@ class AppColors {
   static const Color neutral500Dark = Color(0xFF89827C);
   static const Color neutral600Dark = Color(0xFF57534E);
   static const Color neutral700Dark = Color(0xFF292524);
+  // Input and button outlines: 3:1 or more on the page, card and input fill.
+  static const Color fieldBorderDark = Color(0xFF6B6765);
   static const Color neutral800Dark = Color(0xFF1C1917);
   static const Color neutral900Dark = Color(0xFF0C0A09);
   static const Color neutral950Dark = Color(0xFF0A0A0A);

@@ -289,16 +289,16 @@ class _AppTextFieldState extends State<AppTextField> {
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide(
                   color: isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light,
+                      ? AppColors.fieldBorderDark
+                      : AppColors.fieldBorderLight,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide(
                   color: isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light,
+                      ? AppColors.fieldBorderDark
+                      : AppColors.fieldBorderLight,
                 ),
               ),
               focusedBorder: OutlineInputBorder(

@@ -49,8 +49,8 @@ class MetricTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isDark
-                  ? AppColors.neutral700Dark
-                  : AppColors.neutral200Light,
+                  ? AppColors.fieldBorderDark
+                  : AppColors.fieldBorderLight,
             ),
           ),
           child: Column(

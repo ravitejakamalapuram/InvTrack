@@ -26,7 +26,7 @@ class AppTheme {
         onPrimaryContainer: AppColors.neutral900Light,
         onSurface: AppColors.neutral900Light,
         onError: Colors.white,
-        outline: AppColors.neutral300Light,
+        outline: AppColors.fieldBorderLight,
         outlineVariant: AppColors.neutral200Light,
       ),
 
@@ -113,7 +113,7 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primaryLight,
-          side: const BorderSide(color: AppColors.neutral300Light, width: 1.5),
+          side: const BorderSide(color: AppColors.fieldBorderLight, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -142,7 +142,7 @@ class AppTheme {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(
-            color: AppColors.neutral300Light,
+            color: AppColors.fieldBorderLight,
             width: 1,
           ),
         ),
@@ -251,7 +251,7 @@ class AppTheme {
         onSurface: AppColors.neutral50Dark,
         // Dark ink on the light red: white would be 2.77:1.
         onError: AppColors.cardDark,
-        outline: AppColors.neutral700Dark,
+        outline: AppColors.fieldBorderDark,
         outlineVariant: AppColors.neutral800Dark,
       ),
 
@@ -334,7 +334,7 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primaryDark,
-          side: const BorderSide(color: AppColors.neutral700Dark, width: 1.5),
+          side: const BorderSide(color: AppColors.fieldBorderDark, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -354,7 +354,7 @@ class AppTheme {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(
-            color: AppColors.neutral700Dark,
+            color: AppColors.fieldBorderDark,
             width: 1,
           ),
         ),

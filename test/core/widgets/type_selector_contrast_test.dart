@@ -195,4 +195,48 @@ void main() {
     );
     handle.dispose();
   });
+
+  testWidgets(
+    'an unselected chip draws its edge in fieldBorder, 3:1 on the page',
+    (tester) async {
+      for (final dark in [false, true]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData(
+              brightness: dark ? Brightness.dark : Brightness.light,
+            ),
+            home: Scaffold(
+              body: TypeSelector<String>(
+                values: const ['a', 'b'],
+                selectedValue: 'a',
+                onSelected: (_) {},
+                colorBuilder: (_) => Colors.indigo,
+                iconBuilder: (_) => Icons.circle,
+                labelBuilder: (v) => v,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final token = dark
+            ? AppColors.fieldBorderDark
+            : AppColors.fieldBorderLight;
+        final edges = tester
+            .widgetList<Container>(find.byType(Container))
+            .map((c) => c.decoration)
+            .whereType<BoxDecoration>()
+            .map((d) => d.border)
+            .whereType<Border>()
+            .map((b) => b.top.color);
+        expect(edges, contains(token));
+        expect(
+          contrastRatio(
+            token,
+            dark ? AppColors.backgroundDark : AppColors.backgroundLight,
+          ),
+          greaterThanOrEqualTo(kMinGraphic),
+        );
+      }
+    },
+  );
 }

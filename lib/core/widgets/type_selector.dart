@@ -375,7 +375,7 @@ class _TypeSelectorChip extends StatelessWidget {
           borderColor = isDark ? Colors.white : AppColors.primaryLight;
         } else {
           borderColor = Color.lerp(
-            isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+            isDark ? AppColors.fieldBorderDark : AppColors.fieldBorderLight,
             Colors.transparent,
             selectionProgress,
           )!;
