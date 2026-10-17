@@ -1,8 +1,10 @@
 /// A backup restores every investment as it was (A24 / #768).
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:archive/archive.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
@@ -139,5 +141,111 @@ void main() {
       }
     }
     expect(notes, unorderedEquals(['first\nsecond', 'only']));
+  });
+
+  // The backup with investments.json replaced by [json].
+  Uint8List withInvestmentsJson(Uint8List zip, String json) {
+    final out = Archive();
+    for (final f in ZipDecoder().decodeBytes(zip).files) {
+      if (f.name == 'investments.json') continue;
+      out.addFile(ArchiveFile(f.name, f.size, f.content));
+    }
+    final bytes = utf8.encode(json);
+    out.addFile(ArchiveFile('investments.json', bytes.length, bytes));
+    return Uint8List.fromList(ZipEncoder().encode(out)!);
+  }
+
+  Future<Uint8List> exportedBackup() async {
+    await seed();
+    return (await export.exportAsZipBytes()).bytes;
+  }
+
+  final damagedFiles = <String, String>{
+    'malformed': '{not json',
+    'newer version': '{"schemaVersion": 99, "investments": []}',
+    'unreadable row among readable ones':
+        '{"schemaVersion": 1, "investments": [42]}',
+  };
+
+  for (final entry in damagedFiles.entries) {
+    test('Replace stops on a damaged investments.json (${entry.key}) and '
+        'keeps the existing data', () async {
+      final zip = withInvestmentsJson(await exportedBackup(), entry.value);
+
+      final result = await import.importFromZip(
+        zip,
+        ImportStrategy.replace,
+        baseCurrency: 'INR',
+      );
+
+      expect(result.errors.single, contains('investments.json is damaged'));
+      expect(await repo.getAllInvestments(), hasLength(2));
+    });
+
+    test('Merge skips a damaged investments.json (${entry.key}) with a '
+        'warning and still imports', () async {
+      final zip = withInvestmentsJson(await exportedBackup(), entry.value);
+      await repo.bulkDelete(['a', 'b']);
+
+      final result = await import.importFromZip(
+        zip,
+        ImportStrategy.merge,
+        baseCurrency: 'INR',
+      );
+
+      expect(result.errors, isEmpty);
+      expect(result.warnings, isNotEmpty);
+      // Without investments.json the two same-name investments fall back to
+      // matching by name, as in a backup from before the file existed.
+      expect(await repo.getAllInvestments(), hasLength(1));
+    });
+  }
+
+  test(
+    'Replace stops when one row of investments.json is unreadable',
+    () async {
+      final backup = await exportedBackup();
+      final text = utf8.decode(
+        ZipDecoder().decodeBytes(backup).findFile('investments.json')!.content
+            as List<int>,
+      );
+      final good = jsonDecode(text) as Map<String, dynamic>;
+      (good['investments'] as List).add(42);
+      final zip = withInvestmentsJson(backup, jsonEncode(good));
+
+      final result = await import.importFromZip(
+        zip,
+        ImportStrategy.replace,
+        baseCurrency: 'INR',
+      );
+
+      expect(result.errors.single, contains('investments.json is damaged'));
+      expect(await repo.getAllInvestments(), hasLength(2));
+    },
+  );
+
+  test('Merge restores a missing investment with its details and skips '
+      'the one that exists', () async {
+    await repo.bulkImport(
+      investments: [rich('a', 'Alpha'), rich('b', 'Beta')],
+      cashFlows: [flow('fa', 'a', 'x'), flow('fb', 'b', 'y')],
+    );
+    final zip = (await export.exportAsZipBytes()).bytes;
+    await repo.bulkDelete(['b']);
+
+    final result = await import.importFromZip(
+      zip,
+      ImportStrategy.merge,
+      baseCurrency: 'INR',
+    );
+
+    expect(result.errors, isEmpty);
+    expect(result.warnings, hasLength(1));
+    final all = await repo.getAllInvestments();
+    expect(all.map((i) => i.name), unorderedEquals(['Alpha', 'Beta']));
+    final beta = all.firstWhere((i) => i.name == 'Beta');
+    expect(beta.id, isNot('b'), reason: 'Merge adds under a new id');
+    expect(beta.platform, 'Acme Bank');
+    expect(beta.expectedRate, 7.25);
   });
 }

@@ -283,7 +283,7 @@ class DataImportService {
           _investmentsWarning,
           warnings,
           damagedFiles,
-          _parseInvestmentsJson,
+          (text) => _parseInvestmentsJson(text, strict: isReplace),
         ) ??
         const <String, InvestmentEntity>{};
     if (isReplace && damagedFiles.isNotEmpty) {
@@ -1132,8 +1132,13 @@ class DataImportService {
   /// investments by id. Null if the file is damaged: not JSON, not an object,
   /// written by a newer version of the app, without the list the exporter
   /// always writes, or with rows but none of them readable. A row of the wrong
-  /// shape among readable ones is skipped.
-  Map<String, InvestmentEntity>? _parseInvestmentsJson(String text) {
+  /// shape among readable ones is skipped by Merge; with [strict] (Replace) it
+  /// makes the file damaged too, so Replace never deletes the account and
+  /// restores that investment without its details.
+  Map<String, InvestmentEntity>? _parseInvestmentsJson(
+    String text, {
+    required bool strict,
+  }) {
     final json = jsonDecode(text);
     if (json is! Map<String, dynamic>) return null;
     final version = json['schemaVersion'];
@@ -1145,7 +1150,11 @@ class DataImportService {
     final byId = <String, InvestmentEntity>{};
     for (final row in rows) {
       final investment = investmentFromBackupJson(row);
-      if (investment != null) byId[investment.id] = investment;
+      if (investment != null) {
+        byId[investment.id] = investment;
+      } else if (strict) {
+        return null;
+      }
     }
     if (byId.isEmpty && rows.isNotEmpty) return null;
     return byId;
