@@ -190,7 +190,7 @@ _Goal: Nothing false on the store, and no flow that silently destroys or inflate
 **Why:** Until A10 lands, every open FD, bond or P2P loan shows a red −100% or −98% XIRR and 0.00x MOIC. This is the first number new users see.
 
 **Do:**
-- When an open investment has no inflows, or no terminal value, show “Awaiting first payout” instead of a % badge, and show XIRR as “—” with the hint “Add a payout or current value to calculate”.
+- When an open investment has no inflows, or no terminal value, show “Awaiting first payout” instead of a % badge (exception, #954: an open holding with no value that has already returned its cost keeps its cash-only figures, labelled “so far”), and show XIRR as “—” with the hint “Add a payout or current value to calculate”.
 - Rename the hero headline to “Net cash flow so far”, and when a rate is known show “Projected at maturity ₹1,23,144 (7.19% p.a.)” from InvestmentProjector.
 - Return a result type from the XIRR solver (exact / approximate / undefined): label approximate results “approx.”, show “>1000%” instead of “0.0%”, and show absolute return as the primary figure for holdings under 90 days.
 

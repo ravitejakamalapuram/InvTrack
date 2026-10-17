@@ -105,6 +105,8 @@ class InvestmentCard extends ConsumerWidget {
       };
 
       baseLabel = AccessibilityUtils.investmentCardLabel(
+        hiddenAmountLabel: l10n.hiddenAmount,
+        hiddenPercentageLabel: l10n.hiddenPercentage,
         name: investment.name,
         type: typeName,
         // An open investment awaiting a value shows what went in and came

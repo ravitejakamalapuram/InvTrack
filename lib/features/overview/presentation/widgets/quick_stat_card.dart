@@ -7,6 +7,7 @@ import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// A card displaying a quick stat with icon, label, value, and optional subtitle.
 class QuickStatCard extends ConsumerWidget {
@@ -45,7 +46,9 @@ class QuickStatCard extends ConsumerWidget {
     // Instead of reading "Label", "Value", "Subtitle" separately, screen readers will
     // announce "Label: Value, Subtitle". This reduces swipe fatigue.
     // Note: We hide subtitle in privacy mode to prevent leaking sensitive info.
-    final semanticValue = shouldMask ? 'Hidden amount' : value;
+    final semanticValue = shouldMask
+        ? AppLocalizations.of(context).hiddenAmount
+        : value;
     final showSubtitle = subtitle != null && !shouldMask;
     final semanticLabel =
         '$label: $semanticValue${showSubtitle ? ", $subtitle" : ""}';
