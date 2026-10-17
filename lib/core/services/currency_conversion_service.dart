@@ -170,6 +170,9 @@ class CurrencyConversionService {
   // In-flight request cache for request coalescing
   final Map<String, Future<double>> _inflightRequests = {};
 
+  /// Currencies pegged to USD: units of currency per 1 USD.
+  static const _usdPegs = {'AED': 3.6725, 'SAR': 3.75};
+
   // Circuit breaker for API resilience
   final CircuitBreaker _circuitBreaker = CircuitBreaker();
 
@@ -497,7 +500,7 @@ class CurrencyConversionService {
 
       if (snapshot.docs.isNotEmpty) {
         final data = snapshot.docs.first.data();
-        return data['rate'] as double;
+        return (data['rate'] as num).toDouble();
       }
     } catch (e) {
       if (kDebugMode) {
@@ -577,7 +580,7 @@ class CurrencyConversionService {
     final doc = await _exchangeRatesRef.doc(memKey).get();
 
     if (doc.exists) {
-      final rate = doc.data()!['rate'] as double;
+      final rate = (doc.data()!['rate'] as num).toDouble();
       _addToMemoryCache(memKey, rate);
       _metrics.firestoreCacheHits++;
       _analytics?.logExchangeRateCacheHit(
@@ -676,7 +679,7 @@ class CurrencyConversionService {
 
       // Check if expired
       if (expiresAt != null && DateTime.now().isBefore(expiresAt)) {
-        final rate = data['rate'] as double;
+        final rate = (data['rate'] as num).toDouble();
         _addToMemoryCache(memKey, rate);
         _metrics.firestoreCacheHits++;
         _analytics?.logExchangeRateCacheHit(
@@ -764,6 +767,35 @@ class CurrencyConversionService {
     required String to,
     DateTime? date,
   }) async {
+    // The APIs have no historical source for pegged currencies (AED, SAR),
+    // so derive them from the fixed USD peg instead.
+    final fromPeg = _usdPegs[from];
+    final toPeg = _usdPegs[to];
+    if (fromPeg == null && toPeg == null) {
+      return _fetchRateFromApis(from: from, to: to, date: date);
+    }
+    if (fromPeg != null && toPeg != null) return toPeg / fromPeg;
+    if (fromPeg != null) {
+      final usdToTarget = await _fetchRateFromApis(
+        from: 'USD',
+        to: to,
+        date: date,
+      );
+      return usdToTarget / fromPeg;
+    }
+    final sourceToUsd = await _fetchRateFromApis(
+      from: from,
+      to: 'USD',
+      date: date,
+    );
+    return sourceToUsd * toPeg!;
+  }
+
+  Future<double> _fetchRateFromApis({
+    required String from,
+    required String to,
+    DateTime? date,
+  }) async {
     // Try primary API (Frankfurter) - NO rate limits!
     try {
       final dateStr = date != null ? formatDate(date) : 'latest';
@@ -775,7 +807,7 @@ class CurrencyConversionService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['rates'][to] as double;
+        return (data['rates'][to] as num).toDouble();
       }
 
       // Non-200 status, try fallback

@@ -210,6 +210,57 @@ void main() {
     });
   });
 
+  group('CurrencyConversionService - Pegged currencies and parsing', () {
+    late MockDocumentReference mockDocRef;
+    late List<Uri> requests;
+
+    CurrencyConversionService build(String body) {
+      final snap = MockDocumentSnapshot();
+      mockDocRef = MockDocumentReference();
+      when(() => mockExchangeRatesCollection.doc(any())).thenReturn(mockDocRef);
+      when(() => mockDocRef.get()).thenAnswer((_) async => snap);
+      when(() => snap.exists).thenReturn(false);
+      when(() => mockDocRef.set(any())).thenAnswer((_) async => {});
+      requests = [];
+      return CurrencyConversionService(
+        firestore: mockFirestore,
+        userId: 'test-user',
+        httpClient: MockClient((request) async {
+          requests.add(request.url);
+          return http.Response(body, 200);
+        }),
+      );
+    }
+
+    final date = DateTime(2023, 1, 1);
+
+    test('AED to INR divides USD to INR by the 3.6725 peg', () async {
+      service = build('{"rates":{"INR":82.0}}');
+      final rate = await service.getHistoricalRate(date, 'AED', 'INR');
+      expect(rate, closeTo(82.0 / 3.6725, 1e-9));
+      expect(requests.single.queryParameters['base'], 'USD');
+    });
+
+    test('INR to SAR multiplies INR to USD by the 3.75 peg', () async {
+      service = build('{"rates":{"USD":0.0125}}');
+      final rate = await service.getHistoricalRate(date, 'INR', 'SAR');
+      expect(rate, closeTo(0.0125 * 3.75, 1e-9));
+      expect(requests.single.queryParameters['symbols'], 'USD');
+    });
+
+    test('AED to SAR needs no API call', () async {
+      service = build('{}');
+      final rate = await service.getHistoricalRate(date, 'AED', 'SAR');
+      expect(rate, closeTo(3.75 / 3.6725, 1e-9));
+      expect(requests, isEmpty);
+    });
+
+    test('an integer JSON rate parses', () async {
+      service = build('{"rates":{"INR":83}}');
+      expect(await service.getHistoricalRate(date, 'USD', 'INR'), 83.0);
+    });
+  });
+
   group('CurrencyConversionService - Live Rates', () {
     test('refreshes live rates daily', () async {
       var apiCallCount = 0;
