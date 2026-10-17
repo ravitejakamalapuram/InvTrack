@@ -49,8 +49,8 @@ class MetricTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isDark
-                  ? AppColors.neutral700Dark
-                  : AppColors.neutral200Light,
+                  ? AppColors.fieldBorderDark
+                  : AppColors.fieldBorderLight,
             ),
           ),
           child: Column(
@@ -189,17 +189,19 @@ class HeroMetric extends StatelessWidget {
               ...?trailing != null ? [trailing!] : null,
             ],
           ),
-          ...?subtitle != null ? [
-            const SizedBox(height: 8),
-            ExcludeSemantics(
-              child: Text(
-                subtitle!,
-                style: AppTypography.caption.copyWith(
-                  color: Colors.white.withValues(alpha: 0.7),
-                ),
-              ),
-            ),
-          ] : null,
+          ...?subtitle != null
+              ? [
+                  const SizedBox(height: 8),
+                  ExcludeSemantics(
+                    child: Text(
+                      subtitle!,
+                      style: AppTypography.caption.copyWith(
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ),
+                ]
+              : null,
         ],
       ),
     );

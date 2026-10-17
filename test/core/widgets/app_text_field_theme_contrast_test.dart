@@ -141,4 +141,62 @@ void main() {
       );
     });
   });
+
+  group('the field and button outlines', () {
+    testWidgets(
+      'field-border-light@card: the field edge is fieldBorderLight on every ground',
+      (tester) async {
+        final field = await _pump(tester, AppTheme.lightTheme);
+        final edge = _color(field.decoration!.enabledBorder);
+        expect(edge, AppColors.fieldBorderLight);
+        expect(_color(field.decoration!.border), edge);
+        for (final ground in {
+          'field-border-light@background': AppColors.backgroundLight,
+          'field-border-light@card': AppColors.cardLight,
+          'field-border-light@surface': AppColors.surfaceLight,
+        }.entries) {
+          expect(
+            contrastRatio(edge, ground.value),
+            greaterThanOrEqualTo(kMinGraphic),
+            reason: ground.key,
+          );
+        }
+      },
+    );
+
+    testWidgets(
+      'field-border-dark@card: the field edge is fieldBorderDark on every ground',
+      (tester) async {
+        final field = await _pump(tester, AppTheme.darkTheme);
+        final edge = _color(field.decoration!.enabledBorder);
+        expect(edge, AppColors.fieldBorderDark);
+        for (final ground in {
+          'field-border-dark@background': AppColors.backgroundDark,
+          'field-border-dark@card': AppColors.cardDark,
+          'field-border-dark@input-fill': AppColors.neutral800Dark,
+        }.entries) {
+          expect(
+            contrastRatio(edge, ground.value),
+            greaterThanOrEqualTo(kMinGraphic),
+            reason: ground.key,
+          );
+        }
+      },
+    );
+
+    test('the outlined button and the global input use the same edge', () {
+      for (final entry in {
+        AppTheme.lightTheme: AppColors.fieldBorderLight,
+        AppTheme.darkTheme: AppColors.fieldBorderDark,
+      }.entries) {
+        final theme = entry.key;
+        expect(theme.colorScheme.outline, entry.value);
+        expect(
+          theme.outlinedButtonTheme.style!.side!.resolve({})!.color,
+          entry.value,
+        );
+        expect(_color(theme.inputDecorationTheme.enabledBorder), entry.value);
+      }
+    });
+  });
 }

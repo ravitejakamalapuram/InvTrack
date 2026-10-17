@@ -195,10 +195,7 @@ class _AppTextFieldState extends State<AppTextField> {
                 }
               },
               child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  minWidth: 44,
-                  minHeight: 44,
-                ),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -289,16 +286,16 @@ class _AppTextFieldState extends State<AppTextField> {
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide(
                   color: isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light,
+                      ? AppColors.fieldBorderDark
+                      : AppColors.fieldBorderLight,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide(
                   color: isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light,
+                      ? AppColors.fieldBorderDark
+                      : AppColors.fieldBorderLight,
                 ),
               ),
               focusedBorder: OutlineInputBorder(

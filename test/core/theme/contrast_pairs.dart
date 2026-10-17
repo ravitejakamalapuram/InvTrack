@@ -618,7 +618,7 @@ List<ContrastPair> _build() {
     for (final (name, fg, grounds, row) in [
       (
         'field-border-dark',
-        AppColors.neutral700Dark,
+        AppColors.fieldBorderDark,
         [
           ('background', _bgD, 1.31),
           ('card', _cardD, 1.18),
@@ -628,7 +628,7 @@ List<ContrastPair> _build() {
       ),
       (
         'field-border-light',
-        AppColors.neutral200Light,
+        AppColors.fieldBorderLight,
         [
           ('background', _bgL, 1.20),
           ('card', _cardL, 1.26),
