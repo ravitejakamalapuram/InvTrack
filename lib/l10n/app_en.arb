@@ -5624,6 +5624,21 @@
     "description": "Error message when investments fail to load"
   },
 
+  "goalsLoadError": "Couldn''t load your goals",
+  "@goalsLoadError": {
+    "description": "Shown with a Retry button on the Home goals card when goals fail to load"
+  },
+
+  "goalProgressLoadError": "Couldn''t load progress",
+  "@goalProgressLoadError": {
+    "description": "Shown with a Retry button on a goal card when its progress fails to load"
+  },
+
+  "goalLoadError": "Couldn''t load this goal",
+  "@goalLoadError": {
+    "description": "Shown with a Retry button on the goal details screen when the goal fails to load"
+  },
+
   "errorLoadingGoals": "Error loading goals",
   "@errorLoadingGoals": {
     "description": "Error message when goals fail to load"
