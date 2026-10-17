@@ -81,15 +81,57 @@ class BatchCurrencyConverter {
         to: baseCurrency,
       );
     } catch (e) {
-      // Handle batch conversion failure based on strategy
-      return _handleBatchConversionFailure(
-        cashFlows: cashFlows,
-        baseCurrency: baseCurrency,
-        fallbackStrategy: fallbackStrategy,
-        error: e,
-      );
+      if (fallbackStrategy == ConversionFallbackStrategy.throwError) {
+        throw CurrencyConversionException('Batch conversion failed', e);
+      }
+      // One missing rate must not decide the others: retry key by key, and
+      // let the strategy apply only to the flows whose own rate failed.
+      convertedAmounts = await _convertKeyByKey(requests, baseCurrency);
     }
+    return _applyConvertedRates(
+      cashFlows: cashFlows,
+      baseCurrency: baseCurrency,
+      fallbackStrategy: fallbackStrategy,
+      convertedAmounts: convertedAmounts,
+    );
+  }
 
+  /// Retries each key on its own, [_retryChunkSize] at a time, so one failed
+  /// lookup neither stops the others nor makes the retries run one by one.
+  static const _retryChunkSize = 5;
+
+  Future<Map<String, double>> _convertKeyByKey(
+    Map<String, ConversionRequest> requests,
+    String baseCurrency,
+  ) async {
+    final converted = <String, double>{};
+    final entries = requests.entries.toList();
+    for (var i = 0; i < entries.length; i += _retryChunkSize) {
+      final chunk = entries.skip(i).take(_retryChunkSize);
+      final results = await Future.wait(
+        chunk.map((entry) async {
+          try {
+            return await _conversionService.batchConvertHistorical(
+              requests: {entry.key: entry.value},
+              to: baseCurrency,
+            );
+          } catch (_) {
+            // Left out: the caller applies the fallback strategy to this key.
+            return <String, double>{};
+          }
+        }),
+      );
+      results.forEach(converted.addAll);
+    }
+    return converted;
+  }
+
+  Future<List<CashFlowEntity>> _applyConvertedRates({
+    required List<CashFlowEntity> cashFlows,
+    required String baseCurrency,
+    required ConversionFallbackStrategy fallbackStrategy,
+    required Map<String, double> convertedAmounts,
+  }) async {
     // Apply converted amounts to cash flows
     final result = <CashFlowEntity>[];
     for (var i = 0; i < cashFlows.length; i++) {
@@ -127,34 +169,6 @@ class BatchCurrencyConverter {
     return result;
   }
 
-  /// Handle batch conversion failure
-  Future<List<CashFlowEntity>> _handleBatchConversionFailure({
-    required List<CashFlowEntity> cashFlows,
-    required String baseCurrency,
-    required ConversionFallbackStrategy fallbackStrategy,
-    required Object error,
-  }) async {
-    if (kDebugMode) {
-      debugPrint('Batch conversion failed: $error');
-    }
-
-    switch (fallbackStrategy) {
-      case ConversionFallbackStrategy.useOriginal:
-        return cashFlows; // Return original cash flows
-
-      case ConversionFallbackStrategy.useLastKnown:
-        // Try individual conversions with last known rates
-        return _convertWithLastKnownRates(cashFlows, baseCurrency);
-
-      case ConversionFallbackStrategy.throwError:
-        throw CurrencyConversionException('Batch conversion failed', error);
-
-      case ConversionFallbackStrategy.skipTransaction:
-        // Return only cash flows already in base currency
-        return cashFlows.where((cf) => cf.currency == baseCurrency).toList();
-    }
-  }
-
   /// Handle individual conversion failure
   Future<CashFlowEntity?> _handleIndividualConversionFailure({
     required CashFlowEntity cashFlow,
@@ -173,10 +187,15 @@ class BatchCurrencyConverter {
 
       case ConversionFallbackStrategy.useLastKnown:
         // Try to get last known rate
-        final lastKnownRate = await _conversionService.getLastKnownRate(
-          from: cashFlow.currency,
-          to: baseCurrency,
-        );
+        double? lastKnownRate;
+        try {
+          lastKnownRate = await _conversionService.getLastKnownRate(
+            from: cashFlow.currency,
+            to: baseCurrency,
+          );
+        } catch (_) {
+          // A cache that cannot be read counts as no cached rate.
+        }
         if (lastKnownRate != null) {
           return cashFlow.copyWith(
             amount: cashFlow.amount * lastKnownRate,
@@ -193,46 +212,6 @@ class BatchCurrencyConverter {
       case ConversionFallbackStrategy.skipTransaction:
         return null; // Skip this cash flow
     }
-  }
-
-  /// Convert cash flows using last known rates (fallback)
-  Future<List<CashFlowEntity>> _convertWithLastKnownRates(
-    List<CashFlowEntity> cashFlows,
-    String baseCurrency,
-  ) async {
-    final result = <CashFlowEntity>[];
-
-    for (final cf in cashFlows) {
-      if (cf.currency == baseCurrency) {
-        result.add(cf);
-        continue;
-      }
-
-      try {
-        final lastKnownRate = await _conversionService.getLastKnownRate(
-          from: cf.currency,
-          to: baseCurrency,
-        );
-
-        if (lastKnownRate != null) {
-          result.add(
-            cf.copyWith(
-              amount: cf.amount * lastKnownRate,
-              currency: baseCurrency,
-            ),
-          );
-        } else {
-          result.add(cf); // Keep original if no cached rate
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('Failed to get last known rate: $e');
-        }
-        result.add(cf); // Keep original on error
-      }
-    }
-
-    return result;
   }
 
   /// Convert a single amount from one currency to another
@@ -274,9 +253,7 @@ class BatchCurrencyConverter {
           return amount; // Fall back to original if no cached rate
 
         case ConversionFallbackStrategy.throwError:
-          throw CurrencyConversionException(
-            'Failed to convert $from → $to',
-          );
+          throw CurrencyConversionException('Failed to convert $from → $to');
 
         case ConversionFallbackStrategy.skipTransaction:
           return 0.0; // Exclude from calculation
@@ -286,10 +263,7 @@ class BatchCurrencyConverter {
 
   /// The last cached rate from [from] to [to] (any date), or null when
   /// there is none.
-  Future<double?> getLastKnownRate({
-    required String from,
-    required String to,
-  }) {
+  Future<double?> getLastKnownRate({required String from, required String to}) {
     if (from == to) return Future.value(1.0);
     return _conversionService.getLastKnownRate(from: from, to: to);
   }
