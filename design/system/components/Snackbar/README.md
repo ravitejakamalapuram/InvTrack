@@ -4,8 +4,8 @@ Use a snackbar to confirm a finished action or report a failure the user can ret
 
 ## Kinds
 
-- `success`: `success` fill (light `#007a54`, dark `#34d399`), a 20px white check-circle icon, 2 s. Haptic: medium.
-- `error`: `error` fill (light `#cc1926`, dark `#f87171`), a white error icon, 3 s. Haptic: heavy.
+- `success`: `success` fill (light `#007a54`, dark `#34d399`), a 20px check-circle icon (white in light, `ink` in dark, 9.10:1 on the dark fill), 2 s. Haptic: medium.
+- `error`: `error` fill (light `#cc1926`, dark `#f87171`), an error icon (white in light, `ink` in dark, 6.32:1), 3 s. Haptic: heavy.
 - `info`: `primary` fill (light `#5b4cdb`, dark `#8b7cf6`), a white info icon, 2 s. Haptic: selection.
 - `exact` (CompactAmountText long-press): `neutral-800-light` in light, `surface` in dark; a 11px "Exact Amount" label (white 70%) over the 16px/700 figure to two decimals, and a copy icon button (48dp). Copying shows a green "Copied to clipboard" snackbar for 1 s: `success` fill (light `#007a54`, dark `#34d399`), a check icon and the message in `card` colour (white in light, 5.37:1 on the light fill; #171717 in dark, 9.33:1 on the dark fill). 4 s.
 The snackbars of Settings, Data & Account and the guest-backup notices follow the same rule: `success` or `error` fill by theme, and the Retry action of the currency snackbar is the message colour (white in light, #171717 in dark). Only the import-warnings snackbar keeps one amber fill (`warning`, #f59e0b) with fixed dark text in both themes.

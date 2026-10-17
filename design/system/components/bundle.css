@@ -393,7 +393,8 @@
 .it-dialog__act .is-danger { color: var(--danger); font-weight: 600; }
 .it-dialog__act .is-primary { color: var(--primary); font-weight: 600; }
 .it-snack { display: flex; align-items: center; gap: var(--space-sm); min-height: 48px; padding: 14px var(--space-md); border-radius: var(--radius-md); color: var(--card); font: 400 14px/1.4 var(--font-text); }   /* message: ColorScheme.onInverseSurface falls back to surface = card (white light, #171717 dark) */
-.it-snack .it-icon { color: #fff; }   /* the icons are explicit Colors.white in both themes */
+.it-snack .it-icon { color: #fff; }   /* white on the light fills and the info fill; success and error in dark take ink (AppColors.onFill) */
+[data-theme="dark"] .it-snack--success .it-icon, [data-theme="dark"] .it-snack--error .it-icon { color: var(--it-ink); }
 .it-snack > span:not(.it-icon) { flex: 1; }
 .it-snack--success { background: var(--success); }
 .it-snack--error { background: var(--error); }
