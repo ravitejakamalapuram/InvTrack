@@ -642,6 +642,17 @@ void main() {
         }
       });
     }
+
+    testWidgets('a numeric return is masked in the semantics label', (
+      tester,
+    ) async {
+      await _pumpCards(tester, [_confirmedValue], privacy: true);
+
+      final label = _label(tester);
+      expect(label, contains(sentinelHiddenPercentage));
+      expect(label, isNot(contains('7.2')));
+      expect(label, isNot(contains('7.19')));
+    });
   });
 
   group('alignment', () {
