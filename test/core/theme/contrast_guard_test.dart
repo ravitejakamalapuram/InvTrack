@@ -17,33 +17,6 @@ import 'contrast_pairs.dart';
 
 /// Pairs that still fail. Grouped by the PR in the stack that fixes them.
 const _allowlist = <String>{
-  // PR 9 contrast-chart-hero (26)
-  'graph-emerald-light@tint10',
-  'graph-cyan-light@card',
-  'graph-emerald-light@card',
-  'graph-purple-light@card',
-  'hero-return-negative-dark@stop-1e1b4b',
-  'hero-return-negative-dark@stop-312e81',
-  'hero-return-negative-dark@stop-3b0764',
-  'hero-return-negative-light@stop-5b4cdb',
-  'hero-return-negative-light@stop-7c3aed',
-  'hero-return-negative-light@stop-9333ea',
-  'hero-return-positive-light@stop-5b4cdb',
-  'hero-return-positive-light@stop-7c3aed',
-  'hero-return-positive-light@stop-9333ea',
-  'hero-secondary-dark-50@stop-312e81',
-  'hero-secondary-light-80@stop-5b4cdb',
-  'hero-secondary-light-80@stop-7c3aed',
-  'hero-secondary-light-80@stop-9333ea',
-  'hero-secondary-light-60@stop-5b4cdb',
-  'hero-secondary-light-60@stop-7c3aed',
-  'hero-secondary-light-60@stop-9333ea',
-  'hero-secondary-light-50@stop-5b4cdb',
-  'hero-secondary-light-50@stop-7c3aed',
-  'hero-secondary-light-50@stop-9333ea',
-  'hero-toggle-light@stop-5b4cdb',
-  'hero-toggle-light@stop-7c3aed',
-  'hero-toggle-light@stop-9333ea',
   // PR 10 contrast-outlines (12)
   'field-border-dark@background',
   'field-border-dark@card',
@@ -74,7 +47,7 @@ const _allowlist = <String>{
 
 /// The size of [_allowlist]. Lower it with the list; raising it needs a reason
 /// in the PR body.
-const _allowlistMax = 50;
+const _allowlistMax = 24;
 
 /// The size of the pair table. A fixing PR that retires a pair or drops a
 /// ground it cannot fix changes this literal, so the change is in the diff.

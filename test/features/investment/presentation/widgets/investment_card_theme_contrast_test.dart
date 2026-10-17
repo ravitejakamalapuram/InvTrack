@@ -427,4 +427,77 @@ void main() {
       });
     }
   });
+
+  group('a gain', () {
+    final gain = _stats(invested: 100000, returned: 120000, xirr: 0.2);
+    const xirr = XirrResult.exact(0.2);
+    final closed = _investment('gain', status: InvestmentStatus.closed);
+
+    testWidgets(
+      'graph-emerald-light@card: in light the net figure is the deeper green',
+      (tester) async {
+        await _pump(
+          tester,
+          investment: closed,
+          stats: gain,
+          xirr: xirr,
+          brightness: light,
+        );
+        final net = tester.widget<CompactAmountText>(
+          find.byType(CompactAmountText).first,
+        );
+        expect(net.style!.color, AppColors.successLight);
+        expect(
+          contrastRatio(net.style!.color!, AppColors.cardLight),
+          greaterThanOrEqualTo(kMinText),
+          reason: 'graph-emerald-light@card',
+        );
+      },
+    );
+
+    testWidgets(
+      'graph-emerald-light@tint10: in light the return pill reads on its tint',
+      (tester) async {
+        await _pump(
+          tester,
+          investment: closed,
+          stats: gain,
+          xirr: xirr,
+          brightness: light,
+        );
+        final text = find.descendant(
+          of: find.byType(AnimatedOpacity),
+          matching: find.byType(Text),
+        );
+        expect(text, findsOneWidget);
+        final color = _textColor(tester, text);
+        expect(color, AppColors.successLight);
+        expect(
+          contrastRatio(color, _tintBehind(tester, text, AppColors.cardLight)),
+          greaterThanOrEqualTo(kMinText),
+          reason: 'graph-emerald-light@tint10',
+        );
+      },
+    );
+
+    testWidgets('in dark the net figure keeps the bright emerald', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        investment: closed,
+        stats: gain,
+        xirr: xirr,
+        brightness: dark,
+      );
+      final net = tester.widget<CompactAmountText>(
+        find.byType(CompactAmountText).first,
+      );
+      expect(net.style!.color, AppColors.graphEmerald);
+      expect(
+        contrastRatio(net.style!.color!, AppColors.cardDark),
+        greaterThanOrEqualTo(kMinText),
+      );
+    });
+  });
 }

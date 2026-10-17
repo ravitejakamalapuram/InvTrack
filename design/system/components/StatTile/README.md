@@ -30,7 +30,7 @@ Formatted strings and colours (`color` as a CSS colour). Never pass an unconvert
 
 ## Contrast
 
-The metric colours used as text on `card` are low in light: `graph-cyan` 2.43:1, `graph-emerald` 2.54:1, `graph-purple` 3.96:1 (dark 4.53:1); the QuickStat subtitle (`#9e9e9e`) 2.68:1 and its label (`#757575`) 3.89:1 on the dark card. Kept as drawn.
+The investment-detail mini stat uses `graph-cyan-light` (4.64:1) and `graph-purple-light` (4.62:1) as text on `card` in light and `graph-cyan` and `graph-purple` in dark. Still low as drawn:  the QuickStat subtitle (`#9e9e9e`) 2.68:1 and its label (`#757575`) 3.89:1 on the dark card. Kept as drawn.
 
 ## Source
 

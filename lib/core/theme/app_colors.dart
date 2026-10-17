@@ -206,6 +206,15 @@ class AppColors {
     end: Alignment.bottomRight,
   );
 
+  // Text on the hero gradient: white at 90% reads on every stop of both
+  // gradients (4.65:1 at the lightest, #9333ea). One step for all secondary
+  // text, so the hierarchy comes from size and weight, not from fading.
+  static const Color heroSecondaryText = Color(0xE6FFFFFF);
+
+  // The fill under the hero's toggle and return badge: black at 20% darkens
+  // the gradient so white text on it clears 4.5:1 on every stop.
+  static const Color heroChipFill = Color(0x33000000);
+
   // Premium gold gradient for special highlights
   static const LinearGradient goldGradient = LinearGradient(
     colors: [Color(0xFFD97706), Color(0xFFF59E0B), Color(0xFFFBBF24)],
@@ -241,6 +250,12 @@ class AppColors {
   static const Color graphRose = Color(0xFFF43F5E);
   static const Color graphPink = Color(0xFFEC4899);
   static const Color graphPurple = Color(0xFFA855F7);
+
+  // Deeper cyan and purple for text on a light card (4.64:1 and 4.62:1). The
+  // chart fills and the dark theme keep graphCyan and graphPurple; emerald text
+  // in light uses successLight.
+  static const Color graphCyanLight = Color(0xFF008096);
+  static const Color graphPurpleLight = Color(0xFF9D48EA);
   static const Color graphViolet = Color(0xFF8B5CF6);
 
   // Chart color palette (for pie charts, etc.)

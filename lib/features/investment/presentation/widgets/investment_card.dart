@@ -681,7 +681,7 @@ class _InvestmentValueColumn extends StatelessWidget {
         final l10n = AppLocalizations.of(context);
         final isPositive = stats.netCashFlow >= 0;
         final plColor = isPositive
-            ? AppColors.graphEmerald
+            ? (isDark ? AppColors.graphEmerald : AppColors.successLight)
             : (isDark ? AppColors.errorDark : AppColors.errorLight);
 
         final valueStyle = _figureStyle(plColor);
@@ -728,7 +728,7 @@ class _InvestmentValueColumn extends StatelessWidget {
                 final isGain =
                     (isShortHolding ? stats.absoluteReturn : xirr!) >= 0;
                 final xirrColor = isGain
-                    ? AppColors.graphEmerald
+                    ? (isDark ? AppColors.graphEmerald : AppColors.successLight)
                     : (isDark ? AppColors.errorDark : AppColors.errorLight);
                 // A loss is tinted with the brighter red: on a tint of the
                 // deeper text red the pill would fall under 4.5:1.

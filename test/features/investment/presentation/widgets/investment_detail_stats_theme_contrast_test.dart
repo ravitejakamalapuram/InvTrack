@@ -307,4 +307,35 @@ void main() {
       expect(contrastRatio(text, tint), greaterThanOrEqualTo(kMinGraphic));
     });
   }
+
+  testWidgets(
+    'the XIRR is the deeper cyan and the MOIC the deeper purple in light '
+    '(graph-cyan-light@card, graph-purple-light@card)',
+    (tester) async {
+      await _pump(
+        tester,
+        investment: _closed(),
+        stats: _stats(invested: 100000, returned: 110000),
+      );
+
+      Finder painted(Color c) => find.byWidgetPredicate(
+        (w) => w is Text && w.style?.color == c,
+        description: 'text painted $c',
+      );
+      expect(painted(AppColors.graphCyanLight), findsOneWidget);
+      expect(painted(AppColors.graphPurpleLight), findsOneWidget);
+      expect(painted(AppColors.graphCyan), findsNothing);
+      expect(painted(AppColors.graphPurple), findsNothing);
+      expect(
+        contrastRatio(AppColors.graphCyanLight, AppColors.cardLight),
+        greaterThanOrEqualTo(kMinText),
+        reason: 'graph-cyan-light@card',
+      );
+      expect(
+        contrastRatio(AppColors.graphPurpleLight, AppColors.cardLight),
+        greaterThanOrEqualTo(kMinText),
+        reason: 'graph-purple-light@card',
+      );
+    },
+  );
 }
