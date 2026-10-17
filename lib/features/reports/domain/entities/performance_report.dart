@@ -69,7 +69,6 @@ class InvestmentPerformance {
   final double percentageReturn;
   final double totalInvested;
   final double totalReturned;
-  final double currentValue;
 
   const InvestmentPerformance({
     required this.investment,
@@ -78,7 +77,6 @@ class InvestmentPerformance {
     required this.percentageReturn,
     required this.totalInvested,
     required this.totalReturned,
-    required this.currentValue,
   });
 
   /// Returns true if this investment is profitable

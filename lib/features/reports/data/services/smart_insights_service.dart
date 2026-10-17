@@ -7,6 +7,7 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
 import 'package:inv_tracker/features/reports/domain/entities/smart_insight.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -263,6 +264,14 @@ class SmartInsightsService {
       }
 
       if (totalInvested == 0 || oldInvested == 0) continue;
+
+      // An open holding with no current value only has a cash view: it is
+      // either awaiting a value or a "so far" minimum, and neither can show
+      // a decline (money rule 4).
+      if (investment.isOpen) {
+        final stats = calculateStats(investmentCashFlows);
+        if (stats.awaitsValue || stats.returnsAreSoFar) continue;
+      }
 
       final currentValue = totalReturned - totalInvested;
       final oldValue = oldReturned - oldInvested;

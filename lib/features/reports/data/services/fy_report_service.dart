@@ -261,6 +261,10 @@ class FYReportService {
       // Calculate stats
       final stats = calculateStats(investmentCFs);
 
+      // An open investment still awaiting a value has no return to rank
+      // (money rule 4); a cash-only "so far" return is a minimum and stays.
+      if (investment.isOpen && stats.awaitsValue) continue;
+
       performers.add(
         InvestmentWithReturns(
           investment: investment,
