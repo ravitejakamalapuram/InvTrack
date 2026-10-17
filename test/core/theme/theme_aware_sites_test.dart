@@ -73,6 +73,10 @@ const _constants = [
   // is `accentDark` and `warningDark`.
   'accentTextLight',
   'warningTextLight',
+  // The deeper cyan and purple for chart-coloured text. Light only: in dark
+  // the text is `graphCyan` and `graphPurple`.
+  'graphCyanLight',
+  'graphPurpleLight',
   // The grey of the word CLOSED on the investment card. Light only: in dark
   // the text is `Colors.grey`.
   'closedTextLight',

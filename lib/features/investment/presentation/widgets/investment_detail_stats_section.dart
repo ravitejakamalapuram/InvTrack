@@ -147,7 +147,7 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
               color: !hasReturnFigure
                   ? _neutralColor
                   : returnIsPositive
-                  ? AppColors.graphCyan
+                  ? (isDark ? AppColors.graphCyan : AppColors.graphCyanLight)
                   : (isDark ? AppColors.errorDark : AppColors.errorLight),
               subtitle: xirrSubtitle,
               semanticsLabel: display.isSoFar && hasReturnFigure
@@ -164,7 +164,9 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
             _statColumn(
               label: display.moicLabel(l10n),
               value: display.isAwaitingValue ? ReturnDisplay.dash : moicText,
-              color: AppColors.graphPurple,
+              color: isDark
+                  ? AppColors.graphPurple
+                  : AppColors.graphPurpleLight,
               subtitle: moicSubtitle,
               // A multiple is not a percentage: it keeps the neutral hidden
               // string the Overview quick-stats tile uses.

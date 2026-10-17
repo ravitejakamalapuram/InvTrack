@@ -101,6 +101,10 @@ class ContrastPair {
 const _cardTest =
     'test/features/investment/presentation/widgets/investment_card_theme_contrast_test.dart';
 
+// The test that pumps the Overview hero and measures its text, toggle and badge.
+const _heroTest =
+    'test/features/overview/presentation/widgets/hero_card_contrast_test.dart';
+
 // The test that pumps the zero-change ChangeBadge and measures its text.
 const _zeroBadgeTest = 'test/core/widgets/change_badge_zero_contrast_test.dart';
 
@@ -266,21 +270,21 @@ List<ContrastPair> _build() {
     ContrastPair.token(
       'graph-cyan-light@card',
       rows: [3],
-      fg: AppColors.graphCyan,
+      fg: AppColors.graphCyanLight,
       ground: _cardL,
       audit: 2.43,
     ),
     ContrastPair.token(
       'graph-emerald-light@card',
       rows: [4],
-      fg: AppColors.graphEmerald,
+      fg: AppColors.successLight,
       ground: _cardL,
       audit: 2.54,
     ),
     ContrastPair.token(
       'graph-purple-light@card',
       rows: [5],
-      fg: AppColors.graphPurple,
+      fg: AppColors.graphPurpleLight,
       ground: _cardL,
       audit: 3.96,
     ),
@@ -393,14 +397,15 @@ List<ContrastPair> _build() {
     ),
 
     // ---- P1 text the audit had no row for, found in the PR 1 review ----
-    // The investment card's XIRR pill paints graphEmerald or errorLight on a
+    // The investment card's XIRR pill paints successLight or errorLight on a
     // 10% tint (investment_card.dart, `xirrColor`). The green is tinted with
-    // itself; the red with `dangerTintLight`, the brighter red that
-    // `errorLight` had before it was deepened. Dark has the pair below.
+    // the brighter graphEmerald; the red with `dangerTintLight`, the brighter
+    // red that `errorLight` had before it was deepened. Dark has the pair
+    // below.
     ContrastPair.token(
       'graph-emerald-light@tint10',
       rows: [],
-      fg: AppColors.graphEmerald,
+      fg: AppColors.successLight,
       ground: _tint(AppColors.graphEmerald, 0.1, _cardL),
       audit: 2.31,
       addedByPlan: true,
@@ -731,6 +736,7 @@ List<ContrastPair> _build() {
         'hero-return-negative-dark@stop-$stop',
         rows: [18],
         audit: audit,
+        widgetTest: _heroTest,
       ),
     for (final (stop, audit) in [
       ('5b4cdb', 1.83),
@@ -741,6 +747,7 @@ List<ContrastPair> _build() {
         'hero-return-negative-light@stop-$stop',
         rows: [19],
         audit: audit,
+        widgetTest: _heroTest,
       ),
     for (final (stop, audit) in [
       ('5b4cdb', 3.59),
@@ -751,6 +758,7 @@ List<ContrastPair> _build() {
         'hero-return-positive-light@stop-$stop',
         rows: [20],
         audit: audit,
+        widgetTest: _heroTest,
       ),
     ContrastPair.widget(
       'primary-light-in-dark@card',
@@ -786,6 +794,7 @@ List<ContrastPair> _build() {
       'hero-secondary-dark-50@stop-312e81',
       rows: [57],
       audit: 4.06,
+      widgetTest: _heroTest,
     ),
     for (final (stop, audit) in [
       ('5b4cdb', 4.45),
@@ -796,6 +805,7 @@ List<ContrastPair> _build() {
         'hero-secondary-light-80@stop-$stop',
         rows: [58],
         audit: audit,
+        widgetTest: _heroTest,
       ),
     for (final (stop, audit) in [
       ('5b4cdb', 3.20),
@@ -806,6 +816,7 @@ List<ContrastPair> _build() {
         'hero-secondary-light-60@stop-$stop',
         rows: [59],
         audit: audit,
+        widgetTest: _heroTest,
       ),
     for (final (stop, audit) in [
       ('5b4cdb', 2.70),
@@ -816,6 +827,7 @@ List<ContrastPair> _build() {
         'hero-secondary-light-50@stop-$stop',
         rows: [60],
         audit: audit,
+        widgetTest: _heroTest,
       ),
     for (final (stop, audit) in [
       ('5b4cdb', 3.91),
@@ -826,6 +838,7 @@ List<ContrastPair> _build() {
         'hero-toggle-light@stop-$stop',
         rows: [61],
         audit: audit,
+        widgetTest: _heroTest,
       ),
     ContrastPair.widget(
       'primary-focus-border-dark@card',

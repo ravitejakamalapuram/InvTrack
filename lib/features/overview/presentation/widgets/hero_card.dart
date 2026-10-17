@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
+import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -146,7 +147,6 @@ class HeroCardContent extends ConsumerWidget {
       isHidden: isPrivacyMode,
     );
     final netPosition = stats.netCashFlow;
-    final isPositive = netPosition >= 0;
     final status = display.statusLabel(l10n);
 
     // Privacy mode hides amounts from the screen reader as well.
@@ -181,7 +181,6 @@ class HeroCardContent extends ConsumerWidget {
             const SizedBox(height: 8),
             _buildValueRow(
               netPosition,
-              isPositive,
               stats,
               status,
               display.badgeText(l10n),
@@ -195,7 +194,7 @@ class HeroCardContent extends ConsumerWidget {
               Text(
                 l10n.moneyOutIncludesFeesReinvested,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
+                  color: AppColors.heroSecondaryText,
                   fontSize: 11,
                 ),
               ),
@@ -207,7 +206,7 @@ class HeroCardContent extends ConsumerWidget {
               Text(
                 display.secondaryText(l10n)!,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
+                  color: AppColors.heroSecondaryText,
                   fontSize: 11,
                 ),
               ),
@@ -217,7 +216,7 @@ class HeroCardContent extends ConsumerWidget {
               Text(
                 l10n.overviewArchivedExcluded(archivedCount),
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
+                  color: AppColors.heroSecondaryText,
                   fontSize: 11,
                 ),
               ),
@@ -229,7 +228,7 @@ class HeroCardContent extends ConsumerWidget {
               Text(
                 'Showing closed investments only',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: AppColors.heroSecondaryText,
                   fontSize: 11,
                   fontStyle: FontStyle.italic,
                 ),
@@ -249,10 +248,7 @@ class HeroCardContent extends ConsumerWidget {
             showRealizedOnly
                 ? 'Realized Net Position'
                 : AppLocalizations.of(context).netCashFlowSoFar,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
-              fontSize: 14,
-            ),
+            style: TextStyle(color: AppColors.heroSecondaryText, fontSize: 14),
           ),
         ),
         // Privacy toggle button
@@ -284,7 +280,7 @@ class HeroCardContent extends ConsumerWidget {
           child: Ink(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
+              color: AppColors.heroChipFill,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: Colors.white.withValues(alpha: 0.3),
@@ -318,7 +314,6 @@ class HeroCardContent extends ConsumerWidget {
 
   Widget _buildValueRow(
     double netPosition,
-    bool isPositive,
     InvestmentStats stats,
     String? status,
     String badgeText,
@@ -327,16 +322,10 @@ class HeroCardContent extends ConsumerWidget {
     final isPrivacyMode = ref.watch(privacyModeProvider);
     // A neutral chip replaces the return % while open investments have no
     // terminal value; otherwise the badge would show a fake loss.
-    final badgeColor = status != null
-        ? Colors.white.withValues(alpha: 0.15)
-        : isPositive
-        ? Colors.green.withValues(alpha: 0.3)
-        : Colors.red.withValues(alpha: 0.3);
-    final badgeTextColor = status != null
-        ? Colors.white.withValues(alpha: 0.9)
-        : isPositive
-        ? Colors.greenAccent
-        : Colors.redAccent;
+    const badgeColor = AppColors.heroChipFill;
+    // White on a dark scrim: green and red text on a tint of itself fell to
+    // 1.6:1. The badge starts with + or -, so colour is not the only carrier.
+    final badgeTextColor = AppColors.heroSecondaryText;
 
     const figureStyle = TextStyle(
       color: Colors.white,
@@ -480,10 +469,7 @@ class HeroCardContent extends ConsumerWidget {
       labelText: label,
       label: Text(
         label,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.6),
-          fontSize: 12,
-        ),
+        style: TextStyle(color: AppColors.heroSecondaryText, fontSize: 12),
       ),
       value: MaskedAmountText(
         text: value,
@@ -515,7 +501,7 @@ class HeroCardContent extends ConsumerWidget {
           child: Text(
             'All amounts shown in $currencySymbol ($baseCurrency)',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
+              color: AppColors.heroSecondaryText,
               fontSize: 10,
               fontStyle: FontStyle.italic,
             ),
@@ -539,18 +525,14 @@ class HeroCardContent extends ConsumerWidget {
         children: [
           // The arrow has no baseline of its own: the label's is its text's.
           IgnoreBaseline(
-            child: Icon(
-              icon,
-              color: Colors.white.withValues(alpha: 0.8),
-              size: 14,
-            ),
+            child: Icon(icon, color: AppColors.heroSecondaryText, size: 14),
           ),
           const SizedBox(width: 4),
           Flexible(
             child: Text(
               label,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
+                color: AppColors.heroSecondaryText,
                 fontSize: 12,
               ),
             ),
