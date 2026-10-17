@@ -283,7 +283,11 @@ class DataImportService {
           _investmentsWarning,
           warnings,
           damagedFiles,
-          (text) => _parseInvestmentsJson(text, strict: isReplace),
+          (text) => _parseInvestmentsJson(
+            text,
+            strict: isReplace,
+            warnings: warnings,
+          ),
         ) ??
         const <String, InvestmentEntity>{};
     if (isReplace && damagedFiles.isNotEmpty) {
@@ -307,6 +311,7 @@ class DataImportService {
     int cashflowsImported = 0;
     int goalsImported = 0;
     final investmentNameToIdMap = <String, String>{};
+    final investmentIdMap = <String, String>{};
 
     // Reusable custom types (#936) first, so the investments below can link
     // to them. Replace with the file replaces the account's own types (the
@@ -349,6 +354,7 @@ class DataImportService {
       errors.addAll(result.errors);
       warnings.addAll(result.warnings);
       investmentNameToIdMap.addAll(result.investmentNameToIdMap);
+      investmentIdMap.addAll(result.investmentIdMap);
     }
 
     // Import archived cashflows
@@ -369,6 +375,7 @@ class DataImportService {
       errors.addAll(result.errors);
       warnings.addAll(result.warnings);
       investmentNameToIdMap.addAll(result.investmentNameToIdMap);
+      investmentIdMap.addAll(result.investmentIdMap);
     }
 
     // Investments with valuations and no cash flows, then every valuation.
@@ -437,9 +444,13 @@ class DataImportService {
         if (docFile != null) {
           // Get the new investment ID by looking up the investment name
           final investmentName = docMeta['investmentName'] as String?;
-          String? newInvestmentId;
+          // Same-name investments kept apart by id take their own documents.
+          String? newInvestmentId =
+              investmentIdMap[docMeta['investmentId'] as String? ?? ''];
 
-          if (investmentName != null && investmentName.isNotEmpty) {
+          if (newInvestmentId == null &&
+              investmentName != null &&
+              investmentName.isNotEmpty) {
             // Use the name-to-ID mapping we built during import
             newInvestmentId =
                 investmentNameToIdMap[investmentName.toLowerCase()];
@@ -690,12 +701,31 @@ class DataImportService {
     // For merge strategy, get existing investment names and ids
     Set<String> existingInvestmentNames = {};
     Set<String> existingInvestmentIds = {};
+    final existingNameCounts = <String, int>{};
     if (strategy == ImportStrategy.merge) {
       final existing = await _investmentRepository.getAllInvestments();
       existingInvestmentNames = existing
           .map((e) => e.name.toLowerCase())
           .toSet();
       existingInvestmentIds = existing.map((e) => e.id).toSet();
+      for (final e in existing) {
+        existingNameCounts.update(
+          e.name.toLowerCase(),
+          (n) => n + 1,
+          ifAbsent: () => 1,
+        );
+      }
+    }
+    // How many investments of each name the backup holds apart by id.
+    final backupNameGroups = <String, int>{};
+    for (final entry in grouped.entries) {
+      if (entry.key.startsWith('id:')) {
+        backupNameGroups.update(
+          entry.value.first.investmentName.toLowerCase(),
+          (n) => n + 1,
+          ifAbsent: () => 1,
+        );
+      }
     }
 
     final now = DateTime.now();
@@ -703,6 +733,7 @@ class DataImportService {
     final cashFlows = <CashFlowEntity>[];
     final warnings = <String>[];
     final nameToIdMap = <String, String>{};
+    final idToIdMap = <String, String>{};
 
     for (final entry in grouped.entries) {
       final rows = entry.value;
@@ -717,9 +748,17 @@ class DataImportService {
           const <_ImportedValuation>[];
 
       // Skip if merging and investment already exists
-      if (strategy == ImportStrategy.merge &&
-          (existingInvestmentNames.contains(investmentName.toLowerCase()) ||
-              (saved != null && existingInvestmentIds.contains(saved.id)))) {
+      // An investment kept apart by id is skipped when its id exists, or when
+      // the account already holds as many of that name as the backup (a backup
+      // merged before has them under new ids); a missing one of several
+      // same-name investments is restored.
+      final nameKey = investmentName.toLowerCase();
+      final alreadyThere = saved == null
+          ? existingInvestmentNames.contains(nameKey)
+          : existingInvestmentIds.contains(saved.id) ||
+                (existingNameCounts[nameKey] ?? 0) >=
+                    (backupNameGroups[nameKey] ?? 1);
+      if (strategy == ImportStrategy.merge && alreadyThere) {
         warnings.add('Skipped "$investmentName" - already exists');
         continue;
       }
@@ -801,6 +840,7 @@ class DataImportService {
 
       // Track name -> ID mapping for goals remapping
       nameToIdMap[investmentName.toLowerCase()] = investmentId;
+      if (saved != null) idToIdMap[saved.id] = investmentId;
 
       for (final row in rows) {
         cashFlows.add(
@@ -839,6 +879,7 @@ class DataImportService {
       errors: parseResult.errors,
       warnings: warnings,
       investmentNameToIdMap: nameToIdMap,
+      investmentIdMap: idToIdMap,
     );
   }
 
@@ -1138,6 +1179,7 @@ class DataImportService {
   Map<String, InvestmentEntity>? _parseInvestmentsJson(
     String text, {
     required bool strict,
+    required List<String> warnings,
   }) {
     final json = jsonDecode(text);
     if (json is! Map<String, dynamic>) return null;
@@ -1148,15 +1190,20 @@ class DataImportService {
     final rows = json['investments'];
     if (rows is! List) return null;
     final byId = <String, InvestmentEntity>{};
+    var skipped = 0;
     for (final row in rows) {
       final investment = investmentFromBackupJson(row);
       if (investment != null) {
         byId[investment.id] = investment;
       } else if (strict) {
         return null;
+      } else {
+        skipped++;
       }
     }
     if (byId.isEmpty && rows.isNotEmpty) return null;
+    // Merge keeps the readable rows; the user is told details were lost.
+    if (skipped > 0) warnings.add(_investmentsWarning);
     return byId;
   }
 
@@ -1530,12 +1577,17 @@ class _CsvImportResult {
   /// Map of investment name (lowercase) to investment ID (for goals linking)
   final Map<String, String> investmentNameToIdMap;
 
+  /// Map of the backed-up investment id to the id it was imported under, for
+  /// the investments the backup keeps apart by id (documents).
+  final Map<String, String> investmentIdMap;
+
   const _CsvImportResult({
     required this.imported,
     this.investmentsCreated = 0,
     required this.errors,
     required this.warnings,
     this.investmentNameToIdMap = const {},
+    this.investmentIdMap = const {},
   });
 }
 

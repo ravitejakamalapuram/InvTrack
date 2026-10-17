@@ -1,3 +1,4 @@
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 
 /// The version of investments.json that this app writes and reads.
@@ -44,7 +45,8 @@ T? _enumNamed<T extends Enum>(List<T> values, Object? name) {
 DateTime? _date(Object? raw) => raw is String ? DateTime.tryParse(raw) : null;
 
 /// The investment of one investments.json row, or null when the row has no
-/// usable id, name, type or status (a row of the wrong shape is skipped).
+/// usable id, name, type, status or listed currency, or a present rate or
+/// tenure is not a number (a row of the wrong shape is skipped).
 InvestmentEntity? investmentFromBackupJson(Object? row) {
   if (row is! Map) return null;
   final id = row['id'];
@@ -61,13 +63,16 @@ InvestmentEntity? investmentFromBackupJson(Object? row) {
       type == null ||
       status == null ||
       currency is! String ||
-      currency.isEmpty ||
+      !getValidCurrencyCodes().contains(currency) ||
       createdAt == null ||
       updatedAt == null) {
     return null;
   }
   final rate = row['expectedRate'];
   final tenure = row['tenureMonths'];
+  if ((rate != null && rate is! num) || (tenure != null && tenure is! num)) {
+    return null;
+  }
   return InvestmentEntity(
     id: id,
     name: name,

@@ -5,10 +5,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive.dart';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
+import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
@@ -38,6 +40,8 @@ void main() {
   late DataExportService export;
   late DataImportService import;
   late Directory tempDir;
+  late _Docs docsRepo;
+  late _Storage storageSvc;
 
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -49,11 +53,11 @@ void main() {
         );
     repo = FakeInvestmentRepository();
     final goals = FakeGoalRepository();
-    final docs = _Docs();
+    final docs = docsRepo = _Docs();
     when(
       () => docs.getDocumentsByInvestment(any()),
     ).thenAnswer((_) async => []);
-    final storage = _Storage();
+    final storage = storageSvc = _Storage();
     final perf = _NoTrace();
     export = DataExportService(
       investmentRepository: repo,
@@ -247,5 +251,171 @@ void main() {
     expect(beta.id, isNot('b'), reason: 'Merge adds under a new id');
     expect(beta.platform, 'Acme Bank');
     expect(beta.expectedRate, 7.25);
+  });
+
+  final damagedRows = <String, Object>{
+    'a currency the app does not list': {
+      'id': 'x',
+      'name': 'X',
+      'type': 'fixedDeposit',
+      'status': 'open',
+      'currency': 'ZZZ',
+      'createdAt': '2026-01-01T00:00:00.000',
+      'updatedAt': '2026-01-01T00:00:00.000',
+    },
+    'an expected rate that is not a number': {
+      'id': 'x',
+      'name': 'X',
+      'type': 'fixedDeposit',
+      'status': 'open',
+      'currency': 'USD',
+      'createdAt': '2026-01-01T00:00:00.000',
+      'updatedAt': '2026-01-01T00:00:00.000',
+      'expectedRate': 'seven',
+    },
+  };
+
+  for (final entry in damagedRows.entries) {
+    test('Replace stops on ${entry.key}', () async {
+      final zip = withInvestmentsJson(
+        await exportedBackup(),
+        jsonEncode({
+          'schemaVersion': 1,
+          'investments': [entry.value],
+        }),
+      );
+
+      final result = await import.importFromZip(
+        zip,
+        ImportStrategy.replace,
+        baseCurrency: 'INR',
+      );
+
+      expect(result.errors.single, contains('investments.json is damaged'));
+      expect(await repo.getAllInvestments(), hasLength(2));
+    });
+  }
+
+  test(
+    'Merge warns when it skips one unreadable row among readable ones',
+    () async {
+      final backup = await exportedBackup();
+      final text = utf8.decode(
+        ZipDecoder().decodeBytes(backup).findFile('investments.json')!.content
+            as List<int>,
+      );
+      final json = jsonDecode(text) as Map<String, dynamic>;
+      (json['investments'] as List).add(42);
+      await repo.bulkDelete(['a', 'b']);
+
+      final result = await import.importFromZip(
+        withInvestmentsJson(backup, jsonEncode(json)),
+        ImportStrategy.merge,
+        baseCurrency: 'INR',
+      );
+
+      expect(result.errors, isEmpty);
+      expect(result.warnings, hasLength(1));
+      final all = await repo.getAllInvestments();
+      expect(all, hasLength(2), reason: 'the readable rows still restore');
+      expect(all.every((i) => i.platform == 'Acme Bank'), isTrue);
+    },
+  );
+
+  test('Merge restores the missing one of two same-name investments, and a '
+      'second Merge adds nothing', () async {
+    final zip = await exportedBackup();
+    await repo.bulkDelete(['b']);
+
+    var result = await import.importFromZip(
+      zip,
+      ImportStrategy.merge,
+      baseCurrency: 'INR',
+    );
+    expect(result.errors, isEmpty);
+    expect(await repo.getAllInvestments(), hasLength(2));
+
+    result = await import.importFromZip(
+      zip,
+      ImportStrategy.merge,
+      baseCurrency: 'INR',
+    );
+    expect(await repo.getAllInvestments(), hasLength(2));
+  });
+
+  test('Replace gives each same-name investment its own documents', () async {
+    await seed();
+    final zipBytes = (await export.exportAsZipBytes()).bytes;
+    final archive = ZipDecoder().decodeBytes(zipBytes);
+    final meta =
+        jsonDecode(
+              utf8.decode(
+                archive.findFile('metadata.json')!.content as List<int>,
+              ),
+            )
+            as Map<String, dynamic>;
+    final png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0];
+    meta['documents'] = [
+      for (final id in ['a', 'b'])
+        {
+          'id': 'doc-$id',
+          'investmentId': id,
+          'investmentName': 'Same name',
+          'fileName': '$id.png',
+          'zipPath': 'documents/$id/$id.png',
+        },
+    ];
+    final out = Archive();
+    for (final f in archive.files) {
+      if (f.name == 'metadata.json') continue;
+      out.addFile(ArchiveFile(f.name, f.size, f.content));
+    }
+    final metaBytes = utf8.encode(jsonEncode(meta));
+    out.addFile(ArchiveFile('metadata.json', metaBytes.length, metaBytes));
+    for (final id in ['a', 'b']) {
+      out.addFile(ArchiveFile('documents/$id/$id.png', png.length, png));
+    }
+    registerFallbackValue(Uint8List(0));
+    registerFallbackValue(
+      DocumentEntity(
+        id: 'f',
+        investmentId: 'f',
+        name: 'f',
+        fileName: 'f',
+        type: DocumentType.other,
+        mimeType: 'x',
+        localPath: 'f',
+        fileSize: 0,
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      ),
+    );
+    when(
+      () => storageSvc.saveDocument(
+        investmentId: any(named: 'investmentId'),
+        documentId: any(named: 'documentId'),
+        fileName: any(named: 'fileName'),
+        bytes: any(named: 'bytes'),
+      ),
+    ).thenAnswer((_) async => '/tmp/x');
+    when(() => docsRepo.createDocument(any())).thenAnswer((_) async {});
+
+    await import.importFromZip(
+      Uint8List.fromList(ZipEncoder().encode(out)!),
+      ImportStrategy.replace,
+      baseCurrency: 'INR',
+    );
+
+    final saved = verify(
+      () => storageSvc.saveDocument(
+        investmentId: captureAny(named: 'investmentId'),
+        documentId: captureAny(named: 'documentId'),
+        fileName: any(named: 'fileName'),
+        bytes: any(named: 'bytes'),
+      ),
+    ).captured;
+    final byDoc = {saved[1]: saved[0], saved[3]: saved[2]};
+    expect(byDoc['doc-a'], 'a');
+    expect(byDoc['doc-b'], 'b');
   });
 }
