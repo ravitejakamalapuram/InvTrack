@@ -11,6 +11,11 @@ import '../../mocks/mock_currency_conversion_service.dart';
 /// Converts USD at 83 and fails for every other currency, throwing for the
 /// whole call when any requested key is not USD (like the real service).
 class _OnlyUsdService extends MockCurrencyConversionService {
+  _OnlyUsdService({this.cachedEurRate, this.cacheThrows = false});
+
+  final double? cachedEurRate;
+  final bool cacheThrows;
+
   @override
   Future<Map<String, double>> batchConvertHistorical({
     required Map<String, ConversionRequest> requests,
@@ -26,7 +31,10 @@ class _OnlyUsdService extends MockCurrencyConversionService {
   Future<double?> getLastKnownRate({
     required String from,
     required String to,
-  }) async => null;
+  }) async {
+    if (cacheThrows) throw CurrencyConversionException('cache unreadable');
+    return from == 'EUR' ? cachedEurRate : null;
+  }
 }
 
 CashFlowEntity _flow(String id, double amount, String currency) =>
@@ -39,6 +47,17 @@ CashFlowEntity _flow(String id, double amount, String currency) =>
       createdAt: DateTime(2026, 4, 1),
       currency: currency,
     );
+
+void _expectFlow(
+  List<CashFlowEntity> out,
+  String id,
+  String currency,
+  double amount,
+) {
+  final cf = out.firstWhere((c) => c.id == id);
+  expect(cf.currency, currency, reason: id);
+  expect(cf.amount, closeTo(amount, 1e-9), reason: id);
+}
 
 void main() {
   final flows = [
@@ -54,9 +73,40 @@ void main() {
       baseCurrency: 'INR',
     );
 
-    final usd = out.firstWhere((cf) => cf.id == 'usd');
-    expect(usd.currency, 'INR');
-    expect(usd.amount, closeTo(8300, 1e-9));
+    _expectFlow(out, 'usd', 'INR', 8300);
+    _expectFlow(out, 'eur', 'EUR', 100);
+    _expectFlow(out, 'inr', 'INR', 500);
+  });
+
+  test('useOriginal keeps the failed flow as it was', () async {
+    final out = await converter.batchConvert(
+      cashFlows: flows,
+      baseCurrency: 'INR',
+      fallbackStrategy: ConversionFallbackStrategy.useOriginal,
+    );
+
+    _expectFlow(out, 'usd', 'INR', 8300);
+    _expectFlow(out, 'eur', 'EUR', 100);
+    _expectFlow(out, 'inr', 'INR', 500);
+  });
+
+  test('useLastKnown converts the failed flow with a cached rate', () async {
+    final out = await BatchCurrencyConverter(
+      _OnlyUsdService(cachedEurRate: 90),
+    ).batchConvert(cashFlows: flows, baseCurrency: 'INR');
+
+    _expectFlow(out, 'usd', 'INR', 8300);
+    _expectFlow(out, 'eur', 'INR', 9000);
+    _expectFlow(out, 'inr', 'INR', 500);
+  });
+
+  test('useLastKnown treats an unreadable cache as no cached rate', () async {
+    final out = await BatchCurrencyConverter(
+      _OnlyUsdService(cacheThrows: true),
+    ).batchConvert(cashFlows: flows, baseCurrency: 'INR');
+
+    _expectFlow(out, 'usd', 'INR', 8300);
+    _expectFlow(out, 'eur', 'EUR', 100);
   });
 
   test('skipTransaction drops only the flow whose rate failed', () async {
@@ -67,7 +117,8 @@ void main() {
     );
 
     expect(out.map((cf) => cf.id), unorderedEquals(['usd', 'inr']));
-    expect(out.firstWhere((cf) => cf.id == 'usd').amount, closeTo(8300, 1e-9));
+    _expectFlow(out, 'usd', 'INR', 8300);
+    _expectFlow(out, 'inr', 'INR', 500);
   });
 
   test('throwError still throws when any rate fails', () async {

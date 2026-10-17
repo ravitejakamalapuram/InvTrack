@@ -96,22 +96,32 @@ class BatchCurrencyConverter {
     );
   }
 
+  /// Retries each key on its own, [_retryChunkSize] at a time, so one failed
+  /// lookup neither stops the others nor makes the retries run one by one.
+  static const _retryChunkSize = 5;
+
   Future<Map<String, double>> _convertKeyByKey(
     Map<String, ConversionRequest> requests,
     String baseCurrency,
   ) async {
     final converted = <String, double>{};
-    for (final entry in requests.entries) {
-      try {
-        converted.addAll(
-          await _conversionService.batchConvertHistorical(
-            requests: {entry.key: entry.value},
-            to: baseCurrency,
-          ),
-        );
-      } catch (_) {
-        // Left out: the caller applies the fallback strategy to this key.
-      }
+    final entries = requests.entries.toList();
+    for (var i = 0; i < entries.length; i += _retryChunkSize) {
+      final chunk = entries.skip(i).take(_retryChunkSize);
+      final results = await Future.wait(
+        chunk.map((entry) async {
+          try {
+            return await _conversionService.batchConvertHistorical(
+              requests: {entry.key: entry.value},
+              to: baseCurrency,
+            );
+          } catch (_) {
+            // Left out: the caller applies the fallback strategy to this key.
+            return <String, double>{};
+          }
+        }),
+      );
+      results.forEach(converted.addAll);
     }
     return converted;
   }
@@ -177,10 +187,15 @@ class BatchCurrencyConverter {
 
       case ConversionFallbackStrategy.useLastKnown:
         // Try to get last known rate
-        final lastKnownRate = await _conversionService.getLastKnownRate(
-          from: cashFlow.currency,
-          to: baseCurrency,
-        );
+        double? lastKnownRate;
+        try {
+          lastKnownRate = await _conversionService.getLastKnownRate(
+            from: cashFlow.currency,
+            to: baseCurrency,
+          );
+        } catch (_) {
+          // A cache that cannot be read counts as no cached rate.
+        }
         if (lastKnownRate != null) {
           return cashFlow.copyWith(
             amount: cashFlow.amount * lastKnownRate,
