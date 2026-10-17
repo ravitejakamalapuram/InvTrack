@@ -96,6 +96,11 @@ const _currencyLine = {
   'hero-secondary-light-50@stop-9333ea': '9333ea',
   'hero-secondary-dark-50@stop-312e81': '312e81',
 };
+const _infoIcon = {
+  'hero-info-icon-light@stop-5b4cdb': '5b4cdb',
+  'hero-info-icon-light@stop-7c3aed': '7c3aed',
+  'hero-info-icon-light@stop-9333ea': '9333ea',
+};
 const _toggle = {
   'hero-toggle-light@stop-5b4cdb': '5b4cdb',
   'hero-toggle-light@stop-7c3aed': '7c3aed',
@@ -189,6 +194,21 @@ void main() {
       _expectReadable(_labels, _textColor(tester, find.text(label)));
     }
   });
+
+  testWidgets(
+    'the info icon beside the currency line reads on every light stop',
+    (tester) async {
+      await _pump(tester, invested: 100000, returned: 120000);
+      final icon = tester.widget<Icon>(find.byIcon(Icons.info_outline)).color!;
+      _infoIcon.forEach((id, stop) {
+        expect(
+          contrastRatio(icon, _stops[stop]!),
+          greaterThanOrEqualTo(kMinGraphic),
+          reason: id,
+        );
+      });
+    },
+  );
 
   testWidgets('the currency line reads on the light and the dark stops', (
     tester,

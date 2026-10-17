@@ -491,11 +491,7 @@ class HeroCardContent extends ConsumerWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          Icons.info_outline,
-          size: 12,
-          color: Colors.white.withValues(alpha: 0.4),
-        ),
+        Icon(Icons.info_outline, size: 12, color: AppColors.heroSecondaryText),
         const SizedBox(width: 4),
         Expanded(
           child: Text(

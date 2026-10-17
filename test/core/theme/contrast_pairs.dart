@@ -709,15 +709,14 @@ List<ContrastPair> _build() {
       tier: 'P3',
       addedByPlan: true,
     ),
-    // White glyph on the start of the archive swipe gradient.
-    ContrastPair.token(
+    // The archive swipe glyph on the start of its gradient (white was 2.15).
+    ContrastPair.widget(
       'archive-gradient-start-light',
       rows: [76],
-      fg: white,
-      ground: AppColors.archiveGradient.colors.first,
       audit: 2.15,
       min: graphic,
       tier: 'P3',
+      widgetTest: 'test/core/widgets/swipe_actions_archive_contrast_test.dart',
     ),
 
     // ---- Colours hard-coded in widgets (no live measurement yet) ----
@@ -868,6 +867,7 @@ List<ContrastPair> _build() {
       audit: 2.77,
       min: graphic,
       tier: 'P3',
+      widgetTest: 'test/core/utils/app_feedback_theme_contrast_test.dart',
     ),
     ContrastPair.widget(
       'snackbar-icon-success-dark',
@@ -875,6 +875,7 @@ List<ContrastPair> _build() {
       audit: 1.92,
       min: graphic,
       tier: 'P3',
+      widgetTest: 'test/core/utils/app_feedback_theme_contrast_test.dart',
     ),
     for (final (stop, audit) in [
       ('5b4cdb', 2.24),
@@ -887,6 +888,7 @@ List<ContrastPair> _build() {
         audit: audit,
         min: graphic,
         tier: 'P3',
+        widgetTest: _heroTest,
       ),
     ContrastPair.widget(
       'quick-stat-subtitle-light@card',

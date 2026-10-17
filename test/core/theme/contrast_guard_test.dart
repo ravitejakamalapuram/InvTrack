@@ -17,24 +17,18 @@ import 'contrast_pairs.dart';
 
 /// Pairs that still fail. Grouped by the PR in the stack that fixes them.
 const _allowlist = <String>{
-  // PR 11 contrast-card-edges (12)
+  // PR 11 contrast-card-edges (6): dividers and glass borders, held for a decision
   'outline-variant-dark@background',
   'outline-variant-light@background',
   'outline-variant-light@card',
   'outline-variant-light@surface',
-  'archive-gradient-start-light',
   'glass-border-dark@card',
   'glass-border-light@card',
-  'snackbar-icon-danger-dark',
-  'snackbar-icon-success-dark',
-  'hero-info-icon-light@stop-5b4cdb',
-  'hero-info-icon-light@stop-7c3aed',
-  'hero-info-icon-light@stop-9333ea',
 };
 
 /// The size of [_allowlist]. Lower it with the list; raising it needs a reason
 /// in the PR body.
-const _allowlistMax = 12;
+const _allowlistMax = 6;
 
 /// The size of the pair table. A fixing PR that retires a pair or drops a
 /// ground it cannot fix changes this literal, so the change is in the diff.

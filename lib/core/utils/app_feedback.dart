@@ -9,18 +9,21 @@ class AppFeedback {
   static void showSuccess(BuildContext context, String message) {
     HapticFeedback.mediumImpact();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fill = isDark ? AppColors.successDark : AppColors.successLight;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            Icon(
+              Icons.check_circle_rounded,
+              color: AppColors.onFill(fill),
+              size: 20,
+            ),
             const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: isDark
-            ? AppColors.successDark
-            : AppColors.successLight,
+        backgroundColor: fill,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 2),
@@ -32,16 +35,17 @@ class AppFeedback {
   static void showError(BuildContext context, String message) {
     HapticFeedback.heavyImpact();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fill = isDark ? AppColors.errorDark : AppColors.errorLight;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.error_rounded, color: Colors.white, size: 20),
+            Icon(Icons.error_rounded, color: AppColors.onFill(fill), size: 20),
             const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: isDark ? AppColors.errorDark : AppColors.errorLight,
+        backgroundColor: fill,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 3),

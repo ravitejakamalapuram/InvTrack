@@ -29,7 +29,7 @@ Display strings only: `amount`, `returnText` or `status`, `positive`, `out`, `in
 
 ## Contrast
 
-All secondary text on the gradient is one step, `hero-secondary-text` (white at 90%): 5.19:1 on #5b4cdb, 4.91:1 on #7c3aed, 4.65:1 on #9333ea, and 9.55:1 or more on the dark stops. The toggle and the return badge sit on `hero-chip-fill` (black at 20%), where `hero-secondary-text` on it is 6.3:1 or more on every stop in both themes; the status chip ("Awaiting current value") sits on it too. The badge no longer paints green or red (that fell to 1.62:1 on a loss): its sign and its words carry the direction. The info icon (white 40%, 3.16:1 to 3.66:1 on dark) is unchanged and stays on the card-edges follow-up. `test/features/overview/presentation/widgets/hero_card_contrast_test.dart` measures all of it on the real card.
+All secondary text on the gradient is one step, `hero-secondary-text` (white at 90%): 5.19:1 on #5b4cdb, 4.91:1 on #7c3aed, 4.65:1 on #9333ea, and 9.55:1 or more on the dark stops. The toggle and the return badge sit on `hero-chip-fill` (black at 20%), where `hero-secondary-text` on it is 6.3:1 or more on every stop in both themes; the status chip ("Awaiting current value") sits on it too. The badge no longer paints green or red (that fell to 1.62:1 on a loss): its sign and its words carry the direction. The info icon is `hero-secondary-text` too (5.19, 4.91 and 4.65:1 on the light stops). `test/features/overview/presentation/widgets/hero_card_contrast_test.dart` measures all of it on the real card.
 
 ## Source
 

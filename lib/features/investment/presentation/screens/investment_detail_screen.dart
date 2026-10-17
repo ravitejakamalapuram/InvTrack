@@ -696,7 +696,13 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error_rounded, color: Colors.white, size: 20),
+                Icon(
+                  Icons.error_rounded,
+                  color: AppColors.onFill(
+                    isDark ? AppColors.errorDark : AppColors.errorLight,
+                  ),
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
                 Expanded(child: Text(l10n.failedToDeleteInvestment)),
               ],
@@ -776,7 +782,13 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error_rounded, color: Colors.white, size: 20),
+                Icon(
+                  Icons.error_rounded,
+                  color: AppColors.onFill(
+                    isDark ? AppColors.errorDark : AppColors.errorLight,
+                  ),
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
                 Expanded(child: Text(errorMessage)),
               ],

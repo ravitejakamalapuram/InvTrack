@@ -190,7 +190,10 @@ class SwipeActions extends StatelessWidget {
       padding: const EdgeInsets.only(left: 24),
       child: Icon(
         isArchived ? Icons.unarchive_rounded : Icons.archive_rounded,
-        color: Colors.white,
+        // The amber start of the archive gradient is too bright for white.
+        color: isArchived
+            ? Colors.white
+            : AppColors.onFill(AppColors.archiveGradient.colors.first),
       ),
     );
   }
