@@ -176,7 +176,7 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
                       _withSubtitle(
                         '${l10n.moicLabel}: '
                         '${isPrivacyMode ? l10n.hiddenAmount : moicText}',
-                        moicSubtitle,
+                        moicSubtitle == null ? null : _spokenDuration(l10n),
                       ),
                     )
                   : null,
@@ -244,6 +244,16 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
 
   /// [figure] followed by the card's visible subtitle, which a card that
   /// replaces its texts with one semantics label would otherwise drop.
+  /// The holding period as a screen reader should say it, in place of the
+  /// short visible form ("1.0y", "<1mo").
+  String? _spokenDuration(AppLocalizations l10n) {
+    final years = stats.durationYears;
+    if (years == null) return null;
+    if (years < 0.08) return l10n.durationSpokenUnderMonth;
+    if (years < 1) return l10n.durationSpokenMonths((years * 12).round());
+    return l10n.durationSpokenYears(years.toStringAsFixed(1));
+  }
+
   static String _withSubtitle(String figure, String? subtitle) =>
       subtitle == null ? figure : '$figure, $subtitle';
 
