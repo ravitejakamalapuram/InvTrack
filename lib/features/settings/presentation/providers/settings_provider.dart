@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
-import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/services/locale_detection_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -113,13 +112,9 @@ class SettingsNotifier extends Notifier<SettingsState> {
     //
     // The automatic rebuild via the dependency chain is sufficient and correct.
 
-    // CRITICAL FIX #3: Clear cached exchange rates for new currency
-    // Use clearCache() instead of ref.invalidate() to preserve:
-    // - Circuit breaker state (prevents unnecessary API failures)
-    // - Performance metrics (preserves monitoring data)
-    // - In-flight requests (prevents duplicate API calls)
-    // BUG FIX (2026-05-04): Handle null service when user is not authenticated
-    await ref.read(currencyConversionServiceProvider)?.clearCache();
+    // Exchange rates are cached per currency pair (from -> to), not per base
+    // currency, so a base-currency switch must keep the cache (#759). Rates
+    // for the new base are fetched on demand and old pairs stay reusable.
 
     // Track analytics
     ref

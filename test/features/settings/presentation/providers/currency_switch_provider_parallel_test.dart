@@ -180,9 +180,9 @@ void main() {
         // Close subscription after operation completes
         subscription.close();
 
-        // CRITICAL: Verify cache was cleared during currency switch
-        // This ensures stale exchange rates don't persist across currency changes
-        verify(() => mockConversionService.clearCache()).called(1);
+        // Rates are keyed per currency pair, not per base currency, so a
+        // currency switch must keep the FX cache (#759).
+        verifyNever(() => mockConversionService.clearCache());
 
         // Verify all rates were fetched
         verify(

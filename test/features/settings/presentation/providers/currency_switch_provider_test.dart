@@ -237,8 +237,9 @@ void main() {
         // Use immediate method for testing
         await notifier.switchCurrencyImmediate('EUR');
 
-        // Verify cache was cleared
-        verify(() => mockConversionService.clearCache()).called(1);
+        // Rates are keyed per currency pair, not per base currency, so a
+        // currency switch must keep the FX cache (#759).
+        verifyNever(() => mockConversionService.clearCache());
       });
     });
 
