@@ -256,7 +256,9 @@ void main() {
         allInvestments: [
           _investment('A', InvestmentStatus.closed),
           _investment('B', InvestmentStatus.open),
-          _investment('C', InvestmentStatus.open),
+          // Closed: an open C with no current value has no XIRR to rank
+          // (money rule 4, #981; see reports_rule4_test.dart).
+          _investment('C', InvestmentStatus.closed),
         ],
         allCashFlows: [..._flowsA, ..._flowsB, ..._flowsC],
       );
