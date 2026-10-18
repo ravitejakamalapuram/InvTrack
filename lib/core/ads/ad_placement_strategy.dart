@@ -77,9 +77,11 @@ class AdPlacementStrategy {
   static List<int> getInvestmentListAdPositions(int investmentCount) {
     final positions = <int>[];
 
-    for (int i = investmentListFrequency;
-        i <= investmentCount;
-        i += investmentListFrequency) {
+    for (
+      int i = investmentListFrequency;
+      i <= investmentCount;
+      i += investmentListFrequency
+    ) {
       positions.add(i);
     }
 
@@ -110,9 +112,7 @@ class AdPlacementStrategy {
   static List<int> getGoalListAdPositions(int goalCount) {
     final positions = <int>[];
 
-    for (int i = goalListFrequency;
-        i <= goalCount;
-        i += goalListFrequency) {
+    for (int i = goalListFrequency; i <= goalCount; i += goalListFrequency) {
       positions.add(i);
     }
 

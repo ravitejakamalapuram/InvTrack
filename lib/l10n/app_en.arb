@@ -1299,6 +1299,51 @@
     "description": "Footer message"
   },
 
+  "offlineBanner": "You''re offline. Changes are saved on this device and sync when you reconnect.",
+  "@offlineBanner": {
+    "description": "Persistent banner shown at the top of every screen while there is no network"
+  },
+
+  "errorReasonNetwork": "no internet connection",
+  "@errorReasonNetwork": {
+    "description": "Short reason after 'Export failed:' when the network is the cause"
+  },
+
+  "errorReasonPermission": "you don''t have access to this data",
+  "@errorReasonPermission": {
+    "description": "Short reason after 'Export failed:' when access is denied"
+  },
+
+  "errorReasonUnknown": "something went wrong",
+  "@errorReasonUnknown": {
+    "description": "Short reason after 'Export failed:' when the cause is not known"
+  },
+
+  "investmentLoadErrorNetworkTitle": "Connection Error",
+  "@investmentLoadErrorNetworkTitle": {
+    "description": "Investment list error title when the network is the cause"
+  },
+
+  "investmentLoadErrorNetworkBody": "Unable to load investments.\nPlease check your connection and try again.",
+  "@investmentLoadErrorNetworkBody": {
+    "description": "Investment list error body when the network is the cause"
+  },
+
+  "investmentLoadErrorTitle": "Couldn''t load investments",
+  "@investmentLoadErrorTitle": {
+    "description": "Investment list error title when the cause is not the network"
+  },
+
+  "investmentLoadErrorPermissionBody": "You don''t have access to these investments right now.\nSign in again and retry.",
+  "@investmentLoadErrorPermissionBody": {
+    "description": "Investment list error body when access is denied"
+  },
+
+  "investmentLoadErrorUnknownBody": "Something went wrong while loading your investments.\nPlease try again.",
+  "@investmentLoadErrorUnknownBody": {
+    "description": "Investment list error body when the cause is not known"
+  },
+
   "exportFailed": "Export failed: {error}",
   "@exportFailed": {
     "description": "Export failure message",

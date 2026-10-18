@@ -44,9 +44,10 @@ class NativeAdState {
 
 /// Simplified provider for ad state - using Provider.family instead of complex Notifier
 /// This is simpler and works well for ad loading which is async/one-time
-final nativeAdProvider = Provider.family.autoDispose<AsyncValue<NativeAd?>, AdPlacement>((ref, placement) {
-  return const AsyncValue.loading();
-});
+final nativeAdProvider = Provider.family
+    .autoDispose<AsyncValue<NativeAd?>, AdPlacement>((ref, placement) {
+      return const AsyncValue.loading();
+    });
 
 /// Helper to load an ad for a given placement
 Future<NativeAd?> loadNativeAd(WidgetRef ref, AdPlacement placement) async {

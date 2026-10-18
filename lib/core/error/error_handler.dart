@@ -79,7 +79,19 @@ import 'package:inv_tracker/core/utils/app_feedback.dart';
 /// Centralized error handler for the application.
 ///
 /// See library documentation above for usage examples and exception hierarchy.
+/// Coarse cause of a failure, used to pick which message the user sees.
+enum ErrorKind { network, permission, unknown }
+
 class ErrorHandler {
+  /// Which kind of failure [error] is. Permission and sign-in failures are
+  /// [ErrorKind.permission]; anything unrecognised is [ErrorKind.unknown].
+  static ErrorKind kindOf(Object error) {
+    final mapped = mapException(error);
+    if (mapped is NetworkException) return ErrorKind.network;
+    if (mapped is AuthException) return ErrorKind.permission;
+    return ErrorKind.unknown;
+  }
+
   /// Convert any exception to an [AppException].
   ///
   /// This method maps platform-specific exceptions (Firebase, network, etc.)
@@ -152,38 +164,37 @@ class ErrorHandler {
       if (code == 'sign_in_canceled') {
         return AuthException.signInCancelled();
       }
-      return AuthException.signInFailed(
-        cause: error,
-        stackTrace: stackTrace,
-      );
+      return AuthException.signInFailed(cause: error, stackTrace: stackTrace);
     }
 
     // Google Sign-In Exceptions
     if (error.runtimeType.toString() == 'GoogleSignInException') {
-       final code = (error as dynamic).code;
-       final codeString = code?.toString() ?? '';
+      final code = (error as dynamic).code;
+      final codeString = code?.toString() ?? '';
 
-       if (codeString.contains('canceled') || code == 'canceled') {
-           return AuthException.signInCancelled();
-       }
-       if (codeString.contains('clientConfigurationError') ||
-           codeString.contains('providerConfigurationError') ||
-           code == 'clientConfigurationError' ||
-           code == 'providerConfigurationError') {
-         return AuthException(
-            userMessage: 'There is a configuration issue with Google Sign-In. Please contact support.',
-            technicalMessage: 'GoogleSignInException: $code',
-            cause: error,
-            stackTrace: stackTrace,
-            shouldReport: false,
-         );
-       }
+      if (codeString.contains('canceled') || code == 'canceled') {
+        return AuthException.signInCancelled();
+      }
+      if (codeString.contains('clientConfigurationError') ||
+          codeString.contains('providerConfigurationError') ||
+          code == 'clientConfigurationError' ||
+          code == 'providerConfigurationError') {
+        return AuthException(
+          userMessage:
+              'There is a configuration issue with Google Sign-In. Please contact support.',
+          technicalMessage: 'GoogleSignInException: $code',
+          cause: error,
+          stackTrace: stackTrace,
+          shouldReport: false,
+        );
+      }
 
-       return AuthException.signInFailed(
-         cause: error,
-         stackTrace: stackTrace,
-         shouldReport: false, // Don't report generic google sign in errors to avoid spam
-       );
+      return AuthException.signInFailed(
+        cause: error,
+        stackTrace: stackTrace,
+        shouldReport:
+            false, // Don't report generic google sign in errors to avoid spam
+      );
     }
 
     // Generic fallback
@@ -341,7 +352,9 @@ class ErrorHandler {
       } catch (e) {
         // Silently ignore Crashlytics initialization errors (e.g., in test environment)
         // This ensures tests don't fail when Firebase isn't initialized
-        debugPrint('⚠️  Crashlytics not available (likely in test environment): $e');
+        debugPrint(
+          '⚠️  Crashlytics not available (likely in test environment): $e',
+        );
       }
     }
   }

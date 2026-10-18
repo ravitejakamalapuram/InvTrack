@@ -189,11 +189,7 @@ class NotificationService with NotificationPreferencesMixin {
 
   /// [clock] supplies "now" for reminder scheduling; tests inject a fixed
   /// time. Defaults to [DateTime.now].
-  NotificationService(
-    this._plugin,
-    this._prefs, {
-    DateTime Function()? clock,
-  }) {
+  NotificationService(this._plugin, this._prefs, {DateTime Function()? clock}) {
     // Initialize handlers with required dependencies
     _scheduledHandler = ScheduledNotificationHandler(
       plugin: _plugin,
@@ -1057,7 +1053,8 @@ class NotificationService with NotificationPreferencesMixin {
       await _plugin.zonedSchedule(
         id: NotificationIds.activationDay0,
         title: '🎉 Welcome to InvTrack!',
-        body: 'Start tracking your investments and discover your real returns (XIRR). Add your first investment now!',
+        body:
+            'Start tracking your investments and discover your real returns (XIRR). Add your first investment now!',
         scheduledDate: tz.TZDateTime.from(day0Time, tz.local),
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -1077,7 +1074,8 @@ class NotificationService with NotificationPreferencesMixin {
       await _plugin.zonedSchedule(
         id: NotificationIds.activationDay1,
         title: '📊 Add Your First Investment',
-        body: 'Take 30 seconds to add an FD, mutual fund, or any investment. See how your returns really stack up!',
+        body:
+            'Take 30 seconds to add an FD, mutual fund, or any investment. See how your returns really stack up!',
         scheduledDate: tz.TZDateTime.from(day1Time, tz.local),
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -1097,7 +1095,8 @@ class NotificationService with NotificationPreferencesMixin {
       await _plugin.zonedSchedule(
         id: NotificationIds.activationDay3,
         title: '📥 Import Your Investments',
-        body: 'Have a spreadsheet? Import your investments from CSV in seconds. No manual entry needed!',
+        body:
+            'Have a spreadsheet? Import your investments from CSV in seconds. No manual entry needed!',
         scheduledDate: tz.TZDateTime.from(day3Time, tz.local),
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -1117,7 +1116,8 @@ class NotificationService with NotificationPreferencesMixin {
       await _plugin.zonedSchedule(
         id: NotificationIds.activationDay7,
         title: '💡 Did You Know?',
-        body: 'InvTrack shows your real XIRR returns - often different from advertised rates. Start tracking to see the difference!',
+        body:
+            'InvTrack shows your real XIRR returns - often different from advertised rates. Start tracking to see the difference!',
         scheduledDate: tz.TZDateTime.from(day7Time, tz.local),
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -1142,7 +1142,8 @@ class NotificationService with NotificationPreferencesMixin {
       await _plugin.zonedSchedule(
         id: NotificationIds.activationDay14,
         title: '📈 Join Smart Investors',
-        body: 'Thousands of investors track their real returns with InvTrack. Add your first investment and join them!',
+        body:
+            'Thousands of investors track their real returns with InvTrack. Add your first investment and join them!',
         scheduledDate: tz.TZDateTime.from(day14Time, tz.local),
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,

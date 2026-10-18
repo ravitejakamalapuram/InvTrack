@@ -304,9 +304,13 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     await _plugin.zonedSchedule(
       id: NotificationIds.weeklyCheckIn,
       title: '📊 Weekly Check-In',
-      body: 'Did you receive any investment income this week? Tap to log it now.',
+      body:
+          'Did you receive any investment income this week? Tap to log it now.',
       scheduledDate: tz.TZDateTime.from(nextSunday, tz.local),
-      notificationDetails: const NotificationDetails(android: androidDetails, iOS: iosDetails),
+      notificationDetails: const NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       payload: NotificationPayload.weeklyCheckIn,
@@ -355,7 +359,10 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       title: '📅 FY Summary Ready',
       body: 'Your financial year summary is ready!',
       scheduledDate: tz.TZDateTime.from(nextApril1, tz.local),
-      notificationDetails: const NotificationDetails(android: androidDetails, iOS: iosDetails),
+      notificationDetails: const NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       payload: NotificationPayload.fySummary,
     );
@@ -406,7 +413,10 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       id: NotificationIds.fySummary,
       title: '📊 FY$previousFY-$nextFY Summary',
       body: buffer.toString(),
-      notificationDetails: const NotificationDetails(android: androidDetails, iOS: iosDetails),
+      notificationDetails: const NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      ),
       payload: NotificationPayload.fySummary,
     );
 

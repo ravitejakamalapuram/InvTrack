@@ -102,7 +102,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Redirect to Overview if user tries to access Reports when feature is disabled
       final isReportsRoute = state.uri.path.startsWith('/reports');
       if (isLoggedIn && !isReportsEnabled && isReportsRoute) {
-        LoggerService.debug('Reports feature disabled, redirecting to Overview');
+        LoggerService.debug(
+          'Reports feature disabled, redirecting to Overview',
+        );
         return '/';
       }
 
@@ -213,7 +215,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
                       // Otherwise, parse params and show the generated report
                       try {
-                        final config = ReportConfiguration.fromQueryParams(params);
+                        final config = ReportConfiguration.fromQueryParams(
+                          params,
+                        );
                         return DynamicReportScreen(configuration: config);
                       } catch (e, stackTrace) {
                         // Log parsing errors and show error screen

@@ -64,11 +64,7 @@ final adServiceProvider = Provider<AdService>((ref) {
 });
 
 /// Ad placement identifiers (for analytics and frequency control)
-enum AdPlacement {
-  investmentList,
-  portfolioHealth,
-  goalList,
-}
+enum AdPlacement { investmentList, portfolioHealth, goalList }
 
 /// Ad consent status
 enum AdConsentStatus {
@@ -93,9 +89,9 @@ class AdService {
     required SharedPreferences prefs,
     required AnalyticsService analytics,
     DateTime? userCreatedAt,
-  })  : _prefs = prefs,
-        _analytics = analytics,
-        _userCreatedAt = userCreatedAt;
+  }) : _prefs = prefs,
+       _analytics = analytics,
+       _userCreatedAt = userCreatedAt;
 
   /// Initialize the Mobile Ads SDK
   ///
@@ -202,9 +198,7 @@ class AdService {
   ///   NativeAdWidget(ad: ad);
   /// }
   /// ```
-  Future<NativeAd?> loadNativeAd({
-    required AdPlacement placement,
-  }) async {
+  Future<NativeAd?> loadNativeAd({required AdPlacement placement}) async {
     // Lazy initialization: Initialize if needed
     if (!_isInitialized) {
       LoggerService.debug('Lazy-initializing AdService before ad load');
@@ -246,10 +240,7 @@ class AdService {
             );
             _analytics.logEvent(
               name: 'ad_loaded',
-              parameters: {
-                'placement': placement.name,
-                'ad_format': 'native',
-              },
+              parameters: {'placement': placement.name, 'ad_format': 'native'},
             );
           },
           onAdFailedToLoad: (ad, error) {
@@ -355,4 +346,3 @@ class AdService {
     // Native ads are disposed individually when widgets are removed
   }
 }
-
