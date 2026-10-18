@@ -413,44 +413,56 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 60),
-            const Icon(
-              Icons.lock_outline,
-              size: 48,
-              color: AppColors.primaryLight,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: AppTypography.h3.copyWith(
-                color: _isError ? Colors.red : AppColors.textPrimaryLight,
+        // Scrolls on short screens, where the way-out buttons would overflow.
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 60),
+                    const Icon(
+                      Icons.lock_outline,
+                      size: 48,
+                      color: AppColors.primaryLight,
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.h3.copyWith(
+                        color: _isError
+                            ? Colors.red
+                            : AppColors.textPrimaryLight,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(4, (index) {
+                        return Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 12),
+                          width: 16,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: index < _input.length
+                                ? AppColors.primaryLight
+                                : AppColors.neutral300Light,
+                          ),
+                        );
+                      }),
+                    ),
+                    const Spacer(),
+                    if (isUnlock) ..._buildWayOut(security, canProveIdentity),
+                    _buildKeypad(),
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 40),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(4, (index) {
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: index < _input.length
-                        ? AppColors.primaryLight
-                        : AppColors.neutral300Light,
-                  ),
-                );
-              }),
-            ),
-            const Spacer(),
-            if (isUnlock) ..._buildWayOut(security, canProveIdentity),
-            _buildKeypad(),
-            const SizedBox(height: 40),
-          ],
+          ),
         ),
       ),
     );
