@@ -775,6 +775,10 @@ class CurrencyConversionService {
       return _fetchRateFromApis(from: from, to: to, date: date);
     }
     if (fromPeg != null && toPeg != null) return toPeg / fromPeg;
+    // A pegged currency against USD is the peg itself; asking the APIs for
+    // USD to USD returns no rate.
+    if (fromPeg != null && to == 'USD') return 1 / fromPeg;
+    if (toPeg != null && from == 'USD') return toPeg;
     if (fromPeg != null) {
       final usdToTarget = await _fetchRateFromApis(
         from: 'USD',

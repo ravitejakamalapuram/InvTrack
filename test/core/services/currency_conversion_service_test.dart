@@ -259,6 +259,32 @@ void main() {
       service = build('{"rates":{"INR":83}}');
       expect(await service.getHistoricalRate(date, 'USD', 'INR'), 83.0);
     });
+
+    test('AED to USD and USD to SAR are the pegs, with no API call', () async {
+      service = build('{}');
+      expect(
+        await service.getHistoricalRate(date, 'AED', 'USD'),
+        closeTo(1 / 3.6725, 1e-9),
+      );
+      expect(await service.getHistoricalRate(date, 'USD', 'SAR'), 3.75);
+      expect(requests, isEmpty);
+    });
+
+    test('an integer Firestore rate reads as a double', () async {
+      service = build('{}');
+      final snap = MockDocumentSnapshot();
+      when(() => mockDocRef.get()).thenAnswer((_) async => snap);
+      when(() => snap.exists).thenReturn(true);
+      when(() => snap.data()).thenReturn({
+        'rate': 83,
+        'expiresAt': Timestamp.fromDate(
+          DateTime.now().add(const Duration(days: 1)),
+        ),
+      });
+      expect(await service.getHistoricalRate(date, 'USD', 'INR'), 83.0);
+      expect(await service.getLiveRate('USD', 'EUR'), 83.0);
+      expect(requests, isEmpty);
+    });
   });
 
   group('CurrencyConversionService - Live Rates', () {
