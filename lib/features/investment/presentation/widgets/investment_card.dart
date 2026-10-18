@@ -109,10 +109,10 @@ class InvestmentCard extends ConsumerWidget {
         hiddenPercentageLabel: l10n.hiddenPercentage,
         name: investment.name,
         type: typeName,
-        // The card knows no current value, so the label never says one. An
-        // open investment awaiting a value shows what went in and came back
-        // (its net would read as a loss); every other card shows its net
-        // position, and so does the label.
+        // The card knows no current value, so the label never says one. What
+        // it does say goes in receivedSegment below: what went in and came
+        // back while the value is awaited (a net would read as a loss), the
+        // net position on every other card.
         currentValue: null,
         receivedSegment: isAwaitingValue
             ? l10n.investmentCardReceivedSemantics(
