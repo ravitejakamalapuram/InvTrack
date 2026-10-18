@@ -84,8 +84,8 @@ void main() {
     };
     for (final MapEntry(key: field, value: investment)
         in withOneDetail.entries) {
-      test('is true when $field is set', () {
-        expect(investmentHasDetailsNotInExport(investment), isTrue);
+      test('is false when $field is set: investments.json carries it', () {
+        expect(investmentHasDetailsNotInExport(investment), isFalse);
       });
     }
   });
@@ -141,7 +141,11 @@ void main() {
 
     expect(export.investments, 2);
     expect(export.cashFlows, 2);
-    expect(export.investmentsWithDetailsNotInExport, 1);
+    expect(
+      export.investmentsWithDetailsNotInExport,
+      0,
+      reason: 'investments.json carries every investment field',
+    );
     expect(export.expectedCashFlows, 3);
     expect(export.carriesEverything, isFalse);
   });
