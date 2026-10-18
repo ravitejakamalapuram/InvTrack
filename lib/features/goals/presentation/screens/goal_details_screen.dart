@@ -45,7 +45,7 @@ class GoalDetailsScreen extends ConsumerWidget {
           return _buildContent(context, ref, goal, isDark);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _buildError(context, isDark, error),
+        error: (error, _) => _buildError(context, ref, isDark),
       ),
     );
   }
@@ -78,7 +78,7 @@ class GoalDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildError(BuildContext context, bool isDark, Object error) {
+  Widget _buildError(BuildContext context, WidgetRef ref, bool isDark) {
     final l10n = AppLocalizations.of(context);
     return Center(
       child: Column(
@@ -90,13 +90,24 @@ class GoalDetailsScreen extends ConsumerWidget {
             color: isDark ? AppColors.errorDark : AppColors.errorLight,
           ),
           SizedBox(height: AppSpacing.md),
-          Text(
-            'Failed to load goal',
-            style: AppTypography.h3.copyWith(
-              color: isDark ? Colors.white : AppColors.neutral900Light,
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              l10n.goalLoadError,
+              style: AppTypography.h3.copyWith(
+                color: isDark ? Colors.white : AppColors.neutral900Light,
+              ),
             ),
           ),
           SizedBox(height: AppSpacing.md),
+          TextButton.icon(
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              reloadGoals(ref);
+            },
+            icon: const Icon(Icons.refresh_rounded),
+            label: Text(l10n.retry),
+          ),
           TextButton(
             onPressed: () => context.safePop(),
             child: Text(l10n.goBack),
@@ -159,7 +170,7 @@ class GoalDetailsScreen extends ConsumerWidget {
         ],
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => _buildError(context, isDark, error),
+      error: (error, _) => _buildError(context, ref, isDark),
     );
   }
 
