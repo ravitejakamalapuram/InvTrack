@@ -475,7 +475,7 @@ class _InvestmentInfo extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: isDark ? Colors.white : AppColors.neutral900Light,
           ),
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
         SizedBox(height: AppSpacing.xxs),
