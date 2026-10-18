@@ -3945,6 +3945,17 @@
     "description": "Lowercase word after the amount received so far, on an investment card that awaits its current value (e.g., '₹2.52 L received')"
   },
 
+  "investmentCardNetSemantics": "Net position: {amount}",
+  "@investmentCardNetSemantics": {
+    "description": "Screen reader text for the net position (cash in minus cash out) drawn on an investment card. The amount is already spoken text, or 'Hidden amount' in privacy mode",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "2,000 dollars"
+      }
+    }
+  },
+
   "investmentCardReceivedSemantics": "Received: {amount}",
   "@investmentCardReceivedSemantics": {
     "description": "Screen reader text for the amount received so far, on an investment card that awaits its current value. The amount is already spoken text, or 'Hidden amount' in privacy mode",
