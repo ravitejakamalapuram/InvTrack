@@ -42,11 +42,8 @@ class MetricWithTooltip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          label,
-          style: labelStyle,
-        ),
-        const SizedBox(width: 4),
+        Flexible(child: Text(label, style: labelStyle)),
+        const SizedBox(width: 2),
         Tooltip(
           message: tooltip,
           triggerMode: TooltipTriggerMode.tap,
@@ -61,10 +58,15 @@ class MetricWithTooltip extends StatelessWidget {
             color: Theme.of(context).colorScheme.onInverseSurface,
             fontSize: 13,
           ),
-          child: Icon(
-            Icons.help_outline_rounded,
-            size: iconSize,
-            color: iconColor ?? Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Icon(
+              Icons.help_outline_rounded,
+              size: iconSize,
+              color:
+                  iconColor ??
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+            ),
           ),
         ),
       ],

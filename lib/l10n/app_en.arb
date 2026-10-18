@@ -577,7 +577,7 @@
     "description": "FAQ question"
   },
 
-  "howToAddFirstInvestmentAnswer": "Tap the \"+\" button on the Investments tab. Enter your investment details including name, amount, date, and category. You can also add transactions later to track your investment growth.",
+  "howToAddFirstInvestmentAnswer": "Tap the \"+\" button on the Investments tab. Enter the name and type, then add cash flows (money in, payouts, income) to track how it grows.",
   "@howToAddFirstInvestmentAnswer": {
     "description": "FAQ answer"
   },
@@ -4932,9 +4932,17 @@
     "description": "Summary section title"
   },
 
-  "xirrTooltip": "Extended Internal Rate of Return - Industry standard for calculating returns with multiple transactions at different times. Accounts for when you invested and withdrew money.",
+  "xirrTooltip": "Your yearly return, counting when each payment went in or came out. Example: 100 invested grows to 110 in a year, so XIRR is 10%.",
   "@xirrTooltip": {
-    "description": "Tooltip explaining XIRR metric"
+    "description": "Explainer shown from the info icon next to XIRR, with an example"
+  },
+  "moicTooltip": "Money multiple: what you got back (plus what it is worth now) divided by what you put in. Example: 100 invested and 150 back is 1.50x.",
+  "@moicTooltip": {
+    "description": "Explainer shown from the info icon next to MOIC (multiple on invested capital), with an example"
+  },
+  "netPositionTooltip": "Money received minus money put in. Example: 100 put in and 130 received is +30. Below zero means you have not got all your money back yet.",
+  "@netPositionTooltip": {
+    "description": "Explainer shown from the info icon next to Net Position and Net cash flow so far, with an example"
   },
 
   "capitalGainsTooltip": "Profit from selling investments. Short-term (<1 year) gains are taxed higher than long-term (>1 year) gains in India.",
