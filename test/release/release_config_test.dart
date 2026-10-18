@@ -69,6 +69,7 @@ void main() {
     for (final path in [
       '.github/workflows/promote.yml',
       '.github/workflows/nightly.yml',
+      '.github/workflows/auto-release.yml',
     ]) {
       final text = read(path);
       final uses = RegExp(
@@ -158,5 +159,26 @@ void main() {
       expect(nightly, contains(flow));
       expect(File(flow).existsSync(), isTrue, reason: '$flow must exist');
     }
+  });
+
+  // A85: a red or stale nightly stops automatic releases.
+  test('auto-release waits for a gate job that reads the nightly runs', () {
+    final auto = read('.github/workflows/auto-release.yml');
+    expect(
+      RegExp(
+        r'^  auto:\n(?:    .*\n)*?    needs: gate$',
+        multiLine: true,
+      ).hasMatch(auto),
+      isTrue,
+      reason: 'the auto job must need the gate job',
+    );
+    expect(auto, contains('--workflow nightly.yml'));
+    expect(auto, contains('scripts/nightly_gate.dart'));
+    final gate = auto.substring(
+      auto.indexOf('  gate:'),
+      auto.indexOf('  auto:'),
+    );
+    expect(gate, contains('actions: read'));
+    expect(gate, isNot(contains('write')));
   });
 }
