@@ -6,6 +6,7 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
@@ -13,7 +14,8 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/empty_state_widget.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
-import 'package:inv_tracker/core/widgets/privacy_toggle_button.dart';
+import 'package:inv_tracker/core/widgets/screen_layout.dart';
+import 'package:inv_tracker/core/widgets/tonal_icon_action.dart';
 import 'package:inv_tracker/features/digest/domain/monthly_digest.dart';
 import 'package:inv_tracker/features/digest/presentation/providers/monthly_digest_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
@@ -41,26 +43,58 @@ class MonthlyRecapScreen extends ConsumerWidget {
     );
     final digestAsync = ref.watch(monthlyDigestProvider(month));
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isPrivate = ref.watch(privacyModeProvider);
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.safePop(),
-          tooltip: l10n.tooltipBack,
+        toolbarHeight: 64,
+        backgroundColor: isDark
+            ? AppColors.surfaceDark
+            : AppColors.surfaceLight,
+        surfaceTintColor: Colors.transparent,
+        leading: TonalIconAction.leading(
+          TonalIconAction(
+            icon: Icons.arrow_back_rounded,
+            tooltip: l10n.tooltipBack,
+            onPressed: () => context.safePop(),
+          ),
         ),
+        leadingWidth: AppSpacing.appBarLeadingWidth,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.monthlyRecapTitle(monthName)),
-            Text(range, style: AppTypography.caption),
+            Text(
+              l10n.monthlyRecapTitle(monthName),
+              style: AppTypography.h2.copyWith(
+                color: isDark ? Colors.white : AppColors.neutral900Light,
+              ),
+            ),
+            Text(
+              range,
+              style: AppTypography.small.copyWith(
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
+              ),
+            ),
           ],
         ),
-        actions: const [
-          CompactPrivacyToggle(),
-          SizedBox(width: AppSpacing.appBarTrailingGap),
+        actions: [
+          TonalIconAction(
+            icon: isPrivate
+                ? Icons.visibility_off_rounded
+                : Icons.visibility_rounded,
+            tooltip: isPrivate
+                ? l10n.tooltipShowAmounts
+                : l10n.tooltipHideAmounts,
+            selected: isPrivate,
+            onPressed: () => ref.read(privacyModeProvider.notifier).toggle(),
+          ),
         ],
+        actionsPadding: const EdgeInsetsDirectional.only(
+          end: AppSpacing.appBarTrailingGap,
+        ),
       ),
       body: digestAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -95,19 +129,18 @@ class _RecapBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final muted = isDark ? AppColors.neutral500Dark : AppColors.neutral500Light;
+    final muted = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondaryLight;
     final nextName = DateFormat.MMMM(locale).format(digest.month.next.start);
 
     Widget heading(String text) => Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.listItemSpacing),
-      child: Semantics(
-        header: true,
-        child: Text(text, style: AppTypography.h4),
-      ),
+      child: ScreenSectionHeader(title: text),
     );
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(
+      padding: const EdgeInsetsDirectional.fromSTEB(
         AppSpacing.screenEdge,
         AppSpacing.md,
         AppSpacing.screenEdge,
@@ -192,10 +225,12 @@ class _MoneyInCard extends ConsumerWidget {
 
     final Widget comparison;
     if (isPrivate) {
-      comparison = Row(
+      comparison = Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: AppSpacing.xxs,
         children: [
           Text(
-            '${l10n.monthlyRecapCompared(previousName)} ',
+            l10n.monthlyRecapCompared(previousName),
             style: AppTypography.caption.copyWith(color: secondary),
           ),
           MaskedAmountText(text: changeText, style: AppTypography.caption),
@@ -249,7 +284,11 @@ class _MoneyInCard extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.xxs),
                 MaskedAmountText(
                   text: format.formatSmart(moneyIn.total),
-                  style: AppTypography.numberLarge.copyWith(fontSize: 28),
+                  style: AppTypography.number.copyWith(
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.xxs),
                 Text(
@@ -281,7 +320,7 @@ class _ChangeLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
     children: [
-      Icon(icon, size: 16, color: color),
+      Icon(icon, size: AppSizes.iconXs, color: color),
       const SizedBox(width: AppSpacing.xxs),
       Flexible(
         child: Text(
@@ -322,17 +361,10 @@ class _MaturingRow extends StatelessWidget {
         onTap: () => context.push('/investments/${investment.id}'),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.xs),
-              decoration: BoxDecoration(
-                color: investment.type.tintColor(brightness),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                investment.type.icon,
-                size: 20,
-                color: investment.type.textColor(brightness),
-              ),
+            _IconTile(
+              icon: investment.type.icon,
+              fill: investment.type.tintColor(brightness),
+              color: investment.type.textColor(brightness),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
@@ -354,13 +386,19 @@ class _MaturingRow extends StatelessWidget {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.event, size: 14, color: accent),
+                          Icon(
+                            Icons.event,
+                            size: AppSizes.iconXs,
+                            color: accent,
+                          ),
                           const SizedBox(width: AppSpacing.xxs),
-                          Text(
-                            l10n.monthlyRecapMatures(chipDate),
-                            style: AppTypography.small.copyWith(
-                              color: accent,
-                              fontWeight: FontWeight.w600,
+                          Flexible(
+                            child: Text(
+                              l10n.monthlyRecapMatures(chipDate),
+                              style: AppTypography.small.copyWith(
+                                color: accent,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
@@ -387,14 +425,20 @@ class _NeedsValueRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final muted = isDark ? AppColors.neutral500Dark : AppColors.neutral500Light;
+    final muted = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondaryLight;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.listItemSpacing),
       child: GlassCard(
         child: Row(
           children: [
-            Icon(Icons.hourglass_empty, color: muted),
+            _IconTile(
+              icon: Icons.hourglass_empty,
+              fill: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+              color: muted,
+            ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Column(
@@ -418,4 +462,27 @@ class _NeedsValueRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The tinted tile a row starts with, so the rows of every section line up.
+class _IconTile extends StatelessWidget {
+  final IconData icon;
+  final Color fill;
+  final Color color;
+
+  const _IconTile({
+    required this.icon,
+    required this.fill,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(AppSpacing.xs),
+    decoration: BoxDecoration(
+      color: fill,
+      borderRadius: AppSizes.borderRadiusSm,
+    ),
+    child: Icon(icon, size: AppSizes.iconSm, color: color),
+  );
 }

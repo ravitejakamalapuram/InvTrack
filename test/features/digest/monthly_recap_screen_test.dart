@@ -4,17 +4,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/calculations/period_inflows.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/widgets/tonal_icon_action.dart';
 import 'package:inv_tracker/features/digest/domain/monthly_digest.dart';
 import 'package:inv_tracker/features/digest/presentation/providers/monthly_digest_provider.dart';
 import 'package:inv_tracker/features/digest/presentation/screens/monthly_recap_screen.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
+import '../../helpers/inter_font.dart';
+
 class _Privacy extends PrivacyModeNotifier {
   _Privacy(this.on);
   final bool on;
   @override
   bool build() => on;
+  @override
+  Future<void> toggle() async => state = !state;
 }
 
 final _october = DigestMonth.parse('2026-10');
@@ -72,6 +77,8 @@ Future<void> _pump(
 }
 
 void main() {
+  setUpAll(loadInterFont);
+
   testWidgets('shows the month, its payouts and the change', (tester) async {
     final semantics = tester.ensureSemantics();
     await _pump(tester, _digest());
@@ -130,4 +137,54 @@ void main() {
     expect(find.text('Nothing matures in November'), findsOneWidget);
     expect(find.text('Needs A Value'), findsNothing);
   });
+
+  testWidgets('the app bar uses the tonal chips and the privacy chip toggles', (
+    tester,
+  ) async {
+    await _pump(tester, _digest());
+
+    expect(find.byType(TonalIconAction), findsNWidgets(2));
+    expect(find.byTooltip('Hide amounts'), findsOneWidget);
+    expect(find.textContaining('18,400'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Hide amounts'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Show amounts'), findsOneWidget);
+    expect(find.textContaining('18,400'), findsNothing);
+  });
+
+  for (final privacy in [false, true]) {
+    testWidgets('does not overflow at 320dp and 1.8x text '
+        '(privacy: $privacy)', (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currencyCodeProvider.overrideWith((ref) => 'INR'),
+            privacyModeProvider.overrideWith(() => _Privacy(privacy)),
+            monthlyDigestProvider(
+              _october,
+            ).overrideWithValue(AsyncData(_digest())),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(1.8)),
+              child: child!,
+            ),
+            home: MonthlyRecapScreen(month: _october),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

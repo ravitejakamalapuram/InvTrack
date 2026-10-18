@@ -4,12 +4,16 @@ It is a screen built from existing parts (GlassCard, StatTile styles, EmptyState
 
 ## Layout
 
-- App bar: back arrow, title "October Recap" (Title Case), a `caption` line under it, "1 Oct – 31 Oct 2026" in `text-muted`, and the `CompactPrivacyToggle` at the end.
-- Body on `screen-edge` (16) through `ScreenEdge`, as on Overview and Investment detail. Sections are `section-gap` (24) apart, each with an `h4` heading (Title Case) and its cards `list-item-gap` (12) apart. Cards are GlassCards, padding 16, radius 20.
-- **Money In**: one card. Label "Payouts received", the total (Plus Jakarta Sans 28/700, `formatSmart`), the caption "3 payouts from 2 investments", then the comparison line 12 below: arrow up and `+₹4,200 more than September` in `success`, arrow down and `-₹1,500 less than September` in `danger`, or a flat arrow and "Same as September" in `text-muted` with no amount. Empty: compact EmptyState "No payouts recorded in October" / "Payouts you add for October will appear here" with the text button "Add a Payout".
+- App bar (64dp): a back `TonalIconAction` and the privacy `TonalIconAction` (selected while privacy mode is on; tooltips "Hide amounts" / "Show amounts"), both on `screen-edge` through `leadingWidth: appBarLeadingWidth` and `appBarTrailingGap`, as on Investment detail. The title "October Recap" (Title Case) is `h2` in `text`, with the date range "1 Oct – 31 Oct 2026" under it in `small` and `text-muted`.
+- Body on `screen-edge` (16) through `ScreenEdge`, as on Overview and Investment detail. Sections are `section-gap` (24) apart, each with a `ScreenSectionHeader` (`h4`, Title Case) and its cards `list-item-gap` (12) apart. Cards are GlassCards, padding 16, radius 20.
+- **Money In**: one card. Label "Payouts received" in `caption`, the total (`AppTypography.number`, Plus Jakarta Sans 28/700, in `text`, `formatSmart`), the caption "3 payouts from 2 investments", then the comparison line 12 below: arrow up and `+₹4,200 more than September` in `success`, arrow down and `-₹1,500 less than September` in `danger`, or a flat arrow and "Same as September" in `text-muted` with no amount. Empty: compact EmptyState "No payouts recorded in October" / "Payouts you add for October will appear here" with the text button "Add a Payout".
 - **Coming Up In November**: one tappable card per investment maturing next month: type icon in its tinted 8px tile, name (one line, ellipsis), the type badge and the maturity chip (`MATURES 12 NOV`, ALL CAPS, accent tone, `event` icon), chevron. The tap opens the investment. Empty: one line "Nothing matures in November" in `text-muted`.
-- **Needs A Value**: one card per open investment with no current value: hourglass in a `text-muted` tile, name, "Add a current value to see its XIRR", text button "Update" (48dp target). Hidden when empty.
+- **Needs A Value**: one card per open investment with no current value: hourglass in a `text-muted` icon on a `surface` tile (the same 8px tile as the Coming Up rows), name, "Add a current value to see its XIRR", text button "Update" (48dp target). Hidden when empty.
 - Footer: caption "Archived investments are not included."
+
+## Tokens
+
+Spacing, type, radius and icon sizes come only from `AppSpacing`, `AppTypography` and `AppSizes` (tile `radius-sm` 8, tile icon 20, inline icons 16). Muted text is `text-muted` (`textSecondaryLight` / `textSecondaryDark`). In privacy mode the comparison wraps rather than forming one long row, so it does not overflow at 1.8x text on a 320dp screen.
 
 ## States
 

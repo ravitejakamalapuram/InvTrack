@@ -98,9 +98,9 @@ html, body { margin: 0; }
 
   function screen(o) {
     return '<div class="it-phone"><div class="it-appbar">' +
-      '<button type="button" class="it-appbar__act md-back" aria-label="Back">' + I.icon('arrow_back', { size: 24 }) + '</button>' +
+      '<button type="button" class="it-appbar__act it-appbar__act--tonal md-back" aria-label="Back"><span class="it-appbar__chip">' + I.icon('arrow_back', { size: 20 }) + '</span></button>' +
       '<div style="flex:1;min-width:0"><h2 class="it-appbar__title">October Recap</h2><p class="md-sub">1 Oct – 31 Oct 2026</p></div>' +
-      I.PrivacyMask({ kind: 'toggle', background: false, size: 24, on: !!o.privacy }) + '</div>' +
+      '<button type="button" class="it-appbar__act it-appbar__act--tonal' + (o.privacy ? ' is-on' : '') + '" aria-label="' + (o.privacy ? 'Show amounts' : 'Hide amounts') + '"><span class="it-appbar__chip">' + I.icon(o.privacy ? 'visibility_off' : 'visibility', { size: 20 }) + '</span></button></div>' +
       '<div class="it-phone__body">' + moneyIn(o.money, o.privacy) + maturing(o.maturing) + needsValue(o.needs) +
       '<p class="it-cap" style="margin-top:var(--section-gap,24px)">Archived investments are not included.</p></div></div>';
   }
