@@ -11,13 +11,13 @@ part of 'currency_switch_provider.dart';
 /// Provider for currency switch status
 
 @ProviderFor(CurrencySwitch)
-final currencySwitchProvider = CurrencySwitchProvider._();
+const currencySwitchProvider = CurrencySwitchProvider._();
 
 /// Provider for currency switch status
 final class CurrencySwitchProvider
     extends $NotifierProvider<CurrencySwitch, CurrencySwitchStatus> {
   /// Provider for currency switch status
-  CurrencySwitchProvider._()
+  const CurrencySwitchProvider._()
     : super(
         from: null,
         argument: null,
@@ -44,7 +44,7 @@ final class CurrencySwitchProvider
   }
 }
 
-String _$currencySwitchHash() => r'c5892b2d29b49616a5340e6d1a06e0ed09d7ade7';
+String _$currencySwitchHash() => r'41a83deaceee2c810670c3744b8aa25bc4a4c3ff';
 
 /// Provider for currency switch status
 
