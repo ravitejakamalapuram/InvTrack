@@ -244,7 +244,7 @@ class ReportsHomeScreen extends ConsumerWidget {
                   l10n,
                   icon: Icons.calendar_today_rounded,
                   title: l10n.fyReport,
-                  subtitle: l10n.currentFY('2023', '24'),
+                  subtitle: _currentFyLabel(l10n),
                   onTap: () => _navigateToReport(
                     context,
                     ReportConfiguration.fyReport(),
@@ -361,5 +361,12 @@ class ReportsHomeScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// The Indian FY the report tile opens: [1 Apr, next 1 Apr).
+  String _currentFyLabel(AppLocalizations l10n) {
+    final now = DateTime.now();
+    final start = now.month >= 4 ? now.year : now.year - 1;
+    return l10n.currentFY('$start', ((start + 1) % 100).toString().padLeft(2, '0'));
   }
 }

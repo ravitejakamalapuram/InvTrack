@@ -331,7 +331,7 @@
 .it-inv__check + .it-inv__tile { margin-top: 8px; }   /* the tile centred on the checkbox; name and figures stay on the top edge */
 .it-inv__tile { display: inline-flex; align-items: center; justify-content: center; flex: none; width: var(--icon-xl); height: var(--icon-xl); border-radius: 14px; color: var(--on, #fff); font-size: 24px; background: linear-gradient(135deg, var(--c), color-mix(in srgb, var(--c) 70%, transparent)); box-shadow: 0 4px 8px color-mix(in srgb, var(--c) 30%, transparent); }
 .it-inv__info { flex: 1 1 96px; min-width: 96px; }   /* the name keeps room for about eleven characters; when the figures need more, the value column wraps under it (the app measures the figures the same way) */
-.it-inv__name { margin: 0; font: 600 18px/1.6 var(--font-text); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.it-inv__name { margin: 0; font: 600 18px/1.6 var(--font-text); color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .it-inv__tags { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-top: 4px; }
 .it-inv__val { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right; margin-left: auto; }
 .it-inv__net { font: 600 18px/1.6 var(--font-text); }
