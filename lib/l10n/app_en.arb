@@ -1898,20 +1898,8 @@
     "description": "Button text to keep data"
   },
 
-  "invTrackerPremium": "InvTrack Premium",
-  "@invTrackerPremium": {
-    "description": "Title for premium paywall screen"
-  },
 
-  "maybeLater": "Maybe Later",
-  "@maybeLater": {
-    "description": "Button text to dismiss premium offer"
-  },
 
-  "unlockPremiumFeature": "Unlock Premium feature",
-  "@unlockPremiumFeature": {
-    "description": "Accessibility label for premium gate overlay"
-  },
 
   "signInTagline": "Track investments. Grow wealth.",
   "@signInTagline": {
@@ -1981,15 +1969,7 @@
     "description": "Header for transaction type values legend"
   },
 
-  "welcomeToPremium": "Welcome to Premium!",
-  "@welcomeToPremium": {
-    "description": "Success message when user upgrades to premium"
-  },
 
-  "upgradeForPrice": "Upgrade for $4.99/mo",
-  "@upgradeForPrice": {
-    "description": "Premium upgrade button text with price"
-  },
 
   "goalEmoji": "🎯",
   "@goalEmoji": {
