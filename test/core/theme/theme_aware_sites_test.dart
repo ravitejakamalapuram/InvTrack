@@ -152,6 +152,8 @@ const _bright = <String, int>{
       1,
   // The tint behind the insight icon.
   'lib/features/reports/presentation/widgets/smart_insight_card.dart': 1,
+  // The offline banner's amber fill; its icon and label take `onFill` of it.
+  'lib/core/widgets/connectivity_listener.dart': 1,
   // The tint of the danger-zone tile and the Replace option, the amber
   // snackbar fill and the amber button fill.
   'lib/features/settings/presentation/screens/data_management_screen.dart': 4,
