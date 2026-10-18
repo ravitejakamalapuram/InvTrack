@@ -290,6 +290,7 @@ class _MaturingRow extends StatelessWidget {
     final chipDate = DateFormat.d(locale).add_MMM().format(date).toUpperCase();
     final spokenDate = DateFormat.MMMMd(locale).format(date);
     final accent = Theme.of(context).colorScheme.primary;
+    final brightness = Theme.of(context).brightness;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.listItemSpacing),
@@ -302,7 +303,18 @@ class _MaturingRow extends StatelessWidget {
         onTap: () => context.push('/investments/${investment.id}'),
         child: Row(
           children: [
-            Icon(investment.type.icon, color: investment.type.color),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.xs),
+              decoration: BoxDecoration(
+                color: investment.type.tintColor(brightness),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                investment.type.icon,
+                size: 20,
+                color: investment.type.textColor(brightness),
+              ),
+            ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Column(

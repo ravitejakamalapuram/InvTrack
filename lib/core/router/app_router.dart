@@ -52,7 +52,6 @@ final routerProvider = Provider<GoRouter>((ref) {
   final analytics = ref.watch(analyticsServiceProvider);
   final isReportsEnabled = ref.watch(isReportsTabEnabledProvider);
   final isIncomeGuardianEnabled = ref.watch(isIncomeGuardianEnabledProvider);
-  final isMonthlyRecapEnabled = ref.watch(isMonthlyRecapEnabledProvider);
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -105,7 +104,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Redirect to Overview if user tries to access Reports when feature is disabled
       final isReportsRoute = state.uri.path.startsWith('/reports');
       if (isLoggedIn && !isReportsEnabled && isReportsRoute) {
-        LoggerService.debug('Reports feature disabled, redirecting to Overview');
+        LoggerService.debug(
+          'Reports feature disabled, redirecting to Overview',
+        );
         return '/';
       }
 
@@ -113,14 +114,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       // calendar reached by a deep link or a stale navigation.
       final isIncomeCalendarRoute = state.uri.path == '/income-calendar';
       if (isLoggedIn && !isIncomeGuardianEnabled && isIncomeCalendarRoute) {
-        return '/';
-      }
-
-      // The monthly recap is hidden while its flag is off; a recap
-      // notification tapped then lands on Overview.
-      if (isLoggedIn &&
-          !isMonthlyRecapEnabled &&
-          state.uri.path.startsWith('/recap/')) {
         return '/';
       }
 
@@ -224,7 +217,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
                       // Otherwise, parse params and show the generated report
                       try {
-                        final config = ReportConfiguration.fromQueryParams(params);
+                        final config = ReportConfiguration.fromQueryParams(
+                          params,
+                        );
                         return DynamicReportScreen(configuration: config);
                       } catch (e, stackTrace) {
                         // Log parsing errors and show error screen
@@ -312,7 +307,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/recap/:month',
         name: AnalyticsScreens.monthlyRecap,
+        // Hidden while its flag is off: a recap notification tapped then
+        // lands on Overview, as does a malformed month.
         redirect: (context, state) {
+          if (!ref.read(isMonthlyRecapEnabledProvider)) return '/';
           try {
             DigestMonth.parse(state.pathParameters['month'] ?? '');
             return null;

@@ -268,19 +268,28 @@ class _NotificationSyncInitializerState
 
   /// This month's recap counts while the recap flag is on, or null. Only
   /// the counts reach the notification; the amounts are computed on tap.
+  /// A failure here never stops the other reminders from being rescheduled.
   MonthlyDigest? _recapFacts(DateTime now) {
-    if (!ref.read(isMonthlyRecapEnabledProvider)) return null;
-    final active = ref.read(activeInvestmentsProvider).value;
-    if (active == null) return null;
-    return MonthlyDigest.build(
-      month: DigestMonth(now.year, now.month),
-      baseCurrency: ref.read(currencyCodeProvider),
-      convertedFlows: const [],
-      activeInvestments: active,
-      statsById:
-          ref.read(activeInvestmentBasicStatsMapProvider).value ?? const {},
-    );
+    try {
+      if (!ref.read(isMonthlyRecapEnabledProvider)) return null;
+      final active = ref.read(activeInvestmentsProvider).value;
+      if (active == null) return null;
+      return _buildRecap(now, active);
+    } catch (e) {
+      LoggerService.warn('Monthly recap counts unavailable', error: e);
+      return null;
+    }
   }
+
+  MonthlyDigest _buildRecap(DateTime now, List<InvestmentEntity> active) =>
+      MonthlyDigest.build(
+        month: DigestMonth(now.year, now.month),
+        baseCurrency: ref.read(currencyCodeProvider),
+        convertedFlows: const [],
+        activeInvestments: active,
+        statsById:
+            ref.read(activeInvestmentBasicStatsMapProvider).value ?? const {},
+      );
 
   /// Latest INCOME cash-flow date per investment id.
   static Map<String, DateTime> _lastIncomeDates(List<CashFlowEntity> flows) {
