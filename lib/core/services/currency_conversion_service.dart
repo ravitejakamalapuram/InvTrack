@@ -497,7 +497,7 @@ class CurrencyConversionService {
 
       if (snapshot.docs.isNotEmpty) {
         final data = snapshot.docs.first.data();
-        return data['rate'] as double;
+        return (data['rate'] as num).toDouble();
       }
     } catch (e) {
       if (kDebugMode) {
@@ -577,7 +577,7 @@ class CurrencyConversionService {
     final doc = await _exchangeRatesRef.doc(memKey).get();
 
     if (doc.exists) {
-      final rate = doc.data()!['rate'] as double;
+      final rate = (doc.data()!['rate'] as num).toDouble();
       _addToMemoryCache(memKey, rate);
       _metrics.firestoreCacheHits++;
       _analytics?.logExchangeRateCacheHit(
@@ -592,9 +592,15 @@ class CurrencyConversionService {
     try {
       final startTime = DateTime.now();
 
-      final rate = await _circuitBreaker.execute(() async {
-        return await _fetchFromApiWithFallback(from: from, to: to, date: date);
-      });
+      final double rate =
+          _pegOnlyRate(from, to) ??
+          await _circuitBreaker.execute(() async {
+            return await _fetchFromApiWithFallback(
+              from: from,
+              to: to,
+              date: date,
+            );
+          });
 
       final latency = DateTime.now().difference(startTime);
       _metrics.apiCalls++;
@@ -676,7 +682,7 @@ class CurrencyConversionService {
 
       // Check if expired
       if (expiresAt != null && DateTime.now().isBefore(expiresAt)) {
-        final rate = data['rate'] as double;
+        final rate = (data['rate'] as num).toDouble();
         _addToMemoryCache(memKey, rate);
         _metrics.firestoreCacheHits++;
         _analytics?.logExchangeRateCacheHit(
@@ -691,13 +697,15 @@ class CurrencyConversionService {
     try {
       final startTime = DateTime.now();
 
-      final rate = await _circuitBreaker.execute(() async {
-        return await _fetchFromApiWithFallback(
-          from: from,
-          to: to,
-          date: null, // Live rate
-        );
-      });
+      final double rate =
+          _pegOnlyRate(from, to) ??
+          await _circuitBreaker.execute(() async {
+            return await _fetchFromApiWithFallback(
+              from: from,
+              to: to,
+              date: null, // Live rate
+            );
+          });
 
       final latency = DateTime.now().difference(startTime);
       _metrics.apiCalls++;
@@ -746,6 +754,55 @@ class CurrencyConversionService {
     }
   }
 
+  /// Official pegs: units of currency per 1 USD.
+  static const Map<String, double> _usdPegs = {'AED': 3.6725, 'SAR': 3.75};
+
+  /// Rate between two currencies that are each USD or pegged to it, or null
+  /// when either side needs a market quote. Needs no request.
+  double? _pegOnlyRate(String from, String to) {
+    double? perUsd(String c) => c == 'USD' ? 1.0 : _usdPegs[c];
+    final fromPerUsd = perUsd(from);
+    final toPerUsd = perUsd(to);
+    if (fromPerUsd == null || toPerUsd == null) return null;
+    return toPerUsd / fromPerUsd;
+  }
+
+  /// Rate from the USD pegs of AED/SAR, or null when neither side is pegged.
+  /// The non-pegged leg (if any) is read from the primary API against USD.
+  Future<double?> _pegCrossRate(String from, String to, DateTime? date) async {
+    final fromPeg = _usdPegs[from];
+    final toPeg = _usdPegs[to];
+    if (fromPeg == null && toPeg == null) return null;
+    try {
+      // Units of `c` per USD.
+      Future<double> perUsd(String c) async {
+        final peg = _usdPegs[c];
+        if (peg != null) return peg;
+        if (c == 'USD') return 1.0;
+        final dateStr = date != null ? formatDate(date) : 'latest';
+        final response = await _httpClient
+            .get(Uri.parse('$_primaryApiBaseUrl/$dateStr?base=USD&symbols=$c'))
+            .timeout(_apiTimeout);
+        if (response.statusCode != 200) {
+          throw CurrencyConversionException(
+            'USD cross returned ${response.statusCode}',
+          );
+        }
+        final quote = (jsonDecode(response.body)['rates'][c] as num).toDouble();
+        // A zero, negative or non-finite quote would give an infinite or
+        // nonsense rate: reject it so the next fallback runs.
+        if (!quote.isFinite || quote <= 0) {
+          throw CurrencyConversionException('USD cross returned $quote');
+        }
+        return quote;
+      }
+
+      return await perUsd(to) / await perUsd(from);
+    } catch (_) {
+      return null; // Fall through to the next fallback.
+    }
+  }
+
   /// Fetch exchange rate from API with fallback support
   ///
   /// Tries primary API (Frankfurter) first, falls back to ExchangeRate-API on failure
@@ -775,7 +832,7 @@ class CurrencyConversionService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['rates'][to] as double;
+        return (data['rates'][to] as num).toDouble();
       }
 
       // Non-200 status, try fallback
@@ -789,6 +846,11 @@ class CurrencyConversionService {
         toCurrency: to,
         errorType: 'primary_api_failed',
       );
+
+      // AED and SAR are hard-pegged to USD and have no Frankfurter history:
+      // derive them from the peg plus a USD cross when the primary fails.
+      final pegged = await _pegCrossRate(from, to, date);
+      if (pegged != null) return pegged;
 
       // Try fallback API (ExchangeRate-API)
       try {
