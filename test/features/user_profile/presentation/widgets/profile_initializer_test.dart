@@ -1,5 +1,6 @@
 // A31: the base currency is proposed from the phone's country on a first run,
 // stored on the user's profile, and restored on a new device.
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -229,6 +230,22 @@ void main() {
     expect(container.read(settingsProvider).currency, 'USD');
   });
 
+  testWidgets('a currency chosen while the server check is pending is not '
+      'overwritten by the profile read before it', (tester) async {
+    repo.profile = stored('USD');
+    final gate = Completer<void>();
+    investments = _GatedInvestments(gate.future);
+    final container = await pump(tester, locale: const ui.Locale('en', 'IN'));
+
+    // The user switches to EUR (and it is stored) while the check is pending.
+    repo.profile = stored('EUR');
+    await container.read(settingsProvider.notifier).setCurrency('EUR');
+    gate.complete();
+    await tester.pumpAndSettle();
+
+    expect(container.read(settingsProvider).currency, 'EUR');
+  });
+
   testWidgets('the Choose another list shows translated currency names', (
     tester,
   ) async {
@@ -253,6 +270,18 @@ class _ServerOnlyInvestments extends FakeInvestmentRepository {
 class _OfflineInvestments extends FakeInvestmentRepository {
   @override
   Future<bool> hasAnyInvestmentOnServer() async => throw StateError('offline');
+}
+
+class _GatedInvestments extends FakeInvestmentRepository {
+  _GatedInvestments(this._gate);
+
+  final Future<void> _gate;
+
+  @override
+  Future<bool> hasAnyInvestmentOnServer() async {
+    await _gate;
+    return false;
+  }
 }
 
 class _NoAnalytics extends Mock implements AnalyticsService {

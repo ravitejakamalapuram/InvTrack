@@ -2,17 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/security/wait_until_unlocked.dart';
 import 'package:inv_tracker/core/services/locale_detection_service.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
-import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
-import 'package:inv_tracker/features/user_profile/domain/entities/user_profile_entity.dart';
-import 'package:inv_tracker/features/user_profile/domain/repositories/user_profile_repository.dart';
 import 'package:inv_tracker/features/user_profile/domain/services/base_currency_planner.dart';
-import 'package:inv_tracker/features/user_profile/presentation/providers/user_profile_provider.dart';
+import 'package:inv_tracker/features/user_profile/presentation/providers/base_currency_reconciler.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Keeps the base currency on the signed-in user's profile (A31).
@@ -57,43 +53,16 @@ class _ProfileInitializerState extends ConsumerState<ProfileInitializer>
 
   Future<void> _run(String userId) async {
     try {
-      final repository = ref.read(userProfileRepositoryProvider(userId));
-      final profile = await repository.getProfile();
-      // The device shows a currency "in use" only when this user already has
-      // investments. The saved currency is device-wide, so it may have been
-      // left by another account, and a fresh install shows only the default.
-      // The local cache can be empty on a new device, so ask the server; an
-      // unreachable server throws and defers the decision to the next start.
-      final hasData = await ref
-          .read(investmentRepositoryProvider)
-          .hasAnyInvestmentOnServer();
-      if (!_stillCurrent(userId)) return;
-      final shown = ref.read(settingsProvider).currency;
-      final locale = ref.read(deviceLocaleProvider);
-      final plan = planBaseCurrency(
-        profile: profile,
-        inUseCurrency: hasData ? shown : null,
-        // No fallback to 'US': a missing country proposes nothing (money rule 1).
-        countryCode: locale.countryCode ?? '',
+      final reconciler = ref.read(baseCurrencyReconcilerProvider);
+      final plan = await reconciler.reconcile(
+        userId,
+        isCurrent: () => _stillCurrent(userId),
       );
-      final currency = plan.currency;
-      if (currency == null) return;
-
-      switch (plan.action) {
-        case BaseCurrencyAction.none:
-          return;
-        case BaseCurrencyAction.adoptProfile:
-          if (currency != shown) {
-            await ref.read(settingsProvider.notifier).setCurrency(currency);
-          }
-        case BaseCurrencyAction.saveDevice:
-          await _save(repository, userId, locale, currency);
-        case BaseCurrencyAction.propose:
-          final chosen = await _ask(userId, currency);
-          if (chosen == null || !_stillCurrent(userId)) return;
-          await ref.read(settingsProvider.notifier).setCurrency(chosen);
-          await _save(repository, userId, locale, chosen);
-      }
+      final proposed = plan.currency;
+      if (plan.action != BaseCurrencyAction.propose || proposed == null) return;
+      final chosen = await _ask(userId, proposed);
+      if (chosen == null || !_stillCurrent(userId)) return;
+      await reconciler.confirm(userId, chosen);
     } catch (e) {
       LoggerService.warn(
         'Base currency profile check did not finish; will retry',
@@ -101,20 +70,6 @@ class _ProfileInitializerState extends ConsumerState<ProfileInitializer>
       );
     }
   }
-
-  Future<void> _save(
-    UserProfileRepository repository,
-    String userId,
-    Locale locale,
-    String currency,
-  ) => repository.saveProfile(
-    UserProfileEntity.fromDetectedLocale(
-      userId: userId,
-      countryCode: locale.countryCode ?? '',
-      languageCode: LocaleDetectionService.getLanguageCode(locale),
-      currency: currency,
-    ),
-  );
 
   /// Returns the confirmed currency, or null when the question is dismissed
   /// (it is asked again on the next start).
