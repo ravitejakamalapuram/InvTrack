@@ -71,33 +71,58 @@ void main() {
       'monthly_summary',
     );
 
-    test(
-      'keeps last month\'s recap when the app opens before 10:00 on the 1st',
-      () {
+    test('keeps last month\'s recap all day on the 1st, even after 10:00', () {
+      for (final hour in [8, 10, 15]) {
         expect(
           ScheduledNotificationHandler.shouldKeepDueRecap(
-            DateTime(2026, 10, 1, 8),
+            DateTime(2026, 10, 1, hour),
             [recap],
           ),
           isTrue,
+          reason: 'hour $hour: an inexact alarm may not have fired yet',
         );
-      },
-    );
+      }
+    });
 
-    test('replaces it from 10:00 on the 1st and on any other day', () {
-      expect(
-        ScheduledNotificationHandler.shouldKeepDueRecap(
-          DateTime(2026, 10, 1, 10),
-          [recap],
-        ),
-        isFalse,
-      );
+    test('replaces it on any other day', () {
       expect(
         ScheduledNotificationHandler.shouldKeepDueRecap(
           DateTime(2026, 10, 2, 8),
           [recap],
         ),
         isFalse,
+      );
+    });
+
+    test('replaces a recap that is not the one due today', () {
+      const thisMonths = PendingNotificationRequest(
+        NotificationIds.monthlySummary,
+        'title',
+        'body',
+        'monthly_recap:2026-10',
+      );
+      expect(
+        ScheduledNotificationHandler.shouldKeepDueRecap(
+          DateTime(2026, 10, 1, 8),
+          [thisMonths],
+        ),
+        isFalse,
+      );
+    });
+
+    test('is not fooled by the year boundary', () {
+      const december = PendingNotificationRequest(
+        NotificationIds.monthlySummary,
+        'title',
+        'body',
+        'monthly_recap:2026-12',
+      );
+      expect(
+        ScheduledNotificationHandler.shouldKeepDueRecap(
+          DateTime(2027, 1, 1, 12),
+          [december],
+        ),
+        isTrue,
       );
     });
 

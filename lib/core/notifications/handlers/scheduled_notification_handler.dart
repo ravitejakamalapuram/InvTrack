@@ -218,19 +218,21 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     );
   }
 
-  /// Opening the app before 10:00 on the 1st must not replace last month's
-  /// recap, which is due later that morning.
+  /// On the 1st, a still-pending recap of last month is the one due today
+  /// (the alarm is inexact, so it can fire after 10:00). Opening the app must
+  /// not replace it.
   static bool shouldKeepDueRecap(
     DateTime now,
     List<PendingNotificationRequest> pending,
-  ) =>
-      now.day == 1 &&
-      now.hour < 10 &&
-      pending.any(
-        (r) =>
-            r.id == NotificationIds.monthlySummary &&
-            (r.payload?.startsWith('monthly_recap:') ?? false),
-      );
+  ) {
+    if (now.day != 1) return false;
+    final due = NotificationPayload.monthlyRecap(
+      DateFormat('yyyy-MM').format(DateTime(now.year, now.month - 1)),
+    );
+    return pending.any(
+      (r) => r.id == NotificationIds.monthlySummary && r.payload == due,
+    );
+  }
 
   // ============ Tax Reminder Notifications ============
 
