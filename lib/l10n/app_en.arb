@@ -1269,6 +1269,11 @@
     "description": "Lock screen message when Forgot PIN fails: the phone screen lock is missing or refused, or Google re-authentication is cancelled or fails"
   },
 
+  "passcodeForgotPinDeviceLockReason": "Confirm it''s you to reset your InvTrack PIN",
+  "@passcodeForgotPinDeviceLockReason": {
+    "description": "Reason shown in the phone's own screen-lock prompt when the user taps Forgot PIN on the lock screen"
+  },
+
   "passcodeStorageFailed": "We can''t check your PIN right now. Try again, or sign out.",
   "@passcodeStorageFailed": {
     "description": "Lock screen message when secure storage fails or times out and a PIN may be set"

@@ -508,7 +508,9 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
   Future<void> _forgotPin() async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    final removed = await ref.read(securityProvider.notifier).forgotPin();
+    final removed = await ref
+        .read(securityProvider.notifier)
+        .forgotPin(deviceLockReason: l10n.passcodeForgotPinDeviceLockReason);
     if (!removed && mounted) {
       messenger.showSnackBar(
         SnackBar(content: Text(l10n.passcodeForgotPinFailed)),

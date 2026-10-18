@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/utils/security_utils.dart';
 import 'package:inv_tracker/features/security/data/services/security_clock.dart';
@@ -8,6 +10,22 @@ import 'package:inv_tracker/features/security/data/services/security_service.dar
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../mocks/mock_security_service.dart';
+
+/// Secure storage whose reads wait until the test lets them answer.
+class _GatedReadStorage extends FakeFlutterSecureStorage {
+  final gate = Completer<String?>();
+
+  @override
+  Future<String?> read({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) => gate.future;
+}
 
 void main() {
   late FakeFlutterSecureStorage fakeSecureStorage;
@@ -36,6 +54,24 @@ void main() {
     test('hasPin returns false when no PIN is set', () async {
       final result = await service.hasPin();
       expect(result, isFalse);
+    });
+
+    testWidgets('a read that timed out cannot overwrite the PIN mirror later', (
+      tester,
+    ) async {
+      await prefs.setBool('has_pin', true);
+      final storage = _GatedReadStorage();
+      final slow = SecurityService(storage, fakeLocalAuth, prefs, clock);
+      Object? failure;
+      unawaited(slow.hasPin().then((_) {}, onError: (Object e) => failure = e));
+
+      await tester.pump(SecurityService.storageTimeout * 2);
+      expect(failure, isA<TimeoutException>());
+
+      storage.gate.complete(null);
+      await tester.pump();
+
+      expect(prefs.getBool('has_pin'), isTrue);
     });
 
     test('hasPin returns true after PIN is set', () async {

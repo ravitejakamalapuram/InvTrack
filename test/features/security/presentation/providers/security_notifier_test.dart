@@ -28,7 +28,10 @@ class _FailingDeleteSecureStorage extends FakeFlutterSecureStorage {
     WebOptions? webOptions,
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
-  }) => throw PlatformException(code: 'keystore');
+  }) {
+    if (key == 'user_pin') throw PlatformException(code: 'keystore');
+    return super.delete(key: key);
+  }
 }
 
 /// Secure storage whose reads never answer, like a hung keystore.
@@ -44,6 +47,8 @@ class _HangingSecureStorage extends FakeFlutterSecureStorage {
     WindowsOptions? wOptions,
   }) => Completer<String?>().future;
 }
+
+const _reason = 'Confirm it is you';
 
 void main() {
   // Initialize the test binding
@@ -213,7 +218,9 @@ void main() {
         container.read(securityProvider);
         await pumpEventQueue();
 
-        final ok = await container.read(securityProvider.notifier).forgotPin();
+        final ok = await container
+            .read(securityProvider.notifier)
+            .forgotPin(deviceLockReason: _reason);
 
         expect(ok, isTrue);
         expect(auth.reauthenticateCalls, 1);
@@ -227,19 +234,20 @@ void main() {
       test('forgotPin still clears the mirror and unlocks when the keystore '
           'cannot delete the PIN', () async {
         await prefs.setBool('has_pin', true);
+        final storage = _FailingDeleteSecureStorage();
+        await storage.write(key: 'user_pin', value: 'hash');
         final auth = FakeAuthRepository(googleUser);
         container = createContainer(
           auth: auth,
-          customService: SecurityService(
-            _FailingDeleteSecureStorage(),
-            fakeLocalAuth,
-            prefs,
-          ),
+          customService: SecurityService(storage, fakeLocalAuth, prefs),
         );
         container.read(securityProvider);
         await pumpEventQueue();
+        expect(container.read(securityProvider).isLocked, isTrue);
 
-        final ok = await container.read(securityProvider.notifier).forgotPin();
+        final ok = await container
+            .read(securityProvider.notifier)
+            .forgotPin(deviceLockReason: _reason);
 
         expect(ok, isTrue);
         expect(prefs.getBool('has_pin'), isFalse);
@@ -261,7 +269,7 @@ void main() {
 
           final ok = await container
               .read(securityProvider.notifier)
-              .forgotPin();
+              .forgotPin(deviceLockReason: _reason);
 
           expect(ok, isFalse);
           expect(container.read(securityProvider).isLocked, isTrue);
@@ -279,7 +287,9 @@ void main() {
         container.read(securityProvider);
         await pumpEventQueue();
 
-        final ok = await container.read(securityProvider.notifier).forgotPin();
+        final ok = await container
+            .read(securityProvider.notifier)
+            .forgotPin(deviceLockReason: _reason);
 
         expect(ok, isFalse);
         expect(fakeLocalAuth.authenticateCallCount, 1);
@@ -297,12 +307,39 @@ void main() {
         container.read(securityProvider);
         await pumpEventQueue();
 
-        final ok = await container.read(securityProvider.notifier).forgotPin();
+        final ok = await container
+            .read(securityProvider.notifier)
+            .forgotPin(deviceLockReason: _reason);
 
         expect(ok, isFalse);
         expect(fakeLocalAuth.authenticateCallCount, 0);
         expect(auth.reauthenticateCalls, 0);
         expect(prefs.getBool('has_pin'), isTrue);
+      });
+
+      testWidgets('forgotPin during a pending start-up check is not undone '
+          'when that check ends', (tester) async {
+        final auth = FakeAuthRepository(googleUser);
+        container = createContainer(
+          auth: auth,
+          customService: SecurityService(
+            _HangingSecureStorage(),
+            fakeLocalAuth,
+            prefs,
+          ),
+        );
+        container.read(securityProvider);
+
+        final recovery = container
+            .read(securityProvider.notifier)
+            .forgotPin(deviceLockReason: _reason);
+        await tester.pump(const Duration(seconds: 12));
+        expect(await recovery, isTrue);
+
+        final state = container.read(securityProvider);
+        expect(state.isLocked, isFalse);
+        expect(state.hasPin, isFalse);
+        expect(state.storageFailed, isFalse);
       });
 
       test('forgotPin does nothing for a guest', () async {
@@ -313,7 +350,9 @@ void main() {
         container.read(securityProvider);
         await pumpEventQueue();
 
-        final ok = await container.read(securityProvider.notifier).forgotPin();
+        final ok = await container
+            .read(securityProvider.notifier)
+            .forgotPin(deviceLockReason: _reason);
 
         expect(ok, isFalse);
         expect(auth.reauthenticateCalls, 0);

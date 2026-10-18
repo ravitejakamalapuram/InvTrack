@@ -96,6 +96,9 @@ class SecurityNotifier extends Notifier<SecurityState>
   // Counts successful unlocks, so start-up checks that finish after one do
   // not lock the app again (A114).
   int _unlockCount = 0;
+  // Bumped when Forgot PIN removes the PIN, so start-up checks that began
+  // earlier cannot lock the app again with their old answer.
+  int _recoveryCount = 0;
 
   // Secure storage failed with no has_pin mirror, so whether a PIN is set is
   // not known; the next resume reads storage again.
@@ -189,6 +192,7 @@ class SecurityNotifier extends Notifier<SecurityState>
 
   Future<void> _init(bool? hasPinMirror) async {
     final unlocksBefore = _unlockCount;
+    final recoveriesBefore = _recoveryCount;
     try {
       final hasPin = await _service.hasPin();
       final isBiometricEnabled = _service.isBiometricEnabled;
@@ -203,7 +207,7 @@ class SecurityNotifier extends Notifier<SecurityState>
       }
 
       // Check if provider is still mounted before updating state
-      if (!ref.mounted) return;
+      if (!ref.mounted || recoveriesBefore != _recoveryCount) return;
 
       state = state.copyWith(
         hasPin: hasPin,
@@ -219,7 +223,7 @@ class SecurityNotifier extends Notifier<SecurityState>
       // open the portfolio. With no mirror nobody knows whether one is set,
       // so stay locked too, and read storage again when the app resumes.
       LoggerService.warn('Security init failed', error: e);
-      if (!ref.mounted) return;
+      if (!ref.mounted || recoveriesBefore != _recoveryCount) return;
       _pinStateUnknown = hasPinMirror == null;
       state = SecurityState(
         hasPin: hasPinMirror ?? false,
@@ -240,13 +244,16 @@ class SecurityNotifier extends Notifier<SecurityState>
   /// "Forgot PIN?": the phone's screen lock and the signed-in Google account
   /// both prove who the user is, then the PIN and its mirror are removed. Guests have no account to prove it
   /// with, so they never get this. Returns whether the PIN was removed.
-  Future<bool> forgotPin() async {
+  Future<bool> forgotPin({required String deviceLockReason}) async {
     final auth = ref.read(authRepositoryProvider);
     final user = auth.currentUser;
     if (user == null || user.isAnonymous) return false;
     // The Google account picker may not ask for a password, so anyone holding
     // the phone could skip the PIN. The phone's own screen lock closes that.
-    if (!await _service.authenticateWithDeviceLock()) return false;
+    final deviceLockOk = await _service.authenticateWithDeviceLock(
+      deviceLockReason,
+    );
+    if (!deviceLockOk) return false;
     try {
       if (!await auth.reauthenticateWithGoogle()) return false;
     } catch (e) {
@@ -263,6 +270,7 @@ class SecurityNotifier extends Notifier<SecurityState>
       await _service.clearHasPinMirror();
     }
     if (!ref.mounted) return true;
+    _recoveryCount++;
     _pinStateUnknown = false;
     state = state.copyWith(
       hasPin: false,
