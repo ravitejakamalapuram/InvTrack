@@ -1,6 +1,8 @@
 # Automatic releases for InvTrack from the shared release-platform policy (release window; see its README).
 # Merged feat/fix/perf/revert commits are released automatically in batches (release window), hotfix: at once
 # (see README "Automatic releases"). Kill switch: set the repository variable RELEASE_HOLD to "true".
+# A release also needs a green nightly run on main, at most 36 h old (A85). To unblock a hotfix,
+# dispatch nightly on main and wait for it to pass; there is no skip input.
 name: auto-release
 
 on:
@@ -19,7 +21,31 @@ on:
 permissions: {}
 
 jobs:
+  gate:
+    # Stops the release when the latest completed nightly run on main (goldens and emulator
+    # integration flows) failed or is older than 36 h, or when its history cannot be read.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
+      - name: Require a recent green nightly run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NIGHTLY_RUNS="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow nightly.yml --branch main \
+            --status completed --limit 1 --json conclusion,createdAt 2>/dev/null || true)"
+          # Run outside the Flutter package so plain Dart does not try to resolve Flutter dependencies.
+          cp scripts/nightly_gate.dart "$RUNNER_TEMP/nightly_gate.dart"
+          NIGHTLY_RUNS="$NIGHTLY_RUNS" dart run "$RUNNER_TEMP/nightly_gate.dart"
+
   auto:
+    needs: gate
     permissions:
       contents: write
       id-token: write
