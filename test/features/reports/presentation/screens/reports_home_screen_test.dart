@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
@@ -104,5 +105,27 @@ void main() {
     await tester.pump();
 
     expect(find.text('Score: 80/100'), findsOneWidget);
+  });
+
+  testWidgets('A44: the FY report tile names the current financial year', (
+    tester,
+  ) async {
+    await _pump(tester, () => _FixedHealth(null));
+    await tester.pump();
+
+    final now = DateTime.now();
+    final start = now.month >= 4 ? now.year : now.year - 1;
+    final label = 'FY $start-${((start + 1) % 100).toString().padLeft(2, '0')}';
+    final tile = find.ancestor(
+      of: find.text('FY Report', skipOffstage: false),
+      matching: find.byType(GlassCard),
+    );
+    expect(
+      find.descendant(
+        of: tile,
+        matching: find.text(label, skipOffstage: false),
+      ),
+      findsOneWidget,
+    );
   });
 }

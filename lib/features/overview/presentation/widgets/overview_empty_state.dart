@@ -728,7 +728,18 @@ class OverviewLoadErrorState extends StatelessWidget {
   /// Called when the user taps Retry.
   final VoidCallback onRetry;
 
-  const OverviewLoadErrorState({super.key, required this.onRetry});
+  /// A reload is running: Retry shows progress and is disabled.
+  final bool retrying;
+
+  /// The last Retry failed again.
+  final bool retryFailed;
+
+  const OverviewLoadErrorState({
+    super.key,
+    required this.onRetry,
+    this.retrying = false,
+    this.retryFailed = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -758,14 +769,37 @@ class OverviewLoadErrorState extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall,
             textAlign: TextAlign.center,
           ),
+          if (retryFailed && !retrying) ...[
+            SizedBox(height: AppSpacing.xs),
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                l10n.overviewRetryFailed,
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
           SizedBox(height: AppSpacing.md),
-          FilledButton.icon(
-            onPressed: () {
-              HapticFeedback.mediumImpact();
-              onRetry();
-            },
-            icon: const Icon(Icons.refresh),
-            label: Text(l10n.retry),
+          Semantics(
+            label: retrying ? l10n.retrying : null,
+            excludeSemantics: retrying,
+            child: FilledButton.icon(
+              onPressed: retrying
+                  ? null
+                  : () {
+                      HapticFeedback.mediumImpact();
+                      onRetry();
+                    },
+              icon: retrying
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh),
+              label: Text(l10n.retry),
+            ),
           ),
         ],
       ),

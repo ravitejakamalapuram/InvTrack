@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/providers/connectivity_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Widget that listens to connectivity changes and shows a toast when network comes back
 class ConnectivityListener extends ConsumerStatefulWidget {
@@ -64,7 +65,65 @@ class _ConnectivityListenerState extends ConsumerState<ConnectivityListener> {
       });
     });
 
-    return widget.child;
+    final offline = ref.watch(connectivityStatusProvider).value == false;
+    if (!offline) return widget.child;
+    return Column(
+      children: [
+        const _OfflineBanner(),
+        Expanded(
+          child: MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            child: widget.child,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Persistent strip under the status bar while there is no network.
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fill = isDark ? AppColors.warningDark : AppColors.warningLight;
+    final ink = AppColors.onFill(fill);
+    return Semantics(
+      liveRegion: true,
+      container: true,
+      child: Material(
+        color: fill,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            MediaQuery.of(context).padding.top + 8,
+            16,
+            8,
+          ),
+          child: Row(
+            children: [
+              ExcludeSemantics(
+                child: Icon(Icons.cloud_off_rounded, color: ink, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  AppLocalizations.of(context).offlineBanner,
+                  style: TextStyle(
+                    color: ink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

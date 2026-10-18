@@ -7,6 +7,7 @@ import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/metric_with_tooltip.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// A card displaying a quick stat with icon, label, value, and optional subtitle.
@@ -25,6 +26,9 @@ class QuickStatCard extends ConsumerWidget {
   /// Defaults to true for financial values.
   final bool isSensitive;
 
+  /// Explainer shown from an info icon next to the label.
+  final String? info;
+
   const QuickStatCard({
     super.key,
     required this.icon,
@@ -34,6 +38,7 @@ class QuickStatCard extends ConsumerWidget {
     this.tint,
     this.subtitle,
     this.isSensitive = true,
+    this.info,
   });
 
   @override
@@ -74,15 +79,7 @@ class QuickStatCard extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: isDark
-                          ? AppColors.neutral400Dark
-                          : AppColors.neutral500Light,
-                      fontSize: 12,
-                    ),
-                  ),
+                  _label(isDark),
                   shouldMask
                       ? MaskedAmountText(
                           text: value,
@@ -121,5 +118,19 @@ class QuickStatCard extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _label(bool isDark) {
+    final color = isDark ? AppColors.neutral400Dark : AppColors.neutral500Light;
+    final style = TextStyle(color: color, fontSize: 12);
+    return info == null
+        ? Text(label, style: style)
+        : MetricWithTooltip(
+            label: label,
+            tooltip: info!,
+            labelStyle: style,
+            iconSize: 14,
+            iconColor: color,
+          );
   }
 }

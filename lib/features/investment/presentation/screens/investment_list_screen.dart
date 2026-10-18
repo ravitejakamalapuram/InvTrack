@@ -445,6 +445,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         hasScrollBody: false,
         child: InvestmentErrorState(
           isDark: isDark,
+          error: err,
           onRetry: () => ref.invalidate(allInvestmentsProvider),
         ),
       ),
