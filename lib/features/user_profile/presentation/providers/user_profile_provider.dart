@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/services/locale_detection_service.dart';
@@ -6,6 +8,11 @@ import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.d
 import 'package:inv_tracker/features/user_profile/data/repositories/firestore_user_profile_repository.dart';
 import 'package:inv_tracker/features/user_profile/domain/entities/user_profile_entity.dart';
 import 'package:inv_tracker/features/user_profile/domain/repositories/user_profile_repository.dart';
+
+/// The phone's locale; overridden in tests.
+final deviceLocaleProvider = Provider<ui.Locale>(
+  (ref) => LocaleDetectionService.detectDeviceLocale(),
+);
 
 /// Provider for user profile repository
 final userProfileRepositoryProvider =
@@ -49,44 +56,6 @@ class UserProfileNotifier extends Notifier<AsyncValue<UserProfileEntity?>> {
       loading: () => const AsyncValue.loading(),
       error: (error, stack) => AsyncValue.error(error, stack),
     );
-  }
-
-  /// Initialize profile for first-time user
-  /// Detects locale from device and creates profile with auto-selected currency
-  Future<void> initializeProfileForNewUser(String userId) async {
-    state = const AsyncValue.loading();
-
-    try {
-      final repository = ref.read(userProfileRepositoryProvider(userId));
-
-      // Check if profile already exists
-      final exists = await repository.profileExists();
-      if (exists) {
-        // Profile already exists, just load it
-        final profile = await repository.getProfile();
-        state = AsyncValue.data(profile);
-        return;
-      }
-
-      // Detect device locale
-      final deviceLocale = LocaleDetectionService.detectDeviceLocale();
-      final countryCode = LocaleDetectionService.getCountryCode(deviceLocale);
-      final languageCode = LocaleDetectionService.getLanguageCode(deviceLocale);
-
-      // Create profile with detected locale
-      final profile = UserProfileEntity.fromDetectedLocale(
-        userId: userId,
-        countryCode: countryCode,
-        languageCode: languageCode,
-      );
-
-      // Save to Firestore
-      await repository.saveProfile(profile);
-
-      state = AsyncValue.data(profile);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
   }
 
   /// Update currency preference

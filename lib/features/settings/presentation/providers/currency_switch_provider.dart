@@ -13,6 +13,7 @@ import '../../../../core/services/currency_conversion_service.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../investment/presentation/providers/investment_providers.dart';
+import '../../../user_profile/presentation/providers/user_profile_provider.dart';
 import 'settings_provider.dart';
 
 part 'currency_switch_provider.g.dart';
@@ -189,6 +190,21 @@ class CurrencySwitch extends _$CurrencySwitch {
     });
   }
 
+  /// Keeps the profile in step so a new device restores this currency (A31).
+  /// Best effort: a failed profile write must not undo a finished switch.
+  Future<void> _storeOnProfile(String currency) async {
+    try {
+      await ref
+          .read(userProfileNotifierProvider.notifier)
+          .updateCurrency(currency);
+    } catch (e) {
+      LoggerService.warn(
+        'Could not store the new base currency on the profile',
+        metadata: {'errorType': e.runtimeType.toString()},
+      );
+    }
+  }
+
   /// Switch currency immediately (for testing)
   ///
   /// This method is exposed for testing purposes to avoid dealing with Timer delays.
@@ -344,6 +360,7 @@ class CurrencySwitch extends _$CurrencySwitch {
       if (totalRates == 0) {
         // Currency already set in optimistic update (line 202), no need to set again
         state = CurrencySwitchStatus.success(targetCurrency: newCurrency);
+        await _storeOnProfile(newCurrency);
 
         // Analytics: Track successful currency switch (no rates needed)
         await analytics.logEvent(
@@ -417,6 +434,8 @@ class CurrencySwitch extends _$CurrencySwitch {
 
       // Step 6: Set success state
       state = CurrencySwitchStatus.success(targetCurrency: newCurrency);
+
+      await _storeOnProfile(newCurrency);
 
       // Analytics: Track successful currency switch
       await analytics.logEvent(

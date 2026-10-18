@@ -2862,6 +2862,36 @@
     }
   },
 
+  "baseCurrencyPromptTitle": "Choose your currency",
+  "@baseCurrencyPromptTitle": {
+    "description": "Title of the first-run question that confirms the base currency proposed from the phone's country"
+  },
+
+  "baseCurrencyPromptMessage": "Your phone suggests {currency}. Your totals and returns will be shown in it. You can change it later in Settings.",
+  "@baseCurrencyPromptMessage": {
+    "description": "Body of the first-run base currency question; currency is the proposed currency code",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "baseCurrencyPromptUse": "Use {currency}",
+  "@baseCurrencyPromptUse": {
+    "description": "Button that confirms the proposed base currency",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "baseCurrencyPromptChoose": "Choose another",
+  "@baseCurrencyPromptChoose": {
+    "description": "Button on the first-run base currency question that lets the user pick a different currency"
+  },
+
   "legacyCurrencyPromptTitle": "Older records have no currency",
   "@legacyCurrencyPromptTitle": {
     "description": "Title of the one-time question asking which currency records saved without a currency are in"

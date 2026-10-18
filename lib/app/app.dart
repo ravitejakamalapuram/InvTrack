@@ -11,6 +11,7 @@ import 'package:inv_tracker/core/theme/app_theme.dart';
 import 'package:inv_tracker/core/widgets/connectivity_listener.dart';
 import 'package:inv_tracker/core/widgets/currency_cache_initializer.dart';
 import 'package:inv_tracker/features/auth/presentation/widgets/pending_guest_backup_notice.dart';
+import 'package:inv_tracker/features/user_profile/presentation/widgets/profile_initializer.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/deletion_request_notice.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/legacy_currency_backfill_initializer.dart';
@@ -41,30 +42,33 @@ class InvTrackerApp extends ConsumerWidget {
         child: _NotificationNavigationHandler(
           child: CurrencyCacheInitializer(
             child: LegacyCurrencyBackfillInitializer(
-              child: MaterialApp.router(
-                onGenerateTitle: (context) =>
-                    AppLocalizations.of(context).appTitle,
-                theme: AppTheme.lightTheme,
-                darkTheme: AppTheme.darkTheme,
-                themeMode: settings.themeMode,
-                routerConfig: router,
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                builder: (context, child) {
-                  return InAppUpdateInitializer(
-                    child: ConnectivityListener(
-                      child: DeletionRequestNotice(
-                        child: PrivacyProtectionWrapper(
-                          child: PendingGuestBackupNotice(
-                            child: UsdTagRepairInitializer(
-                              child: child ?? const SizedBox.shrink(),
+              child: ProfileInitializer(
+                child: MaterialApp.router(
+                  onGenerateTitle: (context) =>
+                      AppLocalizations.of(context).appTitle,
+                  theme: AppTheme.lightTheme,
+                  darkTheme: AppTheme.darkTheme,
+                  themeMode: settings.themeMode,
+                  routerConfig: router,
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  builder: (context, child) {
+                    return InAppUpdateInitializer(
+                      child: ConnectivityListener(
+                        child: DeletionRequestNotice(
+                          child: PrivacyProtectionWrapper(
+                            child: PendingGuestBackupNotice(
+                              child: UsdTagRepairInitializer(
+                                child: child ?? const SizedBox.shrink(),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           ),
