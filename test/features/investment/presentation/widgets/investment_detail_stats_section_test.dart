@@ -476,7 +476,7 @@ void main() {
       expect(find.bySemanticsLabel('XIRR: +11.4% $soFarNote'), findsOneWidget);
       // The visible "1.0y" under the MOIC is read too, before the qualifier.
       expect(
-        find.bySemanticsLabel('MOIC: 1.11x, 1.0y $soFarNote'),
+        find.bySemanticsLabel('MOIC: 1.11x, 1.0 years $soFarNote'),
         findsOneWidget,
       );
       handle.dispose();
@@ -511,7 +511,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.bySemanticsLabel('MOIC: Hidden amount, 1.0y $soFarNote'),
+        find.bySemanticsLabel('MOIC: Hidden amount, 1.0 years $soFarNote'),
         findsOneWidget,
       );
       handle.dispose();
@@ -538,7 +538,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.bySemanticsLabel('MOIC: 1.02x, <1mo $soFarNote'),
+        find.bySemanticsLabel('MOIC: 1.02x, under 1 month $soFarNote'),
         findsOneWidget,
       );
       handle.dispose();
@@ -568,7 +568,7 @@ void main() {
       );
       // The holding period is not an amount, so it stays.
       expect(
-        find.bySemanticsLabel('MOIC: Hidden amount, <1mo $soFarNote'),
+        find.bySemanticsLabel('MOIC: Hidden amount, under 1 month $soFarNote'),
         findsOneWidget,
       );
       handle.dispose();

@@ -458,9 +458,11 @@ class CurrentValueCalculator {
         if (own.isEmpty) continue;
         var net = 0.0;
         var out = 0.0;
+        var hasInvest = false;
         for (final cf in own) {
           net += cf.signedAmount;
           if (cf.signedAmount < 0) out += cf.amount;
+          if (cf.type == CashFlowType.invest) hasInvest = true;
         }
         // Still out of pocket with no value: XIRR, MOIC and return % are
         // unknown. An investment that already returned its cost is not,
@@ -472,8 +474,14 @@ class CurrentValueCalculator {
           missing++;
         } else if (out > 0) {
           // Its figures are cash-only minimums (#954). With nothing paid out
-          // (income alone) there is no return to qualify.
-          cashOnly++;
+          // (income alone) there is no return to qualify. Fees alone are not
+          // a cost to be paid back: with no INVEST row it stays unknown
+          // (#982).
+          if (hasInvest) {
+            cashOnly++;
+          } else {
+            missing++;
+          }
         }
         continue;
       }
