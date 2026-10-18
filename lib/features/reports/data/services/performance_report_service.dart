@@ -42,8 +42,8 @@ class PerformanceReportService {
       // Calculate stats for this investment
       final stats = calculateStats(investmentCFs);
 
-      // Estimate current value (invested - returned)
-      final currentValue = stats.totalInvested - stats.totalReturned;
+      // Awaiting a value (money rule 4): nothing to rank, average or count.
+      if (investment.isOpen && stats.awaitsValue) continue;
 
       performances.add(
         InvestmentPerformance(
@@ -53,7 +53,6 @@ class PerformanceReportService {
           percentageReturn: stats.absoluteReturn,
           totalInvested: stats.totalInvested,
           totalReturned: stats.totalReturned,
-          currentValue: currentValue.abs(), // Use absolute value
         ),
       );
     }
