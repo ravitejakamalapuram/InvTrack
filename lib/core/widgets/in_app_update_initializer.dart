@@ -22,7 +22,8 @@ class InAppUpdateInitializer extends ConsumerStatefulWidget {
       _InAppUpdateInitializerState();
 }
 
-class _InAppUpdateInitializerState extends ConsumerState<InAppUpdateInitializer>
+class _InAppUpdateInitializerState
+    extends ConsumerState<InAppUpdateInitializer>
     with WidgetsBindingObserver {
   bool _hasChecked = false;
   bool _hasDeferredUpdate = false;
@@ -73,14 +74,10 @@ class _InAppUpdateInitializerState extends ConsumerState<InAppUpdateInitializer>
       // Check if update is already downloaded
       if (state.isDownloaded) {
         if (!_hasDeferredInstall) {
-          LoggerService.info(
-            'Showing install dialog (update already downloaded)',
-          );
+          LoggerService.info('Showing install dialog (update already downloaded)');
           _showInstallDialog();
         } else {
-          LoggerService.debug(
-            'Update is downloaded but prompt was deferred by user',
-          );
+          LoggerService.debug('Update is downloaded but prompt was deferred by user');
         }
         return;
       }
@@ -132,23 +129,16 @@ class _InAppUpdateInitializerState extends ConsumerState<InAppUpdateInitializer>
   Future<void> _showFlexibleUpdateDialog() async {
     final dialogContext = await _getValidDialogContext();
     if (dialogContext == null || !dialogContext.mounted) {
-      LoggerService.warn(
-        'Cannot show flexible update dialog: navigator context is null or unmounted',
-      );
+      LoggerService.warn('Cannot show flexible update dialog: navigator context is null or unmounted');
       return;
     }
 
-    final l10n = Localizations.of<AppLocalizations>(
-      dialogContext,
-      AppLocalizations,
-    );
+    final l10n = Localizations.of<AppLocalizations>(dialogContext, AppLocalizations);
 
     // FIX: Crash "Null check operator used on a null value" - Crashlytics issue c8f980cd37a050d99b236193ef9ea583
     // If localizations not found, use fallback English strings instead of crashing
     final titleText = l10n?.updateAvailable ?? 'Update Available';
-    final contentText =
-        l10n?.updatePromptMessage ??
-        'A new version of InvTrack is available. Would you like to update now?';
+    final contentText = l10n?.updatePromptMessage ?? 'A new version of InvTrack is available. Would you like to update now?';
     final laterText = l10n?.later ?? 'Later';
     final updateText = l10n?.update ?? 'Update';
 
@@ -178,9 +168,7 @@ class _InAppUpdateInitializerState extends ConsumerState<InAppUpdateInitializer>
           FilledButton(
             onPressed: () async {
               Navigator.of(dialogCtx).pop();
-              await ref
-                  .read(inAppUpdateProvider.notifier)
-                  .startFlexibleUpdate();
+              await ref.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
 
               if (!mounted) return;
               final checkContext = await _getValidDialogContext();
@@ -190,10 +178,7 @@ class _InAppUpdateInitializerState extends ConsumerState<InAppUpdateInitializer>
               final state = ref.read(inAppUpdateProvider);
               if (state.error == null) {
                 // Get fresh l10n from checkContext
-                final checkL10n = Localizations.of<AppLocalizations>(
-                  checkContext,
-                  AppLocalizations,
-                );
+                final checkL10n = Localizations.of<AppLocalizations>(checkContext, AppLocalizations);
                 if (checkL10n == null) return;
 
                 // Show snackbar about background download only on success
@@ -230,20 +215,13 @@ class _InAppUpdateInitializerState extends ConsumerState<InAppUpdateInitializer>
   Future<void> _showInstallDialog() async {
     final dialogContext = await _getValidDialogContext();
     if (dialogContext == null || !dialogContext.mounted) {
-      LoggerService.warn(
-        'Cannot show install dialog: navigator context is null or unmounted',
-      );
+      LoggerService.warn('Cannot show install dialog: navigator context is null or unmounted');
       return;
     }
 
-    final l10n = Localizations.of<AppLocalizations>(
-      dialogContext,
-      AppLocalizations,
-    );
+    final l10n = Localizations.of<AppLocalizations>(dialogContext, AppLocalizations);
     if (l10n == null) {
-      LoggerService.warn(
-        'AppLocalizations not found in context for install dialog',
-      );
+      LoggerService.warn('AppLocalizations not found in context for install dialog');
       return;
     }
 
@@ -266,9 +244,7 @@ class _InAppUpdateInitializerState extends ConsumerState<InAppUpdateInitializer>
           FilledButton(
             onPressed: () async {
               Navigator.of(dialogCtx).pop();
-              await ref
-                  .read(inAppUpdateProvider.notifier)
-                  .completeFlexibleUpdate();
+              await ref.read(inAppUpdateProvider.notifier).completeFlexibleUpdate();
               // App will restart
             },
             child: Text(l10n.inAppUpdateInstallButton),

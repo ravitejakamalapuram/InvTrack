@@ -112,10 +112,7 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
       id: NotificationIds.goalMilestone(goalId, reachedMilestone),
       title: title,
       body: body,
-      notificationDetails: NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      ),
+      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
       payload: NotificationPayload.goalMilestone(goalId, reachedMilestone),
     );
 
@@ -184,10 +181,7 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
       id: NotificationIds.goalAtRisk(goalId),
       title: title,
       body: body,
-      notificationDetails: NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      ),
+      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
       payload: NotificationPayload.goalAtRisk(goalId),
     );
 
@@ -257,10 +251,7 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
       id: NotificationIds.goalStale(goalId),
       title: title,
       body: body,
-      notificationDetails: NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      ),
+      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
       payload: NotificationPayload.goalStale(goalId),
     );
 

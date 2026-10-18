@@ -14,23 +14,17 @@ class MockGoogleSignInException implements Exception {
 
 void main() {
   group('ErrorHandler Platform Exceptions', () {
-    test(
-      'maps PlatformException sign_in_canceled to AuthException.signInCancelled',
-      () {
-        final error = PlatformException(code: 'sign_in_canceled');
-        final result = ErrorHandler.mapException(error);
+    test('maps PlatformException sign_in_canceled to AuthException.signInCancelled', () {
+      final error = PlatformException(code: 'sign_in_canceled');
+      final result = ErrorHandler.mapException(error);
 
-        expect(result, isA<AuthException>());
-        expect((result as AuthException).code, AuthExceptionCode.cancelled);
-        expect(result.shouldReport, false);
-      },
-    );
+      expect(result, isA<AuthException>());
+      expect((result as AuthException).code, AuthExceptionCode.cancelled);
+      expect(result.shouldReport, false);
+    });
 
     test('maps other PlatformExceptions to AuthException.signInFailed', () {
-      final error = PlatformException(
-        code: 'some_other_error',
-        message: 'test',
-      );
+      final error = PlatformException(code: 'some_other_error', message: 'test');
       final result = ErrorHandler.mapException(error);
 
       expect(result, isA<AuthException>());

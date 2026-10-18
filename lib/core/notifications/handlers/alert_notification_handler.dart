@@ -60,10 +60,7 @@ class AlertNotificationHandler with NotificationPreferencesMixin {
       id: NotificationIds.riskAlert(alertType),
       title: '⚠️ $title',
       body: body,
-      notificationDetails: const NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      ),
+      notificationDetails: const NotificationDetails(android: androidDetails, iOS: iosDetails),
       payload: NotificationPayload.riskAlert(alertType),
     );
 
@@ -134,10 +131,7 @@ class AlertNotificationHandler with NotificationPreferencesMixin {
         id: NotificationIds.idleAlert(inv.id),
         title: '💤 Investment Review Needed',
         body: body,
-        notificationDetails: const NotificationDetails(
-          android: androidDetails,
-          iOS: iosDetails,
-        ),
+        notificationDetails: const NotificationDetails(android: androidDetails, iOS: iosDetails),
         payload: NotificationPayload.idleAlert(inv.id),
       );
 

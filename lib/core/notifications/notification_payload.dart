@@ -225,7 +225,8 @@ class NotificationPayload {
             'notificationContext': 'true',
             if (paramMap['investment'] != null)
               'investmentId': paramMap['investment']!,
-            if (paramMap['goal'] != null) 'goalId': paramMap['goal']!,
+            if (paramMap['goal'] != null)
+              'goalId': paramMap['goal']!,
           },
         );
 
@@ -261,7 +262,8 @@ class NotificationPayload {
             'notificationContext': 'true',
             if (paramMap['investment'] != null)
               'investmentId': paramMap['investment']!,
-            if (paramMap['days'] != null) 'daysToMaturity': paramMap['days']!,
+            if (paramMap['days'] != null)
+              'daysToMaturity': paramMap['days']!,
           },
         );
 
@@ -483,19 +485,22 @@ class NotificationPayload {
   static String incomeGuardianOverdue(
     String investmentId,
     String expectedCashFlowId,
-  ) => 'income_guardian_overdue:$investmentId:$expectedCashFlowId';
+  ) =>
+      'income_guardian_overdue:$investmentId:$expectedCashFlowId';
 
   /// Create a payload string for upcoming payment reminder
   static String incomeGuardianUpcoming(
     String investmentId,
     String expectedCashFlowId,
-  ) => 'income_guardian_upcoming:$investmentId:$expectedCashFlowId';
+  ) =>
+      'income_guardian_upcoming:$investmentId:$expectedCashFlowId';
 
   /// Create a payload string for payment received confirmation
   static String incomeGuardianReceived(
     String investmentId,
     String expectedCashFlowId,
-  ) => 'income_guardian_received:$investmentId:$expectedCashFlowId';
+  ) =>
+      'income_guardian_received:$investmentId:$expectedCashFlowId';
 
   @override
   String toString() =>

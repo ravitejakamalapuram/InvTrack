@@ -9,9 +9,9 @@ class CurrencyConverterModule implements CalculationModule {
   final BatchCurrencyConverter? _batchConverter;
 
   CurrencyConverterModule(this._conversionService)
-    : _batchConverter = _conversionService != null
-          ? BatchCurrencyConverter(_conversionService)
-          : null;
+      : _batchConverter = _conversionService != null
+            ? BatchCurrencyConverter(_conversionService)
+            : null;
 
   @override
   String get name => 'Currency';

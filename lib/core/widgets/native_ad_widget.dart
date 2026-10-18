@@ -33,7 +33,10 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 class NativeAdWidget extends StatelessWidget {
   final NativeAdState adState;
 
-  const NativeAdWidget({super.key, required this.adState});
+  const NativeAdWidget({
+    super.key,
+    required this.adState,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +55,9 @@ class NativeAdWidget extends StatelessWidget {
         color: isDark ? AppColors.neutral800Dark : AppColors.neutral100Light,
         borderRadius: AppSizes.borderRadiusMd,
         border: Border.all(
-          color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+          color: isDark
+              ? AppColors.neutral700Dark
+              : AppColors.neutral200Light,
           width: 1,
         ),
       ),
@@ -115,7 +120,9 @@ class NativeAdLoadingWidget extends StatelessWidget {
         color: isDark ? AppColors.neutral800Dark : AppColors.neutral100Light,
         borderRadius: AppSizes.borderRadiusMd,
         border: Border.all(
-          color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+          color: isDark
+              ? AppColors.neutral700Dark
+              : AppColors.neutral200Light,
           width: 1,
         ),
       ),
