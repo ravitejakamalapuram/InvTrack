@@ -16,9 +16,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/notifications/notification_settings_provider.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/digest/domain/monthly_digest.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
 
 /// A widget that initializes notification sync in the background.
 ///
@@ -217,6 +221,8 @@ class _NotificationSyncInitializerState
       final notificationService = ref.read(notificationServiceProvider);
       final generation = _accountGeneration;
       bool isStale() => generation != _accountGeneration;
+      final now = DateTime.now();
+      final recap = _recapFacts(now);
 
       // Schedule in background - don't await, fire and forget
       _enqueue(() async {
@@ -227,6 +233,13 @@ class _NotificationSyncInitializerState
             lastIncomeDates: lastIncomeDates,
             isCancelled: isStale,
           );
+          if (recap != null && !isStale()) {
+            await notificationService.scheduleMonthlyRecap(
+              now: now,
+              maturingNextMonth: recap.maturingNextMonth.length,
+              needingValue: recap.needingValue.length,
+            );
+          }
         } catch (e) {
           LoggerService.warn('Error rescheduling notifications', error: e);
         }
@@ -251,6 +264,22 @@ class _NotificationSyncInitializerState
     } catch (e) {
       LoggerService.debug('NotificationService not available yet');
     }
+  }
+
+  /// This month's recap counts while the recap flag is on, or null. Only
+  /// the counts reach the notification; the amounts are computed on tap.
+  MonthlyDigest? _recapFacts(DateTime now) {
+    if (!ref.read(isMonthlyRecapEnabledProvider)) return null;
+    final active = ref.read(activeInvestmentsProvider).value;
+    if (active == null) return null;
+    return MonthlyDigest.build(
+      month: DigestMonth(now.year, now.month),
+      baseCurrency: ref.read(currencyCodeProvider),
+      convertedFlows: const [],
+      activeInvestments: active,
+      statsById:
+          ref.read(activeInvestmentBasicStatsMapProvider).value ?? const {},
+    );
   }
 
   /// Latest INCOME cash-flow date per investment id.

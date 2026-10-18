@@ -72,7 +72,11 @@ enum FeatureFlag {
   /// date instead of at sign-in (A45, #788).
   /// - Off by default; flag off keeps the ask at sign-in. It ships by changing
   ///   the default in a release PR
-  maturityReminderPrompt('maturity_reminder_prompt', 'Maturity Reminder Prompt');
+  maturityReminderPrompt('maturity_reminder_prompt', 'Maturity Reminder Prompt'),
+
+  /// Monthly recap screen and notification (reports plan, phase 1). Off
+  /// until a release PR turns it on.
+  monthlyRecap('monthly_recap', 'Monthly Recap');
 
   const FeatureFlag(this.key, this.displayName, {this.defaultEnabled = false});
 
@@ -267,6 +271,15 @@ final isMaturityReminderPromptEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.maturityReminderPrompt] ?? false,
+    ),
+  );
+});
+
+/// Convenience provider for checking if the monthly recap is enabled
+final isMonthlyRecapEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagsProvider.select(
+      (flags) => flags[FeatureFlag.monthlyRecap] ?? false,
     ),
   );
 });

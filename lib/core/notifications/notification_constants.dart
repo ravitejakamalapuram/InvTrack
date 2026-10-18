@@ -10,6 +10,7 @@ class NotificationChannels {
   static const String incomeReminders = 'income_reminders';
   static const String maturityReminders = 'maturity_reminders';
   static const String monthlySummary = 'monthly_summary';
+  static const String monthlyRecap = 'monthly_recap';
   static const String milestones = 'milestones';
   static const String goalMilestones = 'goal_milestones';
   static const String taxReminders = 'tax_reminders';

@@ -7273,5 +7273,203 @@
   "archiveActionFailed": "Something went wrong. Please try again.",
   "@archiveActionFailed": {
     "description": "Default message shown when archiving or unarchiving a swiped list item failed and the list gave no message of its own (A17)"
+  },
+  "monthlyRecapFeatureSubtitle": "Monthly recap screen and its notification, in place of the monthly summary",
+  "@monthlyRecapFeatureSubtitle": {
+    "description": "Debug settings subtitle of the monthly recap flag"
+  },
+  "monthlyRecapTitle": "{month} Recap",
+  "@monthlyRecapTitle": {
+    "description": "Monthly recap app bar title, e.g. October Recap",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapMoneyIn": "Money In",
+  "@monthlyRecapMoneyIn": {
+    "description": "Monthly recap section heading"
+  },
+  "monthlyRecapPayoutsReceived": "Payouts received",
+  "@monthlyRecapPayoutsReceived": {
+    "description": "Label above the month's payout total"
+  },
+  "monthlyRecapPayoutCount": "{payouts, plural, =1{1 payout} other{{payouts} payouts}} from {investments, plural, =1{1 investment} other{{investments} investments}}",
+  "@monthlyRecapPayoutCount": {
+    "description": "Caption under the payout total",
+    "placeholders": {
+      "payouts": {
+        "type": "int"
+      },
+      "investments": {
+        "type": "int"
+      }
+    }
+  },
+  "monthlyRecapMore": "{amount} more than {month}",
+  "@monthlyRecapMore": {
+    "description": "Change against the previous month, up",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapLess": "{amount} less than {month}",
+  "@monthlyRecapLess": {
+    "description": "Change against the previous month, down",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapSame": "Same as {month}",
+  "@monthlyRecapSame": {
+    "description": "No change against the previous month",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapCompared": "Compared with {month}:",
+  "@monthlyRecapCompared": {
+    "description": "Privacy-mode comparison line, followed by a masked amount",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapUpSemantics": "Up {amount} from {month}",
+  "@monthlyRecapUpSemantics": {
+    "description": "Screen reader text for a rise",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapDownSemantics": "Down {amount} from {month}",
+  "@monthlyRecapDownSemantics": {
+    "description": "Screen reader text for a fall",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapHeadlineSemantics": "Money in, {month}: {amount}. {detail}",
+  "@monthlyRecapHeadlineSemantics": {
+    "description": "Screen reader text for the payout total",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapNoPayouts": "No payouts recorded in {month}",
+  "@monthlyRecapNoPayouts": {
+    "description": "Empty money-in title",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapNoPayoutsHint": "Payouts you add for {month} will appear here",
+  "@monthlyRecapNoPayoutsHint": {
+    "description": "Empty money-in message",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapAddPayout": "Add a Payout",
+  "@monthlyRecapAddPayout": {
+    "description": "Empty money-in action; opens the investments list"
+  },
+  "monthlyRecapComingUp": "Coming Up In {month}",
+  "@monthlyRecapComingUp": {
+    "description": "Section heading for investments maturing next month",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapNothingMatures": "Nothing matures in {month}",
+  "@monthlyRecapNothingMatures": {
+    "description": "Empty coming-up line",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapMatures": "MATURES {date}",
+  "@monthlyRecapMatures": {
+    "description": "State chip on a maturing investment, ALL CAPS, e.g. MATURES 12 NOV",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapMaturesSemantics": "{name}, {type}, matures {date}. Opens the investment.",
+  "@monthlyRecapMaturesSemantics": {
+    "description": "Screen reader text for a maturing row",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "type": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapNeedsValue": "Needs A Value",
+  "@monthlyRecapNeedsValue": {
+    "description": "Section heading for open investments without a current value"
+  },
+  "monthlyRecapNeedsValueReason": "Add a current value to see its XIRR",
+  "@monthlyRecapNeedsValueReason": {
+    "description": "Why an investment is listed under Needs A Value"
+  },
+  "monthlyRecapUpdate": "Update",
+  "@monthlyRecapUpdate": {
+    "description": "Button that opens the investment to add a current value"
+  },
+  "monthlyRecapArchivedNote": "Archived investments are not included.",
+  "@monthlyRecapArchivedNote": {
+    "description": "Footer note on the monthly recap (money rule 9)"
+  },
+  "monthlyRecapLoadError": "Couldn''t load your recap",
+  "@monthlyRecapLoadError": {
+    "description": "Error state on the monthly recap"
   }
 }

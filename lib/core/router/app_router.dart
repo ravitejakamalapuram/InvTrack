@@ -23,6 +23,8 @@ import 'package:inv_tracker/features/fire_number/presentation/screens/fire_dashb
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_setup_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_settings_screen.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/screens/portfolio_health_details_screen.dart';
+import 'package:inv_tracker/features/digest/domain/monthly_digest.dart';
+import 'package:inv_tracker/features/digest/presentation/screens/monthly_recap_screen.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/dynamic_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/reports_home_screen.dart';
@@ -50,6 +52,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final analytics = ref.watch(analyticsServiceProvider);
   final isReportsEnabled = ref.watch(isReportsTabEnabledProvider);
   final isIncomeGuardianEnabled = ref.watch(isIncomeGuardianEnabledProvider);
+  final isMonthlyRecapEnabled = ref.watch(isMonthlyRecapEnabledProvider);
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -110,6 +113,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       // calendar reached by a deep link or a stale navigation.
       final isIncomeCalendarRoute = state.uri.path == '/income-calendar';
       if (isLoggedIn && !isIncomeGuardianEnabled && isIncomeCalendarRoute) {
+        return '/';
+      }
+
+      // The monthly recap is hidden while its flag is off; a recap
+      // notification tapped then lands on Overview.
+      if (isLoggedIn &&
+          !isMonthlyRecapEnabled &&
+          state.uri.path.startsWith('/recap/')) {
         return '/';
       }
 
@@ -296,6 +307,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/income-calendar',
         name: AnalyticsScreens.incomeCalendar,
         builder: (context, state) => const IncomeCalendarScreen(),
+      ),
+      // Monthly recap, opened from its notification
+      GoRoute(
+        path: '/recap/:month',
+        name: AnalyticsScreens.monthlyRecap,
+        redirect: (context, state) {
+          try {
+            DigestMonth.parse(state.pathParameters['month'] ?? '');
+            return null;
+          } on FormatException {
+            return '/';
+          }
+        },
+        builder: (context, state) => MonthlyRecapScreen(
+          month: DigestMonth.parse(state.pathParameters['month']!),
+        ),
       ),
     ],
   );

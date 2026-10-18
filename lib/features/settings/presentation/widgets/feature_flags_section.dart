@@ -191,6 +191,26 @@ class FeatureFlagsSection extends ConsumerWidget {
           },
         ),
 
+        // Monthly recap screen and notification (reports plan, phase 1)
+        SettingsToggleTile(
+          icon: Icons.calendar_month_outlined,
+          iconColor: AppColors.primaryLight,
+          title: FeatureFlag.monthlyRecap.displayName,
+          subtitle: l10n.monthlyRecapFeatureSubtitle,
+          value: featureFlags[FeatureFlag.monthlyRecap] ?? false,
+          onChanged: (value) async {
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.monthlyRecap);
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
+            }
+          },
+        ),
+
         // Play review prompt feature flag
         SettingsToggleTile(
           icon: Icons.star_outline,

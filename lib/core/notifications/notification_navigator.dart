@@ -143,9 +143,26 @@ class NotificationNavigator {
         // Navigate to investment detail with expected cash flow highlighted
         return _navigateToInvestmentDetail(payloadString, payload.investmentId);
 
+      case NotificationPayloadType.monthlyRecap:
+        return _navigateToMonthlyRecap(payloadString, payload.params['month']);
+
       case NotificationPayloadType.unknown:
         return false;
     }
+  }
+
+  /// Opens the recap of [month] (yyyy-MM); the router sends it to Overview
+  /// while the recap flag is off.
+  Future<bool> _navigateToMonthlyRecap(
+    String payloadString,
+    String? month,
+  ) async {
+    if (month == null) return _navigateToOverview();
+    if (_deferIfLocked(payloadString)) return false;
+    final context = rootNavigatorKey.currentContext;
+    if (context == null || !context.mounted) return false;
+    context.push('/recap/$month');
+    return true;
   }
 
   Future<bool> _navigateToInvestmentDetail(

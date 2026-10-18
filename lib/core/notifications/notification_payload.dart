@@ -62,6 +62,9 @@ enum NotificationPayloadType {
   /// Navigate to Income Guardian screen (expected cash flows)
   incomeGuardian,
 
+  /// Navigate to the monthly recap of the month in params['month']
+  monthlyRecap,
+
   /// Snooze notification (reschedule for later)
   snooze,
 
@@ -120,6 +123,12 @@ class NotificationPayload {
             'daysToMaturity': parts.length > 2 ? parts[2] : '0',
             'showMaturityAction': 'true',
           },
+        );
+
+      case 'monthly_recap':
+        return NotificationPayload(
+          type: NotificationPayloadType.monthlyRecap,
+          params: {if (parts.length > 1) 'month': parts[1]},
         );
 
       case 'weekly_summary':
@@ -398,6 +407,9 @@ class NotificationPayload {
 
   /// Create a payload string for monthly summary report
   static String get monthlySummary => 'monthly_summary';
+
+  /// Create a payload string for the monthly recap of [monthKey] (yyyy-MM)
+  static String monthlyRecap(String monthKey) => 'monthly_recap:$monthKey';
 
   /// Create a payload string for monthly income report
   static String get monthlyIncome => 'monthly_income';

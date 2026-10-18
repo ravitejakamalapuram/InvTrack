@@ -1,0 +1,140 @@
+<!-- @dsCard group="Screens" height=2240 subtitle="Monthly recap screen (not built yet): full month, dark, privacy mode, quiet month and the notification" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>
+html, body { margin: 0; }
+/* Mock-up layout only; every value is an existing token. */
+.md-sec + .md-sec { margin-top: var(--section-gap, 24px); }
+.md-sec > .it-h4 { margin: 0 0 var(--space-sm); }
+.md-list { display: flex; flex-direction: column; gap: var(--list-item-gap, 12px); }
+.md-total { margin: 4px 0 0; font: 700 28px/1.2 var(--font-display); letter-spacing: -.5px; color: var(--text); }
+.md-cmp { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: var(--space-sm); font: 500 14px/1.4 var(--font-text); }
+.md-cmp--priv { display: none; color: var(--text-muted); }
+[data-privacy="on"] .md-cmp--open { display: none; }
+[data-privacy="on"] .md-cmp--priv { display: flex; }
+.md-row { display: flex; align-items: center; gap: var(--space-sm); }
+.md-row__main { flex: 1; min-width: 0; }
+.md-row__name { margin: 0; font: 600 15px/1.4 var(--font-text); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.md-row__tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.md-quiet { margin: 0; font: 400 14px/1.4 var(--font-text); color: var(--text-muted); }
+.md-back { margin: 0 0 0 -12px; }
+.md-sub { margin: 0; font: 400 12px/1.4 var(--font-text); color: var(--text-muted); }
+.md-notif { display: flex; gap: var(--space-sm); align-items: flex-start; }
+.md-notif__meta { font: 400 12px/1.4 var(--font-text); color: var(--text-muted); }
+.md-notif__t { margin: 2px 0 0; font: 600 14px/1.4 var(--font-text); color: var(--text); }
+.md-notif__b { margin: 2px 0 0; font: 400 14px/1.4 var(--font-text); color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var I = window.InvTrack, F = I.fmt, esc = I.esc;
+  function cap(t) { return '<p class="it-cap">' + t + '</p>'; }
+  function pane(theme, label, html, privacy) {
+    return '<section class="it-pane" data-theme="' + theme + '"' + (privacy ? ' data-privacy="on"' : '') + '><p class="it-pane__label">' + esc(label) + '</p>' + html + '</section>';
+  }
+
+  // Illustrative figures only.
+  var total = 18400, delta = 4200;
+
+  function comparison(d, prev) {
+    if (d === 0) {
+      return '<div class="md-cmp md-cmp--open" style="color:var(--text-muted)" aria-label="Same as ' + prev + '">' + I.icon('trending_flat', { size: 18 }) + '<span>Same as ' + prev + '</span></div>';
+    }
+    var up = d > 0, col = up ? 'var(--success)' : 'var(--danger)';
+    var text = (up ? '+' : '-') + F.inr(Math.abs(d));
+    var sr = (up ? 'Up ' : 'Down ') + F.srAmount(Math.abs(d)) + ' from ' + prev;
+    return '<div class="md-cmp md-cmp--open" style="color:' + col + '" role="text" aria-label="' + esc(sr) + '">' + I.icon(up ? 'arrow_upward' : 'arrow_downward', { size: 18 }) +
+      '<span>' + esc(text) + ' ' + (up ? 'more' : 'less') + ' than ' + prev + '</span></div>';
+  }
+  // Privacy mode: no arrow, no colour, no more/less; the amount is masked.
+  function comparisonPrivate(prev) {
+    return '<div class="md-cmp md-cmp--priv" role="text" aria-label="Compared with ' + prev + ': Hidden amount"><span>Compared with ' + prev + ':</span>' + I.amount('') + '</div>';
+  }
+
+  function moneyIn(o, privacy) {
+    if (!o) {
+      return '<div class="md-sec"><h3 class="it-h4">Money In</h3>' + I.GlassCard(I.EmptyState({ compact: true, icon: 'payments', title: 'No payouts recorded in October',
+        message: 'Payouts you add for October will appear here', actionLabel: 'Add a Payout' }), { padding: '0' }) + '</div>';
+    }
+    var sr = 'Money in, October: ' + (privacy ? 'Hidden amount' : F.srAmount(o.total)) + '. ' + o.caption;   // the screen builds the label from privacyModeProvider
+    return '<div class="md-sec"><h3 class="it-h4">Money In</h3>' + I.GlassCard(
+      '<div role="group" aria-label="' + esc(sr) + '"><div class="it-cvalue__label">Payouts received</div>' +
+      '<p class="md-total">' + I.amount(F.smart(o.total), { big: true }) + '</p>' +
+      '<p class="md-sub">' + esc(o.caption) + '</p></div>' +
+      comparison(o.delta, 'September') + comparisonPrivate('September')) + '</div>';
+  }
+
+  function maturing(rows) {
+    var body = rows.length
+      ? '<div class="md-list">' + rows.map(function (r) {
+          var t = I.types[r.type];
+          return I.GlassCard('<div class="md-row"><span class="it-metric__icon" style="--c:var(--inv-' + r.type + '-text);--tint:var(--inv-' + r.type + ')">' + I.icon(t[1], { size: 20 }) + '</span>' +
+            '<div class="md-row__main"><p class="md-row__name">' + esc(r.name) + '</p><div class="md-row__tags">' +
+            I.Badge({ kind: 'type', label: t[0], color: 'var(--inv-' + r.type + ')' }) + I.Badge({ kind: 'maturity', tone: 'accent', icon: 'event', label: r.chip }) + '</div></div>' +
+            I.icon('chevron_right', { size: 24, color: 'var(--text-muted)' }) + '</div>',
+            { tap: true, flat: true, label: r.name + ', ' + t[0] + ', matures ' + r.sr + '. Opens the investment.' });
+        }).join('') + '</div>'
+      : '<p class="md-quiet">Nothing matures in November</p>';
+    return '<div class="md-sec"><h3 class="it-h4">Coming Up In November</h3>' + body + '</div>';
+  }
+
+  function needsValue(rows) {
+    if (!rows.length) return '';   // hidden when empty
+    return '<div class="md-sec"><h3 class="it-h4">Needs A Value</h3><div class="md-list">' + rows.map(function (r) {
+      var t = I.types[r.type];
+      return I.GlassCard('<div class="md-row" role="group" aria-label="' + esc(r.name + ', ' + t[0] + '. Add a current value to see its XIRR') + '">' +
+        '<span class="it-metric__icon" style="--c:var(--text-muted)">' + I.icon('hourglass_top', { size: 20 }) + '</span>' +
+        '<div class="md-row__main"><p class="md-row__name">' + esc(r.name) + '</p><p class="md-sub">Add a current value to see its XIRR</p></div>' +
+        I.Button({ variant: 'text', label: 'Update' }) + '</div>', { flat: true, padding: '12px 4px 12px 16px' });
+    }).join('') + '</div></div>';
+  }
+
+  function screen(o) {
+    return '<div class="it-phone"><div class="it-appbar">' +
+      '<button type="button" class="it-appbar__act md-back" aria-label="Back">' + I.icon('arrow_back', { size: 24 }) + '</button>' +
+      '<div style="flex:1;min-width:0"><h2 class="it-appbar__title">October Recap</h2><p class="md-sub">1 Oct – 31 Oct 2026</p></div>' +
+      I.PrivacyMask({ kind: 'toggle', background: false, size: 24, on: !!o.privacy }) + '</div>' +
+      '<div class="it-phone__body">' + moneyIn(o.money, o.privacy) + maturing(o.maturing) + needsValue(o.needs) +
+      '<p class="it-cap" style="margin-top:var(--section-gap,24px)">Archived investments are not included.</p></div></div>';
+  }
+
+  var full = {
+    money: { total: total, delta: delta, caption: '3 payouts from 2 investments' },
+    maturing: [{ name: 'Senior citizen FD', type: 'fixed-deposit', chip: 'MATURES 12 NOV', sr: '12 November' }],
+    needs: [{ name: 'Plot near the highway', type: 'real-estate' }, { name: 'Seed round, food startup', type: 'angel-investing' }]
+  };
+  var quiet = { money: null, maturing: [], needs: [] };
+
+  function notif(title, body) {
+    return I.GlassCard('<div class="md-notif"><span class="it-metric__icon">' + I.icon('notifications', { size: 18 }) + '</span><div style="flex:1;min-width:0">' +
+      '<div class="md-notif__meta">InvTrack · now</div><p class="md-notif__t">' + esc(title) + '</p><p class="md-notif__b">' + esc(body) + '</p></div></div>', { flat: true });
+  }
+
+  document.getElementById('root').innerHTML = '<div class="it-panes">' +
+    pane('light', '1 · Full month · light', screen(full)) +
+    pane('dark', '2 · Full month · dark', screen(full)) +
+    pane('light', '3 · Privacy mode on', screen(Object.assign({ privacy: true }, full)) +
+      cap('The headline and the comparison amount are masked and read as “Hidden amount”; the arrow, colour and more/less words go too, because they reveal direction. Counts, names and dates stay.'), true) +
+    pane('light', '4 · Quiet month', screen(quiet) +
+      cap('No payouts: compact EmptyState with one action. Nothing maturing: one line. Needs A Value is hidden.')) +
+    pane('light', 'Comparison line', '<div class="it-stack">' +
+      I.GlassCard(comparison(4200, 'September') + comparison(-1500, 'September') + comparison(0, 'September')) +
+      cap('Up and down differ by arrow and sign as well as colour; equal is a flat arrow in text-muted with no amount.') + '</div>') +
+    pane('light', 'Notification (Android shade)', '<div class="it-stack">' +
+      notif('Your October recap is ready', '1 investment matures in November. 2 need a current value.') +
+      notif('Your October recap is ready', 'See what came in last month.') +
+      cap('Counts only, never an amount, name or percentage, with or without privacy mode. The second body is used when there is no fact to state. Tapping opens October Recap.') + '</div>') +
+    '</div>';
+
+  I.wire(document);
+})();
+</script>
+</body>
+</html>

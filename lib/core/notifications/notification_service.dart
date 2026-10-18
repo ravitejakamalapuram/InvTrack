@@ -637,6 +637,17 @@ class NotificationService with NotificationPreferencesMixin {
   Future<void> scheduleMonthlySummary() =>
       _scheduledHandler.scheduleMonthlySummary();
 
+  /// Replace the monthly summary with the recap of [now]'s month.
+  Future<void> scheduleMonthlyRecap({
+    required DateTime now,
+    required int maturingNextMonth,
+    required int needingValue,
+  }) => _scheduledHandler.scheduleMonthlyRecap(
+    now: now,
+    maturingNextMonth: maturingNextMonth,
+    needingValue: needingValue,
+  );
+
   /// Schedule all tax-related reminders for the financial year
   Future<void> scheduleTaxReminders() =>
       _scheduledHandler.scheduleTaxReminders();

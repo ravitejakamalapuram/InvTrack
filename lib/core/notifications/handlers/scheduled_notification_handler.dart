@@ -1,4 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_constants.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
@@ -140,6 +141,76 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     LoggerService.info(
       'Monthly summary scheduled',
       metadata: {'scheduledDate': lastDayOfMonth.toString()},
+    );
+  }
+
+  /// The title and body of the recap for [month]. Counts only, never an
+  /// amount or a name (rules 7 and 8): [maturingNextMonth] is how many
+  /// investments mature in the month after, [needingValue] how many open ones
+  /// wait on a current value.
+  static ({String title, String body}) monthlyRecapText({
+    required DateTime month,
+    required int maturingNextMonth,
+    required int needingValue,
+  }) {
+    final monthName = DateFormat('MMMM').format(month);
+    final nextName = DateFormat(
+      'MMMM',
+    ).format(DateTime(month.year, month.month + 1));
+    final facts = [
+      if (maturingNextMonth == 1) '1 investment matures in $nextName.',
+      if (maturingNextMonth > 1)
+        '$maturingNextMonth investments mature in $nextName.',
+      if (needingValue == 1) '1 needs a current value.',
+      if (needingValue > 1) '$needingValue need a current value.',
+    ];
+    return (
+      title: 'Your $monthName recap is ready',
+      body: facts.isEmpty ? 'See what came in last month.' : facts.join(' '),
+    );
+  }
+
+  /// Schedule the recap of [now]'s month for 10 AM on the 1st of the next.
+  /// It takes the monthly summary's slot and toggle, and is rescheduled with
+  /// fresh counts whenever investments change.
+  Future<void> scheduleMonthlyRecap({
+    required DateTime now,
+    required int maturingNextMonth,
+    required int needingValue,
+  }) async {
+    await ensureInitialized();
+    await _plugin.cancel(id: NotificationIds.monthlySummary);
+    if (!monthlySummaryEnabled) return;
+
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        NotificationChannels.monthlyRecap,
+        'Monthly Recap',
+        channelDescription: 'What came in last month and what needs you next',
+        visibility: NotificationVisibility.private,
+      ),
+      iOS: DarwinNotificationDetails(presentAlert: true),
+    );
+    final month = DateTime(now.year, now.month);
+    final text = monthlyRecapText(
+      month: month,
+      maturingNextMonth: maturingNextMonth,
+      needingValue: needingValue,
+    );
+
+    await _plugin.zonedSchedule(
+      id: NotificationIds.monthlySummary,
+      title: text.title,
+      body: text.body,
+      scheduledDate: tz.TZDateTime.from(
+        DateTime(now.year, now.month + 1, 1, 10),
+        tz.local,
+      ),
+      notificationDetails: details,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      payload: NotificationPayload.monthlyRecap(
+        DateFormat('yyyy-MM').format(month),
+      ),
     );
   }
 
