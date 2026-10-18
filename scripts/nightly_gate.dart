@@ -81,7 +81,7 @@ List<NightlyRun>? nightlyRuns(String json) {
 void main() {
   final reason = nightlyBlockReason(
     latestRuns: nightlyRuns(Platform.environment['NIGHTLY_RUNS'] ?? ''),
-    now: DateTime.now().toUtc(),
+    now: DateTime.timestamp(),
     maxAge: maxNightlyAge,
   );
   if (reason != null) {
