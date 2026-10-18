@@ -7471,5 +7471,17 @@
   "monthlyRecapLoadError": "Couldn''t load your recap",
   "@monthlyRecapLoadError": {
     "description": "Error state on the monthly recap"
+  },
+  "monthlyRecapRange": "{start} – {end}",
+  "@monthlyRecapRange": {
+    "description": "Date range under the monthly recap title, e.g. 1 Oct – 31 Oct 2026",
+    "placeholders": {
+      "start": {"type": "String"},
+      "end": {"type": "String"}
+    }
+  },
+  "monthlyRecapFeature": "Monthly Recap",
+  "@monthlyRecapFeature": {
+    "description": "Debug settings title of the monthly recap flag"
   }
 }

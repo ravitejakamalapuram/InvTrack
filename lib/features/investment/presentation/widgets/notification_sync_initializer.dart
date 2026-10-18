@@ -205,8 +205,10 @@ class _NotificationSyncInitializerState
     if (investments == null || _signedInUid == null) return;
     if (investments.isEmpty) {
       // The last investment was deleted (here, on another device, by bulk
-      // delete or by clearing sample data): drop its reminders.
+      // delete or by clearing sample data): drop its reminders, and refresh
+      // a queued recap so it no longer counts them.
       _cancelInvestmentReminders();
+      _scheduleRecap();
       return;
     }
 
@@ -259,6 +261,31 @@ class _NotificationSyncInitializerState
           await notificationService.cancelInvestmentReminders();
         } catch (e) {
           LoggerService.warn('Error cancelling investment reminders', error: e);
+        }
+      });
+    } catch (e) {
+      LoggerService.debug('NotificationService not available yet');
+    }
+  }
+
+  /// Reschedule only the recap, with counts from the current investments.
+  void _scheduleRecap() {
+    try {
+      final notificationService = ref.read(notificationServiceProvider);
+      final generation = _accountGeneration;
+      final now = DateTime.now();
+      final recap = _recapFacts(now);
+      if (recap == null) return;
+      _enqueue(() async {
+        if (generation != _accountGeneration) return;
+        try {
+          await notificationService.scheduleMonthlyRecap(
+            now: now,
+            maturingNextMonth: recap.maturingNextMonth.length,
+            needingValue: recap.needingValue.length,
+          );
+        } catch (e) {
+          LoggerService.warn('Error scheduling monthly recap', error: e);
         }
       });
     } catch (e) {
@@ -343,6 +370,29 @@ class _NotificationSyncInitializerState
         (s) => (s.incomeRemindersEnabled, s.maturityRemindersEnabled),
       ),
       (previous, next) => _scheduleNotificationsDebounced(),
+    );
+
+    // The monthly recap shares the monthly summary's slot. Turning the
+    // summary back on, flipping the recap flag either way, or the stats
+    // arriving after the first schedule all reschedule, so the slot holds
+    // the right notification with current counts.
+    ref.listen<bool>(
+      notificationSettingsProvider.select((s) => s.monthlySummaryEnabled),
+      (previous, next) {
+        if (next) _scheduleNotificationsDebounced();
+      },
+    );
+    ref.listen<bool>(
+      isMonthlyRecapEnabledProvider,
+      (previous, next) => _scheduleNotificationsDebounced(),
+      onError: (_, _) {},
+    );
+    ref.listen<bool>(
+      activeInvestmentBasicStatsMapProvider.select((s) => s.hasValue),
+      (previous, next) {
+        if (next && previous == false) _scheduleNotificationsDebounced();
+      },
+      onError: (_, _) {},
     );
 
     // Render child immediately without waiting for notifications

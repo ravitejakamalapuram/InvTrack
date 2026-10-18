@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
@@ -15,7 +16,8 @@ import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/core/widgets/privacy_toggle_button.dart';
 import 'package:inv_tracker/features/digest/domain/monthly_digest.dart';
 import 'package:inv_tracker/features/digest/presentation/providers/monthly_digest_provider.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -31,9 +33,12 @@ class MonthlyRecapScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context).toString();
     final monthName = DateFormat.MMMM(locale).format(month.start);
-    final range =
-        '${DateFormat.d(locale).add_MMM().format(month.start)} – '
-        '${DateFormat.yMMMd(locale).format(month.end.subtract(const Duration(days: 1)))}';
+    final range = l10n.monthlyRecapRange(
+      DateFormat.d(locale).add_MMM().format(month.start),
+      DateFormat.yMMMd(
+        locale,
+      ).format(month.end.subtract(const Duration(days: 1))),
+    );
     final digestAsync = ref.watch(monthlyDigestProvider(month));
 
     return Scaffold(
@@ -59,7 +64,21 @@ class MonthlyRecapScreen extends ConsumerWidget {
       ),
       body: digestAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, _) => Center(child: Text(l10n.monthlyRecapLoadError)),
+        error: (error, _) {
+          LoggerService.warn('Monthly recap failed to load', error: error);
+          return EmptyStateWidget(
+            icon: Icons.cloud_off_rounded,
+            title: l10n.monthlyRecapLoadError,
+            message: l10n.pleaseTryAgain,
+            actionLabel: l10n.retry,
+            actionIcon: Icons.refresh_rounded,
+            onAction: () {
+              ref.invalidate(convertedCashFlowsSnapshotProvider);
+              ref.invalidate(activeInvestmentsProvider);
+              ref.invalidate(activeInvestmentBasicStatsMapProvider);
+            },
+          );
+        },
         data: (digest) => _RecapBody(digest: digest, locale: locale),
       ),
     );

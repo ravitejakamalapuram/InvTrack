@@ -5,9 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/notifications/notification_settings_provider.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/notification_sync_initializer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -63,10 +66,20 @@ void main() {
     incomeFrequency: IncomeFrequency.monthly,
   );
 
-  Future<ProviderContainer> pumpInitializer(WidgetTester tester) async {
+  Future<ProviderContainer> pumpInitializer(
+    WidgetTester tester, {
+    bool recap = false,
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          if (recap) ...[
+            isMonthlyRecapEnabledProvider.overrideWithValue(true),
+            currencyCodeProvider.overrideWithValue('INR'),
+            activeInvestmentBasicStatsMapProvider.overrideWithValue(
+              const AsyncData({}),
+            ),
+          ],
           authStateProvider.overrideWith((ref) => auth.stream),
           notificationServiceProvider.overrideWithValue(service),
           allInvestmentsProvider.overrideWith((ref) => investments.stream),
@@ -347,5 +360,60 @@ void main() {
         expect(pendingIds().intersection(bondIds), isEmpty);
       },
     );
+  });
+
+  group('NotificationSyncInitializer - monthly recap', () {
+    final now = DateTime.now();
+    final bond = InvestmentEntity(
+      currency: 'INR',
+      id: 'inv-bond',
+      name: 'Bond',
+      type: InvestmentType.bonds,
+      status: InvestmentStatus.open,
+      createdAt: DateTime(2026, 1, 1),
+      updatedAt: DateTime(2026, 1, 1),
+      startDate: DateTime(2026, 1, 15),
+      maturityDate: DateTime(now.year, now.month + 1, 20),
+    );
+    FakeScheduledNotification? recapSlot() => fakePlugin.scheduledNotifications
+        .where((n) => n.id == NotificationIds.monthlySummary)
+        .singleOrNull;
+
+    testWidgets('deleting the last investment refreshes the recap counts', (
+      tester,
+    ) async {
+      await pumpInitializer(tester, recap: true);
+      auth.add(user('uid-a'));
+      investments.add([bond]);
+      cashFlows.add(const []);
+      await settle(tester);
+      expect(recapSlot()?.body, contains('1 investment matures'));
+
+      investments.add(const []);
+      await settle(tester);
+
+      expect(recapSlot()?.payload, startsWith('monthly_recap'));
+      expect(recapSlot()?.body, 'See what came in last month.');
+    });
+
+    testWidgets('turning the monthly summary back on restores the recap', (
+      tester,
+    ) async {
+      final container = await pumpInitializer(tester, recap: true);
+      auth.add(user('uid-a'));
+      investments.add([bond]);
+      cashFlows.add(const []);
+      await settle(tester);
+
+      final settings = container.read(notificationSettingsProvider.notifier);
+      await settings.setSetting(NotificationSettingType.monthlySummary, false);
+      await settle(tester);
+      expect(recapSlot(), isNull);
+
+      await settings.setSetting(NotificationSettingType.monthlySummary, true);
+      await settle(tester);
+
+      expect(recapSlot()?.payload, startsWith('monthly_recap'));
+    });
   });
 }

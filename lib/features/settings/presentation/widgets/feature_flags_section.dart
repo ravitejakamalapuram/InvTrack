@@ -39,7 +39,11 @@ class FeatureFlagsSection extends ConsumerWidget {
                   .toggle(FeatureFlag.portfolioHealthScore);
 
               // Verify the toggle succeeded
-              final newState = ref.read(featureFlagsProvider)[FeatureFlag.portfolioHealthScore] ?? false;
+              final newState =
+                  ref.read(
+                    featureFlagsProvider,
+                  )[FeatureFlag.portfolioHealthScore] ??
+                  false;
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -75,7 +79,9 @@ class FeatureFlagsSection extends ConsumerWidget {
                   .toggle(FeatureFlag.reportsTab);
 
               // Verify the toggle succeeded
-              final newState = ref.read(featureFlagsProvider)[FeatureFlag.reportsTab] ?? false;
+              final newState =
+                  ref.read(featureFlagsProvider)[FeatureFlag.reportsTab] ??
+                  false;
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -111,7 +117,9 @@ class FeatureFlagsSection extends ConsumerWidget {
                   .toggle(FeatureFlag.incomeGuardian);
 
               // Verify the toggle succeeded
-              final newState = ref.read(featureFlagsProvider)[FeatureFlag.incomeGuardian] ?? false;
+              final newState =
+                  ref.read(featureFlagsProvider)[FeatureFlag.incomeGuardian] ??
+                  false;
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -147,8 +155,9 @@ class FeatureFlagsSection extends ConsumerWidget {
                   .toggle(FeatureFlag.customInvestmentTypes);
 
               final newState =
-                  ref.read(featureFlagsProvider)[FeatureFlag
-                      .customInvestmentTypes] ??
+                  ref.read(
+                    featureFlagsProvider,
+                  )[FeatureFlag.customInvestmentTypes] ??
                   false;
 
               if (context.mounted) {
@@ -195,7 +204,7 @@ class FeatureFlagsSection extends ConsumerWidget {
         SettingsToggleTile(
           icon: Icons.calendar_month_outlined,
           iconColor: AppColors.primaryLight,
-          title: FeatureFlag.monthlyRecap.displayName,
+          title: l10n.monthlyRecapFeature,
           subtitle: l10n.monthlyRecapFeatureSubtitle,
           value: featureFlags[FeatureFlag.monthlyRecap] ?? false,
           onChanged: (value) async {

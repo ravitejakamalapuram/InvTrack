@@ -5,8 +5,8 @@ import 'package:inv_tracker/features/investment/presentation/providers/investmen
 
 /// The recap of a month, built from the one converted snapshot, the active
 /// investments and their stats (no new Firestore reads).
-final monthlyDigestProvider =
-    Provider.family<AsyncValue<MonthlyDigest>, DigestMonth>((ref, month) {
+final monthlyDigestProvider = Provider.autoDispose
+    .family<AsyncValue<MonthlyDigest>, DigestMonth>((ref, month) {
       final flowsAsync = ref.watch(convertedCashFlowsSnapshotProvider);
       final investmentsAsync = ref.watch(activeInvestmentsProvider);
       final statsAsync = ref.watch(activeInvestmentBasicStatsMapProvider);

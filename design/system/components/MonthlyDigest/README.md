@@ -43,4 +43,4 @@ The month and its date range, the payout total and the change against the previo
 
 ## Source
 
-Not built yet (`lib/features/digest`).
+`lib/features/digest/presentation/screens/monthly_recap_screen.dart` (behind the `monthly_recap` flag).
