@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/providers/connectivity_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/widgets/connectivity_listener.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 import '../../helpers/contrast.dart';
 
@@ -26,6 +27,8 @@ Future<void> _check(
         connectivityStatusProvider.overrideWith((ref) => controller.stream),
       ],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: ThemeData(brightness: brightness),
         home: const ConnectivityListener(child: Scaffold(body: Text('App'))),
       ),
