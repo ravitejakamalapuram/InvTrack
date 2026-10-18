@@ -165,6 +165,94 @@ void main() {
     expect(container.read(settingsProvider).currency, 'INR');
     expect(repo.profile!.preferredCurrency, 'USD');
   });
+
+  testWidgets(
+    'data that is only on the server (empty local cache) still counts '
+    'as data, so no currency is proposed over it',
+    (tester) async {
+      investments = _ServerOnlyInvestments()
+        ..seed(investments: [_investment()]);
+      final container = await pump(tester, locale: const ui.Locale('en', 'US'));
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(container.read(settingsProvider).currency, 'INR');
+      expect(repo.profile!.preferredCurrency, 'INR');
+    },
+  );
+
+  testWidgets('an unreachable server defers the decision instead of treating '
+      'the account as empty', (tester) async {
+    investments = _OfflineInvestments();
+    final container = await pump(tester, locale: const ui.Locale('en', 'US'));
+
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(repo.profile, isNull);
+    expect(container.read(settingsProvider).currency, 'INR');
+  });
+
+  testWidgets('a phone with no country neither proposes a currency nor stores '
+      'US as the country', (tester) async {
+    final empty = await pump(tester, locale: const ui.Locale('en'));
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(repo.profile, isNull);
+    expect(empty.read(settingsProvider).currency, 'INR');
+  });
+
+  testWidgets('a user with data on a phone with no country is saved without a '
+      'made-up US country', (tester) async {
+    investments.seed(investments: [_investment()]);
+    await pump(tester, locale: const ui.Locale('en'));
+
+    expect(repo.profile!.preferredCurrency, 'INR');
+    expect(repo.profile!.countryCode, isNot('US'));
+  });
+
+  testWidgets('a currency left on the phone by another account is not taken as '
+      'this user\'s choice: a new user is asked', (tester) async {
+    SharedPreferences.setMockInitialValues({'currency': 'EUR'});
+    prefs = await SharedPreferences.getInstance();
+    final container = await pump(tester, locale: const ui.Locale('en', 'US'));
+
+    expect(find.text('Use USD'), findsOneWidget);
+    expect(repo.profile, isNull, reason: 'nothing stored before confirming');
+    expect(container.read(settingsProvider).currency, 'EUR');
+  });
+
+  testWidgets('a currency left on the phone by another account does not hide '
+      'this user\'s profile currency', (tester) async {
+    SharedPreferences.setMockInitialValues({'currency': 'EUR'});
+    prefs = await SharedPreferences.getInstance();
+    repo.profile = stored('USD');
+    final container = await pump(tester, locale: const ui.Locale('en', 'IN'));
+
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(container.read(settingsProvider).currency, 'USD');
+  });
+
+  testWidgets('the Choose another list shows translated currency names', (
+    tester,
+  ) async {
+    await pump(tester, locale: const ui.Locale('en', 'US'));
+
+    await tester.tap(find.text('Choose another'));
+    await tester.pumpAndSettle();
+
+    final l10n = AppLocalizations.of(tester.element(find.byType(SimpleDialog)));
+    expect(find.text(l10n.currencyEUR), findsOneWidget);
+    expect(find.text(l10n.currencyAED), findsOneWidget);
+    expect(find.text(l10n.currencySAR), findsOneWidget);
+  });
+}
+
+/// Server has the data but this phone's local cache is still empty.
+class _ServerOnlyInvestments extends FakeInvestmentRepository {
+  @override
+  Future<List<InvestmentEntity>> getAllInvestments() async => [];
+}
+
+class _OfflineInvestments extends FakeInvestmentRepository {
+  @override
+  Future<bool> hasAnyInvestmentOnServer() async => throw StateError('offline');
 }
 
 class _NoAnalytics extends Mock implements AnalyticsService {

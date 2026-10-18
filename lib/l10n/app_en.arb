@@ -3157,6 +3157,16 @@
     "description": "South African Rand currency name with symbol"
   },
 
+  "currencyAED": "UAE Dirham (AED)",
+  "@currencyAED": {
+    "description": "UAE Dirham currency name with code"
+  },
+
+  "currencySAR": "Saudi Riyal (SAR)",
+  "@currencySAR": {
+    "description": "Saudi Riyal currency name with code"
+  },
+
   "readyToImport": "Ready to Import",
   "@readyToImport": {
     "description": "Header text for import confirmation screen"

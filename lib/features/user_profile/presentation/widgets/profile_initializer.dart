@@ -59,20 +59,22 @@ class _ProfileInitializerState extends ConsumerState<ProfileInitializer>
     try {
       final repository = ref.read(userProfileRepositoryProvider(userId));
       final profile = await repository.getProfile();
-      // The device shows a currency "in use" when the user chose one here or
-      // already has investments; a fresh install shows only the default.
-      final prefs = ref.read(sharedPreferencesProvider);
-      final hasData =
-          (await ref.read(investmentRepositoryProvider).getAllInvestments())
-              .isNotEmpty;
+      // The device shows a currency "in use" only when this user already has
+      // investments. The saved currency is device-wide, so it may have been
+      // left by another account, and a fresh install shows only the default.
+      // The local cache can be empty on a new device, so ask the server; an
+      // unreachable server throws and defers the decision to the next start.
+      final hasData = await ref
+          .read(investmentRepositoryProvider)
+          .hasAnyInvestmentOnServer();
       if (!_stillCurrent(userId)) return;
       final shown = ref.read(settingsProvider).currency;
       final locale = ref.read(deviceLocaleProvider);
-      final countryCode = LocaleDetectionService.getCountryCode(locale);
       final plan = planBaseCurrency(
         profile: profile,
-        inUseCurrency: prefs.containsKey('currency') || hasData ? shown : null,
-        countryCode: countryCode,
+        inUseCurrency: hasData ? shown : null,
+        // No fallback to 'US': a missing country proposes nothing (money rule 1).
+        countryCode: locale.countryCode ?? '',
       );
       final currency = plan.currency;
       if (currency == null) return;
@@ -108,7 +110,7 @@ class _ProfileInitializerState extends ConsumerState<ProfileInitializer>
   ) => repository.saveProfile(
     UserProfileEntity.fromDetectedLocale(
       userId: userId,
-      countryCode: LocaleDetectionService.getCountryCode(locale),
+      countryCode: locale.countryCode ?? '',
       languageCode: LocaleDetectionService.getLanguageCode(locale),
       currency: currency,
     ),
@@ -152,20 +154,43 @@ class _ProfileInitializerState extends ConsumerState<ProfileInitializer>
     return showDialog<String>(
       context: again,
       useRootNavigator: true,
-      builder: (ctx) => SimpleDialog(
-        title: Text(AppLocalizations.of(ctx).selectCurrency),
-        children: [
-          for (final entry
-              in LocaleDetectionService.getSupportedCurrencies().entries)
-            SimpleDialogOption(
-              onPressed: () => Navigator.of(ctx).pop(entry.key),
-              child: Text(entry.value),
-            ),
-        ],
-      ),
+      builder: (ctx) {
+        final l10n = AppLocalizations.of(ctx);
+        final names = _currencyNames(l10n);
+        return SimpleDialog(
+          title: Text(l10n.selectCurrency),
+          children: [
+            for (final code
+                in LocaleDetectionService.getSupportedCurrencies().keys)
+              SimpleDialogOption(
+                onPressed: () => Navigator.of(ctx).pop(code),
+                child: Text(names[code] ?? code),
+              ),
+          ],
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) => widget.child;
 }
+
+Map<String, String> _currencyNames(AppLocalizations l10n) => {
+  'USD': l10n.currencyUSD,
+  'EUR': l10n.currencyEUR,
+  'GBP': l10n.currencyGBP,
+  'INR': l10n.currencyINR,
+  'JPY': l10n.currencyJPY,
+  'CAD': l10n.currencyCAD,
+  'AUD': l10n.currencyAUD,
+  'CHF': l10n.currencyCHF,
+  'CNY': l10n.currencyCNY,
+  'SGD': l10n.currencySGD,
+  'HKD': l10n.currencyHKD,
+  'AED': l10n.currencyAED,
+  'SAR': l10n.currencySAR,
+  'BRL': l10n.currencyBRL,
+  'MXN': l10n.currencyMXN,
+  'ZAR': l10n.currencyZAR,
+};

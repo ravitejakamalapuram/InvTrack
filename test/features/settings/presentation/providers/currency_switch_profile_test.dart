@@ -85,7 +85,7 @@ void main() {
       // Let the profile stream emit so the notifier holds the profile.
       container.listen(userProfileNotifierProvider, (_, _) {});
       await container.read(userProfileProvider.future);
-    await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       await container
           .read(currencySwitchProvider.notifier)
@@ -95,4 +95,76 @@ void main() {
       expect(repo.profile.preferredCurrency, 'EUR');
     },
   );
+
+  group('UserProfileNotifier.updateCurrency reports whether it stored', () {
+    UserProfileEntity profile() => UserProfileEntity(
+      userId: 'u1',
+      preferredCurrency: 'USD',
+      preferredLocale: 'en_US',
+      countryCode: 'US',
+      languageCode: 'en',
+      dateFormatPattern: DateFormatPattern.mdy,
+      createdAt: DateTime(2026, 10, 1),
+      updatedAt: DateTime(2026, 10, 1),
+    );
+
+    Future<ProviderContainer> open(_Repo repo, {required bool loaded}) async {
+      final container = ProviderContainer(
+        overrides: [
+          userProfileProvider.overrideWith(
+            (ref) => Stream.value(loaded ? repo.profile : null),
+          ),
+          userProfileRepositoryProvider.overrideWith((ref, id) => repo),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(userProfileNotifierProvider, (_, _) {});
+      await container.read(userProfileProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      return container;
+    }
+
+    test('true after a saved write', () async {
+      final repo = _Repo(profile());
+      final container = await open(repo, loaded: true);
+
+      final stored = await container
+          .read(userProfileNotifierProvider.notifier)
+          .updateCurrency('EUR');
+
+      expect(stored, isTrue);
+      expect(repo.profile.preferredCurrency, 'EUR');
+    });
+
+    test('false when the write fails', () async {
+      final repo = _FailingRepo(profile());
+      final container = await open(repo, loaded: true);
+
+      final stored = await container
+          .read(userProfileNotifierProvider.notifier)
+          .updateCurrency('EUR');
+
+      expect(stored, isFalse);
+    });
+
+    test('false when no profile is loaded', () async {
+      final repo = _Repo(profile());
+      final container = await open(repo, loaded: false);
+
+      final stored = await container
+          .read(userProfileNotifierProvider.notifier)
+          .updateCurrency('EUR');
+
+      expect(stored, isFalse);
+      expect(repo.profile.preferredCurrency, 'USD');
+    });
+  });
+}
+
+class _FailingRepo extends _Repo {
+  _FailingRepo(super.profile);
+
+  @override
+  Future<void> saveProfile(UserProfileEntity p) async =>
+      throw StateError('write failed');
 }

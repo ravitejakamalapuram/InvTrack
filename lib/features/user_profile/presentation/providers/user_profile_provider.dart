@@ -58,10 +58,12 @@ class UserProfileNotifier extends Notifier<AsyncValue<UserProfileEntity?>> {
     );
   }
 
-  /// Update currency preference
-  Future<void> updateCurrency(String currencyCode) async {
+  /// Update currency preference. Returns whether the profile was written;
+  /// false when no profile is loaded or the write failed (the error is kept in
+  /// [state]).
+  Future<bool> updateCurrency(String currencyCode) async {
     final currentProfile = state.value;
-    if (currentProfile == null) return;
+    if (currentProfile == null) return false;
 
     state = const AsyncValue.loading();
 
@@ -77,8 +79,10 @@ class UserProfileNotifier extends Notifier<AsyncValue<UserProfileEntity?>> {
 
       await repository.saveProfile(updatedProfile);
       state = AsyncValue.data(updatedProfile);
+      return true;
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
+      return false;
     }
   }
 

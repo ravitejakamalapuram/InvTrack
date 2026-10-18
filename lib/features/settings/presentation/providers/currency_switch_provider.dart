@@ -194,9 +194,23 @@ class CurrencySwitch extends _$CurrencySwitch {
   /// Best effort: a failed profile write must not undo a finished switch.
   Future<void> _storeOnProfile(String currency) async {
     try {
-      await ref
+      final stored = await ref
           .read(userProfileNotifierProvider.notifier)
           .updateCurrency(currency);
+      if (!stored) {
+        LoggerService.warn(
+          'Could not store the new base currency on the profile',
+          metadata: {
+            'errorType':
+                ref
+                    .read(userProfileNotifierProvider)
+                    .error
+                    ?.runtimeType
+                    .toString() ??
+                'NoLoadedProfile',
+          },
+        );
+      }
     } catch (e) {
       LoggerService.warn(
         'Could not store the new base currency on the profile',
