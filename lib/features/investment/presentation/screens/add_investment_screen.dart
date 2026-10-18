@@ -30,6 +30,7 @@ import 'package:inv_tracker/features/investment/presentation/utils/investment_am
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_template_ui.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/maturity_reminder_prompt.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/add_investment_keys.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/amount_invested_field.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/custom_type_field.dart';
@@ -530,6 +531,14 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
             ? 'Investment updated successfully'
             : 'Investment created successfully';
         AppFeedback.showSuccess(context, message);
+        if (!widget.isEditing) {
+          await askMaturityReminderIfNeeded(
+            context,
+            ref,
+            maturityDate: _maturityDate,
+          );
+        }
+        if (!mounted) return;
         context.pop(widget.isEditing ? true : null);
       }
     } catch (e) {
@@ -632,6 +641,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     // Navigator.push, which GoRouter does not know, so it is popped and the
     // detail pushed on the router: Back lands on the page that opened the
     // form, and the stack is no deeper than before.
+    await askMaturityReminderIfNeeded(
+      context,
+      ref,
+      maturityDate: investment.maturityDate,
+    );
+    if (!mounted) return;
     final router = GoRouter.of(context);
     context.safePop();
     router.push(
