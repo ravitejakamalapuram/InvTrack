@@ -103,7 +103,7 @@ void main() {
   GoogleFonts.config.allowRuntimeFetching = false;
 
   group('the goal card that could not load its progress', () {
-    const message = 'Error loading progress';
+    const message = 'Couldn\'t load progress';
 
     testWidgets('in dark: the message is the dark red', (tester) async {
       await _pump(

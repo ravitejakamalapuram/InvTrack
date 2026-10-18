@@ -10,7 +10,7 @@ InvTrack is a Flutter + Firebase (Firestore, Auth, Analytics, Crashlytics) Andro
   - `flutter analyze --fatal-warnings --no-fatal-infos`
   - `flutter test --exclude-tags=golden` (about 3.5 minutes; 1,477 tests green at the Oct 2026 review)
 - One file or test: `flutter test test/core/calculations/xirr_solver_test.dart --plain-name "name"`.
-- Generated code: `dart run build_runner build --delete-conflicting-outputs` for Riverpod `*.g.dart`. Strings live in `lib/l10n/app_en.arb`, then `flutter gen-l10n`. Never hand-edit generated files.
+- Generated code: `flutter gen-l10n && dart run build_runner build --force-jit` (gen-l10n first, or `smart_insights_provider.g.dart` is deleted; `--delete-conflicting-outputs` is ignored by build_runner 2.15; `--force-jit` avoids the failing AOT build) for Riverpod `*.g.dart`. Strings live in `lib/l10n/app_en.arb`, then `flutter gen-l10n`. Never hand-edit generated files.
 
 ## Coding standards
 

@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/screen_layout.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_carousel_card.dart';
+import 'package:inv_tracker/features/goals/presentation/widgets/goal_load_error_card.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// A card showing goals summary for the overview/dashboard screen.
@@ -83,7 +84,10 @@ class _GoalsDashboardCardState extends ConsumerState<GoalsDashboardCard> {
         return _buildGoalsCarousel(context, summary, isDark);
       },
       loading: () => _buildLoadingState(isDark),
-      error: (error, stackTrace) => const SizedBox.shrink(),
+      error: (error, stackTrace) => GoalLoadErrorCard(
+        message: AppLocalizations.of(context).goalsLoadError,
+        onRetry: () => reloadGoals(ref),
+      ),
     );
   }
 

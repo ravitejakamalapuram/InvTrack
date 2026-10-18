@@ -198,17 +198,26 @@ class GoalCard extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         SizedBox(height: AppSpacing.xxs),
-                        Text(
-                          'Error loading progress',
-                          style: AppTypography.small.copyWith(
-                            color: isDark
-                                ? AppColors.errorDark
-                                : AppColors.errorLight,
+                        Semantics(
+                          liveRegion: true,
+                          child: Text(
+                            l10n?.goalProgressLoadError ??
+                                'Couldn\'t load progress',
+                            style: AppTypography.small.copyWith(
+                              color: isDark
+                                  ? AppColors.errorDark
+                                  : AppColors.errorLight,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
+                  if (l10n != null)
+                    TextButton(
+                      onPressed: () => reloadGoals(ref),
+                      child: Text(l10n.retry),
+                    ),
                 ],
               ),
             ),

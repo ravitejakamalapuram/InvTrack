@@ -179,7 +179,7 @@ class CompactAmountText extends ConsumerWidget {
 
     if (isPrivacyMode) {
       return Semantics(
-        label: 'Hidden amount',
+        label: AppLocalizations.of(context).hiddenAmount,
         excludeSemantics: true,
         child: Text(
           '•••••',

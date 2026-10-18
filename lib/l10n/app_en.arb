@@ -5500,6 +5500,31 @@
     "description": "Label for Multiple on Invested Capital metric"
   },
 
+  "durationSpokenUnderMonth": "under 1 month",
+  "@durationSpokenUnderMonth": {
+    "description": "Screen reader wording for a holding period shorter than one month"
+  },
+
+  "durationSpokenMonths": "{count, plural, =1{1 month} other{{count} months}}",
+  "@durationSpokenMonths": {
+    "description": "Screen reader wording for a holding period of 1 to 11 months",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "durationSpokenYears": "{years} years",
+  "@durationSpokenYears": {
+    "description": "Screen reader wording for a holding period of a year or more; years is a number with one decimal, e.g. 2.3",
+    "placeholders": {
+      "years": {
+        "type": "String"
+      }
+    }
+  },
+
   "overDuration": "over {duration}",
   "@overDuration": {
     "description": "Shows duration of investment returns (e.g., 'over 2 years')",
@@ -5633,6 +5658,21 @@
   "errorLoadingInvestments": "Error loading investments",
   "@errorLoadingInvestments": {
     "description": "Error message when investments fail to load"
+  },
+
+  "goalsLoadError": "Couldn''t load your goals",
+  "@goalsLoadError": {
+    "description": "Shown with a Retry button on the Home goals card when goals fail to load"
+  },
+
+  "goalProgressLoadError": "Couldn''t load progress",
+  "@goalProgressLoadError": {
+    "description": "Shown with a Retry button on a goal card when its progress fails to load"
+  },
+
+  "goalLoadError": "Couldn''t load this goal",
+  "@goalLoadError": {
+    "description": "Shown with a Retry button on the goal details screen when the goal fails to load"
   },
 
   "errorLoadingGoals": "Error loading goals",

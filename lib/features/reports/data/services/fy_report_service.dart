@@ -261,9 +261,8 @@ class FYReportService {
       // Calculate stats
       final stats = calculateStats(investmentCFs);
 
-      // Money rule 4: an open investment with no current value is not
-      // ranked (its net cash is not a return); one that has returned its cost
-      // keeps its cash-only figures, flagged "so far".
+      // An open investment still awaiting a value has no return to rank
+      // (money rule 4); a cash-only "so far" return is a minimum and stays.
       if (investment.isOpen && stats.awaitsValue) continue;
 
       performers.add(
@@ -272,7 +271,6 @@ class FYReportService {
           absoluteReturns: stats.netCashFlow,
           xirr: stats.xirr,
           percentageGain: stats.absoluteReturn,
-          isSoFar: investment.isOpen && stats.returnsAreSoFar,
         ),
       );
     }

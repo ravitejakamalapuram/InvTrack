@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -63,6 +64,8 @@ void main() {
               sharedPreferencesProvider.overrideWithValue(prefs),
             ],
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: CashFlowCardWidget(
                   cashFlow: testCashFlow,
@@ -103,6 +106,8 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: CashFlowCardWidget(
                 cashFlow: testCashFlow,
@@ -148,6 +153,8 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: CashFlowCardWidget(
                 cashFlow: eurCashFlow,
@@ -192,6 +199,8 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: CashFlowCardWidget(
                 cashFlow: testCashFlow,
@@ -249,6 +258,8 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: CashFlowCardWidget(
                 cashFlow: usdReturn,
