@@ -776,10 +776,13 @@ class DataImportService {
       final investmentStatus =
           firstRow.investmentStatus ?? InvestmentStatus.open;
 
-      final currency = resolveSharedCurrency(
-        rows.map((r) => r.currency ?? baseCurrency),
-        baseCurrency,
-      );
+      // An explicit currency saved with the investment wins over the rows.
+      final currency = saved != null && !saved.currencyAssumed
+          ? saved.currency
+          : resolveSharedCurrency(
+              rows.map((r) => r.currency ?? baseCurrency),
+              baseCurrency,
+            );
       final routed = _routeSnapshots(
         investmentId: investmentId,
         name: investmentName,
@@ -814,7 +817,7 @@ class DataImportService {
                 name: investmentName,
                 // A guessed currency was left blank in the file: this account
                 // applies its own, as it does for rows without a file.
-                currency: saved.currencyAssumed ? currency : saved.currency,
+                currency: currency,
                 currencyAssumed: false,
                 isArchived: isArchived,
                 currentValue: mirror?.amount,
