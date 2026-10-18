@@ -1655,6 +1655,16 @@
     "description": "Overview message under the load error title, reassuring the user their data was not lost"
   },
 
+  "overviewRetryFailed": "Still couldn''t load your portfolio. Your data is safe.",
+  "@overviewRetryFailed": {
+    "description": "Overview message shown after Retry on the load error failed again"
+  },
+
+  "retrying": "Retrying",
+  "@retrying": {
+    "description": "Screen reader label for a Retry button while the reload runs"
+  },
+
   "connectionError": "Connection Error",
   "@connectionError": {
     "description": "Connection error title"
