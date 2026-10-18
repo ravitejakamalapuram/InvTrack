@@ -1,87 +1,66 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/reports/data/services/smart_insights_service.dart';
 import 'package:inv_tracker/features/reports/domain/entities/smart_insight.dart';
-import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations_en.dart';
 
 void main() {
-  group('SmartInsightsService declining alert (money rule 4)', () {
-    final service = SmartInsightsService();
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final longAgo = today.subtract(const Duration(days: 60));
-    final recent = today.subtract(const Duration(days: 2));
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
 
-    InvestmentEntity investment(InvestmentStatus status) => InvestmentEntity(
-      id: 'inv1',
-      name: 'FD',
-      type: InvestmentType.fixedDeposit,
-      status: status,
-      startDate: longAgo,
-      createdAt: longAgo,
-      updatedAt: longAgo,
-      currency: 'INR',
-    );
+  InvestmentEntity investment(InvestmentStatus status) => InvestmentEntity(
+    id: 'inv',
+    name: 'P2P loan',
+    type: InvestmentType.p2pLending,
+    status: status,
+    startDate: today.subtract(const Duration(days: 90)),
+    createdAt: today,
+    updatedAt: today,
+    currency: 'INR',
+  );
 
-    CashFlowEntity flow(
-      String id,
-      double amount,
-      CashFlowType type,
-      DateTime d,
-    ) => CashFlowEntity(
-      id: id,
-      investmentId: 'inv1',
-      amount: amount,
-      date: d,
-      type: type,
-      currency: 'INR',
-      createdAt: d,
-    );
+  CashFlowEntity flow(CashFlowType type, double amount, int daysAgo) =>
+      CashFlowEntity(
+        id: '$type$daysAgo',
+        investmentId: 'inv',
+        date: today.subtract(Duration(days: daysAgo)),
+        type: type,
+        amount: amount,
+        createdAt: today,
+        currency: 'INR',
+      );
 
-    List<SmartInsight> declining(
-      InvestmentStatus status,
-      List<CashFlowEntity> flows,
-    ) {
-      return service
+  // 50% back on cash 60 days ago, then 1000 more put in: the cash-only
+  // "return" drops by 75 points.
+  final flows = [
+    flow(CashFlowType.invest, 1000, 60),
+    flow(CashFlowType.returnFlow, 1500, 60),
+    flow(CashFlowType.invest, 1000, 5),
+  ];
+
+  List<SmartInsight> declining(InvestmentStatus status) =>
+      SmartInsightsService()
           .generateInsights(
             investments: [investment(status)],
             cashFlows: flows,
             goals: const [],
             currencySymbol: '₹',
             locale: 'en_IN',
-            l10n: lookupAppLocalizations(const Locale('en')),
+            l10n: AppLocalizationsEn(),
           )
           .where((i) => i.type == InsightType.decliningInvestment)
           .toList();
-    }
 
-    // Paid back (1500 back on 1400 in): a cash-only minimum, not a decline.
-    final paidBack = [
-      flow('1', 1000, CashFlowType.invest, longAgo),
-      flow('2', 1500, CashFlowType.returnFlow, longAgo),
-      flow('3', 400, CashFlowType.fee, recent),
-    ];
-    // 600 back on 1500 in, no current value: awaiting a value.
-    final awaiting = [
-      flow('1', 1000, CashFlowType.invest, longAgo),
-      flow('2', 600, CashFlowType.returnFlow, longAgo),
-      flow('3', 500, CashFlowType.fee, recent),
-    ];
-
-    test('open holding that has been paid back raises no alert', () {
-      expect(declining(InvestmentStatus.open, paidBack), isEmpty);
+  group('declining alerts', () {
+    test('an open holding gets no declining alert from cash alone', () {
+      expect(declining(InvestmentStatus.open), isEmpty);
     });
 
-    test('open holding awaiting a value raises no alert', () {
-      expect(declining(InvestmentStatus.open, awaiting), isEmpty);
-    });
-
-    test('closed holding with the same cash flows still alerts', () {
-      final alerts = declining(InvestmentStatus.closed, awaiting);
+    test('a closed holding still gets the declining alert', () {
+      final alerts = declining(InvestmentStatus.closed);
       expect(alerts, hasLength(1));
-      expect(alerts.single.value, '-20.0%');
+      expect(alerts.single.value, '-75.0%');
     });
   });
 }

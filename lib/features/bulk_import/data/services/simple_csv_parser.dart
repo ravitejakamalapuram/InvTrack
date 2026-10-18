@@ -19,6 +19,10 @@ class ParsedCashFlowRow {
   final InvestmentType? investmentType;
   final InvestmentStatus? investmentStatus;
 
+  /// The investment's own id, from the backup format's Investment ID column.
+  /// Null in files without it (older backups and hand-made files).
+  final String? investmentId;
+
   /// Currency code from the CSV, or the user's base currency when the cell
   /// is blank or the column is missing. Null only when the parser was not
   /// given a base currency; callers must then use the base currency.
@@ -35,6 +39,7 @@ class ParsedCashFlowRow {
     this.error,
     this.investmentType,
     this.investmentStatus,
+    this.investmentId,
   });
 
   bool get isValid => error == null;
@@ -47,7 +52,8 @@ class ParsedCashFlowRow {
       currency = null,
       notes = null,
       investmentType = null,
-      investmentStatus = null;
+      investmentStatus = null,
+      investmentId = null;
 }
 
 /// How to read a numeric date such as 05/03/2024.
@@ -453,6 +459,8 @@ class _CsvParserSession {
         map['investmentType'] = i;
       } else if (header == 'investment status') {
         map['investmentStatus'] = i;
+      } else if (header == 'investment id') {
+        map['investmentId'] = i;
       } else if (header == 'type') {
         // Cashflow type (INVEST, INCOME, RETURN, FEE)
         map['type'] = i;
@@ -496,6 +504,10 @@ class _CsvParserSession {
       final investmentStatusStr = columnMap.containsKey('investmentStatus')
           ? _getValue(values, columnMap['investmentStatus']!)
           : null;
+
+      final investmentIdStr = columnMap.containsKey('investmentId')
+          ? _getValue(values, columnMap['investmentId']!).trim()
+          : '';
 
       // Optional currency (for multi-currency support). A missing column or
       // blank cell is the user's base currency, never USD (null when the
@@ -619,6 +631,7 @@ class _CsvParserSession {
         notes: notes?.isNotEmpty == true ? notes : null,
         investmentType: investmentType,
         investmentStatus: investmentStatus,
+        investmentId: investmentIdStr.isEmpty ? null : investmentIdStr,
       );
     } catch (e) {
       return ParsedCashFlowRow.withError(
