@@ -2506,6 +2506,26 @@
       }
     }
   },
+  "maturityReminderPromptFeatureSubtitle": "Ask for notification permission after the first investment with a maturity date, not at sign-in",
+  "@maturityReminderPromptFeatureSubtitle": {
+    "description": "Debug settings subtitle of the maturity reminder prompt flag (A45)"
+  },
+  "maturityReminderTitle": "Get a reminder when this pays out?",
+  "@maturityReminderTitle": {
+    "description": "Title of the dialog asking to allow notifications after the first investment with a maturity date is saved (A45)"
+  },
+  "maturityReminderBody": "We will tell you before it matures so you do not miss it. You can change this in Settings.",
+  "@maturityReminderBody": {
+    "description": "Body of the maturity reminder dialog (A45)"
+  },
+  "maturityReminderAccept": "Remind me",
+  "@maturityReminderAccept": {
+    "description": "Button that asks the system for notification permission (A45)"
+  },
+  "maturityReminderDecline": "Not now",
+  "@maturityReminderDecline": {
+    "description": "Button that dismisses the maturity reminder dialog without asking the system (A45)"
+  },
   "investmentCreated": "Investment created successfully",
   "@investmentCreated": {
     "description": "Message shown after an investment was added and the server confirmed it (A40)"

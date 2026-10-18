@@ -66,7 +66,13 @@ enum FeatureFlag {
   ///   investment with its first cash flow in one write
   /// - Off by default; it ships by changing the default in a release PR, and
   ///   release builds read only that default
-  firstInvestmentFlow('first_investment_flow', 'First Investment Flow');
+  firstInvestmentFlow('first_investment_flow', 'First Investment Flow'),
+
+  /// Notification permission asked after the first investment with a maturity
+  /// date instead of at sign-in (A45, #788).
+  /// - Off by default; flag off keeps the ask at sign-in. It ships by changing
+  ///   the default in a release PR
+  maturityReminderPrompt('maturity_reminder_prompt', 'Maturity Reminder Prompt');
 
   const FeatureFlag(this.key, this.displayName, {this.defaultEnabled = false});
 
@@ -252,6 +258,15 @@ final isFirstInvestmentFlowEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.firstInvestmentFlow] ?? false,
+    ),
+  );
+});
+
+/// Convenience provider for the maturity reminder prompt (A45)
+final isMaturityReminderPromptEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagsProvider.select(
+      (flags) => flags[FeatureFlag.maturityReminderPrompt] ?? false,
     ),
   );
 });
