@@ -52,8 +52,11 @@ void main() {
     if (s.contains('AED') || s.contains('SAR')) {
       return http.Response('{"message":"not found"}', 404);
     }
+    // The latest and the dated USD->INR rates differ, so a test can tell
+    // which one was fetched.
     if (s.contains('base=USD&symbols=INR')) {
-      return http.Response('{"rates":{"INR":83.5}}', 200);
+      final rate = u.path.endsWith('/2024-01-15') ? 80.0 : 83.5;
+      return http.Response('{"rates":{"INR":$rate}}', 200);
     }
     return http.Response('nope', 500);
   }
@@ -73,7 +76,7 @@ void main() {
     test('SAR -> INR historical = USDINR / 3.75', () async {
       final s = build(frankfurter);
       final r = await s.getHistoricalRate(DateTime(2024, 1, 15), 'SAR', 'INR');
-      expect(r, closeTo(83.5 / 3.75, 1e-6));
+      expect(r, closeTo(80.0 / 3.75, 1e-6));
     });
 
     test('INR -> AED = 3.6725 / USDINR', () async {
@@ -93,9 +96,34 @@ void main() {
       expect(await s.getLiveRate('USD', 'SAR'), closeTo(3.75, 1e-6));
     });
 
-    test('an unrelated failing pair still throws (no invented rate)', () async {
-      final s = build((_) => http.Response('nope', 500));
-      await expectLater(s.getLiveRate('EUR', 'INR'), throwsA(anything));
+    test('pairs made only of pegs and USD make no request at all', () async {
+      var requests = 0;
+      final s = build((_) {
+        requests++;
+        return http.Response('nope', 500);
+      });
+      expect(await s.getLiveRate('AED', 'SAR'), closeTo(3.75 / 3.6725, 1e-6));
+      expect(await s.getLiveRate('USD', 'AED'), closeTo(3.6725, 1e-6));
+      expect(
+        await s.getHistoricalRate(DateTime(2024, 1, 15), 'SAR', 'USD'),
+        closeTo(1 / 3.75, 1e-6),
+      );
+      expect(requests, 0);
+    });
+
+    test('a zero or negative USD quote is rejected, not divided by', () async {
+      // No Frankfurter rate for AED; the USD cross for INR is bad.
+      http.Response badCross(double quote) =>
+          http.Response('{"rates":{"INR":$quote}}', 200);
+      for (final quote in [0.0, -83.5]) {
+        final s = build(
+          (u) => u.toString().contains('AED')
+              ? http.Response('nope', 404)
+              : badCross(quote),
+        );
+        await expectLater(s.getLiveRate('AED', 'INR'), throwsA(anything));
+        await expectLater(s.getLiveRate('INR', 'AED'), throwsA(anything));
+      }
     });
   });
 
