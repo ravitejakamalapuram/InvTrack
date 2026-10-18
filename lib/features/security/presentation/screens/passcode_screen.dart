@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
@@ -487,14 +488,21 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
               child: Text(l10n.passcodeForgotPin),
             ),
           if (canProveIdentity && security.storageFailed)
-            TextButton(
-              onPressed: () => ref.read(authRepositoryProvider).signOut(),
-              child: Text(l10n.signOut),
-            ),
+            TextButton(onPressed: _signOut, child: Text(l10n.signOut)),
         ],
       ),
       const SizedBox(height: 8),
     ];
+  }
+
+  Future<void> _signOut() async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      await ref.read(authRepositoryProvider).signOut();
+    } catch (e) {
+      LoggerService.warn('Lock screen sign-out failed', error: e);
+      if (mounted) AppFeedback.showError(context, l10n.pleaseTryAgain);
+    }
   }
 
   Future<void> _forgotPin() async {

@@ -17,6 +17,20 @@ import '../../../../mocks/fake_auth_repository.dart';
 import '../../../../mocks/mock_analytics_service.dart';
 import '../../../../mocks/mock_security_service.dart';
 
+/// Secure storage that cannot delete, like a broken keystore.
+class _FailingDeleteSecureStorage extends FakeFlutterSecureStorage {
+  @override
+  Future<void> delete({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) => throw PlatformException(code: 'keystore');
+}
+
 /// Secure storage whose reads never answer, like a hung keystore.
 class _HangingSecureStorage extends FakeFlutterSecureStorage {
   @override
@@ -208,6 +222,30 @@ void main() {
         expect(state.isLocked, isFalse);
         expect(state.storageFailed, isFalse);
         expect(prefs.getBool('has_pin'), isFalse);
+      });
+
+      test('forgotPin still clears the mirror and unlocks when the keystore '
+          'cannot delete the PIN', () async {
+        await prefs.setBool('has_pin', true);
+        final auth = FakeAuthRepository(googleUser);
+        container = createContainer(
+          auth: auth,
+          customService: SecurityService(
+            _FailingDeleteSecureStorage(),
+            fakeLocalAuth,
+            prefs,
+          ),
+        );
+        container.read(securityProvider);
+        await pumpEventQueue();
+
+        final ok = await container.read(securityProvider.notifier).forgotPin();
+
+        expect(ok, isTrue);
+        expect(prefs.getBool('has_pin'), isFalse);
+        final state = container.read(securityProvider);
+        expect(state.isLocked, isFalse);
+        expect(state.hasPin, isFalse);
       });
 
       test(
