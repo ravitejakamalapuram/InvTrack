@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,9 +25,10 @@ Future<void> askMaturityReminderIfNeeded(
 }) async {
   final SharedPreferences prefs;
   try {
+    if (!ref.read(isMaturityReminderPromptEnabledProvider)) return;
     prefs = ref.read(sharedPreferencesProvider);
   } catch (_) {
-    // A saved investment never waits on a missing preference store.
+    // A saved investment never waits on a missing flag or preference store.
     return;
   }
   if (!shouldAskMaturityReminder(prefs, maturityDate)) return;
@@ -50,6 +53,13 @@ Future<void> askMaturityReminderIfNeeded(
     ),
   );
 
-  await prefs.setBool(_askedKey, true);
-  if (accepted == true) await service.requestPermissions();
+  // Dismissed without a choice: ask again on a later save.
+  if (accepted == null) return;
+  // Nothing here may fail a saved investment.
+  try {
+    await prefs.setBool(_askedKey, true);
+    if (accepted) await service.requestPermissions();
+  } catch (e) {
+    LoggerService.warn('Maturity reminder opt-in failed', error: e);
+  }
 }

@@ -171,6 +171,26 @@ class FeatureFlagsSection extends ConsumerWidget {
           },
         ),
 
+        // Notification permission after the first dated investment (A45)
+        SettingsToggleTile(
+          icon: Icons.notifications_active_outlined,
+          iconColor: AppColors.primaryLight,
+          title: FeatureFlag.maturityReminderPrompt.displayName,
+          subtitle: l10n.maturityReminderPromptFeatureSubtitle,
+          value: featureFlags[FeatureFlag.maturityReminderPrompt] ?? false,
+          onChanged: (value) async {
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.maturityReminderPrompt);
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
+            }
+          },
+        ),
+
         // Play review prompt feature flag
         SettingsToggleTile(
           icon: Icons.star_outline,
