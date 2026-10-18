@@ -106,6 +106,9 @@ void main() {
       final zip = await export.exportAsZipBytes();
 
       await repo.bulkDelete(['a']);
+      // Restore into an account with no valuations, so only the import can
+      // put the snapshot back.
+      valuations.docs.clear();
       final result = await import.importFromZip(
         zip.bytes,
         ImportStrategy.replace,
@@ -118,6 +121,8 @@ void main() {
       final restored = await valuations.getAll();
       expect(restored.where((s) => s.isLive), hasLength(1));
       expect(restored.single.currency, 'USD');
+      expect(restored.single.investmentId, back.id);
+      expect(restored.single.amount, 1100);
       expect(back.currentValue, 1100);
     },
   );
