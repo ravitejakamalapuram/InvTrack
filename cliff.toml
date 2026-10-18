@@ -33,25 +33,27 @@ footer = ""
 trim = true
 
 [git]
+# Strip ticket tags such as [A82] or [#981, #918] and the trailing PR number (#1044)
+commit_preprocessors = [
+    { pattern = '\s*\[[^\]]*\]', replace = "" },
+    { pattern = '\s*\(#\d+\)', replace = "" },
+]
+
 # Parse conventional commits
 conventional_commits = true
 filter_unconventional = true
 split_commits = false
 
-# Process commits in chronological order
+# Only fix/feat/perf reach users, and only with a user-facing scope.
+# Scopes below are CI, store-listing, analytics and build plumbing.
 commit_parsers = [
+    { message = '^(feat|fix|perf)\((ci|cd|build|deps|listing|release|analytics|test|tests|codegen|security-ci)\)', skip = true },
     { message = "^feat", group = "✨ Features" },
     { message = "^fix", group = "🐛 Bug Fixes" },
-    { message = "^doc", group = "📚 Documentation" },
     { message = "^perf", group = "⚡ Performance" },
-    { message = "^refactor", group = "♻️ Refactoring" },
-    { message = "^style", group = "🎨 Styling" },
-    { message = "^test", group = "🧪 Testing" },
-    { message = "^chore\\(release\\)", skip = true },
-    { message = "^chore\\(deps\\)", skip = true },
-    { message = "^chore", group = "🔧 Miscellaneous" },
-    { message = "^ci", group = "👷 CI/CD" },
     { body = ".*security", group = "🔒 Security" },
+    # Everything else (docs, refactor, style, test, chore, ci) is internal
+    { message = ".*", skip = true },
 ]
 
 # Filter out certain commits
