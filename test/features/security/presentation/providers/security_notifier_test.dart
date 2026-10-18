@@ -269,6 +269,42 @@ void main() {
         },
       );
 
+      test('forgotPin needs the phone screen lock before the Google check, '
+          'and keeps the PIN when it is refused', () async {
+        await prefs.setBool('has_pin', true);
+        await fakeSecureStorage.write(key: 'user_pin', value: 'hash');
+        fakeLocalAuth.authenticateResult = false;
+        final auth = FakeAuthRepository(googleUser);
+        container = createContainer(auth: auth);
+        container.read(securityProvider);
+        await pumpEventQueue();
+
+        final ok = await container.read(securityProvider.notifier).forgotPin();
+
+        expect(ok, isFalse);
+        expect(fakeLocalAuth.authenticateCallCount, 1);
+        expect(auth.reauthenticateCalls, 0);
+        expect(container.read(securityProvider).isLocked, isTrue);
+        expect(prefs.getBool('has_pin'), isTrue);
+      });
+
+      test('forgotPin is refused on a phone with no screen lock', () async {
+        await prefs.setBool('has_pin', true);
+        await fakeSecureStorage.write(key: 'user_pin', value: 'hash');
+        fakeLocalAuth.isDeviceSupportedValue = false;
+        final auth = FakeAuthRepository(googleUser);
+        container = createContainer(auth: auth);
+        container.read(securityProvider);
+        await pumpEventQueue();
+
+        final ok = await container.read(securityProvider.notifier).forgotPin();
+
+        expect(ok, isFalse);
+        expect(fakeLocalAuth.authenticateCallCount, 0);
+        expect(auth.reauthenticateCalls, 0);
+        expect(prefs.getBool('has_pin'), isTrue);
+      });
+
       test('forgotPin does nothing for a guest', () async {
         await prefs.setBool('has_pin', true);
         await fakeSecureStorage.write(key: 'user_pin', value: 'hash');

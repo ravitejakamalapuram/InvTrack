@@ -1264,9 +1264,9 @@
     "description": "Lock screen button: confirm with the signed-in Google account, then remove the PIN"
   },
 
-  "passcodeForgotPinFailed": "We couldn''t confirm your Google account, so the PIN is still set.",
+  "passcodeForgotPinFailed": "We couldn''t confirm it''s you, so the PIN is still set. Forgot PIN needs your phone''s screen lock and your Google account.",
   "@passcodeForgotPinFailed": {
-    "description": "Lock screen message when Forgot PIN re-authentication is cancelled or fails"
+    "description": "Lock screen message when Forgot PIN fails: the phone screen lock is missing or refused, or Google re-authentication is cancelled or fails"
   },
 
   "passcodeStorageFailed": "We can''t check your PIN right now. Try again, or sign out.",

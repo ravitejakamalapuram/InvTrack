@@ -453,6 +453,23 @@ class SecurityService {
     return canCheck && isDeviceSupported;
   }
 
+  /// Asks for the phone's own screen lock (PIN, pattern, password or
+  /// biometric). False when the phone has none or the user cancels.
+  Future<bool> authenticateWithDeviceLock() async {
+    try {
+      if (!await _localAuth.isDeviceSupported()) return false;
+      return await _localAuth.authenticate(
+        localizedReason: 'Confirm it is you to reset the InvTrack PIN',
+      );
+    } catch (e) {
+      LoggerService.warn(
+        'Device lock check failed',
+        metadata: {'errorType': e.runtimeType.toString()},
+      );
+      return false;
+    }
+  }
+
   Future<bool> authenticateWithBiometrics() async {
     try {
       // Check if biometrics are available before attempting auth

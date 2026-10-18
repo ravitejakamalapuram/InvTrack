@@ -237,13 +237,16 @@ class SecurityNotifier extends Notifier<SecurityState>
     return _init(_readHasPinMirror());
   }
 
-  /// "Forgot PIN?": the signed-in Google account proves who the user is, then
-  /// the PIN and its mirror are removed. Guests have no account to prove it
+  /// "Forgot PIN?": the phone's screen lock and the signed-in Google account
+  /// both prove who the user is, then the PIN and its mirror are removed. Guests have no account to prove it
   /// with, so they never get this. Returns whether the PIN was removed.
   Future<bool> forgotPin() async {
     final auth = ref.read(authRepositoryProvider);
     final user = auth.currentUser;
     if (user == null || user.isAnonymous) return false;
+    // The Google account picker may not ask for a password, so anyone holding
+    // the phone could skip the PIN. The phone's own screen lock closes that.
+    if (!await _service.authenticateWithDeviceLock()) return false;
     try {
       if (!await auth.reauthenticateWithGoogle()) return false;
     } catch (e) {
