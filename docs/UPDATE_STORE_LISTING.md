@@ -29,3 +29,7 @@ screenshots) stay as they are on Play. The workflow shares the release lock, so 
 a release.
 
 Reference: [release-platform → Store listings](https://github.com/ravitejakamalapuram/release-platform#store-listings).
+
+## Release notes
+
+`release.yaml` sends `CHANGELOG.md` to Play as "What's new". Nothing regenerates it, so before each release run `git cliff --config cliff.toml -o CHANGELOG.md` and merge the result. Only feat, fix and perf commits appear; write user-facing commit titles.
