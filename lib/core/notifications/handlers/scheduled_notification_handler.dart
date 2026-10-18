@@ -179,6 +179,10 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     required int needingValue,
   }) async {
     await ensureInitialized();
+    if (monthlySummaryEnabled &&
+        shouldKeepDueRecap(now, await _plugin.pendingNotificationRequests())) {
+      return;
+    }
     await _plugin.cancel(id: NotificationIds.monthlySummary);
     if (!monthlySummaryEnabled) return;
 
@@ -213,6 +217,20 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       ),
     );
   }
+
+  /// Opening the app before 10:00 on the 1st must not replace last month's
+  /// recap, which is due later that morning.
+  static bool shouldKeepDueRecap(
+    DateTime now,
+    List<PendingNotificationRequest> pending,
+  ) =>
+      now.day == 1 &&
+      now.hour < 10 &&
+      pending.any(
+        (r) =>
+            r.id == NotificationIds.monthlySummary &&
+            (r.payload?.startsWith('monthly_recap:') ?? false),
+      );
 
   // ============ Tax Reminder Notifications ============
 

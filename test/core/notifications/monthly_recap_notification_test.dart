@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:inv_tracker/core/notifications/notification_constants.dart';
 import 'package:inv_tracker/core/notifications/handlers/scheduled_notification_handler.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 
@@ -53,5 +55,62 @@ void main() {
 
     expect(payload.type, NotificationPayloadType.monthlyRecap);
     expect(payload.params['month'], '2026-10');
+  });
+
+  group('keeping a due recap', () {
+    const recap = PendingNotificationRequest(
+      NotificationIds.monthlySummary,
+      'title',
+      'body',
+      'monthly_recap:2026-09',
+    );
+    const legacy = PendingNotificationRequest(
+      NotificationIds.monthlySummary,
+      'title',
+      'body',
+      'monthly_summary',
+    );
+
+    test(
+      'keeps last month\'s recap when the app opens before 10:00 on the 1st',
+      () {
+        expect(
+          ScheduledNotificationHandler.shouldKeepDueRecap(
+            DateTime(2026, 10, 1, 8),
+            [recap],
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    test('replaces it from 10:00 on the 1st and on any other day', () {
+      expect(
+        ScheduledNotificationHandler.shouldKeepDueRecap(
+          DateTime(2026, 10, 1, 10),
+          [recap],
+        ),
+        isFalse,
+      );
+      expect(
+        ScheduledNotificationHandler.shouldKeepDueRecap(
+          DateTime(2026, 10, 2, 8),
+          [recap],
+        ),
+        isFalse,
+      );
+    });
+
+    test('replaces a pending legacy summary or nothing', () {
+      final early = DateTime(2026, 10, 1, 8);
+      expect(
+        ScheduledNotificationHandler.shouldKeepDueRecap(early, [legacy]),
+        isFalse,
+      );
+      expect(
+        ScheduledNotificationHandler.shouldKeepDueRecap(early, []),
+        isFalse,
+      );
+    });
   });
 }
