@@ -1,6 +1,6 @@
-# Reports and digest engine: PLAN, awaiting confirmation
+# Reports and digest engine: PLAN, confirmed
 
-> **Status: plan only, 2026-10-18. Nothing is deleted or built from this until Raviteja confirms.**
+> **Status: confirmed by Raviteja on 2026-10-18: phased replace, monthly digest first.**
 
 Grounded in current `main` (`950190c`) and `docs/review-2026-10/ACTION_PLAN.md`.
 
