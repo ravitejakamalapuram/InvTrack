@@ -1,9 +1,8 @@
 name: crash-issues
 
-# Files one GitHub issue (label `crash`) per new Crashlytics crash, with the stack trace, so the issue
-# loop can fix it. Needs the repo secret FIREBASE_CRASH_SA_JSON (service account with the Firebase
-# Crashlytics Viewer role). Without it the job exits cleanly. Dedupe is by the Crashlytics issue id
-# stored in each issue body. Dispatch with dry_run to print what would be filed.
+# Files one GitHub issue (label `crash`) per new Crashlytics crash, with the stack trace, so the
+# issue loop can fix it. The logic lives in release-platform's reusable crash-issues.yml (keyless:
+# release-bot needs the Firebase Crashlytics Viewer role on invtracker-b19d1).
 on:
   schedule:
     - cron: '23 2 * * *' # 02:23 UTC = 07:53 IST
@@ -14,31 +13,16 @@ on:
         type: boolean
         default: true
 
-concurrency:
-  group: crash-issues
-  cancel-in-progress: false
-
 permissions: {}
 
 jobs:
-  file:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+  crash-issues:
     permissions:
       contents: read
       issues: write
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: 22
-      - name: Test
-        run: node --test scripts/crashlytics/test/*.test.mjs
-      - name: File crash issues
-        env:
-          FIREBASE_CRASH_SA_JSON: ${{ secrets.FIREBASE_CRASH_SA_JSON }}
-          GITHUB_TOKEN: ${{ github.token }}
-          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
-        run: node scripts/crashlytics/file-crash-issues.mjs
+      id-token: write
+    uses: ravitejakamalapuram/release-platform/.github/workflows/crash-issues.yml@v2
+    with:
+      firebase_project: invtracker-b19d1
+      firebase_app_id: '1:784857267556:android:5ba7e064263d78f61dce71'
+      dry_run: ${{ inputs.dry_run == true }}

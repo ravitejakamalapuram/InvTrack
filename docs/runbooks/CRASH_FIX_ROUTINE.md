@@ -2,11 +2,11 @@
 
 Two parts: a GitHub Action files crashes as issues, and the daily scheduled session fixes the open ones. The session never fetches from Crashlytics.
 
-## Part 1: filing (GitHub Action)
+## Part 1: filing (shared GitHub Action)
 
-`.github/workflows/crash-issues.yml` runs daily at 07:53 IST (and on demand, dry run by default). `scripts/crashlytics/file-crash-issues.mjs` reads the Crashlytics REST API (`firebasecrashlytics.googleapis.com/v1alpha`, project `invtracker-b19d1`) with a read-only service account, takes fatal crashes and ANRs from the last 7 days that are not closed, and files up to 5 new issues per run. Each issue is labelled `crash`, titled `[crash <id8>] <title>`, and holds the counts, first/last seen versions, device/OS/app version of the latest sample, the stack trace and the last log lines. A hidden marker `crashlytics-issue:<full id>` in the body dedupes across runs, open or closed. User, installation, session and event ids and custom keys are never copied (rule 7 in `CLAUDE.md`).
+`.github/workflows/crash-issues.yml` runs daily at 07:53 IST (and on demand, dry run by default) and calls release-platform's reusable `crash-issues.yml`, shared by every app. It reads the Crashlytics REST API with release-bot (keyless, no secret), takes fatal crashes and ANRs from the last 7 days that are not closed, and files up to 5 new issues per run, labelled `crash`, titled `[crash <id8>] <title>`, with counts, first/last seen versions, device/OS/app version of the latest sample, the stack trace and the last log lines. A hidden marker `crashlytics-issue:<full id>` in the body dedupes across runs, open or closed. User, installation, session and event ids and custom keys are never copied (rule 7 in `CLAUDE.md`).
 
-One-time setup (owner): Google Cloud console, project `invtracker-b19d1`, create service account `crash-triage` with role Firebase Crashlytics Viewer, create a JSON key, and add its full text as the GitHub Actions repository secret `FIREBASE_CRASH_SA_JSON`. Then run the workflow once with dry run on, and again with it off.
+One-time setup (owner): grant `release-bot@rk-release-platform.iam.gserviceaccount.com` the Firebase Crashlytics Viewer role on `invtracker-b19d1`, and enable the Firebase Crashlytics API once in `rk-release-platform`. Then run the workflow with dry run on, and again with it off.
 
 ## Part 2: fixing (daily scheduled session)
 
