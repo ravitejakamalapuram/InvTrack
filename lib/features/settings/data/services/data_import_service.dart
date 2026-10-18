@@ -335,6 +335,8 @@ class DataImportService {
     }
     final investmentCustomTypes =
         customTypes?.links ?? const <(bool, String), _ImportedCustomTypeRef>{};
+    final investmentCustomTypesById =
+        customTypes?.linksById ?? const <String, _ImportedCustomTypeRef>{};
 
     // Import cashflows (active)
     if (cashflows != null) {
@@ -347,6 +349,7 @@ class DataImportService {
         snapshots: snapshots,
         backedUpInvestments: backedUpInvestments,
         customTypeRefs: investmentCustomTypes,
+        customTypeRefsById: investmentCustomTypesById,
         customTypesByKey: customTypesByKey,
       );
       investmentsImported += result.investmentsCreated;
@@ -368,6 +371,7 @@ class DataImportService {
         snapshots: snapshots,
         backedUpInvestments: backedUpInvestments,
         customTypeRefs: investmentCustomTypes,
+        customTypeRefsById: investmentCustomTypesById,
         customTypesByKey: customTypesByKey,
       );
       investmentsImported += result.investmentsCreated;
@@ -674,6 +678,7 @@ class DataImportService {
     required List<InvestmentValuationSnapshot> snapshots,
     Map<String, InvestmentEntity> backedUpInvestments = const {},
     Map<(bool, String), _ImportedCustomTypeRef> customTypeRefs = const {},
+    Map<String, _ImportedCustomTypeRef> customTypeRefsById = const {},
     Map<String, CustomInvestmentType> customTypesByKey = const {},
   }) async {
     if (parseResult.validRows == 0) {
@@ -743,9 +748,10 @@ class DataImportService {
       final investmentName = rows.first.investmentName;
 
       // The valuations of this investment go with it, or are dropped with it.
-      final valuationRows =
-          valuations.remove((isArchived, investmentName.toLowerCase())) ??
-          const <_ImportedValuation>[];
+      final valuationRows = _takeValuations(valuations, (
+        isArchived,
+        investmentName.toLowerCase(),
+      ), id: saved?.id);
 
       // Skip if merging and investment already exists
       // An investment kept apart by id is skipped when its id exists, or when
@@ -802,8 +808,12 @@ class DataImportService {
         currency: currency,
       );
 
+      // A file that names its investments by id says which ones have a type;
+      // an older file, or an investment the backup does not know, goes by name.
       final customType = _customTypeOf(
-        customTypeRefs[(isArchived, investmentName.toLowerCase())],
+        saved != null && customTypeRefsById.isNotEmpty
+            ? customTypeRefsById[saved.id]
+            : customTypeRefs[(isArchived, investmentName.toLowerCase())],
         investmentName: investmentName,
         type: investmentType,
         typesByKey: customTypesByKey,
@@ -891,7 +901,9 @@ class DataImportService {
   static final _snapshotIdPattern = RegExp(r'^[A-Za-z0-9_-]{1,64}$');
 
   /// Parses valuations.csv into rows keyed by (archived, lowercase
-  /// investment name), the way cash flow rows name their investment. Files
+  /// investment name), the way cash flow rows name their investment; each row
+  /// also keeps its Investment ID, which tells same-name investments apart.
+  /// Files
   /// from before the Snapshot ID, Kind, Source, Updated At, Investment Type
   /// and Investment Status columns read as manual carrying values. A bad row
   /// is skipped with a warning that holds no amount; an unknown kind or
@@ -927,6 +939,7 @@ class DataImportService {
     final updatedCol = header.indexOf('Updated At');
     final typeCol = header.indexOf('Investment Type');
     final statusCol = header.indexOf('Investment Status');
+    final investmentIdCol = header.indexOf('Investment ID');
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -990,6 +1003,9 @@ class DataImportService {
               investmentStatus: cell(statusCol).isEmpty
                   ? null
                   : InvestmentStatus.fromString(cell(statusCol)),
+              investmentId: cell(investmentIdCol).isEmpty
+                  ? null
+                  : cell(investmentIdCol),
             ),
           );
     }
@@ -1087,6 +1103,38 @@ class DataImportService {
     return accepted;
   }
 
+  /// Takes the rows of one investment out of [valuations] and returns them. An
+  /// investment kept apart by [id] takes the rows that name its id and those
+  /// of files from before ids; without an [id] it takes every row of the name,
+  /// as such backups always did.
+  List<_ImportedValuation> _takeValuations(
+    Map<(bool, String), List<_ImportedValuation>> valuations,
+    (bool, String) key, {
+    String? id,
+  }) {
+    final all = valuations[key];
+    if (all == null) return const [];
+    if (id == null) {
+      valuations.remove(key);
+      return all;
+    }
+    bool isMine(_ImportedValuation r) =>
+        r.investmentId == null || r.investmentId == id;
+    final rest = [
+      for (final r in all)
+        if (!isMine(r)) r,
+    ];
+    if (rest.isEmpty) {
+      valuations.remove(key);
+    } else {
+      valuations[key] = rest;
+    }
+    return [
+      for (final r in all)
+        if (isMine(r)) r,
+    ];
+  }
+
   /// Creates the investments that valuations name but no cash flow does (an
   /// opening baseline has none), from the Investment Type and Investment
   /// Status of their rows, and adds their snapshots. [valuations] holds the
@@ -1110,8 +1158,14 @@ class DataImportService {
     final now = DateTime.now();
     final investments = <InvestmentEntity>[];
     final nameToId = <String, String>{};
-    for (final MapEntry(key: (isArchived, nameKey), value: rows)
-        in valuations.entries) {
+    // Rows of the same name stay apart by investment id.
+    final groups = <(bool, String, List<_ImportedValuation>)>[
+      for (final MapEntry(key: (isArchived, nameKey), value: rows)
+          in valuations.entries)
+        for (final part in _splitByInvestment(rows))
+          (isArchived, nameKey, part),
+    ];
+    for (final (isArchived, nameKey, rows) in groups) {
       final name = rows.first.name;
       if (strategy == ImportStrategy.merge && existingNames.contains(nameKey)) {
         warnings.add('Skipped "$name" - already exists');
@@ -1172,6 +1226,16 @@ class DataImportService {
     return nameToId;
   }
 
+  List<List<_ImportedValuation>> _splitByInvestment(
+    List<_ImportedValuation> rows,
+  ) {
+    final byId = <String, List<_ImportedValuation>>{};
+    for (final r in rows) {
+      byId.putIfAbsent(r.investmentId ?? '', () => []).add(r);
+    }
+    return byId.values.toList();
+  }
+
   /// Reads investments.json (see `DataExportService`): the backed-up
   /// investments by id. Null if the file is damaged: not JSON, not an object,
   /// written by a newer version of the app, without the list the exporter
@@ -1212,7 +1276,8 @@ class DataImportService {
 
   /// Reads custom_types.json (see `DataExportService`): the reusable types
   /// and the custom type label of each Other investment, keyed by (archived,
-  /// lowercase investment name) the way valuations are. Null if the file is
+  /// lowercase investment name) and, when the file has one, by investment id.
+  /// Null if the file is
   /// damaged: not JSON, not an object, without the two lists the exporter
   /// always writes, or with rows but none of them readable. A row of the wrong
   /// shape among readable ones is skipped, and a file with empty lists has
@@ -1237,6 +1302,7 @@ class DataImportService {
       );
     }
     final links = <(bool, String), _ImportedCustomTypeRef>{};
+    final linksById = <String, _ImportedCustomTypeRef>{};
     for (final row in rawLinks) {
       final name = row is Map ? row['name'] : null;
       final label = row is Map ? row['label'] : null;
@@ -1248,11 +1314,20 @@ class DataImportService {
         badRows++;
         continue;
       }
-      links[(row['archived'] == true, name.trim().toLowerCase())] =
-          _ImportedCustomTypeRef(label: label, linked: row['linked'] == true);
+      final ref = _ImportedCustomTypeRef(
+        label: label,
+        linked: row['linked'] == true,
+      );
+      links[(row['archived'] == true, name.trim().toLowerCase())] = ref;
+      final id = row['investmentId'];
+      if (id is String && id.isNotEmpty) linksById[id] = ref;
     }
     if (types.isEmpty && links.isEmpty && badRows > 0) return null;
-    return _ImportedCustomTypes(types: types, links: links);
+    return _ImportedCustomTypes(
+      types: types,
+      links: links,
+      linksById: linksById,
+    );
   }
 
   /// Saves the reusable types of an import and returns them by key. A type
@@ -1528,6 +1603,9 @@ class _ImportedValuation {
   final InvestmentType? investmentType;
   final InvestmentStatus? investmentStatus;
 
+  /// The Investment ID column; null in files from before it existed.
+  final String? investmentId;
+
   const _ImportedValuation({
     required this.name,
     required this.value,
@@ -1539,6 +1617,7 @@ class _ImportedValuation {
     this.updatedAt,
     this.investmentType,
     this.investmentStatus,
+    this.investmentId,
   });
 }
 
@@ -1549,7 +1628,14 @@ class _ImportedCustomTypes {
   /// The custom type label of each investment, by (archived, lowercase name).
   final Map<(bool, String), _ImportedCustomTypeRef> links;
 
-  const _ImportedCustomTypes({required this.types, required this.links});
+  /// The same, by investment id, for files that name investments that way.
+  final Map<String, _ImportedCustomTypeRef> linksById;
+
+  const _ImportedCustomTypes({
+    required this.types,
+    required this.links,
+    this.linksById = const {},
+  });
 }
 
 /// A reusable custom type read from custom_types.json.

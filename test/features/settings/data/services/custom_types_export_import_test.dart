@@ -262,7 +262,13 @@ void main() {
       {'label': 'Stamps', 'removed': false},
     ]);
     expect(file['investments'], [
-      {'name': 'Album', 'archived': false, 'label': 'Stamps', 'linked': false},
+      {
+        'name': 'Album',
+        'investmentId': 'a',
+        'archived': false,
+        'label': 'Stamps',
+        'linked': false,
+      },
     ]);
     final metadata =
         jsonDecode(
