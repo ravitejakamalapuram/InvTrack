@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -399,6 +400,16 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final security = ref.watch(securityProvider);
+    final user = ref.watch(authStateProvider).value;
+    final canProveIdentity = user != null && !user.isAnonymous;
+    final isUnlock = widget.mode == PasscodeMode.unlock;
+    final message = isUnlock && security.storageFailed
+        ? (canProveIdentity
+              ? l10n.passcodeStorageFailed
+              : l10n.passcodeStorageFailedGuest)
+        : _message;
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
@@ -412,7 +423,8 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
             ),
             const SizedBox(height: 24),
             Text(
-              _message,
+              message,
+              textAlign: TextAlign.center,
               style: AppTypography.h3.copyWith(
                 color: _isError ? Colors.red : AppColors.textPrimaryLight,
               ),
@@ -435,12 +447,53 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
               }),
             ),
             const Spacer(),
+            if (isUnlock) ..._buildWayOut(security, canProveIdentity),
             _buildKeypad(),
             const SizedBox(height: 40),
           ],
         ),
       ),
     );
+  }
+
+  /// Ways out of the lock when the PIN cannot be used. A guest has no
+  /// account to prove who they are, and signing out would delete their only
+  /// copy of the data, so a guest only gets Retry.
+  List<Widget> _buildWayOut(SecurityState security, bool canProveIdentity) {
+    final l10n = AppLocalizations.of(context);
+    final notifier = ref.read(securityProvider.notifier);
+    return [
+      Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        children: [
+          if (security.storageFailed)
+            TextButton(onPressed: notifier.retryInit, child: Text(l10n.retry)),
+          if (canProveIdentity)
+            TextButton(
+              onPressed: _forgotPin,
+              child: Text(l10n.passcodeForgotPin),
+            ),
+          if (canProveIdentity && security.storageFailed)
+            TextButton(
+              onPressed: () => ref.read(authRepositoryProvider).signOut(),
+              child: Text(l10n.signOut),
+            ),
+        ],
+      ),
+      const SizedBox(height: 8),
+    ];
+  }
+
+  Future<void> _forgotPin() async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final removed = await ref.read(securityProvider.notifier).forgotPin();
+    if (!removed && mounted) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.passcodeForgotPinFailed)),
+      );
+    }
   }
 
   Widget _buildKeypad() {

@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
+import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/security/data/services/security_service.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
@@ -10,6 +12,7 @@ import 'package:inv_tracker/features/settings/presentation/providers/settings_pr
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../mocks/fake_auth_repository.dart';
 import '../../../../mocks/mock_security_service.dart';
 
 // Mock SecurityNotifier
@@ -22,6 +25,16 @@ class MockSecurityNotifier extends SecurityNotifier {
       isBiometricAvailable: false,
     );
   }
+}
+
+class _FailedStorageNotifier extends SecurityNotifier {
+  _FailedStorageNotifier({required this.storageFailed});
+
+  final bool storageFailed;
+
+  @override
+  SecurityState build() =>
+      SecurityState(isLocked: true, hasPin: true, storageFailed: storageFailed);
 }
 
 /// Secure storage that answers after [delay], like a slow keystore at cold
@@ -226,6 +239,74 @@ void main() {
       await tester.pump(const Duration(seconds: 5));
 
       expect(localAuth.authenticateCallCount, 0);
+    });
+  });
+
+  // A111: every locked state has a way out, and none opens the portfolio.
+  group('ways out of the lock (A111)', () {
+    Future<void> pumpLock(
+      WidgetTester tester, {
+      required UserEntity user,
+      required bool storageFailed,
+    }) async {
+      await tester.binding.setSurfaceSize(const Size(1080, 1920));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            securityProvider.overrideWith(
+              () => _FailedStorageNotifier(storageFailed: storageFailed),
+            ),
+            authRepositoryProvider.overrideWithValue(FakeAuthRepository(user)),
+          ],
+          child: const MaterialApp(
+            home: PasscodeScreen(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    testWidgets('storage failed, Google user: Retry, Forgot PIN and Sign '
+        'out', (tester) async {
+      await pumpLock(tester, user: googleUser, storageFailed: true);
+
+      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('Forgot PIN?'), findsOneWidget);
+      expect(find.text('Sign Out'), findsOneWidget);
+      expect(find.bySemanticsLabel('Forgot PIN?'), findsOneWidget);
+    });
+
+    testWidgets('storage failed, guest: Retry only', (tester) async {
+      await pumpLock(tester, user: guestUser, storageFailed: true);
+
+      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('Forgot PIN?'), findsNothing);
+      expect(find.text('Sign Out'), findsNothing);
+    });
+
+    testWidgets('storage fine, Google user: Forgot PIN only', (tester) async {
+      await pumpLock(tester, user: googleUser, storageFailed: false);
+
+      expect(find.text('Forgot PIN?'), findsOneWidget);
+      expect(find.text('Retry'), findsNothing);
+      expect(find.text('Sign Out'), findsNothing);
+    });
+
+    testWidgets('Sign out signs the user out', (tester) async {
+      await pumpLock(tester, user: googleUser, storageFailed: true);
+
+      await tester.tap(find.text('Sign Out'));
+      await tester.pump();
+
+      final auth =
+          ProviderScope.containerOf(
+                tester.element(find.byType(PasscodeScreen)),
+              ).read(authRepositoryProvider)
+              as FakeAuthRepository;
+      expect(auth.signOutCalls, 1);
     });
   });
 }

@@ -1259,6 +1259,26 @@
     "description": "Retry button label"
   },
 
+  "passcodeForgotPin": "Forgot PIN?",
+  "@passcodeForgotPin": {
+    "description": "Lock screen button: confirm with the signed-in Google account, then remove the PIN"
+  },
+
+  "passcodeForgotPinFailed": "We couldn''t confirm your Google account, so the PIN is still set.",
+  "@passcodeForgotPinFailed": {
+    "description": "Lock screen message when Forgot PIN re-authentication is cancelled or fails"
+  },
+
+  "passcodeStorageFailed": "We can''t check your PIN right now. Try again, or sign out.",
+  "@passcodeStorageFailed": {
+    "description": "Lock screen message when secure storage fails or times out and a PIN may be set"
+  },
+
+  "passcodeStorageFailedGuest": "We can''t check your PIN right now. Try again.",
+  "@passcodeStorageFailedGuest": {
+    "description": "Lock screen message for a guest when secure storage fails; a guest cannot sign out without losing their data"
+  },
+
   "fireProgressLoadError": "Couldn''t load your FIRE progress",
   "@fireProgressLoadError": {
     "description": "FIRE card on Overview when the portfolio fails to load. No FIRE number is shown, because it would be computed from missing data."

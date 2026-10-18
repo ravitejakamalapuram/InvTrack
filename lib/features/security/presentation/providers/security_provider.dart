@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/security/data/services/security_clock.dart';
 import 'package:inv_tracker/features/security/data/services/security_service.dart';
 import 'package:local_auth/local_auth.dart';
@@ -13,9 +14,7 @@ import 'package:inv_tracker/features/settings/presentation/providers/settings_pr
 // Dependencies
 final flutterSecureStorageProvider = Provider(
   (ref) => const FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
   ),
 );
 final localAuthProvider = Provider((ref) => LocalAuthentication());
@@ -59,11 +58,16 @@ class SecurityState {
   final bool isBiometricEnabled;
   final bool isBiometricAvailable;
 
+  /// Secure storage failed or timed out while the app could not rule out a
+  /// PIN. The lock screen then offers Retry (and Sign out).
+  final bool storageFailed;
+
   const SecurityState({
     this.isLocked = false,
     this.hasPin = false,
     this.isBiometricEnabled = false,
     this.isBiometricAvailable = false,
+    this.storageFailed = false,
   });
 
   SecurityState copyWith({
@@ -71,12 +75,14 @@ class SecurityState {
     bool? hasPin,
     bool? isBiometricEnabled,
     bool? isBiometricAvailable,
+    bool? storageFailed,
   }) {
     return SecurityState(
       isLocked: isLocked ?? this.isLocked,
       hasPin: hasPin ?? this.hasPin,
       isBiometricEnabled: isBiometricEnabled ?? this.isBiometricEnabled,
       isBiometricAvailable: isBiometricAvailable ?? this.isBiometricAvailable,
+      storageFailed: storageFailed ?? this.storageFailed,
     );
   }
 }
@@ -203,6 +209,7 @@ class SecurityNotifier extends Notifier<SecurityState>
         hasPin: hasPin,
         isBiometricEnabled: isBiometricEnabled,
         isBiometricAvailable: isBiometricAvailable,
+        storageFailed: false,
         // Lock on startup if PIN exists, unless the user unlocked while
         // these checks ran (then keep whatever happened since).
         isLocked: hasPin && (_unlockCount == unlocksBefore || state.isLocked),
@@ -216,11 +223,51 @@ class SecurityNotifier extends Notifier<SecurityState>
       _pinStateUnknown = hasPinMirror == null;
       state = SecurityState(
         hasPin: hasPinMirror ?? false,
+        storageFailed: hasPinMirror ?? true,
         isLocked:
             (hasPinMirror ?? true) &&
             (_unlockCount == unlocksBefore || state.isLocked),
       );
     }
+  }
+
+  /// Reads secure storage again after a failure (the lock screen's Retry).
+  Future<void> retryInit() {
+    _pinStateUnknown = false;
+    return _init(_readHasPinMirror());
+  }
+
+  /// "Forgot PIN?": the signed-in Google account proves who the user is, then
+  /// the PIN and its mirror are removed. Guests have no account to prove it
+  /// with, so they never get this. Returns whether the PIN was removed.
+  Future<bool> forgotPin() async {
+    final auth = ref.read(authRepositoryProvider);
+    final user = auth.currentUser;
+    if (user == null || user.isAnonymous) return false;
+    try {
+      if (!await auth.reauthenticateWithGoogle()) return false;
+    } catch (e) {
+      LoggerService.warn('Forgot PIN re-authentication failed', error: e);
+      return false;
+    }
+    try {
+      await _service.removePin().timeout(SecurityService.storageTimeout);
+    } catch (e) {
+      // Storage is broken, so the PIN cannot be read or enforced here either.
+      // The mirror still says no PIN; if storage recovers, the next start
+      // finds the PIN and locks again.
+      LoggerService.warn('Could not remove the PIN from storage', error: e);
+      await _service.clearHasPinMirror();
+    }
+    if (!ref.mounted) return true;
+    _pinStateUnknown = false;
+    state = state.copyWith(
+      hasPin: false,
+      isLocked: false,
+      isBiometricEnabled: false,
+      storageFailed: false,
+    );
+    return true;
   }
 
   @override

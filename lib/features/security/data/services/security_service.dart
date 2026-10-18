@@ -51,12 +51,21 @@ class SecurityService {
   IOSOptions _getIOSOptions() =>
       const IOSOptions(accessibility: KeychainAccessibility.first_unlock);
 
+  /// How long secure storage may take to answer before it counts as failed.
+  /// The timeout sits inside the shared future, so a hung read is dropped and
+  /// the next call reads storage again.
+  static const Duration storageTimeout = Duration(seconds: 5);
+
   Future<bool> hasPin() {
-    _hasPinFuture ??= _hasPinInternal().whenComplete(
-      () => _hasPinFuture = null,
-    );
+    _hasPinFuture ??= _hasPinInternal()
+        .timeout(storageTimeout)
+        .whenComplete(() => _hasPinFuture = null);
     return _hasPinFuture!;
   }
+
+  /// Records that no PIN is set, without touching secure storage. For when
+  /// storage is broken and the user proved who they are another way.
+  Future<void> clearHasPinMirror() => _prefs.setBool(_hasPinMirrorKey, false);
 
   /// Whether a PIN is set, as last seen. Unlike [hasPin] it is read
   /// synchronously, so the app's first frame can already be the lock screen.
