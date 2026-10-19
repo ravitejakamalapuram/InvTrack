@@ -12,10 +12,10 @@ void main() {
               as Map<String, dynamic>)['indexes']
           as List<dynamic>;
 
-  /// "collection: field:ORDER, ..." for each declared index.
+  /// "collection (scope): field:ORDER, ..." for each declared index.
   final declared = {
     for (final i in indexes)
-      '${i['collectionGroup']}: ${[for (final f in i['fields'] as List) '${f['fieldPath']}:${f['order']}'].join(', ')}',
+      '${i['collectionGroup']} (${i['queryScope']}): ${[for (final f in i['fields'] as List) '${f['fieldPath']}:${f['order']}'].join(', ')}',
   };
 
   test('expected cash flows by investment, ordered by date', () {
@@ -24,7 +24,7 @@ void main() {
     expect(
       declared,
       contains(
-        'expectedCashFlows: investmentId:ASCENDING, expectedDate:ASCENDING',
+        'expectedCashFlows (COLLECTION): investmentId:ASCENDING, expectedDate:ASCENDING',
       ),
     );
   });
@@ -33,7 +33,9 @@ void main() {
     // where status whereIn [...] (+ expectedDate range), orderBy expectedDate
     expect(
       declared,
-      contains('expectedCashFlows: status:ASCENDING, expectedDate:ASCENDING'),
+      contains(
+        'expectedCashFlows (COLLECTION): status:ASCENDING, expectedDate:ASCENDING',
+      ),
     );
   });
 
@@ -43,7 +45,7 @@ void main() {
     expect(
       declared,
       contains(
-        'exchangeRates: from:ASCENDING, to:ASCENDING, fetchedAt:DESCENDING',
+        'exchangeRates (COLLECTION): from:ASCENDING, to:ASCENDING, fetchedAt:DESCENDING',
       ),
     );
   });
@@ -51,19 +53,27 @@ void main() {
   test('indexes that were already declared stay declared', () {
     expect(
       declared,
-      contains('investments: status:ASCENDING, createdAt:DESCENDING'),
+      contains(
+        'investments (COLLECTION): status:ASCENDING, createdAt:DESCENDING',
+      ),
     );
     expect(
       declared,
-      contains('cashflows: investmentId:ASCENDING, date:DESCENDING'),
+      contains(
+        'cashflows (COLLECTION): investmentId:ASCENDING, date:DESCENDING',
+      ),
     );
     expect(
       declared,
-      contains('archivedCashflows: investmentId:ASCENDING, date:DESCENDING'),
+      contains(
+        'archivedCashflows (COLLECTION): investmentId:ASCENDING, date:DESCENDING',
+      ),
     );
     expect(
       declared,
-      contains('goals: isArchived:ASCENDING, createdAt:DESCENDING'),
+      contains(
+        'goals (COLLECTION): isArchived:ASCENDING, createdAt:DESCENDING',
+      ),
     );
   });
 }
