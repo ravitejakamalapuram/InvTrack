@@ -1,0 +1,33 @@
+name: crash-issues
+
+# Files one GitHub issue (label `crash`) per new Crashlytics crash, with the stack trace, so the
+# issue loop can fix it. The logic lives in release-platform's reusable crash-issues.yml (keyless:
+# release-bot needs the Firebase Crashlytics Viewer role on invtracker-b19d1).
+on:
+  schedule:
+    - cron: '23 2 * * *' # 02:23 UTC = 07:53 IST
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Print the issues instead of filing them'
+        type: boolean
+        default: true
+
+permissions: {}
+
+# Manual dry runs replace each other; a filing run is never cancelled mid-way.
+concurrency:
+  group: crash-issues-${{ inputs.dry_run == true && 'dry' || 'file' }}
+  cancel-in-progress: ${{ inputs.dry_run == true }}
+
+jobs:
+  crash-issues:
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    uses: ravitejakamalapuram/release-platform/.github/workflows/crash-issues.yml@v2
+    with:
+      firebase_project: invtracker-b19d1
+      firebase_app_id: '1:784857267556:android:5ba7e064263d78f61dce71'
+      dry_run: ${{ inputs.dry_run == true }}

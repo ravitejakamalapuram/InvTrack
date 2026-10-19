@@ -1,44 +1,19 @@
 # Daily crash-fix routine
 
-Runbook for the scheduled session that fetches Crashlytics crashes and fixes them. The session follows this file; it should not rediscover how to fetch anything.
+Two parts: a GitHub Action files crashes as issues, and the daily scheduled session fixes the open ones. The session never fetches from Crashlytics.
 
-## Fetch method
+## Part 1: filing (shared GitHub Action)
 
-Firebase's Crashlytics tools, via the Firebase MCP server (`npx -y firebase-tools@latest mcp`, tools `crashlytics_get_report`, `crashlytics_get_issue`, `crashlytics_list_events`, `crashlytics_create_note`, `crashlytics_update_issue`). Firebase project `invtracker-b19d1`, Android app id `1:784857267556:android:5ba7e064263d78f61dce71`. No BigQuery export or Blaze-only feature is needed.
+`.github/workflows/crash-issues.yml` runs daily at 07:53 IST (and on demand, dry run by default) and calls release-platform's reusable `crash-issues.yml`, shared by every app. It reads the Crashlytics REST API with release-bot (keyless, no secret), takes fatal crashes and ANRs from the last 7 days that are not closed, and files up to 5 new issues per run, labelled `crash`, titled `[crash <id8>] <title>`, with counts, first/last seen versions, device/OS/app version of the latest sample, and the stack trace. App log lines are left out (they can hold personal data); the shared workflow's `include_logs` input opts in, and this caller does not set it. A hidden marker `crashlytics-issue:<full id>` in the body dedupes across runs, open or closed. User, installation, session and event ids and custom keys are never copied.
 
-Auth is a Google service account, not `firebase login`: a scheduled session has no browser. Credentials come from `GOOGLE_APPLICATION_CREDENTIALS` (path to the key file) or `GOOGLE_SERVICE_ACCOUNT_JSON` in the routine's cloud environment.
+One-time setup (owner): grant `release-bot@rk-release-platform.iam.gserviceaccount.com` the Firebase Crashlytics Viewer role on `invtracker-b19d1`, and enable the Firebase Crashlytics API once in `rk-release-platform`. Before the first run, check that the caller's `@v2` ref resolves to a release-platform commit that contains `crash-issues.yml` (release-platform#21 merged and a `v2.X.Y` tag, `v2.8.0` or later, pushed); until then the workflow cannot load. Then run the workflow with dry run on, and again with it off.
 
-### One-time setup (owner only)
-
-1. Google Cloud console, project `invtracker-b19d1`, IAM, Service accounts: create `crash-triage`.
-2. Grant it **Firebase Crashlytics Viewer** (add **Firebase Crashlytics Admin** only if the routine should add notes and close issues; viewer is enough to start).
-3. Create a JSON key and store its whole text in the routine's cloud environment as the secret/variable `FIREBASE_CRASH_SA_JSON`. Never paste it in chat or commit it.
-4. Tell Claude. It then runs the verification below.
-
-### Session start (every run)
-
-```bash
-mkdir -p "$HOME/.crash" && printf '%s' "$FIREBASE_CRASH_SA_JSON" > "$HOME/.crash/sa.json" && chmod 600 "$HOME/.crash/sa.json"
-export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.crash/sa.json"
-npx -y firebase-tools@latest mcp --only crashlytics --dir . &   # or the plugin's firebase MCP if it is already authenticated
-```
-
-Verification: `crashlytics_get_report` with `report=topIssues`, `appId` above, `pageSize=10` returns rows. If it returns an auth error, stop and put one card in the Founder Inbox; do not try other methods.
-
-## Daily workflow
+## Part 2: fixing (daily scheduled session)
 
 1. Read the Founder Inbox answers first; mark handled ones.
-2. Fetch `topIssues` for the last 24 h and last 7 days, `issueErrorTypes` `FATAL` and `ANR`. Candidate = new, regressed, or at least 3 users in 7 days. Ignore non-fatals.
-3. Dedupe: search GitHub issues (open and closed, label `crash`) for the Crashlytics issue id (kept in the issue title as `[crash <id>]`). Existing open issue: add a comment with the new counts only if they grew.
-4. Triage each candidate against current `main` (standing rule): read the stack trace via `crashlytics_get_issue` and `crashlytics_list_events`, find the code in `main`, check `git log` for a fix newer than the affected app version. Already fixed: note it on the Crashlytics issue (if admin) and skip. Cannot reproduce or locate: file an issue with the evidence, no code change.
-5. Otherwise file a GitHub issue `[crash <id>] <exception> in <class>` (label `crash`), then fix it: failing test first, smallest change, `flutter analyze` and `flutter test --exclude-tags=golden`, branch `crash/<id>-<slug>`, conventional title `fix(<area>): ...`.
-6. PR size rule: small and obvious fix: self-review the diff once, squash-merge on green CI with no conflict. Money, data, notifications, sign-in, security or larger: comment `@coderabbitai review`, merge only after approval and green CI. Never deploy or touch Play.
-7. Cap the run at 3 fixes; the rest wait for the next day.
-
-## Privacy
-
-Crash events carry no names or amounts by design (rule 7 in `CLAUDE.md`). Do not copy device ids, user ids or raw event payloads into issues or PRs; quote the exception and top frames only.
-
-## Daily output
-
-One line in the thread or inbox: candidates found, fixed, already fixed, skipped. Silent when there are no new crashes.
+2. List open issues labelled `crash`, highest impacted users first. Skip any with an open PR.
+3. Triage each against current `main` (standing rule): find the blamed code, check `git log` for a fix newer than the first/last seen version. Already fixed: comment with the commit and close. Cannot locate or reproduce: comment with what you checked and leave it open.
+4. Otherwise fix it: failing test first, smallest change, `flutter analyze` and `flutter test --exclude-tags=golden`, branch `crash/<id8>-<slug>`, conventional title `fix(<area>): ...`, body starting `Closes #<issue>`.
+5. PR size rule: small and obvious fix: self-review once, squash-merge on green CI with no conflict. Money, data, notifications, sign-in, security or larger: comment `@coderabbitai review` and merge only after approval and green CI. Never deploy or touch Play.
+6. Cap at 3 fixes per run. Quote only the exception and top frames in PRs.
+7. Finish with one line: open crash issues, fixed, already fixed, skipped. Silent when there are none.
