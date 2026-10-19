@@ -86,12 +86,37 @@ class SignOutCleanupService {
         }
       }
     });
-    // terminate() must come first; clearPersistence() is only allowed on a
-    // terminated instance.
-    await _step('firestoreCache', () async {
-      await _firestore.terminate();
-      await _firestore.clearPersistence();
-    });
+    // Firestore only clears its cache before it is first used, so the clear is
+    // queued for the next cold start (see [clearPendingCache]) instead of
+    // terminating the live instance the rest of the app still holds.
+    await _step(
+      'firestoreCache',
+      () => _prefs.setString(pendingCacheClearKey, userId),
+    );
+  }
+
+  /// Preference that holds the uid whose Firestore cache must be cleared.
+  static const String pendingCacheClearKey = 'pending_firestore_cache_clear';
+
+  /// Clears the cache queued by [wipe]. Call at start-up, before Firestore is
+  /// used. If the same user is signed in again the cache is theirs, so it is
+  /// kept. The marker stays when clearing fails, so the next start retries.
+  static Future<void> clearPendingCache({
+    required FirebaseFirestore firestore,
+    required SharedPreferences prefs,
+    required String? currentUserId,
+  }) async {
+    final queuedFor = prefs.getString(pendingCacheClearKey);
+    if (queuedFor == null) return;
+    try {
+      if (queuedFor != currentUserId) await firestore.clearPersistence();
+      await prefs.remove(pendingCacheClearKey);
+    } catch (e) {
+      LoggerService.warn(
+        'Firestore cache clear failed',
+        metadata: {'errorType': e.runtimeType.toString()},
+      );
+    }
   }
 
   Future<void> _step(String name, Future<void> Function() run) async {

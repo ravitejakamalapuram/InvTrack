@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:inv_tracker/features/auth/data/services/sign_out_cleanup_service.dart';
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -34,6 +37,14 @@ void main() async {
       ]);
 
       final sharedPreferences = results[1] as SharedPreferences;
+
+      // A sign-out queued a wipe of the offline cache; it must run before
+      // Firestore is first used.
+      await SignOutCleanupService.clearPendingCache(
+        firestore: FirebaseFirestore.instance,
+        prefs: sharedPreferences,
+        currentUserId: FirebaseAuth.instance.currentUser?.uid,
+      );
 
       // Create notification service (don't initialize yet - defer to post-frame)
       final notificationPlugin = FlutterLocalNotificationsPlugin();

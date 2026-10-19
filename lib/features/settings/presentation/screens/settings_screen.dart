@@ -282,8 +282,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _signOut(BuildContext context, WidgetRef ref) async {
     // Signing out clears this device's offline cache, which also holds edits
     // that have not reached the server.
-    if (await ref.read(signOutCleanupServiceProvider).hasUnsyncedWrites()) {
-      if (!context.mounted) return;
+    final unsynced = await ref
+        .read(signOutCleanupServiceProvider)
+        .hasUnsyncedWrites();
+    if (!context.mounted) return;
+    if (unsynced) {
       final l10n = AppLocalizations.of(context);
       final proceed = await showDialog<bool>(
         context: context,
@@ -302,7 +305,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
       );
-      if (!(proceed ?? false)) return;
+      if (!(proceed ?? false) || !context.mounted) return;
     }
     // The Analytics and Crashlytics user IDs are cleared when the auth state
     // empties (userIdentitySyncProvider).

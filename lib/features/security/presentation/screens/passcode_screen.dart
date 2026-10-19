@@ -54,8 +54,8 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
   static const Duration _biometricCooldown = Duration(seconds: 2);
   static const platform = MethodChannel('com.invtracker/security');
 
-  /// Read once: ref cannot be used in dispose.
-  late final bool _appLockOn;
+  /// Kept so dispose can read the PIN state; ref cannot be used there.
+  late final ProviderContainer _container;
 
   Future<void> _setSecureMode(bool secure) async {
     try {
@@ -70,7 +70,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
   @override
   void initState() {
     super.initState();
-    _appLockOn = ref.read(securityProvider).hasPin;
+    _container = ProviderScope.containerOf(context, listen: false);
     _setSecureMode(true);
     WidgetsBinding.instance.addObserver(this);
     _updateMessage();
@@ -101,8 +101,9 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
 
   @override
   void dispose() {
-    // Stay secure while the app lock is on; only the setup flow clears it.
-    _setSecureMode(_appLockOn);
+    // Follow the current PIN state: a PIN set on this screen keeps the
+    // window secure, a cancelled setup clears it.
+    _setSecureMode(_container.read(securityProvider).hasPin);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

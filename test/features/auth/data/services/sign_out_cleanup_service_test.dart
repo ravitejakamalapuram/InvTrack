@@ -53,7 +53,8 @@ void main() {
     () async {
       await service.wipe('u1');
 
-      expect(calls, ['pin', 'docs:u1', 'terminate', 'clear']);
+      expect(calls, ['pin', 'docs:u1']);
+      expect(prefs.getString(SignOutCleanupService.pendingCacheClearKey), 'u1');
       expect(prefs.containsKey('sample_data_mode_active'), isFalse);
       expect(prefs.containsKey('milestone_shown_inv1_2.0'), isFalse);
       expect(prefs.containsKey('goal_milestone_shown_g1_50'), isFalse);
@@ -69,7 +70,7 @@ void main() {
 
     await service.wipe('u1');
 
-    expect(calls, ['docs:u1', 'terminate', 'clear']);
+    expect(calls, ['docs:u1']);
   });
 
   test('hasUnsyncedWrites is false once pending writes complete', () async {
@@ -86,4 +87,56 @@ void main() {
       expect(await service.hasUnsyncedWrites(), isTrue);
     },
   );
+
+  group('clearPendingCache', () {
+    Future<void> run(String? uid) => SignOutCleanupService.clearPendingCache(
+      firestore: firestore,
+      prefs: prefs,
+      currentUserId: uid,
+    );
+
+    test('does nothing when nothing is queued', () async {
+      await run(null);
+      verifyNever(() => firestore.clearPersistence());
+    });
+
+    test('clears the cache and the marker when signed out', () async {
+      await prefs.setString(SignOutCleanupService.pendingCacheClearKey, 'u1');
+      await run(null);
+      expect(calls, ['clear']);
+      expect(
+        prefs.containsKey(SignOutCleanupService.pendingCacheClearKey),
+        isFalse,
+      );
+    });
+
+    test('clears it when a different user is signed in', () async {
+      await prefs.setString(SignOutCleanupService.pendingCacheClearKey, 'u1');
+      await run('u2');
+      expect(calls, ['clear']);
+    });
+
+    test('keeps the cache when the same user signed back in', () async {
+      await prefs.setString(SignOutCleanupService.pendingCacheClearKey, 'u1');
+      await run('u1');
+      expect(calls, isEmpty);
+      expect(
+        prefs.containsKey(SignOutCleanupService.pendingCacheClearKey),
+        isFalse,
+      );
+    });
+
+    test(
+      'keeps the marker when clearing fails, so the next start retries',
+      () async {
+        await prefs.setString(SignOutCleanupService.pendingCacheClearKey, 'u1');
+        when(() => firestore.clearPersistence()).thenThrow(Exception('busy'));
+        await run(null);
+        expect(
+          prefs.getString(SignOutCleanupService.pendingCacheClearKey),
+          'u1',
+        );
+      },
+    );
+  });
 }
