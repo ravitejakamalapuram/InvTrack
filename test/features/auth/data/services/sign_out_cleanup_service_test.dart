@@ -34,9 +34,6 @@ void main() {
     calls = [];
     when(() => security.removePin()).thenAnswer((_) async => calls.add('pin'));
     when(
-      () => firestore.terminate(),
-    ).thenAnswer((_) async => calls.add('terminate'));
-    when(
       () => firestore.clearPersistence(),
     ).thenAnswer((_) async => calls.add('clear'));
     service = SignOutCleanupService(
@@ -49,11 +46,13 @@ void main() {
   });
 
   test(
-    'wipe removes PIN, documents, per-user prefs and the Firestore cache',
+    'wipe removes PIN, documents and per-user prefs, and queues the cache clear',
     () async {
       await service.wipe('u1');
 
       expect(calls, ['pin', 'docs:u1']);
+      verifyNever(() => firestore.terminate());
+      verifyNever(() => firestore.clearPersistence());
       expect(prefs.getString(SignOutCleanupService.pendingCacheClearKey), 'u1');
       expect(prefs.containsKey('sample_data_mode_active'), isFalse);
       expect(prefs.containsKey('milestone_shown_inv1_2.0'), isFalse);
@@ -89,53 +88,60 @@ void main() {
   );
 
   group('clearPendingCache', () {
-    Future<void> run(String? uid) => SignOutCleanupService.clearPendingCache(
-      firestore: firestore,
-      prefs: prefs,
-      currentUserId: uid,
+    Future<void> run(Future<String?> Function() uid) =>
+        SignOutCleanupService.clearPendingCache(
+          firestore: firestore,
+          prefs: prefs,
+          currentUserId: uid,
+        );
+
+    Future<void> queue() =>
+        prefs.setString(SignOutCleanupService.pendingCacheClearKey, 'u1');
+
+    bool queued() =>
+        prefs.containsKey(SignOutCleanupService.pendingCacheClearKey);
+
+    test(
+      'does nothing, and never asks for the user, when nothing is queued',
+      () async {
+        await run(() async => fail('must not be called'));
+        expect(calls, isEmpty);
+      },
     );
 
-    test('does nothing when nothing is queued', () async {
-      await run(null);
-      verifyNever(() => firestore.clearPersistence());
-    });
-
-    test('clears the cache and the marker when signed out', () async {
-      await prefs.setString(SignOutCleanupService.pendingCacheClearKey, 'u1');
-      await run(null);
+    test('clears the cache and the marker when nobody is signed in', () async {
+      await queue();
+      await run(() async => null);
       expect(calls, ['clear']);
-      expect(
-        prefs.containsKey(SignOutCleanupService.pendingCacheClearKey),
-        isFalse,
-      );
+      expect(queued(), isFalse);
     });
 
-    test('clears it when a different user is signed in', () async {
-      await prefs.setString(SignOutCleanupService.pendingCacheClearKey, 'u1');
-      await run('u2');
-      expect(calls, ['clear']);
-    });
+    test(
+      'never clears while a user is signed in, so their unsynced edits survive',
+      () async {
+        for (final uid in ['u1', 'u2']) {
+          await queue();
+          await run(() async => uid);
+          expect(queued(), isFalse);
+        }
+        expect(calls, isEmpty);
+      },
+    );
 
-    test('keeps the cache when the same user signed back in', () async {
-      await prefs.setString(SignOutCleanupService.pendingCacheClearKey, 'u1');
-      await run('u1');
+    test('keeps the marker when the session cannot be resolved', () async {
+      await queue();
+      await run(() async => throw TimeoutException('auth'));
       expect(calls, isEmpty);
-      expect(
-        prefs.containsKey(SignOutCleanupService.pendingCacheClearKey),
-        isFalse,
-      );
+      expect(queued(), isTrue);
     });
 
     test(
       'keeps the marker when clearing fails, so the next start retries',
       () async {
-        await prefs.setString(SignOutCleanupService.pendingCacheClearKey, 'u1');
+        await queue();
         when(() => firestore.clearPersistence()).thenThrow(Exception('busy'));
-        await run(null);
-        expect(
-          prefs.getString(SignOutCleanupService.pendingCacheClearKey),
-          'u1',
-        );
+        await run(() async => null);
+        expect(queued(), isTrue);
       },
     );
   });

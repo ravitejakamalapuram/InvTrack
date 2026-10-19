@@ -43,7 +43,12 @@ void main() async {
       await SignOutCleanupService.clearPendingCache(
         firestore: FirebaseFirestore.instance,
         prefs: sharedPreferences,
-        currentUserId: FirebaseAuth.instance.currentUser?.uid,
+        // currentUser can be null until Auth has restored the session.
+        currentUserId: () => FirebaseAuth.instance
+            .authStateChanges()
+            .first
+            .then((user) => user?.uid)
+            .timeout(const Duration(seconds: 5)),
       );
 
       // Create notification service (don't initialize yet - defer to post-frame)

@@ -99,17 +99,22 @@ class SignOutCleanupService {
   static const String pendingCacheClearKey = 'pending_firestore_cache_clear';
 
   /// Clears the cache queued by [wipe]. Call at start-up, before Firestore is
-  /// used. If the same user is signed in again the cache is theirs, so it is
-  /// kept. The marker stays when clearing fails, so the next start retries.
+  /// used.
+  ///
+  /// It only clears while nobody is signed in: when a user is signed in the
+  /// cache may hold their unsynced edits, which a clear would destroy, so the
+  /// marker is dropped and the previous user's cache stays on disk until the
+  /// next sign-out clears it. [currentUserId] is called only when a clear is
+  /// queued and must wait for Firebase Auth to restore the session; if it
+  /// throws or times out the marker is kept and the next start retries.
   static Future<void> clearPendingCache({
     required FirebaseFirestore firestore,
     required SharedPreferences prefs,
-    required String? currentUserId,
+    required Future<String?> Function() currentUserId,
   }) async {
-    final queuedFor = prefs.getString(pendingCacheClearKey);
-    if (queuedFor == null) return;
+    if (!prefs.containsKey(pendingCacheClearKey)) return;
     try {
-      if (queuedFor != currentUserId) await firestore.clearPersistence();
+      if (await currentUserId() == null) await firestore.clearPersistence();
       await prefs.remove(pendingCacheClearKey);
     } catch (e) {
       LoggerService.warn(
