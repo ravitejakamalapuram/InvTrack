@@ -114,7 +114,7 @@ class IncomeTrendAnalyzer {
     }
 
     // Batch convert all income cash flows to base currency (OPTIMIZED)
-    final convertedCashFlows = await engine.currency.batchConvert(
+    final convertedCashFlows = await engine.currency.batchConvertToBase(
       cashFlows: incomeCashFlows,
       baseCurrency: baseCurrency,
     );
@@ -267,7 +267,7 @@ class IncomeTrendAnalyzer {
     if (incomeCashFlows.isEmpty) return [];
 
     // Batch convert all income cash flows to base currency (OPTIMIZED)
-    final convertedCashFlows = await engine.currency.batchConvert(
+    final convertedCashFlows = await engine.currency.batchConvertToBase(
       cashFlows: incomeCashFlows,
       baseCurrency: baseCurrency,
     );
