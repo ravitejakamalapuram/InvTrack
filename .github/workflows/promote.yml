@@ -32,9 +32,10 @@ permissions: {}
 jobs:
   # A63: `promote` to production starts at 5% or less, and no release goes above 5% without 48 h at a
   # partial rollout and at least 99.5% crash-free users (scripts/promotion_guard.dart). Halt is never
-  # blocked. The 48 h clock starts when the Play call for the latest GitHub Release finished: the end
-  # of the auto-release run that created it, or of a later successful partial `promote` run of this
-  # workflow, whichever is later. If that cannot be found, going above 5% is refused. Only a first
+  # blocked. A84: the 48 h clock starts at the rollout record release-platform's promote job writes
+  # (a `play-production` deployment) after it read the staged release back from Play. With no record,
+  # going above 5% is refused. The guard passes the version codes it counted the soak for to the
+  # promote job, which first checks that Play still holds exactly those in progress. Only a first
   # attempt dispatched from main may run: a re-run would reuse old inputs and an old guard result.
   guard:
     name: Release safety guard
@@ -42,13 +43,16 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-      actions: read
+      deployments: read
+    outputs:
+      soak_version_codes: ${{ steps.guard.outputs.soak_version_codes }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
       - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
       - name: Check rollout soak time and crash-free users
+        id: guard
         env:
           GH_TOKEN: ${{ github.token }}
           ACTION: ${{ inputs.action }}
@@ -56,17 +60,10 @@ jobs:
           USER_FRACTION: ${{ inputs.user_fraction }}
           CRASH_FREE_USERS: ${{ inputs.crash_free_users }}
         run: |
-          RELEASED_AT="$(gh release view --repo "$GITHUB_REPOSITORY" --json publishedAt --jq .publishedAt 2>/dev/null || true)"
-          echo "Latest GitHub Release published at: ${RELEASED_AT:-unknown}"
-          PROMOTE_RUNS="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow promote.yml --branch main \
-            --status success --limit 200 --json displayTitle,createdAt,updatedAt 2>/dev/null || true)"
-          # The auto-release run that created the release finishes after its 5% Play call.
-          AUTO_RELEASE_RUNS="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow auto-release.yml --branch main \
-            --status success --created "<=$RELEASED_AT" --limit 50 --json createdAt,updatedAt 2>/dev/null || true)"
+          ROLLOUT_RECORDS="$(gh api "repos/$GITHUB_REPOSITORY/deployments?environment=play-production&per_page=100" 2>/dev/null || true)"
           # Run outside the Flutter package so plain Dart does not try to resolve Flutter dependencies.
           cp scripts/promotion_guard.dart "$RUNNER_TEMP/promotion_guard.dart"
-          RELEASED_AT="$RELEASED_AT" PROMOTE_RUNS="$PROMOTE_RUNS" AUTO_RELEASE_RUNS="$AUTO_RELEASE_RUNS" \
-            dart run "$RUNNER_TEMP/promotion_guard.dart"
+          ROLLOUT_RECORDS="$ROLLOUT_RECORDS" dart run "$RUNNER_TEMP/promotion_guard.dart"
 
   promote:
     needs: guard
@@ -76,9 +73,11 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      deployments: write   # release-platform records the staged rollout start (A84)
     uses: ravitejakamalapuram/release-platform/.github/workflows/promote.yml@v2
     with:
       action: ${{ inputs.action }}
       from_track: ${{ inputs.from_track }}
       to_track: ${{ inputs.to_track }}
       user_fraction: ${{ inputs.user_fraction }}
+      expect_in_progress_version_codes: ${{ needs.guard.outputs.soak_version_codes }}

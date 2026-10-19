@@ -49,6 +49,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
+      deployments: write   # release-platform records the staged rollout start (A84)
     uses: ravitejakamalapuram/release-platform/.github/workflows/auto-release.yml@v2
     with:
       trigger: ${{ github.event_name }}
@@ -57,6 +58,7 @@ jobs:
       force: ${{ github.event.inputs.force == 'true' }}
       # Staged rollout (A63): every automatic release starts at 5% of production. Widen it with
       # promote.yml (rollout 0.2, then complete); its guard job refuses 100% until the release has
-      # been out for 48 h and Crashlytics crash-free users are at least 99.5%.
+      # been at a partial rollout for 48 h (recorded when Play confirmed it) and Crashlytics
+      # crash-free users are at least 99.5%.
       rollout_fraction: '0.05'
     secrets: inherit

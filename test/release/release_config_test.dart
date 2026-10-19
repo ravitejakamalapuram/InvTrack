@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -53,13 +52,33 @@ void main() {
     expect(condition, contains("inputs.action == 'halt'"));
   });
 
-  // ci-release-4: the guard needs the auto-release history to find when the
-  // 5% Play call finished.
-  test('the guard reads the auto-release history', () {
+  // A84: the 48 h count comes from the rollout record that release-platform
+  // writes after Play confirmed the rollout, never from a run-finish proxy.
+  test('the guard reads the rollout records and not the run history', () {
     final promote = read('.github/workflows/promote.yml');
-    expect(promote, contains('--workflow auto-release.yml'));
-    expect(promote, contains('AUTO_RELEASE_RUNS'));
-    expect(promote, contains('updatedAt'));
+    expect(promote, contains('environment=play-production'));
+    expect(promote, contains('ROLLOUT_RECORDS'));
+    expect(promote, isNot(contains('AUTO_RELEASE_RUNS')));
+    expect(promote, isNot(contains('PROMOTE_RUNS')));
+    expect(promote, isNot(contains('gh release view')));
+  });
+
+  test('the promote job confirms the soaked release on Play and may record '
+      'the next rollout', () {
+    final promote = read('.github/workflows/promote.yml');
+    expect(
+      promote,
+      contains(
+        'expect_in_progress_version_codes: '
+        r'${{ needs.guard.outputs.soak_version_codes }}',
+      ),
+    );
+    expect(promote, contains('soak_version_codes:'));
+    expect(promote, contains('deployments: write'));
+    expect(
+      read('.github/workflows/auto-release.yml'),
+      contains('deployments: write'),
+    );
   });
 
   // ci-release-8: third-party actions in the release guard and nightly
@@ -112,40 +131,14 @@ void main() {
     expect(nightly, contains('flutter test --tags golden'));
   });
 
-  test('promote.yml names each run so the guard can find when a partial '
-      'production rollout started', () {
+  test('the guard job may read deployments', () {
     final promote = read('.github/workflows/promote.yml');
-    final runName = RegExp(
-      r'^run-name:\s*(.+)$',
-      multiLine: true,
-    ).firstMatch(promote)?.group(1)?.trim();
-    expect(runName, isNotNull, reason: 'promote.yml needs a run-name');
-
-    String title(String action, String toTrack, String fraction) => runName!
-        .replaceAll(RegExp(r'\$\{\{\s*inputs\.action\s*\}\}'), action)
-        .replaceAll(RegExp(r'\$\{\{\s*inputs\.to_track\s*\}\}'), toTrack)
-        .replaceAll(RegExp(r'\$\{\{\s*inputs\.user_fraction\s*\}\}'), fraction);
-
-    final starts = partialRolloutStarts(
-      jsonEncode([
-        {
-          'displayTitle': title('promote', 'production', '0.05'),
-          'createdAt': '2026-10-01T09:00:00Z',
-          'updatedAt': '2026-10-01T09:30:00Z',
-        },
-        {
-          'displayTitle': title('rollout', 'production', '0.2'),
-          'createdAt': '2026-10-01T10:00:00Z',
-          'updatedAt': '2026-10-01T10:30:00Z',
-        },
-      ]),
+    final guard = promote.substring(
+      promote.indexOf('  guard:'),
+      promote.indexOf('  promote:'),
     );
-    expect(starts, [DateTime.utc(2026, 10, 1, 9, 30)]);
-
-    // The guard reads that history, and it needs permission to.
-    expect(promote, contains('gh run list'));
-    expect(promote, contains('PROMOTE_RUNS'));
-    expect(promote, contains('actions: read'));
+    expect(guard, contains('deployments: read'));
+    expect(guard, contains('gh api'));
   });
 
   test('a nightly workflow runs the integration tests on an emulator', () {
