@@ -129,5 +129,20 @@ void main() {
       baseCurrency: 'INR',
     );
     expect(report.totalIncome, 8300);
+    expect(report.incomeSources.length, 1);
+    expect(report.incomeSources.single.totalIncome, 8300);
+  });
+
+  test('no insight calls income diversified when no source has a rate',
+      () async {
+    final report = await IncomeTrendAnalyzer().generateReport(
+      investments: [_investment()],
+      cashFlows: [_flow('eur', 100, 'EUR', type: CashFlowType.income)],
+      expectedCashFlows: [],
+      engine: _engine(_OnlyUsdService()),
+      baseCurrency: 'INR',
+    );
+    expect(report.incomeSources, isEmpty);
+    expect(report.insights.any((i) => i.contains('diversification')), isFalse);
   });
 }

@@ -346,7 +346,7 @@ class IncomeTrendAnalyzer {
       if (topSource != null) {
         insights.add('${topSource.percentage.toStringAsFixed(0)}% of income from ${topSource.investmentName}. Consider diversifying.');
       }
-    } else if (diversificationScore < 0.15) {
+    } else if (diversificationScore < 0.15 && incomeSources.isNotEmpty) {
       insights.add('Excellent diversification! Your income is well-balanced across investments.');
     }
 
