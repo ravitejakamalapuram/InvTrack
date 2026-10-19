@@ -338,6 +338,20 @@ class DataImportService {
     final investmentCustomTypesById =
         customTypes?.linksById ?? const <String, _ImportedCustomTypeRef>{};
 
+    // What Merge adds next to, as it was before this import wrote anything,
+    // and how many investments of each name the backup holds apart by id.
+    final accountNameCounts = <String, int>{};
+    if (strategy == ImportStrategy.merge) {
+      for (final e in await _investmentRepository.getAllInvestments()) {
+        accountNameCounts.update(
+          e.name.toLowerCase(),
+          (n) => n + 1,
+          ifAbsent: () => 1,
+        );
+      }
+    }
+    final backupIdGroups = <String, int>{};
+
     // Import cashflows (active)
     if (cashflows != null) {
       final result = await _importCashflowsCsv(
@@ -351,6 +365,7 @@ class DataImportService {
         customTypeRefs: investmentCustomTypes,
         customTypeRefsById: investmentCustomTypesById,
         customTypesByKey: customTypesByKey,
+        backupIdGroups: backupIdGroups,
       );
       investmentsImported += result.investmentsCreated;
       cashflowsImported += result.imported;
@@ -373,6 +388,7 @@ class DataImportService {
         customTypeRefs: investmentCustomTypes,
         customTypeRefsById: investmentCustomTypesById,
         customTypesByKey: customTypesByKey,
+        backupIdGroups: backupIdGroups,
       );
       investmentsImported += result.investmentsCreated;
       cashflowsImported += result.imported;
@@ -389,6 +405,11 @@ class DataImportService {
       baseCurrency: baseCurrency,
       snapshots: snapshots,
       warnings: warnings,
+      accountNameCounts: accountNameCounts,
+      backupIdGroups: backupIdGroups,
+      customTypeRefs: investmentCustomTypes,
+      customTypeRefsById: investmentCustomTypesById,
+      customTypesByKey: customTypesByKey,
     );
     investmentsImported += shells.length;
     investmentNameToIdMap.addAll(shells);
@@ -680,6 +701,7 @@ class DataImportService {
     Map<(bool, String), _ImportedCustomTypeRef> customTypeRefs = const {},
     Map<String, _ImportedCustomTypeRef> customTypeRefsById = const {},
     Map<String, CustomInvestmentType> customTypesByKey = const {},
+    Map<String, int>? backupIdGroups,
   }) async {
     if (parseResult.validRows == 0) {
       return _CsvImportResult(
@@ -733,6 +755,13 @@ class DataImportService {
       }
     }
 
+    if (backupIdGroups != null) {
+      backupNameGroups.forEach(
+        (name, n) =>
+            backupIdGroups.update(name, (m) => m + n, ifAbsent: () => n),
+      );
+    }
+
     final now = DateTime.now();
     final investments = <InvestmentEntity>[];
     final cashFlows = <CashFlowEntity>[];
@@ -748,10 +777,16 @@ class DataImportService {
       final investmentName = rows.first.investmentName;
 
       // The valuations of this investment go with it, or are dropped with it.
-      final valuationRows = _takeValuations(valuations, (
-        isArchived,
-        investmentName.toLowerCase(),
-      ), id: saved?.id);
+      // A group without a saved investment (a row of investments.json that
+      // could not be read, or an older file) still owns the ids its rows name.
+      final valuationRows = _takeValuations(
+        valuations,
+        (isArchived, investmentName.toLowerCase()),
+        ids: {
+          for (final r in rows)
+            if (r.investmentId != null) r.investmentId!,
+        },
+      );
 
       // Skip if merging and investment already exists
       // An investment kept apart by id is skipped when its id exists, or when
@@ -1103,23 +1138,18 @@ class DataImportService {
     return accepted;
   }
 
-  /// Takes the rows of one investment out of [valuations] and returns them. An
-  /// investment kept apart by [id] takes the rows that name its id and those
-  /// of files from before ids; without an [id] it takes every row of the name,
-  /// as such backups always did.
+  /// Takes the rows of one investment out of [valuations] and returns them.
+  /// It takes the rows that name one of its [ids] and those of files from
+  /// before ids; a row that names another investment stays for that one.
   List<_ImportedValuation> _takeValuations(
     Map<(bool, String), List<_ImportedValuation>> valuations,
     (bool, String) key, {
-    String? id,
+    Set<String> ids = const {},
   }) {
     final all = valuations[key];
     if (all == null) return const [];
-    if (id == null) {
-      valuations.remove(key);
-      return all;
-    }
     bool isMine(_ImportedValuation r) =>
-        r.investmentId == null || r.investmentId == id;
+        r.investmentId == null || ids.contains(r.investmentId);
     final rest = [
       for (final r in all)
         if (!isMine(r)) r,
@@ -1145,15 +1175,13 @@ class DataImportService {
     required String baseCurrency,
     required List<InvestmentValuationSnapshot> snapshots,
     required List<String> warnings,
+    Map<String, int> accountNameCounts = const {},
+    Map<String, int> backupIdGroups = const {},
+    Map<(bool, String), _ImportedCustomTypeRef> customTypeRefs = const {},
+    Map<String, _ImportedCustomTypeRef> customTypeRefsById = const {},
+    Map<String, CustomInvestmentType> customTypesByKey = const {},
   }) async {
     if (valuations.isEmpty) return const {};
-    var existingNames = <String>{};
-    if (strategy == ImportStrategy.merge) {
-      existingNames = {
-        for (final e in await _investmentRepository.getAllInvestments())
-          e.name.toLowerCase(),
-      };
-    }
 
     final now = DateTime.now();
     final investments = <InvestmentEntity>[];
@@ -1165,9 +1193,23 @@ class DataImportService {
         for (final part in _splitByInvestment(rows))
           (isArchived, nameKey, part),
     ];
+    // An investment named by id counts with the cash-flow ones of its name, so
+    // a twin that has no cash flows is restored when the account holds fewer
+    // of that name than the backup; one without an id goes by name alone.
+    final backupCounts = {...backupIdGroups};
+    for (final (_, nameKey, rows) in groups) {
+      if (rows.first.investmentId != null) {
+        backupCounts.update(nameKey, (n) => n + 1, ifAbsent: () => 1);
+      }
+    }
     for (final (isArchived, nameKey, rows) in groups) {
       final name = rows.first.name;
-      if (strategy == ImportStrategy.merge && existingNames.contains(nameKey)) {
+      final backupId = rows.first.investmentId;
+      if (strategy == ImportStrategy.merge &&
+          (backupId == null
+              ? accountNameCounts.containsKey(nameKey)
+              : (accountNameCounts[nameKey] ?? 0) >=
+                    (backupCounts[nameKey] ?? 1))) {
         warnings.add('Skipped "$name" - already exists');
         continue;
       }
@@ -1194,11 +1236,25 @@ class DataImportService {
         investmentId: investmentId,
         currency: currency,
       );
+      final type = rows.first.investmentType ?? InvestmentType.other;
+      // The type is looked up the way cash-flow investments do: by id when the
+      // file names investments by id, by name otherwise.
+      final customType = _customTypeOf(
+        backupId != null && customTypeRefsById.isNotEmpty
+            ? customTypeRefsById[backupId]
+            : customTypeRefs[(isArchived, nameKey)],
+        investmentName: name,
+        type: type,
+        typesByKey: customTypesByKey,
+        warnings: warnings,
+      );
       investments.add(
         InvestmentEntity(
           id: investmentId,
           name: name,
-          type: rows.first.investmentType ?? InvestmentType.other,
+          type: type,
+          customTypeId: customType.id,
+          customTypeLabel: customType.label,
           status: rows.first.investmentStatus ?? InvestmentStatus.open,
           createdAt: now,
           updatedAt: now,
