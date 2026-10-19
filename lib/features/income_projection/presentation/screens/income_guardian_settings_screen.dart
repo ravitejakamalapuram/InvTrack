@@ -257,6 +257,8 @@ class _SliderTile extends StatelessWidget {
               min: min,
               max: max,
               divisions: divisions,
+              // The subtitle already says the value in words.
+              semanticFormatterCallback: (_) => subtitle,
               onChanged: onChanged,
             ),
           ),

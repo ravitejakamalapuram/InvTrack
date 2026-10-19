@@ -26,6 +26,7 @@ Display strings only: `amount`, `returnText` or `status`, `positive`, `out`, `in
 - Keep the currency disclosure line visible whenever amounts are shown.
 - Stats stack and the title wraps, they are never truncated, at large text scale. The 36px amount shrinks to fit its line (scale down only, never an ellipsis), in privacy mode by the same factor; its long-press shows the exact figure (`AmountText`).
 - The badge shares the amount's baseline or drops below it; the last stat ends on the card padding. `test/layout/card_guard_360_test.dart` and `card_guard_411_test.dart` measure both on the real card.
+- The privacy toggle and the Realized/All switch keep a 48dp tap target around the smaller drawn control; `test/accessibility/hero_tap_targets_test.dart` enforces it.
 
 ## Contrast
 

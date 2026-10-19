@@ -121,7 +121,12 @@ class _PrivacyToggleButtonState extends ConsumerState<PrivacyToggleButton>
           child: GestureDetector(
             onTap: _handleTap,
             behavior: HitTestBehavior.opaque,
-            child: Padding(padding: const EdgeInsets.all(8), child: iconButton),
+            child: _TapTarget(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: iconButton,
+              ),
+            ),
           ),
         ),
       );
@@ -135,49 +140,66 @@ class _PrivacyToggleButtonState extends ConsumerState<PrivacyToggleButton>
         excludeFromSemantics: true,
         child: GestureDetector(
           onTap: _handleTap,
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: isPrivacyMode ? 1.0 : 0.0),
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            builder: (context, value, child) {
-              final bgColor =
-                  widget.backgroundColor ??
-                  Color.lerp(
-                    Colors.white.withValues(alpha: 0.15),
-                    Colors.white.withValues(alpha: 0.25),
-                    value,
-                  )!;
-              final shadowOpacity = 0.2 * value;
+          behavior: HitTestBehavior.opaque,
+          child: _TapTarget(
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: isPrivacyMode ? 1.0 : 0.0),
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, child) {
+                final bgColor =
+                    widget.backgroundColor ??
+                    Color.lerp(
+                      Colors.white.withValues(alpha: 0.15),
+                      Colors.white.withValues(alpha: 0.25),
+                      value,
+                    )!;
+                final shadowOpacity = 0.2 * value;
 
-              return Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    width: 1,
-                  ),
-                  boxShadow: value > 0.01
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(
-                              alpha: shadowOpacity,
+                return Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                    boxShadow: value > 0.01
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withValues(
+                                alpha: shadowOpacity,
+                              ),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: iconButton,
-              );
-            },
+                          ]
+                        : null,
+                  ),
+                  child: iconButton,
+                );
+              },
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+/// Keeps the hit area at the 48dp Android minimum while the drawn toggle stays
+/// small.
+class _TapTarget extends StatelessWidget {
+  const _TapTarget({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => ConstrainedBox(
+    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+    child: Center(widthFactor: 1, heightFactor: 1, child: child),
+  );
 }
 
 /// A compact privacy toggle for use in app bars or tight spaces.
@@ -215,7 +237,9 @@ class CompactPrivacyToggle extends ConsumerWidget {
           color: effectiveColor,
         ),
       ),
-      tooltip: isPrivacyMode ? l10n.tooltipShowAmounts : l10n.tooltipHideAmounts,
+      tooltip: isPrivacyMode
+          ? l10n.tooltipShowAmounts
+          : l10n.tooltipHideAmounts,
     );
   }
 }
