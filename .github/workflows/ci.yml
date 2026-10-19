@@ -20,6 +20,8 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+permissions: {}
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -60,7 +62,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           clean: true
 
@@ -213,6 +215,6 @@ jobs:
             --arg text "❌ *CI Failed for InvTrack (PR Checks)*" \
             '{ text: $text, attachments: [{ color: "#a30200", fields: [] }] }')
 
-          curl -k -s -o /dev/null -w "%{http_code}" -X POST -H 'Content-type: application/json' \
+          curl -fsS -o /dev/null -X POST -H 'Content-type: application/json' \
             --data "$PAYLOAD" "$SLACK_WEBHOOK_URL"
         shell: bash

@@ -22,10 +22,3 @@ paths = [
     '''\.flutter-plugins''',
     '''\.flutter-plugins-dependencies''',
 ]
-
-# Additional regex patterns to allow
-regexes = [
-    # Firebase API keys pattern (these are public by design)
-    '''AIza[0-9A-Za-z\-_]{35}''',
-]
-
