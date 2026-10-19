@@ -4,23 +4,18 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-List<File> _workflows() => Directory('.github/workflows')
-    .listSync()
-    .whereType<File>()
-    .where((f) => f.path.endsWith('.yml'))
-    .toList();
+List<File> _workflows() => Directory(
+  '.github/workflows',
+).listSync().whereType<File>().where((f) => f.path.endsWith('.yml')).toList();
 
 void main() {
   test('no workflow turns off TLS verification', () {
     final insecure = RegExp(r'curl\b[^\n]*\s(-\w*k\w*|--insecure)\b');
     final offenders = <String>[];
     for (final f in _workflows()) {
-      final lines = f.readAsLinesSync();
-      for (var i = 0; i < lines.length; i++) {
-        if (insecure.hasMatch(lines[i])) {
-          offenders.add('${f.path}:${i + 1}');
-        }
-      }
+      // Join shell continuations so `curl -fsS \` + `--insecure` is caught.
+      final text = f.readAsStringSync().replaceAll(RegExp(r'\\\r?\n\s*'), ' ');
+      if (text.split('\n').any(insecure.hasMatch)) offenders.add(f.path);
     }
     expect(offenders, isEmpty);
   });
@@ -54,15 +49,19 @@ void main() {
   });
 
   test('the production rules deploy only runs from main', () {
-    final text =
-        File('.github/workflows/deploy-firestore-rules.yml').readAsStringSync();
+    final text = File(
+      '.github/workflows/deploy-firestore-rules.yml',
+    ).readAsStringSync();
     expect(text, contains("if: github.ref == 'refs/heads/main'"));
     expect(text, contains('environment: production'));
   });
 
   test('ci.yml sets a workflow-level permissions block', () {
     final text = File('.github/workflows/ci.yml').readAsStringSync();
-    expect(text, matches(RegExp(r'^permissions:', multiLine: true)));
+    expect(
+      text,
+      matches(RegExp(r'^permissions:\s*\{\s*\}\s*$', multiLine: true)),
+    );
   });
 
   test('gitleaks has no repo-wide regex allow-list', () {
