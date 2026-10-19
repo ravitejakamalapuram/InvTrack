@@ -5,6 +5,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/features/auth/presentation/handlers/google_sign_in_handler.dart';
@@ -38,6 +39,15 @@ class _GuestLinkBannerState extends ConsumerState<GuestLinkBanner> {
       await GoogleSignInHandler(ref: ref, context: context).handleSignIn();
     } finally {
       if (mounted) setState(() => _linking = false);
+    }
+  }
+
+  Future<void> _dismiss() async {
+    ref.read(analyticsServiceProvider).logGuestLinkBannerDismissed();
+    try {
+      await ref.read(guestLinkBannerDismissProvider.notifier).dismiss();
+    } catch (e, st) {
+      ErrorHandler.handle(e, st, context: mounted ? context : null);
     }
   }
 
@@ -89,10 +99,7 @@ class _GuestLinkBannerState extends ConsumerState<GuestLinkBanner> {
           IconButton(
             tooltip: l10n.guestLinkBannerDismiss,
             icon: const Icon(Icons.close, size: 20),
-            onPressed: () {
-              ref.read(analyticsServiceProvider).logGuestLinkBannerDismissed();
-              ref.read(guestLinkBannerDismissProvider.notifier).dismiss();
-            },
+            onPressed: _dismiss,
           ),
         ],
       ),
