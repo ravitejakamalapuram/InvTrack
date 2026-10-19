@@ -333,16 +333,34 @@ class HeroCardContent extends ConsumerWidget {
       fontWeight: FontWeight.bold,
     );
     final figureText = currencyFormat.formatSmart(netPosition);
-    final value = PrivacyMask(
-      child: CompactAmountText(
-        key: const ValueKey('hero-net-cash-flow'),
-        amount: netPosition,
-        compactText: figureText,
-        currencySymbol: currencyFormat.currencySymbol,
-        locale: currencyFormat.locale,
-        style: figureStyle,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+    // Shrinks to fit the line instead of ending in an ellipsis: this is the
+    // number people raise the text size to read (#1004). The box is the width
+    // of the figure as written, so privacy mode, which draws dots in its
+    // place, shrinks by the same factor and nothing moves.
+    final value = Builder(
+      builder: (context) => FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: AlignmentDirectional.centerStart,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: measureTextWidth(context, figureText, figureStyle),
+          ),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            widthFactor: 1,
+            child: PrivacyMask(
+              child: CompactAmountText(
+                key: const ValueKey('hero-net-cash-flow'),
+                amount: netPosition,
+                compactText: figureText,
+                currencySymbol: currencyFormat.currencySymbol,
+                locale: currencyFormat.locale,
+                style: figureStyle,
+                maxLines: 1,
+              ),
+            ),
+          ),
+        ),
       ),
     );
 

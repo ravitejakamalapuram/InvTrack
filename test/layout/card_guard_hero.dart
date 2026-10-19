@@ -459,15 +459,7 @@ Future<_Shape> _run(
   if (figure != null) {
     g.expectNear('net figure start', startOf(figure), startEdge);
   }
-  // Not part of this change: the headline amount is 36sp, so at text x2.0 it is
-  // 72sp. A six-digit amount in full ("-₹50,000") is 317dp wide and ends in an
-  // ellipsis on a 360dp phone, and on a 320dp phone ("₹13,000" is 268dp in a
-  // 248dp line) any amount of five digits or more does, on main as well. It is
-  // listed as a follow-up, so these cases do not assert the figure.
-  final knownTruncation =
-      g.textScale >= 2 &&
-      (g.width < 340 || (c.name == 'loss' && g.width < 400));
-  if (!knownTruncation) g.expectWholeWords('net figure', figureFinder);
+  g.expectWholeWords('net figure', figureFinder);
 
   Rect? pill;
   if (c.badge != null) {
