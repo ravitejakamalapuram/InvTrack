@@ -341,8 +341,10 @@ class DataImportService {
     // What Merge adds next to, as it was before this import wrote anything,
     // and how many investments of each name the backup holds apart by id.
     final accountNameCounts = <String, int>{};
+    final accountIds = <String>{};
     if (strategy == ImportStrategy.merge) {
       for (final e in await _investmentRepository.getAllInvestments()) {
+        accountIds.add(e.id);
         accountNameCounts.update(
           e.name.toLowerCase(),
           (n) => n + 1,
@@ -406,6 +408,7 @@ class DataImportService {
       snapshots: snapshots,
       warnings: warnings,
       accountNameCounts: accountNameCounts,
+      accountIds: accountIds,
       backupIdGroups: backupIdGroups,
       customTypeRefs: investmentCustomTypes,
       customTypeRefsById: investmentCustomTypesById,
@@ -1176,6 +1179,7 @@ class DataImportService {
     required List<InvestmentValuationSnapshot> snapshots,
     required List<String> warnings,
     Map<String, int> accountNameCounts = const {},
+    Set<String> accountIds = const {},
     Map<String, int> backupIdGroups = const {},
     Map<(bool, String), _ImportedCustomTypeRef> customTypeRefs = const {},
     Map<String, _ImportedCustomTypeRef> customTypeRefsById = const {},
@@ -1208,8 +1212,9 @@ class DataImportService {
       if (strategy == ImportStrategy.merge &&
           (backupId == null
               ? accountNameCounts.containsKey(nameKey)
-              : (accountNameCounts[nameKey] ?? 0) >=
-                    (backupCounts[nameKey] ?? 1))) {
+              : accountIds.contains(backupId) ||
+                    (accountNameCounts[nameKey] ?? 0) >=
+                        (backupCounts[nameKey] ?? 1))) {
         warnings.add('Skipped "$name" - already exists');
         continue;
       }

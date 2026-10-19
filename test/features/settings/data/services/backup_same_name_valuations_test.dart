@@ -288,6 +288,35 @@ void main() {
     );
 
     test(
+      'Merge skips a valuation-only investment the account already has',
+      () async {
+        await repo.bulkImport(
+          investments: [gold('a'), gold('v')],
+          cashFlows: [invest('fa', 'a', 1000)],
+        );
+        await value('aaaaaaaaaaaaaaaaaaaaaaaa', 'a', 1100);
+        await value('cccccccccccccccccccccccc', 'v', 700);
+        final zip = await export.exportAsZipBytes();
+
+        // The account lost the cash-flow investment and kept the valuation-only
+        // one: merging the backup back must not copy that one again.
+        await repo.bulkDelete(['a']);
+        final result = await import.importFromZip(
+          zip.bytes,
+          ImportStrategy.merge,
+          baseCurrency: 'INR',
+        );
+        expect(result.errors, isEmpty);
+
+        expect((await repo.getAllInvestments()).map((i) => i.id), ['v']);
+        final live = (await valuations.getAll()).where(
+          (s) => s.isLive && s.amount == 700,
+        );
+        expect(live, hasLength(1));
+      },
+    );
+
+    test(
       'Merge restores a valuation-only twin of an existing investment',
       () async {
         await repo.bulkImport(
