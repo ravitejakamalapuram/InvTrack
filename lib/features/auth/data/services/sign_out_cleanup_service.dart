@@ -26,7 +26,8 @@ class SignOutCleanupService {
        _prefs = prefs,
        _deleteDocuments =
            deleteDocuments ??
-           ((uid) => DocumentStorageService(userId: uid).deleteAllUserDocuments());
+           ((uid) =>
+               DocumentStorageService(userId: uid).deleteAllUserDocuments());
 
   final FirebaseFirestore _firestore;
   final SecurityService _security;

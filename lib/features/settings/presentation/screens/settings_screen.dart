@@ -189,8 +189,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   iconColor: Colors.orange,
                   title: l10n.featureFlagsScreenTitle,
                   subtitle: l10n.featureFlagsTileSubtitle,
-                  onTap: () =>
-                      _navigateTo(context, const FeatureFlagsScreen()),
+                  onTap: () => _navigateTo(context, const FeatureFlagsScreen()),
                 ),
               ],
             ),

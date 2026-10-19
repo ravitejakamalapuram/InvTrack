@@ -33,8 +33,12 @@ void main() {
     security = _MockSecurity();
     calls = [];
     when(() => security.removePin()).thenAnswer((_) async => calls.add('pin'));
-    when(() => firestore.terminate()).thenAnswer((_) async => calls.add('terminate'));
-    when(() => firestore.clearPersistence()).thenAnswer((_) async => calls.add('clear'));
+    when(
+      () => firestore.terminate(),
+    ).thenAnswer((_) async => calls.add('terminate'));
+    when(
+      () => firestore.clearPersistence(),
+    ).thenAnswer((_) async => calls.add('clear'));
     service = SignOutCleanupService(
       firestore: firestore,
       security: security,
@@ -44,18 +48,21 @@ void main() {
     );
   });
 
-  test('wipe removes PIN, documents, per-user prefs and the Firestore cache', () async {
-    await service.wipe('u1');
+  test(
+    'wipe removes PIN, documents, per-user prefs and the Firestore cache',
+    () async {
+      await service.wipe('u1');
 
-    expect(calls, ['pin', 'docs:u1', 'terminate', 'clear']);
-    expect(prefs.containsKey('sample_data_mode_active'), isFalse);
-    expect(prefs.containsKey('milestone_shown_inv1_2.0'), isFalse);
-    expect(prefs.containsKey('goal_milestone_shown_g1_50'), isFalse);
-    expect(prefs.containsKey('idle_alert_last_shown_inv1'), isFalse);
-    expect(prefs.containsKey('user_signup_date'), isFalse);
-    expect(prefs.containsKey('activation_day_3_sent'), isFalse);
-    expect(prefs.getString('theme_mode'), 'dark');
-  });
+      expect(calls, ['pin', 'docs:u1', 'terminate', 'clear']);
+      expect(prefs.containsKey('sample_data_mode_active'), isFalse);
+      expect(prefs.containsKey('milestone_shown_inv1_2.0'), isFalse);
+      expect(prefs.containsKey('goal_milestone_shown_g1_50'), isFalse);
+      expect(prefs.containsKey('idle_alert_last_shown_inv1'), isFalse);
+      expect(prefs.containsKey('user_signup_date'), isFalse);
+      expect(prefs.containsKey('activation_day_3_sent'), isFalse);
+      expect(prefs.getString('theme_mode'), 'dark');
+    },
+  );
 
   test('a failing step does not stop the others', () async {
     when(() => security.removePin()).thenThrow(Exception('storage'));
@@ -70,9 +77,13 @@ void main() {
     expect(await service.hasUnsyncedWrites(), isFalse);
   });
 
-  test('hasUnsyncedWrites is true when pending writes do not finish in time', () async {
-    when(() => firestore.waitForPendingWrites())
-        .thenAnswer((_) => Completer<void>().future);
-    expect(await service.hasUnsyncedWrites(), isTrue);
-  });
+  test(
+    'hasUnsyncedWrites is true when pending writes do not finish in time',
+    () async {
+      when(
+        () => firestore.waitForPendingWrites(),
+      ).thenAnswer((_) => Completer<void>().future);
+      expect(await service.hasUnsyncedWrites(), isTrue);
+    },
+  );
 }

@@ -282,10 +282,7 @@ class FirebaseAuthRepository implements AuthRepository {
         LoggerService.error(
           'GoogleSignInException: Configuration error during re-auth (non-fatal)',
           error: authException,
-          metadata: {
-            'code': e.code.name,
-            'description': e.description,
-          },
+          metadata: {'code': e.code.name, 'description': e.description},
         );
         throw authException;
       }
@@ -310,7 +307,9 @@ class FirebaseAuthRepository implements AuthRepository {
       throw authException;
     } catch (e, stackTrace) {
       if (e is PlatformException && e.code == 'sign_in_canceled') {
-        LoggerService.info('User cancelled re-authentication (PlatformException)');
+        LoggerService.info(
+          'User cancelled re-authentication (PlatformException)',
+        );
         return false;
       }
       LoggerService.error(
@@ -473,41 +472,43 @@ class FirebaseAuthRepository implements AuthRepository {
       if (isCredentialInUse) _linkCredential = credential ?? e.credential;
       final isProviderLinked = e.code == 'provider-already-linked';
       final isTransient = _isTransientAuthError(e.code);
-      final shouldReport = !isCredentialInUse && !isProviderLinked && !isTransient;
+      final shouldReport =
+          !isCredentialInUse && !isProviderLinked && !isTransient;
 
       final authException = e.code == 'credential-already-in-use'
           ? AuthException(
               userMessage:
                   'This Google account is already registered. Please use the backup & merge option.',
-              technicalMessage: 'credential-already-in-use during account linking',
+              technicalMessage:
+                  'credential-already-in-use during account linking',
               cause: e,
               stackTrace: stackTrace,
               shouldReport: false,
               code: AuthExceptionCode.credentialAlreadyInUse,
             )
           : e.code == 'provider-already-linked'
-              ? AuthException(
-                  userMessage: 'Account is already linked to Google',
-                  technicalMessage: 'Provider already linked',
-                  cause: e,
-                  stackTrace: stackTrace,
-                  shouldReport: false,
-                  code: AuthExceptionCode.providerAlreadyLinked,
-                )
-              : e.code == 'invalid-credential'
-                  ? AuthException(
-                      userMessage: 'Invalid Google credentials. Please try again.',
-                      technicalMessage: 'Invalid credential for linking',
-                      cause: e,
-                      stackTrace: stackTrace,
-                      shouldReport: true,
-                      code: AuthExceptionCode.invalidCredential,
-                    )
-                  : AuthException.signInFailed(
-                      cause: e,
-                      stackTrace: stackTrace,
-                      shouldReport: shouldReport,
-                    );
+          ? AuthException(
+              userMessage: 'Account is already linked to Google',
+              technicalMessage: 'Provider already linked',
+              cause: e,
+              stackTrace: stackTrace,
+              shouldReport: false,
+              code: AuthExceptionCode.providerAlreadyLinked,
+            )
+          : e.code == 'invalid-credential'
+          ? AuthException(
+              userMessage: 'Invalid Google credentials. Please try again.',
+              technicalMessage: 'Invalid credential for linking',
+              cause: e,
+              stackTrace: stackTrace,
+              shouldReport: true,
+              code: AuthExceptionCode.invalidCredential,
+            )
+          : AuthException.signInFailed(
+              cause: e,
+              stackTrace: stackTrace,
+              shouldReport: shouldReport,
+            );
 
       if (shouldReport) {
         LoggerService.error(
@@ -519,7 +520,10 @@ class FirebaseAuthRepository implements AuthRepository {
       } else {
         LoggerService.info(
           'Account linking handled condition',
-          metadata: {'errorCode': e.code, 'reason': isTransient ? 'transient' : 'expected_flow'},
+          metadata: {
+            'errorCode': e.code,
+            'reason': isTransient ? 'transient' : 'expected_flow',
+          },
         );
       }
 
@@ -541,7 +545,8 @@ class FirebaseAuthRepository implements AuthRepository {
           e.code == GoogleSignInExceptionCode.providerConfigurationError) {
         final authException = AuthException(
           userMessage: _mapGoogleSignInException(e),
-          technicalMessage: 'GoogleSignInException during linking: ${e.code.name}',
+          technicalMessage:
+              'GoogleSignInException during linking: ${e.code.name}',
           cause: e,
           stackTrace: stackTrace,
           shouldReport: false, // Environmental config issue, not app bug
@@ -551,10 +556,7 @@ class FirebaseAuthRepository implements AuthRepository {
           'GoogleSignInException: Configuration error during linking (non-fatal)',
           error: authException,
           stackTrace: stackTrace,
-          metadata: {
-            'code': e.code.name,
-            'description': e.description,
-          },
+          metadata: {'code': e.code.name, 'description': e.description},
         );
 
         throw authException;
@@ -563,7 +565,8 @@ class FirebaseAuthRepository implements AuthRepository {
       // Other GoogleSignInExceptions
       final authException = AuthException(
         userMessage: _mapGoogleSignInException(e),
-        technicalMessage: 'GoogleSignInException during linking: ${e.code.name}',
+        technicalMessage:
+            'GoogleSignInException during linking: ${e.code.name}',
         cause: e,
         stackTrace: stackTrace,
         shouldReport: false, // Don't spam Crashlytics with user errors
@@ -573,16 +576,15 @@ class FirebaseAuthRepository implements AuthRepository {
         'GoogleSignInException during account linking',
         error: authException,
         stackTrace: stackTrace,
-        metadata: {
-          'code': e.code.name,
-          'description': e.description,
-        },
+        metadata: {'code': e.code.name, 'description': e.description},
       );
 
       throw authException;
     } catch (e, stackTrace) {
       if (e is PlatformException && e.code == 'sign_in_canceled') {
-        LoggerService.info('User cancelled account linking (PlatformException)');
+        LoggerService.info(
+          'User cancelled account linking (PlatformException)',
+        );
         throw AuthException.signInCancelled();
       }
 
