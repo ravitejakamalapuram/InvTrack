@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
@@ -92,6 +92,53 @@ void main() {
     await tester.pump();
     expect(identical(container.read(routerProvider), router), isTrue);
     // Dispose inside the body so Riverpod's refresh timer does not outlive it.
+    container.dispose();
+    await tester.pump();
+  });
+
+  testWidgets('the router refreshes itself when the lock changes', (
+    tester,
+  ) async {
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(
+          FakeAuthRepository(googleUser),
+        ),
+        securityProvider.overrideWith(_TestSecurity.new),
+        onboardingCompleteProvider.overrideWith((ref) async => true),
+        analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
+        isReportsTabEnabledProvider.overrideWith(
+          (ref) => ref.watch(_reportsFlag),
+        ),
+        isIncomeGuardianEnabledProvider.overrideWithValue(false),
+      ],
+    );
+    container.listen(authStateProvider, (_, _) {});
+    container.listen(onboardingCompleteProvider, (_, _) {});
+    final router = container.read(routerProvider);
+    final security = container.read(securityProvider.notifier) as _TestSecurity;
+    // A parse always re-reads state, so it cannot show that a change
+    // reaches the router; the router announcing a refresh does. (go_router
+    // only announces when the redirect result moves, which a lock does.)
+    var refreshes = 0;
+    router.routeInformationProvider.addListener(() => refreshes++);
+    Future<int> refreshesAfter(void Function() change) async {
+      final before = refreshes;
+      change();
+      await tester.pump();
+      await tester.pump();
+      return refreshes - before;
+    }
+
+    expect(
+      await refreshesAfter(() => security.setLocked(true)),
+      greaterThan(0),
+    );
+    expect(
+      await refreshesAfter(() => security.setLocked(false)),
+      greaterThan(0),
+    );
+    await tester.pumpWidget(const SizedBox());
     container.dispose();
     await tester.pump();
   });
