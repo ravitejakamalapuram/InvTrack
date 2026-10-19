@@ -34,6 +34,10 @@ class SecurityService {
 
   bool _isVerifying = false;
   Future<bool>? _hasPinFuture;
+  // Bumped whenever a PIN read stops being the latest word on whether a PIN
+  // is set (it timed out, or the PIN was set or removed meanwhile). A read
+  // from an older generation must not write the mirror when it finally ends.
+  int _mirrorGeneration = 0;
 
   SecurityService(
     this._secureStorage,
@@ -51,11 +55,29 @@ class SecurityService {
   IOSOptions _getIOSOptions() =>
       const IOSOptions(accessibility: KeychainAccessibility.first_unlock);
 
+  /// How long secure storage may take to answer before it counts as failed.
+  /// The timeout sits inside the shared future, so a hung read is dropped and
+  /// the next call reads storage again.
+  static const Duration storageTimeout = Duration(seconds: 5);
+
   Future<bool> hasPin() {
-    _hasPinFuture ??= _hasPinInternal().whenComplete(
-      () => _hasPinFuture = null,
-    );
+    _hasPinFuture ??= _hasPinInternal()
+        .timeout(
+          storageTimeout,
+          onTimeout: () {
+            _mirrorGeneration++;
+            throw TimeoutException('Secure storage did not answer');
+          },
+        )
+        .whenComplete(() => _hasPinFuture = null);
     return _hasPinFuture!;
+  }
+
+  /// Records that no PIN is set, without touching secure storage. For when
+  /// storage is broken and the user proved who they are another way.
+  Future<void> clearHasPinMirror() {
+    _mirrorGeneration++;
+    return _prefs.setBool(_hasPinMirrorKey, false);
   }
 
   /// Whether a PIN is set, as last seen. Unlike [hasPin] it is read
@@ -64,8 +86,11 @@ class SecurityService {
   bool? get hasPinMirror => _prefs.getBool(_hasPinMirrorKey);
 
   Future<bool> _hasPinInternal() async {
+    final generation = _mirrorGeneration;
     final hasPin = await _readHasPin();
-    await _prefs.setBool(_hasPinMirrorKey, hasPin);
+    if (generation == _mirrorGeneration) {
+      await _prefs.setBool(_hasPinMirrorKey, hasPin);
+    }
     return hasPin;
   }
 
@@ -117,6 +142,7 @@ class SecurityService {
   }
 
   Future<void> setPin(String pin) async {
+    _mirrorGeneration++;
     final salt = _generateSalt();
     // Use PBKDF2 with 100,000 iterations (v3 format: salt:iterations:hash)
     final hashedPin = SecurityUtils.hashPin(pin, salt, iterations: 100000);
@@ -420,6 +446,7 @@ class SecurityService {
   }
 
   Future<void> removePin() async {
+    _mirrorGeneration++;
     try {
       await _clearRateLimit();
       await _secureStorage.delete(
@@ -442,6 +469,21 @@ class SecurityService {
     final canCheck = await _localAuth.canCheckBiometrics;
     final isDeviceSupported = await _localAuth.isDeviceSupported();
     return canCheck && isDeviceSupported;
+  }
+
+  /// Asks for the phone's own screen lock (PIN, pattern, password or
+  /// biometric). False when the phone has none or the user cancels.
+  Future<bool> authenticateWithDeviceLock(String reason) async {
+    try {
+      if (!await _localAuth.isDeviceSupported()) return false;
+      return await _localAuth.authenticate(localizedReason: reason);
+    } catch (e) {
+      LoggerService.warn(
+        'Device lock check failed',
+        metadata: {'errorType': e.runtimeType.toString()},
+      );
+      return false;
+    }
   }
 
   Future<bool> authenticateWithBiometrics() async {
