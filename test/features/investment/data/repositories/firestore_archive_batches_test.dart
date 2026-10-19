@@ -1,7 +1,8 @@
 // #766 (A23): archive and unarchive move an investment and its cash flows in
 // batches of at most 500 operations. 300 cash flows are 602 operations, which
 // one batch cannot hold. Copies are written before anything is deleted, and
-// the investment is deleted last, so a failed batch loses nothing.
+// the source investment is deleted first among the deletes, so a failed batch
+// never leaves an active investment with part of its cash flows missing.
 //
 // ignore_for_file: subtype_of_sealed_class
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -148,12 +149,14 @@ void main() {
     expect(sets, contains(docAt(toInvestments, id)));
     expect(sets, contains(docAt(toFlows, 'cf-299')));
     expect(deletes, contains(docAt(fromFlows, 'cf-0')));
-    // Nothing is deleted before every copy exists, and the investment goes
-    // last, so a failed batch leaves it at its source to retry from.
+    // Nothing is deleted before every copy exists. The source investment goes
+    // first among the deletes: if a later batch fails, the copy is complete
+    // and the leftover source cash flows have no investment, so they are
+    // filtered out (as in bulkDelete) instead of shown as a part-emptied one.
     final firstDelete = all.indexWhere((op) => op.kind == 'delete');
     final lastSet = all.lastIndexWhere((op) => op.kind == 'set');
     expect(firstDelete, greaterThan(lastSet));
-    expect(all.last.ref, docAt(fromInvestments, id));
+    expect(all[firstDelete].ref, docAt(fromInvestments, id));
   }
 
   group('archiveInvestment', () {

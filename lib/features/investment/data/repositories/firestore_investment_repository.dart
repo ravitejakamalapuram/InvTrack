@@ -291,9 +291,13 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   /// Moves an investment and its cash flows to the other collection pair in
   /// batches of at most [_deleteBatchSize] operations (Firestore allows 500).
   ///
-  /// Copies come first and the deletes after, the investment last in each
-  /// phase, so a failed batch loses nothing: the investment is still at its
-  /// source, and running the move again overwrites the copies by id.
+  /// All copies are written first, then the source investment is deleted, then
+  /// its cash flows. A failed batch therefore never leaves the source
+  /// investment with part of its cash flows missing: either the move has not
+  /// reached the deletes (the source is whole, and running it again overwrites
+  /// the copies by id), or the copy is complete and any source cash flows
+  /// left behind have no investment, so they are filtered out like those of
+  /// [bulkDelete].
   Future<void> _moveInvestment({
     required DocumentReference<Map<String, dynamic>> investment,
     required Map<String, dynamic> investmentData,
@@ -305,8 +309,8 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       for (final cf in cashFlows)
         (batch) => batch.set(cashFlowsTarget.doc(cf.id), cf.data()),
       (batch) => batch.set(target, investmentData),
-      for (final cf in cashFlows) (batch) => batch.delete(cf.reference),
       (batch) => batch.delete(investment),
+      for (final cf in cashFlows) (batch) => batch.delete(cf.reference),
     ];
     for (var i = 0; i < writes.length; i += _deleteBatchSize) {
       final batch = _firestore.batch();
