@@ -96,9 +96,7 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('the router refreshes itself when the lock changes', (
-    tester,
-  ) async {
+  testWidgets('a mounted router follows the lock', (tester) async {
     final container = ProviderContainer(
       overrides: [
         authRepositoryProvider.overrideWithValue(
@@ -117,27 +115,38 @@ void main() {
     container.listen(onboardingCompleteProvider, (_, _) {});
     final router = container.read(routerProvider);
     final security = container.read(securityProvider.notifier) as _TestSecurity;
-    // A parse always re-reads state, so it cannot show that a change
-    // reaches the router; the router announcing a refresh does. (go_router
-    // only announces when the redirect result moves, which a lock does.)
-    var refreshes = 0;
-    router.routeInformationProvider.addListener(() => refreshes++);
-    Future<int> refreshesAfter(void Function() change) async {
-      final before = refreshes;
-      change();
-      await tester.pump();
-      await tester.pump();
-      return refreshes - before;
+    // Mounted for real: a refresh count alone would pass while a locked user
+    // stays on '/'. The screens need services this test does not set up and
+    // throw while building; only the router's location matters here, so
+    // those build errors are drained.
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          routerConfig: router,
+          builder: (_, child) => Offstage(child: child),
+        ),
+      ),
+    );
+    Future<String> settle() async {
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      while (tester.takeException() != null) {}
+      return router.state.uri.path;
     }
 
-    expect(
-      await refreshesAfter(() => security.setLocked(true)),
-      greaterThan(0),
-    );
-    expect(
-      await refreshesAfter(() => security.setLocked(false)),
-      greaterThan(0),
-    );
+    var refreshes = 0;
+    router.routeInformationProvider.addListener(() => refreshes++);
+    expect(await settle(), '/');
+
+    security.setLocked(true);
+    expect(await settle(), '/lock');
+    expect(refreshes, greaterThan(0));
+
+    security.setLocked(false);
+    expect(await settle(), '/');
+
     await tester.pumpWidget(const SizedBox());
     container.dispose();
     await tester.pump();

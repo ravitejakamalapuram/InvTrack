@@ -50,6 +50,7 @@ class _RouterRefresh extends ChangeNotifier {
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = _RouterRefresh();
   ref.onDispose(refresh.dispose);
+  late final GoRouter router;
 
   // Linking a guest to Google keeps the UID and must not refresh; redirect()
   // uses only these fields of the auth state.
@@ -57,7 +58,16 @@ final routerProvider = Provider<GoRouter>((ref) {
     authStateProvider.select(
       (state) => (state.isLoading, state.hasError, state.value?.id),
     ),
-    (_, _) => refresh.refresh(),
+    (previous, next) {
+      refresh.refresh();
+      // A direct switch from one signed-in user to another must not keep the
+      // previous user's pages; sign-out and first sign-in already redirect.
+      final (_, _, before) = previous ?? (false, false, null);
+      final (_, _, after) = next;
+      if (before != null && after != null && before != after) {
+        router.go('/');
+      }
+    },
   );
   ref.listen(securityProvider.select((s) => s.isLocked), (_, _) {
     refresh.refresh();
@@ -66,7 +76,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.listen(isReportsTabEnabledProvider, (_, _) => refresh.refresh());
   ref.listen(isIncomeGuardianEnabledProvider, (_, _) => refresh.refresh());
 
-  final router = GoRouter(
+  router = GoRouter(
     refreshListenable: refresh,
     navigatorKey: rootNavigatorKey,
     initialLocation: '/',
