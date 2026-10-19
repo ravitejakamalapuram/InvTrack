@@ -6,7 +6,7 @@ Two parts: a GitHub Action files crashes as issues, and the daily scheduled sess
 
 `.github/workflows/crash-issues.yml` runs daily at 07:53 IST (and on demand, dry run by default) and calls release-platform's reusable `crash-issues.yml`, shared by every app. It reads the Crashlytics REST API with release-bot (keyless, no secret), takes fatal crashes and ANRs from the last 7 days that are not closed, and files up to 5 new issues per run, labelled `crash`, titled `[crash <id8>] <title>`, with counts, first/last seen versions, device/OS/app version of the latest sample, and the stack trace. App log lines are left out (they can hold personal data); the shared workflow's `include_logs` input opts in, and this caller does not set it. A hidden marker `crashlytics-issue:<full id>` in the body dedupes across runs, open or closed. User, installation, session and event ids and custom keys are never copied.
 
-One-time setup (owner): grant `release-bot@rk-release-platform.iam.gserviceaccount.com` the Firebase Crashlytics Viewer role on `invtracker-b19d1`, and enable the Firebase Crashlytics API once in `rk-release-platform`. Then run the workflow with dry run on, and again with it off.
+One-time setup (owner): grant `release-bot@rk-release-platform.iam.gserviceaccount.com` the Firebase Crashlytics Viewer role on `invtracker-b19d1`, and enable the Firebase Crashlytics API once in `rk-release-platform`. Before the first run, check that the caller's `@v2` ref resolves to a release-platform commit that contains `crash-issues.yml` (release-platform#21 merged and a `v2.X.Y` tag, `v2.8.0` or later, pushed); until then the workflow cannot load. Then run the workflow with dry run on, and again with it off.
 
 ## Part 2: fixing (daily scheduled session)
 
