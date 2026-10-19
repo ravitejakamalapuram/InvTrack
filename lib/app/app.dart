@@ -101,6 +101,8 @@ class _NotificationNavigationHandlerState
     super.initState();
     // Listen for pending navigation from notifications
     _subscription = pendingNavigationStream.listen(_handleNavigation);
+    // The tap that started the app arrived before anyone listened.
+    takeBufferedNotificationNavigation().forEach(_handleNavigation);
   }
 
   @override

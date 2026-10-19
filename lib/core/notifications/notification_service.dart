@@ -310,7 +310,34 @@ class NotificationService with NotificationPreferencesMixin {
 
     _isInitialized = true;
     LoggerService.info('NotificationService initialized');
+
+    await _queueLaunchTap();
   }
+
+  /// The plugin does not deliver the tap that started a killed app through
+  /// the response callback, so read it here and queue it for the app.
+  Future<void> _queueLaunchTap() async {
+    try {
+      final details = await _plugin.getNotificationAppLaunchDetails();
+      final payload = details?.notificationResponse?.payload;
+      if ((details?.didNotificationLaunchApp ?? false) &&
+          payload != null &&
+          payload.isNotEmpty) {
+        queueNotificationNavigation(payload);
+      }
+    } catch (e) {
+      LoggerService.info(
+        'Could not read notification launch details',
+        metadata: {'errorType': e.runtimeType.toString()},
+      );
+    }
+  }
+
+  /// Whether the Reports route is on. The weekly, monthly and FY summaries
+  /// open a report, so they are scheduled only while it is. Off until the
+  /// app says otherwise.
+  set reportsRouteEnabled(bool enabled) =>
+      _scheduledHandler.reportsRouteEnabled = enabled;
 
   /// Configure the local timezone from the device.
   /// This is required for scheduled notifications to work correctly.

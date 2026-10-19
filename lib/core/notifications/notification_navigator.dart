@@ -48,9 +48,24 @@ final _pendingNavigationController = StreamController<String>.broadcast();
 Stream<String> get pendingNavigationStream =>
     _pendingNavigationController.stream;
 
+/// Taps that arrived before the app started listening, e.g. the tap that
+/// launched it from a killed state. A broadcast stream drops those.
+final _bufferedNavigation = <String>[];
+
+/// Returns and clears the taps that arrived before anyone listened.
+List<String> takeBufferedNotificationNavigation() {
+  final taps = List<String>.of(_bufferedNavigation);
+  _bufferedNavigation.clear();
+  return taps;
+}
+
 /// Queue a navigation for when the app is ready
 void queueNotificationNavigation(String payload) {
-  _pendingNavigationController.add(payload);
+  if (_pendingNavigationController.hasListener) {
+    _pendingNavigationController.add(payload);
+  } else {
+    _bufferedNavigation.add(payload);
+  }
   LoggerService.debug(
     'Queued notification navigation',
     metadata: {'payloadLength': payload.length},
