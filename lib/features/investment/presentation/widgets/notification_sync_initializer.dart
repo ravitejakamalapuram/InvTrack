@@ -66,6 +66,7 @@ class _NotificationSyncInitializerState
   @override
   void initState() {
     super.initState();
+    _applyReportsRoute(_reportsRouteOn());
     // fireImmediately records the user who is already signed in when this
     // widget is built, so a later sign-out is detected.
     _authSubscription = ref.listenManual<AsyncValue<UserEntity?>>(
@@ -73,6 +74,24 @@ class _NotificationSyncInitializerState
       (previous, next) => _onAuthChanged(next),
       fireImmediately: true,
     );
+  }
+
+  bool _reportsRouteOn() {
+    try {
+      return ref.read(isReportsTabEnabledProvider);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  void _applyReportsRoute(bool enabled) {
+    try {
+      final notificationService = ref.read(notificationServiceProvider);
+      notificationService.reportsRouteEnabled = enabled;
+      _enqueue(() => notificationService.applyReportsRoute(enabled));
+    } catch (e) {
+      LoggerService.debug('NotificationService not available for reports');
+    }
   }
 
   @override
@@ -386,6 +405,13 @@ class _NotificationSyncInitializerState
     ) {
       if (next.hasValue) _scheduleNotificationsDebounced();
     });
+
+    // The monthly slot is shared with the recap, so a change also reschedules
+    // everything, which puts the right monthly notification back.
+    ref.listen<bool>(isReportsTabEnabledProvider, (previous, next) {
+      _applyReportsRoute(next);
+      _scheduleNotificationsDebounced();
+    }, onError: (_, _) {});
 
     // Turning income or maturity reminders back on schedules them again.
     // Turning them off cancels them in NotificationService.

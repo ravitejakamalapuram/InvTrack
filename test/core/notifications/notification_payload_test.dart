@@ -182,7 +182,8 @@ void main() {
     test('should parse weekly_check_in payload correctly', () {
       final parsed = NotificationPayload.parse('weekly_check_in');
 
-      expect(parsed.type, NotificationPayloadType.addCashFlow);
+      // A29: the payload has no investment, so a cash-flow screen cannot open.
+      expect(parsed.type, NotificationPayloadType.investmentList);
       expect(parsed.params['source'], 'weekly_check_in');
     });
 
