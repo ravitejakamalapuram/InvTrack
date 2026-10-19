@@ -15,6 +15,7 @@ import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/settings/data/services/legacy_currency_backfill_service.dart';
+import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -45,6 +46,7 @@ void main() {
         ProviderScope(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
+            securityProvider.overrideWith(_Unlocked.new),
             authStateProvider.overrideWith((ref) => Stream.value(null)),
             analyticsServiceProvider.overrideWithValue(analytics),
             crashlyticsServiceProvider.overrideWithValue(crashlytics),
@@ -83,4 +85,10 @@ void main() {
       ).called(1);
     },
   );
+}
+
+/// The real notifier reads as locked here, with no secure storage in tests.
+class _Unlocked extends SecurityNotifier {
+  @override
+  SecurityState build() => const SecurityState();
 }

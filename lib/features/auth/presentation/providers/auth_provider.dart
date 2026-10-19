@@ -4,7 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:inv_tracker/core/config/google_sign_in_config.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/features/auth/data/repositories/firebase_auth_repository.dart';
+import 'package:inv_tracker/features/auth/data/services/sign_out_cleanup_service.dart';
+import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/domain/repositories/auth_repository.dart';
 
@@ -71,8 +75,21 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return FirebaseAuthRepository(
     firebaseAuth: firebaseAuth,
     googleSignIn: googleSignIn,
+    onSignedOut: (userId) async {
+      await ref.read(signOutCleanupServiceProvider).wipe(userId);
+      // The notifier still holds the old user's lock state.
+      ref.invalidate(securityProvider);
+    },
   );
 });
+
+final signOutCleanupServiceProvider = Provider<SignOutCleanupService>(
+  (ref) => SignOutCleanupService(
+    firestore: ref.read(firestoreProvider),
+    security: ref.read(securityServiceProvider),
+    prefs: ref.read(sharedPreferencesProvider),
+  ),
+);
 
 /// Stream provider for the current user state.
 final authStateProvider = StreamProvider<UserEntity?>((ref) {

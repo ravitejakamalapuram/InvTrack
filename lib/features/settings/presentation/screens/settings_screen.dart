@@ -189,8 +189,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   iconColor: Colors.orange,
                   title: l10n.featureFlagsScreenTitle,
                   subtitle: l10n.featureFlagsTileSubtitle,
-                  onTap: () =>
-                      _navigateTo(context, const FeatureFlagsScreen()),
+                  onTap: () => _navigateTo(context, const FeatureFlagsScreen()),
                 ),
               ],
             ),
@@ -253,7 +252,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
-    if (confirmed ?? false) await _signOut(ref);
+    if ((confirmed ?? false) && context.mounted) await _signOut(context, ref);
   }
 
   /// A guest cannot sign back in to an anonymous account, so signing out
@@ -276,11 +275,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ErrorHandler.handle(e, st, context: context, showFeedback: true);
         }
       case _GuestSignOutChoice.signOut:
-        await _signOut(ref);
+        await _signOut(context, ref);
     }
   }
 
-  Future<void> _signOut(WidgetRef ref) async {
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    // Signing out clears this device's offline cache, which also holds edits
+    // that have not reached the server.
+    final unsynced = await ref
+        .read(signOutCleanupServiceProvider)
+        .hasUnsyncedWrites();
+    if (!context.mounted) return;
+    if (unsynced) {
+      final l10n = AppLocalizations.of(context);
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.signOutUnsyncedTitle),
+          content: Text(l10n.signOutUnsyncedMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(l10n.signOutAnyway),
+            ),
+          ],
+        ),
+      );
+      if (!(proceed ?? false) || !context.mounted) return;
+    }
     // The Analytics and Crashlytics user IDs are cleared when the auth state
     // empties (userIdentitySyncProvider).
     await ref.read(authRepositoryProvider).signOut();

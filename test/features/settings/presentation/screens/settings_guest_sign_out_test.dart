@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
+import 'package:inv_tracker/features/auth/data/services/sign_out_cleanup_service.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
@@ -22,6 +23,14 @@ class _MockCrashlyticsService extends Mock implements CrashlyticsService {}
 
 class _MockDataExportService extends Mock implements DataExportService {}
 
+class _FakeCleanup extends Fake implements SignOutCleanupService {
+  _FakeCleanup(this.unsynced);
+  final bool unsynced;
+
+  @override
+  Future<bool> hasUnsyncedWrites() async => unsynced;
+}
+
 class _TestSecurityNotifier extends SecurityNotifier {
   @override
   SecurityState build() => const SecurityState();
@@ -38,8 +47,10 @@ void main() {
   late _MockCrashlyticsService crashlytics;
   late _MockDataExportService exportService;
   late SharedPreferences prefs;
+  var unsynced = false;
 
   setUp(() async {
+    unsynced = false;
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
     crashlytics = _MockCrashlyticsService();
@@ -57,6 +68,9 @@ void main() {
       ProviderScope(
         overrides: [
           authRepositoryProvider.overrideWithValue(authRepo),
+          signOutCleanupServiceProvider.overrideWithValue(
+            _FakeCleanup(unsynced),
+          ),
           sharedPreferencesProvider.overrideWithValue(prefs),
           securityProvider.overrideWith(_TestSecurityNotifier.new),
           analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
@@ -153,6 +167,36 @@ void main() {
 
       expect(linkCalls, 1);
       expect(authRepo.signOutCalls, 0);
+    });
+  });
+
+  group('Settings > Sign Out with unsynced offline edits', () {
+    const warning = 'Some changes have not synced';
+
+    testWidgets('warns, and Cancel keeps the user signed in', (tester) async {
+      unsynced = true;
+      await pumpSettings(tester, googleUser);
+      await tapSignOutTile(tester);
+      await tester.tap(find.widgetWithText(FilledButton, 'Sign Out'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(warning), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(authRepo.signOutCalls, 0);
+    });
+
+    testWidgets('Sign out anyway signs out', (tester) async {
+      unsynced = true;
+      await pumpSettings(tester, googleUser);
+      await tapSignOutTile(tester);
+      await tester.tap(find.widgetWithText(FilledButton, 'Sign Out'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sign out anyway'));
+      await tester.pumpAndSettle();
+
+      expect(authRepo.signOutCalls, 1);
     });
   });
 
