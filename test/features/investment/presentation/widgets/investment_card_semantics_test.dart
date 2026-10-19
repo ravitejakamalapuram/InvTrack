@@ -15,6 +15,11 @@ class MockPrivacyModeNotifier extends PrivacyModeNotifier {
   bool build() => false;
 }
 
+class MockPrivacyOnNotifier extends PrivacyModeNotifier {
+  @override
+  bool build() => true;
+}
+
 void main() {
   testWidgets('InvestmentCard semantics include XIRR when available', (
     tester,
@@ -230,4 +235,81 @@ void main() {
     // So returnPercent is null. So returns is empty.
     expect(label, isNot(contains('percent')));
   });
+
+  // #981: the card draws the net position (cash in minus cash out); the
+  // screen reader must not call that figure the "Current value".
+  testWidgets(
+    'InvestmentCard semantics do not call net cash the current value',
+    (tester) async {
+      final investment = InvestmentEntity(
+        currency: 'USD',
+        id: 'inv-net',
+        name: 'Paid back',
+        type: InvestmentType.p2pLending,
+        status: InvestmentStatus.open,
+        createdAt: DateTime(2023, 1, 1),
+        updatedAt: DateTime(2023, 1, 1),
+      );
+      final stats = InvestmentStats(
+        totalInvested: 10000,
+        totalReturned: 12000,
+        netCashFlow: 2000,
+        absoluteReturn: 20,
+        moic: 1.2,
+        xirr: 0.2,
+        cashFlowCount: 2,
+        firstCashFlowDate: DateTime(2023, 1, 1),
+        lastCashFlowDate: DateTime(2024, 1, 1),
+      );
+
+      Future<String> pumpLabel({required bool privacy}) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            key: UniqueKey(),
+            overrides: [
+              investmentBasicStatsProvider(
+                investment.id,
+              ).overrideWith((ref) => AsyncValue.data(stats)),
+              investmentXirrProvider(
+                investment.id,
+              ).overrideWith((ref) => Future.value(XirrResult.exact(0.2))),
+              currencySymbolProvider.overrideWith((ref) => '\$'),
+              currencyFormatProvider.overrideWith(
+                (ref) => NumberFormat.currency(symbol: '\$'),
+              ),
+              currencyCodeProvider.overrideWith((ref) => 'USD'),
+              privacyModeProvider.overrideWith(
+                privacy
+                    ? MockPrivacyOnNotifier.new
+                    : MockPrivacyModeNotifier.new,
+              ),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: InvestmentCard(
+                  investment: investment,
+                  isSelectionMode: false,
+                  isSelected: false,
+                  onTap: () {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        return tester.getSemantics(find.byType(GlassCard)).label;
+      }
+
+      final label = await pumpLabel(privacy: false);
+      expect(label, isNot(contains('Current value')));
+      expect(label, contains('Net position: 2,000 dollars'));
+
+      final hidden = await pumpLabel(privacy: true);
+      expect(hidden, isNot(contains('Current value')));
+      expect(hidden, isNot(contains('2,000')));
+      expect(hidden, contains('Net position: Hidden amount'));
+    },
+  );
 }

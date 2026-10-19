@@ -2,8 +2,9 @@ name: nightly
 
 # Tests that PR CI skips (A63). release.yaml runs `flutter test --exclude-tags=golden`, so the golden
 # tests in test/golden and the emulator integration tests in integration_test only run here: every
-# night and on demand. A failure does not block auto-release; GitHub emails it only to whoever last
-# changed the cron line, so check the Actions tab.
+# night and on demand. Auto-release needs the latest completed nightly run on main to have succeeded
+# within the last 36 h (A85, gate job in auto-release.yml), so a failure stops automatic releases until
+# a nightly run passes. To unblock a hotfix, dispatch this workflow on main and wait for it to pass.
 on:
   schedule:
     - cron: '37 1 * * *' # 01:37 UTC = 07:07 IST

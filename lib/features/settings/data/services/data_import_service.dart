@@ -11,6 +11,7 @@ import 'package:inv_tracker/core/utils/custom_type_label.dart';
 import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
+import 'package:inv_tracker/features/settings/data/services/investment_backup_json.dart';
 import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settings_repository.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/repositories/goal_repository.dart';
@@ -38,6 +39,8 @@ const _cashflowsArchivedWarning =
 const _goalsWarning = 'Goals not imported: goals.csv is invalid';
 const _goalsArchivedWarning =
     'Archived goals not imported: goals_archived.csv is invalid';
+const _investmentsWarning =
+    'Investment details not imported: investments.json is invalid';
 const _customTypesWarning =
     'Custom types not imported: custom_types.json is invalid';
 
@@ -273,6 +276,20 @@ class DataImportService {
       damagedFiles,
       _parseCustomTypes,
     );
+    final backedUpInvestments =
+        _readParsed(
+          archive,
+          'investments.json',
+          _investmentsWarning,
+          warnings,
+          damagedFiles,
+          (text) => _parseInvestmentsJson(
+            text,
+            strict: isReplace,
+            warnings: warnings,
+          ),
+        ) ??
+        const <String, InvestmentEntity>{};
     if (isReplace && damagedFiles.isNotEmpty) {
       // The file name only: not a row, a name, an amount or the exception.
       return _notImported('${damagedFiles.first} is damaged');
@@ -294,6 +311,7 @@ class DataImportService {
     int cashflowsImported = 0;
     int goalsImported = 0;
     final investmentNameToIdMap = <String, String>{};
+    final investmentIdMap = <String, String>{};
 
     // Reusable custom types (#936) first, so the investments below can link
     // to them. Replace with the file replaces the account's own types (the
@@ -327,6 +345,7 @@ class DataImportService {
         baseCurrency: baseCurrency,
         valuations: valuations,
         snapshots: snapshots,
+        backedUpInvestments: backedUpInvestments,
         customTypeRefs: investmentCustomTypes,
         customTypesByKey: customTypesByKey,
       );
@@ -335,6 +354,7 @@ class DataImportService {
       errors.addAll(result.errors);
       warnings.addAll(result.warnings);
       investmentNameToIdMap.addAll(result.investmentNameToIdMap);
+      investmentIdMap.addAll(result.investmentIdMap);
     }
 
     // Import archived cashflows
@@ -346,6 +366,7 @@ class DataImportService {
         baseCurrency: baseCurrency,
         valuations: valuations,
         snapshots: snapshots,
+        backedUpInvestments: backedUpInvestments,
         customTypeRefs: investmentCustomTypes,
         customTypesByKey: customTypesByKey,
       );
@@ -354,6 +375,7 @@ class DataImportService {
       errors.addAll(result.errors);
       warnings.addAll(result.warnings);
       investmentNameToIdMap.addAll(result.investmentNameToIdMap);
+      investmentIdMap.addAll(result.investmentIdMap);
     }
 
     // Investments with valuations and no cash flows, then every valuation.
@@ -422,9 +444,13 @@ class DataImportService {
         if (docFile != null) {
           // Get the new investment ID by looking up the investment name
           final investmentName = docMeta['investmentName'] as String?;
-          String? newInvestmentId;
+          // Same-name investments kept apart by id take their own documents.
+          String? newInvestmentId =
+              investmentIdMap[docMeta['investmentId'] as String? ?? ''];
 
-          if (investmentName != null && investmentName.isNotEmpty) {
+          if (newInvestmentId == null &&
+              investmentName != null &&
+              investmentName.isNotEmpty) {
             // Use the name-to-ID mapping we built during import
             newInvestmentId =
                 investmentNameToIdMap[investmentName.toLowerCase()];
@@ -646,6 +672,7 @@ class DataImportService {
     required String baseCurrency,
     required Map<(bool, String), List<_ImportedValuation>> valuations,
     required List<InvestmentValuationSnapshot> snapshots,
+    Map<String, InvestmentEntity> backedUpInvestments = const {},
     Map<(bool, String), _ImportedCustomTypeRef> customTypeRefs = const {},
     Map<String, CustomInvestmentType> customTypesByKey = const {},
   }) async {
@@ -657,21 +684,48 @@ class DataImportService {
       );
     }
 
-    // Group cashflows by investment name
+    // Group cashflows by investment: by id when the file says which investment
+    // a row belongs to and investments.json knows it, so same-name investments
+    // stay apart; otherwise by name, as older backups always were.
     final grouped = <String, List<ParsedCashFlowRow>>{};
     for (final row in parseResult.rows) {
       if (row.isValid) {
-        grouped.putIfAbsent(row.investmentName, () => []).add(row);
+        final id = row.investmentId;
+        final key = id != null && backedUpInvestments.containsKey(id)
+            ? 'id:$id'
+            : 'name:${row.investmentName}';
+        grouped.putIfAbsent(key, () => []).add(row);
       }
     }
 
-    // For merge strategy, get existing investment names
+    // For merge strategy, get existing investment names and ids
     Set<String> existingInvestmentNames = {};
+    Set<String> existingInvestmentIds = {};
+    final existingNameCounts = <String, int>{};
     if (strategy == ImportStrategy.merge) {
       final existing = await _investmentRepository.getAllInvestments();
       existingInvestmentNames = existing
           .map((e) => e.name.toLowerCase())
           .toSet();
+      existingInvestmentIds = existing.map((e) => e.id).toSet();
+      for (final e in existing) {
+        existingNameCounts.update(
+          e.name.toLowerCase(),
+          (n) => n + 1,
+          ifAbsent: () => 1,
+        );
+      }
+    }
+    // How many investments of each name the backup holds apart by id.
+    final backupNameGroups = <String, int>{};
+    for (final entry in grouped.entries) {
+      if (entry.key.startsWith('id:')) {
+        backupNameGroups.update(
+          entry.value.first.investmentName.toLowerCase(),
+          (n) => n + 1,
+          ifAbsent: () => 1,
+        );
+      }
     }
 
     final now = DateTime.now();
@@ -679,10 +733,14 @@ class DataImportService {
     final cashFlows = <CashFlowEntity>[];
     final warnings = <String>[];
     final nameToIdMap = <String, String>{};
+    final idToIdMap = <String, String>{};
 
     for (final entry in grouped.entries) {
-      final investmentName = entry.key;
       final rows = entry.value;
+      final saved = entry.key.startsWith('id:')
+          ? backedUpInvestments[entry.key.substring(3)]
+          : null;
+      final investmentName = rows.first.investmentName;
 
       // The valuations of this investment go with it, or are dropped with it.
       final valuationRows =
@@ -690,13 +748,26 @@ class DataImportService {
           const <_ImportedValuation>[];
 
       // Skip if merging and investment already exists
-      if (strategy == ImportStrategy.merge &&
-          existingInvestmentNames.contains(investmentName.toLowerCase())) {
+      // An investment kept apart by id is skipped when its id exists, or when
+      // the account already holds as many of that name as the backup (a backup
+      // merged before has them under new ids); a missing one of several
+      // same-name investments is restored.
+      final nameKey = investmentName.toLowerCase();
+      final alreadyThere = saved == null
+          ? existingInvestmentNames.contains(nameKey)
+          : existingInvestmentIds.contains(saved.id) ||
+                (existingNameCounts[nameKey] ?? 0) >=
+                    (backupNameGroups[nameKey] ?? 1);
+      if (strategy == ImportStrategy.merge && alreadyThere) {
         warnings.add('Skipped "$investmentName" - already exists');
         continue;
       }
 
-      final investmentId = _uuid.v4();
+      // Replace keeps the backed-up id (the account was just cleared); Merge
+      // adds next to what exists, so it takes a new one.
+      final investmentId = saved != null && strategy == ImportStrategy.replace
+          ? saved.id
+          : _uuid.v4();
 
       // Get investment type and status from the first row (all rows for same
       // investment should have the same type/status)
@@ -705,10 +776,13 @@ class DataImportService {
       final investmentStatus =
           firstRow.investmentStatus ?? InvestmentStatus.open;
 
-      final currency = resolveSharedCurrency(
-        rows.map((r) => r.currency ?? baseCurrency),
-        baseCurrency,
-      );
+      // An explicit currency saved with the investment wins over the rows.
+      final currency = saved != null && !saved.currencyAssumed
+          ? saved.currency
+          : resolveSharedCurrency(
+              rows.map((r) => r.currency ?? baseCurrency),
+              baseCurrency,
+            );
       final routed = _routeSnapshots(
         investmentId: investmentId,
         name: investmentName,
@@ -737,24 +811,39 @@ class DataImportService {
       );
 
       investments.add(
-        InvestmentEntity(
-          id: investmentId,
-          name: investmentName,
-          type: investmentType,
-          status: investmentStatus,
-          createdAt: now,
-          updatedAt: now,
-          isArchived: isArchived,
-          currency: currency,
-          currentValue: mirror?.amount,
-          currentValueDate: mirror?.effectiveDate,
-          customTypeId: customType.id,
-          customTypeLabel: customType.label,
-        ),
+        saved != null
+            ? saved.copyWith(
+                id: investmentId,
+                name: investmentName,
+                // A guessed currency was left blank in the file: this account
+                // applies its own, as it does for rows without a file.
+                currency: currency,
+                currencyAssumed: false,
+                isArchived: isArchived,
+                currentValue: mirror?.amount,
+                currentValueDate: mirror?.effectiveDate,
+                customTypeId: customType.id,
+                customTypeLabel: customType.label,
+              )
+            : InvestmentEntity(
+                id: investmentId,
+                name: investmentName,
+                type: investmentType,
+                status: investmentStatus,
+                createdAt: now,
+                updatedAt: now,
+                isArchived: isArchived,
+                currency: currency,
+                currentValue: mirror?.amount,
+                currentValueDate: mirror?.effectiveDate,
+                customTypeId: customType.id,
+                customTypeLabel: customType.label,
+              ),
       );
 
       // Track name -> ID mapping for goals remapping
       nameToIdMap[investmentName.toLowerCase()] = investmentId;
+      if (saved != null) idToIdMap[saved.id] = investmentId;
 
       for (final row in rows) {
         cashFlows.add(
@@ -793,6 +882,7 @@ class DataImportService {
       errors: parseResult.errors,
       warnings: warnings,
       investmentNameToIdMap: nameToIdMap,
+      investmentIdMap: idToIdMap,
     );
   }
 
@@ -1080,6 +1170,44 @@ class DataImportService {
       }
     }
     return nameToId;
+  }
+
+  /// Reads investments.json (see `DataExportService`): the backed-up
+  /// investments by id. Null if the file is damaged: not JSON, not an object,
+  /// written by a newer version of the app, without the list the exporter
+  /// always writes, or with rows but none of them readable. A row of the wrong
+  /// shape among readable ones is skipped by Merge; with [strict] (Replace) it
+  /// makes the file damaged too, so Replace never deletes the account and
+  /// restores that investment without its details.
+  Map<String, InvestmentEntity>? _parseInvestmentsJson(
+    String text, {
+    required bool strict,
+    required List<String> warnings,
+  }) {
+    final json = jsonDecode(text);
+    if (json is! Map<String, dynamic>) return null;
+    final version = json['schemaVersion'];
+    if (version is! int || version > investmentsBackupSchemaVersion) {
+      return null;
+    }
+    final rows = json['investments'];
+    if (rows is! List) return null;
+    final byId = <String, InvestmentEntity>{};
+    var skipped = 0;
+    for (final row in rows) {
+      final investment = investmentFromBackupJson(row);
+      if (investment != null) {
+        byId[investment.id] = investment;
+      } else if (strict) {
+        return null;
+      } else {
+        skipped++;
+      }
+    }
+    if (byId.isEmpty && rows.isNotEmpty) return null;
+    // Merge keeps the readable rows; the user is told details were lost.
+    if (skipped > 0) warnings.add(_investmentsWarning);
+    return byId;
   }
 
   /// Reads custom_types.json (see `DataExportService`): the reusable types
@@ -1452,12 +1580,17 @@ class _CsvImportResult {
   /// Map of investment name (lowercase) to investment ID (for goals linking)
   final Map<String, String> investmentNameToIdMap;
 
+  /// Map of the backed-up investment id to the id it was imported under, for
+  /// the investments the backup keeps apart by id (documents).
+  final Map<String, String> investmentIdMap;
+
   const _CsvImportResult({
     required this.imported,
     this.investmentsCreated = 0,
     required this.errors,
     required this.warnings,
     this.investmentNameToIdMap = const {},
+    this.investmentIdMap = const {},
   });
 }
 

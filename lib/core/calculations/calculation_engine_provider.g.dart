@@ -8,9 +8,16 @@ part of 'calculation_engine_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Provider for the unified [CalculationEngine].
+///
+/// Automatically registers calculation modules and resolves active services.
 
 @ProviderFor(calculationEngine)
-final calculationEngineProvider = CalculationEngineProvider._();
+const calculationEngineProvider = CalculationEngineProvider._();
+
+/// Provider for the unified [CalculationEngine].
+///
+/// Automatically registers calculation modules and resolves active services.
 
 final class CalculationEngineProvider
     extends
@@ -20,16 +27,19 @@ final class CalculationEngineProvider
           CalculationEngine
         >
     with $Provider<CalculationEngine> {
-  CalculationEngineProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'calculationEngineProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  /// Provider for the unified [CalculationEngine].
+  ///
+  /// Automatically registers calculation modules and resolves active services.
+  const CalculationEngineProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'calculationEngineProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$calculationEngineHash();
@@ -54,5 +64,4 @@ final class CalculationEngineProvider
   }
 }
 
-String _$calculationEngineHash() => r'8c5e9f7a4b3d2c1e0f9a8b7c6d5e4f3a2b1c0d9e';
-String $calculationEngineHash() => _$calculationEngineHash();
+String _$calculationEngineHash() => r'f07d7076fb36859857fcf3293c523e88d597dabb';

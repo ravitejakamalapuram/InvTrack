@@ -49,6 +49,29 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
   /// new snapshots do not log it again.
   bool _emptyStateViewLogged = false;
 
+  /// Retry on the load error card: a reload is running / the last one failed.
+  bool _retrying = false;
+  bool _retryFailed = false;
+
+  Future<void> _retry() async {
+    setState(() {
+      _retrying = true;
+      _retryFailed = false;
+    });
+    reloadPortfolio(ref);
+    var failed = false;
+    try {
+      await ref.read(multiCurrencyGlobalStatsProvider.future);
+    } catch (_) {
+      failed = true;
+    }
+    if (!mounted) return;
+    setState(() {
+      _retrying = false;
+      _retryFailed = failed;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -331,7 +354,11 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
   SliverList _buildLoadErrorContent(WidgetRef ref) {
     return SliverList(
       delegate: SliverChildListDelegate([
-        OverviewLoadErrorState(onRetry: () => reloadPortfolio(ref)),
+        OverviewLoadErrorState(
+          onRetry: _retry,
+          retrying: _retrying,
+          retryFailed: _retryFailed,
+        ),
       ]),
     );
   }

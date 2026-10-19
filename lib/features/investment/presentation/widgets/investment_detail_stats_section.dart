@@ -17,6 +17,7 @@ import 'package:inv_tracker/features/investment/domain/entities/investment_entit
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/presentation/utils/return_display.dart';
 import 'package:inv_tracker/features/investment/presentation/utils/xirr_viewed_logger.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/metric_with_tooltip.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Stats section widget for investment detail screen.
@@ -143,6 +144,7 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
           columns: [
             _statColumn(
               label: display.metricLabel(l10n),
+              tooltip: l10n.xirrTooltip,
               value: display.primaryText(l10n),
               color: !hasReturnFigure
                   ? _neutralColor
@@ -163,6 +165,7 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
             ),
             _statColumn(
               label: display.moicLabel(l10n),
+              tooltip: l10n.moicTooltip,
               value: display.isAwaitingValue ? ReturnDisplay.dash : moicText,
               color: isDark
                   ? AppColors.graphPurple
@@ -176,7 +179,7 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
                       _withSubtitle(
                         '${l10n.moicLabel}: '
                         '${isPrivacyMode ? l10n.hiddenAmount : moicText}',
-                        moicSubtitle,
+                        moicSubtitle == null ? null : _spokenDuration(l10n),
                       ),
                     )
                   : null,
@@ -210,20 +213,27 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
     required Color color,
     String? subtitle,
     String? semanticsLabel,
+    String? tooltip,
   }) {
+    final labelStyle = AppTypography.small.copyWith(
+      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+      fontSize: 11,
+    );
     final valueStyle = AppTypography.bodyMedium.copyWith(
       color: color,
       fontWeight: FontWeight.w700,
     );
     return StatColumn(
       labelText: label,
-      label: Text(
-        label,
-        style: AppTypography.small.copyWith(
-          color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-          fontSize: 11,
-        ),
-      ),
+      label: tooltip == null
+          ? Text(label, style: labelStyle)
+          : MetricWithTooltip(
+              label: label,
+              tooltip: tooltip,
+              labelStyle: labelStyle,
+              iconSize: 12,
+              iconColor: labelStyle.color,
+            ),
       value: isPrivacyMode
           ? MaskedAmountText(text: value, style: valueStyle)
           : Text(value, style: valueStyle),
@@ -244,6 +254,16 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
 
   /// [figure] followed by the card's visible subtitle, which a card that
   /// replaces its texts with one semantics label would otherwise drop.
+  /// The holding period as a screen reader should say it, in place of the
+  /// short visible form ("1.0y", "<1mo").
+  String? _spokenDuration(AppLocalizations l10n) {
+    final years = stats.durationYears;
+    if (years == null) return null;
+    if (years < 0.08) return l10n.durationSpokenUnderMonth;
+    if (years < 1) return l10n.durationSpokenMonths((years * 12).round());
+    return l10n.durationSpokenYears(years.toStringAsFixed(1));
+  }
+
   static String _withSubtitle(String figure, String? subtitle) =>
       subtitle == null ? figure : '$figure, $subtitle';
 
@@ -330,15 +350,19 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      investment.isOpen
+                    MetricWithTooltip(
+                      label: investment.isOpen
                           ? l10n.netCashFlowSoFar
                           : l10n.netPosition,
-                      style: AppTypography.small.copyWith(
+                      tooltip: l10n.netPositionTooltip,
+                      labelStyle: AppTypography.small.copyWith(
                         color: isDark
                             ? AppColors.neutral400Dark
                             : AppColors.neutral500Light,
                       ),
+                      iconColor: isDark
+                          ? AppColors.neutral400Dark
+                          : AppColors.neutral500Light,
                     ),
                     const SizedBox(height: 4),
                     isPrivacyMode

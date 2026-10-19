@@ -256,7 +256,9 @@ void main() {
         allInvestments: [
           _investment('A', InvestmentStatus.closed),
           _investment('B', InvestmentStatus.open),
-          _investment('C', InvestmentStatus.open),
+          // Closed: an open C with no value would await one (rule 4) and
+          // leave the report; this test is about undefined XIRRs.
+          _investment('C', InvestmentStatus.closed),
         ],
         allCashFlows: [..._flowsA, ..._flowsB, ..._flowsC],
       );

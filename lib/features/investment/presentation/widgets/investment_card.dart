@@ -109,9 +109,11 @@ class InvestmentCard extends ConsumerWidget {
         hiddenPercentageLabel: l10n.hiddenPercentage,
         name: investment.name,
         type: typeName,
-        // An open investment awaiting a value shows what went in and came
-        // back; its net would read as a loss.
-        currentValue: isAwaitingValue ? null : stats.netCashFlow,
+        // The card knows no current value, so the label never says one. What
+        // it does say goes in receivedSegment below: what went in and came
+        // back while the value is awaited (a net would read as a loss), the
+        // net position on every other card.
+        currentValue: null,
         receivedSegment: isAwaitingValue
             ? l10n.investmentCardReceivedSemantics(
                 isPrivacyMode
@@ -122,7 +124,15 @@ class InvestmentCard extends ConsumerWidget {
                         locale: currencyFormat.locale,
                       ),
               )
-            : null,
+            : l10n.investmentCardNetSemantics(
+                isPrivacyMode
+                    ? l10n.hiddenAmount
+                    : AccessibilityUtils.formatCurrencyForScreenReader(
+                        stats.netCashFlow,
+                        currencySymbol,
+                        locale: currencyFormat.locale,
+                      ),
+              ),
         // Null while XIRR is loading or undefined: the label leaves it out
         returnPercent: returnPercent,
         returnIsApproximate:
@@ -465,7 +475,7 @@ class _InvestmentInfo extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: isDark ? Colors.white : AppColors.neutral900Light,
           ),
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
         SizedBox(height: AppSpacing.xxs),

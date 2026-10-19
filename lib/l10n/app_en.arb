@@ -577,7 +577,7 @@
     "description": "FAQ question"
   },
 
-  "howToAddFirstInvestmentAnswer": "Tap the \"+\" button on the Investments tab. Enter your investment details including name, amount, date, and category. You can also add transactions later to track your investment growth.",
+  "howToAddFirstInvestmentAnswer": "Tap the \"+\" button on the Investments tab. Enter the name and type, then add cash flows (money in, payouts, income) to track how it grows.",
   "@howToAddFirstInvestmentAnswer": {
     "description": "FAQ answer"
   },
@@ -1299,6 +1299,51 @@
     "description": "Footer message"
   },
 
+  "offlineBanner": "You''re offline. Changes are saved on this device and sync when you reconnect.",
+  "@offlineBanner": {
+    "description": "Persistent banner shown at the top of every screen while there is no network"
+  },
+
+  "errorReasonNetwork": "no internet connection",
+  "@errorReasonNetwork": {
+    "description": "Short reason after 'Export failed:' when the network is the cause"
+  },
+
+  "errorReasonPermission": "you don''t have access to this data",
+  "@errorReasonPermission": {
+    "description": "Short reason after 'Export failed:' when access is denied"
+  },
+
+  "errorReasonUnknown": "something went wrong",
+  "@errorReasonUnknown": {
+    "description": "Short reason after 'Export failed:' when the cause is not known"
+  },
+
+  "investmentLoadErrorNetworkTitle": "Connection Error",
+  "@investmentLoadErrorNetworkTitle": {
+    "description": "Investment list error title when the network is the cause"
+  },
+
+  "investmentLoadErrorNetworkBody": "Unable to load investments.\nPlease check your connection and try again.",
+  "@investmentLoadErrorNetworkBody": {
+    "description": "Investment list error body when the network is the cause"
+  },
+
+  "investmentLoadErrorTitle": "Couldn''t load investments",
+  "@investmentLoadErrorTitle": {
+    "description": "Investment list error title when the cause is not the network"
+  },
+
+  "investmentLoadErrorPermissionBody": "You don''t have access to these investments right now.\nSign in again and retry.",
+  "@investmentLoadErrorPermissionBody": {
+    "description": "Investment list error body when access is denied"
+  },
+
+  "investmentLoadErrorUnknownBody": "Something went wrong while loading your investments.\nPlease try again.",
+  "@investmentLoadErrorUnknownBody": {
+    "description": "Investment list error body when the cause is not known"
+  },
+
   "exportFailed": "Export failed: {error}",
   "@exportFailed": {
     "description": "Export failure message",
@@ -1655,6 +1700,16 @@
     "description": "Overview message under the load error title, reassuring the user their data was not lost"
   },
 
+  "overviewRetryFailed": "Still couldn''t load your portfolio. Your data is safe.",
+  "@overviewRetryFailed": {
+    "description": "Overview message shown after Retry on the load error failed again"
+  },
+
+  "retrying": "Retrying",
+  "@retrying": {
+    "description": "Screen reader label for a Retry button while the reload runs"
+  },
+
   "connectionError": "Connection Error",
   "@connectionError": {
     "description": "Connection error title"
@@ -1898,20 +1953,8 @@
     "description": "Button text to keep data"
   },
 
-  "invTrackerPremium": "InvTrack Premium",
-  "@invTrackerPremium": {
-    "description": "Title for premium paywall screen"
-  },
 
-  "maybeLater": "Maybe Later",
-  "@maybeLater": {
-    "description": "Button text to dismiss premium offer"
-  },
 
-  "unlockPremiumFeature": "Unlock Premium feature",
-  "@unlockPremiumFeature": {
-    "description": "Accessibility label for premium gate overlay"
-  },
 
   "signInTagline": "Track investments. Grow wealth.",
   "@signInTagline": {
@@ -1981,15 +2024,7 @@
     "description": "Header for transaction type values legend"
   },
 
-  "welcomeToPremium": "Welcome to Premium!",
-  "@welcomeToPremium": {
-    "description": "Success message when user upgrades to premium"
-  },
 
-  "upgradeForPrice": "Upgrade for $4.99/mo",
-  "@upgradeForPrice": {
-    "description": "Premium upgrade button text with price"
-  },
 
   "goalEmoji": "🎯",
   "@goalEmoji": {
@@ -2470,6 +2505,26 @@
         "example": "14"
       }
     }
+  },
+  "maturityReminderPromptFeatureSubtitle": "Ask for notification permission after the first investment with a maturity date, not at sign-in",
+  "@maturityReminderPromptFeatureSubtitle": {
+    "description": "Debug settings subtitle of the maturity reminder prompt flag (A45)"
+  },
+  "maturityReminderTitle": "Get a reminder when this pays out?",
+  "@maturityReminderTitle": {
+    "description": "Title of the dialog asking to allow notifications after the first investment with a maturity date is saved (A45)"
+  },
+  "maturityReminderBody": "We will tell you before it matures so you do not miss it. You can change this in Settings.",
+  "@maturityReminderBody": {
+    "description": "Body of the maturity reminder dialog (A45)"
+  },
+  "maturityReminderAccept": "Remind me",
+  "@maturityReminderAccept": {
+    "description": "Button that asks the system for notification permission (A45)"
+  },
+  "maturityReminderDecline": "Not now",
+  "@maturityReminderDecline": {
+    "description": "Button that dismisses the maturity reminder dialog without asking the system (A45)"
   },
   "investmentCreated": "Investment created successfully",
   "@investmentCreated": {
@@ -4001,6 +4056,17 @@
     "description": "Lowercase word after the amount received so far, on an investment card that awaits its current value (e.g., '₹2.52 L received')"
   },
 
+  "investmentCardNetSemantics": "Net position: {amount}",
+  "@investmentCardNetSemantics": {
+    "description": "Screen reader text for the net position (cash in minus cash out) drawn on an investment card. The amount is already spoken text, or 'Hidden amount' in privacy mode",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "2,000 dollars"
+      }
+    }
+  },
+
   "investmentCardReceivedSemantics": "Received: {amount}",
   "@investmentCardReceivedSemantics": {
     "description": "Screen reader text for the amount received so far, on an investment card that awaits its current value. The amount is already spoken text, or 'Hidden amount' in privacy mode",
@@ -4988,9 +5054,17 @@
     "description": "Summary section title"
   },
 
-  "xirrTooltip": "Extended Internal Rate of Return - Industry standard for calculating returns with multiple transactions at different times. Accounts for when you invested and withdrew money.",
+  "xirrTooltip": "Your yearly return, counting when each payment went in or came out. Example: 100 invested grows to 110 in a year, so XIRR is 10%.",
   "@xirrTooltip": {
-    "description": "Tooltip explaining XIRR metric"
+    "description": "Explainer shown from the info icon next to XIRR, with an example"
+  },
+  "moicTooltip": "Money multiple: what you got back (plus what it is worth now) divided by what you put in. Example: 100 invested and 150 back is 1.50x.",
+  "@moicTooltip": {
+    "description": "Explainer shown from the info icon next to MOIC (multiple on invested capital), with an example"
+  },
+  "netPositionTooltip": "Money received minus money put in. Example: 100 put in and 130 received is +30. Below zero means you have not got all your money back yet.",
+  "@netPositionTooltip": {
+    "description": "Explainer shown from the info icon next to Net Position and Net cash flow so far, with an example"
   },
 
   "capitalGainsTooltip": "Profit from selling investments. Short-term (<1 year) gains are taxed higher than long-term (>1 year) gains in India.",
@@ -5545,6 +5619,31 @@
     "description": "Label for Multiple on Invested Capital metric"
   },
 
+  "durationSpokenUnderMonth": "under 1 month",
+  "@durationSpokenUnderMonth": {
+    "description": "Screen reader wording for a holding period shorter than one month"
+  },
+
+  "durationSpokenMonths": "{count, plural, =1{1 month} other{{count} months}}",
+  "@durationSpokenMonths": {
+    "description": "Screen reader wording for a holding period of 1 to 11 months",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "durationSpokenYears": "{years} years",
+  "@durationSpokenYears": {
+    "description": "Screen reader wording for a holding period of a year or more; years is a number with one decimal, e.g. 2.3",
+    "placeholders": {
+      "years": {
+        "type": "String"
+      }
+    }
+  },
+
   "overDuration": "over {duration}",
   "@overDuration": {
     "description": "Shows duration of investment returns (e.g., 'over 2 years')",
@@ -5678,6 +5777,21 @@
   "errorLoadingInvestments": "Error loading investments",
   "@errorLoadingInvestments": {
     "description": "Error message when investments fail to load"
+  },
+
+  "goalsLoadError": "Couldn''t load your goals",
+  "@goalsLoadError": {
+    "description": "Shown with a Retry button on the Home goals card when goals fail to load"
+  },
+
+  "goalProgressLoadError": "Couldn''t load progress",
+  "@goalProgressLoadError": {
+    "description": "Shown with a Retry button on a goal card when its progress fails to load"
+  },
+
+  "goalLoadError": "Couldn''t load this goal",
+  "@goalLoadError": {
+    "description": "Shown with a Retry button on the goal details screen when the goal fails to load"
   },
 
   "errorLoadingGoals": "Error loading goals",
@@ -7215,5 +7329,215 @@
   "archiveActionFailed": "Something went wrong. Please try again.",
   "@archiveActionFailed": {
     "description": "Default message shown when archiving or unarchiving a swiped list item failed and the list gave no message of its own (A17)"
+  },
+  "monthlyRecapFeatureSubtitle": "Monthly recap screen and its notification, in place of the monthly summary",
+  "@monthlyRecapFeatureSubtitle": {
+    "description": "Debug settings subtitle of the monthly recap flag"
+  },
+  "monthlyRecapTitle": "{month} Recap",
+  "@monthlyRecapTitle": {
+    "description": "Monthly recap app bar title, e.g. October Recap",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapMoneyIn": "Money In",
+  "@monthlyRecapMoneyIn": {
+    "description": "Monthly recap section heading"
+  },
+  "monthlyRecapPayoutsReceived": "Payouts received",
+  "@monthlyRecapPayoutsReceived": {
+    "description": "Label above the month's payout total"
+  },
+  "monthlyRecapPayoutCount": "{payouts, plural, =1{1 payout} other{{payouts} payouts}} from {investments, plural, =1{1 investment} other{{investments} investments}}",
+  "@monthlyRecapPayoutCount": {
+    "description": "Caption under the payout total",
+    "placeholders": {
+      "payouts": {
+        "type": "int"
+      },
+      "investments": {
+        "type": "int"
+      }
+    }
+  },
+  "monthlyRecapMore": "{amount} more than {month}",
+  "@monthlyRecapMore": {
+    "description": "Change against the previous month, up",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapLess": "{amount} less than {month}",
+  "@monthlyRecapLess": {
+    "description": "Change against the previous month, down",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapSame": "Same as {month}",
+  "@monthlyRecapSame": {
+    "description": "No change against the previous month",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapCompared": "Compared with {month}:",
+  "@monthlyRecapCompared": {
+    "description": "Privacy-mode comparison line, followed by a masked amount",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapUpSemantics": "Up {amount} from {month}",
+  "@monthlyRecapUpSemantics": {
+    "description": "Screen reader text for a rise",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapDownSemantics": "Down {amount} from {month}",
+  "@monthlyRecapDownSemantics": {
+    "description": "Screen reader text for a fall",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapHeadlineSemantics": "Money in, {month}: {amount}. {detail}",
+  "@monthlyRecapHeadlineSemantics": {
+    "description": "Screen reader text for the payout total",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapNoPayouts": "No payouts recorded in {month}",
+  "@monthlyRecapNoPayouts": {
+    "description": "Empty money-in title",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapNoPayoutsHint": "Payouts you add for {month} will appear here",
+  "@monthlyRecapNoPayoutsHint": {
+    "description": "Empty money-in message",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapAddPayout": "Add a Payout",
+  "@monthlyRecapAddPayout": {
+    "description": "Empty money-in action; opens the investments list"
+  },
+  "monthlyRecapComingUp": "Coming Up In {month}",
+  "@monthlyRecapComingUp": {
+    "description": "Section heading for investments maturing next month",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapNothingMatures": "Nothing matures in {month}",
+  "@monthlyRecapNothingMatures": {
+    "description": "Empty coming-up line",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapMatures": "MATURES {date}",
+  "@monthlyRecapMatures": {
+    "description": "State chip on a maturing investment, ALL CAPS, e.g. MATURES 12 NOV",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapMaturesSemantics": "{name}, {type}, matures {date}. Opens the investment.",
+  "@monthlyRecapMaturesSemantics": {
+    "description": "Screen reader text for a maturing row",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "type": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyRecapNeedsValue": "Needs A Value",
+  "@monthlyRecapNeedsValue": {
+    "description": "Section heading for open investments without a current value"
+  },
+  "monthlyRecapNeedsValueReason": "Add a current value to see its XIRR",
+  "@monthlyRecapNeedsValueReason": {
+    "description": "Why an investment is listed under Needs A Value"
+  },
+  "monthlyRecapUpdate": "Update",
+  "@monthlyRecapUpdate": {
+    "description": "Button that opens the investment to add a current value"
+  },
+  "monthlyRecapArchivedNote": "Archived investments are not included.",
+  "@monthlyRecapArchivedNote": {
+    "description": "Footer note on the monthly recap (money rule 9)"
+  },
+  "monthlyRecapLoadError": "Couldn''t load your recap",
+  "@monthlyRecapLoadError": {
+    "description": "Error state on the monthly recap"
+  },
+  "monthlyRecapRange": "{start} – {end}",
+  "@monthlyRecapRange": {
+    "description": "Date range under the monthly recap title, e.g. 1 Oct – 31 Oct 2026",
+    "placeholders": {
+      "start": {"type": "String"},
+      "end": {"type": "String"}
+    }
+  },
+  "monthlyRecapFeature": "Monthly Recap",
+  "@monthlyRecapFeature": {
+    "description": "Debug settings title of the monthly recap flag"
   }
 }

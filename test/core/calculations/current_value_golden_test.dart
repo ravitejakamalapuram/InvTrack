@@ -775,6 +775,17 @@ void main() {
         expect(terminal.missingValueCount, 0);
       });
 
+      test('income and fee without any INVEST row stay unknown (#982)', () {
+        // Money out is only the fee, so the holding looks paid back, but
+        // nothing was ever invested: no "so far" figures.
+        final terminal = terminalOf([
+          _flow('gold', CashFlowType.fee, 100, DateTime(2026, 1, 1)),
+          _flow('gold', CashFlowType.income, 500, DateTime(2026, 2, 1)),
+        ]);
+        expect(terminal.cashOnlyCount, 0);
+        expect(terminal.missingValueCount, 1);
+      });
+
       test('a closed investment is neither', () {
         final closed = _investment(
           'gold',

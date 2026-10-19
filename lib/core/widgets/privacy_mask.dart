@@ -6,6 +6,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// A widget that masks its child when privacy mode is enabled.
 /// Uses an animated blur effect with a stylish masked pattern.
@@ -187,7 +188,7 @@ class _MaskedText extends StatelessWidget {
     // Also fixed bug where dots were white-on-white in light mode.
     return Text(
       dots.text,
-      semanticsLabel: 'Hidden amount',
+      semanticsLabel: AppLocalizations.of(context).hiddenAmount,
       style: dots.style,
       maxLines: maxLines,
       overflow: overflow,

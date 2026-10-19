@@ -74,7 +74,20 @@ enum FeatureFlag {
   /// - Off by default; it ships by changing the default in a release PR, and
   ///   release builds read only that default. Read once per sign-in, so a
   ///   debug toggle applies from the next sign-in or start
-  baseCurrencyPrompt('base_currency_prompt', 'Base Currency Prompt');
+  baseCurrencyPrompt('base_currency_prompt', 'Base Currency Prompt'),
+
+  /// Notification permission asked after the first investment with a maturity
+  /// date instead of at sign-in (A45, #788).
+  /// - Off by default; flag off keeps the ask at sign-in. It ships by changing
+  ///   the default in a release PR
+  maturityReminderPrompt(
+    'maturity_reminder_prompt',
+    'Maturity Reminder Prompt',
+  ),
+
+  /// Monthly recap screen and notification (reports plan, phase 1). Off
+  /// until a release PR turns it on.
+  monthlyRecap('monthly_recap', 'Monthly Recap');
 
   const FeatureFlag(this.key, this.displayName, {this.defaultEnabled = false});
 
@@ -270,6 +283,24 @@ final isBaseCurrencyPromptEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.baseCurrencyPrompt] ?? false,
+    ),
+  );
+});
+
+/// Convenience provider for the maturity reminder prompt (A45)
+final isMaturityReminderPromptEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagsProvider.select(
+      (flags) => flags[FeatureFlag.maturityReminderPrompt] ?? false,
+    ),
+  );
+});
+
+/// Convenience provider for checking if the monthly recap is enabled
+final isMonthlyRecapEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagsProvider.select(
+      (flags) => flags[FeatureFlag.monthlyRecap] ?? false,
     ),
   );
 });

@@ -352,28 +352,20 @@ void main() {
       );
     });
 
-    test('says the app shows no ads, for as long as only the ads layer '
-        'knows about ads', () {
+    test('says the app shows no ads, and no ads or mock-purchase code is left',
+        () {
       expect(privacyPolicyContent, contains('The app shows no ads.'));
-      const adsLayer = {
-        'lib/core/ads/ad_placement_strategy.dart',
-        'lib/core/ads/ad_provider.dart',
-        'lib/core/ads/ad_service.dart',
-        'lib/core/widgets/native_ad_widget.dart',
-      };
-      final outsiders = [
+      final offenders = [
         for (final file in _libDartFiles())
-          if (!adsLayer.contains(file.path) &&
-              RegExp(
-                r'google_mobile_ads|core/ads/|NativeAd|AdService|MobileAds|adServiceProvider',
-              ).hasMatch(file.source))
+          if (RegExp(
+            r'core/ads/|NativeAd|AdService|MobileAds|adServiceProvider|features/premium/|PremiumGate|PaywallScreen|premiumServiceProvider',
+          ).hasMatch(file.source))
             file.path,
       ];
-      expect(
-        outsiders,
-        isEmpty,
-        reason: 'a file outside the ads layer uses ads: update the ads text',
-      );
+      expect(offenders, isEmpty,
+          reason: 'ads or mock-premium code is back: update the ads text');
+      expect(Directory('lib/core/ads').existsSync(), isFalse);
+      expect(Directory('lib/features/premium').existsSync(), isFalse);
     });
   });
 

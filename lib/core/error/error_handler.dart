@@ -76,10 +76,22 @@ import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 
+/// Coarse cause of a failure, used to pick which message the user sees.
+enum ErrorKind { network, permission, unknown }
+
 /// Centralized error handler for the application.
 ///
 /// See library documentation above for usage examples and exception hierarchy.
 class ErrorHandler {
+  /// Which kind of failure [error] is. Permission and sign-in failures are
+  /// [ErrorKind.permission]; anything unrecognised is [ErrorKind.unknown].
+  static ErrorKind kindOf(Object error) {
+    final mapped = mapException(error);
+    if (mapped is NetworkException) return ErrorKind.network;
+    if (mapped is AuthException) return ErrorKind.permission;
+    return ErrorKind.unknown;
+  }
+
   /// Convert any exception to an [AppException].
   ///
   /// This method maps platform-specific exceptions (Firebase, network, etc.)

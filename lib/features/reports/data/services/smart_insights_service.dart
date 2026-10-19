@@ -233,6 +233,11 @@ class SmartInsightsService {
 
     for (final investment in investments) {
       // O(1) map lookup instead of O(N) .where() scan
+      // Cash alone says nothing about an open holding's value (money rule 4):
+      // what it still holds is not in the cash flows, so no decline can be
+      // read from them.
+      if (investment.isOpen) continue;
+
       final investmentCashFlows = cashFlowsByInvestment[investment.id];
       if (investmentCashFlows == null || investmentCashFlows.isEmpty) continue;
 

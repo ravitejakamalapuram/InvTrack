@@ -18,6 +18,7 @@ import 'package:inv_tracker/features/goals/domain/repositories/goal_repository.d
 import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
 import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/settings/data/services/investment_backup_json.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
@@ -34,6 +35,10 @@ enum ExportFileType {
   goals,
   goalsArchived,
   valuations,
+
+  /// Every investment with its id and all its fields (A24), so an import
+  /// restores them as they were and keeps same-name investments apart.
+  investments,
 
   /// The account's reusable custom investment types and the custom type
   /// label of each Other investment (#936), in one JSON file; written only
@@ -93,23 +98,13 @@ class ZipExport {
   int get investmentsInExport => investments - investmentsNotInExport;
 }
 
-/// Whether [investment] holds details the export ZIP does not carry. The ZIP
-/// keeps only name, type, status, currency and cash flows per investment, so
-/// an import recreates it without these (and without the maturity and income
-/// reminders that depend on them).
-bool investmentHasDetailsNotInExport(InvestmentEntity investment) =>
-    (investment.notes?.isNotEmpty ?? false) ||
-    investment.closedAt != null ||
-    investment.maturityDate != null ||
-    investment.incomeFrequency != null ||
-    investment.startDate != null ||
-    investment.expectedRate != null ||
-    investment.tenureMonths != null ||
-    investment.platform != null ||
-    investment.interestPayoutMode != null ||
-    investment.autoRenewal != null ||
-    investment.riskLevel != null ||
-    investment.compoundingFrequency != null;
+/// Whether [investment] holds details the export ZIP does not carry. Since
+/// investments.json (A24) the ZIP carries every field of an investment (the
+/// current value and the custom type travel in valuations.csv and
+/// custom_types.json), so this is always false. It stays, with the count in
+/// [ZipExport], so the guest merge keeps asking the question until a follow-up
+/// removes it.
+bool investmentHasDetailsNotInExport(InvestmentEntity investment) => false;
 
 /// Service for exporting all user data as a ZIP file with CSV data files
 class DataExportService {
@@ -255,6 +250,15 @@ class DataExportService {
       archived: archivedInvestments,
     );
 
+    // Every investment with its id, so an import keeps same-name investments
+    // apart and restores what cashflows.csv has no column for.
+    final investmentsJson = jsonEncode({
+      'schemaVersion': investmentsBackupSchemaVersion,
+      'investments': [
+        for (final inv in allInvestments) investmentToBackupJson(inv),
+      ],
+    });
+
     // 3. Create metadata JSON
     final metadata = _createMetadata(
       documents: allDocuments,
@@ -295,6 +299,15 @@ class DataExportService {
     final valuationsBytes = utf8.encode(valuationsCsv);
     archive.addFile(
       ArchiveFile('valuations.csv', valuationsBytes.length, valuationsBytes),
+    );
+
+    final investmentsBytes = utf8.encode(investmentsJson);
+    archive.addFile(
+      ArchiveFile(
+        'investments.json',
+        investmentsBytes.length,
+        investmentsBytes,
+      ),
     );
 
     if (customTypesJson != null) {
@@ -454,6 +467,7 @@ class DataExportService {
       'Notes',
       'Investment Type',
       'Investment Status',
+      'Investment ID',
     ]);
 
     // Sort by date
@@ -472,6 +486,7 @@ class DataExportService {
         CsvUtils.sanitizeField(item.cashFlow.notes ?? ''),
         item.investment.type.name,
         item.investment.status.name,
+        item.investment.id,
       ]);
     }
 
@@ -717,6 +732,10 @@ class DataExportService {
           'type': ExportFileType.goalsArchived.name,
         },
         {'fileName': 'valuations.csv', 'type': ExportFileType.valuations.name},
+        {
+          'fileName': 'investments.json',
+          'type': ExportFileType.investments.name,
+        },
         if (hasCustomTypes)
           {
             'fileName': 'custom_types.json',

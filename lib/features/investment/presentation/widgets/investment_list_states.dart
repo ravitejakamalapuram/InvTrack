@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -183,16 +184,29 @@ class InvestmentNoResultsState extends StatelessWidget {
 class InvestmentErrorState extends StatelessWidget {
   final bool isDark;
   final VoidCallback onRetry;
+  final Object? error;
 
   const InvestmentErrorState({
     super.key,
     required this.isDark,
     required this.onRetry,
+    this.error,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final kind = error == null
+        ? ErrorKind.network
+        : ErrorHandler.kindOf(error!);
+    final title = kind == ErrorKind.network
+        ? l10n.investmentLoadErrorNetworkTitle
+        : l10n.investmentLoadErrorTitle;
+    final body = switch (kind) {
+      ErrorKind.network => l10n.investmentLoadErrorNetworkBody,
+      ErrorKind.permission => l10n.investmentLoadErrorPermissionBody,
+      ErrorKind.unknown => l10n.investmentLoadErrorUnknownBody,
+    };
     return Center(
       child: Padding(
         padding: EdgeInsets.all(AppSpacing.xxl),
@@ -213,14 +227,14 @@ class InvestmentErrorState extends StatelessWidget {
             ),
             SizedBox(height: AppSpacing.lg),
             Text(
-              'Connection Error',
+              title,
               style: AppTypography.h3.copyWith(
                 color: isDark ? Colors.white : AppColors.neutral900Light,
               ),
             ),
             SizedBox(height: AppSpacing.xs),
             Text(
-              'Unable to load investments.\nPlease check your connection and try again.',
+              body,
               textAlign: TextAlign.center,
               style: AppTypography.body.copyWith(
                 color: isDark
