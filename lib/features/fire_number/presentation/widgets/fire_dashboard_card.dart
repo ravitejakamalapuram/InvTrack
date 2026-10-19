@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/spread_row.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
 import 'package:inv_tracker/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart';
@@ -55,7 +56,11 @@ class FireDashboardCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildSetupCard(BuildContext context, bool isDark, AppLocalizations l10n) {
+  Widget _buildSetupCard(
+    BuildContext context,
+    bool isDark,
+    AppLocalizations l10n,
+  ) {
     // The icon is the deeper blue in light; its disc keeps the bright blue.
     final accentTint = isDark ? AppColors.accentDark : AppColors.accentLight;
     final accentColor = isDark
@@ -149,19 +154,29 @@ class FireDashboardCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          SpreadRow(
             children: [
-              Icon(Icons.local_fire_department, color: statusColor, size: 24),
-              SizedBox(width: AppSpacing.sm),
-              Text(
-                l10n.fireProgressTitle,
-                style: AppTypography.h4.copyWith(
-                  color: isDark
-                      ? AppColors.textPrimaryDark
-                      : AppColors.textPrimaryLight,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.local_fire_department,
+                    color: statusColor,
+                    size: 24,
+                  ),
+                  SizedBox(width: AppSpacing.sm),
+                  Flexible(
+                    child: Text(
+                      l10n.fireProgressTitle,
+                      style: AppTypography.h4.copyWith(
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimaryLight,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const Spacer(),
               Container(
                 padding: EdgeInsets.symmetric(
                   horizontal: AppSpacing.sm,
@@ -195,8 +210,7 @@ class FireDashboardCard extends ConsumerWidget {
             ),
           ),
           SizedBox(height: AppSpacing.sm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          SpreadRow(
             children: [
               // Current portfolio value - mask in privacy mode
               isPrivacyMode
