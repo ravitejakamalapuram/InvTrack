@@ -47,9 +47,9 @@ class UserProfileEntity {
     required String userId,
     required String countryCode,
     required String languageCode,
+    required String currency,
   }) {
     final now = DateTime.now();
-    final currency = LocaleDetectionService.getCurrencyForCountry(countryCode);
     final locale = LocaleDetectionService.getLocaleStringForCountry(
       countryCode,
     );

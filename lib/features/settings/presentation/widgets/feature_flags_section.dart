@@ -318,6 +318,45 @@ class FeatureFlagsSection extends ConsumerWidget {
           },
         ),
 
+        // Base currency prompt feature flag (A31, #772)
+        SettingsToggleTile(
+          icon: Icons.currency_exchange,
+          iconColor: Colors.teal,
+          title: l10n.baseCurrencyPromptFeature,
+          subtitle: l10n.baseCurrencyPromptSubtitle,
+          value: featureFlags[FeatureFlag.baseCurrencyPrompt] ?? false,
+          onChanged: (value) async {
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.baseCurrencyPrompt);
+
+              final newState =
+                  ref.read(
+                    featureFlagsProvider,
+                  )[FeatureFlag.baseCurrencyPrompt] ??
+                  false;
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      newState
+                          ? l10n.baseCurrencyPromptEnabled
+                          : l10n.baseCurrencyPromptDisabled,
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
+            }
+          },
+        ),
+
         // Future features (disabled - coming soon)
         Opacity(
           opacity: 0.5,

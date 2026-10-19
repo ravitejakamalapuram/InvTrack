@@ -68,11 +68,22 @@ enum FeatureFlag {
   ///   release builds read only that default
   firstInvestmentFlow('first_investment_flow', 'First Investment Flow'),
 
+  /// Base currency prompt and profile sync (A31, #772).
+  /// - A new user confirms a currency proposed from their phone's country
+  /// - The base currency is kept on the profile and restored on a new device
+  /// - Off by default; it ships by changing the default in a release PR, and
+  ///   release builds read only that default. Read once per sign-in, so a
+  ///   debug toggle applies from the next sign-in or start
+  baseCurrencyPrompt('base_currency_prompt', 'Base Currency Prompt'),
+
   /// Notification permission asked after the first investment with a maturity
   /// date instead of at sign-in (A45, #788).
   /// - Off by default; flag off keeps the ask at sign-in. It ships by changing
   ///   the default in a release PR
-  maturityReminderPrompt('maturity_reminder_prompt', 'Maturity Reminder Prompt'),
+  maturityReminderPrompt(
+    'maturity_reminder_prompt',
+    'Maturity Reminder Prompt',
+  ),
 
   /// Monthly recap screen and notification (reports plan, phase 1). Off
   /// until a release PR turns it on.
@@ -262,6 +273,16 @@ final isFirstInvestmentFlowEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.firstInvestmentFlow] ?? false,
+    ),
+  );
+});
+
+/// Convenience provider for checking if the base currency prompt (A31) is
+/// enabled
+final isBaseCurrencyPromptEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagsProvider.select(
+      (flags) => flags[FeatureFlag.baseCurrencyPrompt] ?? false,
     ),
   );
 });

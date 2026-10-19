@@ -50,6 +50,7 @@ void main() {
         final profile = UserProfileEntity.fromDetectedLocale(
           userId: 'test_user',
           countryCode: 'US',
+          currency: 'USD',
           languageCode: 'en',
         );
 
@@ -66,6 +67,7 @@ void main() {
         final profile = UserProfileEntity.fromDetectedLocale(
           userId: 'test_user',
           countryCode: 'IN',
+          currency: 'INR',
           languageCode: 'en',
         );
 
@@ -80,6 +82,7 @@ void main() {
         final profile = UserProfileEntity.fromDetectedLocale(
           userId: 'test_user',
           countryCode: 'GB',
+          currency: 'GBP',
           languageCode: 'en',
         );
 
@@ -93,6 +96,7 @@ void main() {
         final profile = UserProfileEntity.fromDetectedLocale(
           userId: 'test_user',
           countryCode: 'JP',
+          currency: 'JPY',
           languageCode: 'ja',
         );
 
@@ -109,6 +113,7 @@ void main() {
         final original = UserProfileEntity.fromDetectedLocale(
           userId: 'test_user',
           countryCode: 'US',
+          currency: 'USD',
           languageCode: 'en',
         );
 
@@ -124,6 +129,7 @@ void main() {
         final original = UserProfileEntity.fromDetectedLocale(
           userId: 'test_user',
           countryCode: 'US',
+          currency: 'USD',
           languageCode: 'en',
         );
 
@@ -137,6 +143,7 @@ void main() {
         final original = UserProfileEntity.fromDetectedLocale(
           userId: 'test_user',
           countryCode: 'US',
+          currency: 'USD',
           languageCode: 'en',
         );
 
@@ -152,6 +159,7 @@ void main() {
         final original = UserProfileEntity.fromDetectedLocale(
           userId: 'test_user',
           countryCode: 'US',
+          currency: 'USD',
           languageCode: 'en',
         );
 
@@ -195,6 +203,7 @@ void main() {
         final profile1 = UserProfileEntity.fromDetectedLocale(
           userId: 'test_user',
           countryCode: 'US',
+          currency: 'USD',
           languageCode: 'en',
         );
 
