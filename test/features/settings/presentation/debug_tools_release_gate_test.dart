@@ -359,14 +359,14 @@ void main() {
     });
 
     test('GoRouter diagnostics follow the developer-tools switch', () {
-      const followsSwitch = 'ref.watch(developerToolsAvailableProvider)';
+      const followsSwitch = 'ref.read(developerToolsAvailableProvider)';
       final settings = <String>[];
       for (final file in libDartFiles()) {
         // Compare without whitespace, so a formatter that wraps the value
         // over several lines does not break the check.
         final source = file.readAsStringSync().replaceAll(RegExp(r'\s+'), '');
         for (final m in RegExp(
-          r'debugLogDiagnostics:(ref\.watch\([^)]*\)|[^,)]+)',
+          r'debugLogDiagnostics:(ref\.(?:watch|read)\([^)]*\)|[^,)]+)',
         ).allMatches(source)) {
           settings.add(m.group(1)!.replaceAll(',)', ')'));
         }

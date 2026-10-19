@@ -63,15 +63,18 @@ void main() {
     },
   );
 
-  test('signing in as a different user still rebuilds the router', () async {
-    container.listen(routerProvider, (_, _) {});
-    await settle();
-    final routerBefore = container.read(routerProvider);
+  test(
+    'signing in as a different user keeps the router and re-runs its redirects',
+    () async {
+      container.listen(routerProvider, (_, _) {});
+      await settle();
+      final routerBefore = container.read(routerProvider);
 
-    authRepo.emit(googleUser);
-    await settle();
-    expect(container.read(authStateProvider).value, googleUser);
+      authRepo.emit(googleUser);
+      await settle();
+      expect(container.read(authStateProvider).value, googleUser);
 
-    expect(identical(container.read(routerProvider), routerBefore), isFalse);
-  });
+      expect(identical(container.read(routerProvider), routerBefore), isTrue);
+    },
+  );
 }

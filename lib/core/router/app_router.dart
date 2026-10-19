@@ -38,31 +38,53 @@ import 'package:inv_tracker/features/income_projection/presentation/screens/inco
 // Root navigator key - used for showing dialogs from anywhere in the app
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
+/// Tells the one router to re-run its redirects when state they read changes.
+class _RouterRefresh extends ChangeNotifier {
+  void refresh() => notifyListeners();
+}
+
+/// Built once. Everything the redirects depend on is read when they run and
+/// pushed through [_RouterRefresh], so a lock, sign-in, onboarding or flag
+/// change re-evaluates the redirects without recreating the router, which
+/// would reset navigation to '/' and discard open forms (A27).
 final routerProvider = Provider<GoRouter>((ref) {
-  // Rebuild only when who is signed in changes. Linking a guest to Google
-  // keeps the UID and must not reset navigation; redirect() uses only these
-  // fields of the auth state.
-  final (authLoading, authFailed, signedInUserId) = ref.watch(
+  final refresh = _RouterRefresh();
+  ref.onDispose(refresh.dispose);
+
+  // Linking a guest to Google keeps the UID and must not refresh; redirect()
+  // uses only these fields of the auth state.
+  ref.listen(
     authStateProvider.select(
       (state) => (state.isLoading, state.hasError, state.value?.id),
     ),
+    (_, _) => refresh.refresh(),
   );
-  final securityState = ref.watch(securityProvider);
-  final onboardingComplete = ref.watch(onboardingCompleteProvider);
-  final analytics = ref.watch(analyticsServiceProvider);
-  final isReportsEnabled = ref.watch(isReportsTabEnabledProvider);
-  final isIncomeGuardianEnabled = ref.watch(isIncomeGuardianEnabledProvider);
+  ref.listen(securityProvider.select((s) => s.isLocked), (_, _) {
+    refresh.refresh();
+  });
+  ref.listen(onboardingCompleteProvider, (_, _) => refresh.refresh());
+  ref.listen(isReportsTabEnabledProvider, (_, _) => refresh.refresh());
+  ref.listen(isIncomeGuardianEnabledProvider, (_, _) => refresh.refresh());
 
-  return GoRouter(
+  final router = GoRouter(
+    refreshListenable: refresh,
     navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     // Route paths are diagnostics; release builds must not log them (A35).
-    debugLogDiagnostics: ref.watch(developerToolsAvailableProvider),
+    debugLogDiagnostics: ref.read(developerToolsAvailableProvider),
     // The one observer: go_router forwards the tabs' own Navigators to it, so
     // none of the tab branches gets another (it would log every tab twice).
-    observers: [AnalyticsRouteObserver(analytics)],
+    observers: [AnalyticsRouteObserver(ref.read(analyticsServiceProvider))],
     redirect: (context, state) {
-      final isLocked = securityState.isLocked;
+      final (authLoading, authFailed, signedInUserId) = ref.read(
+        authStateProvider.select(
+          (state) => (state.isLoading, state.hasError, state.value?.id),
+        ),
+      );
+      final onboardingComplete = ref.read(onboardingCompleteProvider);
+      final isReportsEnabled = ref.read(isReportsTabEnabledProvider);
+      final isIncomeGuardianEnabled = ref.read(isIncomeGuardianEnabledProvider);
+      final isLocked = ref.read(securityProvider).isLocked;
       final isLockScreen = state.uri.toString() == '/lock';
 
       // While auth or onboarding state is loading, only the lock applies:
@@ -324,4 +346,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+  ref.onDispose(router.dispose);
+  return router;
 });
