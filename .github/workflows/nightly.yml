@@ -81,7 +81,7 @@ jobs:
   notify-failure:
     name: Notify Slack of Failure
     needs: [goldens, integration]
-    if: always() && (needs.goldens.result == 'failure' || needs.integration.result == 'failure')
+    if: ${{ !cancelled() && (needs.goldens.result == 'failure' || needs.integration.result == 'failure') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
