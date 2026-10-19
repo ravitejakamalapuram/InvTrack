@@ -17,6 +17,8 @@ import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
+import 'package:inv_tracker/features/investment/presentation/utils/document_file_reader.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/document_image_preview.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -207,7 +209,10 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
           child: isImage
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.memory(_selectedBytes!, fit: BoxFit.cover),
+                  child: DocumentImagePreview(
+                    bytes: _selectedBytes!,
+                    cacheWidth: 900,
+                  ),
                 )
               : Center(
                   child: Column(
@@ -322,7 +327,15 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
         imageQuality: 85,
       );
       if (image != null && mounted) {
-        final bytes = await image.readAsBytes();
+        final bytes = await readDocumentBytesWithinLimit(File(image.path));
+        if (!mounted) return;
+        if (bytes == null) {
+          AppFeedback.showError(
+            context,
+            AppLocalizations.of(context).documentsTooLargeSkipped,
+          );
+          return;
+        }
         setState(() {
           _selectedBytes = bytes;
           _selectedFileName = image.name;
@@ -362,10 +375,15 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
         setState(() => _isReadingFiles = true);
 
         final files = <_SelectedFile>[];
+        var skippedTooLarge = 0;
         for (final platformFile in result.files) {
           if (platformFile.path != null) {
             final file = File(platformFile.path!);
-            final bytes = await file.readAsBytes();
+            final bytes = await readDocumentBytesWithinLimit(file);
+            if (bytes == null) {
+              skippedTooLarge++;
+              continue;
+            }
             final detectedType = _detectDocumentType(platformFile.name);
             files.add(
               _SelectedFile(
@@ -381,6 +399,13 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
 
         if (mounted) {
           setState(() => _isReadingFiles = false);
+
+          if (skippedTooLarge > 0) {
+            AppFeedback.showError(
+              context,
+              AppLocalizations.of(context).documentsTooLargeSkipped,
+            );
+          }
 
           if (files.isNotEmpty) {
             // Save the directory from the first file for next time
@@ -474,11 +499,11 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: isImage
-                          ? Image.memory(
-                              file.bytes,
+                          ? DocumentImagePreview(
+                              bytes: file.bytes,
                               width: 48,
                               height: 48,
-                              fit: BoxFit.cover,
+                              cacheWidth: 144, // 48 px at 3x density
                               semanticLabel:
                                   'Document preview: ${file.fileName}',
                             )

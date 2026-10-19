@@ -2076,6 +2076,11 @@
     "description": "Error message when file access fails"
   },
 
+  "documentsTooLargeSkipped": "Files over 10 MB were skipped",
+  "@documentsTooLargeSkipped": {
+    "description": "Error shown when a picked document is larger than the 10 MB limit and was not loaded"
+  },
+
   "documentsAdded": "{count} documents added",
   "@documentsAdded": {
     "description": "Success message when multiple documents are added",
