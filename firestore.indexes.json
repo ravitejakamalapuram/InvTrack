@@ -55,6 +55,52 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "expectedCashFlows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "investmentId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "expectedDate",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "expectedCashFlows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "expectedDate",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "exchangeRates",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "from",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "to",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "fetchedAt",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []
