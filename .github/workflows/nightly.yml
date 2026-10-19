@@ -5,6 +5,7 @@ name: nightly
 # night and on demand. Auto-release needs the latest completed nightly run on main to have succeeded
 # within the last 36 h (A85, gate job in auto-release.yml), so a failure stops automatic releases until
 # a nightly run passes. To unblock a hotfix, dispatch this workflow on main and wait for it to pass.
+# A failure posts to Slack (notify-failure job: failing job names and the run link only).
 on:
   schedule:
     - cron: '37 1 * * *' # 01:37 UTC = 07:07 IST
@@ -75,3 +76,27 @@ jobs:
             flutter test integration_test/flows/investment_form_flow_test.dart -d emulator-5554
             flutter test integration_test/flows/cash_flow_crud_test.dart -d emulator-5554
             flutter test integration_test/flows/data_management_flow_test.dart -d emulator-5554
+
+  # Own job so the webhook secret never reaches the test jobs. Sends only job names and the run URL.
+  notify-failure:
+    name: Notify Slack of Failure
+    needs: [goldens, integration]
+    if: always() && (needs.goldens.result == 'failure' || needs.integration.result == 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Notify Slack
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GOLDENS_RESULT: ${{ needs.goldens.result }}
+          INTEGRATION_RESULT: ${{ needs.integration.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          failed=""
+          [ "$GOLDENS_RESULT" = "failure" ] && failed="goldens"
+          [ "$INTEGRATION_RESULT" = "failure" ] && failed="${failed:+$failed, }integration"
+          PAYLOAD=$(jq -n --arg text "❌ *Nightly failed for InvTrack*: $failed — $RUN_URL" '{ text: $text }')
+          curl -fsS -o /dev/null -X POST -H 'Content-type: application/json' \
+            --data "$PAYLOAD" "$SLACK_WEBHOOK_URL"
+        shell: bash
