@@ -15,6 +15,11 @@ on:
 
 permissions: {}
 
+# Manual dry runs replace each other; a filing run is never cancelled mid-way.
+concurrency:
+  group: crash-issues-${{ inputs.dry_run == true && 'dry' || 'file' }}
+  cancel-in-progress: ${{ inputs.dry_run == true }}
+
 jobs:
   crash-issues:
     permissions:
