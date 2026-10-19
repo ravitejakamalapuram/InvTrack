@@ -84,16 +84,11 @@ class _NotificationSyncInitializerState
     }
   }
 
-  /// Weekly and FY summaries open a report, so they exist only while the
-  /// Reports route does. Scheduling again either schedules or cancels them.
   void _applyReportsRoute(bool enabled) {
     try {
       final notificationService = ref.read(notificationServiceProvider);
       notificationService.reportsRouteEnabled = enabled;
-      _enqueue(() async {
-        await notificationService.scheduleWeeklySummary();
-        await notificationService.scheduleFYSummary();
-      });
+      _enqueue(() => notificationService.applyReportsRoute(enabled));
     } catch (e) {
       LoggerService.debug('NotificationService not available for reports');
     }
@@ -411,8 +406,11 @@ class _NotificationSyncInitializerState
       if (next.hasValue) _scheduleNotificationsDebounced();
     });
 
+    // The monthly slot is shared with the recap, so a change also reschedules
+    // everything, which puts the right monthly notification back.
     ref.listen<bool>(isReportsTabEnabledProvider, (previous, next) {
       _applyReportsRoute(next);
+      _scheduleNotificationsDebounced();
     }, onError: (_, _) {});
 
     // Turning income or maturity reminders back on schedules them again.

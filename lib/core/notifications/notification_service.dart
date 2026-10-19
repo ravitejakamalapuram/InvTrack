@@ -339,6 +339,15 @@ class NotificationService with NotificationPreferencesMixin {
   set reportsRouteEnabled(bool enabled) =>
       _scheduledHandler.reportsRouteEnabled = enabled;
 
+  /// Records whether Reports is on and schedules or cancels the weekly and
+  /// FY summaries to match. The monthly slot is shared with the recap, so
+  /// the caller reconciles it with the rest of the reminders.
+  Future<void> applyReportsRoute(bool enabled) async {
+    reportsRouteEnabled = enabled;
+    await scheduleWeeklySummary();
+    await scheduleFYSummary();
+  }
+
   /// Configure the local timezone from the device.
   /// This is required for scheduled notifications to work correctly.
   Future<void> _configureLocalTimeZone() async {

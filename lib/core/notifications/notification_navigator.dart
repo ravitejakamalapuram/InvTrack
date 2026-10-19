@@ -72,6 +72,23 @@ void queueNotificationNavigation(String payload) {
   );
 }
 
+/// Hands [payload] to [handle] once the app can show a screen: the tap that
+/// starts a killed app arrives while the router and sign-in are still
+/// loading. Polls [isReady] up to [maxPolls] times, [pollEvery] apart, then
+/// tries once anyway so the failure is logged where the tap is handled.
+Future<bool> deliverNotificationTap(
+  String payload, {
+  required bool Function() isReady,
+  required Future<bool> Function(String payload) handle,
+  Duration pollEvery = const Duration(milliseconds: 500),
+  int maxPolls = 20,
+}) async {
+  for (var i = 0; i < maxPolls && !isReady(); i++) {
+    await Future<void>.delayed(pollEvery);
+  }
+  return handle(payload);
+}
+
 /// Handles navigation from notification payloads
 class NotificationNavigator {
   final Ref _ref;

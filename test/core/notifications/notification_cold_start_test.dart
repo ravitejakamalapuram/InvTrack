@@ -73,6 +73,57 @@ void main() {
     });
   });
 
+  group('deliverNotificationTap', () {
+    test('waits for the router, then hands over the payload once', () async {
+      var ready = false;
+      final handled = <String>[];
+      final done = deliverNotificationTap(
+        'p',
+        isReady: () => ready,
+        handle: (p) async {
+          handled.add(p);
+          return true;
+        },
+        pollEvery: const Duration(milliseconds: 5),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(handled, isEmpty);
+
+      ready = true;
+      expect(await done, isTrue);
+      expect(handled, ['p']);
+    });
+
+    test('hands over right away when already ready', () async {
+      final handled = <String>[];
+      await deliverNotificationTap(
+        'p',
+        isReady: () => true,
+        handle: (p) async {
+          handled.add(p);
+          return true;
+        },
+      );
+      expect(handled, ['p']);
+    });
+
+    test('tries once after the poll limit when never ready', () async {
+      final handled = <String>[];
+      await deliverNotificationTap(
+        'p',
+        isReady: () => false,
+        handle: (p) async {
+          handled.add(p);
+          return false;
+        },
+        pollEvery: const Duration(milliseconds: 1),
+        maxPolls: 3,
+      );
+      expect(handled, ['p']);
+    });
+  });
+
   test('weekly check-in tap opens the investment list', () {
     final parsed = NotificationPayload.parse(NotificationPayload.weeklyCheckIn);
 
