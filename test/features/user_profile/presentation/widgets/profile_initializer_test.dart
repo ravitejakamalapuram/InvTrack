@@ -120,12 +120,16 @@ void main() {
   testWidgets('with the flag off nothing is asked, read or stored', (
     tester,
   ) async {
-    investments.seed(investments: [_investment()]);
+    final recording = _RecordingInvestments()
+      ..seed(investments: [_investment()]);
+    investments = recording;
     final container = await pump(
       tester,
       locale: const ui.Locale('en', 'US'),
       flagOn: false,
     );
+
+    expect(recording.serverChecks, 0);
 
     expect(find.byType(AlertDialog), findsNothing);
     expect(repo.profile, isNull);
@@ -283,6 +287,16 @@ void main() {
 class _ServerOnlyInvestments extends FakeInvestmentRepository {
   @override
   Future<List<InvestmentEntity>> getAllInvestments() async => [];
+}
+
+class _RecordingInvestments extends FakeInvestmentRepository {
+  int serverChecks = 0;
+
+  @override
+  Future<bool> hasAnyInvestmentOnServer() async {
+    serverChecks++;
+    return super.hasAnyInvestmentOnServer();
+  }
 }
 
 class _OfflineInvestments extends FakeInvestmentRepository {
