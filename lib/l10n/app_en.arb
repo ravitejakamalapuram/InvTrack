@@ -278,6 +278,21 @@
     "description": "Sign out confirmation dialog message"
   },
 
+  "signOutUnsyncedTitle": "Some changes have not synced",
+  "@signOutUnsyncedTitle": {
+    "description": "Title of the warning shown when signing out while edits made offline have not reached the server"
+  },
+
+  "signOutUnsyncedMessage": "Changes you made offline have not reached the server yet. If you sign out now they will be lost. Connect to the internet and wait a moment to keep them.",
+  "@signOutUnsyncedMessage": {
+    "description": "Warning shown when signing out with unsynced offline edits"
+  },
+
+  "signOutAnyway": "Sign out anyway",
+  "@signOutAnyway": {
+    "description": "Button that signs out and discards unsynced offline edits"
+  },
+
   "guestSignOutTitle": "Sign out of guest account?",
   "@guestSignOutTitle": {
     "description": "Title of the sign-out dialog shown to guest (anonymous) users"

@@ -97,7 +97,8 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
 
   @override
   void dispose() {
-    _setSecureMode(false);
+    // Stay secure while the app lock is on; only the setup flow clears it.
+    _setSecureMode(ref.read(securityProvider).hasPin);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

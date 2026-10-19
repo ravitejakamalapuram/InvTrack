@@ -19,8 +19,13 @@ class FirebaseAuthRepository implements AuthRepository {
   FirebaseAuthRepository({
     required FirebaseAuth firebaseAuth,
     required GoogleSignIn googleSignIn,
+    Future<void> Function(String userId)? onSignedOut,
   }) : _firebaseAuth = firebaseAuth,
-       _googleSignIn = googleSignIn;
+       _googleSignIn = googleSignIn,
+       _onSignedOut = onSignedOut;
+
+  /// Removes the signed-out user's data from this device.
+  final Future<void> Function(String userId)? _onSignedOut;
 
   /// Uses userChanges() rather than authStateChanges(): linking a guest to
   /// Google keeps the UID, so only userChanges() reports it. userChanges()
@@ -215,8 +220,10 @@ class FirebaseAuthRepository implements AuthRepository {
   @override
   Future<void> signOut() async {
     _linkCredential = null;
+    final userId = _firebaseAuth.currentUser?.uid;
     await _googleSignIn.signOut();
     await _firebaseAuth.signOut();
+    if (userId != null) await _onSignedOut?.call(userId);
   }
 
   @override

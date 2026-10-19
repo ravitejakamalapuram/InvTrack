@@ -1,7 +1,26 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
+
+/// Turns Android's FLAG_SECURE on or off for the whole window. While it is on,
+/// the recents thumbnail and screenshots are blank.
+Future<void> setSecureWindow(bool secure) async {
+  try {
+    if (!kIsWeb && Platform.isAndroid) {
+      await const MethodChannel(
+        'com.invtracker/security',
+      ).invokeMethod('setSecureMode', {'secure': secure});
+    }
+  } catch (e) {
+    LoggerService.warn('Failed to set secure mode', error: e);
+  }
+}
 
 /// A widget that overlays a privacy screen when the app goes into the background
 /// or becomes inactive (e.g. app switcher, notification shade).
@@ -34,6 +53,11 @@ class _PrivacyProtectionWrapperState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // FLAG_SECURE follows the app lock, so the recents thumbnail is blank
+    // whenever a PIN is set, not only while the passcode screen is up.
+    if (widget.enabled) {
+      setSecureWindow(ref.read(securityProvider).hasPin);
+    }
   }
 
   @override
@@ -63,6 +87,9 @@ class _PrivacyProtectionWrapperState
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    ref.listen(securityProvider.select((s) => s.hasPin), (_, hasPin) {
+      if (widget.enabled) setSecureWindow(hasPin);
+    });
     final lockPending =
         widget.enabled && ref.watch(autoLockCheckPendingProvider);
 
