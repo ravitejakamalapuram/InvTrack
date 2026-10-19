@@ -1,0 +1,10 @@
+version: 2
+updates:
+  # The account-deletion job holds deletion rights; keep its pinned lockfile current (reviewed, never auto-merged).
+  - package-ecosystem: npm
+    directory: /scripts/account-deletion
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7 # never take a release younger than a week
+    open-pull-requests-limit: 2
