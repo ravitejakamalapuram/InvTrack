@@ -3,16 +3,52 @@ import 'dart:ui';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/security/data/services/security_clock.dart';
 import 'package:inv_tracker/features/security/data/services/security_service.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../mocks/fake_auth_repository.dart';
 import '../../../../mocks/mock_analytics_service.dart';
 import '../../../../mocks/mock_security_service.dart';
+
+/// Secure storage that cannot delete, like a broken keystore.
+class _FailingDeleteSecureStorage extends FakeFlutterSecureStorage {
+  @override
+  Future<void> delete({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) {
+    if (key == 'user_pin') throw PlatformException(code: 'keystore');
+    return super.delete(key: key);
+  }
+}
+
+/// Secure storage whose reads never answer, like a hung keystore.
+class _HangingSecureStorage extends FakeFlutterSecureStorage {
+  @override
+  Future<String?> read({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) => Completer<String?>().future;
+}
+
+const _reason = 'Confirm it is you';
 
 void main() {
   // Initialize the test binding
@@ -72,6 +108,7 @@ void main() {
     ProviderContainer createContainer({
       SecurityService? customService,
       SecurityClock? clock,
+      FakeAuthRepository? auth,
     }) {
       final service =
           customService ??
@@ -84,9 +121,244 @@ void main() {
           localAuthProvider.overrideWithValue(fakeLocalAuth),
           securityServiceProvider.overrideWithValue(service),
           analyticsServiceProvider.overrideWithValue(fakeAnalytics),
+          if (auth != null) authRepositoryProvider.overrideWithValue(auth),
         ],
       );
     }
+
+    // A111: a storage failure must never open the portfolio when a PIN may
+    // exist, and every locked state needs a way out.
+    group('storage failure (A111)', () {
+      test(
+        'mirror null, hasPin throws: stays locked and flags the failure',
+        () async {
+          fakeSecureStorage.setThrowRead('user_pin', true);
+          container = createContainer();
+          container.read(securityProvider);
+          await pumpEventQueue();
+
+          final state = container.read(securityProvider);
+          expect(state.isLocked, isTrue);
+          expect(state.storageFailed, isTrue);
+        },
+      );
+
+      test(
+        'mirror true, hasPin throws: stays locked and flags the failure',
+        () async {
+          await prefs.setBool('has_pin', true);
+          fakeSecureStorage.setThrowRead('user_pin', true);
+          container = createContainer();
+          container.read(securityProvider);
+          await pumpEventQueue();
+
+          final state = container.read(securityProvider);
+          expect(state.isLocked, isTrue);
+          expect(state.hasPin, isTrue);
+          expect(state.storageFailed, isTrue);
+        },
+      );
+
+      test(
+        'mirror false, hasPin throws: unlocked, no PIN was ever set',
+        () async {
+          await prefs.setBool('has_pin', false);
+          fakeSecureStorage.setThrowRead('user_pin', true);
+          container = createContainer();
+          container.read(securityProvider);
+          await pumpEventQueue();
+
+          final state = container.read(securityProvider);
+          expect(state.isLocked, isFalse);
+          expect(state.storageFailed, isFalse);
+        },
+      );
+
+      testWidgets('mirror null, hasPin never completes: after 5 s the '
+          'failure is flagged and the app stays locked', (tester) async {
+        container = createContainer(
+          customService: SecurityService(
+            _HangingSecureStorage(),
+            fakeLocalAuth,
+            prefs,
+          ),
+        );
+        container.read(securityProvider);
+
+        await tester.pump(const Duration(seconds: 4));
+        expect(container.read(securityProvider).storageFailed, isFalse);
+
+        await tester.pump(const Duration(seconds: 2));
+        final state = container.read(securityProvider);
+        expect(state.isLocked, isTrue);
+        expect(state.storageFailed, isTrue);
+      });
+
+      test('retryInit clears the failure and unlocks when storage works '
+          'again and no PIN is set', () async {
+        fakeSecureStorage.setThrowRead('user_pin', true);
+        container = createContainer();
+        container.read(securityProvider);
+        await pumpEventQueue();
+
+        fakeSecureStorage.setThrowRead('user_pin', false);
+        await container.read(securityProvider.notifier).retryInit();
+
+        final state = container.read(securityProvider);
+        expect(state.storageFailed, isFalse);
+        expect(state.isLocked, isFalse);
+      });
+
+      test('forgotPin re-authenticates, removes the PIN and its mirror, and '
+          'unlocks', () async {
+        await prefs.setBool('has_pin', true);
+        fakeSecureStorage.setThrowRead('user_pin', true);
+        final auth = FakeAuthRepository(googleUser);
+        container = createContainer(auth: auth);
+        container.read(securityProvider);
+        await pumpEventQueue();
+
+        final ok = await container
+            .read(securityProvider.notifier)
+            .forgotPin(deviceLockReason: _reason);
+
+        expect(ok, isTrue);
+        expect(auth.reauthenticateCalls, 1);
+        final state = container.read(securityProvider);
+        expect(state.hasPin, isFalse);
+        expect(state.isLocked, isFalse);
+        expect(state.storageFailed, isFalse);
+        expect(prefs.getBool('has_pin'), isFalse);
+      });
+
+      test('forgotPin still clears the mirror and unlocks when the keystore '
+          'cannot delete the PIN', () async {
+        await prefs.setBool('has_pin', true);
+        final storage = _FailingDeleteSecureStorage();
+        await storage.write(key: 'user_pin', value: 'hash');
+        final auth = FakeAuthRepository(googleUser);
+        container = createContainer(
+          auth: auth,
+          customService: SecurityService(storage, fakeLocalAuth, prefs),
+        );
+        container.read(securityProvider);
+        await pumpEventQueue();
+        expect(container.read(securityProvider).isLocked, isTrue);
+
+        final ok = await container
+            .read(securityProvider.notifier)
+            .forgotPin(deviceLockReason: _reason);
+
+        expect(ok, isTrue);
+        expect(prefs.getBool('has_pin'), isFalse);
+        final state = container.read(securityProvider);
+        expect(state.isLocked, isFalse);
+        expect(state.hasPin, isFalse);
+      });
+
+      test(
+        'forgotPin keeps the lock when re-authentication is cancelled',
+        () async {
+          await prefs.setBool('has_pin', true);
+          await fakeSecureStorage.write(key: 'user_pin', value: 'hash');
+          final auth = FakeAuthRepository(googleUser)
+            ..onReauthenticate = () async => false;
+          container = createContainer(auth: auth);
+          container.read(securityProvider);
+          await pumpEventQueue();
+
+          final ok = await container
+              .read(securityProvider.notifier)
+              .forgotPin(deviceLockReason: _reason);
+
+          expect(ok, isFalse);
+          expect(container.read(securityProvider).isLocked, isTrue);
+          expect(prefs.getBool('has_pin'), isTrue);
+        },
+      );
+
+      test('forgotPin needs the phone screen lock before the Google check, '
+          'and keeps the PIN when it is refused', () async {
+        await prefs.setBool('has_pin', true);
+        await fakeSecureStorage.write(key: 'user_pin', value: 'hash');
+        fakeLocalAuth.authenticateResult = false;
+        final auth = FakeAuthRepository(googleUser);
+        container = createContainer(auth: auth);
+        container.read(securityProvider);
+        await pumpEventQueue();
+
+        final ok = await container
+            .read(securityProvider.notifier)
+            .forgotPin(deviceLockReason: _reason);
+
+        expect(ok, isFalse);
+        expect(fakeLocalAuth.authenticateCallCount, 1);
+        expect(auth.reauthenticateCalls, 0);
+        expect(container.read(securityProvider).isLocked, isTrue);
+        expect(prefs.getBool('has_pin'), isTrue);
+      });
+
+      test('forgotPin is refused on a phone with no screen lock', () async {
+        await prefs.setBool('has_pin', true);
+        await fakeSecureStorage.write(key: 'user_pin', value: 'hash');
+        fakeLocalAuth.isDeviceSupportedValue = false;
+        final auth = FakeAuthRepository(googleUser);
+        container = createContainer(auth: auth);
+        container.read(securityProvider);
+        await pumpEventQueue();
+
+        final ok = await container
+            .read(securityProvider.notifier)
+            .forgotPin(deviceLockReason: _reason);
+
+        expect(ok, isFalse);
+        expect(fakeLocalAuth.authenticateCallCount, 0);
+        expect(auth.reauthenticateCalls, 0);
+        expect(prefs.getBool('has_pin'), isTrue);
+      });
+
+      testWidgets('forgotPin during a pending start-up check is not undone '
+          'when that check ends', (tester) async {
+        final auth = FakeAuthRepository(googleUser);
+        container = createContainer(
+          auth: auth,
+          customService: SecurityService(
+            _HangingSecureStorage(),
+            fakeLocalAuth,
+            prefs,
+          ),
+        );
+        container.read(securityProvider);
+
+        final recovery = container
+            .read(securityProvider.notifier)
+            .forgotPin(deviceLockReason: _reason);
+        await tester.pump(const Duration(seconds: 12));
+        expect(await recovery, isTrue);
+
+        final state = container.read(securityProvider);
+        expect(state.isLocked, isFalse);
+        expect(state.hasPin, isFalse);
+        expect(state.storageFailed, isFalse);
+      });
+
+      test('forgotPin does nothing for a guest', () async {
+        await prefs.setBool('has_pin', true);
+        await fakeSecureStorage.write(key: 'user_pin', value: 'hash');
+        final auth = FakeAuthRepository(guestUser);
+        container = createContainer(auth: auth);
+        container.read(securityProvider);
+        await pumpEventQueue();
+
+        final ok = await container
+            .read(securityProvider.notifier)
+            .forgotPin(deviceLockReason: _reason);
+
+        expect(ok, isFalse);
+        expect(auth.reauthenticateCalls, 0);
+        expect(container.read(securityProvider).isLocked, isTrue);
+      });
+    });
 
     group('Initial State', () {
       // A07: this used to expect isLocked == false on the first read. That
@@ -683,20 +955,22 @@ void main() {
         expect(await lockedAfterResumeAt(notifier, 1060000), isTrue);
       });
 
-      test('a trusted clock failure locks instead of weakening auto-lock',
-          () async {
-        final clock = _FlakyClock();
-        final notifier = await unlockedWithPin(60, clock: clock);
+      test(
+        'a trusted clock failure locks instead of weakening auto-lock',
+        () async {
+          final clock = _FlakyClock();
+          final notifier = await unlockedWithPin(60, clock: clock);
 
-        notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
-        await pumpEventQueue();
+          notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+          await pumpEventQueue();
 
-        clock.failNext = true;
-        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
-        await pumpEventQueue();
+          clock.failNext = true;
+          notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+          await pumpEventQueue();
 
-        expect(container.read(securityProvider).isLocked, isTrue);
-      });
+          expect(container.read(securityProvider).isLocked, isTrue);
+        },
+      );
     });
 
     // A114: the lock screen shows before secure storage answers, so the
@@ -820,7 +1094,6 @@ class _FakeClock implements SecurityClock {
   @override
   DateTime wallTime() => DateTime.utc(2026, 10, 5);
 }
-
 
 class _FlakyClock implements SecurityClock {
   final Duration _boot = const Duration(seconds: 1000);

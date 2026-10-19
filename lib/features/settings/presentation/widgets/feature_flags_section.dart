@@ -39,7 +39,11 @@ class FeatureFlagsSection extends ConsumerWidget {
                   .toggle(FeatureFlag.portfolioHealthScore);
 
               // Verify the toggle succeeded
-              final newState = ref.read(featureFlagsProvider)[FeatureFlag.portfolioHealthScore] ?? false;
+              final newState =
+                  ref.read(
+                    featureFlagsProvider,
+                  )[FeatureFlag.portfolioHealthScore] ??
+                  false;
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -75,7 +79,9 @@ class FeatureFlagsSection extends ConsumerWidget {
                   .toggle(FeatureFlag.reportsTab);
 
               // Verify the toggle succeeded
-              final newState = ref.read(featureFlagsProvider)[FeatureFlag.reportsTab] ?? false;
+              final newState =
+                  ref.read(featureFlagsProvider)[FeatureFlag.reportsTab] ??
+                  false;
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -111,7 +117,9 @@ class FeatureFlagsSection extends ConsumerWidget {
                   .toggle(FeatureFlag.incomeGuardian);
 
               // Verify the toggle succeeded
-              final newState = ref.read(featureFlagsProvider)[FeatureFlag.incomeGuardian] ?? false;
+              final newState =
+                  ref.read(featureFlagsProvider)[FeatureFlag.incomeGuardian] ??
+                  false;
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -147,8 +155,9 @@ class FeatureFlagsSection extends ConsumerWidget {
                   .toggle(FeatureFlag.customInvestmentTypes);
 
               final newState =
-                  ref.read(featureFlagsProvider)[FeatureFlag
-                      .customInvestmentTypes] ??
+                  ref.read(
+                    featureFlagsProvider,
+                  )[FeatureFlag.customInvestmentTypes] ??
                   false;
 
               if (context.mounted) {
@@ -163,6 +172,46 @@ class FeatureFlagsSection extends ConsumerWidget {
                   ),
                 );
               }
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
+            }
+          },
+        ),
+
+        // Notification permission after the first dated investment (A45)
+        SettingsToggleTile(
+          icon: Icons.notifications_active_outlined,
+          iconColor: AppColors.primaryLight,
+          title: FeatureFlag.maturityReminderPrompt.displayName,
+          subtitle: l10n.maturityReminderPromptFeatureSubtitle,
+          value: featureFlags[FeatureFlag.maturityReminderPrompt] ?? false,
+          onChanged: (value) async {
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.maturityReminderPrompt);
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
+            }
+          },
+        ),
+
+        // Monthly recap screen and notification (reports plan, phase 1)
+        SettingsToggleTile(
+          icon: Icons.calendar_month_outlined,
+          iconColor: AppColors.primaryLight,
+          title: l10n.monthlyRecapFeature,
+          subtitle: l10n.monthlyRecapFeatureSubtitle,
+          value: featureFlags[FeatureFlag.monthlyRecap] ?? false,
+          onChanged: (value) async {
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.monthlyRecap);
             } catch (e, stackTrace) {
               if (context.mounted) {
                 ErrorHandler.handle(e, stackTrace, context: context);
@@ -256,6 +305,45 @@ class FeatureFlagsSection extends ConsumerWidget {
                       newState
                           ? l10n.firstInvestmentFlowEnabled
                           : l10n.firstInvestmentFlowDisabled,
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
+            }
+          },
+        ),
+
+        // Base currency prompt feature flag (A31, #772)
+        SettingsToggleTile(
+          icon: Icons.currency_exchange,
+          iconColor: Colors.teal,
+          title: l10n.baseCurrencyPromptFeature,
+          subtitle: l10n.baseCurrencyPromptSubtitle,
+          value: featureFlags[FeatureFlag.baseCurrencyPrompt] ?? false,
+          onChanged: (value) async {
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.baseCurrencyPrompt);
+
+              final newState =
+                  ref.read(
+                    featureFlagsProvider,
+                  )[FeatureFlag.baseCurrencyPrompt] ??
+                  false;
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      newState
+                          ? l10n.baseCurrencyPromptEnabled
+                          : l10n.baseCurrencyPromptDisabled,
                     ),
                     duration: const Duration(seconds: 2),
                   ),

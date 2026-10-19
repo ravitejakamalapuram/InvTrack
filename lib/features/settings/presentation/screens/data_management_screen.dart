@@ -4,6 +4,7 @@ library;
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:inv_tracker/core/error/error_message.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
@@ -239,7 +240,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     if (state.hasError && context.mounted) {
       final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.exportFailed(state.error.toString()))),
+        SnackBar(content: Text(exportFailureMessage(l10n, state.error!))),
       );
     } else {
       ref.read(analyticsServiceProvider).logExportGenerated(format: 'csv');
@@ -254,7 +255,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       final isDark = Theme.of(context).brightness == Brightness.dark;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.exportFailed(state.error.toString())),
+          content: Text(exportFailureMessage(l10n, state.error!)),
           backgroundColor: isDark ? AppColors.errorDark : AppColors.errorLight,
         ),
       );

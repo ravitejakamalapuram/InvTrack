@@ -11,6 +11,14 @@ InvTrack is a mobile-first investment tracking application designed for alternat
 
 **[Get InvTrack on Google Play](https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker)** (Android). iOS is deferred until Android activation and retention targets are met.
 
+<p>
+  <img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/play_01_investments_list.png" width="18%" alt="Investments list" />
+  <img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/play_02_investment_detail.png" width="18%" alt="Investment detail" />
+  <img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/play_03_goals.png" width="18%" alt="Goals" />
+  <img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/play_04_overview.png" width="18%" alt="Overview" />
+  <img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/play_05_privacy_mode.png" width="18%" alt="Privacy mode" />
+</p>
+
 ---
 
 ## ✨ Key Features

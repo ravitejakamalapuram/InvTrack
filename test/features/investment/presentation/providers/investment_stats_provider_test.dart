@@ -349,6 +349,8 @@ void main() {
         overrides: [
           investmentRepositoryProvider.overrideWithValue(fakeRepository),
           sharedPreferencesProvider.overrideWithValue(prefs),
+          isAuthenticatedProvider.overrideWith((ref) => true),
+          currencyCodeProvider.overrideWith((ref) => 'USD'),
           currencyConversionServiceProvider.overrideWithValue(mockConversionService),
         ],
       );
@@ -359,84 +361,45 @@ void main() {
       fakeRepository.reset();
     });
 
-    // TODO(raviteja369.k@gmail.com): Fix async stream-to-future timing issue
-    // The test fails because multiCurrencyInvestmentStatsProvider watches
-    // cashFlowsByInvestmentProvider.future, which needs the stream to emit first.
-    // FakeInvestmentRepository uses Stream.value() which completes immediately,
-    // but the .future conversion happens asynchronously in the provider.
-    // Possible fixes:
-    // 1. Override cashFlowsByInvestmentProvider directly in test
-    // 2. Use container.listen to await provider state changes
-    // 3. Modify FakeInvestmentRepository to use StreamController
-    test('should use correct collection for each provider type', () async {
-      // Wait for streams to emit by giving time for async operations
-      await Future.delayed(const Duration(milliseconds: 100));
+    // Awaiting the provider's future (with a listener keeping it alive) waits
+    // for the stream to emit, so no fixed delay is needed.
+    Future<dynamic> statsOf(dynamic provider) async {
+      container.listen(provider, (_, _) {});
+      return container.read(provider.future);
+    }
 
-      // Read active stats - should calculate from active cash flows
-      final activeStatsAsync = container.read(
+    test('should use correct collection for each provider type', () async {
+      final active = await statsOf(
         multiCurrencyInvestmentStatsProvider('active-inv-1'),
       );
+      expect(active.totalInvested, 2000);
 
-      // Since this is a FutureProvider based on StreamProvider,
-      // we need to check if it has a value after the delay
-      activeStatsAsync.when(
-        data: (stats) {
-          expect(stats.totalInvested, 2000);
-        },
-        loading: () => fail('Active stats should have loaded after delay'),
-        error: (e, st) => fail('Active stats errored: $e'),
-      );
-
-      // Read archived stats - should calculate from archived cash flows
-      final archivedStatsAsync = container.read(
+      final archived = await statsOf(
         multiCurrencyArchivedInvestmentStatsProvider('archived-inv-1'),
       );
-      archivedStatsAsync.when(
-        data: (stats) {
-          expect(stats.totalInvested, 1000);
-        },
-        loading: () {}, // StreamProvider may still be loading
-        error: (e, st) => fail('Archived stats errored: $e'),
-      );
-    }, skip: 'TODO: Fix async stream-to-future timing issue');
+      expect(archived.totalInvested, 1000);
+    });
 
-    // TODO(raviteja369.k@gmail.com): Fix async stream-to-future timing issue (same as above)
-    test('multiCurrencyInvestmentStatsProvider should not find archived cash flows', () async {
-      // Wait for streams to emit
-      await Future.delayed(const Duration(milliseconds: 100));
-
-      // Read provider (should return empty since archived cashflows aren't in active collection)
-      final wrongProviderAsync = container.read(
-        multiCurrencyInvestmentStatsProvider('archived-inv-1'),
-      );
-
-      // Using multiCurrencyInvestmentStatsProvider on archived investment should return empty
-      wrongProviderAsync.when(
-        data: (stats) {
-          expect(stats.hasData, false);
-          expect(stats.totalInvested, 0);
-        },
-        loading: () => fail('Should have loaded after delay'),
-        error: (e, st) => fail('Should not error: $e'),
-      );
-    }, skip: 'TODO: Fix async stream-to-future timing issue');
-
-    // TODO(raviteja369.k@gmail.com): Fix async stream-to-future timing issue (same as above)
     test(
-      'archivedInvestmentStatsProvider should not find active cash flows',
+      'multiCurrencyInvestmentStatsProvider should not find archived cash flows',
       () async {
-        await Future.delayed(const Duration(milliseconds: 50));
+        final stats = await statsOf(
+          multiCurrencyInvestmentStatsProvider('archived-inv-1'),
+        );
+        expect(stats.hasData, false);
+        expect(stats.totalInvested, 0);
+      },
+    );
 
-        // Using archivedInvestmentStatsProvider on active investment returns empty
-        final wrongProviderAsync = container.read(
+    test(
+      'multiCurrencyArchivedInvestmentStatsProvider should not find active cash flows',
+      () async {
+        final stats = await statsOf(
           multiCurrencyArchivedInvestmentStatsProvider('active-inv-1'),
         );
-        wrongProviderAsync.whenData((stats) {
-          expect(stats.hasData, false);
-          expect(stats.totalInvested, 0);
-        });
+        expect(stats.hasData, false);
+        expect(stats.totalInvested, 0);
       },
-      skip: 'TODO: Fix async stream-to-future timing issue',
     );
   });
 }

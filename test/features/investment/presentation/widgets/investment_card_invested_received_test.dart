@@ -1493,4 +1493,43 @@ void main() {
       expect(find.text('received'), findsNothing);
     });
   });
+  // #990: the name may take two lines beside the figures, so a long name is
+  // not cut to "P2P loan p..." on a narrow phone.
+  group('the name wraps to two lines instead of being cut', () {
+    // (width, text scale, selection mode)
+    final cells = <(double, double, bool)>[
+      (280, 1.0, false),
+      (320, 1.0, false),
+      (360, 1.0, false),
+      (411, 1.0, false),
+      (320, 1.3, false),
+      (360, 2.0, false),
+      (411, 2.0, false),
+      (320, 1.0, true),
+    ];
+    for (final (width, scale, selection) in cells) {
+      testWidgets('"P2P loan pool A" shows in full at ${width}dp, ${scale}x'
+          '${selection ? ', selection mode' : ''}', (tester) async {
+        await _pumpCards(
+          tester,
+          [_p2p],
+          width: width,
+          textScale: scale,
+          selectionMode: selection,
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(tester.widget<Text>(find.text('P2P loan pool A')).maxLines, 2);
+        final paragraph = tester.renderObject<RenderParagraph>(
+          find.text('P2P loan pool A'),
+        );
+        expect(
+          paragraph.didExceedMaxLines,
+          isFalse,
+          reason: 'the name is cut at ${width}dp, ${scale}x',
+        );
+        _expectInsideCard(tester);
+      });
+    }
+  });
 }

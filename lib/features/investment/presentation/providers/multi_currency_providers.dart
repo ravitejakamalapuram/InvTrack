@@ -1,5 +1,6 @@
 import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
 import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
+import 'package:inv_tracker/core/calculations/stats_off_ui_thread.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
@@ -278,7 +279,7 @@ Future<InvestmentStats> _convertedStats(
         );
 
   // Use engine's financial module to calculate stats
-  return engine.financial.calculateStats(
+  return calculateStatsOffUiThread(
     convertedCashFlows,
     terminalValues: convertedTerminalValues,
   );

@@ -291,6 +291,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
                   max: FireAgeLimits.maxCurrentAge.toDouble(),
                   divisions:
                       FireAgeLimits.maxCurrentAge - FireAgeLimits.minCurrentAge,
+                  semanticFormatterCallback: (v) => l10n.yearsFormat(v.round()),
                   onChanged: (v) => _setCurrentAge(v.round()),
                 ),
               ],
@@ -343,6 +344,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
                   min: targetRange.min.toDouble(),
                   max: targetRange.max.toDouble(),
                   divisions: targetRange.max - targetRange.min,
+                  semanticFormatterCallback: (v) => l10n.yearsFormat(v.round()),
                   onChanged: (v) => setState(() => _targetFireAge = v.round()),
                 ),
                 Center(
@@ -625,6 +627,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
             min: min,
             max: max,
             divisions: ((max - min) * 10).round(),
+            semanticFormatterCallback: (v) => '${v.toStringAsFixed(1)}$suffix',
             onChanged: onChanged,
           ),
         ],

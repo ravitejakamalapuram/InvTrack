@@ -625,6 +625,7 @@ class FireSettingsScreen extends ConsumerWidget {
                   max: maxAge.toDouble(),
                   divisions: maxAge - minAge,
                   label: '$selectedAge',
+                  semanticFormatterCallback: (v) => l10n.yearsFormat(v.round()),
                   onChanged: (v) => setState(() => selectedAge = v.round()),
                 ),
                 _sheetError(error, isDark),
@@ -819,6 +820,9 @@ class FireSettingsScreen extends ConsumerWidget {
                   max: max,
                   divisions: divisions ?? ((max - min) * 10).round(),
                   label: valueLabel,
+                  semanticFormatterCallback: (v) =>
+                      label?.call(v) ??
+                      l10n.percentageFormat(v.toStringAsFixed(1)),
                   onChanged: (v) => setState(() => selectedValue = v),
                 ),
                 _sheetError(error, isDark),

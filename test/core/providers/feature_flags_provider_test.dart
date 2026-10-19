@@ -51,6 +51,13 @@ void main() {
         );
       });
 
+      test('$build: the base currency prompt (A31) is off', () async {
+        final c = await _container(overridesAllowed: overridesAllowed);
+        expect(c.read(isBaseCurrencyPromptEnabledProvider), isFalse);
+        expect(FeatureFlag.baseCurrencyPrompt.defaultEnabled, isFalse);
+        expect(FeatureFlag.baseCurrencyPrompt.key, 'base_currency_prompt');
+      });
+
       test('$build: custom investment types (#936) stay hidden', () async {
         final c = await _container(overridesAllowed: overridesAllowed);
         expect(c.read(isCustomInvestmentTypesEnabledProvider), isFalse);

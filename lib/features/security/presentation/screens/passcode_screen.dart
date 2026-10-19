@@ -7,7 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -399,48 +401,121 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final security = ref.watch(securityProvider);
+    final user = ref.watch(authStateProvider).value;
+    final canProveIdentity = user != null && !user.isAnonymous;
+    final isUnlock = widget.mode == PasscodeMode.unlock;
+    final message = isUnlock && security.storageFailed
+        ? (canProveIdentity
+              ? l10n.passcodeStorageFailed
+              : l10n.passcodeStorageFailedGuest)
+        : _message;
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 60),
-            const Icon(
-              Icons.lock_outline,
-              size: 48,
-              color: AppColors.primaryLight,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              _message,
-              style: AppTypography.h3.copyWith(
-                color: _isError ? Colors.red : AppColors.textPrimaryLight,
+        // Scrolls on short screens, where the way-out buttons would overflow.
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 60),
+                    const Icon(
+                      Icons.lock_outline,
+                      size: 48,
+                      color: AppColors.primaryLight,
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.h3.copyWith(
+                        color: _isError
+                            ? Colors.red
+                            : AppColors.textPrimaryLight,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(4, (index) {
+                        return Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 12),
+                          width: 16,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: index < _input.length
+                                ? AppColors.primaryLight
+                                : AppColors.neutral300Light,
+                          ),
+                        );
+                      }),
+                    ),
+                    const Spacer(),
+                    if (isUnlock) ..._buildWayOut(security, canProveIdentity),
+                    _buildKeypad(),
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 40),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(4, (index) {
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: index < _input.length
-                        ? AppColors.primaryLight
-                        : AppColors.neutral300Light,
-                  ),
-                );
-              }),
-            ),
-            const Spacer(),
-            _buildKeypad(),
-            const SizedBox(height: 40),
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  /// Ways out of the lock when the PIN cannot be used. A guest has no
+  /// account to prove who they are, and signing out would delete their only
+  /// copy of the data, so a guest only gets Retry.
+  List<Widget> _buildWayOut(SecurityState security, bool canProveIdentity) {
+    final l10n = AppLocalizations.of(context);
+    final notifier = ref.read(securityProvider.notifier);
+    return [
+      Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        children: [
+          if (security.storageFailed)
+            TextButton(onPressed: notifier.retryInit, child: Text(l10n.retry)),
+          if (canProveIdentity)
+            TextButton(
+              onPressed: _forgotPin,
+              child: Text(l10n.passcodeForgotPin),
+            ),
+          if (canProveIdentity && security.storageFailed)
+            TextButton(onPressed: _signOut, child: Text(l10n.signOut)),
+        ],
+      ),
+      const SizedBox(height: 8),
+    ];
+  }
+
+  Future<void> _signOut() async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      await ref.read(authRepositoryProvider).signOut();
+    } catch (e) {
+      LoggerService.warn('Lock screen sign-out failed', error: e);
+      if (mounted) AppFeedback.showError(context, l10n.pleaseTryAgain);
+    }
+  }
+
+  Future<void> _forgotPin() async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final removed = await ref
+        .read(securityProvider.notifier)
+        .forgotPin(deviceLockReason: l10n.passcodeForgotPinDeviceLockReason);
+    if (!removed && mounted) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.passcodeForgotPinFailed)),
+      );
+    }
   }
 
   Widget _buildKeypad() {

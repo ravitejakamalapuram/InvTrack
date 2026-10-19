@@ -12,28 +12,28 @@ body = """
 {% if group == "✨ Features" -%}
 🆕 What's New
 {% for commit in commits -%}
-• {{ commit.message | upper_first | split(pat=":") | last | trim }}
+• {{ commit.message | upper_first | trim }}
 {% endfor %}
 {% endif -%}
 {% if group == "🐛 Bug Fixes" -%}
 
 🐛 Bug Fixes & Improvements
 {% for commit in commits -%}
-• {{ commit.message | upper_first | split(pat=":") | last | trim }}
+• {{ commit.message | upper_first | trim }}
 {% endfor %}
 {% endif -%}
 {% if group == "⚡ Performance" -%}
 
 ⚡ Performance Improvements
 {% for commit in commits -%}
-• {{ commit.message | upper_first | split(pat=":") | last | trim }}
+• {{ commit.message | upper_first | trim }}
 {% endfor %}
 {% endif -%}
 {% if group == "🔒 Security" -%}
 
 🔒 Security Updates
 {% for commit in commits -%}
-• {{ commit.message | upper_first | split(pat=":") | last | trim }}
+• {{ commit.message | upper_first | trim }}
 {% endfor %}
 {% endif -%}
 {% endfor -%}
@@ -46,24 +46,27 @@ footer = ""
 trim = true
 
 [git]
+# Strip ticket tags such as [A82] or [#981, #918] and the trailing PR number (#1044)
+commit_preprocessors = [
+    { pattern = '\s*\[[^\]]*\]', replace = "" },
+    { pattern = '\s*\(#\d+\)', replace = "" },
+]
+
 # Parse conventional commits
 conventional_commits = true
 filter_unconventional = true
 split_commits = false
 
-# Simplified commit parsers for Play Store (only show user-facing changes)
+# Only fix/feat/perf reach users, and only with a user-facing scope.
+# Scopes below are CI, store-listing, analytics and build plumbing.
 commit_parsers = [
+    { message = '^(feat|fix|perf)\((ci|cd|build|deps|listing|release|analytics|test|tests|codegen|security-ci)\)', skip = true },
     { message = "^feat", group = "✨ Features" },
     { message = "^fix", group = "🐛 Bug Fixes" },
     { message = "^perf", group = "⚡ Performance" },
     { body = ".*security", group = "🔒 Security" },
-    # Skip internal changes (not relevant to users)
-    { message = "^doc", skip = true },
-    { message = "^refactor", skip = true },
-    { message = "^style", skip = true },
-    { message = "^test", skip = true },
-    { message = "^chore", skip = true },
-    { message = "^ci", skip = true },
+    # Everything else (docs, refactor, style, test, chore, ci) is internal
+    { message = ".*", skip = true },
 ]
 
 # Filter out certain commits

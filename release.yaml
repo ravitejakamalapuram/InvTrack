@@ -5,7 +5,7 @@
 # Flow: release uploads a signed bundle to the INTERNAL track -> promote to production. The old self-hosted
 # cd.yml was removed (it stays in git history).
 app: invtrack
-test: flutter pub get && flutter gen-l10n && flutter analyze --fatal-warnings --no-fatal-infos && flutter test --exclude-tags=golden
+test: flutter pub get && flutter gen-l10n && flutter analyze --fatal-warnings --no-fatal-infos && flutter test --exclude-tags=golden && dart run build_runner build --force-jit && git diff --exit-code -- '*.g.dart' && test -z "$(git status --porcelain -- '*.g.dart')"
 targets:
   - type: android
     package: com.invtracker.inv_tracker

@@ -23,6 +23,8 @@ import 'package:inv_tracker/features/fire_number/presentation/screens/fire_dashb
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_setup_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_settings_screen.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/screens/portfolio_health_details_screen.dart';
+import 'package:inv_tracker/features/digest/domain/monthly_digest.dart';
+import 'package:inv_tracker/features/digest/presentation/screens/monthly_recap_screen.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/dynamic_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/reports_home_screen.dart';
@@ -102,7 +104,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Redirect to Overview if user tries to access Reports when feature is disabled
       final isReportsRoute = state.uri.path.startsWith('/reports');
       if (isLoggedIn && !isReportsEnabled && isReportsRoute) {
-        LoggerService.debug('Reports feature disabled, redirecting to Overview');
+        LoggerService.debug(
+          'Reports feature disabled, redirecting to Overview',
+        );
         return '/';
       }
 
@@ -213,7 +217,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
                       // Otherwise, parse params and show the generated report
                       try {
-                        final config = ReportConfiguration.fromQueryParams(params);
+                        final config = ReportConfiguration.fromQueryParams(
+                          params,
+                        );
                         return DynamicReportScreen(configuration: config);
                       } catch (e, stackTrace) {
                         // Log parsing errors and show error screen
@@ -296,6 +302,25 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/income-calendar',
         name: AnalyticsScreens.incomeCalendar,
         builder: (context, state) => const IncomeCalendarScreen(),
+      ),
+      // Monthly recap, opened from its notification
+      GoRoute(
+        path: '/recap/:month',
+        name: AnalyticsScreens.monthlyRecap,
+        // Hidden while its flag is off: a recap notification tapped then
+        // lands on Overview, as does a malformed month.
+        redirect: (context, state) {
+          if (!ref.read(isMonthlyRecapEnabledProvider)) return '/';
+          try {
+            DigestMonth.parse(state.pathParameters['month'] ?? '');
+            return null;
+          } on FormatException {
+            return '/';
+          }
+        },
+        builder: (context, state) => MonthlyRecapScreen(
+          month: DigestMonth.parse(state.pathParameters['month']!),
+        ),
       ),
     ],
   );

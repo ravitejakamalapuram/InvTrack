@@ -12,6 +12,9 @@ class GlassCard extends StatefulWidget {
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final Color? backgroundColor;
+
+  /// Backdrop blur sigma. Off by default: the blur forces an offscreen pass and
+  /// only shows when the card sits over imagery.
   final double blur;
   final bool showBorder;
   final String? semanticLabel;
@@ -25,7 +28,7 @@ class GlassCard extends StatefulWidget {
     this.onTap,
     this.onLongPress,
     this.backgroundColor,
-    this.blur = 10,
+    this.blur = 0,
     this.showBorder = true,
     this.semanticLabel,
     this.selected,

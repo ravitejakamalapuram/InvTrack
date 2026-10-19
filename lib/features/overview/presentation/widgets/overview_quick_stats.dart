@@ -38,6 +38,7 @@ class OverviewQuickStats extends StatelessWidget {
         QuickStatCard(
           icon: Icons.trending_up,
           label: display.moicLabel(l10n),
+          info: l10n.moicTooltip,
           value: awaiting
               ? ReturnDisplay.dash
               : '${NumberFormat('#,##0.00').format(stats.moic)}x',

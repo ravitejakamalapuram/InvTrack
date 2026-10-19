@@ -16,9 +16,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/notifications/notification_settings_provider.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/digest/domain/monthly_digest.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
 
 /// A widget that initializes notification sync in the background.
 ///
@@ -201,8 +205,10 @@ class _NotificationSyncInitializerState
     if (investments == null || _signedInUid == null) return;
     if (investments.isEmpty) {
       // The last investment was deleted (here, on another device, by bulk
-      // delete or by clearing sample data): drop its reminders.
+      // delete or by clearing sample data): drop its reminders, and refresh
+      // a queued recap so it no longer counts them.
       _cancelInvestmentReminders();
+      _scheduleRecap();
       return;
     }
 
@@ -217,6 +223,8 @@ class _NotificationSyncInitializerState
       final notificationService = ref.read(notificationServiceProvider);
       final generation = _accountGeneration;
       bool isStale() => generation != _accountGeneration;
+      final now = DateTime.now();
+      final recap = _recapFacts(now);
 
       // Schedule in background - don't await, fire and forget
       _enqueue(() async {
@@ -227,6 +235,13 @@ class _NotificationSyncInitializerState
             lastIncomeDates: lastIncomeDates,
             isCancelled: isStale,
           );
+          if (recap != null && !isStale()) {
+            await notificationService.scheduleMonthlyRecap(
+              now: now,
+              maturingNextMonth: recap.maturingNextMonth.length,
+              needingValue: recap.needingValue.length,
+            );
+          }
         } catch (e) {
           LoggerService.warn('Error rescheduling notifications', error: e);
         }
@@ -252,6 +267,80 @@ class _NotificationSyncInitializerState
       LoggerService.debug('NotificationService not available yet');
     }
   }
+
+  /// Reschedule only the recap, with counts from the current investments.
+  void _scheduleRecap() {
+    try {
+      final notificationService = ref.read(notificationServiceProvider);
+      final generation = _accountGeneration;
+      final now = DateTime.now();
+      final recap = _recapFacts(now);
+      if (recap == null) {
+        // With the flag off, put the legacy summary back in the shared slot
+        // so a queued recap never fires.
+        if (!_recapFlagOn()) {
+          _enqueue(() async {
+            if (generation != _accountGeneration) return;
+            try {
+              await notificationService.scheduleMonthlySummary();
+            } catch (e) {
+              LoggerService.warn('Error scheduling monthly summary', error: e);
+            }
+          });
+        }
+        return;
+      }
+      _enqueue(() async {
+        if (generation != _accountGeneration) return;
+        try {
+          await notificationService.scheduleMonthlyRecap(
+            now: now,
+            maturingNextMonth: recap.maturingNextMonth.length,
+            needingValue: recap.needingValue.length,
+          );
+        } catch (e) {
+          LoggerService.warn('Error scheduling monthly recap', error: e);
+        }
+      });
+    } catch (e) {
+      LoggerService.debug('NotificationService not available yet');
+    }
+  }
+
+  /// This month's recap counts while the recap flag is on, or null. Only
+  /// the counts reach the notification; the amounts are computed on tap.
+  /// A failure here never stops the other reminders from being rescheduled.
+  MonthlyDigest? _recapFacts(DateTime now) {
+    try {
+      if (!_recapFlagOn()) return null;
+      final active = ref.read(activeInvestmentsProvider).value;
+      if (active == null) return null;
+      return _buildRecap(now, active);
+    } catch (e) {
+      LoggerService.warn('Monthly recap counts unavailable', error: e);
+      return null;
+    }
+  }
+
+  bool _recapFlagOn({bool watch = false}) {
+    try {
+      return watch
+          ? ref.watch(isMonthlyRecapEnabledProvider)
+          : ref.read(isMonthlyRecapEnabledProvider);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  MonthlyDigest _buildRecap(DateTime now, List<InvestmentEntity> active) =>
+      MonthlyDigest.build(
+        month: DigestMonth(now.year, now.month),
+        baseCurrency: ref.read(currencyCodeProvider),
+        convertedFlows: const [],
+        activeInvestments: active,
+        statsById:
+            ref.read(activeInvestmentBasicStatsMapProvider).value ?? const {},
+      );
 
   /// Latest INCOME cash-flow date per investment id.
   static Map<String, DateTime> _lastIncomeDates(List<CashFlowEntity> flows) {
@@ -306,6 +395,32 @@ class _NotificationSyncInitializerState
       ),
       (previous, next) => _scheduleNotificationsDebounced(),
     );
+
+    // The monthly recap shares the monthly summary's slot. Turning the
+    // summary back on, flipping the recap flag either way, or the stats
+    // arriving after the first schedule all reschedule, so the slot holds
+    // the right notification with current counts.
+    ref.listen<bool>(
+      notificationSettingsProvider.select((s) => s.monthlySummaryEnabled),
+      (previous, next) {
+        if (next) _scheduleNotificationsDebounced();
+      },
+    );
+    ref.listen<bool>(
+      isMonthlyRecapEnabledProvider,
+      (previous, next) => _scheduleNotificationsDebounced(),
+      onError: (_, _) {},
+    );
+    // Only while the recap is on, so the stats are not computed for nothing.
+    if (_recapFlagOn(watch: true)) {
+      ref.listen<bool>(
+        activeInvestmentBasicStatsMapProvider.select((s) => s.hasValue),
+        (previous, next) {
+          if (next && previous == false) _scheduleNotificationsDebounced();
+        },
+        onError: (_, _) {},
+      );
+    }
 
     // Render child immediately without waiting for notifications
     return widget.child;

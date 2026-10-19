@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/utils/file_signature_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
+import 'package:inv_tracker/features/investment/presentation/utils/document_file_reader.dart';
 
 /// Provider for DocumentNotifier - handles document CRUD operations
 final documentNotifierProvider = Provider<DocumentNotifier>((ref) {
@@ -87,7 +88,7 @@ class DocumentNotifier {
     }
 
     // Validate file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = kMaxDocumentBytes;
     if (bytes.length > maxSize) {
       throw ValidationException(
         userMessage: 'File size cannot exceed 10MB',

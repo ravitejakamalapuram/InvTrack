@@ -151,34 +151,12 @@ class LocaleDetectionService {
     return locale.languageCode;
   }
 
-  /// Map country code to currency code.
+  /// The currency to propose for [countryCode], or null for an unknown one.
   ///
-  /// This is an enterprise-grade mapping covering 50+ countries.
-  ///
-  /// ## Parameters
-  ///
-  /// - [countryCode]: ISO 3166-1 alpha-2 country code (e.g., 'IN', 'US', 'GB')
-  ///
-  /// ## Returns
-  ///
-  /// - **String**: ISO 4217 currency code (e.g., 'INR', 'USD', 'EUR')
-  /// - Fallback: 'USD' if country not found
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// final currency = LocaleDetectionService.getCurrencyForCountry('IN');
-  /// print(currency); // INR
-  ///
-  /// final unknownCurrency = LocaleDetectionService.getCurrencyForCountry('XX');
-  /// print(unknownCurrency); // USD (fallback)
-  /// ```
-  ///
-  /// ## Supported Countries
-  ///
-  /// See [_countryToCurrencyMap] for full list (50+ countries).
-  static String getCurrencyForCountry(String countryCode) {
-    return _countryToCurrencyMap[countryCode.toUpperCase()] ?? 'USD';
+  /// Never falls back to a default currency: an unknown country must not turn
+  /// into a silent USD (money rule 1), so the caller proposes nothing instead.
+  static String? proposeCurrencyForCountry(String countryCode) {
+    return _countryToCurrencyMap[countryCode.toUpperCase()];
   }
 
   /// Map country code to locale string for number formatting.

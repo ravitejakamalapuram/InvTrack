@@ -36,8 +36,12 @@ class FakeAuthRepository extends Fake implements AuthRepository {
   /// What [signInWithLinkCredential] does. Defaults to no kept credential.
   Future<UserEntity?> Function() onSignInWithLinkCredential = () async => null;
 
+  /// What [reauthenticateWithGoogle] does. Defaults to success.
+  Future<bool> Function() onReauthenticate = () async => true;
+
   int signInWithGoogleCalls = 0;
   int signOutCalls = 0;
+  int reauthenticateCalls = 0;
 
   /// Simulates Firebase reporting a new user on the auth stream.
   void emit(UserEntity? user) {
@@ -77,6 +81,12 @@ class FakeAuthRepository extends Fake implements AuthRepository {
 
   @override
   Future<UserEntity?> linkAnonymousToGoogle() => onLinkAnonymousToGoogle();
+
+  @override
+  Future<bool> reauthenticateWithGoogle() {
+    reauthenticateCalls++;
+    return onReauthenticate();
+  }
 
   @override
   Future<void> signOut() async {

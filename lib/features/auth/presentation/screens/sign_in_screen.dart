@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
@@ -148,7 +149,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
 
         // Request notification permissions on first sign-in
         if (!mounted) return;
-        await _requestNotificationPermissionsIfNeeded();
+        if (!ref.read(isMaturityReminderPromptEnabledProvider)) {
+          await _requestNotificationPermissionsIfNeeded();
+        }
       }
       // Firestore sync happens automatically via listeners - no manual sync needed
     } catch (e, st) {
@@ -197,7 +200,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
 
         // Request notification permissions on first sign-in
         if (!mounted) return;
-        await _requestNotificationPermissionsIfNeeded();
+        if (!ref.read(isMaturityReminderPromptEnabledProvider)) {
+          await _requestNotificationPermissionsIfNeeded();
+        }
       }
       // Firestore sync happens automatically via listeners - no manual sync needed
     } catch (e, st) {

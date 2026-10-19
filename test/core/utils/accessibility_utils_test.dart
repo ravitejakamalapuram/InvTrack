@@ -202,7 +202,7 @@ void main() {
 
       test('generates correct label for investment maturing soon', () {
         final now = DateTime.now();
-        final maturityDate = now.add(const Duration(days: 15));
+        final maturityDate = DateTime(now.year, now.month, now.day + 15);
 
         final label = AccessibilityUtils.investmentCardLabel(
           hiddenAmountLabel: 'Hidden amount',
@@ -222,7 +222,7 @@ void main() {
 
       test('generates label without maturity info if > 30 days', () {
         final now = DateTime.now();
-        final maturityDate = now.add(const Duration(days: 40));
+        final maturityDate = DateTime(now.year, now.month, now.day + 40);
 
         final label = AccessibilityUtils.investmentCardLabel(
           hiddenAmountLabel: 'Hidden amount',

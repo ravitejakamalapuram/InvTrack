@@ -94,6 +94,7 @@ void main() {
       '/fire/settings': 'fire_settings',
       '/portfolio-health': 'portfolio_health',
       '/income-calendar': 'income_calendar',
+      '/recap/:month': 'monthly_recap',
     });
   });
 

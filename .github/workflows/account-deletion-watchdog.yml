@@ -1,0 +1,37 @@
+name: account-deletion-watchdog
+
+# Fails, and opens (or comments on) the `account-deletion` issue, when the daily account-deletion schedule has not
+# run successfully for 48 hours while ACCOUNT_DELETION_SCHEDULE_ENABLED is 'true'. The job's own 3-day alert cannot
+# fire if no job runs (GitHub pauses scheduled workflows after 60 days of repo inactivity, a renamed default branch).
+# No cloud login and no deletion rights: it only reads the run list of this repository.
+# Limit: it is a schedule too, so a pause of the whole repository stops it as well; a quiet repo needs a look at the Actions tab.
+on:
+  schedule:
+    - cron: '17 9 * * *' # 09:17 UTC, hours after the 20:41 deletion run
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  watch:
+    name: watch
+    if: github.ref == 'refs/heads/main' && github.repository == 'ravitejakamalapuram/InvTrack'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read # list the runs of account-deletion.yml
+      issues: write # open the account-deletion issue, or comment on the open one
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/account-deletion/schedule-watch.mjs
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Check the schedule ran
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SCHEDULE_ENABLED: ${{ vars.ACCOUNT_DELETION_SCHEDULE_ENABLED }}
+        run: node scripts/account-deletion/schedule-watch.mjs

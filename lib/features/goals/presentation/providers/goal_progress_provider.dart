@@ -36,6 +36,19 @@ class GoalPortfolioInputs {
   });
 }
 
+/// Reloads everything a goal screen reads after a load error. Riverpod stops
+/// retrying a failed provider, so Retry buttons call this.
+void reloadGoals(WidgetRef ref) {
+  reloadPortfolio(ref);
+  ref.invalidate(activeGoalsProvider);
+  ref.invalidate(watchGoalByIdProvider);
+  ref.invalidate(goalPortfolioInputsProvider);
+  ref.invalidate(multiCurrencyGoalProgressProvider);
+  ref.invalidate(multiCurrencyAllGoalsProgressProvider);
+  ref.invalidate(multiCurrencyGoalsSummaryProvider);
+  ref.invalidate(goalLinkedInvestmentsProvider);
+}
+
 /// The goal inputs, from the converted snapshot every stats screen reads.
 final goalPortfolioInputsProvider = FutureProvider<GoalPortfolioInputs>((
   ref,

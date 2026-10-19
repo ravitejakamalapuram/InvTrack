@@ -148,7 +148,7 @@ void main() {
           id: 'inv2',
           name: 'Loss',
           type: InvestmentType.fixedDeposit,
-          status: InvestmentStatus.open,
+          status: InvestmentStatus.closed,
           startDate: DateTime(2023, 1, 1),
           createdAt: DateTime(2023, 1, 1),
           updatedAt: DateTime(2023, 1, 1),
@@ -170,6 +170,37 @@ void main() {
       expect(report.profitableCount, 1);
       expect(report.lossCount, 1);
       expect(report.totalInvestments, 2);
+    });
+
+    test('open holding awaiting a value is not ranked or counted (rule 4)', () {
+      final investments = [
+        for (final id in ['paid', 'awaiting'])
+          InvestmentEntity(
+            id: id,
+            name: id,
+            type: InvestmentType.fixedDeposit,
+            status: InvestmentStatus.open,
+            startDate: DateTime(2023, 5, 1),
+            createdAt: DateTime(2023, 5, 1),
+            updatedAt: DateTime(2023, 5, 1),
+            currency: 'USD',
+          ),
+      ];
+      CashFlowEntity cf(String id, String inv, double a, CashFlowType t, DateTime d) =>
+          CashFlowEntity(id: id, investmentId: inv, amount: a, date: d, type: t, currency: 'USD', createdAt: d);
+      final report = service.generateReport(
+        allInvestments: investments,
+        allCashFlows: [
+          cf('1', 'paid', 1000, CashFlowType.invest, DateTime(2023, 1, 1)),
+          cf('2', 'paid', 1200, CashFlowType.returnFlow, DateTime(2023, 12, 31)),
+          cf('3', 'awaiting', 1000, CashFlowType.invest, DateTime(2023, 1, 1)),
+          cf('4', 'awaiting', 900, CashFlowType.returnFlow, DateTime(2023, 12, 31)),
+        ],
+      );
+
+      expect(report.allPerformances.map((p) => p.investment.id), ['paid']);
+      expect(report.profitableCount, 1);
+      expect(report.lossCount, 0);
     });
 
     test('should handle empty data', () {

@@ -3,45 +3,45 @@ import 'package:inv_tracker/core/services/locale_detection_service.dart';
 
 void main() {
   group('LocaleDetectionService', () {
-    group('getCurrencyForCountry', () {
+    group('proposeCurrencyForCountry', () {
       test('returns correct currency for US', () {
-        expect(LocaleDetectionService.getCurrencyForCountry('US'), 'USD');
+        expect(LocaleDetectionService.proposeCurrencyForCountry('US'), 'USD');
       });
 
       test('returns correct currency for India', () {
-        expect(LocaleDetectionService.getCurrencyForCountry('IN'), 'INR');
+        expect(LocaleDetectionService.proposeCurrencyForCountry('IN'), 'INR');
       });
 
       test('returns correct currency for UK', () {
-        expect(LocaleDetectionService.getCurrencyForCountry('GB'), 'GBP');
+        expect(LocaleDetectionService.proposeCurrencyForCountry('GB'), 'GBP');
       });
 
       test('returns correct currency for Eurozone countries', () {
-        expect(LocaleDetectionService.getCurrencyForCountry('DE'), 'EUR');
-        expect(LocaleDetectionService.getCurrencyForCountry('FR'), 'EUR');
-        expect(LocaleDetectionService.getCurrencyForCountry('IT'), 'EUR');
-        expect(LocaleDetectionService.getCurrencyForCountry('ES'), 'EUR');
+        expect(LocaleDetectionService.proposeCurrencyForCountry('DE'), 'EUR');
+        expect(LocaleDetectionService.proposeCurrencyForCountry('FR'), 'EUR');
+        expect(LocaleDetectionService.proposeCurrencyForCountry('IT'), 'EUR');
+        expect(LocaleDetectionService.proposeCurrencyForCountry('ES'), 'EUR');
       });
 
       test('returns correct currency for Japan', () {
-        expect(LocaleDetectionService.getCurrencyForCountry('JP'), 'JPY');
+        expect(LocaleDetectionService.proposeCurrencyForCountry('JP'), 'JPY');
       });
 
       test('returns correct currency for Canada', () {
-        expect(LocaleDetectionService.getCurrencyForCountry('CA'), 'CAD');
+        expect(LocaleDetectionService.proposeCurrencyForCountry('CA'), 'CAD');
       });
 
       test('returns correct currency for Australia', () {
-        expect(LocaleDetectionService.getCurrencyForCountry('AU'), 'AUD');
+        expect(LocaleDetectionService.proposeCurrencyForCountry('AU'), 'AUD');
       });
 
-      test('returns USD for unknown country code', () {
-        expect(LocaleDetectionService.getCurrencyForCountry('XX'), 'USD');
+      test('returns null, not USD, for an unknown country code', () {
+        expect(LocaleDetectionService.proposeCurrencyForCountry('XX'), isNull);
       });
 
       test('handles lowercase country codes', () {
-        expect(LocaleDetectionService.getCurrencyForCountry('us'), 'USD');
-        expect(LocaleDetectionService.getCurrencyForCountry('in'), 'INR');
+        expect(LocaleDetectionService.proposeCurrencyForCountry('us'), 'USD');
+        expect(LocaleDetectionService.proposeCurrencyForCountry('in'), 'INR');
       });
     });
 
