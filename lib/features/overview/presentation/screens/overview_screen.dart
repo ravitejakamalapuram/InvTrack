@@ -32,6 +32,7 @@ import 'package:inv_tracker/features/overview/presentation/widgets/overview_anal
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_all_archived_card.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_empty_state.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_quick_stats.dart';
+import 'package:inv_tracker/features/overview/presentation/widgets/guest_link_banner.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/sample_data_banner.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/deletion_request_banner.dart';
@@ -260,6 +261,9 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
       delegate: SliverChildListDelegate([
         // Sample Data Mode Banner (shows when active)
         const SampleDataBanner(),
+
+        // Guests: back up by linking Google (flag, A43)
+        const GuestLinkBanner(),
 
         // Hero Card - Global Summary with toggle
         HeroCardWithToggle(

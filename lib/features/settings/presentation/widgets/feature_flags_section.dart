@@ -220,6 +220,26 @@ class FeatureFlagsSection extends ConsumerWidget {
           },
         ),
 
+        // Guest link banner on the Overview (A43)
+        SettingsToggleTile(
+          icon: Icons.cloud_upload_outlined,
+          iconColor: AppColors.primaryLight,
+          title: l10n.guestLinkFeature,
+          subtitle: l10n.guestLinkFeatureSubtitle,
+          value: featureFlags[FeatureFlag.guestLinkBanner] ?? false,
+          onChanged: (value) async {
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.guestLinkBanner);
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
+            }
+          },
+        ),
+
         // Play review prompt feature flag
         SettingsToggleTile(
           icon: Icons.star_outline,
