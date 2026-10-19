@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/security/wait_until_unlocked.dart';
 import 'package:inv_tracker/core/services/locale_detection_service.dart';
@@ -52,6 +53,7 @@ class _ProfileInitializerState extends ConsumerState<ProfileInitializer>
       mounted && ref.read(authStateProvider).value?.id == userId;
 
   Future<void> _run(String userId) async {
+    if (!ref.read(isBaseCurrencyPromptEnabledProvider)) return;
     try {
       final reconciler = ref.read(baseCurrencyReconcilerProvider);
       final plan = await reconciler.reconcile(

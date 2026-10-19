@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/services/locale_detection_service.dart';
@@ -68,6 +69,7 @@ void main() {
   Future<ProviderContainer> pump(
     WidgetTester tester, {
     required ui.Locale locale,
+    bool flagOn = true,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -80,6 +82,7 @@ void main() {
           securityProvider.overrideWith(_UnlockedSecurity.new),
           analyticsServiceProvider.overrideWithValue(_NoAnalytics()),
           currencyConversionServiceProvider.overrideWithValue(null),
+          isBaseCurrencyPromptEnabledProvider.overrideWithValue(flagOn),
         ],
         child: MaterialApp(
           navigatorKey: rootNavigatorKey,
@@ -112,6 +115,21 @@ void main() {
 
     expect(repo.profile!.preferredCurrency, 'USD');
     expect(container.read(settingsProvider).currency, 'USD');
+  });
+
+  testWidgets('with the flag off nothing is asked, read or stored', (
+    tester,
+  ) async {
+    investments.seed(investments: [_investment()]);
+    final container = await pump(
+      tester,
+      locale: const ui.Locale('en', 'US'),
+      flagOn: false,
+    );
+
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(repo.profile, isNull);
+    expect(container.read(settingsProvider).currency, 'INR');
   });
 
   testWidgets('dismissing the proposal stores nothing and keeps the default', (
