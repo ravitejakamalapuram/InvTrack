@@ -66,6 +66,24 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets('GlassCard has no BackdropFilter unless blur is requested', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: GlassCard(child: const Text('A'))),
+        ),
+      );
+      expect(find.byType(BackdropFilter), findsNothing);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: GlassCard(blur: 10, child: const Text('A'))),
+        ),
+      );
+      expect(find.byType(BackdropFilter), findsOneWidget);
+    });
+
     testWidgets('GlassCard with blur: 0 removes shadows for performance', (
       tester,
     ) async {
