@@ -41,6 +41,8 @@ void main() {
   Future<void> roundTrip(
     ImportStrategy strategy, {
     Uint8List Function(Uint8List zip)? tamper,
+    String? labelOfA = 'Art',
+    String? labelOfB,
   }) async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
@@ -112,8 +114,8 @@ void main() {
 
     await repo.bulkImport(
       investments: [
-        investment('a', customTypeLabel: 'Art'),
-        investment('b'),
+        investment('a', customTypeLabel: labelOfA),
+        investment('b', customTypeLabel: labelOfB),
       ],
       cashFlows: [invest('fa', 'a', 1000), invest('fb', 'b', 2000)],
     );
@@ -146,7 +148,7 @@ void main() {
       expect(own, hasLength(1), reason: 'invested $invested');
       expect(own.single.amount, invested == 1000 ? 1100 : 2500);
       expect(inv.currentValue, invested == 1000 ? 1100 : 2500);
-      expect(inv.customTypeLabel, invested == 1000 ? 'Art' : isNull);
+      expect(inv.customTypeLabel, invested == 1000 ? labelOfA : labelOfB);
     }
   }
 
@@ -184,7 +186,12 @@ void main() {
         return Uint8List.fromList(ZipEncoder().encode(out)!);
       }
 
-      return roundTrip(ImportStrategy.merge, tamper: dropRowOfA);
+      return roundTrip(
+        ImportStrategy.merge,
+        tamper: dropRowOfA,
+        labelOfA: null,
+        labelOfB: 'Bronze',
+      );
     },
   );
 

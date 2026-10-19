@@ -782,14 +782,14 @@ class DataImportService {
       // The valuations of this investment go with it, or are dropped with it.
       // A group without a saved investment (a row of investments.json that
       // could not be read, or an older file) still owns the ids its rows name.
-      final valuationRows = _takeValuations(
-        valuations,
-        (isArchived, investmentName.toLowerCase()),
-        ids: {
-          for (final r in rows)
-            if (r.investmentId != null) r.investmentId!,
-        },
-      );
+      final valuationIds = {
+        for (final r in rows)
+          if (r.investmentId != null) r.investmentId!,
+      };
+      final valuationRows = _takeValuations(valuations, (
+        isArchived,
+        investmentName.toLowerCase(),
+      ), ids: valuationIds);
 
       // Skip if merging and investment already exists
       // An investment kept apart by id is skipped when its id exists, or when
@@ -848,9 +848,13 @@ class DataImportService {
 
       // A file that names its investments by id says which ones have a type;
       // an older file, or an investment the backup does not know, goes by name.
+      // A group whose investments.json row was unreadable still knows its id
+      // from its rows, when they name just one.
+      final refId =
+          saved?.id ?? (valuationIds.length == 1 ? valuationIds.single : null);
       final customType = _customTypeOf(
-        saved != null && customTypeRefsById.isNotEmpty
-            ? customTypeRefsById[saved.id]
+        refId != null && customTypeRefsById.isNotEmpty
+            ? customTypeRefsById[refId]
             : customTypeRefs[(isArchived, investmentName.toLowerCase())],
         investmentName: investmentName,
         type: investmentType,
