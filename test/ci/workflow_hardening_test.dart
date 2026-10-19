@@ -4,9 +4,11 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-List<File> _workflows() => Directory(
-  '.github/workflows',
-).listSync().whereType<File>().where((f) => f.path.endsWith('.yml')).toList();
+List<File> _workflows() => Directory('.github/workflows')
+    .listSync()
+    .whereType<File>()
+    .where((f) => f.path.endsWith('.yml') || f.path.endsWith('.yaml'))
+    .toList();
 
 void main() {
   test('no workflow turns off TLS verification', () {
