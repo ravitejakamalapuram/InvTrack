@@ -12,6 +12,10 @@ on:
         description: 'Print the issues instead of filing them'
         type: boolean
         default: true
+      window_days:
+        description: 'Look back this many days (Crashlytics keeps about 90)'
+        type: number
+        default: 7
 
 permissions: {}
 
@@ -31,3 +35,4 @@ jobs:
       firebase_project: invtracker-b19d1
       firebase_app_id: '1:784857267556:android:5ba7e064263d78f61dce71'
       dry_run: ${{ inputs.dry_run == true }}
+      window_days: ${{ fromJSON(inputs.window_days || 7) }}
