@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
+import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/screens/portfolio_health_details_screen.dart';
@@ -123,5 +125,30 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('the score card starts on the shared screen edge (#998)', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(360 * 3, 780 * 3)
+      ..devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    await _pump(
+      tester,
+      PortfolioHealthScore(
+        overallScore: 50,
+        returnsPerformance: _component('Returns Performance', 0.30),
+        diversification: _component('Diversification', 0.25),
+        liquidity: _component('Liquidity', 0.20),
+        goalAlignment: _component('Goal Alignment', 0.15),
+        actionReadiness: _component('Action Readiness', 0.10),
+        calculatedAt: DateTime(2026, 10, 4),
+      ),
+    );
+
+    final card = tester.getRect(find.byType(GlassCard).first);
+    expect(card.left, AppSpacing.screenEdge);
+    expect(360 - card.right, AppSpacing.screenEdge);
   });
 }
