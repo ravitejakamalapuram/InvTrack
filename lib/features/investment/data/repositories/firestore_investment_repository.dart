@@ -245,25 +245,17 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       investmentData['isArchived'] = true;
       investmentData['updatedAt'] = FieldValue.serverTimestamp();
 
-      // Move all cash flows for this investment to archived collection
       final cashFlows = await _cashFlowsRef
           .where('investmentId', isEqualTo: id)
           .get();
 
-      final batch = _firestore.batch();
-
-      // Add investment to archived collection
-      batch.set(_archivedInvestmentsRef.doc(id), investmentData);
-      // Delete from active collection
-      batch.delete(_investmentsRef.doc(id));
-
-      // Move each cash flow
-      for (final cfDoc in cashFlows.docs) {
-        batch.set(_archivedCashFlowsRef.doc(cfDoc.id), cfDoc.data());
-        batch.delete(cfDoc.reference);
-      }
-
-      await _executeWrite(() => batch.commit());
+      await _moveInvestment(
+        investment: _investmentsRef.doc(id),
+        investmentData: investmentData,
+        target: _archivedInvestmentsRef.doc(id),
+        cashFlows: cashFlows.docs,
+        cashFlowsTarget: _archivedCashFlowsRef,
+      );
     } on TimeoutException {
       // Offline - data will sync when back online
     }
@@ -280,27 +272,48 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       investmentData['isArchived'] = false;
       investmentData['updatedAt'] = FieldValue.serverTimestamp();
 
-      // Move all archived cash flows for this investment back to active
       final cashFlows = await _archivedCashFlowsRef
           .where('investmentId', isEqualTo: id)
           .get();
 
-      final batch = _firestore.batch();
-
-      // Add investment back to active collection
-      batch.set(_investmentsRef.doc(id), investmentData);
-      // Delete from archived collection
-      batch.delete(_archivedInvestmentsRef.doc(id));
-
-      // Move each cash flow back
-      for (final cfDoc in cashFlows.docs) {
-        batch.set(_cashFlowsRef.doc(cfDoc.id), cfDoc.data());
-        batch.delete(cfDoc.reference);
-      }
-
-      await _executeWrite(() => batch.commit());
+      await _moveInvestment(
+        investment: _archivedInvestmentsRef.doc(id),
+        investmentData: investmentData,
+        target: _investmentsRef.doc(id),
+        cashFlows: cashFlows.docs,
+        cashFlowsTarget: _cashFlowsRef,
+      );
     } on TimeoutException {
       // Offline - data will sync when back online
+    }
+  }
+
+  /// Moves an investment and its cash flows to the other collection pair in
+  /// batches of at most [_deleteBatchSize] operations (Firestore allows 500).
+  ///
+  /// Copies come first and the deletes after, the investment last in each
+  /// phase, so a failed batch loses nothing: the investment is still at its
+  /// source, and running the move again overwrites the copies by id.
+  Future<void> _moveInvestment({
+    required DocumentReference<Map<String, dynamic>> investment,
+    required Map<String, dynamic> investmentData,
+    required DocumentReference<Map<String, dynamic>> target,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> cashFlows,
+    required CollectionReference<Map<String, dynamic>> cashFlowsTarget,
+  }) async {
+    final writes = <void Function(WriteBatch)>[
+      for (final cf in cashFlows)
+        (batch) => batch.set(cashFlowsTarget.doc(cf.id), cf.data()),
+      (batch) => batch.set(target, investmentData),
+      for (final cf in cashFlows) (batch) => batch.delete(cf.reference),
+      (batch) => batch.delete(investment),
+    ];
+    for (var i = 0; i < writes.length; i += _deleteBatchSize) {
+      final batch = _firestore.batch();
+      for (final write in writes.skip(i).take(_deleteBatchSize)) {
+        write(batch);
+      }
+      await _executeWrite(() => batch.commit());
     }
   }
 
