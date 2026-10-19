@@ -51,6 +51,23 @@ void main() {
       expect(runs, 1, reason: 'under the limit nothing is sent to a runner');
     });
 
+    test('archives over the memory cap stay inline', () async {
+      var runs = 0;
+      Future<List<int>?> spy(Archive a) async {
+        runs++;
+        return ZipEncoder().encode(a);
+      }
+
+      final big = _archive(documentBytes: 300000);
+      final zip = await encodeZipOffUiThread(
+        big,
+        runner: spy,
+        maxBytesForIsolate: 100000,
+      );
+      expect(runs, 0);
+      _expectSameFiles(zip, big);
+    });
+
     test('throws when the archive cannot be encoded', () async {
       Future<List<int>?> failing(Archive a) async => null;
       expect(
