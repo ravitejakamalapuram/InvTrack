@@ -295,6 +295,7 @@ void main() {
         'Updated At',
         'Investment Type',
         'Investment Status',
+        'Investment ID',
       ]);
       final gold = [
         for (final row in rows.skip(1))
