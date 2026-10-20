@@ -7,9 +7,6 @@ library;
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
-// The platform interface is the documented way to replace the picker.
-// ignore: implementation_imports
-import 'package:file_picker/src/platform/file_picker_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,30 +22,7 @@ import 'package:inv_tracker/features/settings/presentation/screens/data_manageme
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 import '../../../../helpers/contrast.dart';
-
-class _FakePicker extends FilePickerPlatform {
-  @override
-  Future<FilePickerResult?> pickFiles({
-    String? dialogTitle,
-    String? initialDirectory,
-    FileType type = FileType.any,
-    List<String>? allowedExtensions,
-    Function(FilePickerStatus)? onFileLoading,
-    int compressionQuality = 0,
-    bool allowMultiple = false,
-    bool withData = false,
-    bool withReadStream = false,
-    bool lockParentWindow = false,
-    bool readSequential = false,
-    bool cancelUploadOnWindowBlur = true,
-    AndroidSAFOptions? androidSafOptions,
-  }) async {
-    final bytes = Uint8List.fromList(const [1, 2, 3]);
-    return FilePickerResult([
-      PlatformFile(name: 'backup.zip', size: bytes.length, bytes: bytes),
-    ]);
-  }
-}
+import '../../../../helpers/fake_file_picker.dart';
 
 /// Answers every import with [result], so the screen is tested on its own.
 class _FixedImport extends ZipImportNotifier {
@@ -96,7 +70,12 @@ void main() {
 
   setUp(() {
     originalPicker = FilePickerPlatform.instance;
-    FilePickerPlatform.instance = _FakePicker();
+    FilePickerPlatform.instance = FakeFilePicker([
+      FakePickedFile(
+        name: 'backup.zip',
+        bytes: Uint8List.fromList(const [1, 2, 3]),
+      ),
+    ]);
   });
   tearDown(() => FilePickerPlatform.instance = originalPicker);
 

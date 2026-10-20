@@ -12,9 +12,6 @@
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-// The platform interface is the documented way to replace the picker.
-// ignore: implementation_imports
-import 'package:file_picker/src/platform/file_picker_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,6 +31,7 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../helpers/contrast.dart';
+import '../../../../helpers/fake_file_picker.dart';
 import '../../../../mocks/mock_security_service.dart';
 
 ThemeData _theme(Brightness b) =>
@@ -70,32 +68,6 @@ DocumentEntity _document(DocumentType type) => DocumentEntity(
   createdAt: DateTime(2025, 1, 1),
   updatedAt: DateTime(2025, 1, 1),
 );
-
-class _FakePicker extends FilePickerPlatform {
-  _FakePicker(this.paths);
-
-  final List<String> paths;
-
-  @override
-  Future<FilePickerResult?> pickFiles({
-    String? dialogTitle,
-    String? initialDirectory,
-    FileType type = FileType.any,
-    List<String>? allowedExtensions,
-    Function(FilePickerStatus)? onFileLoading,
-    int compressionQuality = 0,
-    bool allowMultiple = false,
-    bool withData = false,
-    bool withReadStream = false,
-    bool lockParentWindow = false,
-    bool readSequential = false,
-    bool cancelUploadOnWindowBlur = true,
-    AndroidSAFOptions? androidSafOptions,
-  }) async => FilePickerResult([
-    for (final p in paths)
-      PlatformFile(name: p.split('/').last, path: p, size: 4),
-  ]);
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -232,9 +204,9 @@ void main() {
         tester.view.physicalSize = const Size(1000, 2400);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
-        FilePickerPlatform.instance = _FakePicker([
-          '${dir.path}/a.pdf',
-          '${dir.path}/b.pdf',
+        FilePickerPlatform.instance = FakeFilePicker([
+          for (final name in ['a.pdf', 'b.pdf'])
+            FakePickedFile(name: name, filePath: '${dir.path}/$name'),
         ]);
         await tester.pumpWidget(
           ProviderScope(

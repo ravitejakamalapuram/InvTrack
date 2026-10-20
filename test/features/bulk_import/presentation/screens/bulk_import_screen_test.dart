@@ -2,9 +2,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
-// The platform interface is the documented way to replace the picker.
-// ignore: implementation_imports
-import 'package:file_picker/src/platform/file_picker_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,33 +13,7 @@ import 'package:inv_tracker/features/investment/presentation/providers/providers
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
-class _FakePicker extends FilePickerPlatform {
-  _FakePicker(this.content);
-
-  final String content;
-
-  @override
-  Future<FilePickerResult?> pickFiles({
-    String? dialogTitle,
-    String? initialDirectory,
-    FileType type = FileType.any,
-    List<String>? allowedExtensions,
-    Function(FilePickerStatus)? onFileLoading,
-    int compressionQuality = 0,
-    bool allowMultiple = false,
-    bool withData = false,
-    bool withReadStream = false,
-    bool lockParentWindow = false,
-    bool readSequential = false,
-    bool cancelUploadOnWindowBlur = true,
-    AndroidSAFOptions? androidSafOptions,
-  }) async {
-    final bytes = Uint8List.fromList(utf8.encode(content));
-    return FilePickerResult([
-      PlatformFile(name: 'portfolio.csv', size: bytes.length, bytes: bytes),
-    ]);
-  }
-}
+import '../../../../helpers/fake_file_picker.dart';
 
 class _TestSecurityNotifier extends SecurityNotifier {
   @override
@@ -65,7 +36,12 @@ void main() {
   tearDown(() => FilePickerPlatform.instance = originalPicker);
 
   Future<void> pickFile(WidgetTester tester, String content) async {
-    FilePickerPlatform.instance = _FakePicker(content);
+    FilePickerPlatform.instance = FakeFilePicker([
+      FakePickedFile(
+        name: 'portfolio.csv',
+        bytes: Uint8List.fromList(utf8.encode(content)),
+      ),
+    ]);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [

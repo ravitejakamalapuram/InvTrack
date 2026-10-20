@@ -1,6 +1,8 @@
 /// Unified data and account management screen.
 library;
 
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -365,20 +367,19 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     ref.read(securityProvider.notifier).suspendAutoLock();
 
     // Pick ZIP file
-    PlatformFile? selectedFile;
+    Uint8List zipBytes;
     try {
-      final result = await FilePicker.pickFiles(
+      final picked = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['zip'],
-        withData: true,
       );
 
-      if (result == null ||
-          result.files.isEmpty ||
-          result.files.first.bytes == null) {
+      if (picked.isEmpty) return;
+      try {
+        zipBytes = await picked.first.readAsBytes();
+      } on Exception {
         return;
       }
-      selectedFile = result.files.first;
     } finally {
       // Resume auto-lock after file picker operation completes
       ref.read(securityProvider.notifier).resumeAutoLock();
@@ -390,7 +391,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     try {
       final importResult = await ref
           .read(zipImportStateProvider.notifier)
-          .importFromZip(selectedFile.bytes!, strategy);
+          .importFromZip(zipBytes, strategy);
 
       if (context.mounted) {
         final l10n = AppLocalizations.of(context);

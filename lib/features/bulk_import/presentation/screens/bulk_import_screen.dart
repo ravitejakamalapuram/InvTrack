@@ -49,26 +49,31 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
     // when returning from the system file picker
     ref.read(securityProvider.notifier).suspendAutoLock();
 
-    late final PlatformFile selectedFile;
+    Uint8List? fileBytes;
+    var fileName = '';
     try {
-      final result = await FilePicker.pickFiles(
+      final picked = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['csv'],
-        withData: true,
       );
 
-      if (result == null || result.files.isEmpty) {
+      if (picked.isEmpty) {
         setState(() => _isLoading = false);
         return;
       }
 
-      selectedFile = result.files.first;
+      try {
+        fileName = picked.first.name;
+        fileBytes = await picked.first.readAsBytes();
+      } on Exception {
+        fileBytes = null;
+      }
     } finally {
       // Resume auto-lock after file picker operation completes
       ref.read(securityProvider.notifier).resumeAutoLock();
     }
 
-    if (selectedFile.bytes == null) {
+    if (fileBytes == null) {
       if (mounted) AppFeedback.showError(context, 'Could not read file');
       setState(() => _isLoading = false);
       return;
@@ -79,7 +84,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
       // Rows without a currency take the user's base currency
       final baseCurrency = ref.read(currencyCodeProvider);
       var parseResult = SimpleCsvParser.parse(
-        selectedFile.bytes!,
+        fileBytes,
         baseCurrency: baseCurrency,
       );
 
@@ -100,7 +105,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
       }
       if (order != null || decimalComma != null) {
         parseResult = SimpleCsvParser.parse(
-          selectedFile.bytes!,
+          fileBytes,
           baseCurrency: baseCurrency,
           dateOrder: order,
           decimalComma: decimalComma,
@@ -126,7 +131,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
           MaterialPageRoute(
             builder: (context) => ImportConfirmationScreen(
               parseResult: parseResult,
-              fileName: selectedFile.name,
+              fileName: fileName,
             ),
           ),
         );
