@@ -19,6 +19,7 @@ import 'package:inv_tracker/features/income_projection/domain/repositories/expec
 import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/settings/data/services/investment_backup_json.dart';
+import 'package:inv_tracker/features/settings/data/services/zip_off_ui_thread.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
@@ -395,10 +396,7 @@ class DataExportService {
     }
 
     // 5. Encode to ZIP
-    final zipData = ZipEncoder().encode(archive);
-    if (zipData == null) {
-      throw Exception('Failed to create ZIP archive');
-    }
+    final zipData = await encodeZipOffUiThread(archive);
     return ZipExport(
       bytes: Uint8List.fromList(zipData),
       investments: allInvestments.length,
