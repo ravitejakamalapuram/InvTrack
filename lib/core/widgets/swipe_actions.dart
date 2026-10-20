@@ -236,14 +236,14 @@ class SwipeActions extends StatelessWidget {
               messenger.context,
               deleteConfig!.successMessage,
               messenger: messenger,
-              isDark: isDark,
+              darkOverride: isDark,
             );
           } else {
             AppFeedback.showError(
               messenger.context,
               deleteConfig!.failureMessage ?? l10n.deleteActionFailed,
               messenger: messenger,
-              isDark: isDark,
+              darkOverride: isDark,
             );
           }
         }
