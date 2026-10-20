@@ -29,7 +29,10 @@ void main() {
     testWidgets('has semantic label', (tester) async {
       await tester.pumpWidget(buildTestWidget(const PrivacyToggleButton()));
       final context = tester.element(find.byType(PrivacyToggleButton));
-      expect(find.bySemanticsLabel(AppLocalizations.of(context).tooltipHideAmounts), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(AppLocalizations.of(context).tooltipHideAmounts),
+        findsOneWidget,
+      );
     });
 
     testWidgets('toggles semantics when tapped', (tester) async {
@@ -49,7 +52,10 @@ void main() {
     testWidgets('has tooltip', (tester) async {
       await tester.pumpWidget(buildTestWidget(const PrivacyToggleButton()));
       final context = tester.element(find.byType(PrivacyToggleButton));
-      expect(find.byTooltip(AppLocalizations.of(context).tooltipHideAmounts), findsOneWidget);
+      expect(
+        find.byTooltip(AppLocalizations.of(context).tooltipHideAmounts),
+        findsOneWidget,
+      );
     });
 
     testWidgets('is tappable as a button', (tester) async {
@@ -64,7 +70,10 @@ void main() {
     testWidgets('has tooltip for accessibility', (tester) async {
       await tester.pumpWidget(buildTestWidget(const CompactPrivacyToggle()));
       final context = tester.element(find.byType(CompactPrivacyToggle));
-      expect(find.byTooltip(AppLocalizations.of(context).tooltipHideAmounts), findsOneWidget);
+      expect(
+        find.byTooltip(AppLocalizations.of(context).tooltipHideAmounts),
+        findsOneWidget,
+      );
     });
 
     testWidgets('toggles tooltip when tapped', (tester) async {

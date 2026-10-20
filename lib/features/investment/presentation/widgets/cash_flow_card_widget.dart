@@ -250,7 +250,8 @@ class CashFlowCardWidget extends ConsumerWidget {
               child: Consumer(
                 builder: (context, ref, child) {
                   final isPrivacyMode = ref.watch(privacyModeProvider);
-                  final exchangeText = '1 ${cashFlow.currency} = ${rate.toStringAsFixed(4)} $baseCurrency • ${currencyFormat.formatSmart(convertedAmount)}';
+                  final exchangeText =
+                      '1 ${cashFlow.currency} = ${rate.toStringAsFixed(4)} $baseCurrency • ${currencyFormat.formatSmart(convertedAmount)}';
 
                   return isPrivacyMode
                       ? MaskedAmountText(

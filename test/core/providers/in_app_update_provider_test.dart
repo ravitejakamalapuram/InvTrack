@@ -26,15 +26,21 @@ void main() {
         expect(state.hasUpdate, isFalse);
       });
 
-      test('immediateUpdateAllowed defaults to false when updateInfo is null', () {
-        const state = InAppUpdateState();
-        expect(state.immediateUpdateAllowed, isFalse);
-      });
+      test(
+        'immediateUpdateAllowed defaults to false when updateInfo is null',
+        () {
+          const state = InAppUpdateState();
+          expect(state.immediateUpdateAllowed, isFalse);
+        },
+      );
 
-      test('flexibleUpdateAllowed defaults to false when updateInfo is null', () {
-        const state = InAppUpdateState();
-        expect(state.flexibleUpdateAllowed, isFalse);
-      });
+      test(
+        'flexibleUpdateAllowed defaults to false when updateInfo is null',
+        () {
+          const state = InAppUpdateState();
+          expect(state.flexibleUpdateAllowed, isFalse);
+        },
+      );
 
       test('isHighPriority defaults to false when updateInfo is null', () {
         const state = InAppUpdateState();
@@ -45,24 +51,27 @@ void main() {
     group('hasUpdate', () {
       test('returns true when update is available', () {
         final mockInfo = MockAppUpdateInfo();
-        when(() => mockInfo.updateAvailability)
-            .thenReturn(UpdateAvailability.updateAvailable);
+        when(
+          () => mockInfo.updateAvailability,
+        ).thenReturn(UpdateAvailability.updateAvailable);
         final state = InAppUpdateState(updateInfo: mockInfo);
         expect(state.hasUpdate, isTrue);
       });
 
       test('returns false when update is not available', () {
         final mockInfo = MockAppUpdateInfo();
-        when(() => mockInfo.updateAvailability)
-            .thenReturn(UpdateAvailability.updateNotAvailable);
+        when(
+          () => mockInfo.updateAvailability,
+        ).thenReturn(UpdateAvailability.updateNotAvailable);
         final state = InAppUpdateState(updateInfo: mockInfo);
         expect(state.hasUpdate, isFalse);
       });
 
       test('returns false when update availability is unknown', () {
         final mockInfo = MockAppUpdateInfo();
-        when(() => mockInfo.updateAvailability)
-            .thenReturn(UpdateAvailability.unknown);
+        when(
+          () => mockInfo.updateAvailability,
+        ).thenReturn(UpdateAvailability.unknown);
         final state = InAppUpdateState(updateInfo: mockInfo);
         expect(state.hasUpdate, isFalse);
       });
@@ -190,9 +199,7 @@ void main() {
     setUp(() {
       mockService = MockInAppUpdateService();
       container = ProviderContainer(
-        overrides: [
-          inAppUpdateServiceProvider.overrideWithValue(mockService),
-        ],
+        overrides: [inAppUpdateServiceProvider.overrideWithValue(mockService)],
       );
     });
 
@@ -213,10 +220,12 @@ void main() {
     group('checkForUpdate', () {
       test('sets isChecking to true during check, false after', () async {
         final mockUpdateInfo = MockAppUpdateInfo();
-        when(() => mockUpdateInfo.updateAvailability)
-            .thenReturn(UpdateAvailability.updateAvailable);
-        when(() => mockService.checkForUpdate())
-            .thenAnswer((_) async => mockUpdateInfo);
+        when(
+          () => mockUpdateInfo.updateAvailability,
+        ).thenReturn(UpdateAvailability.updateAvailable);
+        when(
+          () => mockService.checkForUpdate(),
+        ).thenAnswer((_) async => mockUpdateInfo);
 
         final notifier = container.read(inAppUpdateProvider.notifier);
         final future = notifier.checkForUpdate();
@@ -230,17 +239,20 @@ void main() {
 
       test('clears error when starting a new check', () async {
         // First, put the state into an error state
-        when(() => mockService.checkForUpdate())
-            .thenThrow(Exception('Network error'));
+        when(
+          () => mockService.checkForUpdate(),
+        ).thenThrow(Exception('Network error'));
         await container.read(inAppUpdateProvider.notifier).checkForUpdate();
         expect(container.read(inAppUpdateProvider).error, isNotNull);
 
         // Reset mock to succeed
         final mockUpdateInfo = MockAppUpdateInfo();
-        when(() => mockUpdateInfo.updateAvailability)
-            .thenReturn(UpdateAvailability.updateNotAvailable);
-        when(() => mockService.checkForUpdate())
-            .thenAnswer((_) async => mockUpdateInfo);
+        when(
+          () => mockUpdateInfo.updateAvailability,
+        ).thenReturn(UpdateAvailability.updateNotAvailable);
+        when(
+          () => mockService.checkForUpdate(),
+        ).thenAnswer((_) async => mockUpdateInfo);
 
         await container.read(inAppUpdateProvider.notifier).checkForUpdate();
 
@@ -249,8 +261,9 @@ void main() {
 
       test('skips when already checking (no duplicate calls)', () async {
         final mockUpdateInfo = MockAppUpdateInfo();
-        when(() => mockUpdateInfo.updateAvailability)
-            .thenReturn(UpdateAvailability.updateNotAvailable);
+        when(
+          () => mockUpdateInfo.updateAvailability,
+        ).thenReturn(UpdateAvailability.updateNotAvailable);
 
         // Simulate a slow check
         when(() => mockService.checkForUpdate()).thenAnswer((_) async {
@@ -272,13 +285,15 @@ void main() {
 
       test('updates state when update available', () async {
         final mockUpdateInfo = MockAppUpdateInfo();
-        when(() => mockUpdateInfo.updateAvailability)
-            .thenReturn(UpdateAvailability.updateAvailable);
+        when(
+          () => mockUpdateInfo.updateAvailability,
+        ).thenReturn(UpdateAvailability.updateAvailable);
         when(() => mockUpdateInfo.immediateUpdateAllowed).thenReturn(true);
         when(() => mockUpdateInfo.flexibleUpdateAllowed).thenReturn(true);
         when(() => mockUpdateInfo.updatePriority).thenReturn(5);
-        when(() => mockService.checkForUpdate())
-            .thenAnswer((_) async => mockUpdateInfo);
+        when(
+          () => mockService.checkForUpdate(),
+        ).thenAnswer((_) async => mockUpdateInfo);
 
         await container.read(inAppUpdateProvider.notifier).checkForUpdate();
 
@@ -294,10 +309,12 @@ void main() {
 
       test('handles no update available', () async {
         final mockUpdateInfo = MockAppUpdateInfo();
-        when(() => mockUpdateInfo.updateAvailability)
-            .thenReturn(UpdateAvailability.updateNotAvailable);
-        when(() => mockService.checkForUpdate())
-            .thenAnswer((_) async => mockUpdateInfo);
+        when(
+          () => mockUpdateInfo.updateAvailability,
+        ).thenReturn(UpdateAvailability.updateNotAvailable);
+        when(
+          () => mockService.checkForUpdate(),
+        ).thenAnswer((_) async => mockUpdateInfo);
 
         await container.read(inAppUpdateProvider.notifier).checkForUpdate();
 
@@ -323,65 +340,87 @@ void main() {
       });
 
       test('sets error message on exception', () async {
-        when(() => mockService.checkForUpdate())
-            .thenThrow(Exception('Network error'));
+        when(
+          () => mockService.checkForUpdate(),
+        ).thenThrow(Exception('Network error'));
 
         await container.read(inAppUpdateProvider.notifier).checkForUpdate();
 
         final state = container.read(inAppUpdateProvider);
 
         expect(state.error, isNotNull);
-        expect(state.error, 'Failed to check for updates. Please try again later.');
+        expect(
+          state.error,
+          'Failed to check for updates. Please try again later.',
+        );
         expect(state.isChecking, isFalse);
       });
     });
 
     group('startImmediateUpdate', () {
       test('does not set error on success result', () async {
-        when(() => mockService.startImmediateUpdate())
-            .thenAnswer((_) async => AppUpdateResult.success);
+        when(
+          () => mockService.startImmediateUpdate(),
+        ).thenAnswer((_) async => AppUpdateResult.success);
 
-        await container.read(inAppUpdateProvider.notifier).startImmediateUpdate();
+        await container
+            .read(inAppUpdateProvider.notifier)
+            .startImmediateUpdate();
 
         final state = container.read(inAppUpdateProvider);
         expect(state.error, isNull);
       });
 
       test('sets error when result is inAppUpdateFailed', () async {
-        when(() => mockService.startImmediateUpdate())
-            .thenAnswer((_) async => AppUpdateResult.inAppUpdateFailed);
+        when(
+          () => mockService.startImmediateUpdate(),
+        ).thenAnswer((_) async => AppUpdateResult.inAppUpdateFailed);
 
-        await container.read(inAppUpdateProvider.notifier).startImmediateUpdate();
-
-        final state = container.read(inAppUpdateProvider);
-        expect(state.error, 'Update installation failed. Please try again.');
-      });
-
-      test('sets error when result is userDeniedUpdate for immediate update', () async {
-        when(() => mockService.startImmediateUpdate())
-            .thenAnswer((_) async => AppUpdateResult.userDeniedUpdate);
-
-        await container.read(inAppUpdateProvider.notifier).startImmediateUpdate();
+        await container
+            .read(inAppUpdateProvider.notifier)
+            .startImmediateUpdate();
 
         final state = container.read(inAppUpdateProvider);
         expect(state.error, 'Update installation failed. Please try again.');
       });
+
+      test(
+        'sets error when result is userDeniedUpdate for immediate update',
+        () async {
+          when(
+            () => mockService.startImmediateUpdate(),
+          ).thenAnswer((_) async => AppUpdateResult.userDeniedUpdate);
+
+          await container
+              .read(inAppUpdateProvider.notifier)
+              .startImmediateUpdate();
+
+          final state = container.read(inAppUpdateProvider);
+          expect(state.error, 'Update installation failed. Please try again.');
+        },
+      );
 
       test('sets error when result is userDeniedUpdate', () async {
-        when(() => mockService.startImmediateUpdate())
-            .thenAnswer((_) async => AppUpdateResult.userDeniedUpdate);
+        when(
+          () => mockService.startImmediateUpdate(),
+        ).thenAnswer((_) async => AppUpdateResult.userDeniedUpdate);
 
-        await container.read(inAppUpdateProvider.notifier).startImmediateUpdate();
+        await container
+            .read(inAppUpdateProvider.notifier)
+            .startImmediateUpdate();
 
         final state = container.read(inAppUpdateProvider);
         expect(state.error, 'Update installation failed. Please try again.');
       });
 
       test('sets error message on exception', () async {
-        when(() => mockService.startImmediateUpdate())
-            .thenThrow(Exception('Platform error'));
+        when(
+          () => mockService.startImmediateUpdate(),
+        ).thenThrow(Exception('Platform error'));
 
-        await container.read(inAppUpdateProvider.notifier).startImmediateUpdate();
+        await container
+            .read(inAppUpdateProvider.notifier)
+            .startImmediateUpdate();
 
         final state = container.read(inAppUpdateProvider);
         expect(state.error, 'Failed to start update. Please try again later.');
@@ -420,57 +459,79 @@ void main() {
       });
 
       test('calls startFlexibleUpdate on the service', () async {
-        when(() => mockService.startFlexibleUpdate())
-            .thenAnswer((_) async => AppUpdateResult.success);
+        when(
+          () => mockService.startFlexibleUpdate(),
+        ).thenAnswer((_) async => AppUpdateResult.success);
 
-        await container.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
+        await container
+            .read(inAppUpdateProvider.notifier)
+            .startFlexibleUpdate();
 
         verify(() => mockService.startFlexibleUpdate()).called(1);
       });
 
       test('clears isDownloading and sets error on failed result', () async {
-        when(() => mockService.startFlexibleUpdate())
-            .thenAnswer((_) async => AppUpdateResult.inAppUpdateFailed);
+        when(
+          () => mockService.startFlexibleUpdate(),
+        ).thenAnswer((_) async => AppUpdateResult.inAppUpdateFailed);
 
-        await container.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
-
-        final state = container.read(inAppUpdateProvider);
-        expect(state.isDownloading, isFalse);
-        expect(state.error, 'Failed to download update. Please try again.');
-      });
-
-      test('sets error when result is userDeniedUpdate for flexible update', () async {
-        when(() => mockService.startFlexibleUpdate())
-            .thenAnswer((_) async => AppUpdateResult.userDeniedUpdate);
-
-        await container.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
+        await container
+            .read(inAppUpdateProvider.notifier)
+            .startFlexibleUpdate();
 
         final state = container.read(inAppUpdateProvider);
         expect(state.isDownloading, isFalse);
         expect(state.error, 'Failed to download update. Please try again.');
       });
+
+      test(
+        'sets error when result is userDeniedUpdate for flexible update',
+        () async {
+          when(
+            () => mockService.startFlexibleUpdate(),
+          ).thenAnswer((_) async => AppUpdateResult.userDeniedUpdate);
+
+          await container
+              .read(inAppUpdateProvider.notifier)
+              .startFlexibleUpdate();
+
+          final state = container.read(inAppUpdateProvider);
+          expect(state.isDownloading, isFalse);
+          expect(state.error, 'Failed to download update. Please try again.');
+        },
+      );
 
       test('clears isDownloading and sets error on exception', () async {
-        when(() => mockService.startFlexibleUpdate())
-            .thenThrow(Exception('Download failed'));
+        when(
+          () => mockService.startFlexibleUpdate(),
+        ).thenThrow(Exception('Download failed'));
 
-        await container.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
+        await container
+            .read(inAppUpdateProvider.notifier)
+            .startFlexibleUpdate();
 
         final state = container.read(inAppUpdateProvider);
         expect(state.isDownloading, isFalse);
-        expect(state.error, 'Failed to start update download. Please try again later.');
+        expect(
+          state.error,
+          'Failed to start update download. Please try again later.',
+        );
       });
 
       test('clears error before starting download', () async {
         // Put state into error
-        when(() => mockService.startFlexibleUpdate())
-            .thenAnswer((_) async => AppUpdateResult.inAppUpdateFailed);
-        await container.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
+        when(
+          () => mockService.startFlexibleUpdate(),
+        ).thenAnswer((_) async => AppUpdateResult.inAppUpdateFailed);
+        await container
+            .read(inAppUpdateProvider.notifier)
+            .startFlexibleUpdate();
         expect(container.read(inAppUpdateProvider).error, isNotNull);
 
         // Next call should clear error at start
-        when(() => mockService.startFlexibleUpdate())
-            .thenAnswer((_) async => AppUpdateResult.success);
+        when(
+          () => mockService.startFlexibleUpdate(),
+        ).thenAnswer((_) async => AppUpdateResult.success);
         final notifier = container.read(inAppUpdateProvider.notifier);
         final future = notifier.startFlexibleUpdate();
 
@@ -485,27 +546,41 @@ void main() {
 
     group('completeFlexibleUpdate', () {
       test('calls completeFlexibleUpdate on the service', () async {
-        when(() => mockService.completeFlexibleUpdate()).thenAnswer((_) async {});
+        when(
+          () => mockService.completeFlexibleUpdate(),
+        ).thenAnswer((_) async {});
 
-        await container.read(inAppUpdateProvider.notifier).completeFlexibleUpdate();
+        await container
+            .read(inAppUpdateProvider.notifier)
+            .completeFlexibleUpdate();
 
         verify(() => mockService.completeFlexibleUpdate()).called(1);
       });
 
       test('sets error message on exception', () async {
-        when(() => mockService.completeFlexibleUpdate())
-            .thenThrow(Exception('Restart failed'));
+        when(
+          () => mockService.completeFlexibleUpdate(),
+        ).thenThrow(Exception('Restart failed'));
 
-        await container.read(inAppUpdateProvider.notifier).completeFlexibleUpdate();
+        await container
+            .read(inAppUpdateProvider.notifier)
+            .completeFlexibleUpdate();
 
         final state = container.read(inAppUpdateProvider);
-        expect(state.error, 'Failed to complete update. Please restart the app manually.');
+        expect(
+          state.error,
+          'Failed to complete update. Please restart the app manually.',
+        );
       });
 
       test('does not update state on success', () async {
-        when(() => mockService.completeFlexibleUpdate()).thenAnswer((_) async {});
+        when(
+          () => mockService.completeFlexibleUpdate(),
+        ).thenAnswer((_) async {});
 
-        await container.read(inAppUpdateProvider.notifier).completeFlexibleUpdate();
+        await container
+            .read(inAppUpdateProvider.notifier)
+            .completeFlexibleUpdate();
 
         final state = container.read(inAppUpdateProvider);
         expect(state.error, isNull);

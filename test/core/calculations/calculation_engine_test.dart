@@ -41,7 +41,11 @@ class MockCurrencyConversionService implements CurrencyConversionService {
   }
 
   @override
-  Future<double> getHistoricalRate(DateTime date, String from, String to) async {
+  Future<double> getHistoricalRate(
+    DateTime date,
+    String from,
+    String to,
+  ) async {
     return convert(amount: 1.0, from: from, to: to);
   }
 
@@ -119,108 +123,178 @@ void main() {
         expect(f.calculateNetCashFlow(1000, 1500), 500.0);
       });
 
-      test('protects against division-by-zero on zero principal/invested inputs', () {
-        final f = identityEngine.financial;
-        expect(f.calculateMOIC(0, 100), 0.0);
-        expect(f.calculateAbsoluteReturn(0, 100), 0.0);
-      });
+      test(
+        'protects against division-by-zero on zero principal/invested inputs',
+        () {
+          final f = identityEngine.financial;
+          expect(f.calculateMOIC(0, 100), 0.0);
+          expect(f.calculateAbsoluteReturn(0, 100), 0.0);
+        },
+      );
 
       test('calculateXirr resolves standard returns', () {
         final dates = [DateTime(2023, 1, 1), DateTime(2024, 1, 1)];
         final amounts = [-1000.0, 1100.0];
-        expect(identityEngine.financial.calculateXirr(dates, amounts), closeTo(0.10, 0.0001));
+        expect(
+          identityEngine.financial.calculateXirr(dates, amounts),
+          closeTo(0.10, 0.0001),
+        );
       });
 
-      test('calculateStats with empty cash flows returns empty metrics object', () {
-        final stats = identityEngine.financial.calculateStats([]);
-        expect(stats.totalInvested, 0.0);
-        expect(stats.totalReturned, 0.0);
-        expect(stats.netCashFlow, 0.0);
-        expect(stats.absoluteReturn, 0.0);
-        expect(stats.moic, 0.0);
-        // A71: no XIRR exists, so it is undefined (null), not 0%.
-        expect(stats.xirr, isNull);
-      });
+      test(
+        'calculateStats with empty cash flows returns empty metrics object',
+        () {
+          final stats = identityEngine.financial.calculateStats([]);
+          expect(stats.totalInvested, 0.0);
+          expect(stats.totalReturned, 0.0);
+          expect(stats.netCashFlow, 0.0);
+          expect(stats.absoluteReturn, 0.0);
+          expect(stats.moic, 0.0);
+          // A71: no XIRR exists, so it is undefined (null), not 0%.
+          expect(stats.xirr, isNull);
+        },
+      );
 
-      test('calculateStats skips XIRR calculation when includeXirr is false', () {
-        final cashFlows = [
-          CashFlowEntity(
-            currency: 'INR',
-            id: '1',
-            investmentId: 'test',
-            date: DateTime(2023, 1, 1),
-            type: CashFlowType.invest,
-            amount: 1000.0,
-            createdAt: DateTime.now(),
-          ),
-          CashFlowEntity(
-            currency: 'INR',
-            id: '2',
-            investmentId: 'test',
-            date: DateTime(2024, 1, 1),
-            type: CashFlowType.returnFlow,
-            amount: 1200.0,
-            createdAt: DateTime.now(),
-          ),
-        ];
+      test(
+        'calculateStats skips XIRR calculation when includeXirr is false',
+        () {
+          final cashFlows = [
+            CashFlowEntity(
+              currency: 'INR',
+              id: '1',
+              investmentId: 'test',
+              date: DateTime(2023, 1, 1),
+              type: CashFlowType.invest,
+              amount: 1000.0,
+              createdAt: DateTime.now(),
+            ),
+            CashFlowEntity(
+              currency: 'INR',
+              id: '2',
+              investmentId: 'test',
+              date: DateTime(2024, 1, 1),
+              type: CashFlowType.returnFlow,
+              amount: 1200.0,
+              createdAt: DateTime.now(),
+            ),
+          ];
 
-        final stats = identityEngine.financial.calculateStats(cashFlows, includeXirr: false);
-        expect(stats.totalInvested, 1000.0);
-        expect(stats.totalReturned, 1200.0);
-        expect(stats.netCashFlow, 200.0);
-        // Skipped, so not computed: undefined (null), never a 0% placeholder.
-        expect(stats.xirr, isNull);
-      });
+          final stats = identityEngine.financial.calculateStats(
+            cashFlows,
+            includeXirr: false,
+          );
+          expect(stats.totalInvested, 1000.0);
+          expect(stats.totalReturned, 1200.0);
+          expect(stats.netCashFlow, 200.0);
+          // Skipped, so not computed: undefined (null), never a 0% placeholder.
+          expect(stats.xirr, isNull);
+        },
+      );
     });
 
     group('ProjectionCalculatorModule - Compound math & dates', () {
-      test('nominal rate to Effective Annual Rate (EAR) under various compounding options', () {
-        final p = identityEngine.projection;
+      test(
+        'nominal rate to Effective Annual Rate (EAR) under various compounding options',
+        () {
+          final p = identityEngine.projection;
 
-        // Simple Interest -> nominal = EAR
-        expect(p.calculateEffectiveAnnualRate(nominalRate: 12.0, compounding: CompoundingFrequency.none), closeTo(12.0, 0.0001));
+          // Simple Interest -> nominal = EAR
+          expect(
+            p.calculateEffectiveAnnualRate(
+              nominalRate: 12.0,
+              compounding: CompoundingFrequency.none,
+            ),
+            closeTo(12.0, 0.0001),
+          );
 
-        // Daily compounding -> (1 + 0.12/365)^365 - 1 = ~12.747%
-        expect(p.calculateEffectiveAnnualRate(nominalRate: 12.0, compounding: CompoundingFrequency.daily), closeTo(12.747, 0.01));
+          // Daily compounding -> (1 + 0.12/365)^365 - 1 = ~12.747%
+          expect(
+            p.calculateEffectiveAnnualRate(
+              nominalRate: 12.0,
+              compounding: CompoundingFrequency.daily,
+            ),
+            closeTo(12.747, 0.01),
+          );
 
-        // Quarterly compounding -> (1 + 0.12/4)^4 - 1 = ~12.55%
-        expect(p.calculateEffectiveAnnualRate(nominalRate: 12.0, compounding: CompoundingFrequency.quarterly), closeTo(12.55, 0.01));
+          // Quarterly compounding -> (1 + 0.12/4)^4 - 1 = ~12.55%
+          expect(
+            p.calculateEffectiveAnnualRate(
+              nominalRate: 12.0,
+              compounding: CompoundingFrequency.quarterly,
+            ),
+            closeTo(12.55, 0.01),
+          );
 
-        // Annual compounding -> 12%
-        expect(p.calculateEffectiveAnnualRate(nominalRate: 12.0, compounding: CompoundingFrequency.annual), closeTo(12.0, 0.0001));
-      });
+          // Annual compounding -> 12%
+          expect(
+            p.calculateEffectiveAnnualRate(
+              nominalRate: 12.0,
+              compounding: CompoundingFrequency.annual,
+            ),
+            closeTo(12.0, 0.0001),
+          );
+        },
+      );
 
-      test('maturity value for compounding vs simple interest over multi-year periods', () {
-        final p = identityEngine.projection;
+      test(
+        'maturity value for compounding vs simple interest over multi-year periods',
+        () {
+          final p = identityEngine.projection;
 
-        // Simple interest: 1000 principal, 10% rate, 36 months (3 years) -> 1300
-        expect(
-          p.calculateMaturityValue(principal: 1000, annualRate: 10, tenureMonths: 36, compounding: CompoundingFrequency.none),
-          1300.0,
-        );
+          // Simple interest: 1000 principal, 10% rate, 36 months (3 years) -> 1300
+          expect(
+            p.calculateMaturityValue(
+              principal: 1000,
+              annualRate: 10,
+              tenureMonths: 36,
+              compounding: CompoundingFrequency.none,
+            ),
+            1300.0,
+          );
 
-        // Annual compound interest: 1000 principal, 10% rate, 36 months (3 years) -> 1000 * 1.1^3 = 1331
-        expect(
-          p.calculateMaturityValue(principal: 1000, annualRate: 10, tenureMonths: 36, compounding: CompoundingFrequency.annual),
-          closeTo(1331.0, 0.001),
-        );
-      });
+          // Annual compound interest: 1000 principal, 10% rate, 36 months (3 years) -> 1000 * 1.1^3 = 1331
+          expect(
+            p.calculateMaturityValue(
+              principal: 1000,
+              annualRate: 10,
+              tenureMonths: 36,
+              compounding: CompoundingFrequency.annual,
+            ),
+            closeTo(1331.0, 0.001),
+          );
+        },
+      );
 
-      test('maturity date boundary conditions including leap years and month lengths', () {
-        final p = identityEngine.projection;
+      test(
+        'maturity date boundary conditions including leap years and month lengths',
+        () {
+          final p = identityEngine.projection;
 
-        // Leap year boundary: Feb 28, 2024 (leap year) + 24 months -> Feb 28, 2026
-        final startLeap = DateTime(2024, 2, 28);
-        expect(p.calculateMaturityDate(startDate: startLeap, tenureMonths: 24), DateTime(2026, 2, 28));
+          // Leap year boundary: Feb 28, 2024 (leap year) + 24 months -> Feb 28, 2026
+          final startLeap = DateTime(2024, 2, 28);
+          expect(
+            p.calculateMaturityDate(startDate: startLeap, tenureMonths: 24),
+            DateTime(2026, 2, 28),
+          );
 
-        // Month boundary capping: Jan 31, 2024 + 1 month -> Feb 29, 2024 (since 2024 is a leap year)
-        final startJan31 = DateTime(2024, 1, 31);
-        expect(p.calculateMaturityDate(startDate: startJan31, tenureMonths: 1), DateTime(2024, 2, 29));
+          // Month boundary capping: Jan 31, 2024 + 1 month -> Feb 29, 2024 (since 2024 is a leap year)
+          final startJan31 = DateTime(2024, 1, 31);
+          expect(
+            p.calculateMaturityDate(startDate: startJan31, tenureMonths: 1),
+            DateTime(2024, 2, 29),
+          );
 
-        // Month boundary capping: Jan 31, 2023 + 1 month -> Feb 28, 2023 (non-leap year)
-        final startJan31NonLeap = DateTime(2023, 1, 31);
-        expect(p.calculateMaturityDate(startDate: startJan31NonLeap, tenureMonths: 1), DateTime(2023, 2, 28));
-      });
+          // Month boundary capping: Jan 31, 2023 + 1 month -> Feb 28, 2023 (non-leap year)
+          final startJan31NonLeap = DateTime(2023, 1, 31);
+          expect(
+            p.calculateMaturityDate(
+              startDate: startJan31NonLeap,
+              tenureMonths: 1,
+            ),
+            DateTime(2023, 2, 28),
+          );
+        },
+      );
     });
 
     group('CurrencyConverterModule - Multi-currency stubs and strategies', () {
@@ -228,7 +302,11 @@ void main() {
         final c = conversionEngine.currency;
         expect(c.isAvailable, isTrue);
 
-        final converted = await c.convert(amount: 100.0, from: 'USD', to: 'INR');
+        final converted = await c.convert(
+          amount: 100.0,
+          from: 'USD',
+          to: 'INR',
+        );
         expect(converted, 8000.0);
       });
 
@@ -255,7 +333,10 @@ void main() {
           ),
         ];
 
-        final convertedList = await c.batchConvert(cashFlows: cashFlows, baseCurrency: 'INR');
+        final convertedList = await c.batchConvert(
+          cashFlows: cashFlows,
+          baseCurrency: 'INR',
+        );
         expect(convertedList[0].amount, 8000.0);
         expect(convertedList[0].currency, 'INR');
         expect(convertedList[1].amount, 4500.0);
@@ -267,21 +348,44 @@ void main() {
 
         // Strategy: throwError should raise CurrencyConversionException when currency conversion service fails to find conversion rates
         expect(
-          () => c.convert(amount: 100.0, from: 'GBP', to: 'INR', fallbackStrategy: ConversionFallbackStrategy.throwError),
+          () => c.convert(
+            amount: 100.0,
+            from: 'GBP',
+            to: 'INR',
+            fallbackStrategy: ConversionFallbackStrategy.throwError,
+          ),
           throwsA(isA<CurrencyConversionException>()),
         );
 
         // Strategy: useOriginal should keep the original amount
-        final original = await c.convert(amount: 100.0, from: 'GBP', to: 'INR', fallbackStrategy: ConversionFallbackStrategy.useOriginal);
+        final original = await c.convert(
+          amount: 100.0,
+          from: 'GBP',
+          to: 'INR',
+          fallbackStrategy: ConversionFallbackStrategy.useOriginal,
+        );
         expect(original, 100.0);
 
         // Strategy: skipTransaction should return 0.0
-        final zero = await c.convert(amount: 100.0, from: 'GBP', to: 'INR', fallbackStrategy: ConversionFallbackStrategy.skipTransaction);
+        final zero = await c.convert(
+          amount: 100.0,
+          from: 'GBP',
+          to: 'INR',
+          fallbackStrategy: ConversionFallbackStrategy.skipTransaction,
+        );
         expect(zero, 0.0);
 
         // Strategy: useLastKnown should try to get the last known rate or return original
-        final lastKnown = await c.convert(amount: 100.0, from: 'GBP', to: 'INR', fallbackStrategy: ConversionFallbackStrategy.useLastKnown);
-        expect(lastKnown, 100.0); // No last known rate exists, returns original amount
+        final lastKnown = await c.convert(
+          amount: 100.0,
+          from: 'GBP',
+          to: 'INR',
+          fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
+        );
+        expect(
+          lastKnown,
+          100.0,
+        ); // No last known rate exists, returns original amount
       });
     });
 
@@ -354,28 +458,31 @@ void main() {
 
         // The returns component solves one XIRR over the cash flows (A21),
         // so each map comes with the flows it was calculated from.
-        List<CashFlowEntity> flows(String id, double invested, double returned,
-                String currency) =>
-            [
-              CashFlowEntity(
-                id: '$id-in',
-                investmentId: id,
-                date: DateTime(2025, 1, 1),
-                type: CashFlowType.invest,
-                amount: invested,
-                currency: currency,
-                createdAt: DateTime(2025, 1, 1),
-              ),
-              CashFlowEntity(
-                id: '$id-out',
-                investmentId: id,
-                date: DateTime(2026, 1, 1),
-                type: CashFlowType.returnFlow,
-                amount: returned,
-                currency: currency,
-                createdAt: DateTime(2026, 1, 1),
-              ),
-            ];
+        List<CashFlowEntity> flows(
+          String id,
+          double invested,
+          double returned,
+          String currency,
+        ) => [
+          CashFlowEntity(
+            id: '$id-in',
+            investmentId: id,
+            date: DateTime(2025, 1, 1),
+            type: CashFlowType.invest,
+            amount: invested,
+            currency: currency,
+            createdAt: DateTime(2025, 1, 1),
+          ),
+          CashFlowEntity(
+            id: '$id-out',
+            investmentId: id,
+            date: DateTime(2026, 1, 1),
+            type: CashFlowType.returnFlow,
+            amount: returned,
+            currency: currency,
+            createdAt: DateTime(2026, 1, 1),
+          ),
+        ];
 
         // When baseCurrency is 'INR', USD stats should be converted to INR.
         // 100 USD becomes 8000 INR.
@@ -406,7 +513,10 @@ void main() {
         expect(score.diversification.score, greaterThan(0)); // diversified!
 
         // Verify that conversion actually occurred (diversity score differs from the no-conversion control)
-        expect(score.diversification.score, isNot(equals(identityScore.diversification.score)));
+        expect(
+          score.diversification.score,
+          isNot(equals(identityScore.diversification.score)),
+        );
       });
     });
   });

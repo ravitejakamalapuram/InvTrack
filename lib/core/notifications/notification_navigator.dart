@@ -423,7 +423,9 @@ class NotificationNavigator {
   /// Returns `true` if navigation was successful, `false` otherwise.
   ///
   /// Throws [ValidationException] if the report type is unknown or invalid.
-  Future<bool> _navigateToDynamicReport(Map<String, String> reportParams) async {
+  Future<bool> _navigateToDynamicReport(
+    Map<String, String> reportParams,
+  ) async {
     final context = rootNavigatorKey.currentContext;
     if (context == null) {
       LoggerService.warn('No context available for navigation');
@@ -543,8 +545,8 @@ class NotificationNavigator {
         return ReportConfiguration.goalProgress(
           goalId: goalId,
           milestonePercent: milestonePercent != null
-            ? int.tryParse(milestonePercent)
-            : null,
+              ? int.tryParse(milestonePercent)
+              : null,
           notificationContext: notificationContext,
         );
 
@@ -579,14 +581,11 @@ class NotificationNavigator {
       if (investmentsAsync.isLoading) {
         // Cold start scenario - wait for data to load
         final completer = Completer<List<InvestmentEntity>?>();
-        final subscription = _ref.listen(
-          allInvestmentsProvider,
-          (_, next) {
-            if (!next.isLoading && !completer.isCompleted) {
-              completer.complete(next.value);
-            }
-          },
-        );
+        final subscription = _ref.listen(allInvestmentsProvider, (_, next) {
+          if (!next.isLoading && !completer.isCompleted) {
+            completer.complete(next.value);
+          }
+        });
 
         try {
           investments = await completer.future.timeout(

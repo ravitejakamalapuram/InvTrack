@@ -51,13 +51,19 @@ void main() {
       service.set(ReportType.weeklySummary, periodStart, periodEnd, reportData);
 
       // Verify it's cached
-      expect(service.get(ReportType.weeklySummary, periodStart, periodEnd), isNotNull);
+      expect(
+        service.get(ReportType.weeklySummary, periodStart, periodEnd),
+        isNotNull,
+      );
 
       // Clear type
       service.clearType(ReportType.weeklySummary);
 
       // Verify it's gone
-      expect(service.get(ReportType.weeklySummary, periodStart, periodEnd), isNull);
+      expect(
+        service.get(ReportType.weeklySummary, periodStart, periodEnd),
+        isNull,
+      );
     });
 
     test('should clear all cache', () {
@@ -65,27 +71,47 @@ void main() {
       final periodEnd = DateTime(2024, 1, 31);
 
       // Cache multiple items
-      service.set(ReportType.weeklySummary, periodStart, periodEnd, {'test': 'data1'});
-      service.set(ReportType.monthlyIncome, periodStart, periodEnd, {'test': 'data2'});
+      service.set(ReportType.weeklySummary, periodStart, periodEnd, {
+        'test': 'data1',
+      });
+      service.set(ReportType.monthlyIncome, periodStart, periodEnd, {
+        'test': 'data2',
+      });
 
       // Verify they're cached
-      expect(service.get(ReportType.weeklySummary, periodStart, periodEnd), isNotNull);
-      expect(service.get(ReportType.monthlyIncome, periodStart, periodEnd), isNotNull);
+      expect(
+        service.get(ReportType.weeklySummary, periodStart, periodEnd),
+        isNotNull,
+      );
+      expect(
+        service.get(ReportType.monthlyIncome, periodStart, periodEnd),
+        isNotNull,
+      );
 
       // Clear all
       service.clearAll();
 
       // Verify they're gone
-      expect(service.get(ReportType.weeklySummary, periodStart, periodEnd), isNull);
-      expect(service.get(ReportType.monthlyIncome, periodStart, periodEnd), isNull);
+      expect(
+        service.get(ReportType.weeklySummary, periodStart, periodEnd),
+        isNull,
+      );
+      expect(
+        service.get(ReportType.monthlyIncome, periodStart, periodEnd),
+        isNull,
+      );
     });
 
     test('should handle different report types independently', () {
       final periodStart = DateTime(2024, 1, 1);
       final periodEnd = DateTime(2024, 1, 31);
 
-      service.set(ReportType.weeklySummary, periodStart, periodEnd, {'type': 'weekly'});
-      service.set(ReportType.monthlyIncome, periodStart, periodEnd, {'type': 'monthly'});
+      service.set(ReportType.weeklySummary, periodStart, periodEnd, {
+        'type': 'weekly',
+      });
+      service.set(ReportType.monthlyIncome, periodStart, periodEnd, {
+        'type': 'monthly',
+      });
 
       final weekly = service.get<Map<String, String>>(
         ReportType.weeklySummary,
@@ -108,8 +134,12 @@ void main() {
       final periodStart2 = DateTime(2024, 2, 1);
       final periodEnd2 = DateTime(2024, 2, 29);
 
-      service.set(ReportType.weeklySummary, periodStart1, periodEnd1, {'month': 'jan'});
-      service.set(ReportType.weeklySummary, periodStart2, periodEnd2, {'month': 'feb'});
+      service.set(ReportType.weeklySummary, periodStart1, periodEnd1, {
+        'month': 'jan',
+      });
+      service.set(ReportType.weeklySummary, periodStart2, periodEnd2, {
+        'month': 'feb',
+      });
 
       final jan = service.get<Map<String, String>>(
         ReportType.weeklySummary,

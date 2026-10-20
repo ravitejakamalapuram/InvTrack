@@ -13,7 +13,8 @@ class _MockFirestore extends Mock implements FirebaseFirestore {}
 class _MockCollection extends Mock
     implements CollectionReference<Map<String, dynamic>> {}
 
-class _MockDoc extends Mock implements DocumentReference<Map<String, dynamic>> {}
+class _MockDoc extends Mock
+    implements DocumentReference<Map<String, dynamic>> {}
 
 class _MockSnapshot extends Mock
     implements DocumentSnapshot<Map<String, dynamic>> {}
@@ -60,13 +61,16 @@ void main() {
       expect(await repository.getProfile(), isNull);
     });
 
-    test('a document with no fields takes the base currency, not USD', () async {
-      when(ref.get).thenAnswer((_) async => snapshot(data: {}));
-      final profile = await repository.getProfile();
-      expect(profile!.userId, userId);
-      expect(profile.preferredCurrency, 'INR');
-      expect(profile.dateFormatPattern, DateFormatPattern.mdy);
-    });
+    test(
+      'a document with no fields takes the base currency, not USD',
+      () async {
+        when(ref.get).thenAnswer((_) async => snapshot(data: {}));
+        final profile = await repository.getProfile();
+        expect(profile!.userId, userId);
+        expect(profile.preferredCurrency, 'INR');
+        expect(profile.dateFormatPattern, DateFormatPattern.mdy);
+      },
+    );
 
     test('reads the stored fields', () async {
       when(ref.get).thenAnswer(
@@ -86,18 +90,20 @@ void main() {
   });
 
   group('watchProfile', () {
-    test('maps a missing document to null and a present one to a profile',
-        () async {
-      when(() => ref.snapshots()).thenAnswer(
-        (_) => Stream.fromIterable([
-          snapshot(exists: false),
-          snapshot(data: {'preferredCurrency': 'GBP'}),
-        ]),
-      );
-      final emitted = await repository.watchProfile().toList();
-      expect(emitted[0], isNull);
-      expect(emitted[1]!.preferredCurrency, 'GBP');
-    });
+    test(
+      'maps a missing document to null and a present one to a profile',
+      () async {
+        when(() => ref.snapshots()).thenAnswer(
+          (_) => Stream.fromIterable([
+            snapshot(exists: false),
+            snapshot(data: {'preferredCurrency': 'GBP'}),
+          ]),
+        );
+        final emitted = await repository.watchProfile().toList();
+        expect(emitted[0], isNull);
+        expect(emitted[1]!.preferredCurrency, 'GBP');
+      },
+    );
   });
 
   group('writes', () {
@@ -115,16 +121,19 @@ void main() {
     test('saveProfile merges the model fields into the document', () async {
       when(() => ref.set(any(), any())).thenAnswer((_) async {});
       await repository.saveProfile(entity);
-      final captured =
-          verify(() => ref.set(captureAny(), captureAny())).captured;
+      final captured = verify(
+        () => ref.set(captureAny(), captureAny()),
+      ).captured;
       expect((captured[0] as Map)['preferredCurrency'], 'INR');
       expect((captured[1] as SetOptions).merge, isTrue);
     });
 
-    testWidgets('saveProfile gives up after 5s when the write is only cached',
-        (tester) async {
-      when(() => ref.set(any(), any()))
-          .thenAnswer((_) => Completer<void>().future);
+    testWidgets('saveProfile gives up after 5s when the write is only cached', (
+      tester,
+    ) async {
+      when(
+        () => ref.set(any(), any()),
+      ).thenAnswer((_) => Completer<void>().future);
       var done = false;
       repository.saveProfile(entity).then((_) => done = true);
       await tester.pump(const Duration(seconds: 4));

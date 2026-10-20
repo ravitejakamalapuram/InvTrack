@@ -138,8 +138,7 @@ const _bright = <String, int>{
       3,
   // The tint behind the closed-investment banner (its icon takes the text
   // colour).
-  'lib/features/investment/presentation/screens/add_transaction_screen.dart':
-      1,
+  'lib/features/investment/presentation/screens/add_transaction_screen.dart': 1,
   // A gradient behind a white icon.
   'lib/features/onboarding/presentation/screens/onboarding_screen.dart': 1,
   // The tile's tint source (its icon takes the text colour).

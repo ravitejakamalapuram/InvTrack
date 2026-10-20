@@ -16,23 +16,27 @@ import 'package:inv_tracker/features/income_projection/presentation/providers/in
 ///
 /// **Multi-Currency Compliance (Rule 21):**
 /// Uses CalculationEngine to convert all cash flows to base currency before aggregation.
-final incomeTrendReportProvider = FutureProvider.autoDispose<IncomeTrendReport>((ref) async {
-  // Watch required data
-  final investments = await ref.watch(allInvestmentsProvider.future);
-  final cashFlows = await ref.watch(allCashFlowsStreamProvider.future);
-  final expectedCashFlows = await ref.watch(allExpectedCashFlowsProvider.future);
-  final baseCurrency = ref.watch(currencyCodeProvider);
+final incomeTrendReportProvider = FutureProvider.autoDispose<IncomeTrendReport>(
+  (ref) async {
+    // Watch required data
+    final investments = await ref.watch(allInvestmentsProvider.future);
+    final cashFlows = await ref.watch(allCashFlowsStreamProvider.future);
+    final expectedCashFlows = await ref.watch(
+      allExpectedCashFlowsProvider.future,
+    );
+    final baseCurrency = ref.watch(currencyCodeProvider);
 
-  // Get calculation engine and analyzer service
-  final engine = ref.watch(calculationEngineProvider);
-  final analyzer = ref.watch(incomeTrendAnalyzerProvider);
+    // Get calculation engine and analyzer service
+    final engine = ref.watch(calculationEngineProvider);
+    final analyzer = ref.watch(incomeTrendAnalyzerProvider);
 
-  // Generate report with currency conversion
-  return analyzer.generateReport(
-    investments: investments,
-    cashFlows: cashFlows,
-    expectedCashFlows: expectedCashFlows,
-    baseCurrency: baseCurrency,
-    engine: engine,
-  );
-});
+    // Generate report with currency conversion
+    return analyzer.generateReport(
+      investments: investments,
+      cashFlows: cashFlows,
+      expectedCashFlows: expectedCashFlows,
+      baseCurrency: baseCurrency,
+      engine: engine,
+    );
+  },
+);

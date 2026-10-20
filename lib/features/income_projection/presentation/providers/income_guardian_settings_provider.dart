@@ -36,26 +36,33 @@ class IncomeGuardianSettings {
       enabled: enabled ?? this.enabled,
       upcomingDaysBefore: upcomingDaysBefore ?? this.upcomingDaysBefore,
       overdueDaysAfter: overdueDaysAfter ?? this.overdueDaysAfter,
-      amountTolerancePercent: amountTolerancePercent ?? this.amountTolerancePercent,
+      amountTolerancePercent:
+          amountTolerancePercent ?? this.amountTolerancePercent,
       dateWindowDays: dateWindowDays ?? this.dateWindowDays,
-      confidenceThresholdPercent: confidenceThresholdPercent ?? this.confidenceThresholdPercent,
+      confidenceThresholdPercent:
+          confidenceThresholdPercent ?? this.confidenceThresholdPercent,
     );
   }
 }
 
 /// Income Guardian settings provider
-final incomeGuardianSettingsProvider = NotifierProvider<IncomeGuardianSettingsNotifier, IncomeGuardianSettings>(
-  IncomeGuardianSettingsNotifier.new,
-);
+final incomeGuardianSettingsProvider =
+    NotifierProvider<IncomeGuardianSettingsNotifier, IncomeGuardianSettings>(
+      IncomeGuardianSettingsNotifier.new,
+    );
 
 /// Income Guardian settings notifier
 class IncomeGuardianSettingsNotifier extends Notifier<IncomeGuardianSettings> {
   static const String _keyEnabled = 'income_guardian_enabled';
-  static const String _keyUpcomingDaysBefore = 'income_guardian_upcoming_days_before';
-  static const String _keyOverdueDaysAfter = 'income_guardian_overdue_days_after';
-  static const String _keyAmountTolerancePercent = 'income_guardian_amount_tolerance_percent';
+  static const String _keyUpcomingDaysBefore =
+      'income_guardian_upcoming_days_before';
+  static const String _keyOverdueDaysAfter =
+      'income_guardian_overdue_days_after';
+  static const String _keyAmountTolerancePercent =
+      'income_guardian_amount_tolerance_percent';
   static const String _keyDateWindowDays = 'income_guardian_date_window_days';
-  static const String _keyConfidenceThresholdPercent = 'income_guardian_confidence_threshold_percent';
+  static const String _keyConfidenceThresholdPercent =
+      'income_guardian_confidence_threshold_percent';
 
   @override
   IncomeGuardianSettings build() {
@@ -70,7 +77,8 @@ class IncomeGuardianSettingsNotifier extends Notifier<IncomeGuardianSettings> {
       overdueDaysAfter: prefs.getInt(_keyOverdueDaysAfter) ?? 1,
       amountTolerancePercent: prefs.getInt(_keyAmountTolerancePercent) ?? 20,
       dateWindowDays: prefs.getInt(_keyDateWindowDays) ?? 30,
-      confidenceThresholdPercent: prefs.getInt(_keyConfidenceThresholdPercent) ?? 70,
+      confidenceThresholdPercent:
+          prefs.getInt(_keyConfidenceThresholdPercent) ?? 70,
     );
   }
 
@@ -94,10 +102,12 @@ class IncomeGuardianSettingsNotifier extends Notifier<IncomeGuardianSettings> {
     state = state.copyWith(upcomingDaysBefore: value);
 
     // Track analytics
-    await ref.read(analyticsServiceProvider).logIncomeGuardianSettingChanged(
-      settingName: 'upcoming_days_before',
-      newValue: value.toString(),
-    );
+    await ref
+        .read(analyticsServiceProvider)
+        .logIncomeGuardianSettingChanged(
+          settingName: 'upcoming_days_before',
+          newValue: value.toString(),
+        );
   }
 
   Future<void> setOverdueDaysAfter(int value) async {
@@ -106,10 +116,12 @@ class IncomeGuardianSettingsNotifier extends Notifier<IncomeGuardianSettings> {
     state = state.copyWith(overdueDaysAfter: value);
 
     // Track analytics
-    await ref.read(analyticsServiceProvider).logIncomeGuardianSettingChanged(
-      settingName: 'overdue_days_after',
-      newValue: value.toString(),
-    );
+    await ref
+        .read(analyticsServiceProvider)
+        .logIncomeGuardianSettingChanged(
+          settingName: 'overdue_days_after',
+          newValue: value.toString(),
+        );
   }
 
   Future<void> setAmountTolerancePercent(int value) async {
@@ -118,10 +130,12 @@ class IncomeGuardianSettingsNotifier extends Notifier<IncomeGuardianSettings> {
     state = state.copyWith(amountTolerancePercent: value);
 
     // Track analytics
-    await ref.read(analyticsServiceProvider).logIncomeGuardianSettingChanged(
-      settingName: 'amount_tolerance_percent',
-      newValue: value.toString(),
-    );
+    await ref
+        .read(analyticsServiceProvider)
+        .logIncomeGuardianSettingChanged(
+          settingName: 'amount_tolerance_percent',
+          newValue: value.toString(),
+        );
   }
 
   Future<void> setDateWindowDays(int value) async {
@@ -130,10 +144,12 @@ class IncomeGuardianSettingsNotifier extends Notifier<IncomeGuardianSettings> {
     state = state.copyWith(dateWindowDays: value);
 
     // Track analytics
-    await ref.read(analyticsServiceProvider).logIncomeGuardianSettingChanged(
-      settingName: 'date_window_days',
-      newValue: value.toString(),
-    );
+    await ref
+        .read(analyticsServiceProvider)
+        .logIncomeGuardianSettingChanged(
+          settingName: 'date_window_days',
+          newValue: value.toString(),
+        );
   }
 
   Future<void> setConfidenceThresholdPercent(int value) async {
@@ -142,9 +158,11 @@ class IncomeGuardianSettingsNotifier extends Notifier<IncomeGuardianSettings> {
     state = state.copyWith(confidenceThresholdPercent: value);
 
     // Track analytics
-    await ref.read(analyticsServiceProvider).logIncomeGuardianSettingChanged(
-      settingName: 'confidence_threshold_percent',
-      newValue: value.toString(),
-    );
+    await ref
+        .read(analyticsServiceProvider)
+        .logIncomeGuardianSettingChanged(
+          settingName: 'confidence_threshold_percent',
+          newValue: value.toString(),
+        );
   }
 }

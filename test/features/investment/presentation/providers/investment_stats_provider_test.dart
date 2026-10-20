@@ -351,7 +351,9 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(prefs),
           isAuthenticatedProvider.overrideWith((ref) => true),
           currencyCodeProvider.overrideWith((ref) => 'USD'),
-          currencyConversionServiceProvider.overrideWithValue(mockConversionService),
+          currencyConversionServiceProvider.overrideWithValue(
+            mockConversionService,
+          ),
         ],
       );
     });

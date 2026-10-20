@@ -22,7 +22,7 @@ enum ExpectedCashFlowStatus {
   received,
 
   /// Payment was manually marked as dismissed/not expected
-  dismissed;
+  dismissed,
 }
 
 /// Source of the expected amount prediction
@@ -34,54 +34,54 @@ enum PredictionSource {
   wma,
 
   /// Manually entered by user
-  manual;
+  manual,
 }
 
 /// Expected Cash Flow Entity
 class ExpectedCashFlowEntity {
   /// Unique identifier
   final String id;
-  
+
   /// Related investment ID
   final String investmentId;
-  
+
   /// Expected payment date
   final DateTime expectedDate;
-  
+
   /// Predicted amount (can be ML-based or fixed)
   final double expectedAmount;
-  
+
   /// Currency of the expected amount
   final String currency;
-  
+
   /// Source of the prediction
   final PredictionSource predictionSource;
-  
+
   /// Current status
   final ExpectedCashFlowStatus status;
-  
+
   /// Matched actual cash flow ID (if received)
   final String? matchedCashFlowId;
-  
+
   /// Actual amount received (if matched)
   final double? actualAmount;
-  
+
   /// Actual date received (if matched)
   final DateTime? actualDate;
-  
+
   /// Notes/reason for dismissal
   final String? notes;
-  
+
   /// Created timestamp
   final DateTime createdAt;
-  
+
   /// Last updated timestamp
   final DateTime updatedAt;
-  
+
   /// Platform delay offset in days (learned from history)
   /// e.g., +2 days for LenDenClub
   final int? platformDelayDays;
-  
+
   /// Variance factor (used for dynamic tolerance)
   /// Higher value = wider tolerance band
   final double? varianceFactor;
@@ -145,8 +145,10 @@ class ExpectedCashFlowEntity {
     final amountBand = toleranceBand;
     final dateBand = dateTolerance;
 
-    final amountOk = actualAmount >= amountBand[0] && actualAmount <= amountBand[1];
-    final dateOk = !actualDate.isBefore(dateBand[0]) && !actualDate.isAfter(dateBand[1]);
+    final amountOk =
+        actualAmount >= amountBand[0] && actualAmount <= amountBand[1];
+    final dateOk =
+        !actualDate.isBefore(dateBand[0]) && !actualDate.isAfter(dateBand[1]);
 
     return amountOk && dateOk;
   }

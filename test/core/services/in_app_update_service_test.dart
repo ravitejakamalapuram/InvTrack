@@ -15,38 +15,44 @@ void main() {
   });
 
   tearDown(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
   });
 
   group('checkForUpdate', () {
     test('returns null when PlatformException is thrown', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
-        if (call.method == 'checkForUpdate') {
-          throw PlatformException(code: 'TASK_FAILURE', message: 'Install Error(-9)');
-        }
-        return null;
-      });
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            if (call.method == 'checkForUpdate') {
+              throw PlatformException(
+                code: 'TASK_FAILURE',
+                message: 'Install Error(-9)',
+              );
+            }
+            return null;
+          });
 
       final result = await service.checkForUpdate();
       expect(result, isNull);
     });
 
     test('returns AppUpdateInfo when successful', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
-        if (call.method == 'checkForUpdate') {
-          return {
-            'updateAvailability': 2, // updateAvailable
-            'immediateAllowed': true,
-            'flexibleAllowed': true,
-            'availableVersionCode': 100,
-            'installStatus': 0,
-            'packageName': 'com.test.app',
-            'clientVersionStalenessDays': 5,
-            'updatePriority': 4,
-          };
-        }
-        return null;
-      });
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            if (call.method == 'checkForUpdate') {
+              return {
+                'updateAvailability': 2, // updateAvailable
+                'immediateAllowed': true,
+                'flexibleAllowed': true,
+                'availableVersionCode': 100,
+                'installStatus': 0,
+                'packageName': 'com.test.app',
+                'clientVersionStalenessDays': 5,
+                'updatePriority': 4,
+              };
+            }
+            return null;
+          });
 
       final result = await service.checkForUpdate();
       expect(result, isNotNull);
@@ -55,41 +61,59 @@ void main() {
   });
 
   group('startImmediateUpdate', () {
-    test('returns inAppUpdateFailed when PlatformException is thrown', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
-        if (call.method == 'performImmediateUpdate') {
-          throw PlatformException(code: 'TASK_FAILURE', message: 'Install Error(-6)');
-        }
-        return null;
-      });
+    test(
+      'returns inAppUpdateFailed when PlatformException is thrown',
+      () async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (call) async {
+              if (call.method == 'performImmediateUpdate') {
+                throw PlatformException(
+                  code: 'TASK_FAILURE',
+                  message: 'Install Error(-6)',
+                );
+              }
+              return null;
+            });
 
-      final result = await service.startImmediateUpdate();
-      expect(result, AppUpdateResult.inAppUpdateFailed);
-    });
+        final result = await service.startImmediateUpdate();
+        expect(result, AppUpdateResult.inAppUpdateFailed);
+      },
+    );
   });
 
   group('startFlexibleUpdate', () {
-    test('returns inAppUpdateFailed when PlatformException is thrown', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
-        if (call.method == 'startFlexibleUpdate') {
-          throw PlatformException(code: 'TASK_FAILURE', message: 'Install Error(-6)');
-        }
-        return null;
-      });
+    test(
+      'returns inAppUpdateFailed when PlatformException is thrown',
+      () async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (call) async {
+              if (call.method == 'startFlexibleUpdate') {
+                throw PlatformException(
+                  code: 'TASK_FAILURE',
+                  message: 'Install Error(-6)',
+                );
+              }
+              return null;
+            });
 
-      final result = await service.startFlexibleUpdate();
-      expect(result, AppUpdateResult.inAppUpdateFailed);
-    });
+        final result = await service.startFlexibleUpdate();
+        expect(result, AppUpdateResult.inAppUpdateFailed);
+      },
+    );
   });
 
   group('completeFlexibleUpdate', () {
     test('completes normally when PlatformException is thrown', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
-        if (call.method == 'completeFlexibleUpdate') {
-          throw PlatformException(code: 'TASK_FAILURE', message: 'Install Error(-6)');
-        }
-        return null;
-      });
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            if (call.method == 'completeFlexibleUpdate') {
+              throw PlatformException(
+                code: 'TASK_FAILURE',
+                message: 'Install Error(-6)',
+              );
+            }
+            return null;
+          });
 
       await expectLater(service.completeFlexibleUpdate(), completes);
     });

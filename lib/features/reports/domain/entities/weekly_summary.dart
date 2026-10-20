@@ -84,8 +84,7 @@ class WeeklySummary {
   bool get isPositiveWeek => netPosition > 0;
 
   /// Total number of action items (new investments + maturities)
-  int get actionItemsCount =>
-      newInvestments.length + upcomingMaturities.length;
+  int get actionItemsCount => newInvestments.length + upcomingMaturities.length;
 }
 
 /// Daily cashflow data for chart visualization

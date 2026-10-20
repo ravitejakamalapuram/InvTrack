@@ -376,24 +376,21 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
         final files = <_SelectedFile>[];
         var skippedTooLarge = 0;
         for (final platformFile in picked) {
-          if (platformFile.path != null) {
-            final file = File(platformFile.path!);
-            final bytes = await readDocumentBytesWithinLimit(file);
-            if (bytes == null) {
-              skippedTooLarge++;
-              continue;
-            }
-            final detectedType = _detectDocumentType(platformFile.name);
-            files.add(
-              _SelectedFile(
-                bytes: bytes,
-                fileName: platformFile.name,
-                suggestedName: _suggestName(platformFile.name),
-                autoDetectedType: detectedType,
-                selectedType: detectedType, // Initially same as auto-detected
-              ),
-            );
+          final bytes = await readPickedDocumentBytesWithinLimit(platformFile);
+          if (bytes == null) {
+            skippedTooLarge++;
+            continue;
           }
+          final detectedType = _detectDocumentType(platformFile.name);
+          files.add(
+            _SelectedFile(
+              bytes: bytes,
+              fileName: platformFile.name,
+              suggestedName: _suggestName(platformFile.name),
+              autoDetectedType: detectedType,
+              selectedType: detectedType, // Initially same as auto-detected
+            ),
+          );
         }
 
         if (mounted) {

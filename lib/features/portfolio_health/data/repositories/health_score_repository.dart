@@ -24,12 +24,13 @@ class HealthScoreRepository {
     FirebaseFirestore? firestore,
     FirebaseAuth? auth,
     CrashlyticsService? crashlytics,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance,
-        _crashlytics = crashlytics ??
-            CrashlyticsService(
-              debugModeEnabled: CrashlyticsService.enableInDebugMode,
-            );
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _auth = auth ?? FirebaseAuth.instance,
+       _crashlytics =
+           crashlytics ??
+           CrashlyticsService(
+             debugModeEnabled: CrashlyticsService.enableInDebugMode,
+           );
 
   /// Get current user ID
   String get _userId {
@@ -42,7 +43,10 @@ class HealthScoreRepository {
 
   /// Firestore collection reference
   CollectionReference get _collection {
-    return _firestore.collection('users').doc(_userId).collection('healthScores');
+    return _firestore
+        .collection('users')
+        .doc(_userId)
+        .collection('healthScores');
   }
 
   /// Save health score snapshot
@@ -160,8 +164,10 @@ class HealthScoreRepository {
           .orderBy('calculatedAt', descending: false)
           .snapshots()
           .transform(
-            StreamTransformer<QuerySnapshot<Map<String, dynamic>>,
-                QuerySnapshot<Map<String, dynamic>>>.fromHandlers(
+            StreamTransformer<
+              QuerySnapshot<Map<String, dynamic>>,
+              QuerySnapshot<Map<String, dynamic>>
+            >.fromHandlers(
               handleError: (error, stackTrace, sink) {
                 // Record stream errors to Crashlytics
                 _crashlytics.recordError(
@@ -221,10 +227,7 @@ class HealthScoreRepository {
         stackTrace,
         reason: 'Failed to delete health score snapshots',
       );
-      throw DataException.deleteFailed(
-        cause: e,
-        stackTrace: stackTrace,
-      );
+      throw DataException.deleteFailed(cause: e, stackTrace: stackTrace);
     }
   }
 }

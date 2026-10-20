@@ -9,7 +9,9 @@ import 'package:inv_tracker/features/investment/domain/entities/investment_stats
 import 'package:inv_tracker/features/reports/domain/entities/maturity_calendar_report.dart';
 
 /// Provider for maturity calendar service
-final maturityCalendarServiceProvider = Provider<MaturityCalendarService>((ref) {
+final maturityCalendarServiceProvider = Provider<MaturityCalendarService>((
+  ref,
+) {
   return MaturityCalendarService();
 });
 

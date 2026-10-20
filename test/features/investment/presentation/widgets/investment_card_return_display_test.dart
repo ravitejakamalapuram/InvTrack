@@ -33,13 +33,12 @@ Future<void> _pumpCard(
       overrides: [
         if (investment.isArchived) ...[
           // Archived cards read the converted archived stats, XIRR included.
-          multiCurrencyArchivedInvestmentStatsProvider(investment.id)
-              .overrideWith(
-                (ref) async => stats.copyWith(
-                  xirr: xirr.value,
-                  xirrMethod: xirr.method,
-                ),
-              ),
+          multiCurrencyArchivedInvestmentStatsProvider(
+            investment.id,
+          ).overrideWith(
+            (ref) async =>
+                stats.copyWith(xirr: xirr.value, xirrMethod: xirr.method),
+          ),
         ] else ...[
           investmentBasicStatsProvider(
             investment.id,

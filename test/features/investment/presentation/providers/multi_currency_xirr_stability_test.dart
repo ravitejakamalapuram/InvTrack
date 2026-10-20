@@ -110,12 +110,14 @@ void main() {
       expect(
         statsUSD.absoluteReturn,
         closeTo(statsEUR.absoluteReturn, 0.01),
-        reason: 'Absolute return % should be identical when calculated in USD vs EUR',
+        reason:
+            'Absolute return % should be identical when calculated in USD vs EUR',
       );
       expect(
         statsUSD.absoluteReturn,
         closeTo(statsINR.absoluteReturn, 0.01),
-        reason: 'Absolute return % should be identical when calculated in USD vs INR',
+        reason:
+            'Absolute return % should be identical when calculated in USD vs INR',
       );
 
       // ✅ CRITICAL ASSERTION: MOIC must be identical
@@ -137,4 +139,3 @@ void main() {
     });
   });
 }
-

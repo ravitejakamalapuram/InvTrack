@@ -106,15 +106,18 @@ class _FilterChip extends StatelessWidget {
               color: isSelected
                   ? Colors.transparent
                   : (isDark
-                      ? AppColors.fieldBorderDark
-                      : AppColors.fieldBorderLight),
+                        ? AppColors.fieldBorderDark
+                        : AppColors.fieldBorderLight),
               width: 1,
             ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: (isDark ? AppColors.primaryDark : AppColors.primaryLight)
-                          .withValues(alpha: 0.3),
+                      color:
+                          (isDark
+                                  ? AppColors.primaryDark
+                                  : AppColors.primaryLight)
+                              .withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -124,11 +127,7 @@ class _FilterChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 18,
-                color: textColor,
-              ),
+              Icon(icon, size: 18, color: textColor),
               const SizedBox(width: 8),
               Text(
                 label,

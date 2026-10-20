@@ -17,10 +17,12 @@ void main() {
       mockGoogleSignIn = MockGoogleSignIn();
 
       // Stub the initialize method
-      when(() => mockGoogleSignIn.initialize(
-            clientId: any(named: 'clientId'),
-            serverClientId: any(named: 'serverClientId'),
-          )).thenAnswer((_) async {});
+      when(
+        () => mockGoogleSignIn.initialize(
+          clientId: any(named: 'clientId'),
+          serverClientId: any(named: 'serverClientId'),
+        ),
+      ).thenAnswer((_) async {});
     });
 
     test('calls initialize with webClientId on web platform', () async {
@@ -29,12 +31,11 @@ void main() {
       // The actual platform detection happens at compile time
       // This test documents the expected behavior
 
-      debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia; // Simulate web-like
+      debugDefaultTargetPlatformOverride =
+          TargetPlatform.fuchsia; // Simulate web-like
 
       final container = ProviderContainer(
-        overrides: [
-          googleSignInProvider.overrideWithValue(mockGoogleSignIn),
-        ],
+        overrides: [googleSignInProvider.overrideWithValue(mockGoogleSignIn)],
       );
 
       // Act: Read the provider to trigger initialization
@@ -80,13 +81,17 @@ void main() {
       expect(
         GoogleSignInConfig.webClientId,
         expectedWebClientId,
-        reason: 'webClientId must match the active Firebase project (invtracker-b19d1)',
+        reason:
+            'webClientId must match the active Firebase project (invtracker-b19d1)',
       );
     });
 
     test('OAuth client IDs are centralized in GoogleSignInConfig', () {
       // Regression test: Verify constants are not empty and follow expected format
-      expect(GoogleSignInConfig.webClientId, contains('.apps.googleusercontent.com'));
+      expect(
+        GoogleSignInConfig.webClientId,
+        contains('.apps.googleusercontent.com'),
+      );
       expect(
         GoogleSignInConfig.androidServerClientId,
         contains('.apps.googleusercontent.com'),
@@ -97,12 +102,14 @@ void main() {
       expect(
         GoogleSignInConfig.webClientId,
         startsWith('784857267556-'),
-        reason: 'Web client ID must be from the active Firebase project (invtracker-b19d1)',
+        reason:
+            'Web client ID must be from the active Firebase project (invtracker-b19d1)',
       );
       expect(
         GoogleSignInConfig.androidServerClientId,
         startsWith('784857267556-'),
-        reason: 'Android server client ID must be from the active Firebase project (invtracker-b19d1)',
+        reason:
+            'Android server client ID must be from the active Firebase project (invtracker-b19d1)',
       );
 
       // For this project (invtracker-b19d1), both IDs are identical
@@ -111,7 +118,8 @@ void main() {
       expect(
         GoogleSignInConfig.webClientId,
         equals(GoogleSignInConfig.androidServerClientId),
-        reason: 'In this project, both use the same OAuth client ID from the active Firebase project (invtracker-b19d1)',
+        reason:
+            'In this project, both use the same OAuth client ID from the active Firebase project (invtracker-b19d1)',
       );
     });
   });

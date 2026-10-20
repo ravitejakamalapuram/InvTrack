@@ -1,5 +1,5 @@
 /// Display helpers for income projection status enums
-/// 
+///
 /// UI-layer utilities for converting domain enums to user-friendly display strings.
 /// Centralizes all display logic outside of domain layer per Clean Architecture.
 library;
@@ -9,7 +9,10 @@ import 'package:inv_tracker/features/income_projection/domain/entities/reinvestm
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Get localized display name for ExpectedCashFlowStatus
-String getStatusDisplayName(AppLocalizations l10n, ExpectedCashFlowStatus status) {
+String getStatusDisplayName(
+  AppLocalizations l10n,
+  ExpectedCashFlowStatus status,
+) {
   switch (status) {
     case ExpectedCashFlowStatus.upcoming:
       return l10n.incomeStatusUpcoming;

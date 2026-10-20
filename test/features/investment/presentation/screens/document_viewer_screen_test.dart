@@ -373,31 +373,30 @@ void main() {
         },
       );
 
-      testWidgets(
-        'GestureDetector should trigger zoom reset for images',
-        (tester) async {
-          await tester.pumpWidget(buildTestWidget(testImageDocument));
-          await tester.pumpAndSettle();
+      testWidgets('GestureDetector should trigger zoom reset for images', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTestWidget(testImageDocument));
+        await tester.pumpAndSettle();
 
-          // Find the GestureDetector that wraps the InteractiveViewer (not the ones in AppBar)
-          final gestureDetectorFinder = find.descendant(
-            of: find.byType(Stack),
-            matching: find.byWidgetPredicate(
-              (widget) =>
-                  widget is GestureDetector && widget.onDoubleTap != null,
-            ),
-          );
+        // Find the GestureDetector that wraps the InteractiveViewer (not the ones in AppBar)
+        final gestureDetectorFinder = find.descendant(
+          of: find.byType(Stack),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is GestureDetector && widget.onDoubleTap != null,
+          ),
+        );
 
-          expect(gestureDetectorFinder, findsOneWidget);
+        expect(gestureDetectorFinder, findsOneWidget);
 
-          // Verify double-tap functionality exists
-          // Note: We can't actually test the zoom reset behavior without a real file,
-          // but we can verify the GestureDetector is present with onDoubleTap
-          final gestureDetector =
-              tester.widget<GestureDetector>(gestureDetectorFinder);
-          expect(gestureDetector.onDoubleTap, isNotNull);
-        },
-      );
+        // Verify double-tap functionality exists
+        // Note: We can't actually test the zoom reset behavior without a real file,
+        // but we can verify the GestureDetector is present with onDoubleTap
+        final gestureDetector = tester.widget<GestureDetector>(
+          gestureDetectorFinder,
+        );
+        expect(gestureDetector.onDoubleTap, isNotNull);
+      });
 
       testWidgets(
         'PDF document should not have GestureDetector with zoom reset',
@@ -420,7 +419,9 @@ void main() {
           expect(contentSemanticsFinder, findsOneWidget);
 
           // Verify the child is NOT a GestureDetector with onDoubleTap
-          final semanticsWidget = tester.widget<Semantics>(contentSemanticsFinder);
+          final semanticsWidget = tester.widget<Semantics>(
+            contentSemanticsFinder,
+          );
           final child = semanticsWidget.child;
 
           // The child should be the PDF viewer widget, not wrapped in GestureDetector

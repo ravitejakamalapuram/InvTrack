@@ -18,7 +18,7 @@ enum ReinvestmentType {
   taxSaving,
 
   /// Other custom option
-  other;
+  other,
 }
 
 /// Investment suggestion for idle cash
@@ -31,7 +31,7 @@ class InvestmentSuggestion {
   final double expectedReturn; // Annual % return
   final int tenureMonths;
   final String? existingInvestmentId; // For top-up suggestions
-  
+
   const InvestmentSuggestion({
     required this.id,
     required this.type,
@@ -51,47 +51,47 @@ class InvestmentSuggestion {
 class ReinvestmentOpportunity {
   /// Unique identifier
   final String id;
-  
+
   /// Related cash flow ID (the idle income)
   final String cashFlowId;
-  
+
   /// Related investment ID
   final String investmentId;
-  
+
   /// Available amount sitting idle
   final double availableAmount;
-  
+
   /// Currency
   final String currency;
-  
+
   /// Number of days the cash has been idle
   final int daysIdle;
-  
+
   /// Date when income was received
   final DateTime receivedDate;
-  
+
   /// Current savings account rate (for opportunity cost calculation)
   final double savingsRate;
-  
+
   /// Benchmark rate (e.g., FD rate for comparison)
   final double benchmarkRate;
-  
+
   /// Opportunity cost lost (per day/month)
   final double opportunityCostDaily;
   final double opportunityCostMonthly;
-  
+
   /// Investment suggestions (3 options)
   final List<InvestmentSuggestion> suggestions;
-  
+
   /// Created timestamp
   final DateTime createdAt;
-  
+
   /// Last notified timestamp (for escalation tracking)
   final DateTime? lastNotifiedAt;
-  
+
   /// Whether user dismissed this opportunity
   final bool isDismissed;
-  
+
   /// Dismissal reason
   final String? dismissalReason;
 
@@ -120,8 +120,8 @@ class ReinvestmentOpportunity {
   /// Notification urgency level (1-3)
   int get urgencyLevel {
     if (daysIdle >= 14) return 3; // Final
-    if (daysIdle >= 7) return 2;  // Follow-up
-    if (daysIdle >= 3) return 1;  // Gentle
+    if (daysIdle >= 7) return 2; // Follow-up
+    if (daysIdle >= 3) return 1; // Gentle
     return 0; // Not yet
   }
 
@@ -129,13 +129,13 @@ class ReinvestmentOpportunity {
   bool get shouldNotify {
     if (isDismissed) return false;
     if (daysIdle < 3) return false;
-    
+
     // Escalation schedule: Day 3, 7, 14
     if (daysIdle == 3 || daysIdle == 7 || daysIdle == 14) {
       return lastNotifiedAt == null ||
           DateTime.now().difference(lastNotifiedAt!).inHours > 23;
     }
-    
+
     return false;
   }
 
@@ -168,7 +168,8 @@ class ReinvestmentOpportunity {
       savingsRate: savingsRate ?? this.savingsRate,
       benchmarkRate: benchmarkRate ?? this.benchmarkRate,
       opportunityCostDaily: opportunityCostDaily ?? this.opportunityCostDaily,
-      opportunityCostMonthly: opportunityCostMonthly ?? this.opportunityCostMonthly,
+      opportunityCostMonthly:
+          opportunityCostMonthly ?? this.opportunityCostMonthly,
       suggestions: suggestions ?? this.suggestions,
       createdAt: createdAt ?? this.createdAt,
       lastNotifiedAt: lastNotifiedAt ?? this.lastNotifiedAt,

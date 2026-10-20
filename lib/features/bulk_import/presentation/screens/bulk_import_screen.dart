@@ -52,19 +52,19 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
     Uint8List? fileBytes;
     var fileName = '';
     try {
-      final picked = await FilePicker.pickFiles(
+      final picked = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: ['csv'],
       );
 
-      if (picked.isEmpty) {
+      if (picked == null) {
         setState(() => _isLoading = false);
         return;
       }
 
       try {
-        fileName = picked.first.name;
-        fileBytes = await picked.first.readAsBytes();
+        fileName = picked.name;
+        fileBytes = await picked.readAsBytes();
       } on Exception {
         fileBytes = null;
       }

@@ -459,10 +459,7 @@ class FakeAnalyticsService implements AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.portfolioHealthViewed,
-      parameters: {
-        'score_tier': scoreTier,
-        'score_range': scoreRange,
-      },
+      parameters: {'score_tier': scoreTier, 'score_range': scoreRange},
     );
   }
 
@@ -473,10 +470,7 @@ class FakeAnalyticsService implements AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.portfolioHealthDetailsOpened,
-      parameters: {
-        'score_tier': scoreTier,
-        'score_range': scoreRange,
-      },
+      parameters: {'score_tier': scoreTier, 'score_range': scoreRange},
     );
   }
 
@@ -503,10 +497,7 @@ class FakeAnalyticsService implements AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.healthScoreShared,
-      parameters: {
-        'score_tier': scoreTier,
-        'share_method': shareMethod,
-      },
+      parameters: {'score_tier': scoreTier, 'share_method': shareMethod},
     );
   }
 }

@@ -15,10 +15,12 @@ void main() {
 
   setUp(() {
     analyzer = IncomeTrendAnalyzer();
-    
+
     // Set up calculation engine with identity currency conversion (no conversion needed for USD)
     engine = CalculationEngine();
-    engine.registerModule(CurrencyConverterModule(null)); // null = no conversion needed
+    engine.registerModule(
+      CurrencyConverterModule(null),
+    ); // null = no conversion needed
     engine.registerModule(FinancialCalculatorModule());
     engine.registerModule(ProjectionCalculatorModule());
     engine.registerModule(PortfolioHealthModule());
@@ -29,12 +31,21 @@ void main() {
       final now = DateTime.now();
       final investments = [_createInvestment('inv-1')];
       final cashFlows = [
-        _createIncome(1200, DateTime(now.year, now.month, 1), 'inv-1'), // Current month
-        _createIncome(1000, DateTime(now.year, now.month - 1, 1), 'inv-1'), // Previous month
+        _createIncome(
+          1200,
+          DateTime(now.year, now.month, 1),
+          'inv-1',
+        ), // Current month
+        _createIncome(
+          1000,
+          DateTime(now.year, now.month - 1, 1),
+          'inv-1',
+        ), // Previous month
         _createIncome(1000, DateTime(now.year, now.month - 2, 1), 'inv-1'),
       ];
 
-      final report = await analyzer.generateReport(investments: investments,
+      final report = await analyzer.generateReport(
+        investments: investments,
         cashFlows: cashFlows,
         expectedCashFlows: [],
         engine: engine,
@@ -49,12 +60,21 @@ void main() {
       final now = DateTime.now();
       final investments = [_createInvestment('inv-1')];
       final cashFlows = [
-        _createIncome(800, DateTime(now.year, now.month, 1), 'inv-1'), // Current month
-        _createIncome(1000, DateTime(now.year, now.month - 1, 1), 'inv-1'), // Previous month
+        _createIncome(
+          800,
+          DateTime(now.year, now.month, 1),
+          'inv-1',
+        ), // Current month
+        _createIncome(
+          1000,
+          DateTime(now.year, now.month - 1, 1),
+          'inv-1',
+        ), // Previous month
         _createIncome(1000, DateTime(now.year, now.month - 2, 1), 'inv-1'),
       ];
 
-      final report = await analyzer.generateReport(investments: investments,
+      final report = await analyzer.generateReport(
+        investments: investments,
         cashFlows: cashFlows,
         expectedCashFlows: [],
         engine: engine,
@@ -72,7 +92,8 @@ void main() {
         _createIncome(1000, DateTime(now.year, now.month, 1), 'inv-1'),
       ];
 
-      final report = await analyzer.generateReport(investments: investments,
+      final report = await analyzer.generateReport(
+        investments: investments,
         cashFlows: cashFlows,
         expectedCashFlows: [],
         engine: engine,
@@ -99,7 +120,8 @@ void main() {
         ],
       );
 
-      final report = await analyzer.generateReport(investments: investments,
+      final report = await analyzer.generateReport(
+        investments: investments,
         cashFlows: cashFlows,
         expectedCashFlows: [],
         engine: engine,
@@ -125,7 +147,8 @@ void main() {
         _createIncome(1000, DateTime(now.year, now.month, 1), 'inv-3'), // 33.3%
       ];
 
-      final report = await analyzer.generateReport(investments: investments,
+      final report = await analyzer.generateReport(
+        investments: investments,
         cashFlows: cashFlows,
         expectedCashFlows: [],
         engine: engine,
@@ -148,7 +171,8 @@ void main() {
         _createIncome(1000, DateTime(now.year, now.month, 1), 'inv-2'), // 10%
       ];
 
-      final report = await analyzer.generateReport(investments: investments,
+      final report = await analyzer.generateReport(
+        investments: investments,
         cashFlows: cashFlows,
         expectedCashFlows: [],
         engine: engine,
@@ -162,41 +186,72 @@ void main() {
   });
 
   group('IncomeTrendAnalyzer - Platform Reliability', () {
-    test('should calculate 100% reliability when all payments on time', () async {
-      final investments = [
-        _createInvestment('inv-1', platform: 'LenDenClub'),
-      ];
-      final expectedCashFlows = [
-        _createExpectedFlow('inv-1', DateTime(2024, 6, 5), DateTime(2024, 6, 5)), // On time
-        _createExpectedFlow('inv-1', DateTime(2024, 5, 5), DateTime(2024, 5, 5)), // On time
-        _createExpectedFlow('inv-1', DateTime(2024, 4, 5), DateTime(2024, 4, 5)), // On time
-      ];
+    test(
+      'should calculate 100% reliability when all payments on time',
+      () async {
+        final investments = [
+          _createInvestment('inv-1', platform: 'LenDenClub'),
+        ];
+        final expectedCashFlows = [
+          _createExpectedFlow(
+            'inv-1',
+            DateTime(2024, 6, 5),
+            DateTime(2024, 6, 5),
+          ), // On time
+          _createExpectedFlow(
+            'inv-1',
+            DateTime(2024, 5, 5),
+            DateTime(2024, 5, 5),
+          ), // On time
+          _createExpectedFlow(
+            'inv-1',
+            DateTime(2024, 4, 5),
+            DateTime(2024, 4, 5),
+          ), // On time
+        ];
 
-      final report = await analyzer.generateReport(investments: investments,
-        cashFlows: [],
-        expectedCashFlows: expectedCashFlows,
-        engine: engine,
-        baseCurrency: 'USD',
-      );
+        final report = await analyzer.generateReport(
+          investments: investments,
+          cashFlows: [],
+          expectedCashFlows: expectedCashFlows,
+          engine: engine,
+          baseCurrency: 'USD',
+        );
 
-      expect(report.platformReliability.length, 1);
-      expect(report.platformReliability.first.platform, 'LenDenClub');
-      expect(report.platformReliability.first.onTimeRate, 1.0);
-      expect(report.platformReliability.first.averageDelayDays, 0.0);
-    });
+        expect(report.platformReliability.length, 1);
+        expect(report.platformReliability.first.platform, 'LenDenClub');
+        expect(report.platformReliability.first.onTimeRate, 1.0);
+        expect(report.platformReliability.first.averageDelayDays, 0.0);
+      },
+    );
 
     test('should calculate reliability with some late payments', () async {
-      final investments = [
-        _createInvestment('inv-1', platform: 'Grip'),
-      ];
+      final investments = [_createInvestment('inv-1', platform: 'Grip')];
       final expectedCashFlows = [
-        _createExpectedFlow('inv-1', DateTime(2024, 6, 5), DateTime(2024, 6, 8)), // Late (+3 days)
-        _createExpectedFlow('inv-1', DateTime(2024, 5, 5), DateTime(2024, 5, 5)), // On time
-        _createExpectedFlow('inv-1', DateTime(2024, 4, 5), DateTime(2024, 4, 10)), // Late (+5 days)
-        _createExpectedFlow('inv-1', DateTime(2024, 3, 5), DateTime(2024, 3, 5)), // On time
+        _createExpectedFlow(
+          'inv-1',
+          DateTime(2024, 6, 5),
+          DateTime(2024, 6, 8),
+        ), // Late (+3 days)
+        _createExpectedFlow(
+          'inv-1',
+          DateTime(2024, 5, 5),
+          DateTime(2024, 5, 5),
+        ), // On time
+        _createExpectedFlow(
+          'inv-1',
+          DateTime(2024, 4, 5),
+          DateTime(2024, 4, 10),
+        ), // Late (+5 days)
+        _createExpectedFlow(
+          'inv-1',
+          DateTime(2024, 3, 5),
+          DateTime(2024, 3, 5),
+        ), // On time
       ];
 
-      final report = await analyzer.generateReport(investments: investments,
+      final report = await analyzer.generateReport(
+        investments: investments,
         cashFlows: [],
         expectedCashFlows: expectedCashFlows,
         engine: engine,
@@ -208,7 +263,10 @@ void main() {
       // (+3 days is considered on-time, +5 days is late)
       expect(report.platformReliability.first.onTimeRate, closeTo(0.75, 0.01));
       // Average delay: (3 + 0 + 5 + 0) / 4 = 2 days
-      expect(report.platformReliability.first.averageDelayDays, closeTo(2.0, 0.5));
+      expect(
+        report.platformReliability.first.averageDelayDays,
+        closeTo(2.0, 0.5),
+      );
     });
 
     test('should sort platforms by reliability', () async {
@@ -218,14 +276,31 @@ void main() {
       ];
       final expectedCashFlows = [
         // LenDenClub: 100% on-time
-        _createExpectedFlow('inv-1', DateTime(2024, 6, 5), DateTime(2024, 6, 5)),
-        _createExpectedFlow('inv-1', DateTime(2024, 5, 5), DateTime(2024, 5, 5)),
+        _createExpectedFlow(
+          'inv-1',
+          DateTime(2024, 6, 5),
+          DateTime(2024, 6, 5),
+        ),
+        _createExpectedFlow(
+          'inv-1',
+          DateTime(2024, 5, 5),
+          DateTime(2024, 5, 5),
+        ),
         // Grip: 50% on-time
-        _createExpectedFlow('inv-2', DateTime(2024, 6, 5), DateTime(2024, 6, 10)),
-        _createExpectedFlow('inv-2', DateTime(2024, 5, 5), DateTime(2024, 5, 5)),
+        _createExpectedFlow(
+          'inv-2',
+          DateTime(2024, 6, 5),
+          DateTime(2024, 6, 10),
+        ),
+        _createExpectedFlow(
+          'inv-2',
+          DateTime(2024, 5, 5),
+          DateTime(2024, 5, 5),
+        ),
       ];
 
-      final report = await analyzer.generateReport(investments: investments,
+      final report = await analyzer.generateReport(
+        investments: investments,
         cashFlows: [],
         expectedCashFlows: expectedCashFlows,
         engine: engine,
@@ -246,51 +321,87 @@ void main() {
       final now = DateTime.now();
       final investments = [_createInvestment('inv-1')];
       final cashFlows = [
-        _createIncome(1200, DateTime(now.year, now.month, 1), 'inv-1'), // +20% MoM
+        _createIncome(
+          1200,
+          DateTime(now.year, now.month, 1),
+          'inv-1',
+        ), // +20% MoM
         _createIncome(1000, DateTime(now.year, now.month - 1, 1), 'inv-1'),
       ];
 
-      final report = await analyzer.generateReport(investments: investments,
+      final report = await analyzer.generateReport(
+        investments: investments,
         cashFlows: cashFlows,
         expectedCashFlows: [],
         engine: engine,
         baseCurrency: 'USD',
       );
 
-      expect(report.insights.any((i) => i.contains('Strong growth') || i.contains('Positive growth')), true);
-    });
-
-    test('should generate diversification warning for concentrated portfolio', () async {
-      final now = DateTime.now();
-      final investments = [
-        _createInvestment('inv-1', name: 'Top Source'),
-        _createInvestment('inv-2', name: 'Minor Source'),
-      ];
-      final cashFlows = [
-        _createIncome(9000, DateTime(now.year, now.month, 1), 'inv-1'), // 90%
-        _createIncome(1000, DateTime(now.year, now.month, 1), 'inv-2'), // 10%
-      ];
-
-      final report = await analyzer.generateReport(investments: investments,
-        cashFlows: cashFlows,
-        expectedCashFlows: [],
-        engine: engine,
-        baseCurrency: 'USD',
+      expect(
+        report.insights.any(
+          (i) => i.contains('Strong growth') || i.contains('Positive growth'),
+        ),
+        true,
       );
-
-      expect(report.insights.any((i) => i.contains('Consider diversifying')), true);
     });
+
+    test(
+      'should generate diversification warning for concentrated portfolio',
+      () async {
+        final now = DateTime.now();
+        final investments = [
+          _createInvestment('inv-1', name: 'Top Source'),
+          _createInvestment('inv-2', name: 'Minor Source'),
+        ];
+        final cashFlows = [
+          _createIncome(9000, DateTime(now.year, now.month, 1), 'inv-1'), // 90%
+          _createIncome(1000, DateTime(now.year, now.month, 1), 'inv-2'), // 10%
+        ];
+
+        final report = await analyzer.generateReport(
+          investments: investments,
+          cashFlows: cashFlows,
+          expectedCashFlows: [],
+          engine: engine,
+          baseCurrency: 'USD',
+        );
+
+        expect(
+          report.insights.any((i) => i.contains('Consider diversifying')),
+          true,
+        );
+      },
+    );
 
     test('should generate platform reliability warning', () async {
-      final investments = [_createInvestment('inv-1', platform: 'SlowPlatform')];
+      final investments = [
+        _createInvestment('inv-1', platform: 'SlowPlatform'),
+      ];
       final expectedCashFlows = [
-        _createExpectedFlow('inv-1', DateTime(2024, 6, 5), DateTime(2024, 6, 10)), // Late
-        _createExpectedFlow('inv-1', DateTime(2024, 5, 5), DateTime(2024, 5, 10)), // Late
-        _createExpectedFlow('inv-1', DateTime(2024, 4, 5), DateTime(2024, 4, 10)), // Late
-        _createExpectedFlow('inv-1', DateTime(2024, 3, 5), DateTime(2024, 3, 10)), // Late
+        _createExpectedFlow(
+          'inv-1',
+          DateTime(2024, 6, 5),
+          DateTime(2024, 6, 10),
+        ), // Late
+        _createExpectedFlow(
+          'inv-1',
+          DateTime(2024, 5, 5),
+          DateTime(2024, 5, 10),
+        ), // Late
+        _createExpectedFlow(
+          'inv-1',
+          DateTime(2024, 4, 5),
+          DateTime(2024, 4, 10),
+        ), // Late
+        _createExpectedFlow(
+          'inv-1',
+          DateTime(2024, 3, 5),
+          DateTime(2024, 3, 10),
+        ), // Late
       ];
 
-      final report = await analyzer.generateReport(investments: investments,
+      final report = await analyzer.generateReport(
+        investments: investments,
         cashFlows: [],
         expectedCashFlows: expectedCashFlows,
         engine: engine,
@@ -316,8 +427,8 @@ ExpectedCashFlowEntity _createExpectedFlow(
     currency: 'USD',
     predictionSource: PredictionSource.wma,
     status: actualDate != null
-      ? ExpectedCashFlowStatus.received
-      : ExpectedCashFlowStatus.upcoming,
+        ? ExpectedCashFlowStatus.received
+        : ExpectedCashFlowStatus.upcoming,
     actualDate: actualDate,
     actualAmount: actualDate != null ? 1000 : null,
     createdAt: DateTime.now(),
@@ -326,7 +437,11 @@ ExpectedCashFlowEntity _createExpectedFlow(
 }
 
 /// Helper to create test investment
-InvestmentEntity _createInvestment(String id, {String name = 'Test Investment', String? platform}) {
+InvestmentEntity _createInvestment(
+  String id, {
+  String name = 'Test Investment',
+  String? platform,
+}) {
   return InvestmentEntity(
     id: id,
     name: name,
@@ -340,7 +455,11 @@ InvestmentEntity _createInvestment(String id, {String name = 'Test Investment', 
 }
 
 /// Helper to create income cash flow
-CashFlowEntity _createIncome(double amount, DateTime date, String investmentId) {
+CashFlowEntity _createIncome(
+  double amount,
+  DateTime date,
+  String investmentId,
+) {
   return CashFlowEntity(
     id: 'cf-${date.millisecondsSinceEpoch}-$investmentId',
     investmentId: investmentId,

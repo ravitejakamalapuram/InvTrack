@@ -71,13 +71,17 @@ Future<List<SmartInsight>> smartInsights(Ref ref, AppLocalizations l10n) async {
 /// Provider for high-priority insights (urgent/warning only)
 /// Requires AppLocalizations for localized strings
 @riverpod
-Future<List<SmartInsight>> priorityInsights(Ref ref, AppLocalizations l10n) async {
+Future<List<SmartInsight>> priorityInsights(
+  Ref ref,
+  AppLocalizations l10n,
+) async {
   final allInsights = await ref.watch(smartInsightsProvider(l10n).future);
 
   return allInsights
-      .where((insight) =>
-        insight.priority == InsightPriority.urgent ||
-        insight.priority == InsightPriority.warning
+      .where(
+        (insight) =>
+            insight.priority == InsightPriority.urgent ||
+            insight.priority == InsightPriority.warning,
       )
       .toList();
 }

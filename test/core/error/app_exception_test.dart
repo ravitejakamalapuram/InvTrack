@@ -165,4 +165,3 @@ class _MockPlatformException {
   final String? message;
   _MockPlatformException(this.code, this.message);
 }
-

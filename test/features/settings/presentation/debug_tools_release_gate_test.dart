@@ -139,31 +139,32 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('release: 5 taps open no debug mode and nothing hints at them', (
-      tester,
-    ) async {
-      final handle = tester.ensureSemantics();
-      final c = await pumpAbout(tester, toolsAvailable: false);
+    testWidgets(
+      'release: 5 taps open no debug mode and nothing hints at them',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        final c = await pumpAbout(tester, toolsAvailable: false);
 
-      await tapVersion5Times(tester);
+        await tapVersion5Times(tester);
 
-      // Only the feature-flag screen unlocks (#1012); debug mode stays off.
-      expect(c.read(debugModeProvider), isFalse);
-      expect(prefs.getBool(_debugPrefKey), isNull);
-      expect(find.text('🛠️ Debug mode enabled'), findsNothing);
-      expect(c.read(featureFlagUnlockProvider), isTrue);
-      expect(find.text('Feature flags unlocked'), findsOneWidget);
+        // Only the feature-flag screen unlocks (#1012); debug mode stays off.
+        expect(c.read(debugModeProvider), isFalse);
+        expect(prefs.getBool(_debugPrefKey), isNull);
+        expect(find.text('🛠️ Debug mode enabled'), findsNothing);
+        expect(c.read(featureFlagUnlockProvider), isTrue);
+        expect(find.text('Feature flags unlocked'), findsOneWidget);
 
-      // The version is plain text: no button role, no "tap 7 times" hint.
-      expect(find.bySemanticsLabel(RegExp('5 times')), findsNothing);
-      final versionNode = tester.getSemantics(find.text(_versionText));
-      expect(versionNode.label, contains(_versionText));
-      expect(versionNode, containsSemantics(isButton: false));
-      expect(find.text(_tapHint), findsNothing);
+        // The version is plain text: no button role, no "tap 7 times" hint.
+        expect(find.bySemanticsLabel(RegExp('5 times')), findsNothing);
+        final versionNode = tester.getSemantics(find.text(_versionText));
+        expect(versionNode.label, contains(_versionText));
+        expect(versionNode, containsSemantics(isButton: false));
+        expect(find.text(_tapHint), findsNothing);
 
-      await tester.pump(const Duration(seconds: 3));
-      handle.dispose();
-    });
+        await tester.pump(const Duration(seconds: 3));
+        handle.dispose();
+      },
+    );
 
     testWidgets('debug build: 5 taps enable debug mode (control)', (
       tester,

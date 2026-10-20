@@ -108,21 +108,24 @@ void main() {
       expect(fakeAnalytics.loggedEvents, isEmpty);
     });
 
-    test('a pending in-app update suppresses without spending the shot', () async {
-      final launcher = FakeReviewLauncher();
-      var updatePending = true;
-      final service = await buildService(
-        launcher: launcher,
-        isUpdatePending: () => updatePending,
-      );
+    test(
+      'a pending in-app update suppresses without spending the shot',
+      () async {
+        final launcher = FakeReviewLauncher();
+        var updatePending = true;
+        final service = await buildService(
+          launcher: launcher,
+          isUpdatePending: () => updatePending,
+        );
 
-      await service.maybeRequestAfterExitRecorded();
-      expect(launcher.requestReviewCalls, 0);
+        await service.maybeRequestAfterExitRecorded();
+        expect(launcher.requestReviewCalls, 0);
 
-      updatePending = false;
-      await service.maybeRequestAfterExitRecorded();
-      expect(launcher.requestReviewCalls, 1);
-    });
+        updatePending = false;
+        await service.maybeRequestAfterExitRecorded();
+        expect(launcher.requestReviewCalls, 1);
+      },
+    );
 
     test('launcher unavailable does not spend the one shot', () async {
       final prefs = await freshPrefs();
@@ -150,10 +153,7 @@ void main() {
       final launcher = FakeReviewLauncher(throwOnRequest: true);
       final service = await buildService(launcher: launcher);
 
-      await expectLater(
-        service.maybeRequestAfterExitRecorded(),
-        completes,
-      );
+      await expectLater(service.maybeRequestAfterExitRecorded(), completes);
       expect(launcher.requestReviewCalls, 1);
     });
 

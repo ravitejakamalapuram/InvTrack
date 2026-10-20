@@ -582,8 +582,7 @@ class PortfolioHealthCalculator {
       }
 
       // Check for stale investments (no activity in 6+ months)
-      final cashFlows =
-          cashFlowsByInvestmentId[inv.id] ?? const <ICashFlow>[];
+      final cashFlows = cashFlowsByInvestmentId[inv.id] ?? const <ICashFlow>[];
       if (cashFlows.isNotEmpty) {
         // Optimization: Replace .map().reduce() with a standard loop
         var lastActivity = cashFlows.first.date;

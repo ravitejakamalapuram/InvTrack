@@ -53,27 +53,28 @@ void main() {
     _flow('e', CashFlowType.returnFlow, 20000, DateTime(2024, 9, 1)),
   ];
   final terminal = TerminalValues(
-    flows: [
-      _flow('tv', CashFlowType.returnFlow, 95000, DateTime(2025, 4, 1)),
-    ],
+    flows: [_flow('tv', CashFlowType.returnFlow, 95000, DateTime(2025, 4, 1))],
   );
 
   group('calculateStatsOffUiThread', () {
-    test('a real isolate gives exactly the stats the UI isolate would', () async {
-      final expected = FinancialCalculatorModule().calculateStats(
-        flows,
-        terminalValues: terminal,
-      );
-      expect(expected.xirr, isNotNull);
+    test(
+      'a real isolate gives exactly the stats the UI isolate would',
+      () async {
+        final expected = FinancialCalculatorModule().calculateStats(
+          flows,
+          terminalValues: terminal,
+        );
+        expect(expected.xirr, isNotNull);
 
-      final actual = await calculateStatsOffUiThread(
-        flows,
-        terminalValues: terminal,
-        minFlowsForIsolate: 0,
-      );
+        final actual = await calculateStatsOffUiThread(
+          flows,
+          terminalValues: terminal,
+          minFlowsForIsolate: 0,
+        );
 
-      _expectSameStats(actual, expected);
-    });
+        _expectSameStats(actual, expected);
+      },
+    );
 
     test('empty input gives empty stats through the isolate too', () async {
       final actual = await calculateStatsOffUiThread(

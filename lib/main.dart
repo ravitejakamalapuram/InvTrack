@@ -64,7 +64,9 @@ void main() async {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             notificationServiceProvider.overrideWithValue(notificationService),
-            flutterLocalNotificationsPluginProvider.overrideWithValue(notificationPlugin),
+            flutterLocalNotificationsPluginProvider.overrideWithValue(
+              notificationPlugin,
+            ),
           ],
           child: const InvTrackerApp(),
         ),
@@ -101,7 +103,9 @@ Future<void> _initializeNonCriticalServices(
     // Set static field for backward compatibility with direct instantiation
     CrashlyticsService.enableInDebugMode = debugModeEnabled;
 
-    final crashlyticsService = CrashlyticsService(debugModeEnabled: debugModeEnabled);
+    final crashlyticsService = CrashlyticsService(
+      debugModeEnabled: debugModeEnabled,
+    );
     unawaited(
       crashlyticsService.initialize().catchError((error, stack) {
         // Log Crashlytics initialization failure

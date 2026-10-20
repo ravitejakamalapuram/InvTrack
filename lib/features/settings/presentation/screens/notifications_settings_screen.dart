@@ -44,10 +44,7 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 value: settings.weeklySummaryEnabled,
                 onChanged: (value) => ref
                     .read(notificationSettingsProvider.notifier)
-                    .setSetting(
-                      NotificationSettingType.weeklySummary,
-                      value,
-                    ),
+                    .setSetting(NotificationSettingType.weeklySummary, value),
               ),
               SettingsToggleTile(
                 icon: Icons.summarize,
@@ -57,10 +54,7 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 value: settings.monthlySummaryEnabled,
                 onChanged: (value) => ref
                     .read(notificationSettingsProvider.notifier)
-                    .setSetting(
-                      NotificationSettingType.monthlySummary,
-                      value,
-                    ),
+                    .setSetting(NotificationSettingType.monthlySummary, value),
               ),
             ],
           ),
@@ -78,10 +72,7 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 value: settings.incomeRemindersEnabled,
                 onChanged: (value) => ref
                     .read(notificationSettingsProvider.notifier)
-                    .setSetting(
-                      NotificationSettingType.incomeReminders,
-                      value,
-                    ),
+                    .setSetting(NotificationSettingType.incomeReminders, value),
               ),
               SettingsToggleTile(
                 icon: Icons.event_available,
@@ -113,10 +104,7 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 value: settings.goalMilestonesEnabled,
                 onChanged: (value) => ref
                     .read(notificationSettingsProvider.notifier)
-                    .setSetting(
-                      NotificationSettingType.goalMilestones,
-                      value,
-                    ),
+                    .setSetting(NotificationSettingType.goalMilestones, value),
               ),
             ],
           ),

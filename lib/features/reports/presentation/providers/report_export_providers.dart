@@ -34,15 +34,9 @@ class ReportExportState {
   final bool isLoading;
   final String? error;
 
-  const ReportExportState({
-    this.isLoading = false,
-    this.error,
-  });
+  const ReportExportState({this.isLoading = false, this.error});
 
-  ReportExportState copyWith({
-    bool? isLoading,
-    String? error,
-  }) {
+  ReportExportState copyWith({bool? isLoading, String? error}) {
     return ReportExportState(
       isLoading: isLoading ?? this.isLoading,
       error: error,
@@ -181,5 +175,5 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
 /// Provider for export state management
 final reportExportProvider =
     NotifierProvider.autoDispose<ReportExportNotifier, ReportExportState>(
-  ReportExportNotifier.new,
-);
+      ReportExportNotifier.new,
+    );

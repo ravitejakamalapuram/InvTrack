@@ -30,40 +30,45 @@ class ActionRequiredService {
       if (investment.maturityDate == null) continue;
       if (investment.status == InvestmentStatus.closed) continue;
 
-      final daysUntilMaturity =
-          investment.maturityDate!.difference(now).inDays;
+      final daysUntilMaturity = investment.maturityDate!.difference(now).inDays;
 
       if (daysUntilMaturity < 0) {
         // Overdue maturity
-        actions.add(ActionItem(
-          type: ActionType.maturity,
-          priority: ActionPriority.critical,
-          title: '${investment.name} - Maturity Overdue',
-          description:
-              'Investment matured ${-daysUntilMaturity} days ago. Take action to close or renew.',
-          dueDate: investment.maturityDate,
-          investment: investment,
-        ));
+        actions.add(
+          ActionItem(
+            type: ActionType.maturity,
+            priority: ActionPriority.critical,
+            title: '${investment.name} - Maturity Overdue',
+            description:
+                'Investment matured ${-daysUntilMaturity} days ago. Take action to close or renew.',
+            dueDate: investment.maturityDate,
+            investment: investment,
+          ),
+        );
       } else if (daysUntilMaturity <= 7) {
         // Critical: Maturing within 7 days
-        actions.add(ActionItem(
-          type: ActionType.maturity,
-          priority: ActionPriority.critical,
-          title: '${investment.name} - Maturing in $daysUntilMaturity days',
-          description: 'Plan for reinvestment or withdrawal.',
-          dueDate: investment.maturityDate,
-          investment: investment,
-        ));
+        actions.add(
+          ActionItem(
+            type: ActionType.maturity,
+            priority: ActionPriority.critical,
+            title: '${investment.name} - Maturing in $daysUntilMaturity days',
+            description: 'Plan for reinvestment or withdrawal.',
+            dueDate: investment.maturityDate,
+            investment: investment,
+          ),
+        );
       } else if (daysUntilMaturity <= 30) {
         // High: Maturing within 30 days
-        actions.add(ActionItem(
-          type: ActionType.maturity,
-          priority: ActionPriority.high,
-          title: '${investment.name} - Maturing soon',
-          description: 'Review renewal options or explore alternatives.',
-          dueDate: investment.maturityDate,
-          investment: investment,
-        ));
+        actions.add(
+          ActionItem(
+            type: ActionType.maturity,
+            priority: ActionPriority.high,
+            title: '${investment.name} - Maturing soon',
+            description: 'Review renewal options or explore alternatives.',
+            dueDate: investment.maturityDate,
+            investment: investment,
+          ),
+        );
       }
     }
 
@@ -92,22 +97,27 @@ class ActionRequiredService {
 
       if (daysSinceLastActivity >= 180) {
         // Critical: No activity for 6+ months
-        actions.add(ActionItem(
-          type: ActionType.idle,
-          priority: ActionPriority.high,
-          title: '${investment.name} - Idle for ${(daysSinceLastActivity / 30).floor()} months',
-          description: 'Consider reviewing or updating this investment.',
-          investment: investment,
-        ));
+        actions.add(
+          ActionItem(
+            type: ActionType.idle,
+            priority: ActionPriority.high,
+            title:
+                '${investment.name} - Idle for ${(daysSinceLastActivity / 30).floor()} months',
+            description: 'Consider reviewing or updating this investment.',
+            investment: investment,
+          ),
+        );
       } else if (daysSinceLastActivity >= 90) {
         // Medium: No activity for 3+ months
-        actions.add(ActionItem(
-          type: ActionType.idle,
-          priority: ActionPriority.medium,
-          title: '${investment.name} - No activity for 90+ days',
-          description: 'Check if this investment needs attention.',
-          investment: investment,
-        ));
+        actions.add(
+          ActionItem(
+            type: ActionType.idle,
+            priority: ActionPriority.medium,
+            title: '${investment.name} - No activity for 90+ days',
+            description: 'Check if this investment needs attention.',
+            investment: investment,
+          ),
+        );
       }
     }
 
@@ -126,23 +136,28 @@ class ActionRequiredService {
       // Note: We can't calculate actual progress without linked investments
       // For now, show goals approaching deadline as action items
       if (daysRemaining <= 30) {
-        actions.add(ActionItem(
-          type: ActionType.goalAtRisk,
-          priority: ActionPriority.critical,
-          title: '${goal.name} - Deadline approaching',
-          description: 'Goal deadline in $daysRemaining days. Review progress.',
-          dueDate: targetDate,
-          goal: goal,
-        ));
+        actions.add(
+          ActionItem(
+            type: ActionType.goalAtRisk,
+            priority: ActionPriority.critical,
+            title: '${goal.name} - Deadline approaching',
+            description:
+                'Goal deadline in $daysRemaining days. Review progress.',
+            dueDate: targetDate,
+            goal: goal,
+          ),
+        );
       } else if (daysRemaining <= 90) {
-        actions.add(ActionItem(
-          type: ActionType.goalAtRisk,
-          priority: ActionPriority.high,
-          title: '${goal.name} - Deadline in 90 days',
-          description: 'Review goal progress and adjust if needed.',
-          dueDate: targetDate,
-          goal: goal,
-        ));
+        actions.add(
+          ActionItem(
+            type: ActionType.goalAtRisk,
+            priority: ActionPriority.high,
+            title: '${goal.name} - Deadline in 90 days',
+            description: 'Review goal progress and adjust if needed.',
+            dueDate: targetDate,
+            goal: goal,
+          ),
+        );
       }
     }
 
@@ -152,16 +167,18 @@ class ActionRequiredService {
     final daysUntilTax = taxDeadline.difference(now).inDays;
 
     if (daysUntilTax > 0 && daysUntilTax <= 90) {
-      actions.add(ActionItem(
-        type: ActionType.taxDeadline,
-        priority: daysUntilTax <= 30
-            ? ActionPriority.critical
-            : ActionPriority.high,
-        title: 'ITR Filing Deadline - FY $currentFY-${currentFY + 1}',
-        description:
-            'File income tax return by July 31. $daysUntilTax days remaining.',
-        dueDate: taxDeadline,
-      ));
+      actions.add(
+        ActionItem(
+          type: ActionType.taxDeadline,
+          priority: daysUntilTax <= 30
+              ? ActionPriority.critical
+              : ActionPriority.high,
+          title: 'ITR Filing Deadline - FY $currentFY-${currentFY + 1}',
+          description:
+              'File income tax return by July 31. $daysUntilTax days remaining.',
+          dueDate: taxDeadline,
+        ),
+      );
     }
 
     // Optimization: Single pass loop for categorizing actions and counting overdue items

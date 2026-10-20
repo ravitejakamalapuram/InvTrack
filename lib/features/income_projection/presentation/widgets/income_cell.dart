@@ -43,10 +43,14 @@ class IncomeCell extends ConsumerWidget {
           color: isDark ? AppColors.neutral900Dark : Colors.white,
           border: Border(
             bottom: BorderSide(
-              color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+              color: isDark
+                  ? AppColors.neutral700Dark
+                  : AppColors.neutral200Light,
             ),
             right: BorderSide(
-              color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+              color: isDark
+                  ? AppColors.neutral700Dark
+                  : AppColors.neutral200Light,
             ),
           ),
         ),
@@ -67,15 +71,16 @@ class IncomeCell extends ConsumerWidget {
           color: statusColor.withValues(alpha: 0.1),
           border: Border(
             bottom: BorderSide(
-              color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+              color: isDark
+                  ? AppColors.neutral700Dark
+                  : AppColors.neutral200Light,
             ),
             right: BorderSide(
-              color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+              color: isDark
+                  ? AppColors.neutral700Dark
+                  : AppColors.neutral200Light,
             ),
-            left: BorderSide(
-              color: statusColor,
-              width: 3,
-            ),
+            left: BorderSide(color: statusColor, width: 3),
           ),
         ),
         child: Column(
@@ -84,14 +89,17 @@ class IncomeCell extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  statusIcon,
-                  size: 16,
-                  color: statusColor,
-                ),
+                Icon(statusIcon, size: 16, color: statusColor),
                 const SizedBox(width: 4),
                 Expanded(
-                  child: _buildConvertedAmount(ref, expected!, baseCurrency, currencySymbol, locale, statusColor),
+                  child: _buildConvertedAmount(
+                    ref,
+                    expected!,
+                    baseCurrency,
+                    currencySymbol,
+                    locale,
+                    statusColor,
+                  ),
                 ),
               ],
             ),
@@ -101,7 +109,9 @@ class IncomeCell extends ConsumerWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.caption.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral600Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral600Light,
               ),
             ),
           ],
@@ -237,7 +247,10 @@ class IncomeCell extends ConsumerWidget {
 }
 
 /// Helper to get localized display names for status
-String _getStatusDisplayName(BuildContext context, ExpectedCashFlowStatus status) {
+String _getStatusDisplayName(
+  BuildContext context,
+  ExpectedCashFlowStatus status,
+) {
   final l10n = AppLocalizations.of(context);
   switch (status) {
     case ExpectedCashFlowStatus.upcoming:

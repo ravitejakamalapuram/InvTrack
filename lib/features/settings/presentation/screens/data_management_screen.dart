@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/error/error_message.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
@@ -369,15 +370,21 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     // Pick ZIP file
     Uint8List zipBytes;
     try {
-      final picked = await FilePicker.pickFiles(
+      final picked = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: ['zip'],
       );
 
-      if (picked.isEmpty) return;
+      if (picked == null) return;
       try {
-        zipBytes = await picked.first.readAsBytes();
+        zipBytes = await picked.readAsBytes();
       } on Exception {
+        if (context.mounted) {
+          AppFeedback.showError(
+            context,
+            AppLocalizations.of(context).importFailedTryAgain,
+          );
+        }
         return;
       }
     } finally {

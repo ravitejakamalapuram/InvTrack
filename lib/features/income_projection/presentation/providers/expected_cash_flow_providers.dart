@@ -16,11 +16,7 @@ export 'package:inv_tracker/core/di/database_module.dart'
 // ============ INCOME CALENDAR STATE PROVIDERS ============
 
 /// Filter options for income calendar
-enum IncomeCalendarFilter {
-  all,
-  pending,
-  overdue,
-}
+enum IncomeCalendarFilter { all, pending, overdue }
 
 /// Notifier for income calendar filter state
 class IncomeCalendarFilterNotifier extends Notifier<IncomeCalendarFilter> {
@@ -34,11 +30,11 @@ class IncomeCalendarFilterNotifier extends Notifier<IncomeCalendarFilter> {
 
 /// Provider for income calendar filter state
 /// Uses .autoDispose to prevent memory leaks when screen is disposed
-final incomeCalendarFilterProvider = NotifierProvider.autoDispose<
-    IncomeCalendarFilterNotifier,
-    IncomeCalendarFilter>(
-  IncomeCalendarFilterNotifier.new,
-);
+final incomeCalendarFilterProvider =
+    NotifierProvider.autoDispose<
+      IncomeCalendarFilterNotifier,
+      IncomeCalendarFilter
+    >(IncomeCalendarFilterNotifier.new);
 
 /// Notifier for income calendar month offset state
 class IncomeCalendarMonthOffsetNotifier extends Notifier<int> {
@@ -60,11 +56,10 @@ class IncomeCalendarMonthOffsetNotifier extends Notifier<int> {
 
 /// Provider for income calendar month offset state
 /// Uses .autoDispose to prevent memory leaks when screen is disposed
-final incomeCalendarMonthOffsetProvider = NotifierProvider.autoDispose<
-    IncomeCalendarMonthOffsetNotifier,
-    int>(
-  IncomeCalendarMonthOffsetNotifier.new,
-);
+final incomeCalendarMonthOffsetProvider =
+    NotifierProvider.autoDispose<IncomeCalendarMonthOffsetNotifier, int>(
+      IncomeCalendarMonthOffsetNotifier.new,
+    );
 
 // ============ EXPECTED CASH FLOW STREAM PROVIDERS ============
 
@@ -73,66 +68,68 @@ final incomeCalendarMonthOffsetProvider = NotifierProvider.autoDispose<
 /// Errors propagate to UI for proper error handling with retry buttons.
 final allExpectedCashFlowsProvider =
     StreamProvider<List<ExpectedCashFlowEntity>>((ref) {
-  // Check auth first to avoid exception when user signs out
-  final isAuthenticated = ref.watch(isAuthenticatedProvider);
-  if (!isAuthenticated) {
-    return Stream.value([]);
-  }
+      // Check auth first to avoid exception when user signs out
+      final isAuthenticated = ref.watch(isAuthenticatedProvider);
+      if (!isAuthenticated) {
+        return Stream.value([]);
+      }
 
-  // Let errors propagate to UI - screens handle AsyncValue.error properly
-  return ref.watch(expectedCashFlowRepositoryProvider).watchAllExpectedCashFlows();
-});
+      // Let errors propagate to UI - screens handle AsyncValue.error properly
+      return ref
+          .watch(expectedCashFlowRepositoryProvider)
+          .watchAllExpectedCashFlows();
+    });
 
 /// Watch expected cash flows for a specific investment (reactive).
 /// Returns empty list if user is not authenticated.
 /// Uses .autoDispose.family to prevent memory leaks from cached instances.
 final expectedCashFlowsByInvestmentProvider = StreamProvider.autoDispose
     .family<List<ExpectedCashFlowEntity>, String>((ref, investmentId) {
-  // Check auth first to avoid exception when user signs out
-  final isAuthenticated = ref.watch(isAuthenticatedProvider);
-  if (!isAuthenticated) {
-    return Stream.value([]);
-  }
+      // Check auth first to avoid exception when user signs out
+      final isAuthenticated = ref.watch(isAuthenticatedProvider);
+      if (!isAuthenticated) {
+        return Stream.value([]);
+      }
 
-  // Let errors propagate to UI
-  return ref
-      .watch(expectedCashFlowRepositoryProvider)
-      .watchExpectedCashFlowsByInvestment(investmentId);
-});
+      // Let errors propagate to UI
+      return ref
+          .watch(expectedCashFlowRepositoryProvider)
+          .watchExpectedCashFlowsByInvestment(investmentId);
+    });
 
 /// Watch pending expected cash flows (reactive).
 /// Returns only cash flows with status PENDING.
 /// Returns empty list if user is not authenticated.
 final pendingExpectedCashFlowsProvider =
     StreamProvider<List<ExpectedCashFlowEntity>>((ref) {
-  // Check auth first to avoid exception when user signs out
-  final isAuthenticated = ref.watch(isAuthenticatedProvider);
-  if (!isAuthenticated) {
-    return Stream.value([]);
-  }
+      // Check auth first to avoid exception when user signs out
+      final isAuthenticated = ref.watch(isAuthenticatedProvider);
+      if (!isAuthenticated) {
+        return Stream.value([]);
+      }
 
-  // Let errors propagate to UI
-  return ref
-      .watch(expectedCashFlowRepositoryProvider)
-      .watchPendingExpectedCashFlows();
-});
+      // Let errors propagate to UI
+      return ref
+          .watch(expectedCashFlowRepositoryProvider)
+          .watchPendingExpectedCashFlows();
+    });
 
 /// Watch overdue expected cash flows (reactive).
 /// Returns only cash flows that are past their expected date and still PENDING.
 /// Returns empty list if user is not authenticated.
 final overdueExpectedCashFlowsProvider =
     StreamProvider<List<ExpectedCashFlowEntity>>((ref) {
-  // Check auth first to avoid exception when user signs out
-  final isAuthenticated = ref.watch(isAuthenticatedProvider);
-  if (!isAuthenticated) {
-    return Stream.value([]);
-  }
+      // Check auth first to avoid exception when user signs out
+      final isAuthenticated = ref.watch(isAuthenticatedProvider);
+      if (!isAuthenticated) {
+        return Stream.value([]);
+      }
 
-  // Let errors propagate to UI
-  return ref
-      .watch(expectedCashFlowRepositoryProvider)
-      .watchOverdueExpectedCashFlows();
-});
+      // Let errors propagate to UI
+      return ref
+          .watch(expectedCashFlowRepositoryProvider)
+          .watchOverdueExpectedCashFlows();
+    });
 
 /// Watch upcoming expected cash flows (reactive).
 /// Returns cash flows within next [days] days (default: 7).
@@ -140,30 +137,28 @@ final overdueExpectedCashFlowsProvider =
 /// Uses .family to allow different time windows.
 final upcomingExpectedCashFlowsProvider =
     StreamProvider.family<List<ExpectedCashFlowEntity>, int>((ref, days) {
-  // Check auth first to avoid exception when user signs out
-  final isAuthenticated = ref.watch(isAuthenticatedProvider);
-  if (!isAuthenticated) {
-    return Stream.value([]);
-  }
+      // Check auth first to avoid exception when user signs out
+      final isAuthenticated = ref.watch(isAuthenticatedProvider);
+      if (!isAuthenticated) {
+        return Stream.value([]);
+      }
 
-  // Let errors propagate to UI
-  return ref
-      .watch(expectedCashFlowRepositoryProvider)
-      .watchUpcomingExpectedCashFlows(days: days);
-});
+      // Let errors propagate to UI
+      return ref
+          .watch(expectedCashFlowRepositoryProvider)
+          .watchUpcomingExpectedCashFlows(days: days);
+    });
 
 /// Get a single expected cash flow by ID.
 /// Returns null if user is not authenticated.
 final expectedCashFlowByIdProvider =
-    FutureProvider.family<ExpectedCashFlowEntity?, String>(
-  (ref, id) async {
-    // Check auth first to avoid exception when user signs out
-    final isAuthenticated = ref.watch(isAuthenticatedProvider);
-    if (!isAuthenticated) {
-      return null;
-    }
-    return ref
-        .watch(expectedCashFlowRepositoryProvider)
-        .getExpectedCashFlowById(id);
-  },
-);
+    FutureProvider.family<ExpectedCashFlowEntity?, String>((ref, id) async {
+      // Check auth first to avoid exception when user signs out
+      final isAuthenticated = ref.watch(isAuthenticatedProvider);
+      if (!isAuthenticated) {
+        return null;
+      }
+      return ref
+          .watch(expectedCashFlowRepositoryProvider)
+          .getExpectedCashFlowById(id);
+    });

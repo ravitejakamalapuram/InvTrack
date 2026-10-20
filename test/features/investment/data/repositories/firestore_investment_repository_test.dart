@@ -65,17 +65,22 @@ void main() {
     final mockUsersCollection = MockCollectionReference();
     final mockUserDoc = MockDocumentReference();
 
-    when(() => mockFirestore.collection('users'))
-        .thenReturn(mockUsersCollection);
+    when(
+      () => mockFirestore.collection('users'),
+    ).thenReturn(mockUsersCollection);
     when(() => mockUsersCollection.doc(testUserId)).thenReturn(mockUserDoc);
-    when(() => mockUserDoc.collection('investments'))
-        .thenReturn(mockInvestmentsCollection);
-    when(() => mockUserDoc.collection('cashflows'))
-        .thenReturn(mockCashFlowsCollection);
-    when(() => mockUserDoc.collection('archivedInvestments'))
-        .thenReturn(mockArchivedInvestmentsCollection);
-    when(() => mockUserDoc.collection('archivedCashflows'))
-        .thenReturn(mockArchivedCashFlowsCollection);
+    when(
+      () => mockUserDoc.collection('investments'),
+    ).thenReturn(mockInvestmentsCollection);
+    when(
+      () => mockUserDoc.collection('cashflows'),
+    ).thenReturn(mockCashFlowsCollection);
+    when(
+      () => mockUserDoc.collection('archivedInvestments'),
+    ).thenReturn(mockArchivedInvestmentsCollection);
+    when(
+      () => mockUserDoc.collection('archivedCashflows'),
+    ).thenReturn(mockArchivedCashFlowsCollection);
     // Deleting an investment also lists its valuation snapshots (#941);
     // this investment has none.
     final mockValuationsCollection = MockCollectionReference();
@@ -109,10 +114,12 @@ void main() {
       ),
     ).thenReturn(noSnapshotsQuery);
 
-    when(() => mockInvestmentsCollection.doc(testInvestmentId))
-        .thenReturn(mockInvestmentDoc);
-    when(() => mockArchivedInvestmentsCollection.doc(testInvestmentId))
-        .thenReturn(mockArchivedInvestmentDoc);
+    when(
+      () => mockInvestmentsCollection.doc(testInvestmentId),
+    ).thenReturn(mockInvestmentDoc);
+    when(
+      () => mockArchivedInvestmentsCollection.doc(testInvestmentId),
+    ).thenReturn(mockArchivedInvestmentDoc);
 
     when(() => mockFirestore.batch()).thenReturn(mockBatch);
     when(() => mockBatch.delete(any())).thenReturn(null);
@@ -126,44 +133,52 @@ void main() {
   });
 
   group('deleteInvestment', () {
-    test('deletes the investment and every cash flow found in the cache', () async {
-      final mockQuery = MockQuery();
-      final mockSnapshot = MockQuerySnapshot();
-      final cfDoc1 = MockQueryDocumentSnapshot();
-      final cfDoc2 = MockQueryDocumentSnapshot();
-      final cfRef1 = MockDocumentReference();
-      final cfRef2 = MockDocumentReference();
+    test(
+      'deletes the investment and every cash flow found in the cache',
+      () async {
+        final mockQuery = MockQuery();
+        final mockSnapshot = MockQuerySnapshot();
+        final cfDoc1 = MockQueryDocumentSnapshot();
+        final cfDoc2 = MockQueryDocumentSnapshot();
+        final cfRef1 = MockDocumentReference();
+        final cfRef2 = MockDocumentReference();
 
-      when(() => mockCashFlowsCollection.where(
+        when(
+          () => mockCashFlowsCollection.where(
             'investmentId',
             isEqualTo: testInvestmentId,
-          )).thenReturn(mockQuery);
-      when(() => mockQuery.get(const GetOptions(source: Source.cache)))
-          .thenAnswer((_) async => mockSnapshot);
-      when(() => mockSnapshot.docs).thenReturn([cfDoc1, cfDoc2]);
-      when(() => cfDoc1.reference).thenReturn(cfRef1);
-      when(() => cfDoc2.reference).thenReturn(cfRef2);
+          ),
+        ).thenReturn(mockQuery);
+        when(
+          () => mockQuery.get(const GetOptions(source: Source.cache)),
+        ).thenAnswer((_) async => mockSnapshot);
+        when(() => mockSnapshot.docs).thenReturn([cfDoc1, cfDoc2]);
+        when(() => cfDoc1.reference).thenReturn(cfRef1);
+        when(() => cfDoc2.reference).thenReturn(cfRef2);
 
-      await repository.deleteInvestment(testInvestmentId);
+        await repository.deleteInvestment(testInvestmentId);
 
-      verify(() => mockBatch.delete(cfRef1)).called(1);
-      verify(() => mockBatch.delete(cfRef2)).called(1);
-      verify(() => mockBatch.delete(mockInvestmentDoc)).called(1);
-      verify(() => mockBatch.commit()).called(1);
-    });
+        verify(() => mockBatch.delete(cfRef1)).called(1);
+        verify(() => mockBatch.delete(cfRef2)).called(1);
+        verify(() => mockBatch.delete(mockInvestmentDoc)).called(1);
+        verify(() => mockBatch.commit()).called(1);
+      },
+    );
 
-    test(
-        'throws instead of deleting the investment when cash flows cannot '
+    test('throws instead of deleting the investment when cash flows cannot '
         'be determined (cache unusable, server unreachable)', () async {
       final mockQuery = MockQuery();
 
-      when(() => mockCashFlowsCollection.where(
-            'investmentId',
-            isEqualTo: testInvestmentId,
-          )).thenReturn(mockQuery);
+      when(
+        () => mockCashFlowsCollection.where(
+          'investmentId',
+          isEqualTo: testInvestmentId,
+        ),
+      ).thenReturn(mockQuery);
       // Cache lookup fails outright.
-      when(() => mockQuery.get(const GetOptions(source: Source.cache)))
-          .thenThrow(Exception('cache unavailable'));
+      when(
+        () => mockQuery.get(const GetOptions(source: Source.cache)),
+      ).thenThrow(Exception('cache unavailable'));
       // Server fallback can't complete either (offline).
       when(() => mockQuery.get()).thenThrow(TimeoutException('offline'));
 
@@ -184,12 +199,15 @@ void main() {
       final cfDoc = MockQueryDocumentSnapshot();
       final cfRef = MockDocumentReference();
 
-      when(() => mockCashFlowsCollection.where(
-            'investmentId',
-            isEqualTo: testInvestmentId,
-          )).thenReturn(mockQuery);
-      when(() => mockQuery.get(const GetOptions(source: Source.cache)))
-          .thenThrow(Exception('cache unavailable'));
+      when(
+        () => mockCashFlowsCollection.where(
+          'investmentId',
+          isEqualTo: testInvestmentId,
+        ),
+      ).thenReturn(mockQuery);
+      when(
+        () => mockQuery.get(const GetOptions(source: Source.cache)),
+      ).thenThrow(Exception('cache unavailable'));
       when(() => mockQuery.get()).thenAnswer((_) async => mockSnapshot);
       when(() => mockSnapshot.docs).thenReturn([cfDoc]);
       when(() => cfDoc.reference).thenReturn(cfRef);
@@ -203,39 +221,47 @@ void main() {
   });
 
   group('deleteArchivedInvestment', () {
-    test('deletes the archived investment and its archived cash flows', () async {
-      final mockQuery = MockQuery();
-      final mockSnapshot = MockQuerySnapshot();
-      final cfDoc = MockQueryDocumentSnapshot();
-      final cfRef = MockDocumentReference();
+    test(
+      'deletes the archived investment and its archived cash flows',
+      () async {
+        final mockQuery = MockQuery();
+        final mockSnapshot = MockQuerySnapshot();
+        final cfDoc = MockQueryDocumentSnapshot();
+        final cfRef = MockDocumentReference();
 
-      when(() => mockArchivedCashFlowsCollection.where(
+        when(
+          () => mockArchivedCashFlowsCollection.where(
             'investmentId',
             isEqualTo: testInvestmentId,
-          )).thenReturn(mockQuery);
-      when(() => mockQuery.get(const GetOptions(source: Source.cache)))
-          .thenAnswer((_) async => mockSnapshot);
-      when(() => mockSnapshot.docs).thenReturn([cfDoc]);
-      when(() => cfDoc.reference).thenReturn(cfRef);
+          ),
+        ).thenReturn(mockQuery);
+        when(
+          () => mockQuery.get(const GetOptions(source: Source.cache)),
+        ).thenAnswer((_) async => mockSnapshot);
+        when(() => mockSnapshot.docs).thenReturn([cfDoc]);
+        when(() => cfDoc.reference).thenReturn(cfRef);
 
-      await repository.deleteArchivedInvestment(testInvestmentId);
+        await repository.deleteArchivedInvestment(testInvestmentId);
 
-      verify(() => mockBatch.delete(cfRef)).called(1);
-      verify(() => mockBatch.delete(mockArchivedInvestmentDoc)).called(1);
-      verify(() => mockBatch.commit()).called(1);
-    });
+        verify(() => mockBatch.delete(cfRef)).called(1);
+        verify(() => mockBatch.delete(mockArchivedInvestmentDoc)).called(1);
+        verify(() => mockBatch.commit()).called(1);
+      },
+    );
 
-    test(
-        'throws instead of deleting the archived investment when its cash '
+    test('throws instead of deleting the archived investment when its cash '
         'flows cannot be determined', () async {
       final mockQuery = MockQuery();
 
-      when(() => mockArchivedCashFlowsCollection.where(
-            'investmentId',
-            isEqualTo: testInvestmentId,
-          )).thenReturn(mockQuery);
-      when(() => mockQuery.get(const GetOptions(source: Source.cache)))
-          .thenThrow(Exception('cache unavailable'));
+      when(
+        () => mockArchivedCashFlowsCollection.where(
+          'investmentId',
+          isEqualTo: testInvestmentId,
+        ),
+      ).thenReturn(mockQuery);
+      when(
+        () => mockQuery.get(const GetOptions(source: Source.cache)),
+      ).thenThrow(Exception('cache unavailable'));
       when(() => mockQuery.get()).thenThrow(TimeoutException('offline'));
 
       await expectLater(

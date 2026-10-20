@@ -22,7 +22,8 @@ import 'package:inv_tracker/features/investment/presentation/providers/investmen
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 // Currency providers from currency_utils.dart - imported for ref.watch
-export 'package:inv_tracker/core/utils/currency_utils.dart' show currencySymbolProvider, currencyLocaleProvider;
+export 'package:inv_tracker/core/utils/currency_utils.dart'
+    show currencySymbolProvider, currencyLocaleProvider;
 
 class IncomeCalendarGrid extends ConsumerWidget {
   final List<ExpectedCashFlowEntity> expectedCashFlows;
@@ -46,7 +47,7 @@ class IncomeCalendarGrid extends ConsumerWidget {
     final baseCurrency = ref.watch(currencyCodeProvider);
     final now = DateTime.now();
     final centerMonth = DateTime(now.year, now.month + monthOffset, 1);
-    
+
     // Show 3 months: previous, current (center), next
     final months = [
       DateTime(centerMonth.year, centerMonth.month - 1, 1),
@@ -57,7 +58,9 @@ class IncomeCalendarGrid extends ConsumerWidget {
     // Group expected cash flows by investment
     final groupedByInvestment = <String, List<ExpectedCashFlowEntity>>{};
     for (final expected in expectedCashFlows) {
-      groupedByInvestment.putIfAbsent(expected.investmentId, () => []).add(expected);
+      groupedByInvestment
+          .putIfAbsent(expected.investmentId, () => [])
+          .add(expected);
     }
 
     if (groupedByInvestment.isEmpty) {
@@ -79,7 +82,7 @@ class IncomeCalendarGrid extends ConsumerWidget {
             children: [
               // Header row (month names)
               _buildHeaderRow(months, l10n),
-              
+
               // Investment rows
               ...groupedByInvestment.entries.map((entry) {
                 return _buildInvestmentRow(
@@ -101,7 +104,11 @@ class IncomeCalendarGrid extends ConsumerWidget {
     );
   }
 
-  Widget _buildMonthNavigationHeader(BuildContext context, DateTime centerMonth, AppLocalizations l10n) {
+  Widget _buildMonthNavigationHeader(
+    BuildContext context,
+    DateTime centerMonth,
+    AppLocalizations l10n,
+  ) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Row(
@@ -138,9 +145,13 @@ class IncomeCalendarGrid extends ConsumerWidget {
           height: 40,
           padding: EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.neutral800Dark : AppColors.neutral100Light,
+            color: isDark
+                ? AppColors.neutral800Dark
+                : AppColors.neutral100Light,
             border: Border.all(
-              color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+              color: isDark
+                  ? AppColors.neutral700Dark
+                  : AppColors.neutral200Light,
             ),
           ),
           child: Text(
@@ -152,33 +163,43 @@ class IncomeCalendarGrid extends ConsumerWidget {
           ),
         ),
         // Month columns
-        ...months.map((month) => Container(
-          width: 100,
-          height: 40,
-          padding: EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.neutral800Dark : AppColors.neutral100Light,
-            border: Border(
-              top: BorderSide(
-                color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+        ...months.map(
+          (month) => Container(
+            width: 100,
+            height: 40,
+            padding: EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.neutral800Dark
+                  : AppColors.neutral100Light,
+              border: Border(
+                top: BorderSide(
+                  color: isDark
+                      ? AppColors.neutral700Dark
+                      : AppColors.neutral200Light,
+                ),
+                bottom: BorderSide(
+                  color: isDark
+                      ? AppColors.neutral700Dark
+                      : AppColors.neutral200Light,
+                ),
+                right: BorderSide(
+                  color: isDark
+                      ? AppColors.neutral700Dark
+                      : AppColors.neutral200Light,
+                ),
               ),
-              bottom: BorderSide(
-                color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
-              ),
-              right: BorderSide(
-                color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+            ),
+            child: Text(
+              DateFormat('MMM yy').format(month),
+              textAlign: TextAlign.center,
+              style: AppTypography.small.copyWith(
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : AppColors.neutral900Light,
               ),
             ),
           ),
-          child: Text(
-            DateFormat('MMM yy').format(month),
-            textAlign: TextAlign.center,
-            style: AppTypography.small.copyWith(
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white : AppColors.neutral900Light,
-            ),
-          ),
-        )),
+        ),
       ],
     );
   }
@@ -213,13 +234,19 @@ class IncomeCalendarGrid extends ConsumerWidget {
             color: isDark ? AppColors.neutral900Dark : Colors.white,
             border: Border(
               left: BorderSide(
-                color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+                color: isDark
+                    ? AppColors.neutral700Dark
+                    : AppColors.neutral200Light,
               ),
               bottom: BorderSide(
-                color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+                color: isDark
+                    ? AppColors.neutral700Dark
+                    : AppColors.neutral200Light,
               ),
               right: BorderSide(
-                color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+                color: isDark
+                    ? AppColors.neutral700Dark
+                    : AppColors.neutral200Light,
               ),
             ),
           ),
@@ -240,7 +267,9 @@ class IncomeCalendarGrid extends ConsumerWidget {
               Text(
                 l10n.calendarGridExpectedCount(expectedForInvestment.length),
                 style: AppTypography.caption.copyWith(
-                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
                 ),
               ),
             ],
@@ -251,15 +280,25 @@ class IncomeCalendarGrid extends ConsumerWidget {
           // Find expected cash flows for this month
           final expectedForMonth = expectedForInvestment.where((e) {
             return e.expectedDate.year == month.year &&
-                   e.expectedDate.month == month.month;
+                e.expectedDate.month == month.month;
           }).toList();
 
           return IncomeCell(
             expected: expectedForMonth.isEmpty ? null : expectedForMonth.first,
             isDark: isDark,
-            onTap: expectedForMonth.isEmpty ? null : () {
-              _showPaymentDetails(context, expectedForMonth.first, ref, baseCurrency, l10n, currencySymbol, locale);
-            },
+            onTap: expectedForMonth.isEmpty
+                ? null
+                : () {
+                    _showPaymentDetails(
+                      context,
+                      expectedForMonth.first,
+                      ref,
+                      baseCurrency,
+                      l10n,
+                      currencySymbol,
+                      locale,
+                    );
+                  },
           );
         }),
       ],
@@ -307,13 +346,38 @@ class IncomeCalendarGrid extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
-            _buildDetailRow(l10n.calendarGridExpectedDate, DateFormat('MMM dd, yyyy').format(expected.expectedDate)),
-            _buildConvertedDetailRow(ref, l10n.calendarGridExpectedAmount, expected, baseCurrency, currencySymbol, locale, isExpected: true),
-            _buildDetailRow(l10n.calendarGridStatus, getStatusDisplayName(l10n, expected.status)),
+            _buildDetailRow(
+              l10n.calendarGridExpectedDate,
+              DateFormat('MMM dd, yyyy').format(expected.expectedDate),
+            ),
+            _buildConvertedDetailRow(
+              ref,
+              l10n.calendarGridExpectedAmount,
+              expected,
+              baseCurrency,
+              currencySymbol,
+              locale,
+              isExpected: true,
+            ),
+            _buildDetailRow(
+              l10n.calendarGridStatus,
+              getStatusDisplayName(l10n, expected.status),
+            ),
             if (expected.actualAmount != null)
-              _buildConvertedDetailRow(ref, l10n.calendarGridActualAmount, expected, baseCurrency, currencySymbol, locale, isExpected: false),
+              _buildConvertedDetailRow(
+                ref,
+                l10n.calendarGridActualAmount,
+                expected,
+                baseCurrency,
+                currencySymbol,
+                locale,
+                isExpected: false,
+              ),
             if (expected.actualDate != null)
-              _buildDetailRow(l10n.calendarGridActualDate, DateFormat('MMM dd, yyyy').format(expected.actualDate!)),
+              _buildDetailRow(
+                l10n.calendarGridActualDate,
+                DateFormat('MMM dd, yyyy').format(expected.actualDate!),
+              ),
             const SizedBox(height: 24),
           ],
         ),
@@ -330,7 +394,9 @@ class IncomeCalendarGrid extends ConsumerWidget {
           Text(
             label,
             style: AppTypography.body.copyWith(
-              color: isDark ? AppColors.neutral400Dark : AppColors.neutral600Light,
+              color: isDark
+                  ? AppColors.neutral400Dark
+                  : AppColors.neutral600Light,
             ),
           ),
           Text(
@@ -355,7 +421,9 @@ class IncomeCalendarGrid extends ConsumerWidget {
     String locale, {
     required bool isExpected,
   }) {
-    final amount = isExpected ? expected.expectedAmount : expected.actualAmount!;
+    final amount = isExpected
+        ? expected.expectedAmount
+        : expected.actualAmount!;
 
     // Check if conversion is needed
     if (expected.currency == baseCurrency) {
@@ -393,7 +461,11 @@ class IncomeCalendarGrid extends ConsumerWidget {
         final convertedAmount = snapshot.data!;
         return _buildDetailRow(
           label,
-          formatCompactCurrency(convertedAmount, symbol: currencySymbol, locale: locale),
+          formatCompactCurrency(
+            convertedAmount,
+            symbol: currencySymbol,
+            locale: locale,
+          ),
         );
       },
     );

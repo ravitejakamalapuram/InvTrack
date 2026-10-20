@@ -321,32 +321,35 @@ void main() {
       );
     });
 
-    test('five failures remain locked if lockout timestamp cannot be persisted', () async {
-      await service.setPin('1234');
-      fakeSecureStorage.setThrowWrite('pin_lockout_timestamp', true);
+    test(
+      'five failures remain locked if lockout timestamp cannot be persisted',
+      () async {
+        await service.setPin('1234');
+        fakeSecureStorage.setThrowWrite('pin_lockout_timestamp', true);
 
-      for (int i = 0; i < 4; i++) {
-        expect(await service.verifyPin('5678'), isFalse);
-      }
+        for (int i = 0; i < 4; i++) {
+          expect(await service.verifyPin('5678'), isFalse);
+        }
 
-      // Awaited: the fifth attempt has to finish before its effects are read,
-      // and `_isVerifying` would turn a still-running call into a silent false.
-      await expectLater(
-        service.verifyPin('5678'),
-        throwsA(isA<PlatformException>()),
-      );
-      expect(fakeSecureStorage.storage['pin_failed_attempts'], equals('5'));
-      expect(
-        fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'),
-        isFalse,
-      );
+        // Awaited: the fifth attempt has to finish before its effects are read,
+        // and `_isVerifying` would turn a still-running call into a silent false.
+        await expectLater(
+          service.verifyPin('5678'),
+          throwsA(isA<PlatformException>()),
+        );
+        expect(fakeSecureStorage.storage['pin_failed_attempts'], equals('5'));
+        expect(
+          fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'),
+          isFalse,
+        );
 
-      // A correct PIN must not bypass the durable five-failure boundary.
-      await expectLater(
-        service.verifyPin('1234'),
-        throwsA(isA<PlatformException>()),
-      );
-    });
+        // A correct PIN must not bypass the durable five-failure boundary.
+        await expectLater(
+          service.verifyPin('1234'),
+          throwsA(isA<PlatformException>()),
+        );
+      },
+    );
 
     test(
       'a missing lockout timestamp recovers once storage is writable',

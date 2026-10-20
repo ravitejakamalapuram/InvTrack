@@ -152,37 +152,40 @@ void main() {
     verify(() => crashlytics.setUserIdentifier('g1')).called(2);
   });
 
-  test('same UID emitted while update is pending is retried after failure', () async {
-    final firstAttempt = Completer<void>();
-    final releaseFirstAttempt = Completer<void>();
-    var calls = 0;
+  test(
+    'same UID emitted while update is pending is retried after failure',
+    () async {
+      final firstAttempt = Completer<void>();
+      final releaseFirstAttempt = Completer<void>();
+      var calls = 0;
 
-    when(() => analytics.setUserId('g1')).thenAnswer((_) async {
-      calls++;
-      if (calls == 1) {
-        firstAttempt.complete();
-        await releaseFirstAttempt.future;
-        throw StateError('analytics unavailable');
-      }
-    });
+      when(() => analytics.setUserId('g1')).thenAnswer((_) async {
+        calls++;
+        if (calls == 1) {
+          firstAttempt.complete();
+          await releaseFirstAttempt.future;
+          throw StateError('analytics unavailable');
+        }
+      });
 
-    auth.add(guest);
-    await firstAttempt.future;
+      auth.add(guest);
+      await firstAttempt.future;
 
-    // The second emission happens while the first update is still pending.
-    // It carries the same UID but a different account state, as a link does;
-    // an identical UserEntity would compare equal and never reach the
-    // listener at all.
-    auth.add(const UserEntity(id: 'g1', email: 'ravi@example.com'));
-    await pumpEventQueue();
+      // The second emission happens while the first update is still pending.
+      // It carries the same UID but a different account state, as a link does;
+      // an identical UserEntity would compare equal and never reach the
+      // listener at all.
+      auth.add(const UserEntity(id: 'g1', email: 'ravi@example.com'));
+      await pumpEventQueue();
 
-    releaseFirstAttempt.complete();
-    await pumpEventQueue();
-    await pumpEventQueue();
+      releaseFirstAttempt.complete();
+      await pumpEventQueue();
+      await pumpEventQueue();
 
-    verify(() => analytics.setUserId('g1')).called(2);
-    verify(() => crashlytics.setUserIdentifier('g1')).called(2);
-  });
+      verify(() => analytics.setUserId('g1')).called(2);
+      verify(() => crashlytics.setUserIdentifier('g1')).called(2);
+    },
+  );
 
   test('a failed update is tried again when the same UID comes back', () async {
     var failures = 1;

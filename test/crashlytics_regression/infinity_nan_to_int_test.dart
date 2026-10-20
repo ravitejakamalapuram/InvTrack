@@ -27,14 +27,13 @@ void main() {
       mockPrefs = await SharedPreferences.getInstance();
     });
 
-    testWidgets('FireProgressRing handles Infinity progress without crashing',
-        (tester) async {
+    testWidgets('FireProgressRing handles Infinity progress without crashing', (
+      tester,
+    ) async {
       // Regression test for Crashlytics issue d4131a2ceec52d1a8fb783a8e187559e
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(mockPrefs),
-          ],
+          overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
           child: const MaterialApp(
             home: Scaffold(
               body: FireProgressRing(
@@ -55,14 +54,13 @@ void main() {
       expect(find.text('0%'), findsOneWidget);
     });
 
-    testWidgets('FireProgressRing handles NaN progress without crashing',
-        (tester) async {
+    testWidgets('FireProgressRing handles NaN progress without crashing', (
+      tester,
+    ) async {
       // Regression test for Crashlytics issue f44a8b7d80af757a18f4b70b08dd7846
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(mockPrefs),
-          ],
+          overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
           child: const MaterialApp(
             home: Scaffold(
               body: FireProgressRing(
@@ -83,8 +81,9 @@ void main() {
       expect(find.text('0%'), findsOneWidget);
     });
 
-    testWidgets('GoalProgressRing handles Infinity without crashing',
-        (tester) async {
+    testWidgets('GoalProgressRing handles Infinity without crashing', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -102,8 +101,9 @@ void main() {
       expect(find.text('0%'), findsOneWidget);
     });
 
-    testWidgets('GoalProgressRingLarge handles NaN without crashing',
-        (tester) async {
+    testWidgets('GoalProgressRingLarge handles NaN without crashing', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(

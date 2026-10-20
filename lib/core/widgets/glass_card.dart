@@ -230,7 +230,7 @@ class GlassHeroCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(borderRadius),
-          child: Ink(child: cardContent)
+          child: Ink(child: cardContent),
         ),
       );
     }

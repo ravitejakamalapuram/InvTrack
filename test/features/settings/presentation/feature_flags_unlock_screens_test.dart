@@ -190,17 +190,18 @@ void main() {
       expect(find.text('Debug Settings'), findsNothing);
     });
 
-    testWidgets('unlocked: Feature flags entry shows, Debug Settings does not', (
-      tester,
-    ) async {
-      final c = await pumpSettings(tester);
+    testWidgets(
+      'unlocked: Feature flags entry shows, Debug Settings does not',
+      (tester) async {
+        final c = await pumpSettings(tester);
 
-      c.read(featureFlagUnlockProvider.notifier).toggle();
-      await tester.pumpAndSettle();
+        c.read(featureFlagUnlockProvider.notifier).toggle();
+        await tester.pumpAndSettle();
 
-      expect(find.text('Feature flags'), findsOneWidget);
-      expect(find.text('Debug Settings'), findsNothing);
-    });
+        expect(find.text('Feature flags'), findsOneWidget);
+        expect(find.text('Debug Settings'), findsNothing);
+      },
+    );
 
     testWidgets('unlocked, then signed out: the entry is gone', (tester) async {
       final c = await pumpSettings(tester);
@@ -268,8 +269,9 @@ void main() {
     });
 
     test('the Help FAQ says five taps, like the gesture does', () {
-      final arb = jsonDecode(File('lib/l10n/app_en.arb').readAsStringSync())
-          as Map<String, dynamic>;
+      final arb =
+          jsonDecode(File('lib/l10n/app_en.arb').readAsStringSync())
+              as Map<String, dynamic>;
       for (final key in [
         'howToEnableDebugModeAnswer',
         'howToDisableDebugModeAnswer',

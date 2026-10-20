@@ -226,7 +226,6 @@ void main() {
       },
     );
 
-
     test(
       'a slow cash-flow read cannot recreate a reminder after a newer create cancelled it',
       () async {

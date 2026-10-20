@@ -202,9 +202,9 @@ void main() {
         ]) {
           final text = status.colorForBrightness(Brightness.light);
           final tint = composeOver(
-            status.vividColorForBrightness(Brightness.light).withValues(
-              alpha: 0.15,
-            ),
+            status
+                .vividColorForBrightness(Brightness.light)
+                .withValues(alpha: 0.15),
             AppColors.cardLight,
           );
           expect(

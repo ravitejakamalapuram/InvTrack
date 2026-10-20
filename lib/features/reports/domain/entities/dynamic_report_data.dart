@@ -163,20 +163,12 @@ class ChartData {
   });
 }
 
-enum ChartType {
-  bar,
-  line,
-  pie,
-}
+enum ChartType { bar, line, pie }
 
 class ChartDataPoint {
   final String label;
   final double value;
   final DateTime? date;
 
-  const ChartDataPoint({
-    required this.label,
-    required this.value,
-    this.date,
-  });
+  const ChartDataPoint({required this.label, required this.value, this.date});
 }
