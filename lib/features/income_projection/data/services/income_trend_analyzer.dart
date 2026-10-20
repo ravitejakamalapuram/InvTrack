@@ -114,7 +114,7 @@ class IncomeTrendAnalyzer {
     }
 
     // Batch convert all income cash flows to base currency (OPTIMIZED)
-    final convertedCashFlows = await engine.currency.batchConvert(
+    final convertedCashFlows = await engine.currency.batchConvertToBase(
       cashFlows: incomeCashFlows,
       baseCurrency: baseCurrency,
     );
@@ -267,7 +267,7 @@ class IncomeTrendAnalyzer {
     if (incomeCashFlows.isEmpty) return [];
 
     // Batch convert all income cash flows to base currency (OPTIMIZED)
-    final convertedCashFlows = await engine.currency.batchConvert(
+    final convertedCashFlows = await engine.currency.batchConvertToBase(
       cashFlows: incomeCashFlows,
       baseCurrency: baseCurrency,
     );
@@ -346,7 +346,7 @@ class IncomeTrendAnalyzer {
       if (topSource != null) {
         insights.add('${topSource.percentage.toStringAsFixed(0)}% of income from ${topSource.investmentName}. Consider diversifying.');
       }
-    } else if (diversificationScore < 0.15) {
+    } else if (diversificationScore < 0.15 && incomeSources.isNotEmpty) {
       insights.add('Excellent diversification! Your income is well-balanced across investments.');
     }
 

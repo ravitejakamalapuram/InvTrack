@@ -87,7 +87,13 @@ enum FeatureFlag {
 
   /// Monthly recap screen and notification (reports plan, phase 1). Off
   /// until a release PR turns it on.
-  monthlyRecap('monthly_recap', 'Monthly Recap');
+  monthlyRecap('monthly_recap', 'Monthly Recap'),
+
+  /// Quiet Overview banner telling guests their data lives only on this
+  /// device, with a Link Google button (A43, #786).
+  /// - Hidden for 14 days after a dismiss
+  /// - Off by default; it ships by changing the default in a release PR
+  guestLinkBanner('guest_link_banner', 'Guest Link Banner');
 
   const FeatureFlag(this.key, this.displayName, {this.defaultEnabled = false});
 
@@ -235,6 +241,15 @@ final isIncomeGuardianEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.incomeGuardian] ?? false,
+    ),
+  );
+});
+
+/// Whether the guest link banner is enabled
+final isGuestLinkBannerEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagsProvider.select(
+      (flags) => flags[FeatureFlag.guestLinkBanner] ?? false,
     ),
   );
 });

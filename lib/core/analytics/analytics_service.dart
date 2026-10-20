@@ -121,6 +121,9 @@ class AnalyticsEvents {
   static const String xirrViewed = 'xirr_viewed';
   static const String accountLinkSuccess = 'account_link_success';
   static const String accountLinkFailure = 'account_link_failure';
+  static const String guestLinkBannerShown = 'guest_link_banner_shown';
+  static const String guestLinkBannerTapped = 'guest_link_banner_tapped';
+  static const String guestLinkBannerDismissed = 'guest_link_banner_dismissed';
 
   // Investment lifecycle
   static const String investmentClosed = 'investment_closed';
@@ -543,6 +546,18 @@ class AnalyticsService {
       parameters: {'reason': reason},
     );
   }
+
+  /// Log that the Overview guest link banner was shown (once per process).
+  Future<void> logGuestLinkBannerShown() =>
+      logEvent(name: AnalyticsEvents.guestLinkBannerShown);
+
+  /// Log a tap on the banner's Link Google button.
+  Future<void> logGuestLinkBannerTapped() =>
+      logEvent(name: AnalyticsEvents.guestLinkBannerTapped);
+
+  /// Log that the guest dismissed the banner.
+  Future<void> logGuestLinkBannerDismissed() =>
+      logEvent(name: AnalyticsEvents.guestLinkBannerDismissed);
 
   /// Log CSV import completed
   Future<void> logCsvImportCompleted({

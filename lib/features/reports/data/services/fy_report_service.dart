@@ -12,7 +12,6 @@ import 'package:inv_tracker/core/calculations/calculation_engine.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/core/calculations/tax_and_basis_calculator.dart';
-import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
@@ -43,11 +42,11 @@ class FYReportService {
     final fyEnd = DateTime(fyYear + 1, 3, 31, 23, 59, 59);
     final fyLabel = '$fyYear-${(fyYear + 1) % 100}';
 
-    // Convert all cash flows to base currency
-    final baseCashFlows = await _engine.currency.batchConvert(
+    // Convert all cash flows to base currency; a flow with no rate is left
+    // out rather than summed in its own currency.
+    final baseCashFlows = await _engine.currency.batchConvertToBase(
       cashFlows: allCashFlows,
       baseCurrency: baseCurrency,
-      fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
     );
 
     // Calculate totals

@@ -270,6 +270,23 @@ void main() {
       },
     );
 
+    test('signOut cleans up the signed-out user\'s device data', () async {
+      String? cleanedUp;
+      final repo = FirebaseAuthRepository(
+        firebaseAuth: mockFirebaseAuth,
+        googleSignIn: mockGoogleSignIn,
+        onSignedOut: (uid) async => cleanedUp = uid,
+      );
+      when(() => mockUser.uid).thenReturn('user-1');
+      when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+      when(() => mockGoogleSignIn.signOut()).thenAnswer((_) async {});
+      when(() => mockFirebaseAuth.signOut()).thenAnswer((_) async {});
+
+      await repo.signOut();
+
+      expect(cleanedUp, 'user-1');
+    });
+
     test('reauthenticateWithGoogle handles exceptions', () async {
       // Arrange
       when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);

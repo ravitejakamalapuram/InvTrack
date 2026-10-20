@@ -8,6 +8,7 @@ import 'package:timezone/data/latest.dart' as tz_data;
 import '../../mocks/mock_notification_service.dart';
 
 void main() {
+  _reportSummaryGateTests();
   late FakeFlutterLocalNotificationsPlugin fakePlugin;
   late SharedPreferences prefs;
   late NotificationService service;
@@ -17,7 +18,8 @@ void main() {
     fakePlugin = FakeFlutterLocalNotificationsPlugin();
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
-    service = NotificationService(fakePlugin, prefs);
+    service = NotificationService(fakePlugin, prefs)
+      ..reportsRouteEnabled = true;
   });
 
   tearDown(() {
@@ -1673,7 +1675,7 @@ void main() {
         fakePlugin,
         prefs,
         clock: () => fakeNow,
-      );
+      )..reportsRouteEnabled = true;
     });
 
     InvestmentEntity investment({
@@ -1959,6 +1961,61 @@ void main() {
         scheduledAt(NotificationIds.incomeReminder('inv-p2p')),
         DateTime(2026, 10, 15, 9),
       );
+    });
+  });
+}
+
+void _reportSummaryGateTests() {
+  late FakeFlutterLocalNotificationsPlugin plugin;
+  late NotificationService service;
+
+  setUp(() async {
+    tz_data.initializeTimeZones();
+    plugin = FakeFlutterLocalNotificationsPlugin();
+    SharedPreferences.setMockInitialValues({});
+    service = NotificationService(
+      plugin,
+      await SharedPreferences.getInstance(),
+    );
+  });
+
+  group('A29: summaries that open Reports', () {
+    test('are not scheduled while the Reports route is disabled', () async {
+      service.reportsRouteEnabled = false;
+
+      await service.scheduleWeeklySummary();
+      await service.scheduleMonthlySummary();
+      await service.scheduleFYSummary();
+
+      expect(plugin.scheduledNotifications, isEmpty);
+      expect(
+        plugin.cancelledNotificationIds,
+        containsAll([
+          NotificationIds.weeklySummary,
+          NotificationIds.monthlySummary,
+          NotificationIds.fySummary,
+        ]),
+      );
+    });
+
+    test('are scheduled once the Reports route is enabled', () async {
+      service.reportsRouteEnabled = true;
+
+      await service.scheduleWeeklySummary();
+      await service.scheduleMonthlySummary();
+      await service.scheduleFYSummary();
+
+      expect(plugin.scheduledNotifications.map((n) => n.id), [
+        NotificationIds.weeklySummary,
+        NotificationIds.monthlySummary,
+        NotificationIds.fySummary,
+      ]);
+    });
+
+    test('are off by default, until the app says Reports is on', () async {
+      await service.scheduleWeeklySummary();
+
+      expect(plugin.scheduledNotifications, isEmpty);
     });
   });
 }

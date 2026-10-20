@@ -19,6 +19,7 @@ import 'package:inv_tracker/features/income_projection/domain/repositories/expec
 import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/settings/data/services/investment_backup_json.dart';
+import 'package:inv_tracker/features/settings/data/services/zip_off_ui_thread.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
@@ -395,10 +396,7 @@ class DataExportService {
     }
 
     // 5. Encode to ZIP
-    final zipData = ZipEncoder().encode(archive);
-    if (zipData == null) {
-      throw Exception('Failed to create ZIP archive');
-    }
+    final zipData = await encodeZipOffUiThread(archive);
     return ZipExport(
       bytes: Uint8List.fromList(zipData),
       investments: allInvestments.length,
@@ -549,7 +547,9 @@ class DataExportService {
 
   /// Generate CSV for the dated valuations users entered (money rule 6).
   /// Format: Investment Name, Archived, Date, Value, Currency, Snapshot ID,
-  /// Kind, Source, Updated At, Investment Type, Investment Status.
+  /// Kind, Source, Updated At, Investment Type, Investment Status, Investment
+  /// ID. The ID is last, and names the investment the way cashflows.csv does,
+  /// so same-name investments keep their own values.
   ///
   /// The first five columns are the ones older versions read, which keep the
   /// last row per investment: so each investment's rows go oldest first and
@@ -575,6 +575,7 @@ class DataExportService {
         'Updated At',
         'Investment Type',
         'Investment Status',
+        'Investment ID',
       ],
     ];
     for (final (inv, isArchived) in [
@@ -594,6 +595,7 @@ class DataExportService {
           row.updatedAt?.toUtc().toIso8601String() ?? '',
           inv.type.name,
           inv.status.name,
+          inv.id,
         ]);
       }
     }
@@ -650,8 +652,8 @@ class DataExportService {
   /// Generate custom_types.json (#936): the account's reusable types and the
   /// custom type label of each Other investment, or null if there is neither.
   /// JSON, so a label needs no spreadsheet-formula protection and comes back
-  /// exactly. Ids are not exported: an import matches types by label, and
-  /// investments by (archived, name) like valuations.csv. `linked` says
+  /// exactly. Reusable types are matched by label; an investment is named by
+  /// its id, and by (archived, name) in files from before ids. `linked` says
   /// whether the investment referred to a reusable type or carried a label
   /// for itself only.
   String? _generateCustomTypesJson({
@@ -674,6 +676,7 @@ class DataExportService {
         // Spelled as in cashflows.csv and valuations.csv, which an import
         // matches the investment by.
         'name': CsvUtils.sanitizeField(inv.name),
+        'investmentId': inv.id,
         'archived': isArchived,
         'label': label,
         'linked': inv.customTypeId != null,

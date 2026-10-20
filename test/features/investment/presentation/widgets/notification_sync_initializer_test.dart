@@ -69,10 +69,12 @@ void main() {
   Future<ProviderContainer> pumpInitializer(
     WidgetTester tester, {
     bool recap = false,
+    bool reports = true,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          isReportsTabEnabledProvider.overrideWithValue(reports),
           if (recap) ...[
             isMonthlyRecapEnabledProvider.overrideWith(
               (ref) => ref.watch(_recapFlag),
@@ -167,6 +169,24 @@ void main() {
       final ids = fakePlugin.scheduledNotifications.map((n) => n.id);
       expect(ids, contains(NotificationIds.weeklyCheckIn));
       expect(ids, contains(NotificationIds.fySummary));
+    });
+
+    // A29: the FY summary opens a report, so it waits for the Reports route.
+    testWidgets('keeps report summaries off while Reports is off', (
+      tester,
+    ) async {
+      await pumpInitializer(tester, reports: false);
+      auth.add(user('uid-a'));
+      await settle(tester);
+      auth.add(null);
+      await settle(tester);
+      auth.add(user('uid-b'));
+      await settle(tester);
+
+      final ids = fakePlugin.scheduledNotifications.map((n) => n.id);
+      expect(ids, contains(NotificationIds.weeklyCheckIn));
+      expect(ids, isNot(contains(NotificationIds.fySummary)));
+      expect(ids, isNot(contains(NotificationIds.weeklySummary)));
     });
   });
 

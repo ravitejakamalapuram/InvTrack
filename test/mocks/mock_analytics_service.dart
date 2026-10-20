@@ -105,6 +105,18 @@ class FakeAnalyticsService implements AnalyticsService {
   }
 
   @override
+  Future<void> logGuestLinkBannerShown() =>
+      logEvent(name: AnalyticsEvents.guestLinkBannerShown);
+
+  @override
+  Future<void> logGuestLinkBannerTapped() =>
+      logEvent(name: AnalyticsEvents.guestLinkBannerTapped);
+
+  @override
+  Future<void> logGuestLinkBannerDismissed() =>
+      logEvent(name: AnalyticsEvents.guestLinkBannerDismissed);
+
+  @override
   Future<void> logAccountLinkFailure({required String reason}) async {
     await logEvent(
       name: AnalyticsEvents.accountLinkFailure,

@@ -1,6 +1,7 @@
 name: Deploy Firestore rules
 
-# Manual only. Deploys firestore.rules from main to the production Firebase project.
+# Manual only, and only from main. Deploys firestore.rules to the production Firebase project.
+# The `production` environment is where required reviewers belong (repo Settings -> Environments).
 on:
   workflow_dispatch: {}
 
@@ -11,17 +12,24 @@ permissions:
 jobs:
   deploy-rules:
     name: deploy-rules
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    concurrency:
+      group: deploy-firestore-rules
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
       - name: Authenticate to Google Cloud (keyless)
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           workload_identity_provider: projects/784857267556/locations/global/workloadIdentityPools/github/providers/github-oidc
           service_account: admin-bot@invtracker-b19d1.iam.gserviceaccount.com
       - name: Deploy rules
-        run: npx --yes firebase-tools@latest deploy --only firestore:rules --project invtracker-b19d1 --non-interactive
+        run: npx --yes firebase-tools@15.34.0 deploy --only firestore:rules --project invtracker-b19d1 --non-interactive

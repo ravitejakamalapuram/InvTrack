@@ -47,6 +47,8 @@ void main() {
       await settle();
       expect(container.read(authStateProvider).value, guestUser);
       final routerBefore = container.read(routerProvider);
+      var refreshes = 0;
+      routerBefore.routeInformationProvider.addListener(() => refreshes++);
 
       // Firebase reports the link: same UID, no longer anonymous.
       const linked = UserEntity(
@@ -60,18 +62,32 @@ void main() {
       expect(container.read(authStateProvider).value, linked);
       expect(container.read(authStateProvider).value!.isAnonymous, isFalse);
       expect(identical(container.read(routerProvider), routerBefore), isTrue);
+      expect(refreshes, 0, reason: 'same UID: nothing to redo');
     },
   );
 
-  test('signing in as a different user still rebuilds the router', () async {
-    container.listen(routerProvider, (_, _) {});
-    await settle();
-    final routerBefore = container.read(routerProvider);
+  test(
+    'signing in as a different user keeps the router and re-runs its redirects',
+    () async {
+      container.listen(routerProvider, (_, _) {});
+      await settle();
+      final routerBefore = container.read(routerProvider);
+      routerBefore.go('/investments');
+      expect(
+        routerBefore.routeInformationProvider.value.uri.path,
+        '/investments',
+      );
 
-    authRepo.emit(googleUser);
-    await settle();
-    expect(container.read(authStateProvider).value, googleUser);
+      authRepo.emit(googleUser);
+      await settle();
+      expect(container.read(authStateProvider).value, googleUser);
 
-    expect(identical(container.read(routerProvider), routerBefore), isFalse);
-  });
+      expect(identical(container.read(routerProvider), routerBefore), isTrue);
+      expect(
+        routerBefore.routeInformationProvider.value.uri.path,
+        '/',
+        reason: "a new user starts from Overview, not the last user's page",
+      );
+    },
+  );
 }

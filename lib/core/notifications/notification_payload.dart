@@ -183,8 +183,9 @@ class NotificationPayload {
         );
 
       case 'weekly_check_in':
+        // No investment is named, so open the list to pick one.
         return NotificationPayload(
-          type: NotificationPayloadType.addCashFlow,
+          type: NotificationPayloadType.investmentList,
           params: {'flowType': 'income', 'source': 'weekly_check_in'},
         );
 

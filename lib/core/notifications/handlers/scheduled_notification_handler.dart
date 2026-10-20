@@ -34,12 +34,24 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
   @override
   SharedPreferences get prefs => _prefs;
 
+  /// The weekly, monthly and FY summaries open a report; with Reports off the
+  /// tap would land on Overview with nothing to show, so they are not
+  /// scheduled (and any pending one is cancelled).
+  bool reportsRouteEnabled = false;
+
+  Future<bool> _reportsOff(int id) async {
+    if (reportsRouteEnabled) return false;
+    await _plugin.cancel(id: id);
+    return true;
+  }
+
   // ============ Weekly & Monthly Summaries ============
 
   /// Schedule weekly summary notification (every Sunday at 10 AM)
   Future<void> scheduleWeeklySummary() async {
     await ensureInitialized();
     if (!weeklySummaryEnabled) return;
+    if (await _reportsOff(NotificationIds.weeklySummary)) return;
 
     await _plugin.cancel(id: NotificationIds.weeklySummary);
 
@@ -94,6 +106,7 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
   Future<void> scheduleMonthlySummary() async {
     await ensureInitialized();
     if (!monthlySummaryEnabled) return;
+    if (await _reportsOff(NotificationIds.monthlySummary)) return;
 
     await _plugin.cancel(id: NotificationIds.monthlySummary);
 
@@ -415,6 +428,7 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
   Future<void> scheduleFYSummary() async {
     await ensureInitialized();
     if (!fySummaryEnabled) return;
+    if (await _reportsOff(NotificationIds.fySummary)) return;
 
     await _plugin.cancel(id: NotificationIds.fySummary);
 

@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
 import 'package:inv_tracker/core/providers/feature_flag_unlock_provider.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/widgets/currency_picker_sheet.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/handlers/google_sign_in_handler.dart';
@@ -189,8 +190,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   iconColor: Colors.orange,
                   title: l10n.featureFlagsScreenTitle,
                   subtitle: l10n.featureFlagsTileSubtitle,
-                  onTap: () =>
-                      _navigateTo(context, const FeatureFlagsScreen()),
+                  onTap: () => _navigateTo(context, const FeatureFlagsScreen()),
                 ),
               ],
             ),
@@ -253,7 +253,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
-    if (confirmed ?? false) await _signOut(ref);
+    if ((confirmed ?? false) && context.mounted) await _signOut(context, ref);
   }
 
   /// A guest cannot sign back in to an anonymous account, so signing out
@@ -276,11 +276,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ErrorHandler.handle(e, st, context: context, showFeedback: true);
         }
       case _GuestSignOutChoice.signOut:
-        await _signOut(ref);
+        await _signOut(context, ref);
     }
   }
 
-  Future<void> _signOut(WidgetRef ref) async {
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    // Signing out clears this device's offline cache, which also holds edits
+    // that have not reached the server.
+    final unsynced = await ref
+        .read(signOutCleanupServiceProvider)
+        .hasUnsyncedWrites();
+    if (!context.mounted) return;
+    if (unsynced) {
+      final l10n = AppLocalizations.of(context);
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.signOutUnsyncedTitle),
+          content: Text(l10n.signOutUnsyncedMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(l10n.signOutAnyway),
+            ),
+          ],
+        ),
+      );
+      if (!(proceed ?? false) || !context.mounted) return;
+    }
     // The Analytics and Crashlytics user IDs are cleared when the auth state
     // empties (userIdentitySyncProvider).
     await ref.read(authRepositoryProvider).signOut();
@@ -473,67 +500,11 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
     return tile;
   }
 
-  void _showCurrencyPicker(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final settings = ref.read(settingsProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Get all supported currencies with localized names
-    final supportedCurrencies = {
-      'USD': l10n.currencyUSD,
-      'EUR': l10n.currencyEUR,
-      'GBP': l10n.currencyGBP,
-      'INR': l10n.currencyINR,
-      'JPY': l10n.currencyJPY,
-      'CAD': l10n.currencyCAD,
-      'AUD': l10n.currencyAUD,
-      'CHF': l10n.currencyCHF,
-      'CNY': l10n.currencyCNY,
-      'SGD': l10n.currencySGD,
-      'HKD': l10n.currencyHKD,
-      'BRL': l10n.currencyBRL,
-      'MXN': l10n.currencyMXN,
-      'ZAR': l10n.currencyZAR,
-    };
-
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (context) => Container(
-        padding: EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.selectCurrency, style: AppTypography.h3),
-            SizedBox(height: AppSpacing.md),
-            ...supportedCurrencies.entries.map((entry) {
-              final code = entry.key;
-              final name = entry.value;
-              final isSelected = settings.currency == code;
-
-              return ListTile(
-                leading: Icon(
-                  isSelected
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_unchecked,
-                  color: isSelected
-                      ? AppColors.primaryLight
-                      : (isDark
-                            ? AppColors.neutral400Dark
-                            : AppColors.neutral400Light),
-                ),
-                title: Text(name),
-                onTap: () {
-                  // Close the bottom sheet
-                  Navigator.pop(context);
-                  // Trigger currency switch with debouncing (prevents race conditions)
-                  _switchCurrency(code);
-                },
-              );
-            }),
-          ],
-        ),
-      ),
+  Future<void> _showCurrencyPicker(BuildContext context, WidgetRef ref) async {
+    final code = await showCurrencyPickerSheet(
+      context,
+      selected: ref.read(settingsProvider).currency,
     );
+    if (code != null) _switchCurrency(code);
   }
 }

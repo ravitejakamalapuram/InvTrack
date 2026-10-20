@@ -30,6 +30,10 @@
     "description": "Currency label"
   },
   
+  "searchCurrencies": "Search currencies...",
+  "@searchCurrencies": {
+    "description": "Hint in the currency picker search field"
+  },
   "selectCurrency": "Select Currency",
   "@selectCurrency": {
     "description": "Select currency dialog title"
@@ -276,6 +280,21 @@
   "signOutConfirmMessage": "Are you sure you want to sign out?",
   "@signOutConfirmMessage": {
     "description": "Sign out confirmation dialog message"
+  },
+
+  "signOutUnsyncedTitle": "Some changes have not synced",
+  "@signOutUnsyncedTitle": {
+    "description": "Title of the warning shown when signing out while edits made offline have not reached the server"
+  },
+
+  "signOutUnsyncedMessage": "Changes you made offline have not reached the server yet. If you sign out now they will be lost. Connect to the internet and wait a moment to keep them.",
+  "@signOutUnsyncedMessage": {
+    "description": "Warning shown when signing out with unsynced offline edits"
+  },
+
+  "signOutAnyway": "Sign out anyway",
+  "@signOutAnyway": {
+    "description": "Button that signs out and discards unsynced offline edits"
   },
 
   "guestSignOutTitle": "Sign out of guest account?",
@@ -7569,5 +7588,35 @@
   "monthlyRecapFeature": "Monthly Recap",
   "@monthlyRecapFeature": {
     "description": "Debug settings title of the monthly recap flag"
+  },
+
+  "guestLinkFeature": "Guest Link Banner",
+  "@guestLinkFeature": {
+    "description": "Debug settings title of the guest link banner flag"
+  },
+
+  "guestLinkFeatureSubtitle": "Quiet Overview banner asking guests to link Google, hidden for 14 days after a dismiss",
+  "@guestLinkFeatureSubtitle": {
+    "description": "Debug settings subtitle of the guest link banner flag"
+  },
+
+  "guestLinkBannerTitle": "Your data is only on this phone",
+  "@guestLinkBannerTitle": {
+    "description": "Title of the quiet Overview banner shown to guests"
+  },
+
+  "guestLinkBannerMessage": "Link Google to back it up and keep it if you change phones.",
+  "@guestLinkBannerMessage": {
+    "description": "Body of the Overview banner that asks a guest to link a Google account"
+  },
+
+  "guestLinkBannerAction": "Link Google",
+  "@guestLinkBannerAction": {
+    "description": "Button of the guest link banner; starts Google sign-in to link the guest account"
+  },
+
+  "guestLinkBannerDismiss": "Dismiss",
+  "@guestLinkBannerDismiss": {
+    "description": "Accessibility label of the close button on the guest link banner; hides it for 14 days"
   }
 }

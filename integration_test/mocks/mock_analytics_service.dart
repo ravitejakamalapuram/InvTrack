@@ -70,6 +70,18 @@ class FakeAnalyticsService implements AnalyticsService {
       _log('account_link_failure', {'reason': reason});
 
   @override
+  Future<void> logGuestLinkBannerShown() async =>
+      _log('guest_link_banner_shown', {});
+
+  @override
+  Future<void> logGuestLinkBannerTapped() async =>
+      _log('guest_link_banner_tapped', {});
+
+  @override
+  Future<void> logGuestLinkBannerDismissed() async =>
+      _log('guest_link_banner_dismissed', {});
+
+  @override
   Future<void> logValuationSet({
     required String kind,
     required String provenance,

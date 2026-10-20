@@ -185,6 +185,10 @@ class FakeFlutterLocalNotificationsPlugin
   bool _allCancelled = false;
   bool permissionsGranted = true;
 
+  /// What [getNotificationAppLaunchDetails] reports; null means the app was
+  /// not started by a notification.
+  NotificationAppLaunchDetails? launchDetails;
+
   /// When set, [zonedSchedule] rejects a one-off date that is not in the
   /// future, as the real plugin does ("Must be a date in the future").
   DateTime Function()? now;
@@ -204,6 +208,10 @@ class FakeFlutterLocalNotificationsPlugin
     _allCancelled = false;
     permissionsGranted = true;
   }
+
+  @override
+  Future<NotificationAppLaunchDetails?>
+  getNotificationAppLaunchDetails() async => launchDetails;
 
   @override
   Future<bool?> initialize({

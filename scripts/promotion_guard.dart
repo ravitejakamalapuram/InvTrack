@@ -9,14 +9,18 @@
 // a re-run reuses the inputs and the guard result of the original run. Halting
 // is never blocked.
 //
+// The 48 h count starts at the rollout record that release-platform's promote
+// job writes after it read the staged production release back from Play (a
+// GitHub deployment in the `play-production` environment). With no record the
+// guard refuses to widen. The guard also passes the version codes it counted
+// the soak for to the promote job, which checks that Play still holds exactly
+// those codes in progress before it changes anything (A84).
+//
 // Run by the workflow as `dart run scripts/promotion_guard.dart` with these
-// environment variables: ACTION, TO_TRACK, USER_FRACTION, RELEASED_AT
-// (ISO 8601, the latest GitHub Release), PROMOTE_RUNS (JSON from
-// `gh run list --workflow promote.yml --status success --json
-// displayTitle,createdAt,updatedAt`), AUTO_RELEASE_RUNS (JSON from
-// `gh run list --workflow auto-release.yml --status success --json
-// createdAt,updatedAt`) and CRASH_FREE_USERS (percent). GitHub Actions sets
-// GITHUB_REF and GITHUB_RUN_ATTEMPT.
+// environment variables: ACTION, TO_TRACK, USER_FRACTION, ROLLOUT_RECORDS
+// (JSON from `gh api repos/$GITHUB_REPOSITORY/deployments?environment=
+// play-production&per_page=100`) and CRASH_FREE_USERS (percent). GitHub
+// Actions sets GITHUB_REF, GITHUB_RUN_ATTEMPT and GITHUB_OUTPUT.
 import 'dart:convert';
 import 'dart:io';
 
@@ -35,30 +39,31 @@ const double stagedRolloutFraction = 0.05;
 const String _productionTrack = 'production';
 const String _mainRef = 'refs/heads/main';
 
-/// A successful workflow run: when it was dispatched and when it finished.
-class WorkflowRun {
-  const WorkflowRun({required this.createdAt, required this.finishedAt});
+/// A staged production rollout that Play confirmed, as recorded by
+/// release-platform's promote job.
+class RolloutRecord {
+  const RolloutRecord({required this.startedAt, required this.versionCodes});
 
-  final DateTime createdAt;
+  /// When the staged production rollout was read back from Play.
+  final DateTime startedAt;
 
-  /// When the run's last job finished, so any Play call in it is done.
-  final DateTime finishedAt;
+  /// The version codes of the in-progress release, sorted.
+  final List<String> versionCodes;
 }
 
 /// Returns why the promotion must not run, or null when it may run.
 ///
 /// [ref] and [runAttempt] are GitHub's `GITHUB_REF` and `GITHUB_RUN_ATTEMPT`.
-/// The 48 h count starts at [rolloutSoakStart]. A null history means it could
-/// not be read, so going above [stagedRolloutFraction] is refused.
+/// The 48 h count starts at the latest of [rolloutRecords]. A null history
+/// means it could not be read, so going above [stagedRolloutFraction] is
+/// refused.
 String? promotionBlockReason({
   required String action,
   required String toTrack,
   required String userFraction,
   required String ref,
   required String runAttempt,
-  required DateTime? releasedAt,
-  required List<DateTime>? partialRolloutStarts,
-  required List<WorkflowRun>? autoReleaseRuns,
+  required List<RolloutRecord>? rolloutRecords,
   required DateTime now,
   required String crashFreeUsers,
 }) {
@@ -94,12 +99,7 @@ String? promotionBlockReason({
   }
 
   if (aboveStaged) {
-    final reason = _soakBlockReason(
-      releasedAt: releasedAt,
-      partialRolloutStarts: partialRolloutStarts,
-      autoReleaseRuns: autoReleaseRuns,
-      now: now,
-    );
+    final reason = _soakBlockReason(records: rolloutRecords, now: now);
     if (reason != null) return reason;
   }
 
@@ -116,30 +116,20 @@ String? promotionBlockReason({
 }
 
 String? _soakBlockReason({
-  required DateTime? releasedAt,
-  required List<DateTime>? partialRolloutStarts,
-  required List<WorkflowRun>? autoReleaseRuns,
+  required List<RolloutRecord>? records,
   required DateTime now,
 }) {
-  if (releasedAt == null) {
-    return 'Cannot find when the latest release went out, so the 48 h '
-        'partial rollout cannot be confirmed.';
+  if (records == null) {
+    return 'Cannot read the rollout records, so the 48 h partial rollout '
+        'cannot be confirmed.';
   }
-  if (partialRolloutStarts == null || autoReleaseRuns == null) {
-    return 'Cannot read the promote or auto-release history, so the 48 h '
-        'partial rollout cannot be confirmed.';
+  final latest = latestRolloutRecord(records);
+  if (latest == null) {
+    return 'Cannot confirm when the partial production rollout started: no '
+        'rollout record was found. Promote the release to production at 0.05 '
+        'with promote.yml first.';
   }
-  final start = rolloutSoakStart(
-    releasedAt: releasedAt,
-    partialRolloutStarts: partialRolloutStarts,
-    autoReleaseRuns: autoReleaseRuns,
-  );
-  if (start == null) {
-    return 'Cannot confirm when the partial production rollout of the latest '
-        'release started: no successful auto-release or partial promote run '
-        'for it was found. Promote it to production at 0.05 first.';
-  }
-  final soaked = now.difference(start);
+  final soaked = now.difference(latest.startedAt);
   if (soaked < minimumSoak) {
     final hours = (soaked.inMinutes / 60).toStringAsFixed(1);
     return 'This build has been at a partial production rollout for $hours '
@@ -148,88 +138,59 @@ String? _soakBlockReason({
   return null;
 }
 
-/// When the partial production rollout of the release published at
-/// [releasedAt] started, or null when no run shows that it did.
-///
-/// Counts the finish of each successful run that could have made the Play
-/// call for this release: a partial `promote` to production that finished
-/// at or after [releasedAt], and an auto-release run that was running when
-/// the release was published (it promotes to 5% after creating the release).
-/// Returns the latest of them, so a delayed or re-run Play call restarts
-/// the count.
-DateTime? rolloutSoakStart({
-  required DateTime releasedAt,
-  required List<DateTime> partialRolloutStarts,
-  required List<WorkflowRun> autoReleaseRuns,
-}) {
-  DateTime? start;
-  void consider(DateTime time) {
-    if (start == null || time.isAfter(start!)) start = time;
-  }
-
-  for (final finished in partialRolloutStarts) {
-    if (!finished.isBefore(releasedAt)) consider(finished);
-  }
-  for (final run in autoReleaseRuns) {
-    if (!run.createdAt.isAfter(releasedAt) &&
-        !run.finishedAt.isBefore(releasedAt)) {
-      consider(run.finishedAt);
+/// The most recently started rollout, or null when there is none.
+RolloutRecord? latestRolloutRecord(List<RolloutRecord> records) {
+  RolloutRecord? latest;
+  for (final record in records) {
+    if (latest == null || record.startedAt.isAfter(latest.startedAt)) {
+      latest = record;
     }
   }
-  return start;
+  return latest;
 }
 
-/// Matches promote.yml's `run-name`.
-final RegExp _runTitle = RegExp(
-  r'^promote action=(\S*) to=(.*) fraction=(.*)$',
-);
-
-/// When each successful promote.yml run in [runsJson] that started a partial
-/// production rollout (`promote` to production at a fraction below 1)
-/// finished.
-///
-/// [runsJson] is the output of `gh run list --workflow promote.yml --status
-/// success --json displayTitle,createdAt,updatedAt`. Runs with other titles
-/// are ignored. Returns null when [runsJson] cannot be read, or when a
-/// matching run has no finish time.
-List<DateTime>? partialRolloutStarts(String runsJson) {
-  final decoded = _decodeList(runsJson);
-  if (decoded == null) return null;
-
-  final starts = <DateTime>[];
-  for (final run in decoded) {
-    if (run is! Map) continue;
-    final title = run['displayTitle'];
-    if (title is! String) continue;
-    final match = _runTitle.firstMatch(title.trim());
-    if (match == null || match.group(1) != 'promote') continue;
-    if (!_isProduction(match.group(2)!)) continue;
-    final fraction = _parseFraction(match.group(3)!);
-    if (fraction == null || fraction >= 1) continue;
-    final finished = _parseTime(run['updatedAt']);
-    if (finished == null) return null;
-    starts.add(finished);
-  }
-  return starts;
+/// Whether the action goes above [stagedRolloutFraction] on production, so it
+/// needs the 48 h soak and a confirmation of the soaked release on Play.
+bool soakRequired({
+  required String action,
+  required String toTrack,
+  required String userFraction,
+}) {
+  if (!const {'rollout', 'complete'}.contains(action)) return false;
+  if (!_isProduction(toTrack)) return false;
+  final fraction = action == 'complete' ? 1.0 : _parseFraction(userFraction);
+  return fraction != null && fraction > stagedRolloutFraction;
 }
 
-/// The successful auto-release.yml runs in [runsJson], the output of `gh run
-/// list --workflow auto-release.yml --status success --json
-/// createdAt,updatedAt`. Returns null when it cannot be read or a run has no
-/// start or finish time.
-List<WorkflowRun>? autoReleaseRuns(String runsJson) {
-  final decoded = _decodeList(runsJson);
+/// The staged production rollouts in [deploymentsJson], the output of the
+/// deployments API for the `play-production` environment. Deployments that are
+/// not a valid staged production rollout are skipped. Returns null when
+/// [deploymentsJson] cannot be read.
+List<RolloutRecord>? rolloutRecords(String deploymentsJson) {
+  final decoded = _decodeList(deploymentsJson);
   if (decoded == null) return null;
 
-  final runs = <WorkflowRun>[];
-  for (final run in decoded) {
-    if (run is! Map) return null;
-    final created = _parseTime(run['createdAt']);
-    final finished = _parseTime(run['updatedAt']);
-    if (created == null || finished == null) return null;
-    runs.add(WorkflowRun(createdAt: created, finishedAt: finished));
+  final records = <RolloutRecord>[];
+  for (final deployment in decoded) {
+    if (deployment is! Map || deployment['environment'] != 'play-production') {
+      continue;
+    }
+    final payload = deployment['payload'];
+    if (payload is! Map) continue;
+    final track = payload['track'];
+    if (track is! String || !_isProduction(track)) continue;
+    if (payload['status'] != 'inProgress') continue;
+    final startedAt = _parseTime(payload['startedAt']);
+    final codes = payload['versionCodes'];
+    if (startedAt == null || codes is! List || codes.isEmpty) continue;
+    records.add(
+      RolloutRecord(
+        startedAt: startedAt,
+        versionCodes: [for (final code in codes) '$code']..sort(),
+      ),
+    );
   }
-  return runs;
+  return records;
 }
 
 List<Object?>? _decodeList(String json) {
@@ -259,22 +220,42 @@ double? _parseFraction(String raw) {
 
 void main() {
   final env = Platform.environment;
-  final releasedAtText = env['RELEASED_AT']?.trim() ?? '';
+  final action = env['ACTION'] ?? '';
+  final toTrack = env['TO_TRACK'] ?? '';
+  final userFraction = env['USER_FRACTION'] ?? '';
+  final records = rolloutRecords(env['ROLLOUT_RECORDS'] ?? '');
   final reason = promotionBlockReason(
-    action: env['ACTION'] ?? '',
-    toTrack: env['TO_TRACK'] ?? '',
-    userFraction: env['USER_FRACTION'] ?? '',
+    action: action,
+    toTrack: toTrack,
+    userFraction: userFraction,
     ref: env['GITHUB_REF'] ?? '',
     runAttempt: env['GITHUB_RUN_ATTEMPT'] ?? '',
-    releasedAt: DateTime.tryParse(releasedAtText),
-    partialRolloutStarts: partialRolloutStarts(env['PROMOTE_RUNS'] ?? ''),
-    autoReleaseRuns: autoReleaseRuns(env['AUTO_RELEASE_RUNS'] ?? ''),
+    rolloutRecords: records,
     now: DateTime.now().toUtc(),
     crashFreeUsers: env['CRASH_FREE_USERS'] ?? '',
   );
   if (reason != null) {
     stderr.writeln('::error::$reason');
     exit(1);
+  }
+  final latest = records == null ? null : latestRolloutRecord(records);
+  if (latest != null &&
+      soakRequired(
+        action: action,
+        toTrack: toTrack,
+        userFraction: userFraction,
+      )) {
+    final output = env['GITHUB_OUTPUT'];
+    if (output != null && output.isNotEmpty) {
+      File(output).writeAsStringSync(
+        'soak_version_codes=${latest.versionCodes.join(',')}\n',
+        mode: FileMode.append,
+      );
+    }
+    stdout.writeln(
+      'Soak counted for version codes ${latest.versionCodes.join(', ')} '
+      'from ${latest.startedAt.toIso8601String()}.',
+    );
   }
   stdout.writeln('Promotion allowed.');
 }

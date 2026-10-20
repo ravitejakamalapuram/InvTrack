@@ -249,8 +249,7 @@ class LocaleDetectionService {
   ///
   /// ## Supported Currencies
   ///
-  /// - USD, EUR, GBP, INR, JPY, CAD, AUD, CHF
-  /// - CNY, SGD, HKD, AED, SAR, BRL, MXN, ZAR
+  /// Every currency the app can format (see `_currencySymbols`).
   static Map<String, String> getSupportedCurrencies() {
     return {
       'USD': 'US Dollar (\$)',
@@ -269,6 +268,33 @@ class LocaleDetectionService {
       'BRL': 'Brazilian Real (R\$)',
       'MXN': 'Mexican Peso (MX\$)',
       'ZAR': 'South African Rand (R)',
+      'SEK': 'Swedish Krona (kr)',
+      'NOK': 'Norwegian Krone (kr)',
+      'DKK': 'Danish Krone (kr)',
+      'PLN': 'Polish Zloty (zł)',
+      'CZK': 'Czech Koruna (Kč)',
+      'HUF': 'Hungarian Forint (Ft)',
+      'RON': 'Romanian Leu (lei)',
+      'KRW': 'South Korean Won (₩)',
+      'TWD': 'New Taiwan Dollar (NT\$)',
+      'THB': 'Thai Baht (฿)',
+      'MYR': 'Malaysian Ringgit (RM)',
+      'IDR': 'Indonesian Rupiah (Rp)',
+      'PHP': 'Philippine Peso (₱)',
+      'VND': 'Vietnamese Dong (₫)',
+      'BDT': 'Bangladeshi Taka (৳)',
+      'PKR': 'Pakistani Rupee (₨)',
+      'LKR': 'Sri Lankan Rupee (Rs)',
+      'ILS': 'Israeli Shekel (₪)',
+      'TRY': 'Turkish Lira (₺)',
+      'NZD': 'New Zealand Dollar (NZ\$)',
+      'ARS': 'Argentine Peso (AR\$)',
+      'CLP': 'Chilean Peso (CL\$)',
+      'COP': 'Colombian Peso (CO\$)',
+      'PEN': 'Peruvian Sol (S/)',
+      'NGN': 'Nigerian Naira (₦)',
+      'KES': 'Kenyan Shilling (KSh)',
+      'EGP': 'Egyptian Pound (E£)',
     };
   }
 

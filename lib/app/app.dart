@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/theme/app_theme.dart';
 import 'package:inv_tracker/core/widgets/connectivity_listener.dart';
 import 'package:inv_tracker/core/widgets/currency_cache_initializer.dart';
+import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/widgets/pending_guest_backup_notice.dart';
 import 'package:inv_tracker/features/user_profile/presentation/widgets/profile_initializer.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
@@ -101,6 +102,8 @@ class _NotificationNavigationHandlerState
     super.initState();
     // Listen for pending navigation from notifications
     _subscription = pendingNavigationStream.listen(_handleNavigation);
+    // The tap that started the app arrived before anyone listened.
+    takeBufferedNotificationNavigation().forEach(_handleNavigation);
   }
 
   @override
@@ -110,13 +113,19 @@ class _NotificationNavigationHandlerState
   }
 
   Future<void> _handleNavigation(String payload) async {
-    // Wait a bit for the app to be fully ready
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (!mounted) return;
-
-    final navigator = ref.read(notificationNavigatorProvider);
-    final success = await navigator.handleNotificationTap(payload);
+    // Wait for the router and sign-in: a tap that started the app arrives
+    // before either is ready.
+    final success = await deliverNotificationTap(
+      payload,
+      isReady: () =>
+          !mounted ||
+          (rootNavigatorKey.currentContext != null &&
+              !ref.read(authStateProvider).isLoading),
+      handle: (p) async {
+        if (!mounted) return false;
+        return ref.read(notificationNavigatorProvider).handleNotificationTap(p);
+      },
+    );
 
     LoggerService.debug(
       'Notification navigation result',

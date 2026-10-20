@@ -48,13 +48,45 @@ final _pendingNavigationController = StreamController<String>.broadcast();
 Stream<String> get pendingNavigationStream =>
     _pendingNavigationController.stream;
 
+/// Taps that arrived before the app started listening, e.g. the tap that
+/// launched it from a killed state. A broadcast stream drops those.
+final _bufferedNavigation = <String>[];
+
+/// Returns and clears the taps that arrived before anyone listened.
+List<String> takeBufferedNotificationNavigation() {
+  final taps = List<String>.of(_bufferedNavigation);
+  _bufferedNavigation.clear();
+  return taps;
+}
+
 /// Queue a navigation for when the app is ready
 void queueNotificationNavigation(String payload) {
-  _pendingNavigationController.add(payload);
+  if (_pendingNavigationController.hasListener) {
+    _pendingNavigationController.add(payload);
+  } else {
+    _bufferedNavigation.add(payload);
+  }
   LoggerService.debug(
     'Queued notification navigation',
     metadata: {'payloadLength': payload.length},
   );
+}
+
+/// Hands [payload] to [handle] once the app can show a screen: the tap that
+/// starts a killed app arrives while the router and sign-in are still
+/// loading. Polls [isReady] up to [maxPolls] times, [pollEvery] apart, then
+/// tries once anyway so the failure is logged where the tap is handled.
+Future<bool> deliverNotificationTap(
+  String payload, {
+  required bool Function() isReady,
+  required Future<bool> Function(String payload) handle,
+  Duration pollEvery = const Duration(milliseconds: 500),
+  int maxPolls = 20,
+}) async {
+  for (var i = 0; i < maxPolls && !isReady(); i++) {
+    await Future<void>.delayed(pollEvery);
+  }
+  return handle(payload);
 }
 
 /// Handles navigation from notification payloads

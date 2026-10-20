@@ -6,7 +6,7 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/security/wait_until_unlocked.dart';
-import 'package:inv_tracker/core/services/locale_detection_service.dart';
+import 'package:inv_tracker/core/widgets/currency_picker_sheet.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/user_profile/domain/services/base_currency_planner.dart';
 import 'package:inv_tracker/features/user_profile/presentation/providers/base_currency_reconciler.dart';
@@ -108,46 +108,13 @@ class _ProfileInitializerState extends ConsumerState<ProfileInitializer>
     if (!_stillCurrent(userId)) return null;
     final again = rootNavigatorKey.currentContext;
     if (again == null || !again.mounted) return null;
-    return showDialog<String>(
-      context: again,
+    return showCurrencyPickerSheet(
+      again,
+      selected: proposed,
       useRootNavigator: true,
-      builder: (ctx) {
-        final l10n = AppLocalizations.of(ctx);
-        final names = _currencyNames(l10n);
-        return SimpleDialog(
-          title: Text(l10n.selectCurrency),
-          children: [
-            for (final code
-                in LocaleDetectionService.getSupportedCurrencies().keys)
-              SimpleDialogOption(
-                onPressed: () => Navigator.of(ctx).pop(code),
-                child: Text(names[code] ?? code),
-              ),
-          ],
-        );
-      },
     );
   }
 
   @override
   Widget build(BuildContext context) => widget.child;
 }
-
-Map<String, String> _currencyNames(AppLocalizations l10n) => {
-  'USD': l10n.currencyUSD,
-  'EUR': l10n.currencyEUR,
-  'GBP': l10n.currencyGBP,
-  'INR': l10n.currencyINR,
-  'JPY': l10n.currencyJPY,
-  'CAD': l10n.currencyCAD,
-  'AUD': l10n.currencyAUD,
-  'CHF': l10n.currencyCHF,
-  'CNY': l10n.currencyCNY,
-  'SGD': l10n.currencySGD,
-  'HKD': l10n.currencyHKD,
-  'AED': l10n.currencyAED,
-  'SAR': l10n.currencySAR,
-  'BRL': l10n.currencyBRL,
-  'MXN': l10n.currencyMXN,
-  'ZAR': l10n.currencyZAR,
-};
