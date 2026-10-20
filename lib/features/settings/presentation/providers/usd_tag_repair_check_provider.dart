@@ -34,7 +34,7 @@ class UsdTagRepairPendingCheck extends Notifier<Set<String>> {
   /// Returns the queued ids and empties the queue.
   Set<String> take() {
     final ids = state;
-    state = const {};
+    if (ids.isNotEmpty) state = const {};
     return ids;
   }
 }

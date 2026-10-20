@@ -42,12 +42,15 @@ void main() {
     prefs: prefs,
   );
 
-  Widget app() => ProviderScope(
+  Widget app({bool holder = false}) => ProviderScope(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
       securityProvider.overrideWith(_Unlocked.new),
       analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
-      usdTagRepairServiceProvider.overrideWithValue(service()),
+      if (holder)
+        usdTagRepairServiceProvider.overrideWith((ref) => ref.watch(_holder))
+      else
+        usdTagRepairServiceProvider.overrideWithValue(service()),
     ],
     child: MaterialApp(
       navigatorKey: rootNavigatorKey,
@@ -138,6 +141,53 @@ void main() {
 
     expect(find.text(title), findsNothing);
   });
+
+  testWidgets('the check cannot finish (offline): the ids wait and are asked '
+      'about at the next report', (tester) async {
+    await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+    putInvestment('x', 'USD');
+    firestore.readError = Exception('offline');
+    restored(tester, {'x'});
+    await tester.pumpAndSettle();
+    expect(find.text(title), findsNothing);
+
+    firestore.readError = null;
+    putInvestment('other', 'INR');
+    restored(tester, {'other'});
+    await tester.pumpAndSettle();
+
+    expect(find.text(title), findsOneWidget);
+    expect(find.text('Inv x'), findsOneWidget);
+  });
+
+  testWidgets('ids still waiting when the user signs out are dropped', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app(holder: true));
+    final c = container(tester);
+    c.read(_holder.notifier).set(service());
+    await tester.pumpAndSettle();
+    putInvestment('x', 'USD');
+    firestore.readError = Exception('offline');
+    restored(tester, {'x'});
+    await tester.pumpAndSettle();
+    expect(c.read(usdTagRepairPendingCheckProvider), {'x'});
+
+    c.read(_holder.notifier).set(null);
+    await tester.pumpAndSettle();
+
+    expect(c.read(usdTagRepairPendingCheckProvider), isEmpty);
+  });
+}
+
+final _holder = NotifierProvider<_Holder, UsdTagRepairService?>(_Holder.new);
+
+class _Holder extends Notifier<UsdTagRepairService?> {
+  @override
+  UsdTagRepairService? build() => null;
+
+  void set(UsdTagRepairService? service) => state = service;
 }
 
 class _Unlocked extends SecurityNotifier {

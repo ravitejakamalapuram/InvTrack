@@ -318,6 +318,7 @@ class DataImportService {
     int cashflowsImported = 0;
     int goalsImported = 0;
     final importedGoalIds = <String>{};
+    final importedInvestmentIds = <String>{};
     final investmentNameToIdMap = <String, String>{};
     final investmentIdMap = <String, String>{};
 
@@ -363,6 +364,7 @@ class DataImportService {
       warnings.addAll(result.warnings);
       investmentNameToIdMap.addAll(result.investmentNameToIdMap);
       investmentIdMap.addAll(result.investmentIdMap);
+      importedInvestmentIds.addAll(result.investmentIds);
     }
 
     // Import archived cashflows
@@ -384,6 +386,7 @@ class DataImportService {
       warnings.addAll(result.warnings);
       investmentNameToIdMap.addAll(result.investmentNameToIdMap);
       investmentIdMap.addAll(result.investmentIdMap);
+      importedInvestmentIds.addAll(result.investmentIds);
     }
 
     // Investments with valuations and no cash flows, then every valuation.
@@ -393,6 +396,7 @@ class DataImportService {
       baseCurrency: baseCurrency,
       snapshots: snapshots,
       warnings: warnings,
+      writtenIds: importedInvestmentIds,
     );
     investmentsImported += shells.length;
     investmentNameToIdMap.addAll(shells);
@@ -536,7 +540,7 @@ class DataImportService {
       valuationsImported: valuationsImported,
       errors: errors,
       warnings: warnings,
-      importedInvestmentIds: {...investmentNameToIdMap.values},
+      importedInvestmentIds: importedInvestmentIds,
       importedGoalIds: importedGoalIds,
     );
   }
@@ -891,6 +895,7 @@ class DataImportService {
     return _CsvImportResult(
       imported: cashFlows.length,
       investmentsCreated: investments.length,
+      investmentIds: [for (final inv in investments) inv.id],
       errors: parseResult.errors,
       warnings: warnings,
       investmentNameToIdMap: nameToIdMap,
@@ -1109,6 +1114,7 @@ class DataImportService {
     required String baseCurrency,
     required List<InvestmentValuationSnapshot> snapshots,
     required List<String> warnings,
+    required Set<String> writtenIds,
   }) async {
     if (valuations.isEmpty) return const {};
     var existingNames = <String>{};
@@ -1167,6 +1173,7 @@ class DataImportService {
         ),
       );
       nameToId[nameKey] = investmentId;
+      writtenIds.add(investmentId);
     }
     valuations.clear();
 
@@ -1602,9 +1609,14 @@ class _CsvImportResult {
   /// Ids of the goals written.
   final List<String> goalIds;
 
+  /// Ids of every investment written. The name map keeps one id per name, so
+  /// same-name investments kept apart by id would lose all but one.
+  final List<String> investmentIds;
+
   const _CsvImportResult({
     required this.imported,
     this.goalIds = const [],
+    this.investmentIds = const [],
     this.investmentsCreated = 0,
     required this.errors,
     required this.warnings,

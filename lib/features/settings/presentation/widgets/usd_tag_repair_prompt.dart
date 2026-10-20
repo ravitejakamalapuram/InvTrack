@@ -60,13 +60,19 @@ class _UsdTagRepairInitializerState
       _,
       service,
     ) {
+      final pending = ref.read(usdTagRepairPendingCheckProvider.notifier);
       if (service == null) {
+        // Ids queued for a user who signed out belong to nobody now.
+        if (_handledUserId != null) pending.take();
         _handledUserId = null;
         return;
       }
       if (service.userId == _handledUserId) return;
+      if (_handledUserId != null) pending.take();
       _handledUserId = service.userId;
       unawaited(_run(service));
+      // Ids left over from an import that could not be checked yet.
+      unawaited(_checkAfterImport());
     }, fireImmediately: true);
   }
 
@@ -126,20 +132,37 @@ class _UsdTagRepairInitializerState
             'USD tag check after import did not finish',
             metadata: {'errorType': e.runtimeType.toString()},
           );
+          if (_stillCurrent(service, currency)) _requeue(ids);
           return;
         }
-        if (candidates.isEmpty || !_stillCurrent(service, currency)) continue;
-        await _ask(service, currency, candidates, answersWholeQuestion: false);
+        if (candidates.isEmpty) continue;
+        if (!_stillCurrent(service, currency) ||
+            !await _ask(
+              service,
+              currency,
+              candidates,
+              answersWholeQuestion: false,
+            )) {
+          // Not asked (locked, a currency change running, another user): the
+          // same user's ids wait for the next report or start of this widget.
+          if (_stillCurrent(service, currency)) _requeue(ids);
+          return;
+        }
       }
     } finally {
       _checkingImport = false;
     }
   }
 
-  /// Shows the question for [candidates] and applies the answer.
+  void _requeue(Set<String> ids) => ref
+      .read(usdTagRepairPendingCheckProvider.notifier)
+      .report(investmentIds: ids);
+
+  /// Shows the question for [candidates] and applies the answer. False when
+  /// it was not asked or not answered, so nothing was recorded.
   /// [answersWholeQuestion] is false after an import, which looked at some
   /// documents only, so the account's answer is not recorded.
-  Future<void> _ask(
+  Future<bool> _ask(
     UsdTagRepairService service,
     String currency,
     List<UsdTagCandidate> candidates, {
@@ -148,15 +171,15 @@ class _UsdTagRepairInitializerState
     // The question lists investment names, so it never opens over the lock
     // screen; it waits until the app is unlocked.
     if (!await waitUntilUnlocked() || !_stillCurrent(service, currency)) {
-      return;
+      return false;
     }
-    if (ref.read(currencySwitchProvider).isBusy) return;
+    if (ref.read(currencySwitchProvider).isBusy) return false;
 
     final context = rootNavigatorKey.currentContext;
-    if (context == null || !context.mounted) return;
+    if (context == null || !context.mounted) return false;
     if (answersWholeQuestion &&
         !ref.read(usdTagRepairPromptedUsersProvider).add(service.userId)) {
-      return;
+      return false;
     }
     final analytics = readUsdTagRepairAnalytics(ref);
     logUsdTagRepair(analytics, {
@@ -174,7 +197,7 @@ class _UsdTagRepairInitializerState
     // Whoever answered must still be the user asked, and the currency they
     // saw must still be the base currency. Otherwise nothing is recorded and
     // a later start asks again.
-    if (selected == null || !_stillCurrent(service, currency)) return;
+    if (selected == null || !_stillCurrent(service, currency)) return false;
     // What the user did not tick stays as US dollars, and is not asked about
     // again if a restore brings it back.
     await service.markKept([
@@ -188,7 +211,7 @@ class _UsdTagRepairInitializerState
         'flagged': candidates.length,
         'fixed': 0,
       });
-      return;
+      return true;
     }
 
     final int changed;
@@ -208,7 +231,7 @@ class _UsdTagRepairInitializerState
       if (ctx != null && ctx.mounted) {
         AppFeedback.showError(ctx, AppLocalizations.of(ctx).usdTagRepairFailed);
       }
-      return;
+      return false;
     }
     logUsdTagRepair(analytics, {
       'action': 'fixed',
@@ -216,7 +239,7 @@ class _UsdTagRepairInitializerState
       'fixed': changed,
     });
     final ctx = rootNavigatorKey.currentContext;
-    if (ctx == null || !ctx.mounted) return;
+    if (ctx == null || !ctx.mounted) return true;
     final l10n = AppLocalizations.of(ctx);
     if (changed == 0) {
       final listedGoals = candidates.any((c) => c.kind == UsdTagKind.goal);
@@ -229,7 +252,7 @@ class _UsdTagRepairInitializerState
           ),
         ),
       );
-      return;
+      return true;
     }
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
@@ -253,6 +276,7 @@ class _UsdTagRepairInitializerState
         ),
       ),
     );
+    return true;
   }
 
   /// Whether the question about records without a currency (A03-F1) cannot
