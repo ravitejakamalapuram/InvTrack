@@ -364,37 +364,33 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
     final lastDirectory = ref.read(lastFilePickerDirectoryProvider);
 
     try {
-      final result = await FilePicker.pickFiles(
+      final picked = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'heic'],
-        allowMultiple: true,
         initialDirectory: lastDirectory,
       );
-      if (result != null && result.files.isNotEmpty && mounted) {
+      if (picked.isNotEmpty && mounted) {
         // Show loading indicator while reading files
         setState(() => _isReadingFiles = true);
 
         final files = <_SelectedFile>[];
         var skippedTooLarge = 0;
-        for (final platformFile in result.files) {
-          if (platformFile.path != null) {
-            final file = File(platformFile.path!);
-            final bytes = await readDocumentBytesWithinLimit(file);
-            if (bytes == null) {
-              skippedTooLarge++;
-              continue;
-            }
-            final detectedType = _detectDocumentType(platformFile.name);
-            files.add(
-              _SelectedFile(
-                bytes: bytes,
-                fileName: platformFile.name,
-                suggestedName: _suggestName(platformFile.name),
-                autoDetectedType: detectedType,
-                selectedType: detectedType, // Initially same as auto-detected
-              ),
-            );
+        for (final platformFile in picked) {
+          final bytes = await readPickedDocumentBytesWithinLimit(platformFile);
+          if (bytes == null) {
+            skippedTooLarge++;
+            continue;
           }
+          final detectedType = _detectDocumentType(platformFile.name);
+          files.add(
+            _SelectedFile(
+              bytes: bytes,
+              fileName: platformFile.name,
+              suggestedName: _suggestName(platformFile.name),
+              autoDetectedType: detectedType,
+              selectedType: detectedType, // Initially same as auto-detected
+            ),
+          );
         }
 
         if (mounted) {
@@ -409,7 +405,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
 
           if (files.isNotEmpty) {
             // Save the directory from the first file for next time
-            saveLastFilePickerDirectory(ref, result.files.first.path);
+            saveLastFilePickerDirectory(ref, picked.first.path);
 
             // If single file, use single file mode for simpler UX
             if (files.length == 1) {

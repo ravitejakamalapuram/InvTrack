@@ -47,29 +47,38 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
 
     // Suspend auto-lock during file picker to prevent locking
     // when returning from the system file picker
-    ref.read(securityProvider.notifier).suspendAutoLock();
+    final security = ref.read(securityProvider.notifier);
+    security.suspendAutoLock();
 
-    late final PlatformFile selectedFile;
+    Uint8List? fileBytes;
+    var fileName = '';
     try {
-      final result = await FilePicker.pickFiles(
+      final picked = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: ['csv'],
-        withData: true,
       );
 
-      if (result == null || result.files.isEmpty) {
-        setState(() => _isLoading = false);
+      if (picked == null) {
+        if (mounted) setState(() => _isLoading = false);
         return;
       }
 
-      selectedFile = result.files.first;
+      try {
+        fileName = picked.name;
+        fileBytes = await picked.readAsBytes();
+      } on Exception {
+        fileBytes = null;
+      }
     } finally {
       // Resume auto-lock after file picker operation completes
-      ref.read(securityProvider.notifier).resumeAutoLock();
+      security.resumeAutoLock();
     }
 
-    if (selectedFile.bytes == null) {
-      if (mounted) AppFeedback.showError(context, 'Could not read file');
+    // The screen may have closed while the file was being read.
+    if (!mounted) return;
+
+    if (fileBytes == null) {
+      AppFeedback.showError(context, 'Could not read file');
       setState(() => _isLoading = false);
       return;
     }
@@ -79,7 +88,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
       // Rows without a currency take the user's base currency
       final baseCurrency = ref.read(currencyCodeProvider);
       var parseResult = SimpleCsvParser.parse(
-        selectedFile.bytes!,
+        fileBytes,
         baseCurrency: baseCurrency,
       );
 
@@ -100,7 +109,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
       }
       if (order != null || decimalComma != null) {
         parseResult = SimpleCsvParser.parse(
-          selectedFile.bytes!,
+          fileBytes,
           baseCurrency: baseCurrency,
           dateOrder: order,
           decimalComma: decimalComma,
@@ -126,7 +135,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
           MaterialPageRoute(
             builder: (context) => ImportConfirmationScreen(
               parseResult: parseResult,
-              fileName: selectedFile.name,
+              fileName: fileName,
             ),
           ),
         );
