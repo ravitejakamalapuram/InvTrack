@@ -26,6 +26,40 @@ void main() {
     return picked;
   }
 
+  testWidgets('currency rows expose selected semantics', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await open(tester);
+
+    await tester.enterText(find.byType(TextField), 'INR');
+    await tester.pumpAndSettle();
+    expect(
+      tester.getSemantics(find.bySemanticsLabel(RegExp(r'\bINR\b'))),
+      matchesSemantics(
+        isButton: true,
+        isSelected: true,
+        hasSelectedState: true,
+        hasTapAction: true,
+        hasFocusAction: true,
+        isFocusable: true,
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField), 'USD');
+    await tester.pumpAndSettle();
+    expect(
+      tester.getSemantics(find.bySemanticsLabel(RegExp(r'\bUSD\b'))),
+      matchesSemantics(
+        isButton: true,
+        isSelected: false,
+        hasSelectedState: true,
+        hasTapAction: true,
+        hasFocusAction: true,
+        isFocusable: true,
+      ),
+    );
+    semantics.dispose();
+  });
+
   testWidgets('scrolls to currencies beyond the first screen', (tester) async {
     await open(tester);
     expect(find.text('KRW'), findsNothing);

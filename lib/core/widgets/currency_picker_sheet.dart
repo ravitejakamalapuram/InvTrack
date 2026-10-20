@@ -108,6 +108,7 @@ class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
                   child: GlassCard(
                     padding: const EdgeInsets.all(12),
                     onTap: () => Navigator.pop(context, code),
+                    selected: isSelected,
                     child: Row(
                       children: [
                         Container(
