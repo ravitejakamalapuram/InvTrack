@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/utils/custom_type_label.dart';
 import 'package:inv_tracker/core/utils/stored_date.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -26,6 +27,10 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   /// never stops the delete.
   final Future<void> Function()? _onExpectedPaymentsUnverified;
 
+  /// Told when the server rejects a write that was already reported as saved
+  /// (see [_executeLocalWrite]). Never given the record.
+  final void Function(Object error)? _onWriteRejected;
+
   /// Timeout for write operations - allows offline writes to complete quickly
   static const Duration _writeTimeout = Duration(seconds: 3);
 
@@ -41,10 +46,12 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     required String userId,
     required String Function() baseCurrency,
     Future<void> Function()? onExpectedPaymentsUnverified,
+    void Function(Object error)? onWriteRejected,
   }) : _firestore = firestore,
        _userId = userId,
        _baseCurrency = baseCurrency,
-       _onExpectedPaymentsUnverified = onExpectedPaymentsUnverified;
+       _onExpectedPaymentsUnverified = onExpectedPaymentsUnverified,
+       _onWriteRejected = onWriteRejected;
 
   /// Execute a write operation with timeout
   /// If the operation times out (likely offline), we consider it successful
@@ -67,6 +74,34 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       // This is expected behavior for offline-first apps
       return false;
     }
+  }
+
+  /// A write that counts as saved once it is in the local cache, which
+  /// Firestore does before the future completes: the caller does not wait for
+  /// the server, so a save offline is as quick as one online. A write the
+  /// server rejects later is logged by its type only and passed to
+  /// [_onWriteRejected]; the local cache drops it and the lists follow.
+  Future<void> _executeLocalWrite(
+    Future<void> Function() writeOperation,
+  ) async {
+    final pending = writeOperation();
+    unawaited(
+      pending.then<void>(
+        (_) {},
+        onError: (Object error, StackTrace stackTrace) {
+          LoggerService.warn(
+            'A saved write was rejected by the server',
+            metadata: {'errorType': error.runtimeType.toString()},
+            stackTrace: stackTrace,
+          );
+          try {
+            _onWriteRejected?.call(error);
+          } catch (_) {
+            // Reporting must never throw into the zone.
+          }
+        },
+      ),
+    );
   }
 
   // Collection references for ACTIVE data
@@ -680,7 +715,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   @override
   Future<void> addCashFlow(CashFlowEntity cashFlow) async {
     _requireStorable(cashFlow);
-    await _executeWrite(
+    await _executeLocalWrite(
       () => _cashFlowsRef.doc(cashFlow.id).set(_cashFlowToFirestore(cashFlow)),
     );
   }

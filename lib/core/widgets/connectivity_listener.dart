@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/providers/connectivity_provider.dart';
+import 'package:inv_tracker/core/providers/write_rejected_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Widget that listens to connectivity changes and shows a toast when network comes back
@@ -63,6 +65,15 @@ class _ConnectivityListenerState extends ConsumerState<ConnectivityListener> {
         }
         _previousConnectionStatus = isConnected;
       });
+    });
+
+    ref.listen<int>(writeRejectedProvider, (previous, next) {
+      if (next > (previous ?? 0)) {
+        AppFeedback.showError(
+          context,
+          AppLocalizations.of(context).writeRejectedMessage,
+        );
+      }
     });
 
     final offline = ref.watch(connectivityStatusProvider).value == false;

@@ -7375,6 +7375,14 @@
   "@archiveActionFailed": {
     "description": "Default message shown when archiving or unarchiving a swiped list item failed and the list gave no message of its own (A17)"
   },
+  "deleteActionFailed": "Couldn''t delete. Please try again.",
+  "@deleteActionFailed": {
+    "description": "Default message shown when deleting a swiped list item failed and the list gave no message of its own (A26)"
+  },
+  "writeRejectedMessage": "A change couldn''t be saved to your account and was undone on this device.",
+  "@writeRejectedMessage": {
+    "description": "Snackbar shown when the server rejects a save that was already accepted on this device, for example a cash flow added offline (A26)"
+  },
   "monthlyRecapFeatureSubtitle": "Monthly recap screen and its notification, in place of the monthly summary",
   "@monthlyRecapFeatureSubtitle": {
     "description": "Debug settings subtitle of the monthly recap flag"

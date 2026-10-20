@@ -56,17 +56,23 @@ class DeleteActionConfig {
   /// Message for the confirmation dialog
   final String confirmMessage;
 
-  /// Callback when the item is deleted
-  final VoidCallback onDelete;
+  /// Callback when the item is deleted. It is awaited, so the message
+  /// follows the result: a throw or a failed future shows [failureMessage].
+  final FutureOr<void> Function() onDelete;
 
   /// Success message to show after deletion
   final String successMessage;
+
+  /// Message to show when [onDelete] throws. Null shows the generic
+  /// "Something went wrong" message.
+  final String? failureMessage;
 
   const DeleteActionConfig({
     required this.confirmTitle,
     required this.confirmMessage,
     required this.onDelete,
     required this.successMessage,
+    this.failureMessage,
   });
 }
 
@@ -211,9 +217,24 @@ class SwipeActions extends StatelessWidget {
         confirmText: 'Delete',
       );
       if (confirmed == true) {
-        deleteConfig!.onDelete();
+        // The message follows the result: a failed delete is not announced
+        // as done.
+        var succeeded = true;
+        try {
+          await deleteConfig!.onDelete();
+        } catch (_) {
+          succeeded = false;
+        }
         if (context.mounted) {
-          AppFeedback.showSuccess(context, deleteConfig!.successMessage);
+          if (succeeded) {
+            AppFeedback.showSuccess(context, deleteConfig!.successMessage);
+          } else {
+            AppFeedback.showError(
+              context,
+              deleteConfig!.failureMessage ??
+                  AppLocalizations.of(context).deleteActionFailed,
+            );
+          }
         }
       }
       // Always return false - the item will be removed by provider update

@@ -729,8 +729,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       rethrow;
     }
 
-    // The flow is saved: what follows cannot fail the call.
-    await _afterCashFlowSaved(cashFlow);
+    // The flow is saved: what follows cannot fail the call, and the call does
+    // not wait for it (the milestone checks read goals and flows).
+    unawaited(_afterCashFlowSaved(cashFlow));
     await _afterSave(_invalidateAll);
     state = const AsyncValue.data(null);
   }
@@ -1395,11 +1396,13 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       final goals = await goalRepository.watchActiveGoals().first;
       if (goals.isEmpty) return;
 
-      // Get all investments
-      final investments = await investmentRepository.getAllInvestments();
-
-      // Get all cash flows
-      final cashFlows = await investmentRepository.getAllCashFlows();
+      // The first snapshot of the streams the screens listen to: served from
+      // the local cache, with this device's pending writes, and not a full
+      // download as a one-off read is when online.
+      final investments = await investmentRepository
+          .watchAllInvestments()
+          .first;
+      final cashFlows = await investmentRepository.watchAllCashFlows().first;
       final cashFlowsBefore = cashFlows
           .where((c) => c.id != newCashFlowId)
           .toList();

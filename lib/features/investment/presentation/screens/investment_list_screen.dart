@@ -361,15 +361,12 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                           'This will permanently delete "${investment.name}" and all its transactions.',
                       successMessage: 'Investment deleted',
                       onDelete: () {
-                        if (isArchived) {
-                          ref
-                              .read(investmentNotifierProvider.notifier)
-                              .deleteArchivedInvestment(investment.id);
-                        } else {
-                          ref
-                              .read(investmentNotifierProvider.notifier)
-                              .deleteInvestment(investment.id);
-                        }
+                        final notifier = ref.read(
+                          investmentNotifierProvider.notifier,
+                        );
+                        return isArchived
+                            ? notifier.deleteArchivedInvestment(investment.id)
+                            : notifier.deleteInvestment(investment.id);
                       },
                     ),
                     archiveConfig: ArchiveActionConfig(
