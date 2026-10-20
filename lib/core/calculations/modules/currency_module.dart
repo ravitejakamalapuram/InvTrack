@@ -57,6 +57,21 @@ class CurrencyConverterModule implements CalculationModule {
     );
   }
 
+  /// Like [batchConvert], but a flow that could not be converted (no rate, no
+  /// cached rate, or conversion unavailable) is left out instead of being
+  /// returned in its own currency, so totals never add a native amount under
+  /// the base-currency symbol.
+  Future<List<CashFlowEntity>> batchConvertToBase({
+    required List<CashFlowEntity> cashFlows,
+    required String baseCurrency,
+  }) async {
+    final converted = await batchConvert(
+      cashFlows: cashFlows,
+      baseCurrency: baseCurrency,
+    );
+    return converted.where((cf) => cf.currency == baseCurrency).toList();
+  }
+
   /// How many units of [to] one unit of [from] is worth today, for amounts
   /// a user entered in another currency than the base currency (FIRE
   /// settings, goal targets): today's rate, else the last known one. Throws
