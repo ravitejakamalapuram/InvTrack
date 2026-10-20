@@ -30,6 +30,10 @@
     "description": "Currency label"
   },
   
+  "searchCurrencies": "Search currencies...",
+  "@searchCurrencies": {
+    "description": "Hint in the currency picker search field"
+  },
   "selectCurrency": "Select Currency",
   "@selectCurrency": {
     "description": "Select currency dialog title"

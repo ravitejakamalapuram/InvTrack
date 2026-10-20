@@ -268,7 +268,7 @@ void main() {
     expect(container.read(settingsProvider).currency, 'EUR');
   });
 
-  testWidgets('the Choose another list shows translated currency names', (
+  testWidgets('the Choose another list offers every supported currency', (
     tester,
   ) async {
     await pump(tester, locale: const ui.Locale('en', 'US'));
@@ -276,10 +276,16 @@ void main() {
     await tester.tap(find.text('Choose another'));
     await tester.pumpAndSettle();
 
-    final l10n = AppLocalizations.of(tester.element(find.byType(SimpleDialog)));
-    expect(find.text(l10n.currencyEUR), findsOneWidget);
-    expect(find.text(l10n.currencyAED), findsOneWidget);
-    expect(find.text(l10n.currencySAR), findsOneWidget);
+    expect(find.text('EUR'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('KRW'),
+      300,
+      scrollable: find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    expect(find.text('KRW'), findsOneWidget);
   });
 }
 
