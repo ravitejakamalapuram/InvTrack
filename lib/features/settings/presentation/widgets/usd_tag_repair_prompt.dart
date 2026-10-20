@@ -101,9 +101,11 @@ class _UsdTagRepairInitializerState
     if (!_stillCurrent(service, currency)) return;
     if (candidates.isEmpty) {
       await service.markResolved();
-      return;
+    } else {
+      await _ask(service, currency, candidates, answersWholeQuestion: true);
     }
-    await _ask(service, currency, candidates, answersWholeQuestion: true);
+    // Ids reported while this question was open wait in the queue.
+    if (mounted) await _checkAfterImport();
   }
 
   /// A restore, ZIP import or guest merge wrote [usdTagRepairPendingCheckProvider]

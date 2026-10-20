@@ -178,6 +178,27 @@ void main() {
     expect(container(tester).read(usdTagRepairPendingCheckProvider), {'x'});
   });
 
+  testWidgets('ids that waited for the account question are asked about once '
+      'it is answered', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+    firestore = FakeLegacyCurrencyFirestore();
+    putInvestment('x', 'USD');
+    await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+    expect(find.text(title), findsOneWidget);
+
+    putInvestment('z', 'USD');
+    restored(tester, {'z'});
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Keep in US dollars'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(title), findsOneWidget);
+    expect(find.text('Inv z'), findsOneWidget);
+    expect(find.text('Inv x'), findsNothing);
+  });
+
   testWidgets('ids still waiting when the user signs out are dropped', (
     tester,
   ) async {
