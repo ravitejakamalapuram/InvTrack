@@ -28,11 +28,16 @@ void main() {
     final pubspec = File('pubspec.yaml').readAsStringSync();
     expect(RegExp(r'^\s+pdf:', multiLine: true).hasMatch(pubspec), isFalse);
 
+    // Only import/export directives count, not comments or strings.
+    final directive = RegExp(
+      r'''^\s*(?:import|export)\s+['"]package:pdf/''',
+      multiLine: true,
+    );
     final importers = Directory('lib')
         .listSync(recursive: true)
         .whereType<File>()
         .where((f) => f.path.endsWith('.dart'))
-        .where((f) => f.readAsStringSync().contains('package:pdf/'))
+        .where((f) => directive.hasMatch(f.readAsStringSync()))
         .map((f) => f.path)
         .toList();
     expect(importers, isEmpty);
