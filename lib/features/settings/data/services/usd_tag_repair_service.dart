@@ -179,12 +179,34 @@ class UsdTagRepairService {
     'usd_tag_repair_resolved_$userId',
     'usd_tag_repair_backup_$userId',
     'usd_tag_repair_extended_resolved_$userId',
+    'usd_tag_repair_kept_$userId',
   ];
 
   String get _resolvedKey => 'usd_tag_repair_resolved_$_userId';
   String get _backupKey => 'usd_tag_repair_backup_$_userId';
   String get _extendedResolvedKey =>
       'usd_tag_repair_extended_resolved_$_userId';
+  String get _keptKey => 'usd_tag_repair_kept_$_userId';
+
+  /// Ids ([UsdTagCandidate.id]) the user chose to keep as US dollars. Kept on
+  /// this device only; a new install may ask about them once more.
+  Set<String> get keptIds => {...?_prefs.getStringList(_keptKey)};
+
+  /// Remembers [ids] as kept, so a later restore or import that brings the
+  /// same ids back does not ask about them again.
+  Future<void> markKept(Iterable<String> ids) async {
+    final all = {...keptIds, ...ids};
+    if (all.length == keptIds.length) return;
+    try {
+      await _prefs.setStringList(_keptKey, all.toList());
+    } catch (e) {
+      // The user is asked about these again after a later restore.
+      LoggerService.warn(
+        'USD tag Keep list not saved',
+        metadata: {'errorType': e.runtimeType.toString()},
+      );
+    }
+  }
 
   /// Whether this device has recorded the answer to the current question
   /// (or that there was nothing to fix). See [checkResolved] for the
@@ -291,10 +313,21 @@ class UsdTagRepairService {
   /// from the server. Writes nothing. Empty when [baseCurrency] is USD.
   /// Throws offline. After the A04 answer ([answeredAllUsd]), investments
   /// all in US dollars are still listed, since A04 skipped those that had
-  /// no cash flows then, but they start unticked.
-  Future<List<UsdTagCandidate>> findCandidates(String baseCurrency) async => [
-    for (final s in await _scan(baseCurrency)) s.candidate,
-  ];
+  /// no cash flows then, but they start unticked. Ones the user chose to keep
+  /// ([keptIds]) are left out. [onlyOwners] limits the result to the
+  /// investment ids (and `goal:` ids) a restore or import just wrote.
+  Future<List<UsdTagCandidate>> findCandidates(
+    String baseCurrency, {
+    Set<String>? onlyOwners,
+  }) async {
+    final kept = keptIds;
+    return [
+      for (final s in await _scan(baseCurrency))
+        if (!kept.contains(s.candidate.id) &&
+            (onlyOwners == null || onlyOwners.contains(s.owner)))
+          s.candidate,
+    ];
+  }
 
   Future<List<_Scanned>> _scan(String baseCurrency) async {
     if (baseCurrency == taggedCurrency) return const [];

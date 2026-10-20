@@ -63,6 +63,11 @@ class ZipImportResult {
   final List<String> errors;
   final List<String> warnings;
 
+  /// Ids of the investments and goals this import wrote, so the US dollar
+  /// check can look at those documents only (A110).
+  final Set<String> importedInvestmentIds;
+  final Set<String> importedGoalIds;
+
   const ZipImportResult({
     required this.investmentsImported,
     required this.cashflowsImported,
@@ -72,6 +77,8 @@ class ZipImportResult {
     this.valuationsImported = 0,
     this.errors = const [],
     this.warnings = const [],
+    this.importedInvestmentIds = const {},
+    this.importedGoalIds = const {},
   });
 
   bool get hasErrors => errors.isNotEmpty;
@@ -310,6 +317,8 @@ class DataImportService {
     int investmentsImported = 0;
     int cashflowsImported = 0;
     int goalsImported = 0;
+    final importedGoalIds = <String>{};
+    final importedInvestmentIds = <String>{};
     final investmentNameToIdMap = <String, String>{};
     final investmentIdMap = <String, String>{};
 
@@ -375,6 +384,7 @@ class DataImportService {
       warnings.addAll(result.warnings);
       investmentNameToIdMap.addAll(result.investmentNameToIdMap);
       investmentIdMap.addAll(result.investmentIdMap);
+      importedInvestmentIds.addAll(result.investmentIds);
     }
 
     // Import archived cashflows
@@ -398,6 +408,7 @@ class DataImportService {
       warnings.addAll(result.warnings);
       investmentNameToIdMap.addAll(result.investmentNameToIdMap);
       investmentIdMap.addAll(result.investmentIdMap);
+      importedInvestmentIds.addAll(result.investmentIds);
     }
 
     // Investments with valuations and no cash flows, then every valuation.
@@ -407,6 +418,7 @@ class DataImportService {
       baseCurrency: baseCurrency,
       snapshots: snapshots,
       warnings: warnings,
+      writtenIds: importedInvestmentIds,
       accountNameCounts: accountNameCounts,
       accountIds: accountIds,
       backupIdGroups: backupIdGroups,
@@ -445,6 +457,7 @@ class DataImportService {
         baseCurrency: baseCurrency,
       );
       goalsImported += result.imported;
+      importedGoalIds.addAll(result.goalIds);
       errors.addAll(result.errors);
       warnings.addAll(result.warnings);
     }
@@ -459,6 +472,7 @@ class DataImportService {
         baseCurrency: baseCurrency,
       );
       goalsImported += result.imported;
+      importedGoalIds.addAll(result.goalIds);
       errors.addAll(result.errors);
       warnings.addAll(result.warnings);
     }
@@ -554,6 +568,8 @@ class DataImportService {
       valuationsImported: valuationsImported,
       errors: errors,
       warnings: warnings,
+      importedInvestmentIds: importedInvestmentIds,
+      importedGoalIds: importedGoalIds,
     );
   }
 
@@ -931,6 +947,7 @@ class DataImportService {
     return _CsvImportResult(
       imported: cashFlows.length,
       investmentsCreated: investments.length,
+      investmentIds: [for (final inv in investments) inv.id],
       errors: parseResult.errors,
       warnings: warnings,
       investmentNameToIdMap: nameToIdMap,
@@ -1182,6 +1199,7 @@ class DataImportService {
     required String baseCurrency,
     required List<InvestmentValuationSnapshot> snapshots,
     required List<String> warnings,
+    required Set<String> writtenIds,
     Map<String, int> accountNameCounts = const {},
     Set<String> accountIds = const {},
     Map<String, int> backupIdGroups = const {},
@@ -1274,6 +1292,7 @@ class DataImportService {
         ),
       );
       nameToId[nameKey] = investmentId;
+      writtenIds.add(investmentId);
     }
     valuations.clear();
 
@@ -1535,6 +1554,7 @@ class DataImportService {
     final now = DateTime.now();
     final warnings = <String>[];
     int imported = 0;
+    final goalIds = <String>[];
 
     for (final row in parseResult.validRowsOnly) {
       // Skip if merging and goal already exists
@@ -1589,10 +1609,12 @@ class DataImportService {
       }
 
       imported++;
+      goalIds.add(goal.id);
     }
 
     return _CsvImportResult(
       imported: imported,
+      goalIds: goalIds,
       errors: parseResult.errors,
       warnings: warnings,
     );
@@ -1735,8 +1757,17 @@ class _CsvImportResult {
   /// the investments the backup keeps apart by id (documents).
   final Map<String, String> investmentIdMap;
 
+  /// Ids of the goals written.
+  final List<String> goalIds;
+
+  /// Ids of every investment written. The name map keeps one id per name, so
+  /// same-name investments kept apart by id would lose all but one.
+  final List<String> investmentIds;
+
   const _CsvImportResult({
     required this.imported,
+    this.goalIds = const [],
+    this.investmentIds = const [],
     this.investmentsCreated = 0,
     required this.errors,
     required this.warnings,

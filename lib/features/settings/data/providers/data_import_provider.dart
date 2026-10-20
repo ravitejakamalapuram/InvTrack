@@ -8,6 +8,7 @@ import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.d
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/usd_tag_repair_check_provider.dart';
 
 /// Provider for DataImportService
 final dataImportServiceProvider = Provider<DataImportService?>((ref) {
@@ -73,6 +74,7 @@ class ZipImportNotifier extends Notifier<AsyncValue<ZipImportResult?>> {
         baseCurrency: ref.read(currencyCodeProvider),
       );
       state = AsyncValue.data(result);
+      ref.read(usdTagRepairPendingCheckProvider.notifier).reportImport(result);
       return result;
     } catch (e, st) {
       state = AsyncValue.error(e, st);

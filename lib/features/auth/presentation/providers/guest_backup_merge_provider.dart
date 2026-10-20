@@ -15,6 +15,7 @@ import 'package:inv_tracker/features/settings/data/providers/data_export_provide
 import 'package:inv_tracker/features/settings/data/providers/data_import_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/data_export_service.dart';
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/usd_tag_repair_check_provider.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// Result of [GuestBackupMergeService.backupAndSignIn].
@@ -218,6 +219,7 @@ class GuestBackupMergeService {
         ImportStrategy.merge,
         baseCurrency: baseCurrency,
       );
+      _ref.read(usdTagRepairPendingCheckProvider.notifier).reportImport(result);
       if (!_isComplete(result, summary)) {
         // Counts only: warnings and errors contain investment and goal names.
         LoggerService.warn(
@@ -323,6 +325,7 @@ class GuestBackupMergeService {
       ImportStrategy.merge,
       baseCurrency: expected?.baseCurrency ?? _ref.read(currencyCodeProvider),
     );
+    _ref.read(usdTagRepairPendingCheckProvider.notifier).reportImport(result);
     final problems = result.hasErrors || result.warnings.isNotEmpty;
     if (expected == null) {
       return problems
