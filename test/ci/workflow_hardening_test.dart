@@ -58,6 +58,16 @@ void main() {
     expect(text, contains('environment: production'));
   });
 
+  test(
+    'the production deploy publishes firestore.indexes.json with the rules',
+    () {
+      final text = File(
+        '.github/workflows/deploy-firestore-rules.yml',
+      ).readAsStringSync();
+      expect(text, contains('--only firestore:rules,firestore:indexes'));
+    },
+  );
+
   test('ci.yml sets a workflow-level permissions block', () {
     final text = File('.github/workflows/ci.yml').readAsStringSync();
     expect(
