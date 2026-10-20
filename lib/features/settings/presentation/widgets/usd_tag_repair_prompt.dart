@@ -125,7 +125,11 @@ class _UsdTagRepairInitializerState
         final ids = ref.read(usdTagRepairPendingCheckProvider.notifier).take();
         final List<UsdTagCandidate> candidates;
         try {
-          if (!await service.checkResolved()) return;
+          if (!await service.checkResolved()) {
+            // The start-up check may already have read its documents.
+            if (_stillCurrent(service, currency)) _requeue(ids);
+            return;
+          }
           candidates = await service.findCandidates(currency, onlyOwners: ids);
         } catch (e) {
           LoggerService.warn(

@@ -161,6 +161,23 @@ void main() {
     expect(find.text('Inv x'), findsOneWidget);
   });
 
+  testWidgets('the account question is still open: the ids wait instead of '
+      'being dropped', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+    firestore = FakeLegacyCurrencyFirestore();
+    putInvestment('x', 'USD');
+    await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+    // The start-up question is open over the screen.
+    expect(find.text(title), findsOneWidget);
+
+    restored(tester, {'x'});
+    await tester.pumpAndSettle();
+
+    expect(container(tester).read(usdTagRepairPendingCheckProvider), {'x'});
+  });
+
   testWidgets('ids still waiting when the user signs out are dropped', (
     tester,
   ) async {

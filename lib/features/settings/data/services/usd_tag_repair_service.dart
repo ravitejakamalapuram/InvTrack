@@ -197,7 +197,15 @@ class UsdTagRepairService {
   Future<void> markKept(Iterable<String> ids) async {
     final all = {...keptIds, ...ids};
     if (all.length == keptIds.length) return;
-    await _prefs.setStringList(_keptKey, all.toList());
+    try {
+      await _prefs.setStringList(_keptKey, all.toList());
+    } catch (e) {
+      // The user is asked about these again after a later restore.
+      LoggerService.warn(
+        'USD tag Keep list not saved',
+        metadata: {'errorType': e.runtimeType.toString()},
+      );
+    }
   }
 
   /// Whether this device has recorded the answer to the current question
