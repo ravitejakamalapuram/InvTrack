@@ -47,7 +47,8 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
 
     // Suspend auto-lock during file picker to prevent locking
     // when returning from the system file picker
-    ref.read(securityProvider.notifier).suspendAutoLock();
+    final security = ref.read(securityProvider.notifier);
+    security.suspendAutoLock();
 
     Uint8List? fileBytes;
     var fileName = '';
@@ -58,7 +59,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
       );
 
       if (picked == null) {
-        setState(() => _isLoading = false);
+        if (mounted) setState(() => _isLoading = false);
         return;
       }
 
@@ -70,11 +71,14 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
       }
     } finally {
       // Resume auto-lock after file picker operation completes
-      ref.read(securityProvider.notifier).resumeAutoLock();
+      security.resumeAutoLock();
     }
 
+    // The screen may have closed while the file was being read.
+    if (!mounted) return;
+
     if (fileBytes == null) {
-      if (mounted) AppFeedback.showError(context, 'Could not read file');
+      AppFeedback.showError(context, 'Could not read file');
       setState(() => _isLoading = false);
       return;
     }
