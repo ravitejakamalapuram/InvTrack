@@ -2,6 +2,7 @@
 // Recently Closed cards uses the base-currency symbol and a single sign.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
@@ -16,7 +17,7 @@ class _PrivacyOff extends PrivacyModeNotifier {
   bool build() => false;
 }
 
-Future<void> _pump(WidgetTester tester, Widget child, List overrides) async {
+Future<void> _pump(WidgetTester tester, Widget child, List<Override> overrides) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [

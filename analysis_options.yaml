@@ -10,6 +10,8 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  language:
+    strict-raw-types: true
   # Exclude generated files from analysis
   exclude:
     - "**/*.g.dart"
