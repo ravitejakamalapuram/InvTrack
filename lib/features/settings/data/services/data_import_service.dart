@@ -63,6 +63,11 @@ class ZipImportResult {
   final List<String> errors;
   final List<String> warnings;
 
+  /// Ids of the investments and goals this import wrote, so the US dollar
+  /// check can look at those documents only (A110).
+  final Set<String> importedInvestmentIds;
+  final Set<String> importedGoalIds;
+
   const ZipImportResult({
     required this.investmentsImported,
     required this.cashflowsImported,
@@ -72,6 +77,8 @@ class ZipImportResult {
     this.valuationsImported = 0,
     this.errors = const [],
     this.warnings = const [],
+    this.importedInvestmentIds = const {},
+    this.importedGoalIds = const {},
   });
 
   bool get hasErrors => errors.isNotEmpty;
@@ -310,6 +317,7 @@ class DataImportService {
     int investmentsImported = 0;
     int cashflowsImported = 0;
     int goalsImported = 0;
+    final importedGoalIds = <String>{};
     final investmentNameToIdMap = <String, String>{};
     final investmentIdMap = <String, String>{};
 
@@ -417,6 +425,7 @@ class DataImportService {
         baseCurrency: baseCurrency,
       );
       goalsImported += result.imported;
+      importedGoalIds.addAll(result.goalIds);
       errors.addAll(result.errors);
       warnings.addAll(result.warnings);
     }
@@ -431,6 +440,7 @@ class DataImportService {
         baseCurrency: baseCurrency,
       );
       goalsImported += result.imported;
+      importedGoalIds.addAll(result.goalIds);
       errors.addAll(result.errors);
       warnings.addAll(result.warnings);
     }
@@ -526,6 +536,8 @@ class DataImportService {
       valuationsImported: valuationsImported,
       errors: errors,
       warnings: warnings,
+      importedInvestmentIds: {...investmentNameToIdMap.values},
+      importedGoalIds: importedGoalIds,
     );
   }
 
@@ -1395,6 +1407,7 @@ class DataImportService {
     final now = DateTime.now();
     final warnings = <String>[];
     int imported = 0;
+    final goalIds = <String>[];
 
     for (final row in parseResult.validRowsOnly) {
       // Skip if merging and goal already exists
@@ -1449,10 +1462,12 @@ class DataImportService {
       }
 
       imported++;
+      goalIds.add(goal.id);
     }
 
     return _CsvImportResult(
       imported: imported,
+      goalIds: goalIds,
       errors: parseResult.errors,
       warnings: warnings,
     );
@@ -1584,8 +1599,12 @@ class _CsvImportResult {
   /// the investments the backup keeps apart by id (documents).
   final Map<String, String> investmentIdMap;
 
+  /// Ids of the goals written.
+  final List<String> goalIds;
+
   const _CsvImportResult({
     required this.imported,
+    this.goalIds = const [],
     this.investmentsCreated = 0,
     required this.errors,
     required this.warnings,

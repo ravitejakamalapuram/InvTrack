@@ -15,6 +15,7 @@ import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/import_duplicate_detector.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/usd_tag_repair_check_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 
@@ -241,6 +242,11 @@ class _ImportConfirmationScreenState
         investments: investments,
         cashFlows: cashFlows,
       );
+
+      // A Currency column that says USD can bring dollar tags back.
+      ref
+          .read(usdTagRepairPendingCheckProvider.notifier)
+          .report(investmentIds: {for (final c in cashFlows) c.investmentId});
 
       // Track successful import
       ref

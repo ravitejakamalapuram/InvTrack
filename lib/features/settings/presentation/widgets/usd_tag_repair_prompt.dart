@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/settings/data/services/usd_tag_repair_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/currency_switch_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/usd_tag_repair_check_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/usd_tag_repair_actions.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/usd_tag_repair_dialog.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -47,10 +48,14 @@ class _UsdTagRepairInitializerState
     extends ConsumerState<UsdTagRepairInitializer>
     with WaitsForUnlock {
   String? _handledUserId;
+  bool _checkingImport = false;
 
   @override
   void initState() {
     super.initState();
+    ref.listenManual<Set<String>>(usdTagRepairPendingCheckProvider, (_, ids) {
+      if (ids.isNotEmpty) unawaited(_checkAfterImport());
+    }, fireImmediately: true);
     ref.listenManual<UsdTagRepairService?>(usdTagRepairServiceProvider, (
       _,
       service,
@@ -92,6 +97,54 @@ class _UsdTagRepairInitializerState
       await service.markResolved();
       return;
     }
+    await _ask(service, currency, candidates, answersWholeQuestion: true);
+  }
+
+  /// A restore, ZIP import or guest merge wrote [usdTagRepairPendingCheckProvider]
+  /// ids: asks again about the ones tagged US dollars, even when the question
+  /// was answered before. Does nothing before the first answer, since the
+  /// start-up check then looks at everything.
+  Future<void> _checkAfterImport() async {
+    if (_checkingImport) return;
+    _checkingImport = true;
+    try {
+      while (mounted) {
+        final service = ref.read(usdTagRepairServiceProvider);
+        final currency = ref.read(currencyCodeProvider);
+        if (service == null ||
+            currency == UsdTagRepairService.taggedCurrency ||
+            ref.read(usdTagRepairPendingCheckProvider).isEmpty) {
+          return;
+        }
+        final ids = ref.read(usdTagRepairPendingCheckProvider.notifier).take();
+        final List<UsdTagCandidate> candidates;
+        try {
+          if (!await service.checkResolved()) return;
+          candidates = await service.findCandidates(currency, onlyOwners: ids);
+        } catch (e) {
+          LoggerService.warn(
+            'USD tag check after import did not finish',
+            metadata: {'errorType': e.runtimeType.toString()},
+          );
+          return;
+        }
+        if (candidates.isEmpty || !_stillCurrent(service, currency)) continue;
+        await _ask(service, currency, candidates, answersWholeQuestion: false);
+      }
+    } finally {
+      _checkingImport = false;
+    }
+  }
+
+  /// Shows the question for [candidates] and applies the answer.
+  /// [answersWholeQuestion] is false after an import, which looked at some
+  /// documents only, so the account's answer is not recorded.
+  Future<void> _ask(
+    UsdTagRepairService service,
+    String currency,
+    List<UsdTagCandidate> candidates, {
+    required bool answersWholeQuestion,
+  }) async {
     // The question lists investment names, so it never opens over the lock
     // screen; it waits until the app is unlocked.
     if (!await waitUntilUnlocked() || !_stillCurrent(service, currency)) {
@@ -101,7 +154,10 @@ class _UsdTagRepairInitializerState
 
     final context = rootNavigatorKey.currentContext;
     if (context == null || !context.mounted) return;
-    if (!askedThisSession.add(service.userId)) return;
+    if (answersWholeQuestion &&
+        !ref.read(usdTagRepairPromptedUsersProvider).add(service.userId)) {
+      return;
+    }
     final analytics = readUsdTagRepairAnalytics(ref);
     logUsdTagRepair(analytics, {
       'action': 'prompted',
@@ -119,8 +175,14 @@ class _UsdTagRepairInitializerState
     // saw must still be the base currency. Otherwise nothing is recorded and
     // a later start asks again.
     if (selected == null || !_stillCurrent(service, currency)) return;
+    // What the user did not tick stays as US dollars, and is not asked about
+    // again if a restore brings it back.
+    await service.markKept([
+      for (final c in candidates)
+        if (!selected.contains(c.id)) c.id,
+    ]);
     if (selected.isEmpty) {
-      await service.markResolved();
+      if (answersWholeQuestion) await service.markResolved();
       logUsdTagRepair(analytics, {
         'action': 'kept',
         'flagged': candidates.length,
