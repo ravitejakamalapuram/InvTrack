@@ -111,15 +111,19 @@ void main() {
     DateTime date, {
     CashFlowType type = CashFlowType.returnFlow,
     String currency = 'INR',
-  }) => container
-      .read(investmentNotifierProvider.notifier)
-      .addCashFlow(
-        investmentId: investmentId,
-        type: type,
-        amount: amount,
-        date: date,
-        currency: currency,
-      );
+  }) async {
+    await container
+        .read(investmentNotifierProvider.notifier)
+        .addCashFlow(
+          investmentId: investmentId,
+          type: type,
+          amount: amount,
+          date: date,
+          currency: currency,
+        );
+    // The milestone check runs after the save returns.
+    await pumpEventQueue();
+  }
 
   group('milestone MOIC is the shared paid-in MOIC', () {
     test('a re-lent P2P payout counts once, so 1.5x fires', () async {

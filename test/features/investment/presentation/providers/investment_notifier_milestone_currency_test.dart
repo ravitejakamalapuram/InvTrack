@@ -188,6 +188,8 @@ void main() {
             currency: 'USD',
           );
 
+      await pumpEventQueue();
+
       // 1.5x on $10,000 in and $15,000 back; the gain is $5,000.
       expect(notifications.milestones, [
         {'moic': 1.5, 'gain': 5000.0, 'currency': 'USD'},
@@ -215,6 +217,8 @@ void main() {
             date: DateTime(2026, 1, 1),
             currency: 'INR',
           );
+
+      await pumpEventQueue();
 
       expect(notifications.milestones, hasLength(1));
       expect(notifications.milestones.single['currency'], 'USD');
@@ -251,6 +255,8 @@ void main() {
             date: DateTime(2026, 1, 1),
             currency: 'INR',
           );
+
+      await pumpEventQueue();
 
       expect(notifications.milestones, isEmpty);
     });
@@ -301,6 +307,8 @@ void main() {
             currency: 'INR',
           );
 
+      await pumpEventQueue();
+
       expect(notifications.goalMilestones, hasLength(1));
       final shown = notifications.goalMilestones.single;
       expect(shown['percent'] as double, closeTo(50, 1e-6));
@@ -338,6 +346,8 @@ void main() {
               currency: 'INR',
             );
 
+        await pumpEventQueue();
+
         expect(notifications.goalMilestones, hasLength(1));
         final shown = notifications.goalMilestones.single;
         expect(shown['target'], 83000.0);
@@ -364,6 +374,8 @@ void main() {
             currency: 'INR',
           );
 
+      await pumpEventQueue();
+
       expect(notifications.goalMilestones, isEmpty);
     });
 
@@ -386,6 +398,8 @@ void main() {
             date: DateTime(2026, 1, 1),
             currency: 'USD',
           );
+
+      await pumpEventQueue();
 
       expect(notifications.goalMilestones, hasLength(1));
       final shown = notifications.goalMilestones.single;
@@ -413,6 +427,8 @@ void main() {
           date: DateTime(2026, 1, 1),
           currency: 'USD',
         );
+
+        await pumpEventQueue();
         expect(notifications.goalMilestones, isEmpty);
 
         await notifier.addCashFlow(
@@ -422,6 +438,8 @@ void main() {
           date: DateTime(2026, 2, 1),
           currency: 'USD',
         );
+
+        await pumpEventQueue();
 
         expect(notifications.goalMilestones, hasLength(1));
         final shown = notifications.goalMilestones.single;
@@ -449,6 +467,8 @@ void main() {
             date: DateTime(2026, 1, 1),
             currency: 'USD',
           );
+
+      await pumpEventQueue();
 
       expect(repo.calls.first, 'addCashFlow');
       // The milestone check still sees the progress before it (20% to 26%).
@@ -498,6 +518,8 @@ void main() {
               currency: 'USD',
             );
 
+        await pumpEventQueue();
+
         expect(plugin.shownNotifications.map((n) => n.title), isEmpty);
         expect(service.isGoalMilestoneShown('goal-1', 50), isTrue);
       },
@@ -535,6 +557,8 @@ void main() {
             date: DateTime(2026, 1, 1),
             currency: 'USD',
           );
+
+      await pumpEventQueue();
 
       expect(notifications.goalMilestones, hasLength(1));
       final shown = notifications.goalMilestones.single;

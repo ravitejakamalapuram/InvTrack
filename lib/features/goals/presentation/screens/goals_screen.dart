@@ -364,15 +364,10 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                     confirmMessage: l10n.deleteGoalMessage(goal.name),
                     successMessage: l10n.goalDeleted,
                     onDelete: () {
-                      if (isArchived) {
-                        ref
-                            .read(goalNotifierProvider.notifier)
-                            .deleteArchivedGoal(goal.id);
-                      } else {
-                        ref
-                            .read(goalNotifierProvider.notifier)
-                            .deleteGoal(goal.id);
-                      }
+                      final notifier = ref.read(goalNotifierProvider.notifier);
+                      return isArchived
+                          ? notifier.deleteArchivedGoal(goal.id)
+                          : notifier.deleteGoal(goal.id);
                     },
                   ),
                   archiveConfig: ArchiveActionConfig(
@@ -387,15 +382,10 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                         : l10n.goalArchived,
                     isArchived: isArchived,
                     onArchive: () {
-                      if (isArchived) {
-                        ref
-                            .read(goalNotifierProvider.notifier)
-                            .unarchiveGoal(goal.id);
-                      } else {
-                        ref
-                            .read(goalNotifierProvider.notifier)
-                            .archiveGoal(goal.id);
-                      }
+                      final notifier = ref.read(goalNotifierProvider.notifier);
+                      return isArchived
+                          ? notifier.unarchiveGoal(goal.id)
+                          : notifier.archiveGoal(goal.id);
                     },
                   ),
                   child: GoalCard(

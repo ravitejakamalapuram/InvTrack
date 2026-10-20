@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
+import 'package:inv_tracker/core/providers/write_rejected_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/income_projection/data/repositories/firestore_expected_cash_flow_repository.dart';
@@ -67,6 +68,9 @@ final investmentRepositoryProvider = Provider<InvestmentRepository>((ref) {
           ref.read(sharedPreferencesProvider),
           user.id,
         ),
+    // A save is done once it is on this device; if the server rejects it
+    // later, say so once.
+    onWriteRejected: (_) => ref.read(writeRejectedProvider.notifier).report(),
   );
 });
 

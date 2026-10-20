@@ -6,11 +6,20 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 /// Utility class for consistent user feedback (snackbars, dialogs, haptics)
 class AppFeedback {
   /// Show a success snackbar with a checkmark icon
-  static void showSuccess(BuildContext context, String message) {
+  ///
+  /// [messenger] and [darkOverride] let a caller whose context may be gone by then
+  /// (a row removed while its action ran) take both before it awaits.
+  static void showSuccess(
+    BuildContext context,
+    String message, {
+    ScaffoldMessengerState? messenger,
+    bool? darkOverride,
+  }) {
     HapticFeedback.mediumImpact();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark =
+        darkOverride ?? Theme.of(context).brightness == Brightness.dark;
     final fill = isDark ? AppColors.successDark : AppColors.successLight;
-    ScaffoldMessenger.of(context).showSnackBar(
+    (messenger ?? ScaffoldMessenger.of(context)).showSnackBar(
       SnackBar(
         content: Row(
           children: [
@@ -32,11 +41,20 @@ class AppFeedback {
   }
 
   /// Show an error snackbar with an error icon
-  static void showError(BuildContext context, String message) {
+  ///
+  /// [messenger] and [darkOverride] let a caller whose context may be gone by then
+  /// (a row removed while its action ran) take both before it awaits.
+  static void showError(
+    BuildContext context,
+    String message, {
+    ScaffoldMessengerState? messenger,
+    bool? darkOverride,
+  }) {
     HapticFeedback.heavyImpact();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark =
+        darkOverride ?? Theme.of(context).brightness == Brightness.dark;
     final fill = isDark ? AppColors.errorDark : AppColors.errorLight;
-    ScaffoldMessenger.of(context).showSnackBar(
+    (messenger ?? ScaffoldMessenger.of(context)).showSnackBar(
       SnackBar(
         content: Row(
           children: [

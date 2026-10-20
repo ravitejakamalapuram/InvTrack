@@ -212,14 +212,17 @@ void main() {
       currency: 'INR',
     );
 
-    Future<void> add(CashFlowType type, double amount) =>
-        notifier().addCashFlow(
-          investmentId: 'inv-1',
-          type: type,
-          amount: amount,
-          date: DateTime(2026, 6, 1),
-          currency: 'INR',
-        );
+    Future<void> add(CashFlowType type, double amount) async {
+      await notifier().addCashFlow(
+        investmentId: 'inv-1',
+        type: type,
+        amount: amount,
+        date: DateTime(2026, 6, 1),
+        currency: 'INR',
+      );
+      // The milestone checks run after the save returns.
+      await pumpEventQueue();
+    }
 
     for (final type in CashFlowType.values) {
       test('${type.name}: fires one cashflow_added and nothing else', () async {

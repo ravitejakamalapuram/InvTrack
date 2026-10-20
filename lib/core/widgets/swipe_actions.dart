@@ -56,17 +56,23 @@ class DeleteActionConfig {
   /// Message for the confirmation dialog
   final String confirmMessage;
 
-  /// Callback when the item is deleted
-  final VoidCallback onDelete;
+  /// Callback when the item is deleted. It is awaited, so the message
+  /// follows the result: a throw or a failed future shows [failureMessage].
+  final FutureOr<void> Function() onDelete;
 
   /// Success message to show after deletion
   final String successMessage;
+
+  /// Message to show when [onDelete] throws. Null shows the generic
+  /// "Something went wrong" message.
+  final String? failureMessage;
 
   const DeleteActionConfig({
     required this.confirmTitle,
     required this.confirmMessage,
     required this.onDelete,
     required this.successMessage,
+    this.failureMessage,
   });
 }
 
@@ -204,6 +210,11 @@ class SwipeActions extends StatelessWidget {
   ) async {
     HapticFeedback.mediumImpact();
     if (direction == DismissDirection.endToStart && deleteConfig != null) {
+      // Taken before awaiting: the row can leave the list (and this context
+      // with it) while the delete runs, and the message must still show.
+      final messenger = ScaffoldMessenger.of(context);
+      final l10n = AppLocalizations.of(context);
+      final isDark = Theme.of(context).brightness == Brightness.dark;
       final confirmed = await AppFeedback.showConfirmDialog(
         context: context,
         title: deleteConfig!.confirmTitle,
@@ -211,9 +222,30 @@ class SwipeActions extends StatelessWidget {
         confirmText: 'Delete',
       );
       if (confirmed == true) {
-        deleteConfig!.onDelete();
-        if (context.mounted) {
-          AppFeedback.showSuccess(context, deleteConfig!.successMessage);
+        // The message follows the result: a failed delete is not announced
+        // as done.
+        var succeeded = true;
+        try {
+          await deleteConfig!.onDelete();
+        } catch (_) {
+          succeeded = false;
+        }
+        if (messenger.mounted) {
+          if (succeeded) {
+            AppFeedback.showSuccess(
+              messenger.context,
+              deleteConfig!.successMessage,
+              messenger: messenger,
+              darkOverride: isDark,
+            );
+          } else {
+            AppFeedback.showError(
+              messenger.context,
+              deleteConfig!.failureMessage ?? l10n.deleteActionFailed,
+              messenger: messenger,
+              darkOverride: isDark,
+            );
+          }
         }
       }
       // Always return false - the item will be removed by provider update
