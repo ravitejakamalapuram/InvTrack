@@ -6,11 +6,19 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 /// Utility class for consistent user feedback (snackbars, dialogs, haptics)
 class AppFeedback {
   /// Show a success snackbar with a checkmark icon
-  static void showSuccess(BuildContext context, String message) {
+  ///
+  /// [messenger] and [isDark] let a caller whose context may be gone by then
+  /// (a row removed while its action ran) take both before it awaits.
+  static void showSuccess(
+    BuildContext context,
+    String message, {
+    ScaffoldMessengerState? messenger,
+    bool? isDark,
+  }) {
     HapticFeedback.mediumImpact();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fill = isDark ? AppColors.successDark : AppColors.successLight;
-    ScaffoldMessenger.of(context).showSnackBar(
+    final dark = isDark ?? Theme.of(context).brightness == Brightness.dark;
+    final fill = dark ? AppColors.successDark : AppColors.successLight;
+    (messenger ?? ScaffoldMessenger.of(context)).showSnackBar(
       SnackBar(
         content: Row(
           children: [
@@ -32,11 +40,19 @@ class AppFeedback {
   }
 
   /// Show an error snackbar with an error icon
-  static void showError(BuildContext context, String message) {
+  ///
+  /// [messenger] and [isDark] let a caller whose context may be gone by then
+  /// (a row removed while its action ran) take both before it awaits.
+  static void showError(
+    BuildContext context,
+    String message, {
+    ScaffoldMessengerState? messenger,
+    bool? isDark,
+  }) {
     HapticFeedback.heavyImpact();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fill = isDark ? AppColors.errorDark : AppColors.errorLight;
-    ScaffoldMessenger.of(context).showSnackBar(
+    final dark = isDark ?? Theme.of(context).brightness == Brightness.dark;
+    final fill = dark ? AppColors.errorDark : AppColors.errorLight;
+    (messenger ?? ScaffoldMessenger.of(context)).showSnackBar(
       SnackBar(
         content: Row(
           children: [

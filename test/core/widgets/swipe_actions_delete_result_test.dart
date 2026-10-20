@@ -103,4 +103,54 @@ void main() {
     final l10n = AppLocalizations.of(tester.element(find.byType(Scaffold)));
     expect(find.text(l10n.deleteActionFailed), findsOneWidget);
   });
+
+  testWidgets('the result still shows when the row leaves the list first', (
+    tester,
+  ) async {
+    // A stream-backed list drops the row as soon as the local delete lands,
+    // before the delete's future completes.
+    final done = Completer<void>();
+    var present = true;
+    late StateSetter rebuild;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              rebuild = setState;
+              return ListView(
+                children: [
+                  if (present)
+                    SwipeActions(
+                      itemKey: 'item',
+                      deleteConfig: DeleteActionConfig(
+                        confirmTitle: 'Delete?',
+                        confirmMessage: 'Sure?',
+                        onDelete: () => done.future,
+                        successMessage: 'Deleted it',
+                      ),
+                      child: const SizedBox(
+                        height: 80,
+                        child: Text('Test Item'),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await _swipeAndConfirm(tester);
+    rebuild(() => present = false);
+    await tester.pump();
+    done.complete();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Deleted it'), findsOneWidget);
+  });
 }

@@ -210,6 +210,11 @@ class SwipeActions extends StatelessWidget {
   ) async {
     HapticFeedback.mediumImpact();
     if (direction == DismissDirection.endToStart && deleteConfig != null) {
+      // Taken before awaiting: the row can leave the list (and this context
+      // with it) while the delete runs, and the message must still show.
+      final messenger = ScaffoldMessenger.of(context);
+      final l10n = AppLocalizations.of(context);
+      final isDark = Theme.of(context).brightness == Brightness.dark;
       final confirmed = await AppFeedback.showConfirmDialog(
         context: context,
         title: deleteConfig!.confirmTitle,
@@ -225,14 +230,20 @@ class SwipeActions extends StatelessWidget {
         } catch (_) {
           succeeded = false;
         }
-        if (context.mounted) {
+        if (messenger.mounted) {
           if (succeeded) {
-            AppFeedback.showSuccess(context, deleteConfig!.successMessage);
+            AppFeedback.showSuccess(
+              messenger.context,
+              deleteConfig!.successMessage,
+              messenger: messenger,
+              isDark: isDark,
+            );
           } else {
             AppFeedback.showError(
-              context,
-              deleteConfig!.failureMessage ??
-                  AppLocalizations.of(context).deleteActionFailed,
+              messenger.context,
+              deleteConfig!.failureMessage ?? l10n.deleteActionFailed,
+              messenger: messenger,
+              isDark: isDark,
             );
           }
         }
