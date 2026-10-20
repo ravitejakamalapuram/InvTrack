@@ -130,6 +130,22 @@ void main() {
         expect(currencies.containsKey('JPY'), isTrue);
       });
 
+      test('lists every currency the app can format', () {
+        final codes = LocaleDetectionService.getSupportedCurrencies().keys;
+        expect(codes, hasLength(43));
+        expect(codes, containsAll(['AED', 'SAR', 'KRW', 'EGP', 'NZD']));
+      });
+
+      test('every currency proposed for a country can be picked', () {
+        final codes = LocaleDetectionService.getSupportedCurrencies().keys;
+        for (final c in ['KR', 'TH', 'NG', 'EG', 'NZ', 'SE', 'TR', 'PL']) {
+          expect(
+            codes,
+            contains(LocaleDetectionService.proposeCurrencyForCountry(c)),
+          );
+        }
+      });
+
       test('currency display names include symbols', () {
         final currencies = LocaleDetectionService.getSupportedCurrencies();
 
