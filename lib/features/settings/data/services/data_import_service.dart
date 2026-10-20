@@ -418,6 +418,7 @@ class DataImportService {
       baseCurrency: baseCurrency,
       snapshots: snapshots,
       warnings: warnings,
+      errors: errors,
       writtenIds: importedInvestmentIds,
       accountNameCounts: accountNameCounts,
       accountIds: accountIds,
@@ -574,6 +575,29 @@ class DataImportService {
   }
 
   // ============ Private Helper Methods ============
+
+  /// Archives [ids] one by one and returns how many failed. A failure is
+  /// reported in the result, not thrown, so the ids already written still
+  /// reach the US dollar check (#1099). The type only is logged (rule 7).
+  Future<int> _archiveInvestments(Iterable<String> ids) async {
+    var failed = 0;
+    for (final id in ids) {
+      try {
+        await _investmentRepository.archiveInvestment(id);
+      } catch (e) {
+        failed++;
+        LoggerService.error(
+          'Could not archive an imported investment',
+          metadata: {'error_type': e.runtimeType.toString()},
+        );
+      }
+    }
+    return failed;
+  }
+
+  static String _archiveFailureMessage(int count) =>
+      '$count restored item${count == 1 ? '' : 's'} could not be moved to '
+      'the archive';
 
   /// The result of an import that stopped before it changed anything.
   ZipImportResult _notImported(String reason) => ZipImportResult(
@@ -929,6 +953,7 @@ class DataImportService {
       }
     }
 
+    var archiveFailures = 0;
     // Bulk import
     if (investments.isNotEmpty) {
       await _investmentRepository.bulkImport(
@@ -938,9 +963,9 @@ class DataImportService {
 
       // If these should be archived, archive them
       if (isArchived) {
-        for (final inv in investments) {
-          await _investmentRepository.archiveInvestment(inv.id);
-        }
+        archiveFailures = await _archiveInvestments([
+          for (final inv in investments) inv.id,
+        ]);
       }
     }
 
@@ -948,7 +973,10 @@ class DataImportService {
       imported: cashFlows.length,
       investmentsCreated: investments.length,
       investmentIds: [for (final inv in investments) inv.id],
-      errors: parseResult.errors,
+      errors: [
+        ...parseResult.errors,
+        if (archiveFailures > 0) _archiveFailureMessage(archiveFailures),
+      ],
       warnings: warnings,
       investmentNameToIdMap: nameToIdMap,
       investmentIdMap: idToIdMap,
@@ -1199,6 +1227,7 @@ class DataImportService {
     required String baseCurrency,
     required List<InvestmentValuationSnapshot> snapshots,
     required List<String> warnings,
+    required List<String> errors,
     required Set<String> writtenIds,
     Map<String, int> accountNameCounts = const {},
     Set<String> accountIds = const {},
@@ -1301,11 +1330,11 @@ class DataImportService {
         investments: investments,
         cashFlows: const [],
       );
-      for (final inv in investments) {
-        if (inv.isArchived) {
-          await _investmentRepository.archiveInvestment(inv.id);
-        }
-      }
+      final failed = await _archiveInvestments([
+        for (final inv in investments)
+          if (inv.isArchived) inv.id,
+      ]);
+      if (failed > 0) errors.add(_archiveFailureMessage(failed));
     }
     return nameToId;
   }
@@ -1551,6 +1580,7 @@ class DataImportService {
       existingGoalNames = existing.map((e) => e.name.toLowerCase()).toSet();
     }
 
+    var archiveFailures = 0;
     final now = DateTime.now();
     final warnings = <String>[];
     int imported = 0;
@@ -1602,20 +1632,30 @@ class DataImportService {
       );
 
       await _goalRepository.createGoal(goal);
+      imported++;
+      goalIds.add(goal.id);
 
       // If should be archived, archive it
       if (isArchived) {
-        await _goalRepository.archiveGoal(goal.id);
+        try {
+          await _goalRepository.archiveGoal(goal.id);
+        } catch (e) {
+          archiveFailures++;
+          LoggerService.error(
+            'Could not archive an imported goal',
+            metadata: {'error_type': e.runtimeType.toString()},
+          );
+        }
       }
-
-      imported++;
-      goalIds.add(goal.id);
     }
 
     return _CsvImportResult(
       imported: imported,
       goalIds: goalIds,
-      errors: parseResult.errors,
+      errors: [
+        ...parseResult.errors,
+        if (archiveFailures > 0) _archiveFailureMessage(archiveFailures),
+      ],
       warnings: warnings,
     );
   }
