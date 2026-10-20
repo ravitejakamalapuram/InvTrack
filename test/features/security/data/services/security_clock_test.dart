@@ -40,19 +40,16 @@ void main() {
     expect(calls, ['elapsedRealtime']);
   });
 
-  test(
-    'an explicitly injected stopwatch is test-only and deterministic',
-    () async {
-      final clock = SecurityClock(stopwatch: stopwatch);
+  test('an explicitly injected stopwatch is test-only and deterministic', () async {
+    final clock = SecurityClock(stopwatch: stopwatch);
 
-      expect(await clock.elapsed(), const Duration(seconds: 7));
-      expect(clock.isBootClock, isFalse);
+    expect(await clock.elapsed(), const Duration(seconds: 7));
+    expect(clock.isBootClock, isFalse);
 
-      stopwatch.value = const Duration(seconds: 9);
-      expect(await clock.elapsed(), const Duration(seconds: 9));
-      expect(calls, isEmpty);
-    },
-  );
+    stopwatch.value = const Duration(seconds: 9);
+    expect(await clock.elapsed(), const Duration(seconds: 9));
+    expect(calls, isEmpty);
+  });
 
   test('channel failure fails closed instead of using a stopwatch', () async {
     answer(() => throw PlatformException(code: 'ERROR'));

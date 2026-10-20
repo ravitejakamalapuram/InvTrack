@@ -22,7 +22,6 @@ class MockAuthRepository extends Mock implements AuthRepository {}
 class MockAnalyticsService extends Mock implements AnalyticsService {}
 
 class MockCrashlyticsService extends Mock implements CrashlyticsService {}
-
 class MockNotificationService extends Mock implements NotificationService {}
 
 void main() {
@@ -44,19 +43,13 @@ void main() {
     when(
       () => mockAnalyticsService.logSignIn(method: any(named: 'method')),
     ).thenAnswer((_) async {});
-    when(
-      () => mockNotificationService.requestPermissions(),
-    ).thenAnswer((_) async => true);
+    when(() => mockNotificationService.requestPermissions()).thenAnswer((_) async => true);
     when(() => mockAnalyticsService.setUserId(any())).thenAnswer((_) async {});
-    when(
-      () => mockNotificationService.requestPermissions(),
-    ).thenAnswer((_) async => true);
+    when(() => mockNotificationService.requestPermissions()).thenAnswer((_) async => true);
     when(
       () => mockCrashlyticsService.setUserIdentifier(any()),
     ).thenAnswer((_) async {});
-    when(
-      () => mockNotificationService.requestPermissions(),
-    ).thenAnswer((_) async => true);
+    when(() => mockNotificationService.requestPermissions()).thenAnswer((_) async => true);
   });
 
   testWidgets('Google Sign-In button shows correct semantics during loading', (
@@ -75,9 +68,7 @@ void main() {
           authRepositoryProvider.overrideWithValue(mockAuthRepository),
           sharedPreferencesProvider.overrideWithValue(mockPrefs),
           analyticsServiceProvider.overrideWithValue(mockAnalyticsService),
-          notificationServiceProvider.overrideWithValue(
-            mockNotificationService,
-          ),
+          notificationServiceProvider.overrideWithValue(mockNotificationService),
           crashlyticsServiceProvider.overrideWithValue(mockCrashlyticsService),
           googleSignInInitializedProvider.overrideWith((ref) async {}),
         ],
@@ -170,19 +161,15 @@ void main() {
   // Regression test for Crashlytics Issue: 9dfdf1143e4d5e88cbfe9a9d91440e44
   // GoogleSignInException: "serverClientId must be provided on Android"
   // Bug fix PR: #357
-  testWidgets('googleSignInInitializedProvider uses centralized OAuth config', (
-    tester,
-  ) async {
+  testWidgets('googleSignInInitializedProvider uses centralized OAuth config',
+      (tester) async {
     // This test verifies that the provider uses GoogleSignInConfig constants
     // instead of hardcoded strings, preventing configuration drift
 
     // Verify GoogleSignInConfig constants are properly defined
     expect(GoogleSignInConfig.webClientId, isNotEmpty);
     expect(GoogleSignInConfig.androidServerClientId, isNotEmpty);
-    expect(
-      GoogleSignInConfig.webClientId,
-      contains('.apps.googleusercontent.com'),
-    );
+    expect(GoogleSignInConfig.webClientId, contains('.apps.googleusercontent.com'));
     expect(
       GoogleSignInConfig.androidServerClientId,
       contains('.apps.googleusercontent.com'),
@@ -207,68 +194,63 @@ void main() {
   });
 
   testWidgets(
-    'tapping "Terms of Service" in the sign-in footer opens the legal screen',
-    (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            authRepositoryProvider.overrideWithValue(mockAuthRepository),
-            sharedPreferencesProvider.overrideWithValue(mockPrefs),
-            analyticsServiceProvider.overrideWithValue(mockAnalyticsService),
-            notificationServiceProvider.overrideWithValue(
-              mockNotificationService,
-            ),
-            crashlyticsServiceProvider.overrideWithValue(
-              mockCrashlyticsService,
-            ),
-            googleSignInInitializedProvider.overrideWith((ref) async {}),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: SignInScreen(),
-          ),
+      'tapping "Terms of Service" in the sign-in footer opens the legal screen',
+      (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(mockAuthRepository),
+          sharedPreferencesProvider.overrideWithValue(mockPrefs),
+          analyticsServiceProvider.overrideWithValue(mockAnalyticsService),
+          notificationServiceProvider.overrideWithValue(mockNotificationService),
+          crashlyticsServiceProvider.overrideWithValue(mockCrashlyticsService),
+          googleSignInInitializedProvider.overrideWith((ref) async {}),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SignInScreen(),
         ),
-      );
+      ),
+    );
 
-      await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(seconds: 2));
 
-      // The footer text is a RichText with "Terms of Service" and
-      // "Privacy Policy" as separate tappable spans - it must not render as
-      // plain, non-interactive text.
-      final richTextFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is RichText &&
-            widget.text.toPlainText().contains('Terms of Service') &&
-            widget.text.toPlainText().contains('Privacy Policy'),
-      );
-      expect(richTextFinder, findsOneWidget);
+    // The footer text is a RichText with "Terms of Service" and
+    // "Privacy Policy" as separate tappable spans - it must not render as
+    // plain, non-interactive text.
+    final richTextFinder = find.byWidgetPredicate(
+      (widget) =>
+          widget is RichText &&
+          widget.text.toPlainText().contains('Terms of Service') &&
+          widget.text.toPlainText().contains('Privacy Policy'),
+    );
+    expect(richTextFinder, findsOneWidget);
 
-      final richText = tester.widget<RichText>(richTextFinder);
-      final rootSpan = richText.text as TextSpan;
-      TapGestureRecognizer? tosRecognizer;
-      rootSpan.visitChildren((span) {
-        if (span is TextSpan &&
-            span.text == 'Terms of Service' &&
-            span.recognizer is TapGestureRecognizer) {
-          tosRecognizer = span.recognizer as TapGestureRecognizer;
-        }
-        return true;
-      });
+    final richText = tester.widget<RichText>(richTextFinder);
+    final rootSpan = richText.text as TextSpan;
+    TapGestureRecognizer? tosRecognizer;
+    rootSpan.visitChildren((span) {
+      if (span is TextSpan &&
+          span.text == 'Terms of Service' &&
+          span.recognizer is TapGestureRecognizer) {
+        tosRecognizer = span.recognizer as TapGestureRecognizer;
+      }
+      return true;
+    });
 
-      expect(
-        tosRecognizer,
-        isNotNull,
-        reason: 'Terms of Service must be a tappable link, not plain text',
-      );
+    expect(
+      tosRecognizer,
+      isNotNull,
+      reason: 'Terms of Service must be a tappable link, not plain text',
+    );
 
-      tosRecognizer!.onTap!();
-      await tester.pumpAndSettle();
+    tosRecognizer!.onTap!();
+    await tester.pumpAndSettle();
 
-      expect(find.text('Terms of Service'), findsWidgets);
-      expect(find.textContaining('Governing Law'), findsOneWidget);
-    },
-  );
+    expect(find.text('Terms of Service'), findsWidgets);
+    expect(find.textContaining('Governing Law'), findsOneWidget);
+  });
 
   // A05 / UX-01: the guest data-loss warning was only a screen-reader hint,
   // so sighted users never saw it before choosing guest mode.

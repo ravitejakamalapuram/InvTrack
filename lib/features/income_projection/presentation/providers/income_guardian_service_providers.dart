@@ -24,69 +24,58 @@ import 'package:inv_tracker/features/income_projection/presentation/providers/in
 /// Provider for Flutter Local Notifications plugin
 ///
 /// This must be overridden in main.dart with the actual plugin instance
-final flutterLocalNotificationsPluginProvider =
-    Provider<FlutterLocalNotificationsPlugin>((ref) {
-      throw UnimplementedError('Override in main.dart');
-    });
+final flutterLocalNotificationsPluginProvider = Provider<FlutterLocalNotificationsPlugin>((ref) {
+  throw UnimplementedError('Override in main.dart');
+});
 
 // ============ INCOME GUARDIAN NOTIFICATION HANDLER ============
 
 /// Provider for Income Guardian notification handler
-final incomeGuardianNotificationHandlerProvider =
-    Provider<IncomeGuardianNotificationHandler>((ref) {
-      final plugin = ref.watch(flutterLocalNotificationsPluginProvider);
-      final notificationService = ref.watch(notificationServiceProvider);
+final incomeGuardianNotificationHandlerProvider = Provider<IncomeGuardianNotificationHandler>((ref) {
+  final plugin = ref.watch(flutterLocalNotificationsPluginProvider);
+  final notificationService = ref.watch(notificationServiceProvider);
 
-      return IncomeGuardianNotificationHandler(
-        plugin: plugin,
-        ensureInitialized: () => notificationService.initialize(),
-        ensurePermissionsForShow: () async {
-          await notificationService.initialize();
-          return await notificationService.arePermissionsGranted();
-        },
-        // The handler passes the payment's ISO code: show its symbol and format
-        // the amount in that currency's own locale ('₹2.5 L', '\$1.5K').
-        formatCurrency: (amount, currencyCode, _) => formatCompactCurrency(
-          amount,
-          symbol: getCurrencySymbol(currencyCode),
-          locale: getCurrencyLocale(currencyCode),
-        ),
-      );
-    });
+  return IncomeGuardianNotificationHandler(
+    plugin: plugin,
+    ensureInitialized: () => notificationService.initialize(),
+    ensurePermissionsForShow: () async {
+      await notificationService.initialize();
+      return await notificationService.arePermissionsGranted();
+    },
+    // The handler passes the payment's ISO code: show its symbol and format
+    // the amount in that currency's own locale ('₹2.5 L', '\$1.5K').
+    formatCurrency: (amount, currencyCode, _) => formatCompactCurrency(
+      amount,
+      symbol: getCurrencySymbol(currencyCode),
+      locale: getCurrencyLocale(currencyCode),
+    ),
+  );
+});
 
 // ============ INCOME GUARDIAN MONITOR SERVICE ============
 
 /// Provider for Income Guardian monitor service
-final incomeGuardianMonitorServiceProvider =
-    Provider<IncomeGuardianMonitorService>((ref) {
-      final expectedCashFlowRepository = ref.watch(
-        expectedCashFlowRepositoryProvider,
-      );
-      final investmentRepository = ref.watch(investmentRepositoryProvider);
-      final notificationHandler = ref.watch(
-        incomeGuardianNotificationHandlerProvider,
-      );
-      final settings = ref.watch(incomeGuardianSettingsProvider);
-      final locale = ref.watch(currencyLocaleProvider);
+final incomeGuardianMonitorServiceProvider = Provider<IncomeGuardianMonitorService>((ref) {
+  final expectedCashFlowRepository = ref.watch(expectedCashFlowRepositoryProvider);
+  final investmentRepository = ref.watch(investmentRepositoryProvider);
+  final notificationHandler = ref.watch(incomeGuardianNotificationHandlerProvider);
+  final settings = ref.watch(incomeGuardianSettingsProvider);
+  final locale = ref.watch(currencyLocaleProvider);
 
-      return IncomeGuardianMonitorService(
-        expectedCashFlowRepository: expectedCashFlowRepository,
-        investmentRepository: investmentRepository,
-        notificationHandler: notificationHandler,
-        settings: settings,
-        locale: locale,
-      );
-    });
+  return IncomeGuardianMonitorService(
+    expectedCashFlowRepository: expectedCashFlowRepository,
+    investmentRepository: investmentRepository,
+    notificationHandler: notificationHandler,
+    settings: settings,
+    locale: locale,
+  );
+});
 
 // ============ INCOME GUARDIAN SYNC SERVICE ============
 
 /// Provider for Income Guardian sync service
-final incomeGuardianSyncServiceProvider = Provider<IncomeGuardianSyncService>((
-  ref,
-) {
-  final expectedCashFlowRepository = ref.watch(
-    expectedCashFlowRepositoryProvider,
-  );
+final incomeGuardianSyncServiceProvider = Provider<IncomeGuardianSyncService>((ref) {
+  final expectedCashFlowRepository = ref.watch(expectedCashFlowRepositoryProvider);
   final investmentRepository = ref.watch(investmentRepositoryProvider);
   final settings = ref.watch(incomeGuardianSettingsProvider);
 
@@ -104,21 +93,21 @@ final incomeGuardianSyncServiceProvider = Provider<IncomeGuardianSyncService>((
 /// Throws AuthException.notAuthenticated if user is not authenticated.
 final orphanedExpectedCashFlowCleanupServiceProvider =
     Provider<OrphanedExpectedCashFlowCleanupService>((ref) {
-      final user = ref.watch(authStateProvider).value;
-      if (user == null) {
-        throw AuthException.notAuthenticated();
-      }
-      return OrphanedExpectedCashFlowCleanupService(
-        firestore: ref.watch(firestoreProvider),
-        userId: user.id,
-        prefs: ref.watch(sharedPreferencesProvider),
-      );
-    });
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) {
+    throw AuthException.notAuthenticated();
+  }
+  return OrphanedExpectedCashFlowCleanupService(
+    firestore: ref.watch(firestoreProvider),
+    userId: user.id,
+    prefs: ref.watch(sharedPreferencesProvider),
+  );
+});
 
 // ============ SERVICE INITIALIZATION ============
 
 /// Provider to initialize Income Guardian services
-///
+/// 
 /// This should be called once when the user is authenticated.
 /// It starts both the monitor service (notifications) and sync service (auto-matching).
 ///

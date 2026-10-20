@@ -97,7 +97,8 @@ class FYReport {
   }
 
   /// Total capital gains (short-term + long-term)
-  double get totalCapitalGains => shortTermCapitalGains + longTermCapitalGains;
+  double get totalCapitalGains =>
+      shortTermCapitalGains + longTermCapitalGains;
 
   /// Total taxable income (dividends + interest + capital gains)
   double get totalTaxableIncome =>
@@ -153,7 +154,7 @@ class MonthlyFYData {
       'Sep',
       'Oct',
       'Nov',
-      'Dec',
+      'Dec'
     ];
     return months[month - 1];
   }

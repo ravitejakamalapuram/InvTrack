@@ -29,7 +29,9 @@ class IncomeTrendReportScreen extends ConsumerWidget {
     final reportAsync = ref.watch(incomeTrendReportProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.incomeTrendReport)),
+      appBar: AppBar(
+        title: Text(l10n.incomeTrendReport),
+      ),
       body: reportAsync.when(
         data: (report) => _buildContent(context, ref, report, l10n),
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -38,12 +40,7 @@ class IncomeTrendReportScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(
-    BuildContext context,
-    WidgetRef ref,
-    dynamic report,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildContent(BuildContext context, WidgetRef ref, dynamic report, AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencySymbol = ref.watch(currencySymbolProvider);
     final locale = ref.watch(currencyLocaleProvider);
@@ -75,20 +72,14 @@ class IncomeTrendReportScreen extends ConsumerWidget {
 
           // 6. Auto-Insights
           if (report.insights.isNotEmpty) _buildInsights(context, report),
-
+          
           const SizedBox(height: AppSpacing.fabBottomPadding),
         ],
       ),
     );
   }
 
-  Widget _buildHeaderCard(
-    BuildContext context,
-    dynamic report,
-    String currencySymbol,
-    String locale,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildHeaderCard(BuildContext context, dynamic report, String currencySymbol, String locale, AppLocalizations l10n) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -117,9 +108,7 @@ class IncomeTrendReportScreen extends ConsumerWidget {
               child: Text(
                 '${l10n.averageMonthly}: ${formatCompactCurrency(report.averageMonthlyIncome, symbol: currencySymbol, locale: locale)}',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                  color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                 ),
               ),
             ),
@@ -184,9 +173,7 @@ class IncomeTrendReportScreen extends ConsumerWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(
-                context,
-              ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+              color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -236,40 +223,23 @@ class IncomeTrendReportScreen extends ConsumerWidget {
                 LineChartData(
                   lineBarsData: [
                     LineChartBarData(
-                      spots: report.monthlyData.asMap().entries.map<FlSpot>((
-                        entry,
-                      ) {
-                        return FlSpot(
-                          entry.key.toDouble(),
-                          entry.value.totalIncome,
-                        );
+                      spots: report.monthlyData.asMap().entries.map<FlSpot>((entry) {
+                        return FlSpot(entry.key.toDouble(), entry.value.totalIncome);
                       }).toList(),
                       isCurved: true,
-                      color: isDark
-                          ? AppColors.primaryDark
-                          : AppColors.primaryLight,
+                      color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
                       barWidth: 3,
                       dotData: const FlDotData(show: true),
                       belowBarData: BarAreaData(
                         show: true,
-                        color:
-                            (isDark
-                                    ? AppColors.primaryDark
-                                    : AppColors.primaryLight)
-                                .withValues(alpha: 0.2),
+                        color: (isDark ? AppColors.primaryDark : AppColors.primaryLight).withValues(alpha: 0.2),
                       ),
                     ),
                   ],
                   titlesData: FlTitlesData(
-                    leftTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
+                    leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -347,9 +317,7 @@ class IncomeTrendReportScreen extends ConsumerWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: _getReliabilityColor(
-                          p.onTimeRate,
-                        ).withValues(alpha: 0.2),
+                        color: _getReliabilityColor(p.onTimeRate).withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -417,17 +385,16 @@ class IncomeTrendReportScreen extends ConsumerWidget {
                           ),
                           Text(
                             '${source.percentage.toStringAsFixed(0)}%',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       LinearProgressIndicator(
                         value: source.percentage / 100,
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       ),
                     ],
                   ),
@@ -493,11 +460,7 @@ class IncomeTrendReportScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildErrorState(
-    BuildContext context,
-    WidgetRef ref,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildErrorState(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Padding(
@@ -526,3 +489,4 @@ class IncomeTrendReportScreen extends ConsumerWidget {
     );
   }
 }
+

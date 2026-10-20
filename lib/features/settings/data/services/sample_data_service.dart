@@ -294,9 +294,7 @@ class SampleDataService {
   /// - Seasonal patterns (Q4 bonus in December)
   ///
   /// **Multi-Currency (Rule 21.6):** Uses user's base currency
-  Future<SampleDataResult> createIncomeProjectionData({
-    required String baseCurrency,
-  }) async {
+  Future<SampleDataResult> createIncomeProjectionData({required String baseCurrency}) async {
     final now = DateTime.now();
     final investments = <InvestmentEntity>[];
     final cashFlows = <CashFlowEntity>[];
@@ -420,11 +418,7 @@ class SampleDataService {
     for (int i = 8; i >= 0; i--) {
       final variance = 1.0 + ((i % 3) * 0.05); // 0%, 5%, 10% variance
       final amount = 625.0 * variance; // ~15% annual
-      final expectedDate = DateTime(
-        now.year,
-        now.month - i,
-        10,
-      ); // 10th of month
+      final expectedDate = DateTime(now.year, now.month - i, 10); // 10th of month
       addCashFlow(
         grip.id,
         expectedDate,
@@ -469,7 +463,13 @@ class SampleDataService {
       final amount = 656.25 * seasonalMultiplier; // ~10.5% annual
 
       final date = DateTime(year, adjustedMonth, 15); // 15th of month
-      addCashFlow(altGraaf.id, date, CashFlowType.income, amount, baseCurrency);
+      addCashFlow(
+        altGraaf.id,
+        date,
+        CashFlowType.income,
+        amount,
+        baseCurrency,
+      );
     }
 
     // Bulk import investments

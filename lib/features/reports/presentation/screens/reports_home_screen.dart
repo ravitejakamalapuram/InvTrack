@@ -60,7 +60,9 @@ class ReportsHomeScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.reports)),
+      appBar: AppBar(
+        title: Text(l10n.reports),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
@@ -69,9 +71,9 @@ class ReportsHomeScreen extends ConsumerWidget {
             // Smart Insights Section
             Text(
               l10n.smartInsights,
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: AppSpacing.sm),
 
@@ -102,15 +104,10 @@ class ReportsHomeScreen extends ConsumerWidget {
                 }
 
                 return Column(
-                  children: insights
-                      .take(3)
-                      .map(
-                        (insight) => Padding(
-                          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                          child: SmartInsightCard(insight: insight),
-                        ),
-                      )
-                      .toList(),
+                  children: insights.take(3).map((insight) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: SmartInsightCard(insight: insight),
+                  )).toList(),
                 );
               },
               loading: () => const Center(
@@ -144,11 +141,10 @@ class ReportsHomeScreen extends ConsumerWidget {
                         const SizedBox(width: AppSpacing.xs),
                         Text(
                           l10n.needsAttention,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.error,
-                              ),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
                         ),
                         const SizedBox(width: AppSpacing.xs),
                         Container(
@@ -168,22 +164,19 @@ class ReportsHomeScreen extends ConsumerWidget {
                           ),
                           child: Text(
                             '${priorityInsights.length}',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.error,
-                                ),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    ...priorityInsights.map(
-                      (insight) => Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: SmartInsightCard(insight: insight),
-                      ),
-                    ),
+                    ...priorityInsights.map((insight) => Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                      child: SmartInsightCard(insight: insight),
+                    )),
                     const SizedBox(height: AppSpacing.lg),
                   ],
                 );
@@ -374,9 +367,6 @@ class ReportsHomeScreen extends ConsumerWidget {
   String _currentFyLabel(AppLocalizations l10n) {
     final now = DateTime.now();
     final start = now.month >= 4 ? now.year : now.year - 1;
-    return l10n.currentFY(
-      '$start',
-      ((start + 1) % 100).toString().padLeft(2, '0'),
-    );
+    return l10n.currentFY('$start', ((start + 1) % 100).toString().padLeft(2, '0'));
   }
 }

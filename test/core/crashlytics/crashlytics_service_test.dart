@@ -31,14 +31,8 @@ void main() {
 
       test('identifies network and timeout errors as transient', () {
         expect(service.isTransientError(TimeoutException('timeout')), isTrue);
-        expect(
-          service.isTransientError(const SocketException('connection reset')),
-          isTrue,
-        );
-        expect(
-          service.isTransientError(const HttpException('bad response')),
-          isTrue,
-        );
+        expect(service.isTransientError(const SocketException('connection reset')), isTrue);
+        expect(service.isTransientError(const HttpException('bad response')), isTrue);
       });
 
       test('identifies non-reportable AppException as transient', () {
@@ -47,25 +41,14 @@ void main() {
         expect(service.isTransientError(nonReportable), isTrue);
       });
 
-      test(
-        'identifies unwrapped transient cause in AppException as transient',
-        () {
-          final wrappedTimeout = NetworkException.timeout(
-            cause: TimeoutException('timed out'),
-          );
-          expect(service.isTransientError(wrappedTimeout), isTrue);
-        },
-      );
+      test('identifies unwrapped transient cause in AppException as transient', () {
+        final wrappedTimeout = NetworkException.timeout(cause: TimeoutException('timed out'));
+        expect(service.isTransientError(wrappedTimeout), isTrue);
+      });
 
       test('identifies fatal programming/state errors as non-transient', () {
-        expect(
-          service.isTransientError(FormatException('invalid syntax')),
-          isFalse,
-        );
-        expect(
-          service.isTransientError(StateError('unexpected state')),
-          isFalse,
-        );
+        expect(service.isTransientError(FormatException('invalid syntax')), isFalse);
+        expect(service.isTransientError(StateError('unexpected state')), isFalse);
         expect(service.isTransientError(RangeError.index(5, [])), isFalse);
       });
     });

@@ -172,8 +172,7 @@ class AnalyticsEvents {
   // Income Guardian events
   static const String incomeGuardianEnabled = 'income_guardian_enabled';
   static const String incomeGuardianDisabled = 'income_guardian_disabled';
-  static const String incomeGuardianSettingChanged =
-      'income_guardian_setting_changed';
+  static const String incomeGuardianSettingChanged = 'income_guardian_setting_changed';
 
   // Multi-Currency events
   static const String currencySelected = 'currency_selected';
@@ -187,8 +186,7 @@ class AnalyticsEvents {
 
   // Portfolio Health Score events
   static const String portfolioHealthViewed = 'portfolio_health_viewed';
-  static const String portfolioHealthDetailsOpened =
-      'portfolio_health_details_opened';
+  static const String portfolioHealthDetailsOpened = 'portfolio_health_details_opened';
   static const String healthScoreCalculated = 'health_score_calculated';
   static const String healthScoreShared = 'health_score_shared';
 }
@@ -198,7 +196,7 @@ class AnalyticsEvents {
 /// See library documentation above for usage examples and privacy guidelines.
 class AnalyticsService {
   AnalyticsService({FirebaseAnalytics? analytics})
-    : _analytics = analytics ?? FirebaseAnalytics.instance;
+      : _analytics = analytics ?? FirebaseAnalytics.instance;
 
   final FirebaseAnalytics _analytics;
 
@@ -1007,7 +1005,10 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.portfolioHealthViewed,
-      parameters: {'score_tier': scoreTier, 'score_range': scoreRange},
+      parameters: {
+        'score_tier': scoreTier,
+        'score_range': scoreRange,
+      },
     );
   }
 
@@ -1034,7 +1035,10 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.portfolioHealthDetailsOpened,
-      parameters: {'score_tier': scoreTier, 'score_range': scoreRange},
+      parameters: {
+        'score_tier': scoreTier,
+        'score_range': scoreRange,
+      },
     );
   }
 
@@ -1097,7 +1101,10 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.healthScoreShared,
-      parameters: {'score_tier': scoreTier, 'share_method': shareMethod},
+      parameters: {
+        'score_tier': scoreTier,
+        'share_method': shareMethod,
+      },
     );
   }
 }
@@ -1199,7 +1206,10 @@ extension IncomeGuardianAnalytics on AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.incomeGuardianSettingChanged,
-      parameters: {'setting_name': settingName, 'new_value': newValue},
+      parameters: {
+        'setting_name': settingName,
+        'new_value': newValue,
+      },
     );
   }
 }

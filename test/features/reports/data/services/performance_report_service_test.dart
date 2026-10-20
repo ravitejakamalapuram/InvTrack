@@ -82,10 +82,7 @@ void main() {
       );
 
       expect(report.topPerformers.isNotEmpty, true);
-      expect(
-        report.topPerformers.first.investment.id,
-        'inv1',
-      ); // High performer (highest XIRR)
+      expect(report.topPerformers.first.investment.id, 'inv1'); // High performer (highest XIRR)
       // Note: bottomPerformers has a bug - it reverses twice, so it's same as topPerformers
       // This will be fixed in a follow-up task
       expect(report.bottomPerformers.isNotEmpty, true);
@@ -161,49 +158,14 @@ void main() {
 
       final cashFlows = [
         // Profitable: invest 1000, return 1200
-        CashFlowEntity(
-          id: '1',
-          investmentId: 'inv1',
-          amount: 1000,
-          date: DateTime(2023, 1, 1),
-          type: CashFlowType.invest,
-          currency: 'USD',
-          createdAt: DateTime(2023, 1, 1),
-        ),
-        CashFlowEntity(
-          id: '2',
-          investmentId: 'inv1',
-          amount: 1200,
-          date: DateTime(2023, 12, 31),
-          type: CashFlowType.returnFlow,
-          currency: 'USD',
-          createdAt: DateTime(2023, 12, 31),
-        ),
+        CashFlowEntity(id: '1', investmentId: 'inv1', amount: 1000, date: DateTime(2023, 1, 1), type: CashFlowType.invest, currency: 'USD', createdAt: DateTime(2023, 1, 1)),
+        CashFlowEntity(id: '2', investmentId: 'inv1', amount: 1200, date: DateTime(2023, 12, 31), type: CashFlowType.returnFlow, currency: 'USD', createdAt: DateTime(2023, 12, 31)),
         // Loss: invest 1000, return 900
-        CashFlowEntity(
-          id: '3',
-          investmentId: 'inv2',
-          amount: 1000,
-          date: DateTime(2023, 1, 1),
-          type: CashFlowType.invest,
-          currency: 'USD',
-          createdAt: DateTime(2023, 1, 1),
-        ),
-        CashFlowEntity(
-          id: '4',
-          investmentId: 'inv2',
-          amount: 900,
-          date: DateTime(2023, 12, 31),
-          type: CashFlowType.returnFlow,
-          currency: 'USD',
-          createdAt: DateTime(2023, 12, 31),
-        ),
+        CashFlowEntity(id: '3', investmentId: 'inv2', amount: 1000, date: DateTime(2023, 1, 1), type: CashFlowType.invest, currency: 'USD', createdAt: DateTime(2023, 1, 1)),
+        CashFlowEntity(id: '4', investmentId: 'inv2', amount: 900, date: DateTime(2023, 12, 31), type: CashFlowType.returnFlow, currency: 'USD', createdAt: DateTime(2023, 12, 31)),
       ];
 
-      final report = service.generateReport(
-        allInvestments: investments,
-        allCashFlows: cashFlows,
-      );
+      final report = service.generateReport(allInvestments: investments, allCashFlows: cashFlows);
 
       expect(report.profitableCount, 1);
       expect(report.lossCount, 1);
@@ -224,40 +186,15 @@ void main() {
             currency: 'USD',
           ),
       ];
-      CashFlowEntity cf(
-        String id,
-        String inv,
-        double a,
-        CashFlowType t,
-        DateTime d,
-      ) => CashFlowEntity(
-        id: id,
-        investmentId: inv,
-        amount: a,
-        date: d,
-        type: t,
-        currency: 'USD',
-        createdAt: d,
-      );
+      CashFlowEntity cf(String id, String inv, double a, CashFlowType t, DateTime d) =>
+          CashFlowEntity(id: id, investmentId: inv, amount: a, date: d, type: t, currency: 'USD', createdAt: d);
       final report = service.generateReport(
         allInvestments: investments,
         allCashFlows: [
           cf('1', 'paid', 1000, CashFlowType.invest, DateTime(2023, 1, 1)),
-          cf(
-            '2',
-            'paid',
-            1200,
-            CashFlowType.returnFlow,
-            DateTime(2023, 12, 31),
-          ),
+          cf('2', 'paid', 1200, CashFlowType.returnFlow, DateTime(2023, 12, 31)),
           cf('3', 'awaiting', 1000, CashFlowType.invest, DateTime(2023, 1, 1)),
-          cf(
-            '4',
-            'awaiting',
-            900,
-            CashFlowType.returnFlow,
-            DateTime(2023, 12, 31),
-          ),
+          cf('4', 'awaiting', 900, CashFlowType.returnFlow, DateTime(2023, 12, 31)),
         ],
       );
 
@@ -267,10 +204,7 @@ void main() {
     });
 
     test('should handle empty data', () {
-      final report = service.generateReport(
-        allInvestments: [],
-        allCashFlows: [],
-      );
+      final report = service.generateReport(allInvestments: [], allCashFlows: []);
 
       expect(report.topPerformers, isEmpty);
       expect(report.bottomPerformers, isEmpty);

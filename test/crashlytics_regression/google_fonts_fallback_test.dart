@@ -13,9 +13,8 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 
 void main() {
   group('Google Fonts Fallback Regression Tests', () {
-    testWidgets('AppTypography loads without crashing when offline', (
-      tester,
-    ) async {
+    testWidgets('AppTypography loads without crashing when offline',
+        (tester) async {
       // Regression test for Crashlytics issue db8b8ac28264602be9b88d553f00969d
       // This test verifies that typography works even if Google Fonts CDN fails
 
@@ -65,10 +64,7 @@ void main() {
       // Verify that Plus Jakarta Sans styles have correct fallback
       // Google Fonts adds suffixes like '_800', '_700' to font family names
       expect(AppTypography.displayLarge.fontFamily, isNotNull);
-      expect(
-        AppTypography.displayLarge.fontFamily,
-        contains('PlusJakartaSans'),
-      );
+      expect(AppTypography.displayLarge.fontFamily, contains('PlusJakartaSans'));
 
       expect(AppTypography.h1.fontFamily, isNotNull);
       expect(AppTypography.h1.fontFamily, contains('PlusJakartaSans'));
@@ -112,14 +108,15 @@ void main() {
       expect(AppTypography.label.fontWeight, FontWeight.w500);
     });
 
-    testWidgets('Typography renders correctly in both light and dark themes', (
-      tester,
-    ) async {
+    testWidgets('Typography renders correctly in both light and dark themes',
+        (tester) async {
       // Test light theme
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData.light(),
-          home: Scaffold(body: Text('Test Light', style: AppTypography.h1)),
+          home: Scaffold(
+            body: Text('Test Light', style: AppTypography.h1),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -129,7 +126,9 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData.dark(),
-          home: Scaffold(body: Text('Test Dark', style: AppTypography.h1)),
+          home: Scaffold(
+            body: Text('Test Dark', style: AppTypography.h1),
+          ),
         ),
       );
       await tester.pumpAndSettle();

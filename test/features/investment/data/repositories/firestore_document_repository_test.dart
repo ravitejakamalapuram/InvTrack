@@ -47,13 +47,11 @@ void main() {
     final mockUsersCollection = MockCollectionReference();
     final mockUserDoc = MockDocumentReference();
 
-    when(
-      () => mockFirestore.collection('users'),
-    ).thenReturn(mockUsersCollection);
+    when(() => mockFirestore.collection('users'))
+        .thenReturn(mockUsersCollection);
     when(() => mockUsersCollection.doc(testUserId)).thenReturn(mockUserDoc);
-    when(
-      () => mockUserDoc.collection('documents'),
-    ).thenReturn(mockDocumentsCollection);
+    when(() => mockUserDoc.collection('documents'))
+        .thenReturn(mockDocumentsCollection);
 
     when(() => mockFirestore.batch()).thenReturn(mockBatch);
     when(() => mockBatch.delete(any())).thenReturn(null);
@@ -66,36 +64,31 @@ void main() {
   });
 
   group('deleteAllDocuments', () {
-    test(
-      'deletes every document regardless of which investment it belongs to',
-      () async {
-        final mockSnapshot = MockQuerySnapshot();
-        final doc1 = MockQueryDocumentSnapshot();
-        final doc2 = MockQueryDocumentSnapshot();
-        final ref1 = MockDocumentReference();
-        final ref2 = MockDocumentReference();
+    test('deletes every document regardless of which investment it belongs to', () async {
+      final mockSnapshot = MockQuerySnapshot();
+      final doc1 = MockQueryDocumentSnapshot();
+      final doc2 = MockQueryDocumentSnapshot();
+      final ref1 = MockDocumentReference();
+      final ref2 = MockDocumentReference();
 
-        when(
-          () => mockDocumentsCollection.get(),
-        ).thenAnswer((_) async => mockSnapshot);
-        when(() => mockSnapshot.docs).thenReturn([doc1, doc2]);
-        when(() => doc1.reference).thenReturn(ref1);
-        when(() => doc2.reference).thenReturn(ref2);
+      when(() => mockDocumentsCollection.get())
+          .thenAnswer((_) async => mockSnapshot);
+      when(() => mockSnapshot.docs).thenReturn([doc1, doc2]);
+      when(() => doc1.reference).thenReturn(ref1);
+      when(() => doc2.reference).thenReturn(ref2);
 
-        await repository.deleteAllDocuments();
+      await repository.deleteAllDocuments();
 
-        verify(() => mockBatch.delete(ref1)).called(1);
-        verify(() => mockBatch.delete(ref2)).called(1);
-        verify(() => mockBatch.commit()).called(1);
-      },
-    );
+      verify(() => mockBatch.delete(ref1)).called(1);
+      verify(() => mockBatch.delete(ref2)).called(1);
+      verify(() => mockBatch.commit()).called(1);
+    });
 
     test('does nothing when there are no documents', () async {
       final mockSnapshot = MockQuerySnapshot();
 
-      when(
-        () => mockDocumentsCollection.get(),
-      ).thenAnswer((_) async => mockSnapshot);
+      when(() => mockDocumentsCollection.get())
+          .thenAnswer((_) async => mockSnapshot);
       when(() => mockSnapshot.docs).thenReturn([]);
 
       await repository.deleteAllDocuments();

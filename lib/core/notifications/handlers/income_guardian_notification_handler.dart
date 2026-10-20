@@ -18,18 +18,17 @@ class IncomeGuardianNotificationHandler {
   final FlutterLocalNotificationsPlugin _plugin;
   final Future<void> Function() _ensureInitialized;
   final Future<bool> Function() _ensurePermissionsForShow;
-  final String Function(double amount, String currency, String locale)
-  _formatCurrency;
+  final String Function(double amount, String currency, String locale) _formatCurrency;
 
   IncomeGuardianNotificationHandler({
     required FlutterLocalNotificationsPlugin plugin,
     required Future<void> Function() ensureInitialized,
     required Future<bool> Function() ensurePermissionsForShow,
     required String Function(double, String, String) formatCurrency,
-  }) : _plugin = plugin,
-       _ensureInitialized = ensureInitialized,
-       _ensurePermissionsForShow = ensurePermissionsForShow,
-       _formatCurrency = formatCurrency;
+  })  : _plugin = plugin,
+        _ensureInitialized = ensureInitialized,
+        _ensurePermissionsForShow = ensurePermissionsForShow,
+        _formatCurrency = formatCurrency;
 
   // ============ NOTIFICATION DISPLAY METHODS ============
 
@@ -66,16 +65,12 @@ class IncomeGuardianNotificationHandler {
       presentSound: true,
     );
 
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
     await _plugin.show(
       id: NotificationIds.incomeGuardianOverdue(expectedCashFlow.investmentId),
       title: '⚠️ Payment Overdue',
-      body:
-          '$formattedAmount expected from $investmentName is $daysOverdue days late',
+      body: '$formattedAmount expected from $investmentName is $daysOverdue days late',
       notificationDetails: details,
       payload: NotificationPayload.incomeGuardianOverdue(
         expectedCashFlow.investmentId,
@@ -125,10 +120,7 @@ class IncomeGuardianNotificationHandler {
       presentSound: true,
     );
 
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
     await _plugin.show(
       id: NotificationIds.incomeGuardianUpcoming(expectedCashFlow.investmentId),

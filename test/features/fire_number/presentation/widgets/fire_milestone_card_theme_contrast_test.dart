@@ -63,9 +63,7 @@ Future<void> _pump(WidgetTester tester, Brightness brightness) async {
 /// The fill and the ring of the disc around the check.
 BoxDecoration _discAround(WidgetTester tester, Finder check) {
   for (final element
-      in find
-          .ancestor(of: check, matching: find.byType(Container))
-          .evaluate()) {
+      in find.ancestor(of: check, matching: find.byType(Container)).evaluate()) {
     final decoration = (element.widget as Container).decoration;
     if (decoration is BoxDecoration && decoration.color != null) {
       return decoration;

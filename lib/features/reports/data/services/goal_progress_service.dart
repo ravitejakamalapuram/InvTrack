@@ -7,8 +7,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
-import 'package:inv_tracker/features/reports/domain/entities/goal_progress_report.dart'
-    hide GoalStatus;
+import 'package:inv_tracker/features/reports/domain/entities/goal_progress_report.dart' hide GoalStatus;
 
 /// Provider for goal progress service
 final goalProgressServiceProvider = Provider<GoalProgressService>((ref) {

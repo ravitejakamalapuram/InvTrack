@@ -108,42 +108,44 @@ void main() {
   });
 
   group('CompactAmountText Copy Button Tooltip', () {
-    testWidgets('Snackbar copy button should have tooltip "Copy amount"', (
-      tester,
-    ) async {
-      await pumpWidget(
-        tester,
-        const CompactAmountText(amount: 105000000, compactText: '₹1.05Cr'),
-        privacyModeEnabled: false,
-      );
+    testWidgets(
+      'Snackbar copy button should have tooltip "Copy amount"',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          const CompactAmountText(amount: 105000000, compactText: '₹1.05Cr'),
+          privacyModeEnabled: false,
+        );
 
-      // Long press to reveal the full-amount snackbar
-      await tester.longPress(find.byType(CompactAmountText));
-      await tester.pumpAndSettle();
+        // Long press to reveal the full-amount snackbar
+        await tester.longPress(find.byType(CompactAmountText));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(SnackBar), findsOneWidget);
+        expect(find.byType(SnackBar), findsOneWidget);
 
-      // The copy IconButton must carry the updated tooltip 'Copy amount'
-      expect(find.byTooltip('Copy amount'), findsOneWidget);
-    });
+        // The copy IconButton must carry the updated tooltip 'Copy amount'
+        expect(find.byTooltip('Copy amount'), findsOneWidget);
+      },
+    );
 
-    testWidgets('Snackbar copy button should NOT have the old tooltip "Copy"', (
-      tester,
-    ) async {
-      await pumpWidget(
-        tester,
-        const CompactAmountText(amount: 105000000, compactText: '₹1.05Cr'),
-        privacyModeEnabled: false,
-      );
+    testWidgets(
+      'Snackbar copy button should NOT have the old tooltip "Copy"',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          const CompactAmountText(amount: 105000000, compactText: '₹1.05Cr'),
+          privacyModeEnabled: false,
+        );
 
-      await tester.longPress(find.byType(CompactAmountText));
-      await tester.pumpAndSettle();
+        await tester.longPress(find.byType(CompactAmountText));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(SnackBar), findsOneWidget);
+        expect(find.byType(SnackBar), findsOneWidget);
 
-      // Regression: the previous tooltip 'Copy' must no longer exist
-      expect(find.byTooltip('Copy'), findsNothing);
-    });
+        // Regression: the previous tooltip 'Copy' must no longer exist
+        expect(find.byTooltip('Copy'), findsNothing);
+      },
+    );
 
     testWidgets(
       'Copy button with "Copy amount" tooltip is tappable and shows copied snackbar',

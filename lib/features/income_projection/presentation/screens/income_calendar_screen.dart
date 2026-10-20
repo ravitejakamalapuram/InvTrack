@@ -30,7 +30,7 @@ class IncomeCalendarScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final filter = ref.watch(incomeCalendarFilterProvider);
     final monthOffset = ref.watch(incomeCalendarMonthOffsetProvider);
-
+    
     // Watch all expected cash flows
     final allExpectedAsync = ref.watch(allExpectedCashFlowsProvider);
 
@@ -70,9 +70,7 @@ class IncomeCalendarScreen extends ConsumerWidget {
                       isDark: isDark,
                       currentFilter: filter,
                       onFilterChanged: (newFilter) {
-                        ref
-                            .read(incomeCalendarFilterProvider.notifier)
-                            .setFilter(newFilter);
+                        ref.read(incomeCalendarFilterProvider.notifier).setFilter(newFilter);
                       },
                     ),
                   ),
@@ -84,9 +82,7 @@ class IncomeCalendarScreen extends ConsumerWidget {
                     expectedCashFlows: filteredExpected,
                     monthOffset: monthOffset,
                     onMonthChanged: (newOffset) {
-                      ref
-                          .read(incomeCalendarMonthOffsetProvider.notifier)
-                          .setOffset(newOffset);
+                      ref.read(incomeCalendarMonthOffsetProvider.notifier).setOffset(newOffset);
                     },
                     isDark: isDark,
                   ),
@@ -98,8 +94,7 @@ class IncomeCalendarScreen extends ConsumerWidget {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) =>
-              _buildErrorState(context, isDark, error, ref, l10n),
+          error: (error, stack) => _buildErrorState(context, isDark, error, ref, l10n),
         ),
       ),
     );
@@ -113,17 +108,12 @@ class IncomeCalendarScreen extends ConsumerWidget {
       case IncomeCalendarFilter.all:
         return all;
       case IncomeCalendarFilter.pending:
-        return all
-            .where(
-              (e) =>
-                  e.status == ExpectedCashFlowStatus.upcoming ||
-                  e.status == ExpectedCashFlowStatus.dueSoon,
-            )
-            .toList();
+        return all.where((e) => 
+          e.status == ExpectedCashFlowStatus.upcoming ||
+          e.status == ExpectedCashFlowStatus.dueSoon
+        ).toList();
       case IncomeCalendarFilter.overdue:
-        return all
-            .where((e) => e.status == ExpectedCashFlowStatus.overdue)
-            .toList();
+        return all.where((e) => e.status == ExpectedCashFlowStatus.overdue).toList();
     }
   }
 
@@ -142,17 +132,15 @@ class IncomeCalendarScreen extends ConsumerWidget {
             Icon(
               Icons.calendar_today_rounded,
               size: 64,
-              color: isDark
-                  ? AppColors.neutral600Dark
-                  : AppColors.neutral400Light,
+              color: isDark ? AppColors.neutral600Dark : AppColors.neutral400Light,
             ),
             const SizedBox(height: 16),
             Text(
               filter == IncomeCalendarFilter.all
                   ? l10n.calendarScreenEmptyAll
                   : filter == IncomeCalendarFilter.pending
-                  ? l10n.calendarScreenEmptyPending
-                  : l10n.calendarScreenEmptyOverdue,
+                      ? l10n.calendarScreenEmptyPending
+                      : l10n.calendarScreenEmptyOverdue,
               style: AppTypography.h3.copyWith(
                 color: isDark ? Colors.white : AppColors.neutral900Light,
               ),
@@ -163,13 +151,7 @@ class IncomeCalendarScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildErrorState(
-    BuildContext context,
-    bool isDark,
-    Object error,
-    WidgetRef ref,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildErrorState(BuildContext context, bool isDark, Object error, WidgetRef ref, AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,

@@ -102,9 +102,7 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
                 icon: Icons.percent,
                 iconColor: Colors.blue,
                 title: l10n.amountTolerance,
-                subtitle: l10n.amountToleranceSubtitle(
-                  settings.amountTolerancePercent,
-                ),
+                subtitle: l10n.amountToleranceSubtitle(settings.amountTolerancePercent),
                 value: settings.amountTolerancePercent.toDouble(),
                 min: 5,
                 max: 30,
@@ -141,9 +139,7 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
                     ? AppColors.warningDark
                     : AppColors.warningLight,
                 title: l10n.confidenceThreshold,
-                subtitle: l10n.confidenceThresholdSubtitle(
-                  settings.confidenceThresholdPercent,
-                ),
+                subtitle: l10n.confidenceThresholdSubtitle(settings.confidenceThresholdPercent),
                 value: settings.confidenceThresholdPercent.toDouble(),
                 min: 50,
                 max: 95,
@@ -170,17 +166,13 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
                 title: Text(
                   l10n.comingSoon,
                   style: AppTypography.bodyMedium.copyWith(
-                    color: isDark
-                        ? AppColors.neutral400Dark
-                        : AppColors.neutral500Light,
+                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                   ),
                 ),
                 subtitle: Text(
                   l10n.platformDelaysComingSoon,
                   style: AppTypography.small.copyWith(
-                    color: isDark
-                        ? AppColors.neutral500Dark
-                        : AppColors.neutral400Light,
+                    color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
                   ),
                 ),
               ),
@@ -245,9 +237,7 @@ class _SliderTile extends StatelessWidget {
           subtitle: Text(
             subtitle,
             style: AppTypography.small.copyWith(
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
+              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
             ),
           ),
         ),

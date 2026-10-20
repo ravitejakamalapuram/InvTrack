@@ -277,10 +277,7 @@ void main() {
       );
 
       expect(report.topEarners.length, 2);
-      expect(
-        report.topEarners.first.investment.id,
-        'inv2',
-      ); // Top earner (1000)
+      expect(report.topEarners.first.investment.id, 'inv2'); // Top earner (1000)
       expect(report.topEarners.first.income, 1000.0);
       expect(report.topEarners[1].investment.id, 'inv1'); // Second (800)
       expect(report.topEarners[1].income, 800.0);
@@ -355,111 +352,40 @@ void main() {
     });
 
     group('topEarners calculation', () {
-      test(
-        'caps at exactly 5 top earners in descending order when 6+ investments exist',
-        () {
-          final investments = List.generate(
-            7,
-            (i) => InvestmentEntity(
-              id: 'inv$i',
-              name: 'Investment $i',
-              type: InvestmentType.stocks,
-              status: InvestmentStatus.open,
-              createdAt: DateTime(2023, 1, 1),
-              updatedAt: DateTime(2023, 1, 1),
-              currency: 'USD',
-            ),
-          );
+      test('caps at exactly 5 top earners in descending order when 6+ investments exist', () {
+        final investments = List.generate(
+          7,
+          (i) => InvestmentEntity(
+            id: 'inv$i',
+            name: 'Investment $i',
+            type: InvestmentType.stocks,
+            status: InvestmentStatus.open,
+            createdAt: DateTime(2023, 1, 1),
+            updatedAt: DateTime(2023, 1, 1),
+            currency: 'USD',
+          ),
+        );
 
-          final cashFlows = [
-            CashFlowEntity(
-              id: '1',
-              investmentId: 'inv0',
-              amount: 100,
-              date: DateTime(2024, 1, 10),
-              type: CashFlowType.income,
-              currency: 'USD',
-              createdAt: DateTime(2024, 1, 10),
-            ),
-            CashFlowEntity(
-              id: '2',
-              investmentId: 'inv1',
-              amount: 500,
-              date: DateTime(2024, 1, 10),
-              type: CashFlowType.income,
-              currency: 'USD',
-              createdAt: DateTime(2024, 1, 10),
-            ),
-            CashFlowEntity(
-              id: '3',
-              investmentId: 'inv2',
-              amount: 200,
-              date: DateTime(2024, 1, 10),
-              type: CashFlowType.income,
-              currency: 'USD',
-              createdAt: DateTime(2024, 1, 10),
-            ),
-            CashFlowEntity(
-              id: '4',
-              investmentId: 'inv3',
-              amount: 700,
-              date: DateTime(2024, 1, 10),
-              type: CashFlowType.income,
-              currency: 'USD',
-              createdAt: DateTime(2024, 1, 10),
-            ),
-            CashFlowEntity(
-              id: '5',
-              investmentId: 'inv4',
-              amount: 300,
-              date: DateTime(2024, 1, 10),
-              type: CashFlowType.income,
-              currency: 'USD',
-              createdAt: DateTime(2024, 1, 10),
-            ),
-            CashFlowEntity(
-              id: '6',
-              investmentId: 'inv5',
-              amount: 600,
-              date: DateTime(2024, 1, 10),
-              type: CashFlowType.income,
-              currency: 'USD',
-              createdAt: DateTime(2024, 1, 10),
-            ),
-            CashFlowEntity(
-              id: '7',
-              investmentId: 'inv6',
-              amount: 50,
-              date: DateTime(2024, 1, 10),
-              type: CashFlowType.income,
-              currency: 'USD',
-              createdAt: DateTime(2024, 1, 10),
-            ),
-          ];
+        final cashFlows = [
+          CashFlowEntity(id: '1', investmentId: 'inv0', amount: 100, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
+          CashFlowEntity(id: '2', investmentId: 'inv1', amount: 500, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
+          CashFlowEntity(id: '3', investmentId: 'inv2', amount: 200, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
+          CashFlowEntity(id: '4', investmentId: 'inv3', amount: 700, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
+          CashFlowEntity(id: '5', investmentId: 'inv4', amount: 300, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
+          CashFlowEntity(id: '6', investmentId: 'inv5', amount: 600, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
+          CashFlowEntity(id: '7', investmentId: 'inv6', amount: 50, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
+        ];
 
-          final report = service.generateReport(
-            period: monthPeriod,
-            allCashFlows: cashFlows,
-            allInvestments: investments,
-          );
+        final report = service.generateReport(
+          period: monthPeriod,
+          allCashFlows: cashFlows,
+          allInvestments: investments,
+        );
 
-          expect(report.topEarners.length, 5);
-          expect(report.topEarners.map((e) => e.investment.id).toList(), [
-            'inv3',
-            'inv5',
-            'inv1',
-            'inv4',
-            'inv2',
-          ]);
-          expect(report.topEarners.map((e) => e.income).toList(), [
-            700.0,
-            600.0,
-            500.0,
-            300.0,
-            200.0,
-          ]);
-        },
-      );
+        expect(report.topEarners.length, 5);
+        expect(report.topEarners.map((e) => e.investment.id).toList(), ['inv3', 'inv5', 'inv1', 'inv4', 'inv2']);
+        expect(report.topEarners.map((e) => e.income).toList(), [700.0, 600.0, 500.0, 300.0, 200.0]);
+      });
 
       test('handles fifth-place equal-income boundary correctly', () {
         final investments = List.generate(
@@ -476,60 +402,12 @@ void main() {
         );
 
         final cashFlows = [
-          CashFlowEntity(
-            id: '1',
-            investmentId: 'inv0',
-            amount: 500,
-            date: DateTime(2024, 1, 10),
-            type: CashFlowType.income,
-            currency: 'USD',
-            createdAt: DateTime(2024, 1, 10),
-          ),
-          CashFlowEntity(
-            id: '2',
-            investmentId: 'inv1',
-            amount: 400,
-            date: DateTime(2024, 1, 10),
-            type: CashFlowType.income,
-            currency: 'USD',
-            createdAt: DateTime(2024, 1, 10),
-          ),
-          CashFlowEntity(
-            id: '3',
-            investmentId: 'inv2',
-            amount: 300,
-            date: DateTime(2024, 1, 10),
-            type: CashFlowType.income,
-            currency: 'USD',
-            createdAt: DateTime(2024, 1, 10),
-          ),
-          CashFlowEntity(
-            id: '4',
-            investmentId: 'inv3',
-            amount: 200,
-            date: DateTime(2024, 1, 10),
-            type: CashFlowType.income,
-            currency: 'USD',
-            createdAt: DateTime(2024, 1, 10),
-          ),
-          CashFlowEntity(
-            id: '5',
-            investmentId: 'inv4',
-            amount: 100,
-            date: DateTime(2024, 1, 10),
-            type: CashFlowType.income,
-            currency: 'USD',
-            createdAt: DateTime(2024, 1, 10),
-          ),
-          CashFlowEntity(
-            id: '6',
-            investmentId: 'inv5',
-            amount: 100,
-            date: DateTime(2024, 1, 10),
-            type: CashFlowType.income,
-            currency: 'USD',
-            createdAt: DateTime(2024, 1, 10),
-          ),
+          CashFlowEntity(id: '1', investmentId: 'inv0', amount: 500, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
+          CashFlowEntity(id: '2', investmentId: 'inv1', amount: 400, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
+          CashFlowEntity(id: '3', investmentId: 'inv2', amount: 300, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
+          CashFlowEntity(id: '4', investmentId: 'inv3', amount: 200, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
+          CashFlowEntity(id: '5', investmentId: 'inv4', amount: 100, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
+          CashFlowEntity(id: '6', investmentId: 'inv5', amount: 100, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
         ];
 
         final report = service.generateReport(
@@ -542,62 +420,43 @@ void main() {
         expect(report.topEarners.last.income, 100.0);
       });
 
-      test(
-        'returns fewer than 5 entries when fewer than 5 investments exist',
-        () {
-          final investments = [
-            InvestmentEntity(
-              id: 'inv1',
-              name: 'Inv 1',
-              type: InvestmentType.stocks,
-              status: InvestmentStatus.open,
-              createdAt: DateTime(2023, 1, 1),
-              updatedAt: DateTime(2023, 1, 1),
-              currency: 'USD',
-            ),
-            InvestmentEntity(
-              id: 'inv2',
-              name: 'Inv 2',
-              type: InvestmentType.fixedDeposit,
-              status: InvestmentStatus.open,
-              createdAt: DateTime(2023, 1, 1),
-              updatedAt: DateTime(2023, 1, 1),
-              currency: 'USD',
-            ),
-          ];
+      test('returns fewer than 5 entries when fewer than 5 investments exist', () {
+        final investments = [
+          InvestmentEntity(
+            id: 'inv1',
+            name: 'Inv 1',
+            type: InvestmentType.stocks,
+            status: InvestmentStatus.open,
+            createdAt: DateTime(2023, 1, 1),
+            updatedAt: DateTime(2023, 1, 1),
+            currency: 'USD',
+          ),
+          InvestmentEntity(
+            id: 'inv2',
+            name: 'Inv 2',
+            type: InvestmentType.fixedDeposit,
+            status: InvestmentStatus.open,
+            createdAt: DateTime(2023, 1, 1),
+            updatedAt: DateTime(2023, 1, 1),
+            currency: 'USD',
+          ),
+        ];
 
-          final cashFlows = [
-            CashFlowEntity(
-              id: '1',
-              investmentId: 'inv1',
-              amount: 300,
-              date: DateTime(2024, 1, 10),
-              type: CashFlowType.income,
-              currency: 'USD',
-              createdAt: DateTime(2024, 1, 10),
-            ),
-            CashFlowEntity(
-              id: '2',
-              investmentId: 'inv2',
-              amount: 600,
-              date: DateTime(2024, 1, 10),
-              type: CashFlowType.income,
-              currency: 'USD',
-              createdAt: DateTime(2024, 1, 10),
-            ),
-          ];
+        final cashFlows = [
+          CashFlowEntity(id: '1', investmentId: 'inv1', amount: 300, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
+          CashFlowEntity(id: '2', investmentId: 'inv2', amount: 600, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
+        ];
 
-          final report = service.generateReport(
-            period: monthPeriod,
-            allCashFlows: cashFlows,
-            allInvestments: investments,
-          );
+        final report = service.generateReport(
+          period: monthPeriod,
+          allCashFlows: cashFlows,
+          allInvestments: investments,
+        );
 
-          expect(report.topEarners.length, 2);
-          expect(report.topEarners[0].investment.id, 'inv2');
-          expect(report.topEarners[1].investment.id, 'inv1');
-        },
-      );
+        expect(report.topEarners.length, 2);
+        expect(report.topEarners[0].investment.id, 'inv2');
+        expect(report.topEarners[1].investment.id, 'inv1');
+      });
 
       test('safely skips unknown investment IDs in topEarners', () {
         final investments = [
@@ -613,24 +472,8 @@ void main() {
         ];
 
         final cashFlows = [
-          CashFlowEntity(
-            id: '1',
-            investmentId: 'inv1',
-            amount: 300,
-            date: DateTime(2024, 1, 10),
-            type: CashFlowType.income,
-            currency: 'USD',
-            createdAt: DateTime(2024, 1, 10),
-          ),
-          CashFlowEntity(
-            id: '2',
-            investmentId: 'unknown_inv',
-            amount: 1000,
-            date: DateTime(2024, 1, 10),
-            type: CashFlowType.income,
-            currency: 'USD',
-            createdAt: DateTime(2024, 1, 10),
-          ),
+          CashFlowEntity(id: '1', investmentId: 'inv1', amount: 300, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
+          CashFlowEntity(id: '2', investmentId: 'unknown_inv', amount: 1000, date: DateTime(2024, 1, 10), type: CashFlowType.income, currency: 'USD', createdAt: DateTime(2024, 1, 10)),
         ];
 
         final report = service.generateReport(
@@ -645,3 +488,4 @@ void main() {
     });
   });
 }
+

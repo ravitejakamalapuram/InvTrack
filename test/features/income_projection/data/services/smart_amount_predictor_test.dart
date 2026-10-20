@@ -75,17 +75,9 @@ void main() {
       final investment = _createTestInvestment();
       final cashFlows = [
         _createCashFlow(1000, DateTime(2024, 3, 1), type: CashFlowType.income),
-        _createCashFlow(
-          5000,
-          DateTime(2024, 2, 15),
-          type: CashFlowType.invest,
-        ), // Ignored
+        _createCashFlow(5000, DateTime(2024, 2, 15), type: CashFlowType.invest), // Ignored
         _createCashFlow(1100, DateTime(2024, 2, 1), type: CashFlowType.income),
-        _createCashFlow(
-          100,
-          DateTime(2024, 1, 20),
-          type: CashFlowType.fee,
-        ), // Ignored
+        _createCashFlow(100, DateTime(2024, 1, 20), type: CashFlowType.fee), // Ignored
         _createCashFlow(1200, DateTime(2024, 1, 1), type: CashFlowType.income),
       ];
 
@@ -179,22 +171,10 @@ void main() {
     test('should learn consistent +2 day platform delay', () {
       final investment = _createTestInvestment();
       final cashFlows = [
-        _createCashFlow(
-          1000,
-          DateTime(2024, 6, 7),
-        ), // Expected 5th, actual 7th (+2)
-        _createCashFlow(
-          1000,
-          DateTime(2024, 5, 7),
-        ), // Expected 5th, actual 7th (+2)
-        _createCashFlow(
-          1000,
-          DateTime(2024, 4, 7),
-        ), // Expected 5th, actual 7th (+2)
-        _createCashFlow(
-          1000,
-          DateTime(2024, 3, 7),
-        ), // Expected 5th, actual 7th (+2)
+        _createCashFlow(1000, DateTime(2024, 6, 7)), // Expected 5th, actual 7th (+2)
+        _createCashFlow(1000, DateTime(2024, 5, 7)), // Expected 5th, actual 7th (+2)
+        _createCashFlow(1000, DateTime(2024, 4, 7)), // Expected 5th, actual 7th (+2)
+        _createCashFlow(1000, DateTime(2024, 3, 7)), // Expected 5th, actual 7th (+2)
         _createCashFlow(1000, DateTime(2024, 2, 5)), // Baseline
       ];
 
@@ -268,9 +248,7 @@ void main() {
 }
 
 /// Helper to create test investment
-InvestmentEntity _createTestInvestment({
-  IncomeFrequency? frequency = IncomeFrequency.monthly,
-}) {
+InvestmentEntity _createTestInvestment({IncomeFrequency? frequency = IncomeFrequency.monthly}) {
   return InvestmentEntity(
     id: 'test-inv',
     name: 'Test Investment',

@@ -37,9 +37,7 @@ class CurrencyBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final symbol = getCurrencySymbol(currencyCode);
-    final targetSymbol = targetCurrency != null
-        ? getCurrencySymbol(targetCurrency!)
-        : '';
+    final targetSymbol = targetCurrency != null ? getCurrencySymbol(targetCurrency!) : '';
 
     // Compact mode: just show currency code
     if (compact || exchangeRate == null || targetCurrency == null) {
@@ -96,10 +94,12 @@ class CurrencyBadge extends StatelessWidget {
             style: AppTypography.caption.copyWith(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+              color: isDark
+                  ? AppColors.primaryDark
+                  : AppColors.primaryLight,
             ),
           ),
-
+          
           // Separator
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -113,7 +113,7 @@ class CurrencyBadge extends StatelessWidget {
               ),
             ),
           ),
-
+          
           // Exchange rate
           Text(
             '1 $symbol = $targetSymbol${exchangeRate!.toStringAsFixed(2)}',
@@ -134,10 +134,16 @@ class CurrencyBadge extends StatelessWidget {
 class CompactCurrencyBadge extends StatelessWidget {
   final String currencyCode;
 
-  const CompactCurrencyBadge({super.key, required this.currencyCode});
+  const CompactCurrencyBadge({
+    super.key,
+    required this.currencyCode,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return CurrencyBadge(currencyCode: currencyCode, compact: true);
+    return CurrencyBadge(
+      currencyCode: currencyCode,
+      compact: true,
+    );
   }
 }

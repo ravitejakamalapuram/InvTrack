@@ -34,9 +34,9 @@ class IncomeGuardianSyncService {
     required ExpectedCashFlowRepository expectedCashFlowRepository,
     required InvestmentRepository investmentRepository,
     required IncomeGuardianSettings settings,
-  }) : _expectedCashFlowRepository = expectedCashFlowRepository,
-       _investmentRepository = investmentRepository,
-       _settings = settings;
+  })  : _expectedCashFlowRepository = expectedCashFlowRepository,
+        _investmentRepository = investmentRepository,
+        _settings = settings;
 
   /// Start background sync
   Future<void> startSync() async {
@@ -59,9 +59,9 @@ class IncomeGuardianSyncService {
     _isSyncing = true;
 
     // Monitor all cash flows (we'll filter for income in the handler)
-    _cashFlowSubscription = _investmentRepository.watchAllCashFlows().listen(
-      _handleNewCashFlows,
-    );
+    _cashFlowSubscription = _investmentRepository
+        .watchAllCashFlows()
+        .listen(_handleNewCashFlows);
   }
 
   /// Stop background sync
@@ -76,12 +76,13 @@ class IncomeGuardianSyncService {
   }
 
   /// Handle new cash flows and attempt to match with expected cash flows
-  Future<void> _handleNewCashFlows(List<CashFlowEntity> cashFlows) async {
+  Future<void> _handleNewCashFlows(
+    List<CashFlowEntity> cashFlows,
+  ) async {
     // Filter for income cash flows only using single pass loop
     final incomeCashFlows = <CashFlowEntity>[];
     for (final cf in cashFlows) {
-      if (cf.type == CashFlowType.income &&
-          !_processedCashFlows.contains(cf.id)) {
+      if (cf.type == CashFlowType.income && !_processedCashFlows.contains(cf.id)) {
         incomeCashFlows.add(cf);
       }
     }
@@ -108,8 +109,7 @@ class IncomeGuardianSyncService {
     // Single pass loop to filter pending cash flows
     final pendingCashFlows = <ExpectedCashFlowEntity>[];
     for (final cf in allExpectedCashFlows) {
-      if (cf.status != ExpectedCashFlowStatus.received &&
-          cf.status != ExpectedCashFlowStatus.dismissed) {
+      if (cf.status != ExpectedCashFlowStatus.received && cf.status != ExpectedCashFlowStatus.dismissed) {
         pendingCashFlows.add(cf);
       }
     }
@@ -188,20 +188,15 @@ class IncomeGuardianSyncService {
   ) {
     // Use date window from settings (in days)
     final maxDateDifference = _settings.dateWindowDays;
-    final daysDifference = cashFlow.date
-        .difference(expectedCashFlow.expectedDate)
-        .inDays
-        .abs();
+    final daysDifference = cashFlow.date.difference(expectedCashFlow.expectedDate).inDays.abs();
     final dateScore = daysDifference <= maxDateDifference
         ? (1.0 - (daysDifference / maxDateDifference))
         : 0.0;
 
     // Use amount tolerance from settings (as decimal)
     final maxAmountTolerance = _settings.amountTolerancePercent / 100.0;
-    final amountDifference = (cashFlow.amount - expectedCashFlow.expectedAmount)
-        .abs();
-    final amountPercentDiff =
-        amountDifference / expectedCashFlow.expectedAmount;
+    final amountDifference = (cashFlow.amount - expectedCashFlow.expectedAmount).abs();
+    final amountPercentDiff = amountDifference / expectedCashFlow.expectedAmount;
     final amountScore = amountPercentDiff <= maxAmountTolerance
         ? (1.0 - (amountPercentDiff / maxAmountTolerance))
         : 0.0;
@@ -221,8 +216,7 @@ class IncomeGuardianSyncService {
         .inDays;
 
     // Calculate variance factor (actual amount / expected amount)
-    final varianceFactor =
-        actualCashFlow.amount / expectedCashFlow.expectedAmount;
+    final varianceFactor = actualCashFlow.amount / expectedCashFlow.expectedAmount;
 
     // Update expected cash flow
     final updatedCashFlow = expectedCashFlow.copyWith(

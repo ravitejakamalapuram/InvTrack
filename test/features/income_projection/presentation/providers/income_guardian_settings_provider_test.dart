@@ -84,9 +84,8 @@ void main() {
 
     group('setEnabled', () {
       test('updates state and persists to SharedPreferences', () async {
-        final notifier = container.read(
-          incomeGuardianSettingsProvider.notifier,
-        );
+        final notifier =
+            container.read(incomeGuardianSettingsProvider.notifier);
 
         await notifier.setEnabled(false);
 
@@ -96,9 +95,8 @@ void main() {
       });
 
       test('logs income_guardian_enabled analytics when enabled', () async {
-        final notifier = container.read(
-          incomeGuardianSettingsProvider.notifier,
-        );
+        final notifier =
+            container.read(incomeGuardianSettingsProvider.notifier);
 
         // First disable
         await notifier.setEnabled(false);
@@ -114,9 +112,8 @@ void main() {
       });
 
       test('logs income_guardian_disabled analytics when disabled', () async {
-        final notifier = container.read(
-          incomeGuardianSettingsProvider.notifier,
-        );
+        final notifier =
+            container.read(incomeGuardianSettingsProvider.notifier);
 
         await notifier.setEnabled(false);
 
@@ -129,9 +126,8 @@ void main() {
 
     group('setUpcomingDaysBefore', () {
       test('updates state and persists to SharedPreferences', () async {
-        final notifier = container.read(
-          incomeGuardianSettingsProvider.notifier,
-        );
+        final notifier =
+            container.read(incomeGuardianSettingsProvider.notifier);
 
         await notifier.setUpcomingDaysBefore(7);
 
@@ -141,31 +137,26 @@ void main() {
       });
 
       test('logs setting_changed analytics', () async {
-        final notifier = container.read(
-          incomeGuardianSettingsProvider.notifier,
-        );
+        final notifier =
+            container.read(incomeGuardianSettingsProvider.notifier);
 
         await notifier.setUpcomingDaysBefore(7);
 
         final events = fakeAnalytics.loggedEvents
             .where(
-              (e) => e.name == AnalyticsEvents.incomeGuardianSettingChanged,
-            )
+          (e) => e.name == AnalyticsEvents.incomeGuardianSettingChanged,
+        )
             .toList();
         expect(events, hasLength(1));
-        expect(
-          events.first.parameters?['setting_name'],
-          'upcoming_days_before',
-        );
+        expect(events.first.parameters?['setting_name'], 'upcoming_days_before');
         expect(events.first.parameters?['new_value'], '7');
       });
     });
 
     group('setOverdueDaysAfter', () {
       test('updates state and persists to SharedPreferences', () async {
-        final notifier = container.read(
-          incomeGuardianSettingsProvider.notifier,
-        );
+        final notifier =
+            container.read(incomeGuardianSettingsProvider.notifier);
 
         await notifier.setOverdueDaysAfter(14);
 
@@ -175,16 +166,15 @@ void main() {
       });
 
       test('logs setting_changed analytics', () async {
-        final notifier = container.read(
-          incomeGuardianSettingsProvider.notifier,
-        );
+        final notifier =
+            container.read(incomeGuardianSettingsProvider.notifier);
 
         await notifier.setOverdueDaysAfter(14);
 
         final events = fakeAnalytics.loggedEvents
             .where(
-              (e) => e.name == AnalyticsEvents.incomeGuardianSettingChanged,
-            )
+          (e) => e.name == AnalyticsEvents.incomeGuardianSettingChanged,
+        )
             .toList();
         expect(events, hasLength(1));
         expect(events.first.parameters?['setting_name'], 'overdue_days_after');
@@ -194,28 +184,29 @@ void main() {
 
     group('setAmountTolerancePercent', () {
       test('updates state and persists to SharedPreferences', () async {
-        final notifier = container.read(
-          incomeGuardianSettingsProvider.notifier,
-        );
+        final notifier =
+            container.read(incomeGuardianSettingsProvider.notifier);
 
         await notifier.setAmountTolerancePercent(25);
 
         final settings = container.read(incomeGuardianSettingsProvider);
         expect(settings.amountTolerancePercent, 25);
-        expect(prefs.getInt('income_guardian_amount_tolerance_percent'), 25);
+        expect(
+          prefs.getInt('income_guardian_amount_tolerance_percent'),
+          25,
+        );
       });
 
       test('logs setting_changed analytics', () async {
-        final notifier = container.read(
-          incomeGuardianSettingsProvider.notifier,
-        );
+        final notifier =
+            container.read(incomeGuardianSettingsProvider.notifier);
 
         await notifier.setAmountTolerancePercent(25);
 
         final events = fakeAnalytics.loggedEvents
             .where(
-              (e) => e.name == AnalyticsEvents.incomeGuardianSettingChanged,
-            )
+          (e) => e.name == AnalyticsEvents.incomeGuardianSettingChanged,
+        )
             .toList();
         expect(events, hasLength(1));
         expect(
@@ -228,9 +219,8 @@ void main() {
 
     group('setDateWindowDays', () {
       test('updates state and persists to SharedPreferences', () async {
-        final notifier = container.read(
-          incomeGuardianSettingsProvider.notifier,
-        );
+        final notifier =
+            container.read(incomeGuardianSettingsProvider.notifier);
 
         await notifier.setDateWindowDays(45);
 
@@ -240,16 +230,15 @@ void main() {
       });
 
       test('logs setting_changed analytics', () async {
-        final notifier = container.read(
-          incomeGuardianSettingsProvider.notifier,
-        );
+        final notifier =
+            container.read(incomeGuardianSettingsProvider.notifier);
 
         await notifier.setDateWindowDays(45);
 
         final events = fakeAnalytics.loggedEvents
             .where(
-              (e) => e.name == AnalyticsEvents.incomeGuardianSettingChanged,
-            )
+          (e) => e.name == AnalyticsEvents.incomeGuardianSettingChanged,
+        )
             .toList();
         expect(events, hasLength(1));
         expect(events.first.parameters?['setting_name'], 'date_window_days');
@@ -259,9 +248,8 @@ void main() {
 
     group('setConfidenceThresholdPercent', () {
       test('updates state and persists to SharedPreferences', () async {
-        final notifier = container.read(
-          incomeGuardianSettingsProvider.notifier,
-        );
+        final notifier =
+            container.read(incomeGuardianSettingsProvider.notifier);
 
         await notifier.setConfidenceThresholdPercent(85);
 
@@ -274,16 +262,15 @@ void main() {
       });
 
       test('logs setting_changed analytics', () async {
-        final notifier = container.read(
-          incomeGuardianSettingsProvider.notifier,
-        );
+        final notifier =
+            container.read(incomeGuardianSettingsProvider.notifier);
 
         await notifier.setConfidenceThresholdPercent(85);
 
         final events = fakeAnalytics.loggedEvents
             .where(
-              (e) => e.name == AnalyticsEvents.incomeGuardianSettingChanged,
-            )
+          (e) => e.name == AnalyticsEvents.incomeGuardianSettingChanged,
+        )
             .toList();
         expect(events, hasLength(1));
         expect(
@@ -295,3 +282,4 @@ void main() {
     });
   });
 }
+

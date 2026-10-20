@@ -352,26 +352,21 @@ void main() {
       );
     });
 
-    test(
-      'says the app shows no ads, and no ads or mock-purchase code is left',
-      () {
-        expect(privacyPolicyContent, contains('The app shows no ads.'));
-        final offenders = [
-          for (final file in _libDartFiles())
-            if (RegExp(
-              r'core/ads/|NativeAd|AdService|MobileAds|adServiceProvider|features/premium/|PremiumGate|PaywallScreen|premiumServiceProvider',
-            ).hasMatch(file.source))
-              file.path,
-        ];
-        expect(
-          offenders,
-          isEmpty,
-          reason: 'ads or mock-premium code is back: update the ads text',
-        );
-        expect(Directory('lib/core/ads').existsSync(), isFalse);
-        expect(Directory('lib/features/premium').existsSync(), isFalse);
-      },
-    );
+    test('says the app shows no ads, and no ads or mock-purchase code is left',
+        () {
+      expect(privacyPolicyContent, contains('The app shows no ads.'));
+      final offenders = [
+        for (final file in _libDartFiles())
+          if (RegExp(
+            r'core/ads/|NativeAd|AdService|MobileAds|adServiceProvider|features/premium/|PremiumGate|PaywallScreen|premiumServiceProvider',
+          ).hasMatch(file.source))
+            file.path,
+      ];
+      expect(offenders, isEmpty,
+          reason: 'ads or mock-premium code is back: update the ads text');
+      expect(Directory('lib/core/ads').existsSync(), isFalse);
+      expect(Directory('lib/features/premium').existsSync(), isFalse);
+    });
   });
 
   testWidgets('LegalScreen shows hosted-policy link when provided', (

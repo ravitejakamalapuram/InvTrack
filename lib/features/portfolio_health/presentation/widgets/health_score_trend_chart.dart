@@ -20,7 +20,10 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 class HealthScoreTrendChart extends ConsumerStatefulWidget {
   final double height;
 
-  const HealthScoreTrendChart({super.key, this.height = 200});
+  const HealthScoreTrendChart({
+    super.key,
+    this.height = 200,
+  });
 
   @override
   ConsumerState<HealthScoreTrendChart> createState() =>
@@ -46,8 +49,7 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
         height: widget.height,
         child: const Center(child: CircularProgressIndicator()),
       ),
-      error: (error, stackTrace) =>
-          _buildErrorState(context, isDark, error, stackTrace),
+      error: (error, stackTrace) => _buildErrorState(context, isDark, error, stackTrace),
     );
   }
 
@@ -94,12 +96,7 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
     );
   }
 
-  Widget _buildErrorState(
-    BuildContext context,
-    bool isDark,
-    Object error,
-    StackTrace stackTrace,
-  ) {
+  Widget _buildErrorState(BuildContext context, bool isDark, Object error, StackTrace stackTrace) {
     final l10n = AppLocalizations.of(context);
 
     // Log the error with structured logging
@@ -158,11 +155,7 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
     );
   }
 
-  Widget _buildChart(
-    BuildContext context,
-    bool isDark,
-    List<Map<String, dynamic>> chartData,
-  ) {
+  Widget _buildChart(BuildContext context, bool isDark, List<Map<String, dynamic>> chartData) {
     final l10n = AppLocalizations.of(context);
 
     return Column(
@@ -187,9 +180,7 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
                 });
               },
               icon: Icon(
-                _showComponentScores
-                    ? Icons.remove_circle_outline
-                    : Icons.add_circle_outline,
+                _showComponentScores ? Icons.remove_circle_outline : Icons.add_circle_outline,
                 size: 16,
               ),
               label: Text(
@@ -203,7 +194,9 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
         // Chart
         SizedBox(
           height: widget.height,
-          child: LineChart(_buildLineChartData(isDark, chartData)),
+          child: LineChart(
+            _buildLineChartData(isDark, chartData),
+          ),
         ),
       ],
     );
@@ -213,9 +206,7 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
     bool isDark,
     List<Map<String, dynamic>> chartData,
   ) {
-    final textColor = isDark
-        ? AppColors.textSecondaryDark
-        : AppColors.textSecondaryLight;
+    final textColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
     final gridColor = isDark ? Colors.grey.shade800 : Colors.grey.shade300;
 
     return LineChartData(
@@ -224,7 +215,10 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
         drawVerticalLine: false,
         horizontalInterval: 20,
         getDrawingHorizontalLine: (value) {
-          return FlLine(color: gridColor, strokeWidth: 1);
+          return FlLine(
+            color: gridColor,
+            strokeWidth: 1,
+          );
         },
       ),
       titlesData: FlTitlesData(
@@ -263,9 +257,7 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
             reservedSize: 32,
           ),
         ),
-        rightTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
+        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       ),
       borderData: FlBorderData(show: false),
@@ -306,12 +298,10 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
         spots: chartData
             .asMap()
             .entries
-            .map(
-              (e) => FlSpot(
-                e.key.toDouble(),
-                (e.value['score'] as int).toDouble(),
-              ),
-            )
+            .map((e) => FlSpot(
+                  e.key.toDouble(),
+                  (e.value['score'] as int).toDouble(),
+                ))
             .toList(),
         isCurved: true,
         color: ScoreTier.excellent.textColor(isDark),
@@ -336,9 +326,7 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
       // Returns (blue)
       bars.add(_buildComponentBar(chartData, 'returns', Colors.blue, 1.5));
       // Diversification (purple)
-      bars.add(
-        _buildComponentBar(chartData, 'diversification', Colors.purple, 1.5),
-      );
+      bars.add(_buildComponentBar(chartData, 'diversification', Colors.purple, 1.5));
       // Liquidity (orange)
       bars.add(_buildComponentBar(chartData, 'liquidity', Colors.orange, 1.5));
       // Goals (teal)
@@ -360,9 +348,10 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
       spots: chartData
           .asMap()
           .entries
-          .map(
-            (e) => FlSpot(e.key.toDouble(), (e.value[key] as int).toDouble()),
-          )
+          .map((e) => FlSpot(
+                e.key.toDouble(),
+                (e.value[key] as int).toDouble(),
+              ))
           .toList(),
       isCurved: true,
       color: color.withValues(alpha: 0.6),

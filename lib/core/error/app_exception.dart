@@ -327,9 +327,8 @@ class UpdateException extends AppException {
     try {
       final code = (e as dynamic).code;
       final msg = (e as dynamic).message as String?;
-      isEnvironmental =
-          code == 'TASK_FAILURE' ||
-          (msg != null && msg.contains('Install Error'));
+      isEnvironmental = code == 'TASK_FAILURE' ||
+                        (msg != null && msg.contains('Install Error'));
       message = msg ?? message;
     } catch (_) {
       // Not a PlatformException or missing properties

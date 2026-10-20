@@ -163,9 +163,7 @@ void main() {
     );
     Color? discFill;
     for (final element
-        in find
-            .ancestor(of: icon, matching: find.byType(Container))
-            .evaluate()) {
+        in find.ancestor(of: icon, matching: find.byType(Container)).evaluate()) {
       final decoration = (element.widget as Container).decoration;
       if (decoration is BoxDecoration && decoration.color != null) {
         discFill = composeOver(decoration.color!, cardFill);
@@ -174,7 +172,10 @@ void main() {
     }
     expect(
       discFill,
-      composeOver(AppColors.successTintLight.withValues(alpha: 0.2), cardFill),
+      composeOver(
+        AppColors.successTintLight.withValues(alpha: 0.2),
+        cardFill,
+      ),
     );
     expect(
       contrastRatio(AppColors.successLight, discFill!),

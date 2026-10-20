@@ -45,11 +45,7 @@ void main() {
       currency: 'USD',
       trackingMode: GoalTrackingMode.all,
       icon: 'savings',
-      colorValue:
-          (Colors.blue.a.toInt() << 24) |
-          (Colors.blue.r.toInt() << 16) |
-          (Colors.blue.g.toInt() << 8) |
-          Colors.blue.b.toInt(),
+      colorValue: (Colors.blue.a.toInt() << 24) | (Colors.blue.r.toInt() << 16) | (Colors.blue.g.toInt() << 8) | Colors.blue.b.toInt(),
       createdAt: DateTime(2024, 1, 1),
       updatedAt: DateTime(2024, 1, 1),
     );
@@ -254,53 +250,46 @@ void main() {
       expect(find.textContaining('\$2.5K/mo of \$10K/mo'), findsOneWidget);
     });
 
-    testWidgets(
-      'renders defensively without crashing when localizations are missing',
-      (tester) async {
-        // Mock SharedPreferences for privacy mode
-        SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
-        final prefs = await SharedPreferences.getInstance();
+    testWidgets('renders defensively without crashing when localizations are missing', (tester) async {
+      // Mock SharedPreferences for privacy mode
+      SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
+      final prefs = await SharedPreferences.getInstance();
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              currencySymbolProvider.overrideWith((ref) => '\$'),
-              currencyLocaleProvider.overrideWith((ref) => 'en_US'),
-              multiCurrencyGoalProgressProvider(
-                testGoal.id,
-              ).overrideWith((ref) => Future.value(testProgress)),
-            ],
-            child: MaterialApp(
-              // Explicitly omitting localizationsDelegates and supportedLocales
-              // This replicates the scenario where localizations are missing in the tree
-              home: Scaffold(
-                body: GoalCard(goal: testGoal, onTap: () {}),
-              ),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            currencySymbolProvider.overrideWith((ref) => '\$'),
+            currencyLocaleProvider.overrideWith((ref) => 'en_US'),
+            multiCurrencyGoalProgressProvider(
+              testGoal.id,
+            ).overrideWith((ref) => Future.value(testProgress)),
+          ],
+          child: MaterialApp(
+            // Explicitly omitting localizationsDelegates and supportedLocales
+            // This replicates the scenario where localizations are missing in the tree
+            home: Scaffold(
+              body: GoalCard(goal: testGoal, onTap: () {}),
             ),
           ),
-        );
+        ),
+      );
 
-        await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-        // Verify widget renders successfully without crashing
-        expect(find.byType(GoalCard), findsOneWidget);
+      // Verify widget renders successfully without crashing
+      expect(find.byType(GoalCard), findsOneWidget);
 
-        // Verify the fallback semantics label is applied
-        expect(
-          find.byWidgetPredicate(
-            (widget) =>
-                widget is Semantics &&
-                widget.properties.label == 'View details for Retirement Fund',
-          ),
-          findsOneWidget,
-        );
-      },
-    );
+      // Verify the fallback semantics label is applied
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is Semantics && widget.properties.label == 'View details for Retirement Fund',
+        ),
+        findsOneWidget,
+      );
+    });
 
-    testWidgets('handles long press safely even if callback state changes', (
-      tester,
-    ) async {
+    testWidgets('handles long press safely even if callback state changes', (tester) async {
       SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
       final prefs = await SharedPreferences.getInstance();
 
@@ -329,7 +318,7 @@ void main() {
                     onTap: () {},
                     onLongPress: currentCallback,
                   );
-                },
+                }
               ),
             ),
           ),
@@ -338,15 +327,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Start a long press gesture
-      final gesture = await tester.startGesture(
-        tester.getCenter(find.byType(GoalCard)),
-      );
+      final gesture = await tester.startGesture(tester.getCenter(find.byType(GoalCard)));
 
       // Mutate the callback to null before the gesture completes
       // This mimics the callback being removed from the tree or nulled out during a rebuild
-      setter!(() {
-        currentCallback = null;
-      });
+      setter!(() { currentCallback = null; });
       await tester.pump();
 
       // Wait enough time to trigger the long press gesture callback

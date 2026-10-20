@@ -28,19 +28,19 @@ class HistoricalReportsList extends StatelessWidget {
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: AppSpacing.sm),
-
+        
         // Last 3 FY years
         _buildFYReportList(context, currentFYYear),
-
+        
         const SizedBox(height: AppSpacing.lg),
-
+        
         // Monthly Reports
         Text(
           l10n.monthlyReports,
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: AppSpacing.sm),
-
+        
         // Last 6 months
         _buildMonthlyReportList(context, now),
       ],
@@ -50,10 +50,10 @@ class HistoricalReportsList extends StatelessWidget {
   /// Build list of past FY reports
   Widget _buildFYReportList(BuildContext context, int currentFYYear) {
     final l10n = AppLocalizations.of(context);
-
+    
     // Show last 3 FY years
     final fyYears = List.generate(3, (index) => currentFYYear - index);
-
+    
     return Column(
       children: fyYears.map((fyYear) {
         final fyLabel = l10n.fyLabel(
@@ -61,7 +61,7 @@ class HistoricalReportsList extends StatelessWidget {
           ((fyYear + 1) % 100).toString().padLeft(2, '0'),
         );
         final isCurrent = fyYear == currentFYYear;
-
+        
         return Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: GlassCard(
@@ -74,10 +74,7 @@ class HistoricalReportsList extends StatelessWidget {
                 // Navigate to FY report using dynamic report builder
                 final config = ReportConfiguration.fyReport(fyYear: fyYear);
                 final queryParams = config.toQueryParams();
-                final uri = Uri(
-                  path: '/reports/builder',
-                  queryParameters: queryParams,
-                );
+                final uri = Uri(path: '/reports/builder', queryParameters: queryParams);
                 context.push(uri.toString());
               },
             ),
@@ -90,18 +87,18 @@ class HistoricalReportsList extends StatelessWidget {
   /// Build list of past monthly reports
   Widget _buildMonthlyReportList(BuildContext context, DateTime now) {
     final l10n = AppLocalizations.of(context);
-
+    
     // Show last 6 months
     final months = List.generate(6, (index) {
       final monthDate = DateTime(now.year, now.month - index, 1);
       return monthDate;
     });
-
+    
     return Column(
       children: months.map((month) {
         final monthLabel = _formatMonth(month, l10n);
         final isCurrent = month.year == now.year && month.month == now.month;
-
+        
         return Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: GlassCard(
@@ -114,10 +111,7 @@ class HistoricalReportsList extends StatelessWidget {
                 // Navigate to monthly income report using dynamic report builder
                 final config = ReportConfiguration.monthlyIncome(month: month);
                 final queryParams = config.toQueryParams();
-                final uri = Uri(
-                  path: '/reports/builder',
-                  queryParameters: queryParams,
-                );
+                final uri = Uri(path: '/reports/builder', queryParameters: queryParams);
                 context.push(uri.toString());
               },
             ),
@@ -130,20 +124,11 @@ class HistoricalReportsList extends StatelessWidget {
   /// Format month for display
   String _formatMonth(DateTime month, AppLocalizations l10n) {
     final monthNames = [
-      l10n.january,
-      l10n.february,
-      l10n.march,
-      l10n.april,
-      l10n.may,
-      l10n.june,
-      l10n.july,
-      l10n.august,
-      l10n.september,
-      l10n.october,
-      l10n.november,
-      l10n.december,
+      l10n.january, l10n.february, l10n.march, l10n.april,
+      l10n.may, l10n.june, l10n.july, l10n.august,
+      l10n.september, l10n.october, l10n.november, l10n.december,
     ];
-
+    
     return '${monthNames[month.month - 1]} ${month.year}';
   }
 }

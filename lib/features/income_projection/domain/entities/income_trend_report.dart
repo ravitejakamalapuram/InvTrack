@@ -38,6 +38,8 @@ class PlatformReliability {
     required this.onTimeRate,
   });
 
+
+
   @override
   String toString() => 'PlatformReliability($platform: $onTimeRate)';
 }

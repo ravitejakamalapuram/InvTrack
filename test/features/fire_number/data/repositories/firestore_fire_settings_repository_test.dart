@@ -10,8 +10,7 @@ class _MockFirestore extends Mock implements FirebaseFirestore {}
 class _MockCollection extends Mock
     implements CollectionReference<Map<String, dynamic>> {}
 
-class _MockDoc extends Mock
-    implements DocumentReference<Map<String, dynamic>> {}
+class _MockDoc extends Mock implements DocumentReference<Map<String, dynamic>> {}
 
 class _MockSnapshot extends Mock
     implements DocumentSnapshot<Map<String, dynamic>> {}
@@ -79,20 +78,18 @@ void main() {
   });
 
   group('watchSettings', () {
-    test(
-      'maps a missing document to null and a present one to settings',
-      () async {
-        when(() => ref.snapshots()).thenAnswer(
-          (_) => Stream.fromIterable([
-            snapshot(exists: false),
-            snapshot(data: stored()),
-          ]),
-        );
-        final emitted = await repository.watchSettings().toList();
-        expect(emitted[0], isNull);
-        expect(emitted[1]!.monthlyExpenses, 75000);
-      },
-    );
+    test('maps a missing document to null and a present one to settings',
+        () async {
+      when(() => ref.snapshots()).thenAnswer(
+        (_) => Stream.fromIterable([
+          snapshot(exists: false),
+          snapshot(data: stored()),
+        ]),
+      );
+      final emitted = await repository.watchSettings().toList();
+      expect(emitted[0], isNull);
+      expect(emitted[1]!.monthlyExpenses, 75000);
+    });
   });
 
   group('writes', () {
@@ -110,9 +107,8 @@ void main() {
           updatedAt: DateTime(2026, 1, 1),
         ),
       );
-      final captured = verify(
-        () => ref.set(captureAny(), captureAny()),
-      ).captured;
+      final captured =
+          verify(() => ref.set(captureAny(), captureAny())).captured;
       expect((captured[0] as Map)['monthlyExpenses'], 75000);
       expect((captured[0] as Map)['currency'], 'INR');
       expect((captured[1] as SetOptions).merge, isTrue);
@@ -129,9 +125,8 @@ void main() {
     test('is false with no settings and with unfinished setup', () async {
       when(ref.get).thenAnswer((_) async => snapshot(exists: false));
       expect(await repository.hasCompletedSetup(), isFalse);
-      when(
-        ref.get,
-      ).thenAnswer((_) async => snapshot(data: stored(setupComplete: false)));
+      when(ref.get)
+          .thenAnswer((_) async => snapshot(data: stored(setupComplete: false)));
       expect(await repository.hasCompletedSetup(), isFalse);
     });
 

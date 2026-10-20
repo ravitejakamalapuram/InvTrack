@@ -7,8 +7,7 @@ import 'package:inv_tracker/features/income_projection/domain/entities/expected_
 import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
 
 /// Firestore implementation of ExpectedCashFlowRepository
-class FirestoreExpectedCashFlowRepository
-    implements ExpectedCashFlowRepository {
+class FirestoreExpectedCashFlowRepository implements ExpectedCashFlowRepository {
   final FirebaseFirestore _firestore;
   final String _userId;
 
@@ -19,9 +18,9 @@ class FirestoreExpectedCashFlowRepository
     required FirebaseFirestore firestore,
     required String userId,
     required String Function() baseCurrency,
-  }) : _firestore = firestore,
-       _userId = userId,
-       _baseCurrency = baseCurrency;
+  })  : _firestore = firestore,
+        _userId = userId,
+        _baseCurrency = baseCurrency;
 
   // Collection reference
   CollectionReference<Map<String, dynamic>> get _expectedCashFlowsRef =>
@@ -63,10 +62,12 @@ class FirestoreExpectedCashFlowRepository
   Stream<List<ExpectedCashFlowEntity>> watchPendingExpectedCashFlows() {
     // Pending = all statuses except received and dismissed
     return _expectedCashFlowsRef
-        .where(
-          'status',
-          whereIn: ['upcoming', 'dueSoon', 'gracePeriod', 'overdue'],
-        )
+        .where('status', whereIn: [
+          'upcoming',
+          'dueSoon',
+          'gracePeriod',
+          'overdue',
+        ])
         .orderBy('expectedDate', descending: false)
         .snapshots()
         .map(
@@ -119,9 +120,8 @@ class FirestoreExpectedCashFlowRepository
 
   @override
   Future<List<ExpectedCashFlowEntity>> getAllExpectedCashFlows() async {
-    final snapshot = await _expectedCashFlowsRef
-        .orderBy('expectedDate', descending: false)
-        .get();
+    final snapshot =
+        await _expectedCashFlowsRef.orderBy('expectedDate', descending: false).get();
     return snapshot.docs
         .map((doc) => _expectedCashFlowFromFirestore(doc.data(), doc.id))
         .toList();
@@ -150,10 +150,12 @@ class FirestoreExpectedCashFlowRepository
   @override
   Future<List<ExpectedCashFlowEntity>> getPendingExpectedCashFlows() async {
     final snapshot = await _expectedCashFlowsRef
-        .where(
-          'status',
-          whereIn: ['upcoming', 'dueSoon', 'gracePeriod', 'overdue'],
-        )
+        .where('status', whereIn: [
+          'upcoming',
+          'dueSoon',
+          'gracePeriod',
+          'overdue',
+        ])
         .orderBy('expectedDate', descending: false)
         .get();
     return snapshot.docs

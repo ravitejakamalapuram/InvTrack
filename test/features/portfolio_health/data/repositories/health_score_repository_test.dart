@@ -22,27 +22,14 @@ import 'package:inv_tracker/features/portfolio_health/data/repositories/health_s
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 
 class MockFirebaseFirestore extends Mock implements FirebaseFirestore {}
-
 class MockFirebaseAuth extends Mock implements FirebaseAuth {}
-
 class MockCrashlyticsService extends Mock implements CrashlyticsService {}
-
 class MockUser extends Mock implements User {}
-
-class MockCollectionReference extends Mock
-    implements CollectionReference<Map<String, dynamic>> {}
-
-class MockDocumentReference extends Mock
-    implements DocumentReference<Map<String, dynamic>> {}
-
-class MockQueryDocumentSnapshot extends Mock
-    implements QueryDocumentSnapshot<Map<String, dynamic>> {}
-
-class MockQuerySnapshot extends Mock
-    implements QuerySnapshot<Map<String, dynamic>> {}
-
+class MockCollectionReference extends Mock implements CollectionReference<Map<String, dynamic>> {}
+class MockDocumentReference extends Mock implements DocumentReference<Map<String, dynamic>> {}
+class MockQueryDocumentSnapshot extends Mock implements QueryDocumentSnapshot<Map<String, dynamic>> {}
+class MockQuerySnapshot extends Mock implements QuerySnapshot<Map<String, dynamic>> {}
 class MockQuery extends Mock implements Query<Map<String, dynamic>> {}
-
 class MockWriteBatch extends Mock implements WriteBatch {}
 
 void main() {
@@ -69,26 +56,16 @@ void main() {
 
     when(() => mockAuth.currentUser).thenReturn(mockUser);
     when(() => mockUser.uid).thenReturn(testUserId);
-    when(
-      () => mockCrashlytics.recordError(
-        any(),
-        any(),
-        reason: any(named: 'reason'),
-        fatal: any(named: 'fatal'),
-      ),
-    ).thenAnswer((_) async => Future.value());
+    when(() => mockCrashlytics.recordError(any(), any(), reason: any(named: 'reason'), fatal: any(named: 'fatal')))
+        .thenAnswer((_) async => Future.value());
 
     // Setup Firestore collection path mocking
     final mockUserDoc = MockDocumentReference();
     final mockUsersCollection = MockCollectionReference();
 
-    when(
-      () => mockFirestore.collection('users'),
-    ).thenReturn(mockUsersCollection);
+    when(() => mockFirestore.collection('users')).thenReturn(mockUsersCollection);
     when(() => mockUsersCollection.doc(testUserId)).thenReturn(mockUserDoc);
-    when(
-      () => mockUserDoc.collection('healthScores'),
-    ).thenReturn(mockCollection);
+    when(() => mockUserDoc.collection('healthScores')).thenReturn(mockCollection);
 
     repository = HealthScoreRepository(
       firestore: mockFirestore,
@@ -119,31 +96,26 @@ void main() {
 
   group('HealthScoreRepository', () {
     group('Authentication', () {
-      test(
-        'throws DataException with AuthException cause when user not authenticated',
-        () {
-          when(() => mockAuth.currentUser).thenReturn(null);
+      test('throws DataException with AuthException cause when user not authenticated', () {
+        when(() => mockAuth.currentUser).thenReturn(null);
 
-          final unauthRepository = HealthScoreRepository(
-            firestore: mockFirestore,
-            auth: mockAuth,
-            crashlytics: mockCrashlytics,
-          );
+        final unauthRepository = HealthScoreRepository(
+          firestore: mockFirestore,
+          auth: mockAuth,
+          crashlytics: mockCrashlytics,
+        );
 
-          expect(
-            () => unauthRepository.saveSnapshot(createTestScore()),
-            throwsA(isA<DataException>()),
-          );
-        },
-      );
+        expect(
+          () => unauthRepository.saveSnapshot(createTestScore()),
+          throwsA(isA<DataException>()),
+        );
+      });
     });
 
     group('saveSnapshot', () {
       test('saves snapshot with auto-generated ID', () async {
         final mockDocRef = MockDocumentReference();
-        when(
-          () => mockCollection.add(any()),
-        ).thenAnswer((_) async => mockDocRef);
+        when(() => mockCollection.add(any())).thenAnswer((_) async => mockDocRef);
 
         final score = createTestScore();
         await repository.saveSnapshot(score);
@@ -152,9 +124,8 @@ void main() {
       });
 
       test('rethrows timeout exception', () async {
-        when(
-          () => mockCollection.add(any()),
-        ).thenThrow(TimeoutException('Timeout'));
+        when(() => mockCollection.add(any()))
+            .thenThrow(TimeoutException('Timeout'));
 
         final score = createTestScore();
 
@@ -205,9 +176,8 @@ void main() {
       });
 
       test('wraps other errors in DataException', () async {
-        when(
-          () => mockCollection.add(any()),
-        ).thenThrow(Exception('Permission denied'));
+        when(() => mockCollection.add(any()))
+            .thenThrow(Exception('Permission denied'));
 
         final score = createTestScore();
 
@@ -224,9 +194,8 @@ void main() {
         final mockQuerySnapshot = MockQuerySnapshot();
         final mockDoc = MockQueryDocumentSnapshot();
 
-        when(
-          () => mockCollection.orderBy('calculatedAt', descending: true),
-        ).thenReturn(mockQuery);
+        when(() => mockCollection.orderBy('calculatedAt', descending: true))
+            .thenReturn(mockQuery);
         when(() => mockQuery.limit(1)).thenReturn(mockQuery);
         when(() => mockQuery.get()).thenAnswer((_) async => mockQuerySnapshot);
         when(() => mockQuerySnapshot.docs).thenReturn([mockDoc]);
@@ -251,9 +220,8 @@ void main() {
         final mockQuery = MockQuery();
         final mockQuerySnapshot = MockQuerySnapshot();
 
-        when(
-          () => mockCollection.orderBy('calculatedAt', descending: true),
-        ).thenReturn(mockQuery);
+        when(() => mockCollection.orderBy('calculatedAt', descending: true))
+            .thenReturn(mockQuery);
         when(() => mockQuery.limit(1)).thenReturn(mockQuery);
         when(() => mockQuery.get()).thenAnswer((_) async => mockQuerySnapshot);
         when(() => mockQuerySnapshot.docs).thenReturn([]);
@@ -265,9 +233,8 @@ void main() {
 
       test('throws DataException on error', () async {
         final mockQuery = MockQuery();
-        when(
-          () => mockCollection.orderBy('calculatedAt', descending: true),
-        ).thenReturn(mockQuery);
+        when(() => mockCollection.orderBy('calculatedAt', descending: true))
+            .thenReturn(mockQuery);
         when(() => mockQuery.limit(1)).thenReturn(mockQuery);
         when(() => mockQuery.get()).thenThrow(Exception('Fetch failed'));
 
@@ -284,15 +251,10 @@ void main() {
         final mockQuerySnapshot = MockQuerySnapshot();
         final mockDoc = MockQueryDocumentSnapshot();
 
-        when(
-          () => mockCollection.where(
-            'calculatedAt',
-            isGreaterThan: any(named: 'isGreaterThan'),
-          ),
-        ).thenReturn(mockQuery);
-        when(
-          () => mockQuery.orderBy('calculatedAt', descending: false),
-        ).thenReturn(mockQuery);
+        when(() => mockCollection.where('calculatedAt', isGreaterThan: any(named: 'isGreaterThan')))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.orderBy('calculatedAt', descending: false))
+            .thenReturn(mockQuery);
         when(() => mockQuery.get()).thenAnswer((_) async => mockQuerySnapshot);
         when(() => mockQuerySnapshot.docs).thenReturn([mockDoc]);
         when(() => mockDoc.id).thenReturn('snapshot-1');
@@ -314,15 +276,10 @@ void main() {
 
       test('throws DataException on error', () async {
         final mockQuery = MockQuery();
-        when(
-          () => mockCollection.where(
-            'calculatedAt',
-            isGreaterThan: any(named: 'isGreaterThan'),
-          ),
-        ).thenReturn(mockQuery);
-        when(
-          () => mockQuery.orderBy('calculatedAt', descending: false),
-        ).thenReturn(mockQuery);
+        when(() => mockCollection.where('calculatedAt', isGreaterThan: any(named: 'isGreaterThan')))
+            .thenReturn(mockQuery);
+        when(() => mockQuery.orderBy('calculatedAt', descending: false))
+            .thenReturn(mockQuery);
         when(() => mockQuery.get()).thenThrow(Exception('Fetch failed'));
 
         expect(

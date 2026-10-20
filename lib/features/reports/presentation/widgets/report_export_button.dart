@@ -91,7 +91,11 @@ class ReportExportButton extends ConsumerWidget {
     );
   }
 
-  void _handleExport(BuildContext context, WidgetRef ref, ExportFormat format) {
+  void _handleExport(
+    BuildContext context,
+    WidgetRef ref,
+    ExportFormat format,
+  ) {
     final notifier = ref.read(reportExportProvider.notifier);
 
     switch (format) {

@@ -39,11 +39,11 @@ class IncomeGuardianMonitorService {
     required IncomeGuardianNotificationHandler notificationHandler,
     required IncomeGuardianSettings settings,
     required String locale,
-  }) : _expectedCashFlowRepository = expectedCashFlowRepository,
-       _investmentRepository = investmentRepository,
-       _notificationHandler = notificationHandler,
-       _settings = settings,
-       _locale = locale;
+  })  : _expectedCashFlowRepository = expectedCashFlowRepository,
+        _investmentRepository = investmentRepository,
+        _notificationHandler = notificationHandler,
+        _settings = settings,
+        _locale = locale;
 
   /// Start monitoring expected cash flows
   Future<void> startMonitoring() async {

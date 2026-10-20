@@ -32,11 +32,10 @@ class FilterSelector extends ConsumerWidget {
     final theme = Theme.of(context);
 
     // Determine which filters to show based on report type
-    final showInvestmentFilter =
-        reportType != null &&
+    final showInvestmentFilter = reportType != null &&
         (reportType == ReportType.performance ||
-            reportType == ReportType.weeklySummary ||
-            reportType == ReportType.monthlyIncome);
+         reportType == ReportType.weeklySummary ||
+         reportType == ReportType.monthlyIncome);
 
     final showGoalFilter = reportType == ReportType.goalProgress;
 
@@ -125,7 +124,9 @@ class _InvestmentFilterDropdown extends ConsumerWidget {
           initialValue: selectedInvestmentId,
           decoration: InputDecoration(
             hintText: l10n.allInvestments,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           items: [
             DropdownMenuItem<String>(
@@ -168,10 +169,15 @@ class _GoalFilterDropdown extends ConsumerWidget {
           initialValue: selectedGoalId,
           decoration: InputDecoration(
             hintText: l10n.allGoals,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           items: [
-            DropdownMenuItem<String>(value: null, child: Text(l10n.allGoals)),
+            DropdownMenuItem<String>(
+              value: null,
+              child: Text(l10n.allGoals),
+            ),
             ...goals.map((goal) {
               return DropdownMenuItem<String>(
                 value: goal.id,

@@ -203,73 +203,35 @@ void main() {
       expect(report.interestIncome, 300.0);
     });
 
-    test(
-      'open holding awaiting a value is not ranked as a top performer',
-      () async {
-        InvestmentEntity inv(String id) => InvestmentEntity(
-          id: id,
-          name: id,
-          type: InvestmentType.fixedDeposit,
-          status: InvestmentStatus.open,
-          startDate: DateTime(2023, 5, 1),
-          createdAt: DateTime(2023, 5, 1),
-          updatedAt: DateTime(2023, 5, 1),
-          currency: 'USD',
-        );
-        CashFlowEntity cf(
-          String id,
-          String i,
-          double a,
-          CashFlowType t,
-          DateTime d,
-        ) => CashFlowEntity(
-          id: id,
-          investmentId: i,
-          amount: a,
-          date: d,
-          type: t,
-          currency: 'USD',
-          createdAt: d,
-        );
+    test('open holding awaiting a value is not ranked as a top performer', () async {
+      InvestmentEntity inv(String id) => InvestmentEntity(
+        id: id,
+        name: id,
+        type: InvestmentType.fixedDeposit,
+        status: InvestmentStatus.open,
+        startDate: DateTime(2023, 5, 1),
+        createdAt: DateTime(2023, 5, 1),
+        updatedAt: DateTime(2023, 5, 1),
+        currency: 'USD',
+      );
+      CashFlowEntity cf(String id, String i, double a, CashFlowType t, DateTime d) =>
+          CashFlowEntity(id: id, investmentId: i, amount: a, date: d, type: t, currency: 'USD', createdAt: d);
 
-        final report = await service.generateReport(
-          fyYear: fyYear,
-          allCashFlows: [
-            cf('1', 'paid', 1000, CashFlowType.invest, DateTime(2023, 5, 1)),
-            cf(
-              '2',
-              'paid',
-              1200,
-              CashFlowType.returnFlow,
-              DateTime(2024, 3, 1),
-            ),
-            cf(
-              '3',
-              'awaiting',
-              1000,
-              CashFlowType.invest,
-              DateTime(2023, 5, 1),
-            ),
-            cf(
-              '4',
-              'awaiting',
-              900,
-              CashFlowType.returnFlow,
-              DateTime(2024, 3, 1),
-            ),
-          ],
-          allInvestments: [inv('paid'), inv('awaiting')],
-          baseCurrency: 'USD',
-        );
+      final report = await service.generateReport(
+        fyYear: fyYear,
+        allCashFlows: [
+          cf('1', 'paid', 1000, CashFlowType.invest, DateTime(2023, 5, 1)),
+          cf('2', 'paid', 1200, CashFlowType.returnFlow, DateTime(2024, 3, 1)),
+          cf('3', 'awaiting', 1000, CashFlowType.invest, DateTime(2023, 5, 1)),
+          cf('4', 'awaiting', 900, CashFlowType.returnFlow, DateTime(2024, 3, 1)),
+        ],
+        allInvestments: [inv('paid'), inv('awaiting')],
+        baseCurrency: 'USD',
+      );
 
-        expect(report.topPerformersByReturns.map((p) => p.investment.id), [
-          'paid',
-        ]);
-        expect(report.topPerformersByXIRR.map((p) => p.investment.id), [
-          'paid',
-        ]);
-      },
-    );
+      expect(report.topPerformersByReturns.map((p) => p.investment.id), ['paid']);
+      expect(report.topPerformersByXIRR.map((p) => p.investment.id), ['paid']);
+    });
 
     test('should handle empty data', () async {
       final report = await service.generateReport(

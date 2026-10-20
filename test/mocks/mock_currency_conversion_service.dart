@@ -5,11 +5,11 @@ class MockCurrencyConversionService implements CurrencyConversionService {
   /// Shared exchange rates (how many INR per 1 unit of currency)
   /// Extracted to prevent drift between convert() and getLastKnownRate()
   static const Map<String, double> _ratesInINR = {
-    'USD': 83.0, // 1 USD = 83 INR
-    'EUR': 90.0, // 1 EUR = 90 INR
+    'USD': 83.0,  // 1 USD = 83 INR
+    'EUR': 90.0,  // 1 EUR = 90 INR
     'GBP': 105.0, // 1 GBP = 105 INR
-    'JPY': 0.56, // 1 JPY = 0.56 INR
-    'INR': 1.0, // 1 INR = 1 INR
+    'JPY': 0.56,  // 1 JPY = 0.56 INR
+    'INR': 1.0,   // 1 INR = 1 INR
   };
 
   bool clearCacheCalled = false;
@@ -38,16 +38,12 @@ class MockCurrencyConversionService implements CurrencyConversionService {
     final toRate = _ratesInINR[to];
 
     if (fromRate == null) {
-      throw ArgumentError(
-        'Unsupported "from" currency: $from. '
-        'Supported: ${_ratesInINR.keys.join(", ")}',
-      );
+      throw ArgumentError('Unsupported "from" currency: $from. '
+          'Supported: ${_ratesInINR.keys.join(", ")}');
     }
     if (toRate == null) {
-      throw ArgumentError(
-        'Unsupported "to" currency: $to. '
-        'Supported: ${_ratesInINR.keys.join(", ")}',
-      );
+      throw ArgumentError('Unsupported "to" currency: $to. '
+          'Supported: ${_ratesInINR.keys.join(", ")}');
     }
 
     // Example: 100 USD to EUR
@@ -89,16 +85,12 @@ class MockCurrencyConversionService implements CurrencyConversionService {
     final toRate = _ratesInINR[to];
 
     if (fromRate == null) {
-      throw ArgumentError(
-        'Unsupported "from" currency: $from. '
-        'Supported: ${_ratesInINR.keys.join(", ")}',
-      );
+      throw ArgumentError('Unsupported "from" currency: $from. '
+          'Supported: ${_ratesInINR.keys.join(", ")}');
     }
     if (toRate == null) {
-      throw ArgumentError(
-        'Unsupported "to" currency: $to. '
-        'Supported: ${_ratesInINR.keys.join(", ")}',
-      );
+      throw ArgumentError('Unsupported "to" currency: $to. '
+          'Supported: ${_ratesInINR.keys.join(", ")}');
     }
 
     // Return rate: how much 'to' currency per 1 unit of 'from' currency

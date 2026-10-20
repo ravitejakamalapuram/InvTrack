@@ -18,59 +18,60 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 void main() {
   group('In-App Update Null Check Regression Tests', () {
     testWidgets(
-      'InAppUpdateInitializer does not crash when localizations missing',
-      (tester) async {
-        // Regression test for Crashlytics issues:
-        // - 7c46c24b7ce305a1b5781c5e3b22884f
-        // - c8f980cd37a050d99b236193ef9ea583
+        'InAppUpdateInitializer does not crash when localizations missing',
+        (tester) async {
+      // Regression test for Crashlytics issues:
+      // - 7c46c24b7ce305a1b5781c5e3b22884f
+      // - c8f980cd37a050d99b236193ef9ea583
 
-        // Create a widget WITHOUT proper localization setup
-        // This simulates the crash scenario where l10n is null
-        await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(
-              // Intentionally NOT providing AppLocalizations
-              // to simulate the crash scenario
-              home: InAppUpdateInitializer(
-                child: Scaffold(body: Center(child: Text('Test'))),
+      // Create a widget WITHOUT proper localization setup
+      // This simulates the crash scenario where l10n is null
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            // Intentionally NOT providing AppLocalizations
+            // to simulate the crash scenario
+            home: InAppUpdateInitializer(
+              child: Scaffold(
+                body: Center(child: Text('Test')),
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-        // Should NOT crash - widget should handle missing localizations gracefully
-        expect(find.text('Test'), findsOneWidget);
-      },
-    );
+      // Should NOT crash - widget should handle missing localizations gracefully
+      expect(find.text('Test'), findsOneWidget);
+    });
 
     testWidgets(
-      'InAppUpdateInitializer works correctly with proper localization',
-      (tester) async {
-        // Test the happy path - when localizations are properly set up
-        await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: InAppUpdateInitializer(
-                child: Scaffold(body: Center(child: Text('Test with l10n'))),
+        'InAppUpdateInitializer works correctly with proper localization',
+        (tester) async {
+      // Test the happy path - when localizations are properly set up
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: InAppUpdateInitializer(
+              child: Scaffold(
+                body: Center(child: Text('Test with l10n')),
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-        // Should work normally with localizations
-        expect(find.text('Test with l10n'), findsOneWidget);
-      },
-    );
+      // Should work normally with localizations
+      expect(find.text('Test with l10n'), findsOneWidget);
+    });
 
-    testWidgets('InAppUpdateInitializer child renders regardless of l10n', (
-      tester,
-    ) async {
+    testWidgets('InAppUpdateInitializer child renders regardless of l10n',
+        (tester) async {
       // Verify that the child widget is always rendered,
       // even if update dialogs can't be shown due to missing l10n
       await tester.pumpWidget(
@@ -79,7 +80,10 @@ void main() {
             home: InAppUpdateInitializer(
               child: Scaffold(
                 body: Column(
-                  children: [Text('Child Widget 1'), Text('Child Widget 2')],
+                  children: [
+                    Text('Child Widget 1'),
+                    Text('Child Widget 2'),
+                  ],
                 ),
               ),
             ),
@@ -102,7 +106,9 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: InAppUpdateInitializer(
-              child: Scaffold(body: Text('Dispose Test')),
+              child: Scaffold(
+                body: Text('Dispose Test'),
+              ),
             ),
           ),
         ),
@@ -113,7 +119,11 @@ void main() {
 
       // Navigate away to trigger dispose
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: Text('New Screen'))),
+        const MaterialApp(
+          home: Scaffold(
+            body: Text('New Screen'),
+          ),
+        ),
       );
 
       await tester.pumpAndSettle();

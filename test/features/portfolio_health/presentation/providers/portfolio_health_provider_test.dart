@@ -156,9 +156,7 @@ ProviderContainer _container({
         ),
       currencyCodeProvider.overrideWith((ref) => 'INR'),
       currencyConversionServiceProvider.overrideWith((ref) => conversion),
-      multiCurrencyAllGoalsProgressProvider.overrideWith(
-        (ref) async => const [],
-      ),
+      multiCurrencyAllGoalsProgressProvider.overrideWith((ref) async => const []),
       healthScoreAutoSaveServiceProvider.overrideWithValue(autoSave),
       valuationDateProvider.overrideWithValue(DateTime(2026, 10, 4)),
     ],
