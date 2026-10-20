@@ -120,7 +120,7 @@ class DynamicReportScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildKpiGrid(BuildContext context, List kpiDataList) {
+  Widget _buildKpiGrid(BuildContext context, List<dynamic> kpiDataList) {
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -193,7 +193,7 @@ class DynamicReportScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildItemList(BuildContext context, List items) {
+  Widget _buildItemList(BuildContext context, List<dynamic> items) {
     final l10n = AppLocalizations.of(context);
     if (items.isEmpty) {
       return Text(
