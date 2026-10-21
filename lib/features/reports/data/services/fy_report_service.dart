@@ -24,6 +24,15 @@ final fyReportServiceProvider = Provider((ref) {
   return FYReportService(engine);
 });
 
+/// Whether [cf] is interest income for the FY report: an income flow whose
+/// notes mention interest and not dividend (dividend wins when both appear).
+/// Shared with the interest schedule so both classify identically.
+bool isInterestIncomeFlow(CashFlowEntity cf) {
+  if (cf.type != CashFlowType.income) return false;
+  final note = (cf.notes ?? '').toLowerCase();
+  return !note.contains('dividend') && note.contains('interest');
+}
+
 /// Service to generate Financial Year reports
 class FYReportService {
   final CalculationEngine _engine;
@@ -82,7 +91,7 @@ class FYReportService {
             final noteType = (cf.notes ?? '').toLowerCase();
             if (noteType.contains('dividend')) {
               dividendIncome += cf.amount;
-            } else if (noteType.contains('interest')) {
+            } else if (isInterestIncomeFlow(cf)) {
               interestIncome += cf.amount;
             }
             break;
