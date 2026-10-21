@@ -285,7 +285,14 @@ class FYReportService {
         cashFlows: picked,
         baseCurrency: baseCurrency,
       );
-      return {for (final cf in converted) cf.investmentId: cf.amount};
+      // A rate that is zero or not finite would turn a real value into a
+      // false 0 or NaN, so such a conversion counts as impossible.
+      final original = {for (final cf in picked) cf.id: cf.amount};
+      return {
+        for (final cf in converted)
+          if (cf.amount.isFinite && (cf.amount > 0 || original[cf.id] == 0))
+            cf.investmentId: cf.amount,
+      };
     }
 
     return (

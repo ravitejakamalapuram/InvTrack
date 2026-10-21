@@ -1,12 +1,16 @@
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine.dart';
+import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
 import 'package:inv_tracker/core/calculations/modules/currency_module.dart';
 import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/valuation_providers.dart';
+import 'package:inv_tracker/features/reports/presentation/providers/fy_report_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
-import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/reports/data/services/fy_report_service.dart';
 import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
 import '../../../../mocks/mock_currency_conversion_service.dart';
@@ -860,5 +864,61 @@ void main() {
       expect(edges.opening, isEmpty);
       expect(edges.closing, isEmpty);
     });
+
+    test('a zero conversion rate counts as impossible and omits the holding',
+        () async {
+      final zeroRate = FYReportService(
+        CalculationEngine()
+          ..registerModule(CurrencyConverterModule(_ZeroUsdService()))
+          ..registerModule(FinancialCalculatorModule()),
+      );
+      final edges = await zeroRate.valuationsAtFYEdges(
+        fyYear: 2025,
+        investments: [holding('us', currency: 'USD')],
+        snapshots: [
+          snap('1', 'us', 1000, DateTime(2025, 3, 31), currency: 'USD'),
+        ],
+        baseCurrency: 'INR',
+      );
+      expect(edges.opening, isEmpty);
+    });
+
+    test('fyReportProvider feeds snapshot values into the FY XIRR', () async {
+      final fd = holding('fd');
+      final container = ProviderContainer(
+        overrides: [
+          activeInvestmentsProvider.overrideWithValue(AsyncData([fd])),
+          validCashFlowsProvider.overrideWithValue(
+            AsyncData([invest('1', 'fd', 500000, 'INR')]),
+          ),
+          currencyCodeProvider.overrideWithValue('INR'),
+          validValuationSnapshotsProvider.overrideWithValue(
+            AsyncData([
+              snap('b', 'fd', 530000, DateTime(2025, 3, 31)),
+              snap('d', 'fd', 572400, DateTime(2026, 3, 31)),
+            ]),
+          ),
+          calculationEngineProvider.overrideWithValue(
+            CalculationEngine()
+              ..registerModule(CurrencyConverterModule(null))
+              ..registerModule(FinancialCalculatorModule()),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final r = await container.read(fyReportProvider(2025).future);
+      expect(r.xirr, closeTo(0.08, 1e-6));
+    });
   });
+}
+
+class _ZeroUsdService extends MockCurrencyConversionService {
+  @override
+  Future<double> convert({
+    required double amount,
+    required String from,
+    required String to,
+    DateTime? date,
+  }) async => from == to ? amount : 0.0;
 }
