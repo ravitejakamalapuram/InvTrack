@@ -16,42 +16,44 @@ Future<ProcessResult> _run(String body) async {
 }
 
 void main() {
-  test('the guard script exists', () {
-    expect(File(_script).existsSync(), isTrue);
-  });
+  group('release manifest guard', () {
+    test('the guard script exists', () {
+      expect(File(_script).existsSync(), isTrue);
+    });
 
-  test(
-    'passes a merged manifest with no advertising ID and no AdMob ID',
-    () async {
+    test(
+      'passes a merged manifest with no advertising ID and no AdMob ID',
+      () async {
+        final r = await _run(
+          '<manifest><uses-permission android:name="android.permission.INTERNET"/>'
+          '<application/></manifest>',
+        );
+        expect(r.exitCode, 0, reason: '${r.stdout}${r.stderr}');
+      },
+    );
+
+    test('fails when the advertising ID permission is merged in', () async {
       final r = await _run(
-        '<manifest><uses-permission android:name="android.permission.INTERNET"/>'
-        '<application/></manifest>',
+        '<manifest><uses-permission '
+        'android:name="com.google.android.gms.permission.AD_ID"/></manifest>',
       );
-      expect(r.exitCode, 0, reason: '${r.stdout}${r.stderr}');
-    },
-  );
+      expect(r.exitCode, 1);
+      expect(r.stdout, contains('AD_ID'));
+    });
 
-  test('fails when the advertising ID permission is merged in', () async {
-    final r = await _run(
-      '<manifest><uses-permission '
-      'android:name="com.google.android.gms.permission.AD_ID"/></manifest>',
-    );
-    expect(r.exitCode, 1);
-    expect(r.stdout, contains('AD_ID'));
-  });
+    test('fails when an AdMob application ID is merged in', () async {
+      final r = await _run(
+        '<manifest><application><meta-data '
+        'android:name="com.google.android.gms.ads.APPLICATION_ID" '
+        'android:value="ca-app-pub-1~2"/></application></manifest>',
+      );
+      expect(r.exitCode, 1);
+      expect(r.stdout, contains('AdMob'));
+    });
 
-  test('fails when an AdMob application ID is merged in', () async {
-    final r = await _run(
-      '<manifest><application><meta-data '
-      'android:name="com.google.android.gms.ads.APPLICATION_ID" '
-      'android:value="ca-app-pub-1~2"/></application></manifest>',
-    );
-    expect(r.exitCode, 1);
-    expect(r.stdout, contains('AdMob'));
-  });
-
-  test('fails when the manifest file is missing', () async {
-    final r = await Process.run('bash', [_script, '/nonexistent/m.xml']);
-    expect(r.exitCode, isNot(0));
+    test('fails when the manifest file is missing', () async {
+      final r = await Process.run('bash', [_script, '/nonexistent/m.xml']);
+      expect(r.exitCode, isNot(0));
+    });
   });
 }

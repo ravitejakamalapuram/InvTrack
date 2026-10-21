@@ -174,6 +174,10 @@ void main() {
       expect(privacyPolicyContent, contains('The app shows no ads.'));
       expect(privacyPolicyContent, isNot(contains('Google Mobile Ads')));
       expect(privacyPolicyContent, isNot(contains('advertising ID')));
+      expect(
+        privacyPolicyContent,
+        contains("does not read your device's advertising identifier"),
+      );
       expect(File('pubspec.yaml').readAsStringSync(), isNot(contains('google_mobile_ads')));
       final manifest = File(
         'android/app/src/main/AndroidManifest.xml',

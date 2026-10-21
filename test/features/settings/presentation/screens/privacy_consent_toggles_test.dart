@@ -25,6 +25,12 @@ class _FakeConsent extends ConsentService {
   }
 }
 
+class _FailingConsent extends ConsentService {
+  _FailingConsent(super.prefs);
+  @override
+  Future<void> setAnalytics(bool v) async => throw Exception('firebase down');
+}
+
 class _TestSecurityNotifier extends SecurityNotifier {
   @override
   SecurityState build() => const SecurityState();
@@ -73,5 +79,42 @@ void main() {
     expect(fake.calls, ['analytics:false', 'crash:false']);
     expect(tester.widget<SwitchListTile>(analytics).value, isFalse);
     expect(tester.widget<SwitchListTile>(crash).value, isFalse);
+  });
+
+  testWidgets('a failed change keeps the switch on and shows an error', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          consentServiceProvider.overrideWithValue(_FailingConsent(prefs)),
+          securityProvider.overrideWith(_TestSecurityNotifier.new),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SecuritySettingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final tile = find.byKey(const Key('consent_analytics_toggle'));
+    final toggle = find.descendant(
+      of: tile,
+      matching: find.byType(SwitchListTile),
+    );
+    await tester.scrollUntilVisible(tile, 200);
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<SwitchListTile>(toggle).value, isTrue);
+    expect(
+      find.text('Could not save that choice. Please try again.'),
+      findsOneWidget,
+    );
   });
 }

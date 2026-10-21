@@ -115,6 +115,11 @@ class HelpFaqScreen extends StatelessWidget {
               l10n.whatIsPrivacyModeAnswer,
               isDark,
             ),
+            _buildFaqItem(
+              l10n.whatDoAnalyticsAndCrashSwitchesDo,
+              l10n.whatDoAnalyticsAndCrashSwitchesDoAnswer,
+              isDark,
+            ),
           ]),
           _buildSection(l10n.dataManagementSection, [
             _buildFaqItem(

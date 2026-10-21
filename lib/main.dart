@@ -42,7 +42,15 @@ void main() async {
 
       // Apply the user's analytics and crash-reporting choices (A34) before
       // anything can report.
-      await ConsentService(sharedPreferences).applyAtStartup();
+      try {
+        await ConsentService(sharedPreferences).applyAtStartup();
+      } catch (e, stack) {
+        LoggerService.error(
+          'Failed to apply the analytics and crash-report choices',
+          error: e,
+          stackTrace: stack,
+        );
+      }
 
       // Monitor mode only (#774); must follow Firebase.initializeApp.
       await AppCheckService.initialize();

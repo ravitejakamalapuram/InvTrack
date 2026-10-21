@@ -31,6 +31,7 @@ void main() {
     when(
       () => crashlytics.setCrashlyticsCollectionEnabled(any()),
     ).thenAnswer((_) async {});
+    when(() => crashlytics.deleteUnsentReports()).thenAnswer((_) async {});
   });
 
   test('both choices default to on for a user who never chose', () async {
@@ -89,5 +90,46 @@ void main() {
     await s.setCrashReporting(false);
     verify(() => crashlytics.setCrashlyticsCollectionEnabled(false)).called(1);
     expect(s.crashReportingEnabled, isFalse);
+  });
+
+  group('crash reports cached while the user has opted out', () {
+    test('startup with crash reporting off deletes unsent reports', () async {
+      final s = await service({crashReportingConsentPrefKey: false});
+      await s.applyAtStartup();
+      verifyInOrder([
+        () => crashlytics.setCrashlyticsCollectionEnabled(false),
+        () => crashlytics.deleteUnsentReports(),
+      ]);
+    });
+
+    test('switching crash reporting off deletes unsent reports', () async {
+      final s = await service();
+      await s.setCrashReporting(false);
+      verifyInOrder([
+        () => crashlytics.setCrashlyticsCollectionEnabled(false),
+        () => crashlytics.deleteUnsentReports(),
+      ]);
+    });
+
+    test('switching back on first deletes what was cached while off', () async {
+      final s = await service({crashReportingConsentPrefKey: false});
+      await s.setCrashReporting(true);
+      verifyInOrder([
+        () => crashlytics.deleteUnsentReports(),
+        () => crashlytics.setCrashlyticsCollectionEnabled(any()),
+      ]);
+    });
+
+    test('switching on when it was already on deletes nothing', () async {
+      final s = await service();
+      await s.setCrashReporting(true);
+      verifyNever(() => crashlytics.deleteUnsentReports());
+    });
+
+    test('startup with crash reporting on deletes nothing', () async {
+      final s = await service();
+      await s.applyAtStartup();
+      verifyNever(() => crashlytics.deleteUnsentReports());
+    });
   });
 }

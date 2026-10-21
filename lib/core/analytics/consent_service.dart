@@ -44,6 +44,8 @@ class ConsentService {
     await _a.setAnalyticsCollectionEnabled(analyticsEnabled);
     if (!crashReportingEnabled) {
       await _c.setCrashlyticsCollectionEnabled(false);
+      // Reports written while collection was off must never be sent later.
+      await _c.deleteUnsentReports();
     }
   }
 
@@ -54,9 +56,16 @@ class ConsentService {
   }
 
   Future<void> setCrashReporting(bool value) async {
+    final wasEnabled = crashReportingEnabled;
     final enabled =
         value && (!kDebugMode || CrashlyticsService.enableInDebugMode);
+    if (value && !wasEnabled) {
+      // Collection is still off here, so this removes what was cached while
+      // the user had opted out, before any of it can be sent.
+      await _c.deleteUnsentReports();
+    }
     await _c.setCrashlyticsCollectionEnabled(enabled);
+    if (!value) await _c.deleteUnsentReports();
     await _prefs.setBool(crashReportingConsentPrefKey, value);
   }
 }

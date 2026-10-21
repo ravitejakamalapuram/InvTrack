@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/analytics/consent_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -105,9 +106,17 @@ class SecuritySettingsScreen extends ConsumerWidget {
                 title: l10n.analyticsConsentTitle,
                 subtitle: l10n.analyticsConsentSubtitle,
                 value: ref.watch(analyticsConsentProvider),
-                onChanged: (value) => ref
-                    .read(analyticsConsentProvider.notifier)
-                    .setEnabled(value),
+                onChanged: (value) async {
+                  try {
+                    await ref
+                        .read(analyticsConsentProvider.notifier)
+                        .setEnabled(value);
+                  } on Exception {
+                    if (context.mounted) {
+                      AppFeedback.showError(context, l10n.consentChangeFailed);
+                    }
+                  }
+                },
               ),
               SettingsToggleTile(
                 key: const Key('consent_crash_toggle'),
@@ -115,9 +124,17 @@ class SecuritySettingsScreen extends ConsumerWidget {
                 title: l10n.crashReportingConsentTitle,
                 subtitle: l10n.crashReportingConsentSubtitle,
                 value: ref.watch(crashReportingConsentProvider),
-                onChanged: (value) => ref
-                    .read(crashReportingConsentProvider.notifier)
-                    .setEnabled(value),
+                onChanged: (value) async {
+                  try {
+                    await ref
+                        .read(crashReportingConsentProvider.notifier)
+                        .setEnabled(value);
+                  } on Exception {
+                    if (context.mounted) {
+                      AppFeedback.showError(context, l10n.consentChangeFailed);
+                    }
+                  }
+                },
               ),
             ],
           ),
