@@ -154,6 +154,12 @@ void main() {
       expect(_content(_report(xirr: null)).xirrValue, '—');
     });
 
+    test('XIRR above the display cap says so and near zero is 0.0%', () {
+      expect(_content(_report(xirr: 25.0)).xirrValue, '>1000%');
+      expect(_content(_report(xirr: -0.0001)).xirrValue, '0.0%');
+      expect(_content(_report(xirr: double.nan)).xirrValue, '—');
+    });
+
     test('zero net is shown without a sign', () {
       final c = _content(
         _report(

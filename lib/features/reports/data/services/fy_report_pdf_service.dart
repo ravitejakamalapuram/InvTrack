@@ -16,6 +16,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/utils/number_format_utils.dart';
 import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:path_provider/path_provider.dart';
@@ -150,8 +151,7 @@ FyPdfContent buildFyPdfContent({
     netCashFlowLabel: l10n.fyPdfNetCashFlow,
     netCashFlowValue: signed(report.netCashFlow),
     xirrLabel: l10n.fyPdfXirrForYear,
-    // XIRR is a fraction (0.114); undefined is a dash, never 0%.
-    xirrValue: xirr == null ? '—' : '${(xirr * 100).toStringAsFixed(1)}%',
+    xirrValue: _xirrText(xirr, l10n),
     monthHeading: l10n.fyPdfByMonth,
     monthHeaders: [
       l10n.fyPdfColMonth,
@@ -170,6 +170,17 @@ FyPdfContent buildFyPdfContent({
     ],
     disclaimer: l10n.fyPdfDisclaimer,
   );
+}
+
+// XIRR is a fraction (0.114). Undefined or out-of-range is a dash, a value
+// above the display cap says so, and near zero prints 0.0% (never "-0.0%").
+String _xirrText(double? xirr, AppLocalizations l10n) {
+  if (xirr == null || !xirr.isFinite) return '—';
+  final config = XirrFormatConfig.defaultConfig;
+  final percent = xirr * 100;
+  if (percent > config.maxDisplayPercent) return l10n.xirrAboveMax;
+  if (percent.abs() < 0.05) return '0.0%';
+  return formatXirr(xirr, showSign: false) ?? '—';
 }
 
 /// TTF bytes for the four faces the design uses. Bytes (not fonts) so they
