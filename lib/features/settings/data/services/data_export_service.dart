@@ -90,10 +90,10 @@ class ZipExport {
   final int? expectedCashFlows;
 
   /// Whether an import of [bytes] can recreate everything counted here.
+  /// Expected cash flows do not count: they are derived data that the app
+  /// predicts again from the real cash flows (#768).
   bool get carriesEverything =>
-      investmentsWithDetailsNotInExport == 0 &&
-      investmentsNotInExport == 0 &&
-      expectedCashFlows == 0;
+      investmentsWithDetailsNotInExport == 0 && investmentsNotInExport == 0;
 
   /// The investments an import of [bytes] can recreate.
   int get investmentsInExport => investments - investmentsNotInExport;
