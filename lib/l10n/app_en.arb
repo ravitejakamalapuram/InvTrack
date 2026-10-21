@@ -7631,5 +7631,74 @@
   "howToBackupDataDerivedNote": "A backup does not include expected cash flows or health scores. The app calculates them again from your restored data.",
   "@howToBackupDataDerivedNote": {
     "description": "Second FAQ paragraph under the backup answer: expected cash flows and health scores are derived data and are not in the backup"
+  },
+
+  "notificationToggleInvestmentMilestones": "Investment Milestones",
+  "@notificationToggleInvestmentMilestones": {
+    "description": "Title of the Settings > Notifications switch for the investment milestone notification"
+  },
+
+  "notificationToggleInvestmentMilestonesSubtitle": "Celebrate when an investment reaches 2x, 3x and beyond",
+  "@notificationToggleInvestmentMilestonesSubtitle": {
+    "description": "Subtitle of the Settings > Notifications switch for the investment milestone notification"
+  },
+
+  "notificationToggleTaxReminders": "Tax Reminders",
+  "@notificationToggleTaxReminders": {
+    "description": "Title of the Settings > Notifications switch for the India tax reminder notification"
+  },
+
+  "notificationToggleTaxRemindersSubtitle": "India tax deadlines and advance-tax dates",
+  "@notificationToggleTaxRemindersSubtitle": {
+    "description": "Subtitle of the Settings > Notifications switch for the India tax reminder notification"
+  },
+
+  "notificationToggleWeeklyCheckIn": "Weekly Check-In",
+  "@notificationToggleWeeklyCheckIn": {
+    "description": "Title of the Settings > Notifications switch for the weekly check-in notification"
+  },
+
+  "notificationToggleWeeklyCheckInSubtitle": "A Sunday prompt to log income you received",
+  "@notificationToggleWeeklyCheckInSubtitle": {
+    "description": "Subtitle of the Settings > Notifications switch for the weekly check-in notification"
+  },
+
+  "notificationToggleFySummary": "Financial Year Summary",
+  "@notificationToggleFySummary": {
+    "description": "Title of the Settings > Notifications switch for the financial year summary notification"
+  },
+
+  "notificationToggleFySummarySubtitle": "When a new financial year begins",
+  "@notificationToggleFySummarySubtitle": {
+    "description": "Subtitle of the Settings > Notifications switch for the financial year summary notification"
+  },
+
+  "notificationToggleGoalAtRisk": "Goals At Risk",
+  "@notificationToggleGoalAtRisk": {
+    "description": "Title of the Settings > Notifications switch for the goal at-risk alert notification"
+  },
+
+  "notificationToggleGoalAtRiskSubtitle": "When a goal is behind schedule",
+  "@notificationToggleGoalAtRiskSubtitle": {
+    "description": "Subtitle of the Settings > Notifications switch for the goal at-risk alert notification"
+  },
+
+  "notificationToggleGoalStale": "Stale Goals",
+  "@notificationToggleGoalStale": {
+    "description": "Title of the Settings > Notifications switch for the stale goal alert notification"
+  },
+
+  "notificationToggleGoalStaleSubtitle": "When a goal has had no activity for a while",
+  "@notificationToggleGoalStaleSubtitle": {
+    "description": "Subtitle of the Settings > Notifications switch for the stale goal alert notification"
+  },
+
+  "passcodeDigitsEntered": "{count} of {total} digits entered",
+  "@passcodeDigitsEntered": {
+    "description": "Screen-reader label of the PIN dots on the lock screen; says how many digits are typed, never which",
+    "placeholders": {
+      "count": {"type": "int"},
+      "total": {"type": "int"}
+    }
   }
 }
