@@ -901,6 +901,21 @@ void main() {
       expect(edges.opening, isEmpty);
     });
 
+    test(
+      'a zero-valued snapshot at a valid rate is a real value of 0, kept',
+      () async {
+        final edges = await service.valuationsAtFYEdges(
+          fyYear: 2025,
+          investments: [holding('us', currency: 'USD')],
+          snapshots: [
+            snap('1', 'us', 0, DateTime(2025, 3, 31), currency: 'USD'),
+          ],
+          baseCurrency: 'INR',
+        );
+        expect(edges.opening, {'us': 0.0});
+      },
+    );
+
     test('fyReportProvider stays loading while snapshots load and surfaces '
         'a snapshot error', () async {
       ProviderContainer make(AsyncValue<List<InvestmentValuationSnapshot>> v) {

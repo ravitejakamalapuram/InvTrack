@@ -289,11 +289,13 @@ class FYReportService {
         baseCurrency: baseCurrency,
       );
       // A rate that is zero or not finite is no rate: the holding is left out.
-      return {
-        for (final cf in converted)
-          if (cf.amount.isFinite && cf.amount > 0)
-            cf.investmentId: amounts[cf.investmentId]! * cf.amount,
-      };
+      final values = <String, double>{};
+      for (final cf in converted) {
+        if (!cf.amount.isFinite || cf.amount <= 0) continue;
+        final value = amounts[cf.investmentId]! * cf.amount;
+        if (value.isFinite) values[cf.investmentId] = value;
+      }
+      return values;
     }
 
     return (
