@@ -14,91 +14,103 @@ mixin NotificationPreferencesMixin {
   /// The SharedPreferences instance for storing preferences.
   SharedPreferences get prefs;
 
+  /// The signed-in account whose on/off choices apply. Each account keeps its
+  /// own, so another account on the same device is not changed. Null while
+  /// nobody is signed in.
+  String? preferencesUid;
+
+  /// Whether privacy mode is on. Notification text then leaves out amounts.
+  bool privacyModeActive = false;
+
+  /// An account without a choice of its own uses the choice this device had
+  /// before choices were kept per account, and otherwise is on.
+  bool _flag(String key) =>
+      prefs.getBool(_accountKey(key)) ?? prefs.getBool(key) ?? true;
+
+  Future<void> _setFlag(String key, bool enabled) =>
+      prefs.setBool(_accountKey(key), enabled);
+
+  String _accountKey(String key) =>
+      preferencesUid == null ? key : '${key}_$preferencesUid';
+
   // ============ Enabled/Disabled Preferences ============
 
   bool get weeklySummaryEnabled =>
-      prefs.getBool(NotificationPrefsKeys.weeklySummaryEnabled) ?? true;
+      _flag(NotificationPrefsKeys.weeklySummaryEnabled);
 
   Future<void> setWeeklySummaryEnabled(bool enabled) async {
-    await prefs.setBool(NotificationPrefsKeys.weeklySummaryEnabled, enabled);
+    await _setFlag(NotificationPrefsKeys.weeklySummaryEnabled, enabled);
   }
 
   bool get incomeRemindersEnabled =>
-      prefs.getBool(NotificationPrefsKeys.incomeRemindersEnabled) ?? true;
+      _flag(NotificationPrefsKeys.incomeRemindersEnabled);
 
   Future<void> setIncomeRemindersEnabled(bool enabled) async {
-    await prefs.setBool(NotificationPrefsKeys.incomeRemindersEnabled, enabled);
+    await _setFlag(NotificationPrefsKeys.incomeRemindersEnabled, enabled);
   }
 
   bool get maturityRemindersEnabled =>
-      prefs.getBool(NotificationPrefsKeys.maturityRemindersEnabled) ?? true;
+      _flag(NotificationPrefsKeys.maturityRemindersEnabled);
 
   Future<void> setMaturityRemindersEnabled(bool enabled) async {
-    await prefs.setBool(
-      NotificationPrefsKeys.maturityRemindersEnabled,
-      enabled,
-    );
+    await _setFlag(NotificationPrefsKeys.maturityRemindersEnabled, enabled);
   }
 
   bool get monthlySummaryEnabled =>
-      prefs.getBool(NotificationPrefsKeys.monthlySummaryEnabled) ?? true;
+      _flag(NotificationPrefsKeys.monthlySummaryEnabled);
 
   Future<void> setMonthlySummaryEnabled(bool enabled) async {
-    await prefs.setBool(NotificationPrefsKeys.monthlySummaryEnabled, enabled);
+    await _setFlag(NotificationPrefsKeys.monthlySummaryEnabled, enabled);
   }
 
-  bool get milestonesEnabled =>
-      prefs.getBool(NotificationPrefsKeys.milestonesEnabled) ?? true;
+  bool get milestonesEnabled => _flag(NotificationPrefsKeys.milestonesEnabled);
 
   Future<void> setMilestonesEnabled(bool enabled) async {
-    await prefs.setBool(NotificationPrefsKeys.milestonesEnabled, enabled);
+    await _setFlag(NotificationPrefsKeys.milestonesEnabled, enabled);
   }
 
   /// Goal progress milestone notifications enabled
   bool get goalMilestonesEnabled =>
-      prefs.getBool(NotificationPrefsKeys.goalMilestonesEnabled) ?? true;
+      _flag(NotificationPrefsKeys.goalMilestonesEnabled);
 
   Future<void> setGoalMilestonesEnabled(bool enabled) async {
-    await prefs.setBool(NotificationPrefsKeys.goalMilestonesEnabled, enabled);
+    await _setFlag(NotificationPrefsKeys.goalMilestonesEnabled, enabled);
   }
 
   bool get taxRemindersEnabled =>
-      prefs.getBool(NotificationPrefsKeys.taxRemindersEnabled) ?? true;
+      _flag(NotificationPrefsKeys.taxRemindersEnabled);
 
   Future<void> setTaxRemindersEnabled(bool enabled) async {
-    await prefs.setBool(NotificationPrefsKeys.taxRemindersEnabled, enabled);
+    await _setFlag(NotificationPrefsKeys.taxRemindersEnabled, enabled);
   }
 
   /// Weekly check-in (Sunday prompt) enabled
   bool get weeklyCheckInEnabled =>
-      prefs.getBool(NotificationPrefsKeys.weeklyCheckInEnabled) ?? true;
+      _flag(NotificationPrefsKeys.weeklyCheckInEnabled);
 
   Future<void> setWeeklyCheckInEnabled(bool enabled) async {
-    await prefs.setBool(NotificationPrefsKeys.weeklyCheckInEnabled, enabled);
+    await _setFlag(NotificationPrefsKeys.weeklyCheckInEnabled, enabled);
   }
 
   /// FY summary notification enabled
-  bool get fySummaryEnabled =>
-      prefs.getBool(NotificationPrefsKeys.fySummaryEnabled) ?? true;
+  bool get fySummaryEnabled => _flag(NotificationPrefsKeys.fySummaryEnabled);
 
   Future<void> setFySummaryEnabled(bool enabled) async {
-    await prefs.setBool(NotificationPrefsKeys.fySummaryEnabled, enabled);
+    await _setFlag(NotificationPrefsKeys.fySummaryEnabled, enabled);
   }
 
   /// Goal at-risk alerts enabled (when goal is behind schedule)
-  bool get goalAtRiskEnabled =>
-      prefs.getBool(NotificationPrefsKeys.goalAtRiskEnabled) ?? true;
+  bool get goalAtRiskEnabled => _flag(NotificationPrefsKeys.goalAtRiskEnabled);
 
   Future<void> setGoalAtRiskEnabled(bool enabled) async {
-    await prefs.setBool(NotificationPrefsKeys.goalAtRiskEnabled, enabled);
+    await _setFlag(NotificationPrefsKeys.goalAtRiskEnabled, enabled);
   }
 
   /// Goal stale alerts enabled (when no activity for X days)
-  bool get goalStaleEnabled =>
-      prefs.getBool(NotificationPrefsKeys.goalStaleEnabled) ?? true;
+  bool get goalStaleEnabled => _flag(NotificationPrefsKeys.goalStaleEnabled);
 
   Future<void> setGoalStaleEnabled(bool enabled) async {
-    await prefs.setBool(NotificationPrefsKeys.goalStaleEnabled, enabled);
+    await _setFlag(NotificationPrefsKeys.goalStaleEnabled, enabled);
   }
 
   /// Number of days before a goal is considered "stale" (default: 60)

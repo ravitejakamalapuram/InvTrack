@@ -155,6 +155,12 @@ class FakeNotificationService implements NotificationService {
   String? get remindersOwnerUid => null;
 
   @override
+  String? preferencesUid;
+
+  @override
+  bool privacyModeActive = false;
+
+  @override
   Future<void> setRemindersOwnerUid(String? uid) async {}
 
   // Implement all other required methods with no-op stubs
