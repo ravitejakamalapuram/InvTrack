@@ -3,15 +3,16 @@
 /// Generates comprehensive FY reports (Apr 1 - Mar 31) including:
 /// - Monthly cashflow breakdown
 /// - XIRR calculation for the FY period
-/// - Capital gains classification (short-term vs long-term)
+/// - Realised profit on maturity or exit, reported as interest/income (no
+///   capital gains are reported: the data cannot prove a sale)
 /// - Tax-related summaries
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
-import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/core/calculations/tax_and_basis_calculator.dart';
+import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
@@ -36,9 +37,14 @@ class FYReportService {
     required List<CashFlowEntity> allCashFlows,
     required List<InvestmentEntity> allInvestments,
     required String baseCurrency,
+    Map<String, double>? openingValues,
+    Map<String, double>? closingValues,
   }) async {
-    // FY period: Apr 1 of fyYear to Mar 31 of (fyYear+1)
+    // FY period is the half-open range [1 Apr fyYear, 1 Apr fyYear+1) on
+    // date-only values. [fyEnd] is kept as the last instant of 31 Mar for
+    // display; every comparison uses [fyEndExclusive].
     final fyStart = DateTime(fyYear, 4, 1);
+    final fyEndExclusive = DateTime(fyYear + 1, 4, 1);
     final fyEnd = DateTime(fyYear + 1, 3, 31, 23, 59, 59);
     final fyLabel = '$fyYear-${(fyYear + 1) % 100}';
 
@@ -58,12 +64,10 @@ class FYReportService {
     double interestIncome = 0;
 
     // ⚡ Bolt: Single pass loop replacing .where().toList() to avoid intermediate array allocation
-    final startLimit = fyStart.subtract(const Duration(days: 1));
-    final endLimit = fyEnd.add(const Duration(days: 1));
     final fyCashFlows = <CashFlowEntity>[];
 
     for (final cf in baseCashFlows) {
-      if (cf.date.isAfter(startLimit) && cf.date.isBefore(endLimit)) {
+      if (_inFY(cf.date, fyStart, fyEndExclusive)) {
         fyCashFlows.add(cf);
         switch (cf.type) {
           case CashFlowType.invest:
@@ -96,13 +100,23 @@ class FYReportService {
     final monthlyBreakdown = _calculateMonthlyBreakdown(fyCashFlows, fyYear);
 
     // Calculate XIRR for the FY period
-    final xirr = _calculateFYXIRR(fyCashFlows, allInvestments, fyEnd);
+    final xirr = _calculateFYXIRR(
+      fyCashFlows: fyCashFlows,
+      baseCashFlows: baseCashFlows,
+      allInvestments: allInvestments,
+      fyStart: fyStart,
+      fyEndExclusive: fyEndExclusive,
+      openingValues: openingValues,
+      closingValues: closingValues,
+    );
 
-    // Calculate capital gains (short-term vs long-term)
-    final capitalGains = _calculateCapitalGains(
-      fyCashFlows,
-      allInvestments,
-      fyEnd,
+    // Profit realised on maturity or exit is interest/income at slab rates.
+    // Capital gains need a proven sale with its own cost and holding period,
+    // which the cash-flow model cannot show, so none are reported.
+    final realisedProfit = _realisedProfitInFY(
+      baseCashFlows,
+      fyStart,
+      fyEndExclusive,
     );
 
     // Calculate top performers
@@ -117,7 +131,7 @@ class FYReportService {
     final portfolioValueAtEnd = _calculatePortfolioValue(
       allInvestments,
       baseCashFlows,
-      fyEnd,
+      fyEndExclusive,
     );
 
     return FYReport(
@@ -135,10 +149,10 @@ class FYReportService {
       topPerformersByXIRR: topPerformers.$2,
       portfolioValueAtStart: portfolioValueAtStart,
       portfolioValueAtEnd: portfolioValueAtEnd,
-      shortTermCapitalGains: capitalGains.$1,
-      longTermCapitalGains: capitalGains.$2,
+      shortTermCapitalGains: 0,
+      longTermCapitalGains: 0,
       dividendIncome: dividendIncome,
-      interestIncome: interestIncome,
+      interestIncome: interestIncome + realisedProfit,
     );
   }
 
@@ -208,33 +222,111 @@ class FYReportService {
     return breakdown;
   }
 
-  /// Calculate XIRR for the FY period, or null when it is undefined
-  double? _calculateFYXIRR(
-    List<CashFlowEntity> fyCashFlows,
-    List<InvestmentEntity> allInvestments,
-    DateTime fyEnd,
-  ) {
-    if (fyCashFlows.isEmpty) return null;
-
-    // Calculate XIRR using XirrSolver
-    return FinancialCalculator.calculateXirrFromCashFlows(fyCashFlows);
+  /// Whether [date] falls in the half-open range [start, endExclusive).
+  static bool _inFY(DateTime date, DateTime start, DateTime endExclusive) {
+    final day = DateTime(date.year, date.month, date.day);
+    return !day.isBefore(start) && day.isBefore(endExclusive);
   }
 
-  /// Calculate capital gains (short-term and long-term)
-  (double, double) _calculateCapitalGains(
-    List<CashFlowEntity> fyCashFlows,
-    List<InvestmentEntity> allInvestments,
-    DateTime fyEnd,
+  /// Net cost still held per investment, counting only flows dated before
+  /// [limit]. Only investments with a positive balance are returned.
+  Map<String, double> _heldBefore(
+    List<CashFlowEntity> baseCashFlows,
+    DateTime limit,
   ) {
-    final investmentStartDates = {
-      for (final inv in allInvestments) inv.id: inv.startDate ?? inv.createdAt,
-    };
+    final net = <String, double>{};
+    for (final cf in baseCashFlows) {
+      if (!_inFY(cf.date, DateTime(1900), limit)) continue;
+      if (cf.type == CashFlowType.invest) {
+        net[cf.investmentId] = (net[cf.investmentId] ?? 0) + cf.amount;
+      } else if (cf.type == CashFlowType.returnFlow) {
+        net[cf.investmentId] = (net[cf.investmentId] ?? 0) - cf.amount;
+      }
+    }
+    net.removeWhere((_, v) => v <= 0);
+    return net;
+  }
 
-    return TaxAndBasisCalculator.calculateCapitalGains(
-      cashFlows: fyCashFlows,
-      investmentStartDates: investmentStartDates,
-      assumedGainPercentage: 0.10,
-    );
+  /// FY XIRR, or null when it is undefined or cannot be proven.
+  ///
+  /// The opening value is an outflow on the FY start and the closing value
+  /// an inflow on the next 1 April (a full year is then 365 days). An
+  /// investment still held at either edge needs a value there; without one
+  /// the rate is unknown, so the result is null rather than a rate that
+  /// ignores the money already in the investment.
+  double? _calculateFYXIRR({
+    required List<CashFlowEntity> fyCashFlows,
+    required List<CashFlowEntity> baseCashFlows,
+    required List<InvestmentEntity> allInvestments,
+    required DateTime fyStart,
+    required DateTime fyEndExclusive,
+    required Map<String, double>? openingValues,
+    required Map<String, double>? closingValues,
+  }) {
+    final opening = openingValues ?? const <String, double>{};
+    final closing = closingValues ?? const <String, double>{};
+
+    final heldAtStart = _heldBefore(baseCashFlows, fyStart);
+    final heldAtEnd = _heldBefore(baseCashFlows, fyEndExclusive);
+    if (heldAtStart.keys.any((id) => !opening.containsKey(id))) return null;
+    if (heldAtEnd.keys.any((id) => !closing.containsKey(id))) return null;
+
+    final dates = <DateTime>[];
+    final amounts = <double>[];
+    final openingTotal = opening.values.fold<double>(0, (a, b) => a + b);
+    final closingTotal = closing.values.fold<double>(0, (a, b) => a + b);
+    if (openingTotal > 0) {
+      dates.add(fyStart);
+      amounts.add(-openingTotal);
+    }
+    for (final cf in fyCashFlows) {
+      dates.add(cf.date);
+      amounts.add(cf.signedAmount);
+    }
+    if (closingTotal > 0) {
+      dates.add(fyEndExclusive);
+      amounts.add(closingTotal);
+    }
+    if (dates.isEmpty) return null;
+
+    return XirrSolver.calculateXirr(dates, amounts);
+  }
+
+  /// Profit realised in the FY: for each investment, returns beyond the
+  /// money put in (cost is recovered first), less what was realised before
+  /// the FY. A loss is not income, so it is floored at zero.
+  double _realisedProfitInFY(
+    List<CashFlowEntity> baseCashFlows,
+    DateTime fyStart,
+    DateTime fyEndExclusive,
+  ) {
+    final atStart = <String, double>{};
+    final atEnd = <String, double>{};
+    void add(Map<String, double> m, CashFlowEntity cf) {
+      m[cf.investmentId] =
+          (m[cf.investmentId] ?? 0) +
+          (cf.type == CashFlowType.returnFlow ? cf.amount : -cf.amount);
+    }
+
+    for (final cf in baseCashFlows) {
+      if (cf.type != CashFlowType.invest &&
+          cf.type != CashFlowType.returnFlow) {
+        continue;
+      }
+      final day = DateTime(cf.date.year, cf.date.month, cf.date.day);
+      if (day.isBefore(fyStart)) add(atStart, cf);
+      if (day.isBefore(fyEndExclusive)) add(atEnd, cf);
+    }
+
+    double total = 0;
+    for (final entry in atEnd.entries) {
+      final gainEnd = entry.value > 0 ? entry.value : 0.0;
+      final startNet = atStart[entry.key] ?? 0;
+      final gainStart = startNet > 0 ? startNet : 0.0;
+      final fyGain = gainEnd - gainStart;
+      if (fyGain > 0) total += fyGain;
+    }
+    return total;
   }
 
   /// Calculate top performers by returns and XIRR
@@ -309,14 +401,14 @@ class FYReportService {
     return (topByReturns, topByXIRR);
   }
 
-  /// Calculate portfolio value at a specific date
+  /// Calculate portfolio value before an exclusive date limit
   ///
   /// Calculates outstanding cost basis by summing all investments (outflows)
   /// minus partial exits (inflows) up to the specified date, converted to base currency.
   double _calculatePortfolioValue(
     List<InvestmentEntity> allInvestments,
     List<CashFlowEntity> allCashFlows,
-    DateTime date,
+    DateTime dateLimit,
   ) {
     double totalValue = 0.0;
 
@@ -326,8 +418,6 @@ class FYReportService {
       (cashFlowsByInvestment[cf.investmentId] ??= []).add(cf);
     }
 
-    final dateLimit = date.add(const Duration(days: 1));
-
     for (final investment in allInvestments) {
       final startDate = investment.startDate ?? investment.createdAt;
 
@@ -335,7 +425,7 @@ class FYReportService {
       if (startDate.isBefore(dateLimit)) {
         // If investment was closed before this date, value is 0
         if (investment.closedAt != null &&
-            investment.closedAt!.isBefore(date)) {
+            investment.closedAt!.isBefore(dateLimit)) {
           continue;
         }
 
@@ -343,7 +433,11 @@ class FYReportService {
         final allInvestmentFlows = cashFlowsByInvestment[investment.id] ?? [];
         final investmentFlows = <CashFlowEntity>[];
         for (final cf in allInvestmentFlows) {
-          if (cf.date.isBefore(dateLimit)) {
+          if (DateTime(
+            cf.date.year,
+            cf.date.month,
+            cf.date.day,
+          ).isBefore(dateLimit)) {
             investmentFlows.add(cf);
           }
         }
