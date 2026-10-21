@@ -18,6 +18,7 @@ import 'package:inv_tracker/features/goals/domain/repositories/goal_repository.d
 import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
 import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/settings/data/services/backup_crypto.dart';
 import 'package:inv_tracker/features/settings/data/services/investment_backup_json.dart';
 import 'package:inv_tracker/features/settings/data/services/zip_off_ui_thread.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
@@ -107,6 +108,11 @@ class ZipExport {
 /// removes it.
 bool investmentHasDetailsNotInExport(InvestmentEntity investment) => false;
 
+/// File extension of a password-protected backup.
+const backupEncryptedExtension = 'invbackup';
+
+const _exportPrefix = 'InvTrack_Export_';
+
 /// Service for exporting all user data as a ZIP file with CSV data files
 class DataExportService {
   final InvestmentRepository _investmentRepository;
@@ -141,11 +147,26 @@ class DataExportService {
 
   /// Export all user data as a ZIP file
   /// Returns the path to the exported ZIP file
-  Future<String> exportAsZip() async {
-    return _performanceService.trackOperation(
-      'data_export',
-      () async => _saveToTempFile((await _buildZip()).bytes),
-    );
+  ///
+  /// With a [password] the file is an encrypted `.invbackup` container
+  /// ([BackupCrypto]); the key derivation runs on a background isolate. The
+  /// password is never logged or kept. [kdfIterations] is only lowered in tests.
+  Future<String> exportAsZip({
+    String? password,
+    int kdfIterations = BackupCrypto.defaultIterations,
+  }) async {
+    return _performanceService.trackOperation('data_export', () async {
+      await _purgeStaleExports();
+      var bytes = (await _buildZip()).bytes;
+      if (password != null) {
+        bytes = await BackupCrypto.encryptInBackground(
+          bytes,
+          password,
+          iterations: kdfIterations,
+        );
+      }
+      return _saveToTempFile(bytes, encrypted: password != null);
+    });
   }
 
   /// Export all user data as a ZIP held in memory, without writing a file.
@@ -413,10 +434,14 @@ class DataExportService {
   }
 
   /// Saves export ZIP bytes to the temp directory and returns the file path.
-  Future<String> _saveToTempFile(Uint8List zipData) async {
+  Future<String> _saveToTempFile(
+    Uint8List zipData, {
+    bool encrypted = false,
+  }) async {
     final directory = await getTemporaryDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final fileName = 'InvTrack_Export_$timestamp.zip';
+    final extension = encrypted ? backupEncryptedExtension : 'zip';
+    final fileName = '$_exportPrefix$timestamp.$extension';
     final filePath = '${directory.path}/$fileName';
     final file = File(filePath);
     await file.writeAsBytes(zipData);
@@ -432,9 +457,41 @@ class DataExportService {
     return filePath;
   }
 
-  /// Export and share the ZIP file
-  Future<void> exportAndShare() async {
-    await shareZipFiles([await exportAsZip()]);
+  /// Deletes exports earlier runs left in the cache (a crash or a killed app
+  /// can skip the cleanup in [exportAndShare]). Best effort.
+  Future<void> _purgeStaleExports() async {
+    try {
+      final directory = await getTemporaryDirectory();
+      await for (final entity in directory.list()) {
+        final name = entity.uri.pathSegments.last;
+        if (entity is File && name.startsWith(_exportPrefix)) {
+          await entity.delete();
+        }
+      }
+    } on Exception {
+      // Leftovers are cleaned on the next export.
+    }
+  }
+
+  /// Export and share the file, then delete the temp copy (also when sharing
+  /// fails), so no plaintext backup stays in the cache.
+  Future<void> exportAndShare({
+    String? password,
+    int kdfIterations = BackupCrypto.defaultIterations,
+  }) async {
+    final path = await exportAsZip(
+      password: password,
+      kdfIterations: kdfIterations,
+    );
+    try {
+      await shareZipFiles([path]);
+    } finally {
+      try {
+        await File(path).delete();
+      } on Exception {
+        // Already gone; the next export purges any leftover.
+      }
+    }
   }
 
   /// Shares export ZIP files already on disk, such as kept guest backups.
