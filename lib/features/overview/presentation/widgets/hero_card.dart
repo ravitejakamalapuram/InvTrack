@@ -270,14 +270,19 @@ class HeroCardContent extends ConsumerWidget {
               message: AppLocalizations.of(context).approximateRatesNote,
               excludeFromSemantics: true,
               triggerMode: TooltipTriggerMode.tap,
-              child: Icon(
-                Icons.info_outline,
-                size: 16,
-                color: AppColors.heroSecondaryText,
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: Center(
+                  child: Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: AppColors.heroSecondaryText,
+                  ),
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 8),
         ],
         // Privacy toggle button
         const PrivacyToggleButton(iconSize: 18),
