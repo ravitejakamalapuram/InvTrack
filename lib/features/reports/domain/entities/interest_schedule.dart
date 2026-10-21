@@ -4,8 +4,9 @@
 library;
 
 class InterestScheduleRow {
-  /// Investment platform when set, else the investment name.
-  final String payer;
+  /// Investment platform when set, else the investment name; null when the
+  /// flow's investment is unknown (the UI supplies the label).
+  final String? payer;
   final double totalInterest;
   final int paymentCount;
   final DateTime firstPaymentDate;

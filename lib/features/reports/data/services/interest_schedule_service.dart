@@ -7,6 +7,12 @@ import 'package:inv_tracker/features/investment/domain/entities/transaction_enti
 import 'package:inv_tracker/features/reports/data/services/fy_report_service.dart';
 import 'package:inv_tracker/features/reports/domain/entities/interest_schedule.dart';
 
+/// Named payers sorted by name; the unmatched-investment row (null) last.
+int _byPayer(String? a, String? b) {
+  if (a == null || b == null) return a == null ? (b == null ? 0 : 1) : -1;
+  return a.compareTo(b);
+}
+
 class InterestScheduleService {
   final CalculationEngine _engine;
 
@@ -14,7 +20,8 @@ class InterestScheduleService {
 
   /// [fyYear] is the year the FY starts (2023 for FY 2023-24). The window is
   /// the half-open [1 Apr fyYear, 1 Apr fyYear+1) on date-only values, as in
-  /// [FYReportService]. A flow with no currency rate is left out.
+  /// [FYReportService]. A flow with no currency rate is left out. Flows whose investment
+  /// is not in [allInvestments] are grouped under a null payer.
   Future<InterestSchedule> generate({
     required int fyYear,
     required List<CashFlowEntity> allCashFlows,
@@ -34,10 +41,10 @@ class InterestScheduleService {
         i.id: i.hasPlatform ? i.platform! : i.name,
     };
 
-    final totals = <String, double>{};
-    final counts = <String, int>{};
-    final firsts = <String, DateTime>{};
-    final lasts = <String, DateTime>{};
+    final totals = <String?, double>{};
+    final counts = <String?, int>{};
+    final firsts = <String?, DateTime>{};
+    final lasts = <String?, DateTime>{};
     var grandTotal = 0.0;
 
     for (final cf in baseFlows) {
@@ -45,7 +52,7 @@ class InterestScheduleService {
       if (day.isBefore(start) || !day.isBefore(endExclusive)) continue;
       if (!isInterestIncomeFlow(cf)) continue;
 
-      final payer = payerById[cf.investmentId] ?? 'Unknown payer';
+      final payer = payerById[cf.investmentId];
       totals[payer] = (totals[payer] ?? 0) + cf.amount;
       counts[payer] = (counts[payer] ?? 0) + 1;
       final first = firsts[payer];
@@ -56,7 +63,7 @@ class InterestScheduleService {
     }
 
     final rows = [
-      for (final payer in totals.keys.toList()..sort())
+      for (final payer in totals.keys.toList()..sort(_byPayer))
         InterestScheduleRow(
           payer: payer,
           totalInterest: totals[payer]!,
