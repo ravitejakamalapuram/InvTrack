@@ -730,8 +730,8 @@ void main() {
         snapshots: snaps,
         baseCurrency: 'INR',
       );
-      expect(edges.opening, {'fd': 530000.0});
-      expect(edges.closing, {'fd': 572400.0});
+      expect(edges.opening, equals({'fd': 530000.0}));
+      expect(edges.closing, equals({'fd': 572400.0}));
 
       final r = await reportFor(
         [holding('fd')],
@@ -784,8 +784,8 @@ void main() {
           ],
           baseCurrency: 'INR',
         );
-        expect(edges.opening, {'m': 95000.0, 'c': 72000.0});
-        expect(edges.closing, {'m': 121000.0, 'c': 80000.0});
+        expect(edges.opening, equals({'m': 95000.0, 'c': 72000.0}));
+        expect(edges.closing, equals({'m': 121000.0, 'c': 80000.0}));
       },
     );
 
@@ -803,8 +803,8 @@ void main() {
           snapshots: snaps,
           baseCurrency: 'INR',
         );
-        expect(edges.opening, {'us': 83000.0});
-        expect(edges.closing, {'us': 91300.0});
+        expect(edges.opening, equals({'us': 83000.0}));
+        expect(edges.closing, equals({'us': 91300.0}));
 
         final r = await reportFor(
           [usd],
@@ -829,8 +829,8 @@ void main() {
           snapshots: snaps,
           baseCurrency: 'INR',
         );
-        expect(edges.opening, {'a': 100000.0});
-        expect(edges.closing, {'a': 110000.0});
+        expect(edges.opening, equals({'a': 100000.0}));
+        expect(edges.closing, equals({'a': 110000.0}));
 
         final r = await reportFor(both, [
           invest('1', 'a', 100000, 'INR'),
@@ -912,7 +912,7 @@ void main() {
           ],
           baseCurrency: 'INR',
         );
-        expect(edges.opening, {'us': 0.0});
+        expect(edges.opening, equals({'us': 0.0}));
       },
     );
 
