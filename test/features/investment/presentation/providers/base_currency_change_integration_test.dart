@@ -232,6 +232,15 @@ class _MockCurrencyConversionService implements CurrencyConversionService {
   }
 
   @override
+  Future<RateLookup?> getLastKnownRateResult({
+    required String from,
+    required String to,
+  }) async {
+    final rate = await getLastKnownRate(from: from, to: to);
+    return rate == null ? null : RateLookup(rate, isApproximate: true);
+  }
+
+  @override
   Future<double?> getLastKnownRate({
     required String from,
     required String to,

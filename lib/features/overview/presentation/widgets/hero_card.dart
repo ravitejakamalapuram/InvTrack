@@ -46,6 +46,9 @@ class HeroCardWithToggle extends ConsumerWidget {
   /// Archived investments, which the totals leave out (A17).
   final int archivedCount;
 
+  /// True when a total used an exchange rate over 24 hours old (A14).
+  final bool isApproximate;
+
   const HeroCardWithToggle({
     super.key,
     required this.globalStats,
@@ -54,6 +57,7 @@ class HeroCardWithToggle extends ConsumerWidget {
     required this.currencyFormat,
     required this.errorBuilder,
     this.archivedCount = 0,
+    this.isApproximate = false,
   });
 
   @override
@@ -76,6 +80,7 @@ class HeroCardWithToggle extends ConsumerWidget {
             currencyFormat: currencyFormat,
             showRealizedOnly: showRealizedOnly,
             archivedCount: archivedCount,
+            isApproximate: isApproximate,
           ),
           error: (e, s) => HeroCardContent(
             globalStats: global,
@@ -85,6 +90,7 @@ class HeroCardWithToggle extends ConsumerWidget {
             currencyFormat: currencyFormat,
             showRealizedOnly: showRealizedOnly,
             archivedCount: archivedCount,
+            isApproximate: isApproximate,
           ),
           data: (closed) => HeroCardContent(
             globalStats: global,
@@ -93,6 +99,7 @@ class HeroCardWithToggle extends ConsumerWidget {
             currencyFormat: currencyFormat,
             showRealizedOnly: showRealizedOnly,
             archivedCount: archivedCount,
+            isApproximate: isApproximate,
           ),
         );
       },
@@ -120,6 +127,10 @@ class HeroCardContent extends ConsumerWidget {
   /// the card says so when there are any.
   final int archivedCount;
 
+  /// True when a total used an exchange rate over 24 hours old (A14): the
+  /// card then carries a small marker saying so.
+  final bool isApproximate;
+
   const HeroCardContent({
     super.key,
     required this.globalStats,
@@ -129,6 +140,7 @@ class HeroCardContent extends ConsumerWidget {
     required this.currencyFormat,
     required this.showRealizedOnly,
     this.archivedCount = 0,
+    this.isApproximate = false,
   });
 
   @override
@@ -251,6 +263,22 @@ class HeroCardContent extends ConsumerWidget {
             style: TextStyle(color: AppColors.heroSecondaryText, fontSize: 14),
           ),
         ),
+        if (isApproximate) ...[
+          Semantics(
+            label: AppLocalizations.of(context).approximateRatesNote,
+            child: Tooltip(
+              message: AppLocalizations.of(context).approximateRatesNote,
+              excludeFromSemantics: true,
+              triggerMode: TooltipTriggerMode.tap,
+              child: Icon(
+                Icons.info_outline,
+                size: 16,
+                color: AppColors.heroSecondaryText,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
         // Privacy toggle button
         const PrivacyToggleButton(iconSize: 18),
         const SizedBox(width: 8),
