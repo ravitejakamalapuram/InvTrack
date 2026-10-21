@@ -26,7 +26,9 @@ import 'package:inv_tracker/features/portfolio_health/presentation/screens/portf
 import 'package:inv_tracker/features/digest/domain/monthly_digest.dart';
 import 'package:inv_tracker/features/digest/presentation/screens/monthly_recap_screen.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
+import 'package:inv_tracker/features/reports/domain/entities/report_type.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/dynamic_report_screen.dart';
+import 'package:inv_tracker/features/reports/presentation/screens/fy_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/reports_home_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/report_builder_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/settings_screen.dart';
@@ -252,6 +254,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                         final config = ReportConfiguration.fromQueryParams(
                           params,
                         );
+                        // #800: the tax-year report has its own screen.
+                        if (config.reportType == ReportType.fyReport) {
+                          // Query params arrive as strings.
+                          final fyYear = int.tryParse(
+                            '${config.parameters['fyYear']}',
+                          );
+                          if (fyYear != null) {
+                            return FyReportScreen(initialFyYear: fyYear);
+                          }
+                        }
                         return DynamicReportScreen(configuration: config);
                       } catch (e, stackTrace) {
                         // Log parsing errors and show error screen

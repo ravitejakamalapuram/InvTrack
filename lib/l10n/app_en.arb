@@ -7695,5 +7695,151 @@
       "count": {"type": "int"},
       "total": {"type": "int"}
     }
+  },
+
+  "fyReportScreenTitle": "Tax-Year Report",
+  "@fyReportScreenTitle": {
+    "description": "Title of the tax-year (FY) report screen"
+  },
+
+  "fyReportPeriod": "{start} to {end}",
+  "@fyReportPeriod": {
+    "description": "Date range under the FY report title",
+    "placeholders": {
+      "start": {"type": "String"},
+      "end": {"type": "String"}
+    }
+  },
+
+  "fyReportYearChipsLabel": "Financial year",
+  "@fyReportYearChipsLabel": {
+    "description": "Accessibility label for the FY chips row"
+  },
+
+  "fyReportNetCashFlow": "Net cash flow this year",
+  "@fyReportNetCashFlow": {
+    "description": "Label above the hero net cash flow amount"
+  },
+
+  "fyReportXirrLabel": "XIRR for the year",
+  "@fyReportXirrLabel": {
+    "description": "Label of the XIRR chip on the FY hero card"
+  },
+
+  "fyReportXirrMissing": "Add a current value to calculate.",
+  "@fyReportXirrMissing": {
+    "description": "Hint shown when the FY XIRR is undefined"
+  },
+
+  "fyReportPortfolioValue": "Portfolio value",
+  "@fyReportPortfolioValue": {
+    "description": "Label of the portfolio value chip on the FY hero card"
+  },
+
+  "fyReportMoneyTitle": "Money in and out",
+  "@fyReportMoneyTitle": {
+    "description": "Section title for the four FY money tiles"
+  },
+
+  "fyReportInvested": "Invested",
+  "@fyReportInvested": {
+    "description": "FY tile label: money put in"
+  },
+
+  "fyReportReturned": "Returned",
+  "@fyReportReturned": {
+    "description": "FY tile label: money returned"
+  },
+
+  "fyReportIncomeReceived": "Income received",
+  "@fyReportIncomeReceived": {
+    "description": "FY tile label: interest and dividends received"
+  },
+
+  "fyReportFeesPaid": "Fees paid",
+  "@fyReportFeesPaid": {
+    "description": "FY tile label: fees paid"
+  },
+
+  "fyReportTaxTitle": "For your tax filing",
+  "@fyReportTaxTitle": {
+    "description": "Section title for the FY tax figures card"
+  },
+
+  "fyReportTaxSubtitle": "Totals by income type, ready to copy into your return.",
+  "@fyReportTaxSubtitle": {
+    "description": "Subtitle under the FY tax card title"
+  },
+
+  "fyReportInterestIncome": "Interest income",
+  "@fyReportInterestIncome": {
+    "description": "FY tax card row"
+  },
+
+  "fyReportDividendIncome": "Dividend income",
+  "@fyReportDividendIncome": {
+    "description": "FY tax card row"
+  },
+
+  "fyReportCapitalGains": "Capital gains",
+  "@fyReportCapitalGains": {
+    "description": "FY tax card row"
+  },
+
+  "fyReportNotCalculated": "Not calculated",
+  "@fyReportNotCalculated": {
+    "description": "Value shown for capital gains, which InvTrack does not calculate yet"
+  },
+
+  "fyReportCapitalGainsHint": "Needs a cost basis for each sale, which InvTrack does not track yet.",
+  "@fyReportCapitalGainsHint": {
+    "description": "Explains why capital gains are not calculated"
+  },
+
+  "fyReportMonthlyTitle": "Month by month",
+  "@fyReportMonthlyTitle": {
+    "description": "Section title for the FY monthly bars"
+  },
+
+  "fyReportMonthlyChart": "Monthly net cash flow, April to March",
+  "@fyReportMonthlyChart": {
+    "description": "Accessibility label of the FY monthly bar chart"
+  },
+
+  "fyReportBestMonth": "{month}: best, {amount}",
+  "@fyReportBestMonth": {
+    "description": "Caption naming the best month of the FY and its net cash flow",
+    "placeholders": {
+      "month": {"type": "String"},
+      "amount": {"type": "String"}
+    }
+  },
+
+  "fyReportXirrSuffix": "{xirr} XIRR",
+  "@fyReportXirrSuffix": {
+    "description": "Per-investment XIRR in the FY top performers list",
+    "placeholders": {
+      "xirr": {"type": "String"}
+    }
+  },
+
+  "fyReportDisclaimer": "This report is a summary of what you recorded. It is not tax advice. Check the figures with your tax professional before you file.",
+  "@fyReportDisclaimer": {
+    "description": "Not-tax-advice disclaimer at the bottom of the FY report"
+  },
+
+  "fyReportHideAmounts": "Hide amounts",
+  "@fyReportHideAmounts": {
+    "description": "Tooltip of the privacy toggle when amounts are visible"
+  },
+
+  "fyReportShowAmounts": "Show amounts",
+  "@fyReportShowAmounts": {
+    "description": "Tooltip of the privacy toggle when amounts are hidden"
+  },
+
+  "fyReportLoadError": "This report could not be loaded. Please try again.",
+  "@fyReportLoadError": {
+    "description": "Error text on the FY report screen"
   }
 }
