@@ -1,9 +1,171 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only access their own data
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // ---- Field checks (A32 / #774) -------------------------------------------------
+    // Absent or null always passes: the app writes null to clear optional fields, and
+    // documents copied between collections (archive/restore) may lack newer fields.
+    // Only fields the app really writes are checked; extra keys are NOT rejected, because
+    // older app builds and archive copies carry fields we cannot enumerate safely.
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    function optStr(d, k, max) {
+      return d.get(k, null) == null || (d[k] is string && d[k].size() <= max);
+    }
+    function optNum(d, k) { return d.get(k, null) == null || d[k] is number; }
+    function optBool(d, k) { return d.get(k, null) == null || d[k] is bool; }
+    function optTs(d, k) { return d.get(k, null) == null || d[k] is timestamp; }
+    function optList(d, k, max) {
+      return d.get(k, null) == null || (d[k] is list && d[k].size() <= max);
+    }
+    function optMap(d, k) { return d.get(k, null) == null || d[k] is map; }
+
+    function validInvestment(d) {
+      return optStr(d, 'name', 200) && optStr(d, 'type', 50) && optStr(d, 'status', 20)
+        && optStr(d, 'notes', 2000) && optStr(d, 'incomeFrequency', 50)
+        && optStr(d, 'platform', 200) && optStr(d, 'interestPayoutMode', 50)
+        && optStr(d, 'riskLevel', 50) && optStr(d, 'compoundingFrequency', 50)
+        && optStr(d, 'currency', 10) && optStr(d, 'customTypeId', 200)
+        && optStr(d, 'customTypeLabel', 100)
+        && optBool(d, 'isArchived') && optBool(d, 'autoRenewal')
+        && optNum(d, 'expectedRate') && optNum(d, 'tenureMonths') && optNum(d, 'currentValue')
+        && optTs(d, 'createdAt') && optTs(d, 'closedAt') && optTs(d, 'updatedAt')
+        && optTs(d, 'maturityDate') && optTs(d, 'startDate') && optTs(d, 'currentValueDate');
+    }
+    function validCashFlow(d) {
+      return optStr(d, 'investmentId', 200) && optStr(d, 'type', 50)
+        && optStr(d, 'notes', 2000) && optStr(d, 'currency', 10)
+        && optNum(d, 'amount') && optTs(d, 'date') && optTs(d, 'createdAt');
+    }
+    function validGoal(d) {
+      return optStr(d, 'name', 200) && optStr(d, 'type', 50) && optStr(d, 'trackingMode', 50)
+        && optStr(d, 'icon', 100) && optStr(d, 'currency', 10)
+        && optNum(d, 'targetAmount') && optNum(d, 'targetMonthlyIncome') && optNum(d, 'colorValue')
+        && optBool(d, 'isArchived')
+        && optList(d, 'linkedInvestmentIds', 5000) && optList(d, 'linkedTypes', 100)
+        && optTs(d, 'targetDate') && optTs(d, 'createdAt') && optTs(d, 'updatedAt');
+    }
+    function validExpectedCashFlow(d) {
+      return optStr(d, 'investmentId', 200) && optStr(d, 'currency', 10)
+        && optStr(d, 'predictionSource', 50) && optStr(d, 'status', 50)
+        && optStr(d, 'matchedCashFlowId', 200) && optStr(d, 'notes', 2000)
+        && optNum(d, 'expectedAmount') && optNum(d, 'actualAmount')
+        && optNum(d, 'platformDelayDays') && optNum(d, 'varianceFactor')
+        && optTs(d, 'expectedDate') && optTs(d, 'actualDate')
+        && optTs(d, 'createdAt') && optTs(d, 'updatedAt');
+    }
+    function validDocument(d) {
+      return optStr(d, 'investmentId', 200) && optStr(d, 'name', 200)
+        && optStr(d, 'fileName', 500) && optStr(d, 'type', 50) && optStr(d, 'mimeType', 200)
+        && optStr(d, 'localPath', 2000) && optNum(d, 'fileSize')
+        && optTs(d, 'createdAt') && optTs(d, 'updatedAt');
+    }
+    function validValuation(d) {
+      return optStr(d, 'investmentId', 200) && optStr(d, 'currency', 10)
+        && optStr(d, 'kind', 50) && optStr(d, 'provenance', 50) && optNum(d, 'amount')
+        && optTs(d, 'effectiveDate') && optTs(d, 'createdAt') && optTs(d, 'updatedAt')
+        && optTs(d, 'deletedAt');
+    }
+    function validHealthScore(d) {
+      return optNum(d, 'overallScore') && optNum(d, 'returnsScore')
+        && optNum(d, 'diversificationScore') && optNum(d, 'liquidityScore')
+        && optNum(d, 'goalAlignmentScore') && optNum(d, 'actionReadinessScore')
+        && optTs(d, 'calculatedAt') && optMap(d, 'metadata');
+    }
+    function validFireSettings(d) {
+      return optNum(d, 'schemaVersion') && optNum(d, 'monthlyExpenses')
+        && optNum(d, 'safeWithdrawalRate') && optNum(d, 'birthYear') && optNum(d, 'currentAge')
+        && optNum(d, 'targetFireAge') && optNum(d, 'lifeExpectancy') && optNum(d, 'inflationRate')
+        && optNum(d, 'preRetirementReturn') && optNum(d, 'postRetirementReturn')
+        && optNum(d, 'healthcareBuffer') && optNum(d, 'emergencyMonths')
+        && optNum(d, 'monthlyPassiveIncome') && optNum(d, 'expectedPension')
+        && optNum(d, 'otherAssets') && optNum(d, 'monthlySip')
+        && optStr(d, 'fireType', 50) && optStr(d, 'currency', 10)
+        && optBool(d, 'isSetupComplete') && optTs(d, 'createdAt') && optTs(d, 'updatedAt');
+    }
+    function validProfile(d) {
+      return optNum(d, 'schemaVersion') && optStr(d, 'userId', 200)
+        && optStr(d, 'preferredCurrency', 10) && optStr(d, 'preferredLocale', 35)
+        && optStr(d, 'countryCode', 10) && optStr(d, 'languageCode', 10)
+        && optStr(d, 'dateFormatPattern', 50) && optBool(d, 'isFirstLogin')
+        && optTs(d, 'createdAt') && optTs(d, 'updatedAt');
+    }
+    function validExchangeRate(d) {
+      return optStr(d, 'type', 20) && optStr(d, 'date', 20) && optStr(d, 'from', 10)
+        && optStr(d, 'to', 10) && optNum(d, 'rate')
+        && optTs(d, 'expiresAt') && optTs(d, 'fetchedAt');
+    }
+    function validCustomType(d) {
+      return optStr(d, 'label', 100) && optTs(d, 'createdAt') && optTs(d, 'updatedAt')
+        && optTs(d, 'removedAt');
+    }
+
+    // Users can only access their own data, and only the subcollections the app writes
+    // (the list mirrors AccountDataDeletionService.userCollections). Any other
+    // subcollection, or one nested deeper, is denied.
+    match /users/{userId} {
+      allow read, delete: if isOwner(userId);
+      // The only fields the app writes on the user document itself.
+      allow create, update: if isOwner(userId)
+        && optTs(request.resource.data, 'usdTagRepairResolvedAt')
+        && optTs(request.resource.data, 'usdTagRepairExtendedResolvedAt');
+
+      match /investments/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validInvestment(request.resource.data);
+      }
+      match /archivedInvestments/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validInvestment(request.resource.data);
+      }
+      match /cashflows/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validCashFlow(request.resource.data);
+      }
+      match /archivedCashflows/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validCashFlow(request.resource.data);
+      }
+      match /goals/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validGoal(request.resource.data);
+      }
+      match /archivedGoals/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validGoal(request.resource.data);
+      }
+      match /expectedCashFlows/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validExpectedCashFlow(request.resource.data);
+      }
+      match /documents/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validDocument(request.resource.data);
+      }
+      match /valuations/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validValuation(request.resource.data);
+      }
+      match /healthScores/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validHealthScore(request.resource.data);
+      }
+      match /fireSettings/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validFireSettings(request.resource.data);
+      }
+      match /profile/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validProfile(request.resource.data);
+      }
+      match /exchangeRates/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validExchangeRate(request.resource.data);
+      }
+      match /customInvestmentTypes/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validCustomType(request.resource.data);
+      }
     }
 
     // Account-deletion queue. A signed-in user may file ONE request for their own uid,
