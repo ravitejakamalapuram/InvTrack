@@ -1,6 +1,9 @@
 // A29 (#780) part 3: income and maturity notification IDs never collide.
 // They used to be `hashCode % 50000` / `% 25000`, so at 1,000 investments a
 // collision (one reminder replacing or cancelling another) was near certain.
+import 'dart:async';
+
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -86,6 +89,32 @@ void main() {
       await NotificationService(plugin, prefs).initialize();
       expect(plugin.scheduledNotifications.map((n) => n.id), contains(50123));
     });
+
+    test('are dropped before the first new reminder is scheduled', () async {
+      final plugin = _SlowPendingPlugin();
+      final service = NotificationService(plugin, prefs);
+      final init = service.initialize();
+      await plugin.pendingRequested.future; // the cleanup is under way
+
+      // A caller arriving now must wait for the cleanup, not slip in and have
+      // its reminder cancelled by it.
+      final scheduled = service.scheduleIncomeReminder(
+        investmentId: 'inv-race',
+        investmentName: 'P2P',
+        monthsBetweenPayments: 1,
+        lastIncomeDate: DateTime.now().subtract(const Duration(days: 5)),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(plugin.scheduledNotifications, isEmpty);
+
+      plugin.releasePending.complete();
+      await init;
+      await scheduled;
+      expect(
+        plugin.scheduledNotifications.map((n) => n.id),
+        contains(NotificationIds.incomeReminder('inv-race')),
+      );
+    });
   });
 
   test('goal milestone IDs never reach the goal at-risk range', () {
@@ -98,4 +127,17 @@ void main() {
       }
     }
   });
+}
+
+/// A plugin whose pending-notification lookup waits until the test lets it go.
+class _SlowPendingPlugin extends FakeFlutterLocalNotificationsPlugin {
+  final pendingRequested = Completer<void>();
+  final releasePending = Completer<void>();
+
+  @override
+  Future<List<PendingNotificationRequest>> pendingNotificationRequests() async {
+    if (!pendingRequested.isCompleted) pendingRequested.complete();
+    await releasePending.future;
+    return super.pendingNotificationRequests();
+  }
 }

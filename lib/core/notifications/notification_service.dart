@@ -299,10 +299,13 @@ class NotificationService with NotificationPreferencesMixin {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
+    // Before _isInitialized, so no caller can schedule a reminder that this
+    // cleanup would then cancel.
+    await _dropReminderIdsFromHashScheme();
+
     _isInitialized = true;
     LoggerService.info('NotificationService initialized');
 
-    await _dropReminderIdsFromHashScheme();
     await _queueLaunchTap();
   }
 
@@ -314,11 +317,12 @@ class NotificationService with NotificationPreferencesMixin {
   Future<void> _dropReminderIdsFromHashScheme() async {
     try {
       if (_prefs.getBool(_slotIdsMigratedKey) ?? false) return;
-      await _cancelPendingWhere(
-        (id) =>
-            NotificationIds.isIncomeReminderId(id) ||
-            NotificationIds.isMaturityReminderId(id),
-      );
+      for (final request in await _plugin.pendingNotificationRequests()) {
+        if (NotificationIds.isIncomeReminderId(request.id) ||
+            NotificationIds.isMaturityReminderId(request.id)) {
+          await _plugin.cancel(id: request.id);
+        }
+      }
       await _prefs.setBool(_slotIdsMigratedKey, true);
     } catch (e) {
       LoggerService.warn('Could not drop old reminder IDs', error: e);
