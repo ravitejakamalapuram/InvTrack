@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:flutter/foundation.dart' show immutable;
 import 'package:csv/csv.dart';
 import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
@@ -50,6 +51,67 @@ enum ImportStrategy {
   replace, // Delete all existing data and replace with imported data
 }
 
+/// What went wrong in an import, as a value. The presentation layer turns it
+/// into text (`importErrorText`); [code] is stable for tests and logs.
+enum ImportErrorKind {
+  invalidZip,
+  metadataMissing,
+  metadataUnparseable,
+  cashflowsUnreadable,
+  cashflowsMissing,
+  cashflowsNoRows,
+  fileDamaged,
+  archiveFailures,
+  rowDetail,
+}
+
+@immutable
+class ImportError {
+  final ImportErrorKind kind;
+
+  /// Number of items, for [ImportErrorKind.archiveFailures].
+  final int count;
+
+  /// The backup file name for [ImportErrorKind.fileDamaged], or the CSV
+  /// parser's row message for [ImportErrorKind.rowDetail].
+  final String detail;
+
+  const ImportError._(this.kind, {this.count = 0, this.detail = ''});
+
+  const ImportError.invalidZip() : this._(ImportErrorKind.invalidZip);
+  const ImportError.metadataMissing() : this._(ImportErrorKind.metadataMissing);
+  const ImportError.metadataUnparseable()
+    : this._(ImportErrorKind.metadataUnparseable);
+  const ImportError.cashflowsUnreadable()
+    : this._(ImportErrorKind.cashflowsUnreadable);
+  const ImportError.cashflowsMissing()
+    : this._(ImportErrorKind.cashflowsMissing);
+  const ImportError.cashflowsNoRows() : this._(ImportErrorKind.cashflowsNoRows);
+  const ImportError.fileDamaged(String file)
+    : this._(ImportErrorKind.fileDamaged, detail: file);
+  const ImportError.archiveFailures(int count)
+    : this._(ImportErrorKind.archiveFailures, count: count);
+  const ImportError.rowDetail(String message)
+    : this._(ImportErrorKind.rowDetail, detail: message);
+
+  /// Stable, non-localized, free of user text.
+  String get code => kind.name;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ImportError &&
+      other.kind == kind &&
+      other.count == count &&
+      other.detail == detail;
+
+  @override
+  int get hashCode => Object.hash(kind, count, detail);
+
+  /// The code only: a row message can hold names and amounts.
+  @override
+  String toString() => code;
+}
+
 /// Result of a ZIP import operation
 class ZipImportResult {
   final int investmentsImported;
@@ -60,7 +122,7 @@ class ZipImportResult {
 
   /// Dated valuations written (not part of [totalImported]).
   final int valuationsImported;
-  final List<String> errors;
+  final List<ImportError> errors;
   final List<String> warnings;
 
   /// Ids of the investments and goals this import wrote, so the US dollar
@@ -154,7 +216,7 @@ class DataImportService {
       metadata: {'strategy': strategy.name},
     );
 
-    final errors = <String>[];
+    final errors = <ImportError>[];
     final warnings = <String>[];
 
     // 1. Decode ZIP archive
@@ -169,7 +231,7 @@ class DataImportService {
         goalsImported: 0,
         documentsImported: 0,
         // The exception can quote the file, so it is left out (rule 7).
-        errors: ['Invalid ZIP file'],
+        errors: [const ImportError.invalidZip()],
       );
     }
 
@@ -181,7 +243,7 @@ class DataImportService {
         cashflowsImported: 0,
         goalsImported: 0,
         documentsImported: 0,
-        errors: ['Invalid ZIP file: metadata.json not found'],
+        errors: [const ImportError.metadataMissing()],
       );
     }
 
@@ -200,7 +262,7 @@ class DataImportService {
         documentsImported: 0,
         // The exception quotes the text it could not parse: document and
         // investment names (rule 7).
-        errors: ['Failed to parse metadata.json'],
+        errors: [const ImportError.metadataUnparseable()],
       );
     }
 
@@ -220,7 +282,7 @@ class DataImportService {
     try {
       cashflowsCsv = _readText(archive, 'cashflows.csv');
     } catch (_) {
-      return _notImported('cashflows.csv could not be read');
+      return _notImported(const ImportError.cashflowsUnreadable());
     }
     final cashflows = cashflowsCsv == null
         ? null
@@ -229,10 +291,10 @@ class DataImportService {
       // The exporter always writes cashflows.csv, so a backup without it is
       // damaged or edited. Merge deletes nothing and imports the rest.
       if (cashflows == null) {
-        return _notImported('cashflows.csv is missing');
+        return _notImported(const ImportError.cashflowsMissing());
       }
       if (_isDamaged(cashflows.validRows, cashflows.errors)) {
-        return _notImported('cashflows.csv has no readable rows');
+        return _notImported(const ImportError.cashflowsNoRows());
       }
     }
     final valuations =
@@ -299,7 +361,7 @@ class DataImportService {
         const <String, InvestmentEntity>{};
     if (isReplace && damagedFiles.isNotEmpty) {
       // The file name only: not a row, a name, an amount or the exception.
-      return _notImported('${damagedFiles.first} is damaged');
+      return _notImported(ImportError.fileDamaged(damagedFiles.first));
     }
 
     // Dated valuations are attached to the investments created below (money
@@ -595,20 +657,20 @@ class DataImportService {
     return failed;
   }
 
-  static String _archiveFailureMessage(int count) =>
-      '$count restored item${count == 1 ? '' : 's'} could not be moved to '
-      'the archive';
-
   /// The result of an import that stopped before it changed anything.
-  ZipImportResult _notImported(String reason) => ZipImportResult(
+  ZipImportResult _notImported(ImportError reason) => ZipImportResult(
     investmentsImported: 0,
     cashflowsImported: 0,
     goalsImported: 0,
     documentsImported: 0,
-    errors: [
-      'Backup not imported: $reason. Your existing data was not changed.',
-    ],
+    errors: [reason],
   );
+
+  /// The CSV parser's row messages as import errors. They stay English until
+  /// the shared bulk-import parser is localised.
+  static List<ImportError> _rowErrors(List<String> messages) => [
+    for (final m in messages) ImportError.rowDetail(m),
+  ];
 
   /// The text of [name] in the backup: null if the backup has no such file.
   /// Throws if the file is not valid UTF-8.
@@ -749,7 +811,7 @@ class DataImportService {
     if (parseResult.validRows == 0) {
       return _CsvImportResult(
         imported: 0,
-        errors: parseResult.errors,
+        errors: _rowErrors(parseResult.errors),
         warnings: [],
       );
     }
@@ -974,8 +1036,8 @@ class DataImportService {
       investmentsCreated: investments.length,
       investmentIds: [for (final inv in investments) inv.id],
       errors: [
-        ...parseResult.errors,
-        if (archiveFailures > 0) _archiveFailureMessage(archiveFailures),
+        ..._rowErrors(parseResult.errors),
+        if (archiveFailures > 0) ImportError.archiveFailures(archiveFailures),
       ],
       warnings: warnings,
       investmentNameToIdMap: nameToIdMap,
@@ -1227,7 +1289,7 @@ class DataImportService {
     required String baseCurrency,
     required List<InvestmentValuationSnapshot> snapshots,
     required List<String> warnings,
-    required List<String> errors,
+    required List<ImportError> errors,
     required Set<String> writtenIds,
     Map<String, int> accountNameCounts = const {},
     Set<String> accountIds = const {},
@@ -1334,7 +1396,7 @@ class DataImportService {
         for (final inv in investments)
           if (inv.isArchived) inv.id,
       ]);
-      if (failed > 0) errors.add(_archiveFailureMessage(failed));
+      if (failed > 0) errors.add(ImportError.archiveFailures(failed));
     }
     return nameToId;
   }
@@ -1568,7 +1630,7 @@ class DataImportService {
     if (parseResult.validRows == 0) {
       return _CsvImportResult(
         imported: 0,
-        errors: parseResult.errors,
+        errors: _rowErrors(parseResult.errors),
         warnings: [],
       );
     }
@@ -1653,8 +1715,8 @@ class DataImportService {
       imported: imported,
       goalIds: goalIds,
       errors: [
-        ...parseResult.errors,
-        if (archiveFailures > 0) _archiveFailureMessage(archiveFailures),
+        ..._rowErrors(parseResult.errors),
+        if (archiveFailures > 0) ImportError.archiveFailures(archiveFailures),
       ],
       warnings: warnings,
     );
@@ -1787,7 +1849,7 @@ class _ImportedCustomTypeRef {
 class _CsvImportResult {
   final int imported;
   final int investmentsCreated;
-  final List<String> errors;
+  final List<ImportError> errors;
   final List<String> warnings;
 
   /// Map of investment name (lowercase) to investment ID (for goals linking)

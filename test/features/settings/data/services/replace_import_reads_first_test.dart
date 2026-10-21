@@ -460,7 +460,7 @@ void main() {
     verifyZeroInteractions(documentStorage);
   }
 
-  void expectNoUserTextIn(Iterable<String> messages) {
+  void expectNoUserTextIn(Iterable<Object> messages) {
     final text = messages.join('\n');
     for (final secret in [
       _activeName,
@@ -480,10 +480,7 @@ void main() {
   /// Replace stopped because [file] is damaged: one fixed error, no row
   /// contents or names, and the account exactly as it was.
   void expectStoppedAsDamaged(ZipImportResult result, String file) {
-    final error =
-        'Backup not imported: $file is damaged. Your existing data was not '
-        'changed.';
-    expect(result.errors, [error]);
+    expect(result.errors, [ImportError.fileDamaged(file)]);
     expect(result.warnings, isEmpty);
     expect(result.totalImported, 0);
     expect(result.fireSettingsImported, isFalse);
@@ -492,15 +489,9 @@ void main() {
   }
 
   group('a required file that cannot be read stops the import first', () {
-    const notRead =
-        'Backup not imported: cashflows.csv could not be read. Your existing '
-        'data was not changed.';
-    const noRows =
-        'Backup not imported: cashflows.csv has no readable rows. Your '
-        'existing data was not changed.';
-    const missing =
-        'Backup not imported: cashflows.csv is missing. Your existing data '
-        'was not changed.';
+    const notRead = ImportError.cashflowsUnreadable();
+    const noRows = ImportError.cashflowsNoRows();
+    const missing = ImportError.cashflowsMissing();
 
     test('Replace: cashflows.csv is not UTF-8', () async {
       final result = await importZip(
@@ -573,7 +564,7 @@ void main() {
         }),
       );
 
-      expect(result.errors, ['Failed to parse metadata.json']);
+      expect(result.errors, [const ImportError.metadataUnparseable()]);
       expect(result.totalImported, 0);
       expectAccountUntouched();
     });
@@ -592,7 +583,7 @@ void main() {
           }),
         );
 
-        expect(result.errors, ['Failed to parse metadata.json']);
+        expect(result.errors, [const ImportError.metadataUnparseable()]);
         expectNoUserTextIn(result.errors);
         expect(result.totalImported, 0);
         expectAccountUntouched();
@@ -606,7 +597,7 @@ void main() {
           Uint8List.fromList(utf8.encode('$_activeName is not a zip file')),
         );
 
-        expect(result.errors, ['Invalid ZIP file']);
+        expect(result.errors, [const ImportError.invalidZip()]);
         expectNoUserTextIn(result.errors);
         expect(result.totalImported, 0);
         expectAccountUntouched();
@@ -681,11 +672,7 @@ void main() {
       );
 
       expect(result.errors, hasLength(1));
-      expect(result.errors.single, startsWith('Backup not imported: '));
-      expect(
-        result.errors.single,
-        endsWith(' is damaged. Your existing data was not changed.'),
-      );
+      expect(result.errors.single.kind, ImportErrorKind.fileDamaged);
       expect(result.warnings, isEmpty);
       expect(result.totalImported, 0);
       expectNoUserTextIn(result.errors);
