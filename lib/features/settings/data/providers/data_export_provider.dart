@@ -56,14 +56,16 @@ class ZipExportNotifier extends Notifier<AsyncValue<void>> {
     return const AsyncValue.data(null);
   }
 
-  Future<void> exportAsZip() async {
+  /// A non-null [password] encrypts the export; it is passed straight to the
+  /// service and never kept in state.
+  Future<void> exportAsZip({String? password}) async {
     state = const AsyncValue.loading();
     try {
       final service = ref.read(dataExportServiceProvider);
       if (service == null) {
         throw Exception('User not authenticated');
       }
-      await service.exportAndShare();
+      await service.exportAndShare(password: password);
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

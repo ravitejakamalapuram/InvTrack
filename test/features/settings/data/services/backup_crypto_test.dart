@@ -146,4 +146,49 @@ void main() {
       throwsA(isA<BackupDecryptionException>()),
     );
   });
+
+  group('password normalisation (NFKC)', () {
+    // "é" typed as one code point (Android keyboards) or as e + combining
+    // acute (some iOS/macOS input paths) must open the same backup.
+    const composed = 'caf\u00e9 \u00fcber';
+    const decomposed = 'cafe\u0301 u\u0308ber';
+
+    test('composed and decomposed forms are the same password', () async {
+      final blob = await enc(plain, composed);
+      expect(await BackupCrypto.decrypt(blob, decomposed), plain);
+    });
+
+    test('compatibility forms (full-width, ligature) match', () async {
+      final blob = await enc(plain, '\uff50\uff41\uff53\uff53 \ufb01x');
+      expect(await BackupCrypto.decrypt(blob, 'pass fix'), plain);
+    });
+
+    test('different passwords still differ', () async {
+      final blob = await enc(plain, composed);
+      expect(
+        BackupCrypto.decrypt(blob, 'cafe uber'),
+        throwsA(isA<BackupDecryptionException>()),
+      );
+    });
+  });
+
+  group('background helpers', () {
+    test('encryptInBackground and decryptInBackground round trip', () async {
+      final blob = await BackupCrypto.encryptInBackground(
+        plain,
+        'pw',
+        iterations: fastIterations,
+      );
+      expect(BackupCrypto.isEncrypted(blob), isTrue);
+      expect(await BackupCrypto.decryptInBackground(blob, 'pw'), plain);
+    });
+
+    test('decryptInBackground surfaces a wrong password', () async {
+      final blob = await enc(plain);
+      expect(
+        BackupCrypto.decryptInBackground(blob, 'nope'),
+        throwsA(isA<BackupDecryptionException>()),
+      );
+    });
+  });
 }
