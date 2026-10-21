@@ -133,10 +133,13 @@ Future<void> purgeStaleBackupExports() async {
     final cutoff = DateTime.now().subtract(_staleExportAge);
     await for (final entity in directory.list()) {
       final name = entity.uri.pathSegments.last;
-      if (entity is File &&
-          name.startsWith(_exportPrefix) &&
-          (await entity.lastModified()).isBefore(cutoff)) {
-        await entity.delete();
+      if (entity is! File || !name.startsWith(_exportPrefix)) continue;
+      try {
+        if ((await entity.lastModified()).isBefore(cutoff)) {
+          await entity.delete();
+        }
+      } on FileSystemException {
+        // One unreadable or vanished file must not stop the rest.
       }
     }
   } on Exception {
