@@ -222,9 +222,10 @@ jobs:
           channel: stable
           cache: true
       # Only the manifest merge: a full release build needs the signing keystore,
-      # which CI does not have (packageRelease fails without it).
+      # which CI does not have (packageRelease fails without it). --config-only creates the
+      # Gradle wrapper, which is not committed.
       - name: Merge the release manifest
-        run: flutter pub get && flutter gen-l10n && (cd android && ./gradlew :app:processReleaseManifestForPackage --console=plain)
+        run: flutter pub get && flutter gen-l10n && flutter build apk --release --config-only && (cd android && ./gradlew :app:processReleaseManifestForPackage --console=plain)
       - name: Check the merged release manifest
         run: bash scripts/ci/check_release_manifest.sh build/app/intermediates/packaged_manifests/release/processReleaseManifestForPackage/AndroidManifest.xml
 
