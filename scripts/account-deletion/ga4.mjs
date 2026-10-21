@@ -1,10 +1,13 @@
-// Asks Google Analytics 4 to delete the events tied to one user ID (the User Deletion API, id type USER_ID).
+// Asks Google Analytics 4 to delete the events tied to one user ID (Analytics Admin API, properties.submitUserDeletion).
+// The older v3 User Deletion API answers 404 for GA4 properties (seen on the first live run, 2026-10-20).
 // It never throws and never puts the uid in anything it returns: a failure must not block the Firestore and
 // Auth deletion, and the result goes into the audit entry. Google deletes the data on its own schedule.
 import { GoogleAuth } from 'google-auth-library';
 
-export const USER_DELETION_URL = 'https://www.googleapis.com/analytics/v3/userDeletion/userDeletionRequests:upsert';
-export const USER_DELETION_SCOPE = 'https://www.googleapis.com/auth/analytics.user.deletion';
+/** @param {string} property digits-only GA4 property ID (already validated by the caller) */
+export const userDeletionUrl = (property) =>
+  `https://analyticsadmin.googleapis.com/v1alpha/properties/${property}:submitUserDeletion`;
+export const USER_DELETION_SCOPE = 'https://www.googleapis.com/auth/analytics.edit';
 
 /** Default HTTP client: Application Default Credentials (keyless, as the rest of the job) with the deletion scope. */
 let authClient;
@@ -29,13 +32,9 @@ export function createGa4Deletion({ propertyId, request = authorizedRequest } = 
     if (!configured) return { outcome: 'not-configured', status: null };
     try {
       const res = await request({
-        url: USER_DELETION_URL,
+        url: userDeletionUrl(property),
         method: 'POST',
-        data: {
-          kind: 'analytics#userDeletionRequest',
-          id: { type: 'USER_ID', userId: uid },
-          propertyId: property,
-        },
+        data: { userId: uid },
       });
       return { outcome: 'requested', status: isHttpStatus(res?.status) ? res.status : null };
     } catch (e) {
