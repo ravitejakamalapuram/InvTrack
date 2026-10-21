@@ -935,10 +935,10 @@ void main() {
       }
     }
 
-    // 340dp, 1.0x: "₹12.35 Cr invested" is too wide to leave the name its
+    // 350dp, 1.0x: "₹12.35 Cr total cost" is too wide to leave the name its
     // room; the five dots that replace it in privacy mode are not.
     testWidgets('Cr-scale figures drop under the name', (tester) async {
-      await _pumpCards(tester, [_crore], width: 340);
+      await _pumpCards(tester, [_crore], width: 350);
 
       expect(
         _rect(tester, '₹12.35 Cr').top,
@@ -948,7 +948,7 @@ void main() {
 
     testWidgets('masked figures are measured as the dots drawn, so they sit '
         'beside the name', (tester) async {
-      await _pumpCards(tester, [_crore], width: 340, privacy: true);
+      await _pumpCards(tester, [_crore], width: 350, privacy: true);
 
       expect(
         _rect(tester, '•••••').top,
