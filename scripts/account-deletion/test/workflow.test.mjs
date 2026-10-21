@@ -17,6 +17,8 @@ const MODE_DRY_RUN = "${{ github.event_name == 'schedule' && 'false' || inputs.d
 const FORCE = "${{ github.event_name == 'schedule' && 'false' || inputs.force }}";
 const INPUT_MAX = "${{ inputs.max_per_run || '25' }}";
 const INPUT_SWEEP = "${{ inputs.sweep_inactive_guests_days || '0' }}";
+// On the schedule the guest sweep follows the repo variable ACCOUNT_DELETION_SWEEP_GUESTS_DAYS (unset or 0 = off).
+const SWEEP_DAYS = "${{ github.event_name == 'schedule' && (vars.ACCOUNT_DELETION_SWEEP_GUESTS_DAYS || '0') || inputs.sweep_inactive_guests_days || '0' }}";
 // The exact gates. Substring checks let `... || true` or a dropped clause through, so these are compared whole.
 const RUN_IF =
   "github.ref == 'refs/heads/main' && github.repository == 'ravitejakamalapuram/InvTrack' && " +
@@ -25,12 +27,12 @@ const RUN_IF =
 const VERIFY_IF =
   "always() && github.ref == 'refs/heads/main' && (needs.run.result == 'success' || needs.run.result == 'failure') && " +
   "needs.run.outputs.live == 'true' && needs.run.outputs.run_id != ''";
-const MODE_ENV = { DRY_RUN: MODE_DRY_RUN, MAX_PER_RUN: INPUT_MAX, SWEEP_DAYS: INPUT_SWEEP };
+const MODE_ENV = { DRY_RUN: MODE_DRY_RUN, MAX_PER_RUN: INPUT_MAX, SWEEP_DAYS };
 const DELETION_ENV = {
   DRY_RUN: '${{ steps.mode.outputs.dry_run }}',
   FORCE,
   MAX_PER_RUN: INPUT_MAX,
-  SWEEP_INACTIVE_GUESTS: INPUT_SWEEP,
+  SWEEP_INACTIVE_GUESTS: SWEEP_DAYS,
   REQUEST_EMAIL: '${{ inputs.request_email }}',
   GA4_PROPERTY_ID: '${{ vars.GA4_PROPERTY_ID }}',
 };
@@ -319,7 +321,10 @@ describe('each rule can fail', () => {
     ['dryRunDefault', 'dry_run defaulting to false', (d) => (d.on.workflow_dispatch.inputs.dry_run.default = false)],
     ['dryRunDefault', 'the guest sweep on by default', (d) => (d.on.workflow_dispatch.inputs.sweep_inactive_guests_days.default = '1')],
     ['stepEnv', 'the cap fixed at 100000', (d) => (deletion(d).env.MAX_PER_RUN = '100000')],
-    ['stepEnv', 'a schedule that sweeps guests', (d) => (deletion(d).env.SWEEP_INACTIVE_GUESTS = "${{ inputs.sweep_inactive_guests_days || '1' }}")],
+    ['stepEnv', 'a schedule that sweeps guests regardless of the variable', (d) => (deletion(d).env.SWEEP_INACTIVE_GUESTS = "${{ inputs.sweep_inactive_guests_days || '1' }}")],
+    ['stepEnv', 'a schedule whose sweep ignores the repo variable', (d) => (deletion(d).env.SWEEP_INACTIVE_GUESTS = INPUT_SWEEP)],
+    ['stepEnv', 'a schedule whose sweep defaults on when the variable is unset', (d) => (deletion(d).env.SWEEP_INACTIVE_GUESTS = swap(deletion(d).env.SWEEP_INACTIVE_GUESTS, "vars.ACCOUNT_DELETION_SWEEP_GUESTS_DAYS || '0'", "vars.ACCOUNT_DELETION_SWEEP_GUESTS_DAYS || '180'"))],
+    ['stepEnv', 'a mode step that validates a different sweep value than the deletion step uses', (d) => (mode(d).env.SWEEP_DAYS = INPUT_SWEEP)],
     ['stepEnv', 'force true on a schedule', (d) => (deletion(d).env.FORCE = '${{ inputs.force }}')],
     ['stepEnv', 'a dispatch that is live by default', (d) => (mode(d).env.DRY_RUN = "${{ github.event_name == 'schedule' && 'false' || 'false' }}")],
     ['stepEnv', 'an extra variable in the verify step', (d) => (verifyStep(d).env.UIDS = 'x')],

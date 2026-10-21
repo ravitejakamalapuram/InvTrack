@@ -45,7 +45,7 @@ Try to link accounts → Success: Data stays at same UID
 |-------|--------|------------|
 | Data lost on uninstall | ✅ Accepted | Same as current app behavior |
 | Account linking fails (Google account exists) | ✅ Accepted | ZIP backup + automatic merge import |
-| Orphaned anonymous users | ✅ Accepted | Cloud Function cleanup (30 days) |
+| Orphaned anonymous users | ✅ Accepted | Guest sweep in the account-deletion job (`scripts/account-deletion`), after 180 days of inactivity, switched on by the repo variable `ACCOUNT_DELETION_SWEEP_GUESTS_DAYS`. The Cloud Function in this doc (30 days) was never deployed and has been removed. |
 | Firebase costs (≈$0.0055/user as of Mar 2026) | ✅ Accepted | Minimal per-user cost — [verify current pricing](https://firebase.google.com/pricing) |
 | First launch needs internet | ✅ Accepted | Same as current app |
 
