@@ -6,11 +6,12 @@ Server-side deletion of InvTrack account data (Firestore `users/{uid}` tree + Fi
 
 1. **Load queue**: `deletionRequests/{uid}` older than 24 h (the withdrawal window). Younger requests are only reported. A request is written either by the app (`source: 'app'`, APP-334) or by the APP-333 web page after a Google sign-in (`source: 'web'`); both are the same document and either can withdraw it by deleting it.
 2. **Orphan sweep**: uids from `collection('users').listDocuments()` (the parent doc is never written, so `.get()` would be empty) that `auth.getUsers()` reports as not found.
-3. **Guest sweep** (off unless `SWEEP_INACTIVE_GUESTS=<days>`, workflow input `sweep_inactive_guests_days`): Auth users with no linked provider and no activity for that many days.
+3. **Guest sweep** (off unless `SWEEP_INACTIVE_GUESTS=<days>`, workflow input `sweep_inactive_guests_days`): Auth users with no linked provider and no activity for that many days. On the schedule the number comes from the repo variable `ACCOUNT_DELETION_SWEEP_GUESTS_DAYS` (unset or 0 = off; the app's privacy policy, FAQ and guest notice say 180 days). A manual run uses its input.
 4. **Cap**: more than `max_per_run` (25) candidates and no `force` -> nothing is deleted, `deletionRuns/{runId}` gets `refused: true`, exit 2.
 5. **Per uid**: `recursiveDelete(users/{uid})` -> `auth.deleteUser` -> Google Analytics deletion request (live mode only, see below) -> `verify.mjs` -> `deletionAudit/{runId}-{sha256(uid)[:16]}` (the run id, the hash and the Analytics outcome; no raw uid, no email) -> delete the request **last**. A crash, a failed verify or a failed Analytics request leaves the request for the next run.
 6. **Alert**: a request still pending after 3 days fails the run (the APP-333 web page, `https://ravitejakamalapuram.github.io/delete/invtrack.html`, promises 7 days).
-7. `dry_run` (default **true**) prints the plan and writes nothing: no audit, no run record, no deletes, no Analytics calls.
+7. **Audit retention**: a live run deletes `deletionAudit` entries completed more than 12 months ago (365 days). A dry run deletes nothing.
+8. `dry_run` (default **true**) prints the plan and writes nothing: no audit, no run record, no deletes, no Analytics calls.
 
 `REQUEST_EMAIL` (workflow input `request_email`): the operator email fallback. Looks the uid up with `getUserByEmail` and creates a normal queue entry (source `app`). Deletes nothing in that run.
 
@@ -57,6 +58,7 @@ The provider only accepts `ravitejakamalapuram/InvTrack` on `refs/heads/main`: r
 1. **Do one manual dry run first.** Actions -> account-deletion -> Run workflow, branch `main`, leave `dry_run` ticked. Read the step summary (uid hashes only). Nothing is deleted or written.
 2. **Required before step 3.** Set the repo variable `GA4_PROPERTY_ID` (the numeric GA4 property ID; the workflow passes it to the deletion step as `vars.GA4_PROPERTY_ID`), enable the Google Analytics Admin API in the `invtracker-b19d1` Cloud project and give `account-deletion-bot@invtracker-b19d1.iam.gserviceaccount.com` Editor access on the GA4 property. Left unset, the job still deletes but skips the Analytics request and logs a warning. Accounts deleted before it is set cannot get an Analytics request later, because the job keeps only a hash of the uid.
 3. **Turn the schedule on:** Settings -> Secrets and variables -> Actions -> Variables -> set `ACCOUNT_DELETION_SCHEDULE_ENABLED` to `true`. To pause, delete the variable or set anything else; manual runs still work.
+4. **Guest sweep (optional, after the app's 180-day disclosure has shipped):** set the repo variable `ACCOUNT_DELETION_SWEEP_GUESTS_DAYS` to `180`. Unset or `0` leaves guest accounts alone. The 25-account cap still applies, so a first sweep that finds more than 25 guests is refused (exit 2) until a manual run with `force`.
 
 How the workflow behaves:
 

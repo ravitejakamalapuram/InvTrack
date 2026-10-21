@@ -9,6 +9,7 @@ import { verifyRun } from '../verify-run.mjs';
 import { verifyUserGone } from '../verify.mjs';
 import { deleteUserData } from '../delete.mjs';
 import { createGa4Deletion, userDeletionUrl } from '../ga4.mjs';
+import { Timestamp } from 'firebase-admin/firestore';
 import { auth, authExists, db, DAY, exists, quiet, resetEmulators, seedRequest, seedUser, snapshot } from './helpers.mjs';
 
 const opts = (over = {}) => ({ db, auth, runId: 'run1', dryRun: false, log: quiet, ...over });
@@ -334,6 +335,46 @@ describe('Google Analytics user deletion (A102)', () => {
     const out = await runJob(opts({ ga4, deleter: failing }));
     assert.equal(out.exitCode, 1);
     assert.deepEqual(uids, []);
+  });
+});
+
+describe('deletionAudit retention (12 months)', () => {
+  const now = new Date('2026-10-21T20:41:00Z');
+  const seedAudit = (id, ageDays) =>
+    db.doc(`deletionAudit/${id}`).set({ runId: 'old', uidHash: id, completedAt: Timestamp.fromDate(new Date(now.getTime() - ageDays * DAY)) });
+
+  it('a live run purges entries older than 12 months and keeps newer ones', async () => {
+    await seedAudit('older-than-year', 366);
+    await seedAudit('well-over-year', 800);
+    await seedAudit('inside-year', 364);
+    const out = await runJob(opts({ now }));
+    assert.equal(out.exitCode, 0);
+    assert.equal(await exists('deletionAudit/older-than-year'), false);
+    assert.equal(await exists('deletionAudit/well-over-year'), false);
+    assert.equal(await exists('deletionAudit/inside-year'), true);
+    assert.equal(out.auditPurged, 2);
+  });
+
+  it('purges more than one write batch worth of old entries', async () => {
+    for (let i = 0; i < 520; i++) await seedAudit(`bulk-${i}`, 400);
+    const out = await runJob(opts({ now }));
+    assert.equal(out.auditPurged, 520);
+    assert.equal((await db.collection('deletionAudit').get()).size, 0);
+  });
+
+  it('a dry run purges nothing', async () => {
+    await seedAudit('older-than-year', 366);
+    const out = await runJob(opts({ now, dryRun: true }));
+    assert.equal(await exists('deletionAudit/older-than-year'), true);
+    assert.equal(out.auditPurged, 0);
+  });
+
+  it('never purges the entry the same run just wrote', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY, now);
+    const out = await runJob(opts({ now }));
+    assert.equal(out.exitCode, 0);
+    assert.equal(await exists(`deletionAudit/run1-${hashUid('u1')}`), true);
   });
 });
 

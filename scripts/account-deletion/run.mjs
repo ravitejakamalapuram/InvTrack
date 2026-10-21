@@ -12,6 +12,10 @@ import { safeErrorCode } from './safe-error.mjs';
 import { findInactiveGuests, findOrphans, loadRequests, STALE_MS } from './sweep.mjs';
 import { verifyUserGone } from './verify.mjs';
 
+// deletionAudit entries are kept for 12 months, then purged by the job.
+export const AUDIT_RETENTION_MS = 365 * 24 * 60 * 60 * 1000;
+const PURGE_BATCH = 400;
+
 export const hashUid = (uid) => createHash('sha256').update(uid).digest('hex').slice(0, 16);
 
 export async function runJob({
@@ -118,6 +122,9 @@ export async function runJob({
     );
   }
 
+  const auditPurged = dryRun ? 0 : await purgeOldAudit(db, new Date(now.getTime() - AUDIT_RETENTION_MS));
+  if (auditPurged > 0) log(`Purged ${auditPurged} deletionAudit entr${auditPurged === 1 ? 'y' : 'ies'} older than 12 months.`);
+
   const failed = results.filter((r) => !r.ok).length;
   const exitCode = refused ? 2 : failed > 0 || stale > 0 ? 1 : 0;
 
@@ -133,7 +140,20 @@ export async function runJob({
       completedAt: FieldValue.serverTimestamp(),
     });
   }
-  return { exitCode, refused, results, stale, ga4Failed, ga4NotConfigured };
+  return { exitCode, refused, results, stale, ga4Failed, ga4NotConfigured, auditPurged };
+}
+
+/** Deletes deletionAudit entries completed before `cutoff`, in batches. Returns how many were deleted. */
+async function purgeOldAudit(db, cutoff) {
+  let total = 0;
+  for (;;) {
+    const old = await db.collection('deletionAudit').where('completedAt', '<', cutoff).limit(PURGE_BATCH).get();
+    if (old.empty) return total;
+    const batch = db.batch();
+    old.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+    total += old.size;
+  }
 }
 
 /** Never throws: any error, including one from a custom client, becomes outcome 'failed' without its message. */
