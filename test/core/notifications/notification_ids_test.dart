@@ -41,18 +41,51 @@ void main() {
   });
 
   test('an investment keeps its IDs across app restarts', () async {
-    final before = [
+    final a = [
       NotificationIds.incomeReminder('inv-a'),
       NotificationIds.maturityReminder7Days('inv-a'),
       NotificationIds.maturityReminder1Day('inv-a'),
     ];
-    NotificationIds.incomeReminder('inv-b'); // allocated in between
+    final b = NotificationIds.incomeReminder('inv-b');
     await startApp();
+
+    // Asked in the opposite order: if the slots were not saved, inv-b would
+    // be handed inv-a's old slot.
+    expect(NotificationIds.incomeReminder('inv-b'), b);
     expect([
       NotificationIds.incomeReminder('inv-a'),
       NotificationIds.maturityReminder7Days('inv-a'),
       NotificationIds.maturityReminder1Day('inv-a'),
-    ], before);
+    ], a);
+    expect(prefs.getString('notification_id_slots'), contains('inv-b'));
+  });
+
+  group('reminders scheduled under the old hash IDs', () {
+    FakeScheduledNotification pending(int id) =>
+        FakeScheduledNotification(id: id, scheduledDate: DateTime(2027));
+
+    test('are cancelled once when the app first starts with slot IDs, '
+        'so none can fire for a deleted investment', () async {
+      final plugin = FakeFlutterLocalNotificationsPlugin();
+      plugin.scheduledNotifications.addAll([
+        pending(NotificationIds.weeklySummary),
+        pending(50123), // income, old hash ID
+        pending(100456), // 7-day maturity, old hash ID
+        pending(125789), // 1-day maturity, old hash ID
+      ]);
+      final service = NotificationService(plugin, prefs);
+      await service.initialize();
+
+      expect(plugin.scheduledNotifications.map((n) => n.id), [
+        NotificationIds.weeklySummary,
+      ]);
+
+      // Reminders scheduled after the migration are left alone on the next
+      // start.
+      plugin.scheduledNotifications.add(pending(50123));
+      await NotificationService(plugin, prefs).initialize();
+      expect(plugin.scheduledNotifications.map((n) => n.id), contains(50123));
+    });
   });
 
   test('goal milestone IDs never reach the goal at-risk range', () {

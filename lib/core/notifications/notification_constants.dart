@@ -127,7 +127,10 @@ class NotificationIdSlots {
   static Map<String, int> _cached = {};
 
   /// Called by [NotificationService] when the app starts.
-  static void bind(SharedPreferences prefs) => _prefs = prefs;
+  static void bind(SharedPreferences prefs) {
+    _prefs = prefs;
+    _cachedRaw = null;
+  }
 
   /// The slot (0 up to [capacity] - 1) of [key] within [kind].
   static int slot(String kind, String key, int capacity) {

@@ -76,11 +76,16 @@ void main() {
     expect(plugin.scheduledNotifications, isNotEmpty);
     for (final n in plugin.scheduledNotifications) {
       expectDefaultImportance(n.notificationDetails);
-      expect(n.body, isNot(contains('Thousands')));
+      expect(n.body!.toLowerCase(), isNot(contains('thousands')));
     }
     final day14 = plugin.scheduledNotifications.firstWhere(
       (n) => n.id == NotificationIds.activationDay14,
     );
-    expect(day14.title, isNot(contains('Join Smart Investors')));
+    expect(day14.title, '📈 Track Every Investment');
+    expect(
+      day14.body,
+      'Track FD, P2P and bond returns in one place. '
+      'Add your first investment to see your real returns.',
+    );
   });
 }

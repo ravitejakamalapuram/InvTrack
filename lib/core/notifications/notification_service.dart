@@ -302,7 +302,27 @@ class NotificationService with NotificationPreferencesMixin {
     _isInitialized = true;
     LoggerService.info('NotificationService initialized');
 
+    await _dropReminderIdsFromHashScheme();
     await _queueLaunchTap();
+  }
+
+  static const _slotIdsMigratedKey = 'notification_ids_slot_scheme';
+
+  /// Income and maturity reminders scheduled by earlier versions have IDs from
+  /// `hashCode % range`, which slot IDs can now equal. Cancel them once; the
+  /// next sync schedules every reminder again under its slot ID.
+  Future<void> _dropReminderIdsFromHashScheme() async {
+    try {
+      if (_prefs.getBool(_slotIdsMigratedKey) ?? false) return;
+      await _cancelPendingWhere(
+        (id) =>
+            NotificationIds.isIncomeReminderId(id) ||
+            NotificationIds.isMaturityReminderId(id),
+      );
+      await _prefs.setBool(_slotIdsMigratedKey, true);
+    } catch (e) {
+      LoggerService.warn('Could not drop old reminder IDs', error: e);
+    }
   }
 
   /// The plugin does not deliver the tap that started a killed app through
