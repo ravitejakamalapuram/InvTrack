@@ -31,6 +31,10 @@ void main() {
   late List<bool> existedWhenShared;
   var shareShouldFail = false;
 
+  File aged(String name) => File('${tempDir.path}/$name')
+    ..writeAsBytesSync([1])
+    ..setLastModifiedSync(DateTime.now().subtract(const Duration(hours: 1)));
+
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
     tempDir = Directory.systemTemp.createTempSync('enc_export_');
@@ -134,9 +138,9 @@ void main() {
   });
 
   test('a new export purges stale exports left by earlier runs', () async {
-    final stale = File('${tempDir.path}/InvTrack_Export_1.zip')
-      ..writeAsBytesSync([1]);
-    final staleEnc = File('${tempDir.path}/InvTrack_Export_2.invbackup')
+    final stale = aged('InvTrack_Export_1.zip');
+    final staleEnc = aged('InvTrack_Export_2.invbackup');
+    final active = File('${tempDir.path}/InvTrack_Export_3.zip')
       ..writeAsBytesSync([1]);
     final unrelated = File('${tempDir.path}/other.zip')..writeAsBytesSync([1]);
 
@@ -145,6 +149,7 @@ void main() {
     expect(stale.existsSync(), isFalse);
     expect(staleEnc.existsSync(), isFalse);
     expect(unrelated.existsSync(), isTrue);
+    expect(active.existsSync(), isTrue); // young: maybe a running export
   });
 
   test(
@@ -161,8 +166,7 @@ void main() {
   );
 
   test('purgeStaleBackupExports clears leftovers without an export', () async {
-    final stale = File('${tempDir.path}/InvTrack_Export_9.zip')
-      ..writeAsBytesSync([1]);
+    final stale = aged('InvTrack_Export_9.zip');
     await purgeStaleBackupExports();
     expect(stale.existsSync(), isFalse);
   });

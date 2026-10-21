@@ -119,14 +119,23 @@ const _exportPrefix = 'InvTrack_Export_';
 /// file; deleting at once can make the attachment fail.
 const _androidShareCleanupDelay = Duration(minutes: 2);
 
+/// Exports younger than this are never purged: an export in progress, or one
+/// an Android share is still handing to another app ([_androidShareCleanupDelay]).
+const _staleExportAge = Duration(minutes: 10);
+
 /// Deletes backup exports earlier runs left in the cache (a crash or a killed
-/// app can skip the cleanup in [DataExportService.exportAndShare]). Best effort.
+/// app can skip the cleanup in [DataExportService.exportAndShare]). Only files
+/// older than [_staleExportAge] go, so an overlapping export is never hit.
+/// Best effort.
 Future<void> purgeStaleBackupExports() async {
   try {
     final directory = await getTemporaryDirectory();
+    final cutoff = DateTime.now().subtract(_staleExportAge);
     await for (final entity in directory.list()) {
       final name = entity.uri.pathSegments.last;
-      if (entity is File && name.startsWith(_exportPrefix)) {
+      if (entity is File &&
+          name.startsWith(_exportPrefix) &&
+          (await entity.lastModified()).isBefore(cutoff)) {
         await entity.delete();
       }
     }
