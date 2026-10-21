@@ -107,7 +107,37 @@ Future<void> _pump(
   await tester.pumpAndSettle();
 }
 
+const _amounts = <String>[
+  '2,38,400',
+  '6,50,000',
+  '4,10,000',
+  '4,92,000',
+  '13,600',
+  '4,21,000',
+  '71,000',
+  '32,400',
+  '46,200',
+];
+
 void main() {
+  testWidgets('every amount is visible when privacy mode is off', (
+    tester,
+  ) async {
+    await _pump(tester, _report());
+    await tester.scrollUntilVisible(
+      find.textContaining('not tax advice'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    for (final amount in _amounts) {
+      expect(
+        find.textContaining(amount, skipOffstage: false),
+        findsWidgets,
+        reason: '$amount must be visible',
+      );
+    }
+  });
+
   testWidgets('shows the hero, tiles, tax card, performers and disclaimer', (
     tester,
   ) async {
@@ -162,23 +192,15 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
 
-    for (final amount in [
-      '2,38,400',
-      '6,50,000',
-      '4,10,000',
-      '4,92,000',
-      '13,600',
-      '4,21,000',
-      '71,000',
-      '32,400',
-      '46,200',
-    ]) {
+    for (final amount in _amounts) {
       expect(
         find.textContaining(amount, skipOffstage: false),
         findsNothing,
         reason: '$amount must be masked',
       );
     }
+    expect(find.textContaining('11.4%', skipOffstage: false), findsNothing);
+    expect(find.textContaining('8.1%', skipOffstage: false), findsNothing);
   });
 
   testWidgets('no overflow at 320dp and 1.8x text; targets are 48dp', (
