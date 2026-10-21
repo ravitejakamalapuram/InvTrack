@@ -122,11 +122,21 @@ export async function runJob({
     );
   }
 
-  const auditPurged = dryRun ? 0 : await purgeOldAudit(db, new Date(now.getTime() - AUDIT_RETENTION_MS));
+  // A purge failure must not stop the run record below: verify-run.mjs needs it. It fails the run instead.
+  let auditPurged = 0;
+  let purgeFailed = false;
+  if (!dryRun) {
+    try {
+      auditPurged = await purgeOldAudit(db, new Date(now.getTime() - AUDIT_RETENTION_MS));
+    } catch (e) {
+      purgeFailed = true;
+      log(`ALERT: purging old deletionAudit entries failed (${safeErrorCode(e)}).`);
+    }
+  }
   if (auditPurged > 0) log(`Purged ${auditPurged} deletionAudit entr${auditPurged === 1 ? 'y' : 'ies'} older than 12 months.`);
 
   const failed = results.filter((r) => !r.ok).length;
-  const exitCode = refused ? 2 : failed > 0 || stale > 0 ? 1 : 0;
+  const exitCode = refused ? 2 : failed > 0 || stale > 0 || purgeFailed ? 1 : 0;
 
   if (!dryRun) {
     await db.collection('deletionRuns').doc(runId).set({

@@ -362,6 +362,19 @@ describe('deletionAudit retention (12 months)', () => {
     assert.equal((await db.collection('deletionAudit').get()).size, 0);
   });
 
+  it('a failing purge still writes the run record and fails the run', async () => {
+    await seedUser('u1');
+    await seedRequest('u1', 2 * DAY, now);
+    await seedAudit('older-than-year', 366);
+    const brokenBatchDb = new Proxy(db, {
+      get: (target, prop) => (prop === 'batch' ? () => { throw new Error('boom'); } : Reflect.get(target, prop)),
+    });
+    const out = await runJob(opts({ now, db: brokenBatchDb }));
+    assert.equal(out.exitCode, 1);
+    assert.equal((await db.doc('deletionRuns/run1').get()).get('ok'), false);
+    assert.equal(await authExists('u1'), false);
+  });
+
   it('a dry run purges nothing', async () => {
     await seedAudit('older-than-year', 366);
     const out = await runJob(opts({ now, dryRun: true }));
