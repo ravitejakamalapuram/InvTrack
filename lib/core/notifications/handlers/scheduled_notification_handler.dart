@@ -21,6 +21,7 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
   final Future<void> Function() ensureInitialized;
   final Future<bool> Function() ensurePermissionsForShow;
   final String Function(double amount, String currency) formatCurrency;
+  final DateTime Function() _clock;
 
   ScheduledNotificationHandler({
     required FlutterLocalNotificationsPlugin plugin,
@@ -28,8 +29,10 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     required this.ensureInitialized,
     required this.ensurePermissionsForShow,
     required this.formatCurrency,
+    DateTime Function()? clock,
   }) : _plugin = plugin,
-       _prefs = prefs;
+       _prefs = prefs,
+       _clock = clock ?? DateTime.now;
 
   @override
   SharedPreferences get prefs => _prefs;
@@ -38,6 +41,10 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
   /// tap would land on Overview with nothing to show, so they are not
   /// scheduled (and any pending one is cancelled).
   bool reportsRouteEnabled = false;
+
+  /// Base currency of the signed-in user; the India tax deadlines apply only
+  /// to INR. Null until known, so nothing is scheduled before then.
+  String? baseCurrency;
 
   Future<bool> _reportsOff(int id) async {
     if (reportsRouteEnabled) return false;
@@ -59,8 +66,8 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       NotificationChannels.weeklySummary,
       'Weekly Summary',
       channelDescription: 'Weekly investment activity summary',
-      importance: Importance.max,
-      priority: Priority.max,
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
       playSound: true,
       enableVibration: true,
       visibility: NotificationVisibility.private,
@@ -114,8 +121,8 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       NotificationChannels.monthlySummary,
       'Monthly Summary',
       channelDescription: 'Monthly investment income summary',
-      importance: Importance.max,
-      priority: Priority.max,
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
       playSound: true,
       enableVibration: true,
       visibility: NotificationVisibility.private,
@@ -255,60 +262,55 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     if (!taxRemindersEnabled) return;
 
     await cancelTaxReminders();
+    if (baseCurrency != 'INR') return;
 
-    final now = DateTime.now();
-    final currentYear = now.year;
-    final nextYear = currentYear + 1;
-    final fyYear = now.month >= 4 ? currentYear : currentYear - 1;
+    final now = _clock();
+
+    // Each deadline reminder fires at 09:00 on its next occurrence, so the
+    // date does not depend on which day the app was opened.
+    DateTime next(int month, int day) {
+      final thisYear = DateTime(now.year, month, day, 9);
+      return thisYear.isAfter(now)
+          ? thisYear
+          : DateTime(now.year + 1, month, day, 9);
+    }
 
     final reminders = <_TaxReminder>[
       _TaxReminder(
         id: NotificationIds.taxReminder80C,
         title: '📋 80C Investment Deadline',
         body: 'March 31 is the deadline for 80C tax-saving investments.',
-        date: DateTime(fyYear + 1, 3, 24, 9, 0),
+        date: next(3, 24),
       ),
       _TaxReminder(
         id: NotificationIds.taxReminderAdvanceQ1,
         title: '💰 Advance Tax Due (Q1)',
         body: 'First installment of advance tax (15%) is due by June 15.',
-        date: DateTime(now.month >= 6 ? nextYear : currentYear, 6, 10, 9, 0),
+        date: next(6, 10),
       ),
       _TaxReminder(
         id: NotificationIds.taxReminderAdvanceQ2,
         title: '💰 Advance Tax Due (Q2)',
         body: 'Second installment of advance tax (45%) is due by September 15.',
-        date: DateTime(now.month >= 9 ? nextYear : currentYear, 9, 10, 9, 0),
+        date: next(9, 10),
       ),
       _TaxReminder(
         id: NotificationIds.taxReminderAdvanceQ3,
         title: '💰 Advance Tax Due (Q3)',
         body: 'Third installment of advance tax (75%) is due by December 15.',
-        date: DateTime(now.month >= 12 ? nextYear : currentYear, 12, 10, 9, 0),
+        date: next(12, 10),
       ),
       _TaxReminder(
         id: NotificationIds.taxReminderAdvanceQ4,
         title: '💰 Advance Tax Due (Q4)',
         body: 'Final installment of advance tax (100%) is due by March 15.',
-        date: DateTime(
-          now.month >= 3 && now.day > 15 ? nextYear : currentYear,
-          3,
-          10,
-          9,
-          0,
-        ),
+        date: next(3, 10),
       ),
       _TaxReminder(
         id: NotificationIds.taxReminderITR,
         title: '📝 ITR Filing Deadline',
         body: 'July 31 is the deadline for filing Income Tax Returns.',
-        date: DateTime(
-          now.month >= 7 && now.day > 25 ? nextYear : currentYear,
-          7,
-          25,
-          9,
-          0,
-        ),
+        date: next(7, 25),
       ),
     ];
 
@@ -443,8 +445,8 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       NotificationChannels.fySummary,
       'FY Summary',
       channelDescription: 'Annual financial year summary',
-      importance: Importance.max,
-      priority: Priority.max,
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
       playSound: true,
       visibility: NotificationVisibility.private,
     );
@@ -495,8 +497,8 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       NotificationChannels.fySummary,
       'FY Summary',
       channelDescription: 'Annual financial year summary',
-      importance: Importance.max,
-      priority: Priority.max,
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
       playSound: true,
       visibility: NotificationVisibility.private,
     );

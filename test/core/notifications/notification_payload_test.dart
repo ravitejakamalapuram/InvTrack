@@ -163,18 +163,6 @@ void main() {
       expect(parsed.type, NotificationPayloadType.overview);
     });
 
-    test('riskAlert should create correct payload string', () {
-      final payload = NotificationPayload.riskAlert('single_investment');
-      expect(payload, 'risk_alert:single_investment');
-    });
-
-    test('should parse risk_alert payload correctly', () {
-      final parsed = NotificationPayload.parse('risk_alert:concentration');
-
-      expect(parsed.type, NotificationPayloadType.overview);
-      expect(parsed.params['alertType'], 'concentration');
-    });
-
     test('weeklyCheckIn should create correct payload string', () {
       expect(NotificationPayload.weeklyCheckIn, 'weekly_check_in');
     });
@@ -185,19 +173,6 @@ void main() {
       // A29: the payload has no investment, so a cash-flow screen cannot open.
       expect(parsed.type, NotificationPayloadType.investmentList);
       expect(parsed.params['source'], 'weekly_check_in');
-    });
-
-    test('idleAlert should create correct payload string', () {
-      final payload = NotificationPayload.idleAlert('inv-123');
-      expect(payload, 'idle_alert:inv-123');
-    });
-
-    test('should parse idle_alert payload correctly', () {
-      final parsed = NotificationPayload.parse('idle_alert:inv-456');
-
-      expect(parsed.type, NotificationPayloadType.investmentDetail);
-      expect(parsed.investmentId, 'inv-456');
-      expect(parsed.params['source'], 'idle_alert');
     });
 
     test('fySummary should create correct payload string', () {

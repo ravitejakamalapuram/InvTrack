@@ -69,35 +69,12 @@ mixin NotificationPreferencesMixin {
     await prefs.setBool(NotificationPrefsKeys.taxRemindersEnabled, enabled);
   }
 
-  bool get riskAlertsEnabled =>
-      prefs.getBool(NotificationPrefsKeys.riskAlertsEnabled) ?? true;
-
-  Future<void> setRiskAlertsEnabled(bool enabled) async {
-    await prefs.setBool(NotificationPrefsKeys.riskAlertsEnabled, enabled);
-  }
-
   /// Weekly check-in (Sunday prompt) enabled
   bool get weeklyCheckInEnabled =>
       prefs.getBool(NotificationPrefsKeys.weeklyCheckInEnabled) ?? true;
 
   Future<void> setWeeklyCheckInEnabled(bool enabled) async {
     await prefs.setBool(NotificationPrefsKeys.weeklyCheckInEnabled, enabled);
-  }
-
-  /// Idle investment alerts enabled
-  bool get idleAlertsEnabled =>
-      prefs.getBool(NotificationPrefsKeys.idleAlertsEnabled) ?? true;
-
-  Future<void> setIdleAlertsEnabled(bool enabled) async {
-    await prefs.setBool(NotificationPrefsKeys.idleAlertsEnabled, enabled);
-  }
-
-  /// Number of days before an investment is considered "idle" (default: 90)
-  int get idleAlertDays =>
-      prefs.getInt(NotificationPrefsKeys.idleAlertDays) ?? 90;
-
-  Future<void> setIdleAlertDays(int days) async {
-    await prefs.setInt(NotificationPrefsKeys.idleAlertDays, days);
   }
 
   /// FY summary notification enabled
@@ -166,23 +143,6 @@ mixin NotificationPreferencesMixin {
   }
 
   // ============ Alert Tracking ============
-
-  /// Get last time idle alert was shown for an investment (as ISO8601 string)
-  DateTime? getIdleAlertLastShown(String investmentId) {
-    final str = prefs.getString(
-      NotificationPrefsKeys.idleAlertLastShown(investmentId),
-    );
-    if (str == null) return null;
-    return DateTime.tryParse(str);
-  }
-
-  /// Mark idle alert as shown for an investment
-  Future<void> markIdleAlertShown(String investmentId) async {
-    await prefs.setString(
-      NotificationPrefsKeys.idleAlertLastShown(investmentId),
-      DateTime.now().toIso8601String(),
-    );
-  }
 
   /// Get last time goal at-risk alert was shown
   DateTime? getGoalAtRiskLastShown(String goalId) {

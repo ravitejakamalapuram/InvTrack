@@ -46,10 +46,6 @@ class _NotificationSyncInitializerState
   /// Uid of the last signed-in user seen, to detect sign-out and switches.
   String? _signedInUid;
 
-  /// Set after notifications were cleared on sign-out, so the app-wide
-  /// reminders are restored when someone signs in again.
-  bool _restoreAppWideRemindersOnSignIn = false;
-
   ProviderSubscription<AsyncValue<UserEntity?>>? _authSubscription;
 
   /// Bumped on every account change. A reschedule started for an earlier
@@ -117,10 +113,9 @@ class _NotificationSyncInitializerState
     if (previousUid != null && previousUid != uid) {
       _clearForAccountChange(signedInUid: uid);
     } else if (uid != null) {
-      if (_restoreAppWideRemindersOnSignIn) {
-        _restoreAppWideRemindersOnSignIn = false;
-        _restoreAppWideReminders();
-      }
+      // Tax, check-in and FY reminders are scheduled here, after sign-in,
+      // on every app start (idempotent) and after a sign-out cleared them.
+      _restoreAppWideReminders();
       if (previousUid == null) _recordOwner(uid);
     }
   }
@@ -163,7 +158,6 @@ class _NotificationSyncInitializerState
   void _clearForAccountChange({required String? signedInUid}) {
     _debounceTimer?.cancel();
     _accountGeneration++;
-    _restoreAppWideRemindersOnSignIn = signedInUid == null;
     try {
       final notificationService = ref.read(notificationServiceProvider);
       _enqueue(() async {
@@ -172,6 +166,7 @@ class _NotificationSyncInitializerState
           LoggerService.info('Notifications cleared after account change');
           await notificationService.setRemindersOwnerUid(signedInUid);
           if (signedInUid != null) {
+            _applyBaseCurrency(notificationService);
             await notificationService.scheduleAppWideReminders();
           }
         } catch (e) {
@@ -183,12 +178,25 @@ class _NotificationSyncInitializerState
     }
   }
 
-  /// Re-create tax, check-in and FY reminders after a sign-out cleared them.
+  /// Tell the service the user's base currency; the India tax reminders are
+  /// scheduled only for INR.
+  void _applyBaseCurrency(NotificationService notificationService) {
+    try {
+      notificationService.baseCurrency = ref.read(currencyCodeProvider);
+    } catch (e) {
+      // Unknown currency: schedule no India tax reminders.
+      notificationService.baseCurrency = null;
+      LoggerService.debug('Base currency not available for reminders');
+    }
+  }
+
+  /// Schedule tax, check-in and FY reminders (after sign-in or sign-out).
   void _restoreAppWideReminders() {
     try {
       final notificationService = ref.read(notificationServiceProvider);
-      Future(() async {
+      _enqueue(() async {
         try {
+          _applyBaseCurrency(notificationService);
           await notificationService.scheduleAppWideReminders();
         } catch (e) {
           LoggerService.warn('Error restoring app-wide reminders', error: e);
@@ -413,6 +421,11 @@ class _NotificationSyncInitializerState
       _scheduleNotificationsDebounced();
     }, onError: (_, _) {});
 
+    // The India tax reminders depend on the base currency.
+    ref.listen<String>(currencyCodeProvider, (previous, next) {
+      if (_signedInUid != null) _restoreAppWideReminders();
+    }, onError: (_, _) {});
+
     // Turning income or maturity reminders back on schedules them again.
     // Turning them off cancels them in NotificationService.
     ref.listen<(bool, bool)>(
@@ -454,6 +467,7 @@ class _NotificationSyncInitializerState
 
   /// Schedule activation sequence for new users with no investments
   void _scheduleActivationSequenceIfNeeded() {
+    if (_signedInUid == null) return;
     try {
       final notificationService = ref.read(notificationServiceProvider);
 

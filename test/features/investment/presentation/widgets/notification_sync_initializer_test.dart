@@ -70,7 +70,9 @@ void main() {
     WidgetTester tester, {
     bool recap = false,
     bool reports = true,
+    String currency = 'INR',
   }) async {
+    _currencyInitial = currency;
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -79,11 +81,11 @@ void main() {
             isMonthlyRecapEnabledProvider.overrideWith(
               (ref) => ref.watch(_recapFlag),
             ),
-            currencyCodeProvider.overrideWithValue('INR'),
             activeInvestmentBasicStatsMapProvider.overrideWithValue(
               const AsyncData({}),
             ),
           ],
+          currencyCodeProvider.overrideWith((ref) => ref.watch(_currency)),
           authStateProvider.overrideWith((ref) => auth.stream),
           notificationServiceProvider.overrideWithValue(service),
           allInvestmentsProvider.overrideWith((ref) => investments.stream),
@@ -187,6 +189,81 @@ void main() {
       expect(ids, contains(NotificationIds.weeklyCheckIn));
       expect(ids, isNot(contains(NotificationIds.fySummary)));
       expect(ids, isNot(contains(NotificationIds.weeklySummary)));
+    });
+  });
+
+  // A29 (#780) part 2: tax, check-in, FY and activation reminders are
+  // scheduled after sign-in only, from this one place.
+  group('NotificationSyncInitializer - scheduling after sign-in', () {
+    testWidgets('signing in on a fresh install schedules the app-wide '
+        'reminders', (tester) async {
+      await pumpInitializer(tester);
+
+      auth.add(user('uid-a'));
+      await settle(tester);
+
+      final ids = fakePlugin.scheduledNotifications.map((n) => n.id);
+      expect(ids, contains(NotificationIds.weeklyCheckIn));
+      expect(ids, contains(NotificationIds.taxReminder80C));
+    });
+
+    testWidgets('a signed-in user whose base currency is not INR gets no '
+        'India tax reminders', (tester) async {
+      await pumpInitializer(tester, currency: 'USD');
+      auth.add(user('uid-a'));
+      await settle(tester);
+
+      final ids = fakePlugin.scheduledNotifications.map((n) => n.id);
+      expect(ids, contains(NotificationIds.weeklyCheckIn));
+      expect(ids, isNot(contains(NotificationIds.taxReminder80C)));
+    });
+
+    testWidgets('changing the base currency from INR removes the India tax '
+        'reminders', (tester) async {
+      final container = await pumpInitializer(tester);
+      auth.add(user('uid-a'));
+      await settle(tester);
+      expect(
+        fakePlugin.scheduledNotifications.map((n) => n.id),
+        contains(NotificationIds.taxReminder80C),
+      );
+
+      container.read(_currency.notifier).set('USD');
+      await settle(tester);
+
+      expect(
+        fakePlugin.scheduledNotifications.map((n) => n.id),
+        isNot(contains(NotificationIds.taxReminder80C)),
+      );
+    });
+
+    testWidgets('no activation nudges are scheduled before sign-in', (
+      tester,
+    ) async {
+      await pumpInitializer(tester);
+      auth.add(null);
+      investments.add(const []);
+      await settle(tester);
+
+      expect(prefs.getString('user_signup_date'), isNull);
+      expect(
+        fakePlugin.scheduledNotifications.map((n) => n.id),
+        isNot(contains(NotificationIds.activationDay1)),
+      );
+    });
+
+    testWidgets('activation nudges are scheduled once a user with no '
+        'investments is signed in', (tester) async {
+      await pumpInitializer(tester);
+      auth.add(user('uid-a'));
+      await settle(tester);
+      investments.add(const []);
+      await settle(tester);
+
+      expect(
+        fakePlugin.scheduledNotifications.map((n) => n.id),
+        contains(NotificationIds.activationDay1),
+      );
     });
   });
 
@@ -463,4 +540,15 @@ class _RecapFlag extends Notifier<bool> {
   bool build() => true;
 
   void set(bool value) => state = value;
+}
+
+String _currencyInitial = 'INR';
+
+final _currency = NotifierProvider<_Currency, String>(_Currency.new);
+
+class _Currency extends Notifier<String> {
+  @override
+  String build() => _currencyInitial;
+
+  void set(String value) => state = value;
 }

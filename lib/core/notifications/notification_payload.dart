@@ -22,7 +22,7 @@
 /// - `portfolio_health` - Portfolio health report
 ///
 /// ### Future Notifications (Phase 3+)
-/// - `tax_reminder`, `risk_alert`, `weekly_check_in`, `idle_alert`
+/// - `tax_reminder`, `weekly_check_in`
 /// - `goal_milestone`, `goal_at_risk`, `goal_stale`
 /// - Activation campaigns (day_0, day_1, day_3, day_7, day_14)
 library;
@@ -176,24 +176,11 @@ class NotificationPayload {
           type: NotificationPayloadType.overview,
         );
 
-      case 'risk_alert':
-        return NotificationPayload(
-          type: NotificationPayloadType.overview,
-          params: {'alertType': parts.length > 1 ? parts[1] : 'unknown'},
-        );
-
       case 'weekly_check_in':
         // No investment is named, so open the list to pick one.
         return NotificationPayload(
           type: NotificationPayloadType.investmentList,
           params: {'flowType': 'income', 'source': 'weekly_check_in'},
-        );
-
-      case 'idle_alert':
-        return NotificationPayload(
-          type: NotificationPayloadType.investmentDetail,
-          investmentId: parts.length > 1 ? parts[1] : null,
-          params: {'source': 'idle_alert'},
         );
 
       case 'fy_summary':
@@ -456,14 +443,8 @@ class NotificationPayload {
   /// Create a payload string for tax reminder
   static String taxReminder(String reminderId) => 'tax_reminder:$reminderId';
 
-  /// Create a payload string for risk alert
-  static String riskAlert(String alertType) => 'risk_alert:$alertType';
-
   /// Create a payload string for weekly check-in
   static String get weeklyCheckIn => 'weekly_check_in';
-
-  /// Create a payload string for idle investment alert
-  static String idleAlert(String investmentId) => 'idle_alert:$investmentId';
 
   /// Create a payload string for goal milestone celebration
   static String goalMilestone(String goalId, int milestonePercent) =>

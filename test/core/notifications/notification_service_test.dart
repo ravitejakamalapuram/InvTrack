@@ -1,4 +1,3 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -664,10 +663,10 @@ void main() {
 
   group('NotificationChannels - Constants', () {
     test('should have correct channel IDs', () {
-      expect(NotificationChannels.weeklySummary, 'weekly_summary');
+      expect(NotificationChannels.weeklySummary, 'weekly_summary_v2');
       expect(NotificationChannels.incomeReminders, 'income_reminders');
       expect(NotificationChannels.maturityReminders, 'maturity_reminders');
-      expect(NotificationChannels.monthlySummary, 'monthly_summary');
+      expect(NotificationChannels.monthlySummary, 'monthly_summary_v2');
       expect(NotificationChannels.general, 'general');
     });
   });
@@ -796,25 +795,6 @@ void main() {
       expect(fakePlugin.shownNotifications, isEmpty);
     });
 
-    test('should use private visibility for idle alerts', () async {
-      final oldDate = DateTime.now().subtract(const Duration(days: 100));
-
-      await service.checkIdleInvestments([
-        IdleInvestmentInfo(
-          id: 'inv-private',
-          name: 'Private Investment',
-          lastActivityDate: oldDate,
-          isClosed: false,
-        ),
-      ]);
-
-      expect(fakePlugin.shownNotifications.length, 1);
-      final notification = fakePlugin.shownNotifications.first;
-      expect(
-        notification.notificationDetails?.android?.visibility,
-        NotificationVisibility.private,
-      );
-    });
   });
 
   // Amounts in notifications use the currency's own symbol and number locale
@@ -897,6 +877,7 @@ void main() {
 
   group('NotificationService - Tax Reminders', () {
     test('should schedule tax reminders when enabled', () async {
+      service.baseCurrency = 'INR';
       await service.scheduleTaxReminders();
 
       // Should have scheduled some tax reminders (depends on current date)
@@ -922,33 +903,6 @@ void main() {
     });
   });
 
-  group('NotificationService - Risk Alerts', () {
-    test('should show risk alert notification', () async {
-      await service.showRiskAlert(
-        alertType: 'single_investment',
-        title: 'High Concentration',
-        body: 'Investment XYZ is 45% of your portfolio',
-      );
-
-      expect(fakePlugin.shownNotifications.length, 1);
-      final notification = fakePlugin.shownNotifications.first;
-      expect(notification.title, contains('High Concentration'));
-      expect(notification.body, contains('45%'));
-    });
-
-    test('should not show risk alert when disabled', () async {
-      await service.setRiskAlertsEnabled(false);
-
-      await service.showRiskAlert(
-        alertType: 'platform_concentration',
-        title: 'Platform Risk',
-        body: 'Too much in one platform',
-      );
-
-      expect(fakePlugin.shownNotifications.length, 0);
-    });
-  });
-
   group('NotificationService - Weekly Check-In', () {
     test('should schedule weekly check-in for Sunday', () async {
       await service.scheduleWeeklyCheckIn();
@@ -966,59 +920,6 @@ void main() {
       await service.scheduleWeeklyCheckIn();
 
       expect(fakePlugin.scheduledNotifications.length, 0);
-    });
-  });
-
-  group('NotificationService - Idle Investment Alerts', () {
-    test(
-      'should show idle alert for investment with no recent activity',
-      () async {
-        final oldDate = DateTime.now().subtract(const Duration(days: 100));
-
-        await service.checkIdleInvestments([
-          IdleInvestmentInfo(
-            id: 'inv-idle',
-            name: 'Idle Investment',
-            lastActivityDate: oldDate,
-            isClosed: false,
-          ),
-        ]);
-
-        expect(fakePlugin.shownNotifications.length, 1);
-        final notification = fakePlugin.shownNotifications.first;
-        expect(notification.title, contains('Review Needed'));
-        expect(notification.body, contains('Idle Investment'));
-      },
-    );
-
-    test('should not show idle alert for recent activity', () async {
-      final recentDate = DateTime.now().subtract(const Duration(days: 30));
-
-      await service.checkIdleInvestments([
-        IdleInvestmentInfo(
-          id: 'inv-active',
-          name: 'Active Investment',
-          lastActivityDate: recentDate,
-          isClosed: false,
-        ),
-      ]);
-
-      expect(fakePlugin.shownNotifications.length, 0);
-    });
-
-    test('should not show idle alert for closed investments', () async {
-      final oldDate = DateTime.now().subtract(const Duration(days: 100));
-
-      await service.checkIdleInvestments([
-        IdleInvestmentInfo(
-          id: 'inv-closed',
-          name: 'Closed Investment',
-          lastActivityDate: oldDate,
-          isClosed: true,
-        ),
-      ]);
-
-      expect(fakePlugin.shownNotifications.length, 0);
     });
   });
 
@@ -1272,18 +1173,6 @@ void main() {
       );
 
       expect(fakePlugin.shownNotifications.length, 1);
-    });
-
-    test('should not show risk alert when permissions denied', () async {
-      fakePlugin.permissionsGranted = false;
-
-      await service.showRiskAlert(
-        alertType: 'concentration',
-        title: 'Test Alert',
-        body: 'Test body',
-      );
-
-      expect(fakePlugin.shownNotifications.length, 0);
     });
 
     test('should not show FY summary when permissions denied', () async {
@@ -1595,7 +1484,7 @@ void main() {
               .map((p) => p.id)
               .toSet();
 
-      final incomeId = NotificationIds.incomeReminder('inv-fd');
+      int incomeId() => NotificationIds.incomeReminder('inv-fd');
 
       test(
         'cumulative FD with a quarterly frequency gets no income reminder',
@@ -1604,7 +1493,7 @@ void main() {
             fd(mode: InterestPayoutMode.cumulative),
           ], lastIncomeDates: const {});
 
-          expect(await pendingIds(), isNot(contains(incomeId)));
+          expect(await pendingIds(), isNot(contains(incomeId())));
         },
       );
 
@@ -1615,7 +1504,7 @@ void main() {
             fd(mode: InterestPayoutMode.atMaturity),
           ], lastIncomeDates: const {});
 
-          expect(await pendingIds(), isNot(contains(incomeId)));
+          expect(await pendingIds(), isNot(contains(incomeId())));
         },
       );
 
@@ -1626,7 +1515,7 @@ void main() {
             fd(mode: InterestPayoutMode.periodic),
           ], lastIncomeDates: const {});
 
-          expect(await pendingIds(), contains(incomeId));
+          expect(await pendingIds(), contains(incomeId()));
         },
       );
 
@@ -1637,7 +1526,7 @@ void main() {
             fd(),
           ], lastIncomeDates: const {});
 
-          expect(await pendingIds(), contains(incomeId));
+          expect(await pendingIds(), contains(incomeId()));
         },
       );
 
@@ -1650,13 +1539,13 @@ void main() {
             monthsBetweenPayments: 3,
             lastIncomeDate: DateTime(2026, 3, 10),
           );
-          expect(await pendingIds(), contains(incomeId));
+          expect(await pendingIds(), contains(incomeId()));
 
           await clockedService.rescheduleAllNotifications([
             fd(mode: InterestPayoutMode.cumulative),
           ], lastIncomeDates: const {});
 
-          expect(await pendingIds(), isNot(contains(incomeId)));
+          expect(await pendingIds(), isNot(contains(incomeId())));
         },
       );
     },
