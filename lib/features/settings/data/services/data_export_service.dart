@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -113,6 +114,27 @@ const backupEncryptedExtension = 'invbackup';
 
 const _exportPrefix = 'InvTrack_Export_';
 
+/// How long an Android share leaves the temp file in place. The share result
+/// arrives when the user picks a target app, which may still be reading the
+/// file; deleting at once can make the attachment fail.
+const _androidShareCleanupDelay = Duration(minutes: 2);
+
+/// Deletes backup exports earlier runs left in the cache (a crash or a killed
+/// app can skip the cleanup in [DataExportService.exportAndShare]). Best effort.
+Future<void> purgeStaleBackupExports() async {
+  try {
+    final directory = await getTemporaryDirectory();
+    await for (final entity in directory.list()) {
+      final name = entity.uri.pathSegments.last;
+      if (entity is File && name.startsWith(_exportPrefix)) {
+        await entity.delete();
+      }
+    }
+  } on Exception {
+    // Leftovers are cleaned on the next start or export.
+  }
+}
+
 /// Service for exporting all user data as a ZIP file with CSV data files
 class DataExportService {
   final InvestmentRepository _investmentRepository;
@@ -156,7 +178,7 @@ class DataExportService {
     int kdfIterations = BackupCrypto.defaultIterations,
   }) async {
     return _performanceService.trackOperation('data_export', () async {
-      await _purgeStaleExports();
+      await purgeStaleBackupExports();
       var bytes = (await _buildZip()).bytes;
       if (password != null) {
         bytes = await BackupCrypto.encryptInBackground(
@@ -457,40 +479,38 @@ class DataExportService {
     return filePath;
   }
 
-  /// Deletes exports earlier runs left in the cache (a crash or a killed app
-  /// can skip the cleanup in [exportAndShare]). Best effort.
-  Future<void> _purgeStaleExports() async {
-    try {
-      final directory = await getTemporaryDirectory();
-      await for (final entity in directory.list()) {
-        final name = entity.uri.pathSegments.last;
-        if (entity is File && name.startsWith(_exportPrefix)) {
-          await entity.delete();
-        }
-      }
-    } on Exception {
-      // Leftovers are cleaned on the next export.
-    }
-  }
-
   /// Export and share the file, then delete the temp copy (also when sharing
-  /// fails), so no plaintext backup stays in the cache.
+  /// fails), so no plaintext backup stays in the cache. On Android the delete
+  /// waits [cleanupDelay] (the receiving app may still be reading); a crash in
+  /// between is covered by [purgeStaleBackupExports] at the next start.
   Future<void> exportAndShare({
     String? password,
     int kdfIterations = BackupCrypto.defaultIterations,
+    Duration? cleanupDelay,
   }) async {
     final path = await exportAsZip(
       password: password,
       kdfIterations: kdfIterations,
     );
+    final delay =
+        cleanupDelay ??
+        (Platform.isAndroid ? _androidShareCleanupDelay : Duration.zero);
     try {
       await shareZipFiles([path]);
     } finally {
-      try {
-        await File(path).delete();
-      } on Exception {
-        // Already gone; the next export purges any leftover.
+      if (delay == Duration.zero) {
+        await _deleteQuietly(path);
+      } else {
+        Timer(delay, () => _deleteQuietly(path));
       }
+    }
+  }
+
+  static Future<void> _deleteQuietly(String path) async {
+    try {
+      await File(path).delete();
+    } on Exception {
+      // Already gone; the next start or export purges any leftover.
     }
   }
 

@@ -125,7 +125,10 @@ void main() {
 
   test('exportAndShare deletes the temp file when sharing fails', () async {
     shareShouldFail = true;
-    await expectLater(service.exportAndShare(), throwsA(isA<Exception>()));
+    await expectLater(
+      service.exportAndShare(cleanupDelay: Duration.zero),
+      throwsA(isA<Exception>()),
+    );
     expect(sharedPaths, hasLength(1));
     expect(File(sharedPaths.single).existsSync(), isFalse);
   });
@@ -142,5 +145,25 @@ void main() {
     expect(stale.existsSync(), isFalse);
     expect(staleEnc.existsSync(), isFalse);
     expect(unrelated.existsSync(), isTrue);
+  });
+
+  test(
+    'a delayed cleanup leaves the file for the receiving app first',
+    () async {
+      await service.exportAndShare(
+        cleanupDelay: const Duration(milliseconds: 300),
+      );
+      final file = File(sharedPaths.single);
+      expect(file.existsSync(), isTrue);
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      expect(file.existsSync(), isFalse);
+    },
+  );
+
+  test('purgeStaleBackupExports clears leftovers without an export', () async {
+    final stale = File('${tempDir.path}/InvTrack_Export_9.zip')
+      ..writeAsBytesSync([1]);
+    await purgeStaleBackupExports();
+    expect(stale.existsSync(), isFalse);
   });
 }

@@ -225,6 +225,10 @@ class _BackupUnlockDialogState extends State<_BackupUnlockDialog> {
       _fail(l10n.backupWrongPassword);
     } on BackupFormatException {
       _fail(l10n.backupUnsupportedFile);
+    } catch (_) {
+      // Anything else (a failed isolate, out of memory) must not leave the
+      // dialog stuck; the error text is not shown or logged (it can be sensitive).
+      _fail(l10n.backupUnsupportedFile);
     }
   }
 
