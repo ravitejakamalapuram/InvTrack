@@ -106,7 +106,6 @@ class _InAppUpdateInitializerState
       // Everything else: flexible update dialog
       if (state.flexibleUpdateAllowed && !_hasDeferredUpdate) {
         LoggerService.info('Showing flexible update dialog');
-        await notifier.markPrompted(now);
         _showFlexibleUpdateDialog();
       }
     } catch (e, st) {
@@ -158,6 +157,9 @@ class _InAppUpdateInitializerState
         metadata: {'context_type': dialogContext.runtimeType.toString()},
       );
     }
+
+    // Throttle only once the dialog can really be shown.
+    ref.read(inAppUpdateProvider.notifier).markPrompted(DateTime.now());
 
     showDialog(
       context: dialogContext,
