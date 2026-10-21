@@ -20,7 +20,7 @@ void main() {
   // A monthly payout anchored on 3 Sep 2026: due 3 Oct, then 3 Nov.
   final anchor = DateTime(2026, 9, 3);
   const investmentId = 'inv-p2p';
-  final reminderId = NotificationIds.incomeReminder(investmentId);
+  int reminderId() => NotificationIds.incomeReminder(investmentId);
 
   setUp(() async {
     tz_data.initializeTimeZones();
@@ -43,7 +43,7 @@ void main() {
   /// The pending income alarm, as a plain local DateTime.
   DateTime pendingReminderDate() {
     final matches = fakePlugin.scheduledNotifications
-        .where((n) => n.id == reminderId)
+        .where((n) => n.id == reminderId())
         .toList();
     expect(matches, hasLength(1));
     return DateTime.fromMillisecondsSinceEpoch(
@@ -53,18 +53,18 @@ void main() {
 
   /// Income reminders shown immediately by the app.
   List<FakeNotification> shownReminders() =>
-      fakePlugin.shownNotifications.where((n) => n.id == reminderId).toList();
+      fakePlugin.shownNotifications.where((n) => n.id == reminderId()).toList();
 
   /// Android delivers the alarm: it leaves the pending list.
   void deliverPendingReminder() {
-    fakePlugin.scheduledNotifications.removeWhere((n) => n.id == reminderId);
+    fakePlugin.scheduledNotifications.removeWhere((n) => n.id == reminderId());
   }
 
   /// Android delivers the alarm and the reminder sits in the notification
   /// shade (kept in the fake's shown list, which a cancel clears).
   void deliverPendingReminderToShade() {
     final alarm = fakePlugin.scheduledNotifications.singleWhere(
-      (n) => n.id == reminderId,
+      (n) => n.id == reminderId(),
     );
     deliverPendingReminder();
     fakePlugin.shownNotifications.add(
@@ -194,7 +194,7 @@ void main() {
 
       expect(shownReminders(), isEmpty);
       expect(
-        fakePlugin.scheduledNotifications.where((n) => n.id == reminderId),
+        fakePlugin.scheduledNotifications.where((n) => n.id == reminderId()),
         isEmpty,
       );
     });
@@ -236,7 +236,7 @@ void main() {
       // Shown at 10:30, but replacing today's pending alarm fails, so the
       // 09:00 alarm is still pending.
       fakeNow = DateTime(2026, 10, 3, 10, 30);
-      fakePlugin.failingScheduleIds.add(reminderId);
+      fakePlugin.failingScheduleIds.add(reminderId());
       try {
         await schedule();
       } catch (_) {}
@@ -279,7 +279,7 @@ void main() {
         p2p(InterestPayoutMode.cumulative),
       ], lastIncomeDates: lastIncomeDates);
       expect(
-        fakePlugin.scheduledNotifications.where((n) => n.id == reminderId),
+        fakePlugin.scheduledNotifications.where((n) => n.id == reminderId()),
         isEmpty,
       );
 
@@ -319,7 +319,7 @@ void main() {
       await schedule();
 
       expect(shownReminders(), hasLength(1));
-      expect(fakePlugin.cancelledNotificationIds, isNot(contains(reminderId)));
+      expect(fakePlugin.cancelledNotificationIds, isNot(contains(reminderId())));
       expect(pendingReminderDate(), DateTime(2026, 11, 3, 9));
     });
 
@@ -338,7 +338,7 @@ void main() {
       await schedule();
 
       expect(shownReminders(), hasLength(1));
-      expect(fakePlugin.cancelledNotificationIds, isNot(contains(reminderId)));
+      expect(fakePlugin.cancelledNotificationIds, isNot(contains(reminderId())));
       expect(pendingReminderDate(), DateTime(2026, 11, 3, 9));
     });
 

@@ -70,41 +70,4 @@ class TaxAndBasisCalculator {
 
     return buckets;
   }
-
-  /// Calculates capital gains (short-term vs long-term) based on holding periods.
-  ///
-  /// - Short-term gains: holding period < 365 days.
-  /// - Long-term gains: holding period >= 365 days.
-  static (double shortTermGains, double longTermGains) calculateCapitalGains({
-    required List<ICashFlow> cashFlows,
-    required Map<String, DateTime> investmentStartDates,
-    double assumedGainPercentage = 0.10, // Default 10%
-  }) {
-    double shortTermGains = 0;
-    double longTermGains = 0;
-
-    for (final cf in cashFlows) {
-      if (cf.calculationType == CalculationCashFlowType.returnFlow) {
-        final startDate = investmentStartDates[cf.investmentId];
-        if (startDate == null) continue;
-
-        // Calendar days: elapsed time is an hour short across a DST change.
-        final holdingDays =
-            DateTime.utc(cf.date.year, cf.date.month, cf.date.day)
-                .difference(
-                  DateTime.utc(startDate.year, startDate.month, startDate.day),
-                )
-                .inDays;
-        final gain = cf.amount * assumedGainPercentage;
-
-        if (holdingDays < 365) {
-          shortTermGains += gain;
-        } else {
-          longTermGains += gain;
-        }
-      }
-    }
-
-    return (shortTermGains, longTermGains);
-  }
 }

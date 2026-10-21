@@ -15,6 +15,7 @@ import 'package:inv_tracker/core/analytics/run_guarded.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
+import 'package:inv_tracker/core/security/app_check_service.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/income_guardian_service_providers.dart';
 import 'package:inv_tracker/firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,6 +38,9 @@ void main() async {
       ]);
 
       final sharedPreferences = results[1] as SharedPreferences;
+
+      // Monitor mode only (#774); must follow Firebase.initializeApp.
+      await AppCheckService.initialize();
 
       // A sign-out queued a wipe of the offline cache; it must run before
       // Firestore is first used.
@@ -123,40 +127,11 @@ Future<void> _initializeNonCriticalServices(
 
     // Initialize notifications in background
     await notificationService.initialize();
-
-    // Schedule recurring notifications (tax reminders, weekly check-in, FY summary)
-    // These are idempotent - safe to call on every app start
-    unawaited(_scheduleRecurringNotifications(notificationService));
   } catch (e) {
     LoggerService.error(
       'Error initializing non-critical services',
       error: e,
       metadata: {'service': 'main'},
-    );
-  }
-}
-
-/// Schedule all recurring notifications.
-/// Called on every app start - methods are idempotent.
-Future<void> _scheduleRecurringNotifications(
-  NotificationService notificationService,
-) async {
-  try {
-    // Schedule tax deadline reminders (India-specific)
-    await notificationService.scheduleTaxReminders();
-
-    // Schedule weekly Sunday check-in prompt
-    await notificationService.scheduleWeeklyCheckIn();
-
-    // Schedule FY summary for April 1st
-    await notificationService.scheduleFYSummary();
-
-    LoggerService.info('Recurring notifications scheduled');
-  } catch (e) {
-    LoggerService.error(
-      'Error scheduling recurring notifications',
-      error: e,
-      metadata: {'service': 'NotificationService'},
     );
   }
 }

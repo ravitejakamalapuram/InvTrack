@@ -267,13 +267,21 @@ class CurrencyConversionService {
 
   /// Add entry to memory cache with LRU eviction
   void _addToMemoryCache(String key, double value) {
-    // If cache is full, remove oldest entry (first entry in map)
+    _memoryCache.remove(key); // re-adding an existing key makes it newest
+    // If cache is full, remove the least recently used entry (first in map)
     if (_memoryCache.length >= _maxMemoryCacheSize) {
       final oldestKey = _memoryCache.keys.first;
       _memoryCache.remove(oldestKey);
     }
 
     _memoryCache[key] = value;
+  }
+
+  /// Memory-cache read that marks the entry most recently used (LRU).
+  double? _readMemoryCache(String key) {
+    final value = _memoryCache.remove(key);
+    if (value != null) _memoryCache[key] = value;
+    return value;
   }
 
   /// Get exchange rate between two currencies with request coalescing
@@ -564,13 +572,14 @@ class CurrencyConversionService {
   ) async {
     // 1. Check memory cache
     final memKey = 'historical_${formatDate(date)}_${from}_$to';
-    if (_memoryCache.containsKey(memKey)) {
+    final cachedRate = _readMemoryCache(memKey);
+    if (cachedRate != null) {
       _metrics.memoryCacheHits++;
       _analytics?.logExchangeRateCacheHit(
         cacheType: 'memory',
         rateType: 'historical',
       );
-      return _memoryCache[memKey]!;
+      return cachedRate;
     }
 
     // 2. Check Firestore cache
@@ -664,13 +673,14 @@ class CurrencyConversionService {
 
     // 1. Check memory cache
     final memKey = 'live_${dateStr}_${from}_$to';
-    if (_memoryCache.containsKey(memKey)) {
+    final cachedRate = _readMemoryCache(memKey);
+    if (cachedRate != null) {
       _metrics.memoryCacheHits++;
       _analytics?.logExchangeRateCacheHit(
         cacheType: 'memory',
         rateType: 'live',
       );
-      return _memoryCache[memKey]!;
+      return cachedRate;
     }
 
     // 2. Check Firestore cache (with expiration check)

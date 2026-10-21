@@ -20,9 +20,7 @@ enum NotificationSettingType {
   milestones,
   goalMilestones,
   taxReminders,
-  riskAlerts,
   weeklyCheckIn,
-  idleAlerts,
   fySummary,
 }
 
@@ -35,9 +33,7 @@ class NotificationSettingsState {
   final bool milestonesEnabled;
   final bool goalMilestonesEnabled;
   final bool taxRemindersEnabled;
-  final bool riskAlertsEnabled;
   final bool weeklyCheckInEnabled;
-  final bool idleAlertsEnabled;
   final bool fySummaryEnabled;
 
   const NotificationSettingsState({
@@ -48,9 +44,7 @@ class NotificationSettingsState {
     this.milestonesEnabled = true,
     this.goalMilestonesEnabled = true,
     this.taxRemindersEnabled = true,
-    this.riskAlertsEnabled = true,
     this.weeklyCheckInEnabled = true,
-    this.idleAlertsEnabled = true,
     this.fySummaryEnabled = true,
   });
 
@@ -71,12 +65,8 @@ class NotificationSettingsState {
         return goalMilestonesEnabled;
       case NotificationSettingType.taxReminders:
         return taxRemindersEnabled;
-      case NotificationSettingType.riskAlerts:
-        return riskAlertsEnabled;
       case NotificationSettingType.weeklyCheckIn:
         return weeklyCheckInEnabled;
-      case NotificationSettingType.idleAlerts:
-        return idleAlertsEnabled;
       case NotificationSettingType.fySummary:
         return fySummaryEnabled;
     }
@@ -90,9 +80,7 @@ class NotificationSettingsState {
     bool? milestonesEnabled,
     bool? goalMilestonesEnabled,
     bool? taxRemindersEnabled,
-    bool? riskAlertsEnabled,
     bool? weeklyCheckInEnabled,
-    bool? idleAlertsEnabled,
     bool? fySummaryEnabled,
   }) {
     return NotificationSettingsState(
@@ -107,9 +95,7 @@ class NotificationSettingsState {
       goalMilestonesEnabled:
           goalMilestonesEnabled ?? this.goalMilestonesEnabled,
       taxRemindersEnabled: taxRemindersEnabled ?? this.taxRemindersEnabled,
-      riskAlertsEnabled: riskAlertsEnabled ?? this.riskAlertsEnabled,
       weeklyCheckInEnabled: weeklyCheckInEnabled ?? this.weeklyCheckInEnabled,
-      idleAlertsEnabled: idleAlertsEnabled ?? this.idleAlertsEnabled,
       fySummaryEnabled: fySummaryEnabled ?? this.fySummaryEnabled,
     );
   }
@@ -140,9 +126,7 @@ class NotificationSettingsNotifier extends Notifier<NotificationSettingsState> {
       milestonesEnabled: service.milestonesEnabled,
       goalMilestonesEnabled: service.goalMilestonesEnabled,
       taxRemindersEnabled: service.taxRemindersEnabled,
-      riskAlertsEnabled: service.riskAlertsEnabled,
       weeklyCheckInEnabled: service.weeklyCheckInEnabled,
-      idleAlertsEnabled: service.idleAlertsEnabled,
       fySummaryEnabled: service.fySummaryEnabled,
     );
   }
@@ -182,15 +166,9 @@ class NotificationSettingsNotifier extends Notifier<NotificationSettingsState> {
       case NotificationSettingType.taxReminders:
         await service.setTaxRemindersEnabled(enabled);
         state = state.copyWith(taxRemindersEnabled: enabled);
-      case NotificationSettingType.riskAlerts:
-        await service.setRiskAlertsEnabled(enabled);
-        state = state.copyWith(riskAlertsEnabled: enabled);
       case NotificationSettingType.weeklyCheckIn:
         await service.setWeeklyCheckInEnabled(enabled);
         state = state.copyWith(weeklyCheckInEnabled: enabled);
-      case NotificationSettingType.idleAlerts:
-        await service.setIdleAlertsEnabled(enabled);
-        state = state.copyWith(idleAlertsEnabled: enabled);
       case NotificationSettingType.fySummary:
         await service.setFySummaryEnabled(enabled);
         state = state.copyWith(fySummaryEnabled: enabled);
