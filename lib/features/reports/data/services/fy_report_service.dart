@@ -102,7 +102,6 @@ class FYReportService {
     // Calculate XIRR for the FY period
     final xirr = _calculateFYXIRR(
       fyCashFlows: fyCashFlows,
-      baseCashFlows: baseCashFlows,
       allInvestments: allInvestments,
       fyStart: fyStart,
       fyEndExclusive: fyEndExclusive,
@@ -228,23 +227,15 @@ class FYReportService {
     return !day.isBefore(start) && day.isBefore(endExclusive);
   }
 
-  /// Net cost still held per investment, counting only flows dated before
-  /// [limit]. Only investments with a positive balance are returned.
-  Map<String, double> _heldBefore(
-    List<CashFlowEntity> baseCashFlows,
-    DateTime limit,
-  ) {
-    final net = <String, double>{};
-    for (final cf in baseCashFlows) {
-      if (!_inFY(cf.date, DateTime(1900), limit)) continue;
-      if (cf.type == CashFlowType.invest) {
-        net[cf.investmentId] = (net[cf.investmentId] ?? 0) + cf.amount;
-      } else if (cf.type == CashFlowType.returnFlow) {
-        net[cf.investmentId] = (net[cf.investmentId] ?? 0) - cf.amount;
-      }
-    }
-    net.removeWhere((_, v) => v <= 0);
-    return net;
+  /// Ids of investments that exist at [limit] and were not closed before it,
+  /// judged by the investment itself as [_calculatePortfolioValue] does.
+  Set<String> _heldBefore(List<InvestmentEntity> investments, DateTime limit) {
+    return {
+      for (final inv in investments)
+        if ((inv.startDate ?? inv.createdAt).isBefore(limit) &&
+            !(inv.closedAt != null && inv.closedAt!.isBefore(limit)))
+          inv.id,
+    };
   }
 
   /// FY XIRR, or null when it is undefined or cannot be proven.
@@ -256,7 +247,6 @@ class FYReportService {
   /// ignores the money already in the investment.
   double? _calculateFYXIRR({
     required List<CashFlowEntity> fyCashFlows,
-    required List<CashFlowEntity> baseCashFlows,
     required List<InvestmentEntity> allInvestments,
     required DateTime fyStart,
     required DateTime fyEndExclusive,
@@ -266,10 +256,18 @@ class FYReportService {
     final opening = openingValues ?? const <String, double>{};
     final closing = closingValues ?? const <String, double>{};
 
-    final heldAtStart = _heldBefore(baseCashFlows, fyStart);
-    final heldAtEnd = _heldBefore(baseCashFlows, fyEndExclusive);
-    if (heldAtStart.keys.any((id) => !opening.containsKey(id))) return null;
-    if (heldAtEnd.keys.any((id) => !closing.containsKey(id))) return null;
+    if (_heldBefore(
+      allInvestments,
+      fyStart,
+    ).any((id) => !opening.containsKey(id))) {
+      return null;
+    }
+    if (_heldBefore(
+      allInvestments,
+      fyEndExclusive,
+    ).any((id) => !closing.containsKey(id))) {
+      return null;
+    }
 
     final dates = <DateTime>[];
     final amounts = <double>[];
@@ -292,40 +290,53 @@ class FYReportService {
     return XirrSolver.calculateXirr(dates, amounts);
   }
 
-  /// Profit realised in the FY: for each investment, returns beyond the
-  /// money put in (cost is recovered first), less what was realised before
-  /// the FY. A loss is not income, so it is floored at zero.
+  /// Profit realised in the FY. Per investment, profit realised to date is
+  /// the highest the running (returns minus money put in) has reached, floored
+  /// at zero, so cost is recovered first and a later top-up never makes an
+  /// earlier profit count again. The FY figure is that high-water mark at the
+  /// FY end less the mark before the FY start. A loss is not income.
   double _realisedProfitInFY(
     List<CashFlowEntity> baseCashFlows,
     DateTime fyStart,
     DateTime fyEndExclusive,
   ) {
-    final atStart = <String, double>{};
-    final atEnd = <String, double>{};
-    void add(Map<String, double> m, CashFlowEntity cf) {
-      m[cf.investmentId] =
-          (m[cf.investmentId] ?? 0) +
-          (cf.type == CashFlowType.returnFlow ? cf.amount : -cf.amount);
-    }
+    final moves = <(DateTime, CashFlowEntity)>[
+      for (final cf in baseCashFlows)
+        if (cf.type == CashFlowType.invest ||
+            cf.type == CashFlowType.returnFlow)
+          (DateTime(cf.date.year, cf.date.month, cf.date.day), cf),
+    ];
+    // Oldest first; on one day the money put in is counted before the money
+    // taken out, which can only lower the high-water mark.
+    moves.sort((a, b) {
+      final byDay = a.$1.compareTo(b.$1);
+      if (byDay != 0) return byDay;
+      return (a.$2.type == CashFlowType.invest ? 0 : 1) -
+          (b.$2.type == CashFlowType.invest ? 0 : 1);
+    });
 
-    for (final cf in baseCashFlows) {
-      if (cf.type != CashFlowType.invest &&
-          cf.type != CashFlowType.returnFlow) {
-        continue;
-      }
-      final day = DateTime(cf.date.year, cf.date.month, cf.date.day);
-      if (day.isBefore(fyStart)) add(atStart, cf);
-      if (day.isBefore(fyEndExclusive)) add(atEnd, cf);
+    final running = <String, double>{};
+    final markAtStart = <String, double>{};
+    final markAtEnd = <String, double>{};
+    final mark = <String, double>{};
+    for (final (day, cf) in moves) {
+      if (!day.isBefore(fyEndExclusive)) break;
+      final id = cf.investmentId;
+      final net =
+          (running[id] ?? 0) +
+          (cf.type == CashFlowType.returnFlow ? cf.amount : -cf.amount);
+      running[id] = net;
+      final best = mark[id] ?? 0;
+      if (net > best) mark[id] = net;
+      markAtEnd[id] = mark[id] ?? 0;
+      if (day.isBefore(fyStart)) markAtStart[id] = mark[id] ?? 0;
     }
 
     double total = 0;
-    for (final entry in atEnd.entries) {
-      final gainEnd = entry.value > 0 ? entry.value : 0.0;
-      final startNet = atStart[entry.key] ?? 0;
-      final gainStart = startNet > 0 ? startNet : 0.0;
-      final fyGain = gainEnd - gainStart;
+    markAtEnd.forEach((id, end) {
+      final fyGain = end - (markAtStart[id] ?? 0);
       if (fyGain > 0) total += fyGain;
-    }
+    });
     return total;
   }
 

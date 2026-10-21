@@ -382,11 +382,18 @@ void main() {
       createdAt: date,
     );
 
-    InvestmentEntity investment(String id, DateTime start) => InvestmentEntity(
+    InvestmentEntity investment(
+      String id,
+      DateTime start, {
+      DateTime? closedAt,
+    }) => InvestmentEntity(
       id: id,
       name: id,
       type: InvestmentType.fixedDeposit,
-      status: InvestmentStatus.open,
+      status: closedAt == null
+          ? InvestmentStatus.open
+          : InvestmentStatus.closed,
+      closedAt: closedAt,
       startDate: start,
       createdAt: start,
       updatedAt: start,
@@ -552,11 +559,73 @@ void main() {
             DateTime(2026, 3, 31),
           ),
         ],
-        [investment('fd', DateTime(2025, 4, 1))],
+        [
+          investment(
+            'fd',
+            DateTime(2025, 4, 1),
+            closedAt: DateTime(2026, 3, 31),
+          ),
+        ],
       );
 
       // 364 days.
       expect(r.xirr, closeTo(math.pow(1.08, 365 / 364) - 1, 1e-6));
+    });
+    test(
+      'a loss-making FD that matures inside the FY still has an XIRR',
+      () async {
+        final r = await report(
+          2025,
+          [
+            flow('1', 'fd', 500000, CashFlowType.invest, DateTime(2025, 5, 1)),
+            flow(
+              '2',
+              'fd',
+              480000,
+              CashFlowType.returnFlow,
+              DateTime(2026, 3, 15),
+            ),
+          ],
+          [
+            investment(
+              'fd',
+              DateTime(2025, 5, 1),
+              closedAt: DateTime(2026, 3, 15),
+            ),
+          ],
+        );
+
+        expect(r.xirr, isNotNull);
+        expect(r.xirr! < 0, isTrue);
+      },
+    );
+
+    test('an open holding with a profitable partial exit needs boundary '
+        'values', () async {
+      final r = await report(
+        2025,
+        [
+          flow('1', 'h', 1000, CashFlowType.invest, DateTime(2025, 5, 1)),
+          flow('2', 'h', 1200, CashFlowType.returnFlow, DateTime(2025, 9, 1)),
+        ],
+        [investment('h', DateTime(2025, 5, 1))],
+      );
+
+      expect(r.xirr, isNull);
+    });
+
+    test('a top-up after a realised profit does not report it twice', () async {
+      final flows = [
+        flow('1', 'p', 100, CashFlowType.invest, DateTime(2024, 5, 1)),
+        flow('2', 'p', 120, CashFlowType.returnFlow, DateTime(2024, 9, 1)),
+        flow('3', 'p', 100, CashFlowType.invest, DateTime(2025, 5, 1)),
+        flow('4', 'p', 100, CashFlowType.returnFlow, DateTime(2026, 5, 1)),
+      ];
+      final investments = [investment('p', DateTime(2024, 5, 1))];
+
+      expect((await report(2024, flows, investments)).interestIncome, 20.0);
+      expect((await report(2025, flows, investments)).interestIncome, 0.0);
+      expect((await report(2026, flows, investments)).interestIncome, 0.0);
     });
   });
 }
