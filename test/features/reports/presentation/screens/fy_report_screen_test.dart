@@ -226,4 +226,20 @@ void main() {
       greaterThanOrEqualTo(48),
     );
   });
+
+  testWidgets('privacy mode draws the monthly bars flat', (tester) async {
+    Set<double> factors() => tester
+        .widgetList<FractionallySizedBox>(
+          find.byType(FractionallySizedBox, skipOffstage: false),
+        )
+        .map((w) => w.heightFactor!)
+        .toSet();
+
+    await _pump(tester, _report());
+    expect(factors().length, greaterThan(1));
+
+    await tester.pumpWidget(const SizedBox());
+    await _pump(tester, _report(), privacy: true);
+    expect(factors(), {0.3});
+  });
 }

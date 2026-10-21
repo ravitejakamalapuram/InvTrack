@@ -5,21 +5,27 @@ library;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/fy_hero.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
-class FyMonthly extends StatelessWidget {
+class FyMonthly extends ConsumerWidget {
   const FyMonthly({super.key, required this.report, required this.money});
 
   final FYReport report;
   final String Function(double, {bool signed}) money;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Bar heights and colours encode each month's cash flow, so privacy mode
+    // draws them flat.
+    final isPrivate = ref.watch(privacyModeProvider);
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -64,12 +70,16 @@ class FyMonthly extends StatelessWidget {
                                 horizontal: 3,
                               ),
                               child: FractionallySizedBox(
-                                heightFactor: maxAbs == 0
+                                heightFactor: isPrivate
+                                    ? 0.3
+                                    : maxAbs == 0
                                     ? 0.04
                                     : math.max(0.04, m.net.abs() / maxAbs),
                                 child: DecoratedBox(
                                   decoration: BoxDecoration(
-                                    color: m.net < 0
+                                    color: isPrivate
+                                        ? soft
+                                        : m.net < 0
                                         ? theme.colorScheme.error
                                         : identical(m, best)
                                         ? primary
@@ -176,9 +186,7 @@ class FyPerformer extends StatelessWidget {
                         ),
                       )
                     : MaskedAmountText(
-                        text: l10n.fyReportXirrSuffix(
-                          '${(xirr * 100).toStringAsFixed(1)}%',
-                        ),
+                        text: l10n.fyReportXirrSuffix(fyPercent(context, xirr)),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: muted,
                         ),
