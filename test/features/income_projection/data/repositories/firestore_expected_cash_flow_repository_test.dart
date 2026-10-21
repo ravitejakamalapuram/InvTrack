@@ -364,25 +364,25 @@ void main() {
       },
     );
 
-    test('a failed commit propagates', () {
+    test('a failed commit propagates', () async {
       final query = _MockQuery();
       when(
         () => ecfs.where('investmentId', isEqualTo: 'inv-1'),
       ).thenReturn(query);
       final snapshot = snapshotOf(['a']);
       when(() => query.get()).thenAnswer((_) async => snapshot);
-      when(() => firestore.batch()).thenAnswer((_) {
-        final batch = _MockBatch();
-        when(
-          () => batch.commit(),
-        ).thenAnswer((_) async => throw FirebaseException(plugin: 'firestore'));
-        return batch;
-      });
+      final failing = _MockBatch();
+      when(
+        () => failing.commit(),
+      ).thenAnswer((_) async => throw FirebaseException(plugin: 'firestore'));
+      when(() => firestore.batch()).thenReturn(failing);
 
-      expect(
+      await expectLater(
         repository().deleteExpectedCashFlowsByInvestment('inv-1'),
         throwsA(isA<FirebaseException>()),
       );
+
+      verify(() => failing.delete(docOf('a'))).called(1);
     });
   });
 
