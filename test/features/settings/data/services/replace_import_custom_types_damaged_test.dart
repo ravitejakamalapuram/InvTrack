@@ -322,7 +322,9 @@ void main() {
   }
 
   void expectNoUserTextIn(Iterable<Object> messages) {
-    final text = messages.join('\n');
+    final text = messages
+        .map((e) => e is ImportError ? '${e.code} ${e.detail}' : '$e')
+        .join('\n');
     for (final secret in [
       _secretLabel,
       'Stamps',
