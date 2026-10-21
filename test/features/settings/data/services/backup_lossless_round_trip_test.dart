@@ -190,7 +190,14 @@ void main() {
   test(
     'goal names that start like a spreadsheet formula come back unchanged',
     () async {
-      const risky = ['-5% drawdown', '=Plan', '+91 fund', '@home', "'=Plan"];
+      const risky = [
+        '-5% drawdown',
+        '=Plan',
+        '+91 fund',
+        '@home',
+        "'=Plan",
+        "''=Plan",
+      ];
       for (var i = 0; i < risky.length; i++) {
         goalRepo.seed(
           goals: [

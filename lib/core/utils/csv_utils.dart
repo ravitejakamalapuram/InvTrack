@@ -1,9 +1,9 @@
 class CsvUtils {
-  // Matches an optional guard quote, then an optional run of whitespace (incl.
+  // Matches any run of guard quotes, then an optional run of whitespace (incl.
   // space, \t, \n, \r), then a spreadsheet formula trigger character. The
   // quote case keeps a stored "'=x" distinct from a guarded "=x" on restore.
   // Compiled once for hot-path reuse.
-  static final RegExp _injectionPattern = RegExp(r"^'?\s*[=+\-@\t\r]");
+  static final RegExp _injectionPattern = RegExp(r"^'*\s*[=+\-@\t\r]");
 
   /// Sanitizes a field to prevent CSV formula injection (CSV Injection).
   ///
