@@ -152,7 +152,13 @@ void main() {
     () async {
       // The export guards such cells with a leading quote (CSV injection);
       // restoring them must take the guard off again, not keep it as data.
-      const risky = ['-5% drawdown', '=SUM(A1)', '+91 broker call', '@desk'];
+      const risky = [
+        '-5% drawdown',
+        '=SUM(A1)',
+        '+91 broker call',
+        '@desk',
+        "'=SUM(A1)",
+      ];
       await repo.bulkImport(
         investments: [rich('a', 'Plain')],
         cashFlows: [
