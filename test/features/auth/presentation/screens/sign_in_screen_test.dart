@@ -280,8 +280,9 @@ void main() {
 
     const notice =
         'As a guest, your data can only be reached from this device. If you '
-        'sign out or uninstall the app, it is lost for good. Link a Google '
-        'account in Settings to keep it.';
+        'sign out or uninstall the app, it is lost for good. A guest account '
+        'that is not opened for 180 days is deleted with its data. Link a '
+        'Google account in Settings to keep it.';
     expect(find.text(notice), findsOneWidget);
 
     // The notice sits below the guest button.
