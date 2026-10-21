@@ -590,17 +590,6 @@ void main() {
       investmentsNotInExport: 0,
       expectedCashFlows: 0,
     ),
-    'the guest has expected cash flows': ZipExport(
-      bytes: _backupBytes,
-      investments: 2,
-      cashFlows: 5,
-      goals: 1,
-      documents: 0,
-      hasFireSettings: false,
-      investmentsWithDetailsNotInExport: 0,
-      investmentsNotInExport: 0,
-      expectedCashFlows: 2,
-    ),
     // The backup holds investments only as cash flow rows, so the import
     // adds the other 2 of these 3 and the merge is still complete.
     'an investment has no cash flows': ZipExport(

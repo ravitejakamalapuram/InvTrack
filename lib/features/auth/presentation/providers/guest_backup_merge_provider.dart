@@ -101,8 +101,8 @@ class GuestBackupMergeService {
   /// Backs up the guest's data to app-private storage, signs in with Google
   /// and imports the backup into that account with [ImportStrategy.merge].
   ///
-  /// The backup cannot carry investments without cash flows, some investment
-  /// details and expected cash flows (see [ZipExport.carriesEverything]),
+  /// The backup cannot carry investments without cash flows or some
+  /// investment details (see [ZipExport.carriesEverything]),
   /// and they cannot be reached once
   /// the guest session ends. If the guest has any, [confirmDetailsNotMoved]
   /// is asked first, before anything is saved or signed in; if it returns
