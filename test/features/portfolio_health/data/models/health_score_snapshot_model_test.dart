@@ -7,12 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/portfolio_health/data/models/health_score_snapshot_model.dart';
 
 class _FakeDoc extends Fake implements DocumentSnapshot<Object?> {
-  _FakeDoc(this._data, {this.id = 'snap-1'});
+  _FakeDoc(this._data);
 
   final Object? _data;
 
   @override
-  final String id;
+  String get id => 'snap-1';
 
   @override
   Object? data() => _data;
