@@ -27,6 +27,7 @@ void main() {
       overrides: [
         investmentRepositoryProvider.overrideWithValue(repo),
         valuationRepositoryProvider.overrideWithValue(valuations),
+        valuationSnapshotsActiveProvider.overrideWithValue(true),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
         notificationServiceProvider.overrideWithValue(
           FakeNotificationService(),
@@ -88,6 +89,28 @@ void main() {
       expect(carried.single.currency, 'INR');
       expect(merged.currentValue, 1500);
       expect(merged.currentValueDate, DateTime(2024, 6, 1));
+    },
+  );
+
+  test(
+    'a failed valuation import leaves the sources and no merged copy',
+    () async {
+      await seed('a');
+      await seed('b');
+      valuations.docs['s1'] = snap('s1', 'a', 1000);
+      valuations.docs['s2'] = snap('s2', 'b', 500);
+      valuations.failNextWrite = StateError('boom');
+      container.listen(allInvestmentsProvider, (_, _) {});
+
+      await expectLater(
+        container.read(investmentNotifierProvider.notifier).mergeInvestments([
+          'a',
+          'b',
+        ], 'Both'),
+        throwsStateError,
+      );
+
+      expect(repo.investments.map((i) => i.id), unorderedEquals(['a', 'b']));
     },
   );
 }

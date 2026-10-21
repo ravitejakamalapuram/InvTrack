@@ -979,7 +979,12 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         newId: () => const Uuid().v4(),
         now: now,
       ).where((s) => s.currency == mergedCurrency).toList();
-      final mergedMirror = mergedValuations.isEmpty
+      // While the feature is off the investment keeps its single legacy value,
+      // so the pair is only mirrored when it is on; the snapshots are carried
+      // either way, or deleting the sources would lose them.
+      final mergedMirror =
+          mergedValuations.isEmpty ||
+              !ref.read(valuationSnapshotsActiveProvider)
           ? null
           : mergedValuations.reduce(
               (a, b) => ValuationSnapshotSelector.compare(a, b) >= 0 ? a : b,
@@ -1034,7 +1039,22 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         cashFlows: newCashFlows,
       );
       if (mergedValuations.isNotEmpty) {
-        await ref.read(valuationRepositoryProvider).importAll(mergedValuations);
+        try {
+          await ref
+              .read(valuationRepositoryProvider)
+              .importAll(mergedValuations);
+        } catch (_) {
+          // Leave the sources as they were rather than a half-merged copy.
+          try {
+            await repo.deleteInvestment(newInvestmentId);
+          } catch (e) {
+            LoggerService.warn(
+              'Could not remove half-merged investment',
+              metadata: {'error': e.toString()},
+            );
+          }
+          rethrow;
+        }
       }
 
       // Delete old investments
