@@ -201,6 +201,7 @@ class NotificationService with NotificationPreferencesMixin {
       ensureInitialized: _ensureInitialized,
       ensurePermissionsForShow: _ensurePermissionsForShow,
       formatCurrency: _formatCurrency,
+      clock: clock,
     );
 
     _investmentHandler = InvestmentNotificationHandler(
@@ -338,6 +339,10 @@ class NotificationService with NotificationPreferencesMixin {
   /// app says otherwise.
   set reportsRouteEnabled(bool enabled) =>
       _scheduledHandler.reportsRouteEnabled = enabled;
+
+  /// The signed-in user's base currency. The India tax reminders are scheduled
+  /// only while it is INR; unset until the app says otherwise.
+  set baseCurrency(String? code) => _scheduledHandler.baseCurrency = code;
 
   /// Records whether Reports is on and schedules or cancels the weekly and
   /// FY summaries to match. The monthly slot is shared with the recap, so

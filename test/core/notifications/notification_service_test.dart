@@ -897,6 +897,7 @@ void main() {
 
   group('NotificationService - Tax Reminders', () {
     test('should schedule tax reminders when enabled', () async {
+      service.baseCurrency = 'INR';
       await service.scheduleTaxReminders();
 
       // Should have scheduled some tax reminders (depends on current date)
