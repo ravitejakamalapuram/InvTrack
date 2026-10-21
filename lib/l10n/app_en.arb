@@ -7626,5 +7626,14 @@
   "guestLinkBannerDismiss": "Dismiss",
   "@guestLinkBannerDismiss": {
     "description": "Accessibility label of the close button on the guest link banner; hides it for 14 days"
+  },
+
+  "passcodeDigitsEntered": "{count} of {total} digits entered",
+  "@passcodeDigitsEntered": {
+    "description": "Screen-reader label of the PIN dots on the lock screen; says how many digits are typed, never which",
+    "placeholders": {
+      "count": {"type": "int"},
+      "total": {"type": "int"}
+    }
   }
 }
