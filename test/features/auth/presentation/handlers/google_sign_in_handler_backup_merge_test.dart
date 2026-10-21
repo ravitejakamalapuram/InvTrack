@@ -125,7 +125,10 @@ class _FakeExportService extends Fake implements DataExportService {
   ZipExport? export;
 
   @override
-  Future<String> exportAsZip() async {
+  Future<String> exportAsZip({
+    String? password,
+    int kdfIterations = 600000,
+  }) async {
     exportCalls++;
     return '/cache/InvTrack_Export_1.zip';
   }
