@@ -7686,5 +7686,14 @@
   "notificationToggleGoalStaleSubtitle": "When a goal has had no activity for a while",
   "@notificationToggleGoalStaleSubtitle": {
     "description": "Subtitle of the Settings > Notifications switch for the stale goal alert notification"
+  },
+
+  "passcodeDigitsEntered": "{count} of {total} digits entered",
+  "@passcodeDigitsEntered": {
+    "description": "Screen-reader label of the PIN dots on the lock screen; says how many digits are typed, never which",
+    "placeholders": {
+      "count": {"type": "int"},
+      "total": {"type": "int"}
+    }
   }
 }

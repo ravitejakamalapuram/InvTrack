@@ -124,6 +124,18 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
           .doc(_userId)
           .collection('expectedCashFlows');
 
+  // Document records of active and archived investments alike (the collection
+  // name is a literal for the account deletion coverage test).
+  CollectionReference<Map<String, dynamic>> get _documentsRef =>
+      _firestore.collection('users').doc(_userId).collection('documents');
+
+  // Goals that can link investments by id, active and archived.
+  CollectionReference<Map<String, dynamic>> get _goalsRef =>
+      _firestore.collection('users').doc(_userId).collection('goals');
+
+  CollectionReference<Map<String, dynamic>> get _archivedGoalsRef =>
+      _firestore.collection('users').doc(_userId).collection('archivedGoals');
+
   // Collection references for ARCHIVED data (complete isolation)
   CollectionReference<Map<String, dynamic>> get _archivedInvestmentsRef =>
       _firestore
@@ -364,8 +376,9 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   );
 
   /// Deletes [investment], its cash flows in [cashFlowsRef], its valuation
-  /// snapshots (tombstones included) and its expected payments, so that none
-  /// is left behind.
+  /// snapshots (tombstones included), its expected payments and its document
+  /// records, and takes it out of the goals that link it, so that none is left
+  /// behind.
   ///
   /// Everything that has to go is found first, so that a failure to find it
   /// deletes nothing. The investment is removed last, in the final batch: if
@@ -382,22 +395,65 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       investmentId,
       onUnanswered: _onExpectedPaymentsUnverified,
     );
-    final refs = <DocumentReference>[
-      for (final doc in cashFlows.docs) doc.reference,
-      ...snapshots,
-      ...expected,
-      investment,
+    final documents = await _refsForDeletion(_documentsRef, investmentId);
+    final goals = await _goalRefsLinkedTo(investmentId);
+    final writes = <void Function(WriteBatch)>[
+      for (final doc in cashFlows.docs) (batch) => batch.delete(doc.reference),
+      for (final ref in [...snapshots, ...expected, ...documents])
+        (batch) => batch.delete(ref),
+      for (final goal in goals)
+        (batch) => _unlinkFromGoal(batch, goal, [investmentId]),
+      (batch) => batch.delete(investment),
     ];
-    for (var i = 0; i < refs.length; i += _deleteBatchSize) {
-      final end = (i + _deleteBatchSize < refs.length)
+    await _commitInBatches(writes);
+  }
+
+  /// Commits [writes] in batches of at most [_deleteBatchSize], in order.
+  Future<void> _commitInBatches(List<void Function(WriteBatch)> writes) async {
+    for (var i = 0; i < writes.length; i += _deleteBatchSize) {
+      final end = (i + _deleteBatchSize < writes.length)
           ? i + _deleteBatchSize
-          : refs.length;
+          : writes.length;
       final batch = _firestore.batch();
-      for (final ref in refs.sublist(i, end)) {
-        batch.delete(ref);
+      for (final write in writes.sublist(i, end)) {
+        write(batch);
       }
       await _executeWrite(() => batch.commit());
     }
+  }
+
+  void _unlinkFromGoal(
+    WriteBatch batch,
+    DocumentReference goal,
+    List<String> investmentIds,
+  ) => batch.update(goal, {
+    'linkedInvestmentIds': FieldValue.arrayRemove(investmentIds),
+  });
+
+  /// The active and archived goals that link [investmentId]: the server's
+  /// answer plus whatever the cache holds. Best effort: a goal that cannot be
+  /// listed keeps a dead id, which the goal progress calculation ignores, and
+  /// must never stop the delete.
+  Future<Set<DocumentReference>> _goalRefsLinkedTo(String investmentId) async {
+    final refs = <DocumentReference>{};
+    for (final goals in [_goalsRef, _archivedGoalsRef]) {
+      final query = goals.where(
+        'linkedInvestmentIds',
+        arrayContains: investmentId,
+      );
+      for (final options in const [
+        GetOptions(source: Source.server),
+        GetOptions(source: Source.cache),
+      ]) {
+        try {
+          final snapshot = await query.get(options).timeout(_serverReadTimeout);
+          refs.addAll(snapshot.docs.map((doc) => doc.reference));
+        } catch (_) {
+          // Offline or too slow: use what the other source gave.
+        }
+      }
+    }
+    return refs;
   }
 
   /// Finds every document of [ref] for [investmentId] in the local cache (cash
@@ -851,6 +907,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
     // First, collect all cash flows to delete
     final cashFlowDocsToDelete = <DocumentReference>[];
+    final goalLinks = <DocumentReference, List<String>>{};
     for (final investmentId in investmentIds) {
       try {
         final cashFlows = await _cashFlowsRef
@@ -884,6 +941,12 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
           onUnanswered: _onExpectedPaymentsUnverified,
         ),
       );
+      cashFlowDocsToDelete.addAll(
+        await _refsForDeletion(_documentsRef, investmentId),
+      );
+      for (final goal in await _goalRefsLinkedTo(investmentId)) {
+        goalLinks.putIfAbsent(goal, () => []).add(investmentId);
+      }
     }
 
     // Delete cash flows (and valuation snapshots, expected payments) in batches
@@ -898,6 +961,12 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       }
       await _executeWrite(() => batch.commit());
     }
+
+    // Take the investments out of the goals that link them
+    await _commitInBatches([
+      for (final link in goalLinks.entries)
+        (batch) => _unlinkFromGoal(batch, link.key, link.value),
+    ]);
 
     // Delete investments in batches
     for (var i = 0; i < investmentIds.length; i += batchLimit) {
