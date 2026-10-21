@@ -8,7 +8,7 @@ import { runJob, requestByEmail, hashUid } from '../run.mjs';
 import { verifyRun } from '../verify-run.mjs';
 import { verifyUserGone } from '../verify.mjs';
 import { deleteUserData } from '../delete.mjs';
-import { createGa4Deletion } from '../ga4.mjs';
+import { createGa4Deletion, userDeletionUrl } from '../ga4.mjs';
 import { auth, authExists, db, DAY, exists, quiet, resetEmulators, seedRequest, seedUser, snapshot } from './helpers.mjs';
 
 const opts = (over = {}) => ({ db, auth, runId: 'run1', dryRun: false, log: quiet, ...over });
@@ -198,18 +198,16 @@ describe('Google Analytics user deletion (A102)', () => {
     assert.equal(await authExists('u1'), false);
   });
 
-  it('sends the USER_ID request through the real client with the configured property', async () => {
+  it('sends the userId request through the real client to the configured property', async () => {
     await seedUser('u1');
     await seedRequest('u1', 2 * DAY);
     const calls = [];
     const request = async (o) => {
-      calls.push(o.data);
+      calls.push({ url: o.url, data: o.data });
       return { status: 200 };
     };
     await runJob(opts({ ga4: createGa4Deletion({ propertyId: PROPERTY, request }) }));
-    assert.deepEqual(calls, [
-      { kind: 'analytics#userDeletionRequest', id: { type: 'USER_ID', userId: 'u1' }, propertyId: PROPERTY },
-    ]);
+    assert.deepEqual(calls, [{ url: userDeletionUrl(PROPERTY), data: { userId: 'u1' } }]);
   });
 
   it('dry run makes zero calls and writes nothing', async () => {
