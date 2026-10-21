@@ -44,7 +44,7 @@ void main() {
     test('updatedAt falls back to createdAt when it is missing', () {
       final e = map(minimal());
 
-      expect(e.updatedAt, created.toDate());
+      expect(e.updatedAt, equals(created.toDate()));
     });
 
     test('a full document maps every field', () {
@@ -64,14 +64,19 @@ void main() {
         'varianceFactor': 0.25,
       });
 
+      expect(e.id, 'ecf-1');
+      expect(e.investmentId, 'inv-1');
+      expect(e.expectedDate, equals(expectedOn.toDate()));
+      expect(e.expectedAmount, 3500.0);
+      expect(e.createdAt, equals(created.toDate()));
       expect(e.currency, 'USD');
       expect(e.predictionSource.name, 'manual');
       expect(e.status, ExpectedCashFlowStatus.received);
       expect(e.matchedCashFlowId, 'cf-9');
       expect(e.actualAmount, 3400.0);
-      expect(e.actualDate, actual.toDate());
+      expect(e.actualDate, equals(actual.toDate()));
       expect(e.notes, 'late by two days');
-      expect(e.updatedAt, updated.toDate());
+      expect(e.updatedAt, equals(updated.toDate()));
       expect(e.platformDelayDays, 2);
       expect(e.varianceFactor, 0.25);
     });
@@ -88,7 +93,10 @@ void main() {
     });
 
     test('an integer amount is read as a double', () {
-      expect(map({...minimal(), 'expectedAmount': 10}).expectedAmount, 10.0);
+      final amount = map({...minimal(), 'expectedAmount': 10}).expectedAmount;
+
+      expect(amount, isA<double>());
+      expect(amount, equals(10.0));
     });
 
     for (final field in [

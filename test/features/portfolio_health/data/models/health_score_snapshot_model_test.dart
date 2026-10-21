@@ -156,7 +156,10 @@ void main() {
         expect(map[field], isA<num>(), reason: field);
       }
       expect(map['calculatedAt'], isA<Timestamp>());
-      expect(HealthScoreSnapshotModel.fromFirestore(_FakeDoc(map)), model);
+      expect(
+        HealthScoreSnapshotModel.fromFirestore(_FakeDoc(map)),
+        equals(model),
+      );
     });
   });
 }
