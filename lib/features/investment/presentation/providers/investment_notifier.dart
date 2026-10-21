@@ -628,6 +628,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             () => ref.read(investmentRepositoryProvider).deleteInvestment(id),
             attributes: {'investment_type': investment?.type.name ?? 'unknown'},
           );
+      await _deleteDocumentFiles([id]);
 
       // Track analytics
       if (investment != null) {
@@ -654,6 +655,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .getArchivedInvestmentById(id);
       // No need to cancel reminders - archived investments don't have them
       await ref.read(investmentRepositoryProvider).deleteArchivedInvestment(id);
+      await _deleteDocumentFiles([id]);
 
       // Track analytics
       if (investment != null) {
@@ -670,6 +672,21 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
+  /// Removes the stored files of the deleted investments' documents. Their
+  /// records went with the investment; a file that cannot be removed now is
+  /// only wasted space, so it never fails the delete.
+  Future<void> _deleteDocumentFiles(List<String> investmentIds) async {
+    for (final id in investmentIds) {
+      try {
+        await ref
+            .read(documentStorageServiceProvider)
+            .deleteInvestmentDocuments(id);
+      } catch (_) {
+        LoggerService.warn('Could not delete document files');
+      }
+    }
+  }
+
   /// Bulk delete multiple investments and their cash flows.
   Future<int> bulkDelete(List<String> investmentIds) async {
     if (investmentIds.isEmpty) return 0;
@@ -679,6 +696,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       final deletedCount = await ref
           .read(investmentRepositoryProvider)
           .bulkDelete(investmentIds);
+      await _deleteDocumentFiles(investmentIds);
       _invalidateAll();
       state = const AsyncValue.data(null);
       return deletedCount;

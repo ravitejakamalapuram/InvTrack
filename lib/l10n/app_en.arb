@@ -7677,5 +7677,14 @@
         "type": "int"
       }
     }
+  },
+
+  "passcodeDigitsEntered": "{count} of {total} digits entered",
+  "@passcodeDigitsEntered": {
+    "description": "Screen-reader label of the PIN dots on the lock screen; says how many digits are typed, never which",
+    "placeholders": {
+      "count": {"type": "int"},
+      "total": {"type": "int"}
+    }
   }
 }

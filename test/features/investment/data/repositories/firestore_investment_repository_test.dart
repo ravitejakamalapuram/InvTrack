@@ -108,6 +108,26 @@ void main() {
         isEqualTo: testInvestmentId,
       ),
     ).thenReturn(noSnapshotsQuery);
+    // ... its document records (#766) and the goals that link it; none here.
+    final mockDocumentsCollection = MockCollectionReference();
+    when(() => mockUserDoc.collection('documents'))
+        .thenReturn(mockDocumentsCollection);
+    when(
+      () => mockDocumentsCollection.where(
+        'investmentId',
+        isEqualTo: testInvestmentId,
+      ),
+    ).thenReturn(noSnapshotsQuery);
+    for (final name in ['goals', 'archivedGoals']) {
+      final goals = MockCollectionReference();
+      when(() => mockUserDoc.collection(name)).thenReturn(goals);
+      when(
+        () => goals.where(
+          'linkedInvestmentIds',
+          arrayContains: testInvestmentId,
+        ),
+      ).thenReturn(noSnapshotsQuery);
+    }
 
     when(() => mockInvestmentsCollection.doc(testInvestmentId))
         .thenReturn(mockInvestmentDoc);
