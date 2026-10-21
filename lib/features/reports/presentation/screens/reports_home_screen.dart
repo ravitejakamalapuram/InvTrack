@@ -223,10 +223,7 @@ class ReportsHomeScreen extends ConsumerWidget {
                   icon: Icons.calendar_view_week_rounded,
                   title: l10n.weeklySummary,
                   subtitle: l10n.thisWeek,
-                  onTap: () => _navigateToReport(
-                    context,
-                    ReportConfiguration.weeklySummary(),
-                  ),
+                  onTap: () => context.push('/reports/period?kind=week'),
                 ),
                 _buildReportCard(
                   context,
@@ -234,10 +231,7 @@ class ReportsHomeScreen extends ConsumerWidget {
                   icon: Icons.calendar_month_rounded,
                   title: l10n.monthlyIncome,
                   subtitle: l10n.thisMonth,
-                  onTap: () => _navigateToReport(
-                    context,
-                    ReportConfiguration.monthlyIncome(),
-                  ),
+                  onTap: () => context.push('/reports/period?kind=month'),
                 ),
                 _buildReportCard(
                   context,

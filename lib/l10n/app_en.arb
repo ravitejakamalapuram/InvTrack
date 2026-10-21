@@ -7695,5 +7695,61 @@
       "count": {"type": "int"},
       "total": {"type": "int"}
     }
-  }
+  },
+
+  "periodReportTitle": "Period report",
+  "@periodReportTitle": {"description": "Title of the weekly, monthly and yearly report screen"},
+  "periodReportWeek": "Week",
+  "@periodReportWeek": {"description": "Choice on the period report screen: a seven-day week"},
+  "periodReportMonth": "Month",
+  "@periodReportMonth": {"description": "Choice on the period report screen: a calendar month"},
+  "periodReportYear": "Year",
+  "@periodReportYear": {"description": "Choice on the period report screen: the Indian financial year, April to March"},
+  "periodReportPrevious": "Previous period",
+  "@periodReportPrevious": {"description": "Button label and screen-reader label to move the period report back one period"},
+  "periodReportNext": "Next period",
+  "@periodReportNext": {"description": "Button label and screen-reader label to move the period report forward one period"},
+  "periodReportRange": "{start} to {end}",
+  "@periodReportRange": {
+    "description": "Date range of a week report",
+    "placeholders": {"start": {"type": "String"}, "end": {"type": "String"}}
+  },
+  "periodReportFinancialYear": "FY {label}",
+  "@periodReportFinancialYear": {
+    "description": "Label of a financial year report, label is like 2023-24",
+    "placeholders": {"label": {"type": "String"}}
+  },
+  "periodReportInvested": "Invested",
+  "@periodReportInvested": {"description": "Money put into investments in the period"},
+  "periodReportReturned": "Returned",
+  "@periodReportReturned": {"description": "Principal or sale proceeds received in the period, not income"},
+  "periodReportIncome": "Income",
+  "@periodReportIncome": {"description": "Interest, dividends and rent received in the period"},
+  "periodReportFees": "Fees",
+  "@periodReportFees": {"description": "Fees paid in the period"},
+  "periodReportNet": "Net cash flow",
+  "@periodReportNet": {"description": "Money received minus money paid out in the period"},
+  "periodReportChange": "{change} vs previous period",
+  "@periodReportChange": {
+    "description": "Change against the previous period; change is a percentage like +12.5% or a dash when it cannot be known",
+    "placeholders": {"change": {"type": "String"}}
+  },
+  "periodReportExcludedFlows": "{count, plural, =1{1 entry is left out: no exchange rate.} other{{count} entries are left out: no exchange rate.}}",
+  "@periodReportExcludedFlows": {
+    "description": "Warning on the period report when entries could not be converted to the base currency",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "periodReportArchivedNote": "{count, plural, =1{1 archived investment is not included.} other{{count} archived investments are not included.}}",
+  "@periodReportArchivedNote": {
+    "description": "Note on the period report that archived investments are left out of the totals",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "periodReportNothing": "No activity in this period.",
+  "@periodReportNothing": {"description": "Empty state of the period report when no cash flow happened"},
+  "periodReportByType": "By investment type",
+  "@periodReportByType": {"description": "Section title: period report broken down by investment type"},
+  "periodReportByCurrency": "By currency",
+  "@periodReportByCurrency": {"description": "Section title: period report broken down by the currency the entries were made in"},
+  "periodReportByMonth": "By month",
+  "@periodReportByMonth": {"description": "Section title: period report broken down by calendar month"}
 }

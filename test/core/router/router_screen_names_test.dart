@@ -84,6 +84,7 @@ void main() {
       '/goals/create': 'goal_create',
       '/goals/:id': 'goal_detail',
       '/reports': 'reports',
+      '/reports/period': 'period_report',
       '/reports/builder': 'report_builder',
       '/settings': 'settings',
       '/auth/signin': 'sign_in',
