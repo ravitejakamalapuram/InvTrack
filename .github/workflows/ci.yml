@@ -221,8 +221,10 @@ jobs:
           flutter-version: '3.38.4' # keep in step with release.yaml
           channel: stable
           cache: true
-      - name: Build the release APK (unsigned build is enough to merge manifests)
-        run: flutter pub get && flutter gen-l10n && flutter build apk --release
+      # Only the manifest merge: a full release build needs the signing keystore,
+      # which CI does not have (packageRelease fails without it).
+      - name: Merge the release manifest
+        run: flutter pub get && flutter gen-l10n && (cd android && ./gradlew :app:processReleaseManifestForPackage --console=plain)
       - name: Check the merged release manifest
         run: bash scripts/ci/check_release_manifest.sh build/app/intermediates/packaged_manifests/release/processReleaseManifestForPackage/AndroidManifest.xml
 
