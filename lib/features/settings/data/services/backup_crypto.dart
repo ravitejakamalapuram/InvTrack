@@ -33,7 +33,6 @@ abstract final class BackupCrypto {
   static const _version = 1;
   static const _kdfPbkdf2Sha256 = 1;
   static const _saltLength = 16;
-  static const _nonceLength = 12;
   static const _tagLength = 16;
   static const _iterationsOffset = 10;
   static const _saltOffset = 14;
