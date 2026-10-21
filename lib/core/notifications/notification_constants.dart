@@ -4,22 +4,27 @@
 /// extracted from notification_service.dart for better organization.
 library;
 
-/// Notification channel IDs
+import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Notification channel IDs.
+///
+/// Android fixes a channel's importance when it is first created, so channels
+/// whose importance was lowered (A29) carry a `_v2` suffix to get a new one.
 class NotificationChannels {
-  static const String weeklySummary = 'weekly_summary';
+  static const String weeklySummary = 'weekly_summary_v2';
   static const String incomeReminders = 'income_reminders';
   static const String maturityReminders = 'maturity_reminders';
-  static const String monthlySummary = 'monthly_summary';
+  static const String monthlySummary = 'monthly_summary_v2';
   static const String monthlyRecap = 'monthly_recap';
-  static const String milestones = 'milestones';
-  static const String goalMilestones = 'goal_milestones';
+  static const String milestones = 'milestones_v2';
+  static const String goalMilestones = 'goal_milestones_v2';
   static const String taxReminders = 'tax_reminders';
-  static const String riskAlerts = 'risk_alerts';
   static const String weeklyCheckIn = 'weekly_check_in';
-  static const String idleAlerts = 'idle_alerts';
-  static const String fySummary = 'fy_summary';
+  static const String fySummary = 'fy_summary_v2';
   static const String general = 'general'; // For test notifications
-  static const String activation = 'activation'; // New user activation nudges
+  static const String activation = 'activation_v2'; // New user activation nudges
   static const String incomeGuardian =
       'income_guardian'; // Income Guardian alerts
 }
@@ -49,15 +54,17 @@ class NotificationIds {
   static const int taxReminderAdvanceQ4 = 1014;
   static const int taxReminderITR = 1015;
 
-  /// Generate a unique notification ID for income reminders based on investment ID
+  /// Notification ID for an investment's income reminder, in [50000, 100000).
+  /// One investment, one ID, never shared (see [NotificationIdSlots]).
   static int incomeReminder(String investmentId) =>
-      (investmentId.hashCode.abs() % 50000) + 50000;
+      50000 + NotificationIdSlots.slot('income', investmentId, 50000);
 
-  /// Generate unique notification IDs for maturity reminders (7-day and 1-day before)
+  /// Notification IDs for an investment's maturity reminders (7-day in
+  /// [100000, 125000), 1-day in [125000, 150000)).
   static int maturityReminder7Days(String investmentId) =>
-      (investmentId.hashCode.abs() % 25000) + 100000;
+      100000 + NotificationIdSlots.slot('maturity', investmentId, 25000);
   static int maturityReminder1Day(String investmentId) =>
-      (investmentId.hashCode.abs() % 25000) + 125000;
+      125000 + NotificationIdSlots.slot('maturity', investmentId, 25000);
 
   /// Whether [id] lies in the income-reminder range (see [incomeReminder]).
   static bool isIncomeReminderId(int id) => id >= 50000 && id < 100000;
@@ -69,23 +76,15 @@ class NotificationIds {
   static int milestone(String investmentId, double moic) =>
       (investmentId.hashCode.abs() % 20000) + 150000 + (moic * 100).toInt();
 
-  /// Risk alert notification ID
-  static int riskAlert(String alertType) =>
-      200000 + alertType.hashCode.abs() % 1000;
-
   /// Weekly check-in notification
   static const int weeklyCheckIn = 2000;
-
-  /// Idle investment alert ID (per investment)
-  static int idleAlert(String investmentId) =>
-      210000 + investmentId.hashCode.abs() % 10000;
 
   /// FY summary notification
   static const int fySummary = 2001;
 
   /// Goal milestone notification ID based on goal ID and milestone percentage
   static int goalMilestone(String goalId, int milestonePercent) =>
-      (goalId.hashCode.abs() % 20000) + 220000 + milestonePercent;
+      (goalId.hashCode.abs() % 10000) + 220000 + milestonePercent;
 
   /// Goal at-risk alert notification ID
   static int goalAtRisk(String goalId) =>
@@ -116,6 +115,53 @@ class NotificationIds {
       280000 + expectedCashFlowId.hashCode.abs() % 10000;
 }
 
+/// Hands out notification ID slots: the first time an (kind, key) pair is
+/// seen it gets the next free number of its kind, saved in SharedPreferences.
+/// Unlike `hashCode % range`, two investments never share an ID and an
+/// investment keeps its ID across app updates and Dart SDK changes.
+class NotificationIdSlots {
+  static const String _prefsKey = 'notification_id_slots';
+
+  static SharedPreferences? _prefs;
+  static String? _cachedRaw;
+  static Map<String, int> _cached = {};
+
+  /// Called by [NotificationService] when the app starts.
+  static void bind(SharedPreferences prefs) => _prefs = prefs;
+
+  /// The slot (0 up to [capacity] - 1) of [key] within [kind].
+  static int slot(String kind, String key, int capacity) {
+    final prefs = _prefs;
+    if (prefs == null) {
+      throw StateError('NotificationIdSlots used before NotificationService');
+    }
+    final raw = prefs.getString(_prefsKey);
+    if (raw != _cachedRaw || raw == null) {
+      _cached = raw == null
+          ? {}
+          : (jsonDecode(raw) as Map<String, dynamic>).cast<String, int>();
+      _cachedRaw = raw;
+    }
+    final entry = '$kind:$key';
+    final existing = _cached[entry];
+    if (existing != null) return existing;
+
+    final counter = '#$kind';
+    final next = _cached[counter] ?? 0;
+    if (next >= capacity) {
+      throw StateError('Out of notification ID slots for $kind');
+    }
+    final updated = {..._cached, entry: next, counter: next + 1};
+    final encoded = jsonEncode(updated);
+    // SharedPreferences updates its in-memory copy at once, so the next call
+    // sees this slot even before the write to disk finishes.
+    prefs.setString(_prefsKey, encoded);
+    _cached = updated;
+    _cachedRaw = encoded;
+    return next;
+  }
+}
+
 /// Settings keys for notification preferences
 class NotificationPrefsKeys {
   static const String weeklySummaryEnabled = 'notifications_weekly_summary';
@@ -126,10 +172,7 @@ class NotificationPrefsKeys {
   static const String milestonesEnabled = 'notifications_milestones';
   static const String goalMilestonesEnabled = 'notifications_goal_milestones';
   static const String taxRemindersEnabled = 'notifications_tax_reminders';
-  static const String riskAlertsEnabled = 'notifications_risk_alerts';
   static const String weeklyCheckInEnabled = 'notifications_weekly_check_in';
-  static const String idleAlertsEnabled = 'notifications_idle_alerts';
-  static const String idleAlertDays = 'notifications_idle_alert_days';
   static const String fySummaryEnabled = 'notifications_fy_summary';
   static const String goalAtRiskEnabled = 'notifications_goal_at_risk';
   static const String goalStaleEnabled = 'notifications_goal_stale';
@@ -156,10 +199,6 @@ class NotificationPrefsKeys {
   /// so a retry after a failed reschedule does not show it twice.
   static String incomeReminderShown(String investmentId) =>
       'income_reminder_shown_$investmentId';
-
-  /// Track when idle alert was last shown for an investment
-  static String idleAlertLastShown(String investmentId) =>
-      'idle_alert_last_shown_$investmentId';
 
   /// Track when at-risk alert was last shown for a goal (show max once per week)
   static String goalAtRiskLastShown(String goalId) =>
@@ -198,20 +237,5 @@ class TaxReminder {
     required this.title,
     required this.body,
     required this.date,
-  });
-}
-
-/// Info about an investment for idle checking
-class IdleInvestmentInfo {
-  final String id;
-  final String name;
-  final DateTime? lastActivityDate;
-  final bool isClosed;
-
-  const IdleInvestmentInfo({
-    required this.id,
-    required this.name,
-    this.lastActivityDate,
-    this.isClosed = false,
   });
 }

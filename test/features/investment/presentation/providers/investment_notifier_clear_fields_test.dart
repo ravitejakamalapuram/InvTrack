@@ -247,7 +247,7 @@ void main() {
           .toSet();
     }
 
-    final reminderIds = {
+    Set<int> reminderIds() => {
       NotificationIds.maturityReminder7Days('inv-fd'),
       NotificationIds.maturityReminder1Day('inv-fd'),
       NotificationIds.incomeReminder('inv-fd'),
@@ -256,7 +256,7 @@ void main() {
     test('control: the stored investment schedules its reminders', () async {
       fakeRepository.seed(investments: [_fullyPopulated()]);
 
-      expect(await rescheduleFromStore(), containsAll(reminderIds));
+      expect(await rescheduleFromStore(), containsAll(reminderIds()));
     });
 
     test('clearing maturity date and income frequency removes the reminders '
@@ -272,7 +272,7 @@ void main() {
       expect(fakeNotificationService.scheduledIncomeReminders, isEmpty);
 
       final pending = await rescheduleFromStore();
-      for (final id in reminderIds) {
+      for (final id in reminderIds()) {
         expect(pending, isNot(contains(id)));
       }
     });

@@ -117,16 +117,7 @@ class FakeNotificationService implements NotificationService {
   bool get taxRemindersEnabled => true;
 
   @override
-  bool get riskAlertsEnabled => true;
-
-  @override
   bool get weeklyCheckInEnabled => true;
-
-  @override
-  bool get idleAlertsEnabled => true;
-
-  @override
-  int get idleAlertDays => 90;
 
   @override
   bool get fySummaryEnabled => true;

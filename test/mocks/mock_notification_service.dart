@@ -137,16 +137,7 @@ class FakeNotificationService implements NotificationService {
   bool get taxRemindersEnabled => true;
 
   @override
-  bool get riskAlertsEnabled => true;
-
-  @override
   bool get weeklyCheckInEnabled => true;
-
-  @override
-  bool get idleAlertsEnabled => true;
-
-  @override
-  int get idleAlertDays => 90;
 
   @override
   bool get fySummaryEnabled => true;
@@ -285,6 +276,7 @@ class FakeFlutterLocalNotificationsPlugin
         scheduledDate: scheduledDate,
         payload: payload,
         matchDateTimeComponents: matchDateTimeComponents,
+        notificationDetails: notificationDetails,
       ),
     );
     if (kDebugMode) {
@@ -374,6 +366,7 @@ class FakeScheduledNotification {
   final DateTime scheduledDate;
   final String? payload;
   final DateTimeComponents? matchDateTimeComponents;
+  final NotificationDetails? notificationDetails;
 
   FakeScheduledNotification({
     required this.id,
@@ -382,6 +375,7 @@ class FakeScheduledNotification {
     required this.scheduledDate,
     this.payload,
     this.matchDateTimeComponents,
+    this.notificationDetails,
   });
 }
 
