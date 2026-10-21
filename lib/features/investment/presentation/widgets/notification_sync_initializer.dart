@@ -184,6 +184,8 @@ class _NotificationSyncInitializerState
     try {
       notificationService.baseCurrency = ref.read(currencyCodeProvider);
     } catch (e) {
+      // Unknown currency: schedule no India tax reminders.
+      notificationService.baseCurrency = null;
       LoggerService.debug('Base currency not available for reminders');
     }
   }
