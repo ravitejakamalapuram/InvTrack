@@ -136,7 +136,7 @@ class AccessibilityUtils {
             locale: currencyLocale,
           );
     final invested = totalInvested != null && totalInvested > 0
-        ? 'Invested: ${shouldMask ? hiddenAmountLabel : formatCurrencyForScreenReader(totalInvested, currencySymbol, locale: currencyLocale)}'
+        ? 'Total cost: ${shouldMask ? hiddenAmountLabel : formatCurrencyForScreenReader(totalInvested, currencySymbol, locale: currencyLocale)}'
         : '';
     final approx = returnIsApproximate ? 'approximately ' : '';
     final expected = expectedReturnBasis != null ? 'expected ' : '';

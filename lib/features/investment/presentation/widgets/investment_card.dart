@@ -347,7 +347,11 @@ double _valueColumnWidth(
       figure(stats.totalReturned, _receivedStyle()),
     );
     final words = math.max(
-      measureTextWidth(context, l10n.investmentCardInvestedLabel, _wordStyle()),
+      measureTextWidth(
+        context,
+        l10n.investmentCardTotalCostLabel,
+        _wordStyle(),
+      ),
       measureTextWidth(context, l10n.investmentCardReceivedLabel, _wordStyle()),
     );
     final chip = math.min(
@@ -863,7 +867,7 @@ class _AwaitingValue extends StatelessWidget {
       children: [
         row(
           amount(stats.totalInvested, investedStyle),
-          l10n.investmentCardInvestedLabel,
+          l10n.investmentCardTotalCostLabel,
         ),
         row(
           amount(stats.totalReturned, receivedStyle),
@@ -1001,7 +1005,7 @@ class _InvestmentBottomStrip extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      AppLocalizations.of(context).invested,
+                      AppLocalizations.of(context).investmentCardStripTotalCost,
                       style: subtleTextStyle.copyWith(
                         fontWeight: FontWeight.w500,
                       ),

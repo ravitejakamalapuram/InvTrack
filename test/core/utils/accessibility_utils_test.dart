@@ -151,12 +151,12 @@ void main() {
           lastActivityDate: lastActivity,
         );
 
-        expect(label, contains('Invested: 50,000 dollars'));
+        expect(label, contains('Total cost: 50,000 dollars'));
         expect(label, contains('Last activity: October 15, 2023'));
         // Verify order roughly
         expect(
           label,
-          'Open investment: Active Stock. Type: Stock. Current value: 55,000 dollars. Invested: 50,000 dollars. Returns: positive 10.0 percent. Last activity: October 15, 2023',
+          'Open investment: Active Stock. Type: Stock. Current value: 55,000 dollars. Total cost: 50,000 dollars. Returns: positive 10.0 percent. Last activity: October 15, 2023',
         );
       });
 
@@ -257,7 +257,7 @@ void main() {
         expect(
           label,
           'Open investment: HDFC FD. Type: Fixed Deposit. '
-          'Current value: 5.12 lakh rupees. Invested: 5 lakh rupees. '
+          'Current value: 5.12 lakh rupees. Total cost: 5 lakh rupees. '
           'Returns: positive 7.0 percent',
         );
       });
@@ -278,7 +278,7 @@ void main() {
         );
 
         expect(label, contains('Current value: Hidden amount'));
-        expect(label, contains('Invested: Hidden amount'));
+        expect(label, contains('Total cost: Hidden amount'));
         expect(label, contains('Returns: Hidden percentage'));
         expect(label, isNot(contains('1,000,000')));
         expect(label, isNot(contains('800,000')));
@@ -369,7 +369,7 @@ void main() {
           expect(
             label,
             'Open investment: Pool. Type: P2P Lending. '
-            'Invested: 4 lakh rupees. Received: 2.52 lakh rupees. '
+            'Total cost: 4 lakh rupees. Received: 2.52 lakh rupees. '
             'Returns: Awaiting current value',
           );
         });
@@ -394,7 +394,7 @@ void main() {
           expect(
             label,
             'Open investment: Pool. Type: P2P Lending. '
-            'Invested: 1.5 lakh rupees. Received: 0 rupees. '
+            'Total cost: 1.5 lakh rupees. Received: 0 rupees. '
             'Returns: Awaiting first payout. '
             'Last activity: September 27, 2026',
           );

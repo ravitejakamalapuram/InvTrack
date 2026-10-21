@@ -4090,14 +4090,14 @@
     }
   },
 
-  "invested": "Invested: ",
-  "@invested": {
-    "description": "Label prefix showing amount invested (e.g., 'Invested: ₹1L')"
+  "investmentCardStripTotalCost": "Total cost: ",
+  "@investmentCardStripTotalCost": {
+    "description": "Label prefix in the investment card's bottom strip for the amount put in, fees included (e.g., 'Total cost: ₹1L')"
   },
 
-  "investmentCardInvestedLabel": "invested",
-  "@investmentCardInvestedLabel": {
-    "description": "Lowercase word after the amount put in, on an investment card that awaits its current value (e.g., '₹4 L invested')"
+  "investmentCardTotalCostLabel": "total cost",
+  "@investmentCardTotalCostLabel": {
+    "description": "Lowercase words after the amount put in, fees included, on an investment card that awaits its current value (e.g., '₹4 L total cost')"
   },
 
   "investmentCardReceivedLabel": "received",
