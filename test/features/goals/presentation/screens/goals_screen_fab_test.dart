@@ -48,13 +48,15 @@ Future<void> _pump(WidgetTester tester, List<GoalEntity> active) async {
 }
 
 void main() {
-  testWidgets('FAB shows when there is an active goal', (tester) async {
-    await _pump(tester, [_goal()]);
-    expect(find.byType(FloatingActionButton), findsOneWidget);
-  });
+  group('GoalsScreen FAB', () {
+    testWidgets('FAB shows when there is an active goal', (tester) async {
+      await _pump(tester, [_goal()]);
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+    });
 
-  testWidgets('FAB is hidden when no goal is visible', (tester) async {
-    await _pump(tester, [_goal(archived: true)]);
-    expect(find.byType(FloatingActionButton), findsNothing);
+    testWidgets('FAB is hidden when no goal is visible', (tester) async {
+      await _pump(tester, [_goal(archived: true)]);
+      expect(find.byType(FloatingActionButton), findsNothing);
+    });
   });
 }
