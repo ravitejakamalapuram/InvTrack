@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -865,8 +866,27 @@ void main() {
       expect(edges.closing, isEmpty);
     });
 
-    test('a zero conversion rate counts as impossible and omits the holding',
-        () async {
+    test(
+      'a zero conversion rate counts as impossible and omits the holding',
+      () async {
+        final zeroRate = FYReportService(
+          CalculationEngine()
+            ..registerModule(CurrencyConverterModule(_ZeroUsdService()))
+            ..registerModule(FinancialCalculatorModule()),
+        );
+        final edges = await zeroRate.valuationsAtFYEdges(
+          fyYear: 2025,
+          investments: [holding('us', currency: 'USD')],
+          snapshots: [
+            snap('1', 'us', 1000, DateTime(2025, 3, 31), currency: 'USD'),
+          ],
+          baseCurrency: 'INR',
+        );
+        expect(edges.opening, isEmpty);
+      },
+    );
+
+    test('a zero-valued snapshot with a zero rate is omitted too', () async {
       final zeroRate = FYReportService(
         CalculationEngine()
           ..registerModule(CurrencyConverterModule(_ZeroUsdService()))
@@ -875,12 +895,45 @@ void main() {
       final edges = await zeroRate.valuationsAtFYEdges(
         fyYear: 2025,
         investments: [holding('us', currency: 'USD')],
-        snapshots: [
-          snap('1', 'us', 1000, DateTime(2025, 3, 31), currency: 'USD'),
-        ],
+        snapshots: [snap('1', 'us', 0, DateTime(2025, 3, 31), currency: 'USD')],
         baseCurrency: 'INR',
       );
       expect(edges.opening, isEmpty);
+    });
+
+    test('fyReportProvider stays loading while snapshots load and surfaces '
+        'a snapshot error', () async {
+      ProviderContainer make(AsyncValue<List<InvestmentValuationSnapshot>> v) {
+        final c = ProviderContainer(
+          retry: (_, _) => null,
+          overrides: [
+            activeInvestmentsProvider.overrideWithValue(
+              AsyncData([holding('fd')]),
+            ),
+            validCashFlowsProvider.overrideWithValue(const AsyncData([])),
+            currencyCodeProvider.overrideWithValue('INR'),
+            validValuationSnapshotsProvider.overrideWithValue(v),
+          ],
+        );
+        addTearDown(c.dispose);
+        return c;
+      }
+
+      final loading = make(const AsyncLoading());
+      loading.listen(fyReportProvider(2025), (_, _) {});
+      await expectLater(
+        loading
+            .read(fyReportProvider(2025).future)
+            .timeout(const Duration(milliseconds: 200)),
+        throwsA(isA<TimeoutException>()),
+      );
+
+      final failing = make(AsyncError('boom', StackTrace.empty));
+      failing.listen(fyReportProvider(2025), (_, _) {});
+      await expectLater(
+        failing.read(fyReportProvider(2025).future),
+        throwsA('boom'),
+      );
     });
 
     test('fyReportProvider feeds snapshot values into the FY XIRR', () async {

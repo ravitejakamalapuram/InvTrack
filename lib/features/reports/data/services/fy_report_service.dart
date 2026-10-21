@@ -241,7 +241,8 @@ class FYReportService {
   }) async {
     Future<Map<String, double>> at(DateTime edge) async {
       final held = _heldBefore(investments, edge);
-      final picked = <CashFlowEntity>[];
+      final amounts = <String, double>{};
+      final probes = <CashFlowEntity>[];
       for (final inv in investments) {
         if (!held.contains(inv.id)) continue;
         InvestmentValuationSnapshot? market;
@@ -267,13 +268,15 @@ class FYReportService {
         }
         final chosen = market ?? any;
         if (chosen == null) continue;
-        // Carried as a cash flow so the existing conversion applies: the
-        // rate for the snapshot date, else the latest known, else dropped.
-        picked.add(
+        // One unit is converted as a cash flow so the existing conversion
+        // applies (the rate for the snapshot date, else the latest known,
+        // else dropped) and the rate is checked even for a zero value.
+        amounts[inv.id] = chosen.amount;
+        probes.add(
           CashFlowEntity(
             id: inv.id,
             investmentId: inv.id,
-            amount: chosen.amount,
+            amount: 1,
             date: chosen.effectiveDate,
             type: CashFlowType.invest,
             currency: chosen.currency,
@@ -282,16 +285,14 @@ class FYReportService {
         );
       }
       final converted = await _engine.currency.batchConvertToBase(
-        cashFlows: picked,
+        cashFlows: probes,
         baseCurrency: baseCurrency,
       );
-      // A rate that is zero or not finite would turn a real value into a
-      // false 0 or NaN, so such a conversion counts as impossible.
-      final original = {for (final cf in picked) cf.id: cf.amount};
+      // A rate that is zero or not finite is no rate: the holding is left out.
       return {
         for (final cf in converted)
-          if (cf.amount.isFinite && (cf.amount > 0 || original[cf.id] == 0))
-            cf.investmentId: cf.amount,
+          if (cf.amount.isFinite && cf.amount > 0)
+            cf.investmentId: amounts[cf.investmentId]! * cf.amount,
       };
     }
 
