@@ -9,12 +9,12 @@ Status: design, 2026-10-21. One engine builds every report (weekly, monthly, yea
 | `lib/core/utils/financial_year.dart` (`FinancialYear`) | Reuse. The period abstraction calls it for the Apr-Mar start and the half-open check. |
 | `lib/core/calculations` (`FinancialCalculatorModule.calculateStats`, `TrackingPeriodCalculator`, `CurrentValueCalculator`, `CurrencyConverterModule.batchConvertToBase`) | Reuse as the only source of numbers. The metrics layer is a thin caller. |
 | `FYReportService` + `FYReport` | Keep unchanged for now. It has its own tests and an FY screen and CSV/PDF export (#800) are being built on `FYReport` by other PRs. It moves onto the engine in a later ticket, once the engine reproduces its tested outputs (see "FY migration"). |
-| `WeeklySummaryService`, `ReportBuilderService._buildWeeklySummary` | Replace. They sum unconverted amounts, step days with `add(Duration(days: 1))` (wrong across DST), use `isAfter/isBefore` windows with a one-day pad, and format money with `toStringAsFixed`. The weekly and monthly report types are served by the engine; the old service and its builder branch are deleted in the slice that switches the screen over. |
+| `WeeklySummaryService`, `ReportBuilderService._buildWeeklySummary` | Replace. They sum unconverted amounts, step days with `add(Duration(days: 1))` (wrong across DST), use `isAfter/isBefore` windows with a one-day pad, and format money with `toStringAsFixed`. The weekly and monthly report screens are served by the engine. `WeeklySummaryService` and `WeeklySummary` stay for now because notifications and smart insights still read them; they are removed in a follow-up once those move to `ReportResult`. The report-builder weekly branch is left for the same follow-up. |
 | `ReportSection`/`KpiData` (`dynamic_report_data.dart`) | Do not extend. `KpiData.value` is a pre-formatted `String`, which loses unknown-vs-zero and cannot be privacy-masked or exported. The engine returns typed values; renderers format. `DynamicReportData` stays for the other report types until they move. |
 | `report_builder_screen`, `dynamic_report_screen`, `base_report_screen`, `historical_reports_list`, `report_stat_card` | Reuse the widgets (`BaseReportScreen` shell, `ReportStatCard`, `PrivacyMask`). The new screen is a renderer over `ReportResult`, not a new framework. |
 | `ReportCacheService` | Reuse, keyed by definition id + period. |
 
-No second parallel system: after the weekly/monthly slice there is one weekly and one monthly path.
+No second parallel system for the screens: after slice 3 the Weekly and Monthly tiles use the engine. The remaining old path is notification/insight data, tracked as the follow-up above.
 
 ## Period
 
@@ -78,6 +78,6 @@ Adapters take a `ReportResult` and nothing else, so exports are written once:
 
 1. `lib/core/reporting/report_period.dart` + tests (DST, leap year, FY boundaries 31 Mar/1 Apr, week start variants, month lengths, year boundaries).
 2. `metric_value.dart`, `metrics_calculator.dart`, `report_definition.dart`, `report_result.dart`, `report_engine.dart` + tests with exact paisa/1e-6 values (multi-currency, unknown rate, archived, unknown XIRR, comparison with zero previous, breakdown sums).
-3. Weekly, monthly, yearly definitions, provider, formatter, one `ReportScreen`, routes, strings appended to the end of `app_en.arb`, widget tests (privacy mask, 1.8x/320dp, em dash). Old weekly service removed.
+3. Weekly, monthly, yearly definitions, provider, formatter, one `ReportScreen`, routes, strings appended to the end of `app_en.arb`, widget tests (privacy mask, 1.8x/320dp, em dash). Yearly period XIRR and opening/closing values are not wired (they need `valuationsAtFYEdges`, which belongs to the FY migration); the engine already accepts them through `ReportInputs`.
 
 Non-goals: custom report builder UI, scheduling, new data sources, FY quarters, week-start setting UI.
