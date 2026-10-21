@@ -55,5 +55,6 @@ void main() {
     );
     expect(l10n.isHealthScoreDataSavedAnswer, contains('not included'));
     expect(l10n.howToBackupDataDerivedNote, contains('health scores'));
+    expect(l10n.howToBackupDataDerivedNote, contains('does not include'));
   });
 }
