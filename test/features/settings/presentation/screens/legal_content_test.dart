@@ -289,6 +289,16 @@ void main() {
       expect(privacyPolicyContent, contains('edit any record in the app'));
     });
 
+    test('says how long guest data is kept (A36): 180 days of inactivity', () {
+      expect(
+        privacyPolicyContent,
+        contains(
+          'A guest account that is not opened for 180 days is deleted with '
+          'its data.',
+        ),
+      );
+    });
+
     test('points to the web deletion page and the support email', () {
       expect(privacyPolicyContent, contains(hostedAccountDeletionUrl));
       expect(privacyPolicyContent, contains(supportEmailAddress));

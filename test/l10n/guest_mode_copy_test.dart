@@ -13,7 +13,8 @@ void main() {
       'Guest Mode lets you use InvTrack without signing in. Your data is '
       'stored under an anonymous guest account that only this device can '
       'reach. You cannot open it on another device, and signing out or '
-      'uninstalling the app loses it permanently. To keep your data, tap '
+      'uninstalling the app loses it permanently. A guest account that is not '
+      'opened for 180 days is deleted with its data. To keep your data, tap '
       '"Sign In to Link Account" in Settings to link a Google account.',
     );
   });
@@ -56,8 +57,9 @@ void main() {
     expect(
       l10n.guestModeNotice,
       'As a guest, your data can only be reached from this device. If you '
-      'sign out or uninstall the app, it is lost for good. Link a Google '
-      'account in Settings to keep it.',
+      'sign out or uninstall the app, it is lost for good. A guest account '
+      'that is not opened for 180 days is deleted with its data. Link a '
+      'Google account in Settings to keep it.',
     );
   });
 }
