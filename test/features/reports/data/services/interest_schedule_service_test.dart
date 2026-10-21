@@ -128,51 +128,53 @@ void main() {
     expect(s.grandTotal, 0.0);
   });
 
-  test(
-    'interest for an unknown investment is grouped under a null payer',
-    () async {
-      final s = await service.generate(
-        fyYear: 2023,
-        allCashFlows: [
-          _cf('1', 'ghost', 40, DateTime(2023, 5, 1)),
-          _cf('2', 'ghost', 10, DateTime(2023, 8, 9)),
-          _cf('3', 'a', 100, DateTime(2023, 6, 1)),
-        ],
-        allInvestments: investments,
-        baseCurrency: 'USD',
-      );
-      expect(s.rows.map((r) => r.payer).toList(), ['HDFC Bank', null]);
-      final ghost = s.rows.last;
-      expect(ghost.totalInterest, 50.0);
-      expect(ghost.paymentCount, 2);
-      expect(ghost.firstPaymentDate, DateTime(2023, 5, 1));
-      expect(ghost.lastPaymentDate, DateTime(2023, 8, 9));
-      expect(s.grandTotal, 150.0);
-    },
-  );
+  group('schedule edge cases', () {
+    test(
+      'interest for an unknown investment is grouped under a null payer',
+      () async {
+        final s = await service.generate(
+          fyYear: 2023,
+          allCashFlows: [
+            _cf('1', 'ghost', 40, DateTime(2023, 5, 1)),
+            _cf('2', 'ghost', 10, DateTime(2023, 8, 9)),
+            _cf('3', 'a', 100, DateTime(2023, 6, 1)),
+          ],
+          allInvestments: investments,
+          baseCurrency: 'USD',
+        );
+        expect(s.rows.map((r) => r.payer).toList(), ['HDFC Bank', null]);
+        final ghost = s.rows.last;
+        expect(ghost.totalInterest, 50.0);
+        expect(ghost.paymentCount, 2);
+        expect(ghost.firstPaymentDate, DateTime(2023, 5, 1));
+        expect(ghost.lastPaymentDate, DateTime(2023, 8, 9));
+        expect(s.grandTotal, 150.0);
+      },
+    );
 
-  test(
-    'a flow in a currency with no rate is left out of row and total',
-    () async {
-      final eur = CashFlowEntity(
-        id: 'e',
-        investmentId: 'a',
-        amount: 900,
-        date: DateTime(2023, 7, 1),
-        type: CashFlowType.income,
-        notes: 'Interest',
-        currency: 'EUR',
-        createdAt: DateTime(2023, 7, 1),
-      );
-      final s = await service.generate(
-        fyYear: 2023,
-        allCashFlows: [eur, _cf('1', 'a', 100, DateTime(2023, 6, 1))],
-        allInvestments: investments,
-        baseCurrency: 'USD',
-      );
-      expect(s.rows.single.totalInterest, 100.0);
-      expect(s.rows.single.paymentCount, 1);
-      expect(s.grandTotal, 100.0);
-    },
-  );
+    test(
+      'a flow in a currency with no rate is left out of row and total',
+      () async {
+        final eur = CashFlowEntity(
+          id: 'e',
+          investmentId: 'a',
+          amount: 900,
+          date: DateTime(2023, 7, 1),
+          type: CashFlowType.income,
+          notes: 'Interest',
+          currency: 'EUR',
+          createdAt: DateTime(2023, 7, 1),
+        );
+        final s = await service.generate(
+          fyYear: 2023,
+          allCashFlows: [eur, _cf('1', 'a', 100, DateTime(2023, 6, 1))],
+          allInvestments: investments,
+          baseCurrency: 'USD',
+        );
+        expect(s.rows.single.totalInterest, 100.0);
+        expect(s.rows.single.paymentCount, 1);
+        expect(s.grandTotal, 100.0);
+      },
+    );
+  });
 }
