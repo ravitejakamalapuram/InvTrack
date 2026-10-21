@@ -10,6 +10,14 @@ void main() {
   Future<Uint8List> enc(Uint8List data, [String pw = 'correct horse']) =>
       BackupCrypto.encrypt(data, pw, iterations: fastIterations);
 
+  test('default iterations are serialized in the header', () async {
+    final blob = await BackupCrypto.encrypt(plain, 'pw');
+    expect(
+      BackupCrypto.readIterations(blob),
+      equals(BackupCrypto.defaultIterations),
+    );
+  });
+
   test('round trips and starts with the magic header', () async {
     final blob = await enc(plain);
     expect(BackupCrypto.isEncrypted(blob), isTrue);
@@ -103,5 +111,39 @@ void main() {
 
   test('empty password is rejected', () {
     expect(BackupCrypto.encrypt(plain, ''), throwsArgumentError);
+  });
+
+  test('encrypt rejects out-of-range iterations', () {
+    for (final n in [0, -1, BackupCrypto.maxIterations + 1]) {
+      expect(
+        BackupCrypto.encrypt(plain, 'pw', iterations: n),
+        throwsArgumentError,
+      );
+    }
+  });
+
+  test('decrypt rejects an empty password', () async {
+    final blob = await enc(plain);
+    expect(BackupCrypto.decrypt(blob, ''), throwsArgumentError);
+  });
+
+  test('valid header but too short for a tag is a format error', () async {
+    final blob = await enc(plain);
+    expect(
+      BackupCrypto.decrypt(
+        blob.sublist(0, BackupCrypto.headerLength + 5),
+        'correct horse',
+      ),
+      throwsA(isA<BackupFormatException>()),
+    );
+  });
+
+  test('in-range changed iteration count fails authentication', () async {
+    final blob = Uint8List.fromList(await enc(plain));
+    ByteData.sublistView(blob).setUint32(10, fastIterations + 1);
+    expect(
+      BackupCrypto.decrypt(blob, 'correct horse'),
+      throwsA(isA<BackupDecryptionException>()),
+    );
   });
 }

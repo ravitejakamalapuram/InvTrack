@@ -54,12 +54,19 @@ abstract final class BackupCrypto {
     return ByteData.sublistView(data).getUint32(_iterationsOffset);
   }
 
+  /// Slow by design: PBKDF2 at 600k iterations in pure Dart can take seconds on
+  /// low-end phones. Callers must run this off the UI isolate (compute or
+  /// Isolate.run). The password is used as given (no Unicode normalisation);
+  /// the UI step should normalise it (NFKC) before calling.
   static Future<Uint8List> encrypt(
     Uint8List plain,
     String password, {
     int iterations = defaultIterations,
   }) async {
     if (password.isEmpty) throw ArgumentError('password must not be empty');
+    if (iterations < 1 || iterations > maxIterations) {
+      throw ArgumentError.value(iterations, 'iterations', 'out of range');
+    }
     final header = Uint8List(headerLength)
       ..setRange(0, _magic.length, _magic)
       ..[8] = _version
@@ -77,14 +84,23 @@ abstract final class BackupCrypto {
       nonce: header.sublist(_nonceOffset),
       aad: header,
     );
-    return Uint8List.fromList([...header, ...box.cipherText, ...box.mac.bytes]);
+    final out = BytesBuilder(copy: false)
+      ..add(header)
+      ..add(box.cipherText)
+      ..add(box.mac.bytes);
+    return out.takeBytes();
   }
 
+  /// Slow by design (same cost as encrypt): PBKDF2 at 600k iterations in pure Dart can take seconds on
+  /// low-end phones. Callers must run this off the UI isolate (compute or
+  /// Isolate.run). The password is used as given (no Unicode normalisation);
+  /// the UI step should normalise it (NFKC) before calling.
   static Future<Uint8List> decrypt(Uint8List data, String password) async {
     _checkHeader(data);
     if (data.length < headerLength + _tagLength) {
       throw const BackupFormatException('truncated backup');
     }
+    if (password.isEmpty) throw ArgumentError('password must not be empty');
     final header = data.sublist(0, headerLength);
     final iterations = ByteData.sublistView(data).getUint32(_iterationsOffset);
     final box = SecretBox(
