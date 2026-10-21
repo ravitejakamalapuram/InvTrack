@@ -27,8 +27,11 @@ class AppCheckService {
   /// Call after `Firebase.initializeApp`. Never throws: a failure here must
   /// not stop the app from starting.
   static Future<void> initialize() async {
-    if (defaultTargetPlatform != TargetPlatform.android &&
-        defaultTargetPlatform != TargetPlatform.iOS) {
+    // A mobile browser reports Android or iOS too, but this app uses the
+    // native providers only.
+    if (kIsWeb ||
+        (defaultTargetPlatform != TargetPlatform.android &&
+            defaultTargetPlatform != TargetPlatform.iOS)) {
       return;
     }
     try {
