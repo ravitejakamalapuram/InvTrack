@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/consent_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -92,6 +93,34 @@ class SecuritySettingsScreen extends ConsumerWidget {
                 ),
               ],
             ),
+
+          // Analytics and crash-reporting consent (A34)
+          SettingsSection(
+            title: l10n.privacySectionTitle,
+            footer: l10n.privacySectionFooter,
+            children: [
+              SettingsToggleTile(
+                key: const Key('consent_analytics_toggle'),
+                icon: Icons.insights,
+                title: l10n.analyticsConsentTitle,
+                subtitle: l10n.analyticsConsentSubtitle,
+                value: ref.watch(analyticsConsentProvider),
+                onChanged: (value) => ref
+                    .read(analyticsConsentProvider.notifier)
+                    .setEnabled(value),
+              ),
+              SettingsToggleTile(
+                key: const Key('consent_crash_toggle'),
+                icon: Icons.bug_report_outlined,
+                title: l10n.crashReportingConsentTitle,
+                subtitle: l10n.crashReportingConsentSubtitle,
+                value: ref.watch(crashReportingConsentProvider),
+                onChanged: (value) => ref
+                    .read(crashReportingConsentProvider.notifier)
+                    .setEnabled(value),
+              ),
+            ],
+          ),
 
           // Security info
           Padding(

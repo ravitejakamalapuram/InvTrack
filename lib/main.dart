@@ -10,6 +10,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:inv_tracker/app/app.dart';
+import 'package:inv_tracker/core/analytics/consent_service.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/analytics/run_guarded.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
@@ -37,6 +38,10 @@ void main() async {
       ]);
 
       final sharedPreferences = results[1] as SharedPreferences;
+
+      // Apply the user's analytics and crash-reporting choices (A34) before
+      // anything can report.
+      await ConsentService(sharedPreferences).applyAtStartup();
 
       // A sign-out queued a wipe of the offline cache; it must run before
       // Firestore is first used.
@@ -101,7 +106,10 @@ Future<void> _initializeNonCriticalServices(
     // Set static field for backward compatibility with direct instantiation
     CrashlyticsService.enableInDebugMode = debugModeEnabled;
 
-    final crashlyticsService = CrashlyticsService(debugModeEnabled: debugModeEnabled);
+    final crashlyticsService = CrashlyticsService(
+      debugModeEnabled: debugModeEnabled,
+      collectionConsent: crashReportingConsentFrom(prefs),
+    );
     unawaited(
       crashlyticsService.initialize().catchError((error, stack) {
         // Log Crashlytics initialization failure

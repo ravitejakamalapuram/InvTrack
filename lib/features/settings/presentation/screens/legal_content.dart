@@ -21,7 +21,7 @@ const String hostedAccountDeletionUrl =
 const String supportEmailAddress = 'support@invtracker.app';
 
 /// Date the privacy policy last changed.
-final DateTime privacyPolicyLastUpdated = DateTime(2026, 10, 10);
+final DateTime privacyPolicyLastUpdated = DateTime(2026, 10, 21);
 
 /// The in-app privacy policy, from the ARB file, with the support address,
 /// hosted URLs and date (formatted for [l10n]'s locale) filled in.

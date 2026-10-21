@@ -87,7 +87,7 @@ void main() {
   });
 
   test('privacy policy says plainly who can read stored data', () {
-    expect(privacyPolicyContent, contains('Last updated: October 10, 2026'));
+    expect(privacyPolicyContent, contains('Last updated: October 21, 2026'));
     expect(
       privacyPolicyContent,
       contains(
@@ -107,8 +107,8 @@ void main() {
   // why, where it is stored, how long it is kept, how to use your rights and
   // whom to ask. Every sentence is backed by code; the PR lists the evidence.
   group('privacy policy facts', () {
-    test('was last updated on 10 October 2026', () {
-      expect(privacyPolicyLastUpdated, DateTime(2026, 10, 10));
+    test('was last updated on 21 October 2026', () {
+      expect(privacyPolicyLastUpdated, DateTime(2026, 10, 21));
     });
 
     test('names every processor the app calls', () {
@@ -140,7 +140,6 @@ void main() {
         'firebase_performance': 'Performance Monitoring',
         'google_sign_in': 'Google Sign-In',
         'google_fonts': 'Google Fonts',
-        'google_mobile_ads': 'Google Mobile Ads',
         'in_app_update': 'in-app update',
         'in_app_review': 'review prompt',
       };
@@ -170,14 +169,26 @@ void main() {
       }
     });
 
-    test('says the ads library and advertising ID permission are present', () {
+    test('says the app has no ads library and no advertising ID', () {
       expect(privacyPolicyContent, contains('The app shows no ads.'));
-      expect(privacyPolicyContent, contains('Google Mobile Ads'));
-      expect(privacyPolicyContent, contains('advertising ID'));
+      expect(privacyPolicyContent, isNot(contains('Google Mobile Ads')));
+      expect(privacyPolicyContent, isNot(contains('advertising ID')));
+      expect(File('pubspec.yaml').readAsStringSync(), isNot(contains('google_mobile_ads')));
       final manifest = File(
         'android/app/src/main/AndroidManifest.xml',
       ).readAsStringSync();
-      expect(manifest, contains('com.google.android.gms.permission.AD_ID'));
+      // Firebase Analytics merges AD_ID in; the app manifest must strip it.
+      expect(
+        manifest,
+        matches(RegExp(
+          r'<uses-permission[^>]*permission\.AD_ID"[^>]*tools:node="remove"',
+        )),
+      );
+      expect(manifest, isNot(contains('gms.ads.APPLICATION_ID')));
+      expect(
+        File('ios/Runner/Info.plist').readAsStringSync(),
+        isNot(contains('GADApplicationIdentifier')),
+      );
     });
 
     test('says who shows the app-rating prompt', () {
@@ -300,12 +311,19 @@ void main() {
     // statement would stop being true, not every possible way. They list what
     // is allowed instead of what is forbidden, so a new call site fails until
     // someone has read it and updated the policy.
-    test('says plainly that analytics and crash reports cannot be turned '
-        'off, for as long as that is true', () {
+    test('says where analytics and crash reports are turned off, and every '
+        'collection call is known', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
       expect(
         privacyPolicyContent,
-        contains('There is currently no switch to turn off'),
+        contains(
+          'Withdraw consent: Turn off Analytics or Crashlytics in '
+          'Settings > ${l10n.securityTitle} > ${l10n.privacySectionTitle}. '
+          'The choice is applied every time the app starts.',
+        ),
       );
+      expect(privacyPolicyContent, isNot(contains('no opt-out')));
+      expect(privacyPolicyContent, isNot(contains('no switch')));
 
       // 1. Every call that changes collection or consent is known.
       final call = RegExp(
@@ -318,14 +336,19 @@ void main() {
         }
       }
       const crashlyticsFile = 'lib/core/analytics/crashlytics_service.dart';
+      const consentFile = 'lib/core/analytics/consent_service.dart';
       const performanceFile = 'lib/core/performance/performance_service.dart';
       expect(
         calls..sort(),
-        [
-          '$crashlyticsFile: setCrashlyticsCollectionEnabled(shouldEnable)',
-          '$crashlyticsFile: setCrashlyticsCollectionEnabled(shouldEnable)',
+        <String>[
+          '$consentFile: setAnalyticsCollectionEnabled(analyticsEnabled)',
+          '$consentFile: setAnalyticsCollectionEnabled(value)',
+          '$consentFile: setCrashlyticsCollectionEnabled(false)',
+          '$consentFile: setCrashlyticsCollectionEnabled(enabled)',
+          '$crashlyticsFile: setCrashlyticsCollectionEnabled(shouldEnable && consent)',
+          '$crashlyticsFile: setCrashlyticsCollectionEnabled(shouldEnable && collectionConsent)',
           '$performanceFile: setPerformanceCollectionEnabled(true)',
-        ],
+        ]..sort(),
         reason:
             'a collection or consent call changed: update the withdrawal text',
       );
