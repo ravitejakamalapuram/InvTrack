@@ -202,6 +202,13 @@ void main() {
       expect(find.text('Update Available'), findsNothing);
     });
 
+    testWidgets('showing the flexible dialog records the prompt time', (tester) async {
+      await pump(tester, staleness: 1);
+      expect(find.text('Update Available'), findsOneWidget);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt('in_app_update_last_prompt_ms'), isNotNull);
+    });
+
     testWidgets('prompts again after 3 days', (tester) async {
       final old = DateTime.now().subtract(const Duration(days: 4));
       await pump(

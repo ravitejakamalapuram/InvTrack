@@ -158,8 +158,14 @@ class _InAppUpdateInitializerState
       );
     }
 
-    // Throttle only once the dialog can really be shown.
-    ref.read(inAppUpdateProvider.notifier).markPrompted(DateTime.now());
+    // Throttle only once the dialog can really be shown. Await the write so
+    // it lands before the dialog; a failed write is logged, not shown.
+    try {
+      await ref.read(inAppUpdateProvider.notifier).markPrompted(DateTime.now());
+    } catch (e, st) {
+      LoggerService.warn('Could not save update prompt time', error: e, stackTrace: st);
+    }
+    if (!dialogContext.mounted) return;
 
     showDialog(
       context: dialogContext,
