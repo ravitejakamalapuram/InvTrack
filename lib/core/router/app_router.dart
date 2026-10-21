@@ -25,9 +25,11 @@ import 'package:inv_tracker/features/fire_number/presentation/screens/fire_setti
 import 'package:inv_tracker/features/portfolio_health/presentation/screens/portfolio_health_details_screen.dart';
 import 'package:inv_tracker/features/digest/domain/monthly_digest.dart';
 import 'package:inv_tracker/features/digest/presentation/screens/monthly_recap_screen.dart';
+import 'package:inv_tracker/core/reporting/report_period.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/dynamic_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/reports_home_screen.dart';
+import 'package:inv_tracker/features/reports/presentation/screens/period_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/report_builder_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/settings_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
@@ -235,6 +237,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                 name: AnalyticsScreens.reports,
                 builder: (context, state) => const ReportsHomeScreen(),
                 routes: [
+                  // Weekly, monthly and yearly reports from the reporting engine
+                  GoRoute(
+                    path: 'period',
+                    name: AnalyticsScreens.periodReport,
+                    builder: (context, state) => PeriodReportScreen(
+                      initialKind: switch (state.uri.queryParameters['kind']) {
+                        'month' => ReportPeriodKind.month,
+                        'fy' => ReportPeriodKind.fy,
+                        _ => ReportPeriodKind.week,
+                      },
+                    ),
+                  ),
                   // Dynamic report builder - handles both wizard and generated reports
                   GoRoute(
                     path: 'builder',

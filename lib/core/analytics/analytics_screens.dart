@@ -15,6 +15,7 @@ class AnalyticsScreens {
   static const String goalDetail = 'goal_detail';
   static const String reports = 'reports';
   static const String reportBuilder = 'report_builder';
+  static const String periodReport = 'period_report';
   static const String settings = 'settings';
   static const String signIn = 'sign_in';
   static const String lock = 'lock';
