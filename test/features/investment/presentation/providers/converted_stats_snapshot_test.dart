@@ -607,7 +607,7 @@ void main() {
 
       expect(find.text(compactInr(_expectedInvested)), findsOneWidget);
       expect(find.text(compactInr(44000)), findsOneWidget);
-      expect(find.text('invested'), findsOneWidget);
+      expect(find.text('total cost'), findsOneWidget);
       expect(find.text('received'), findsOneWidget);
       expect(find.text('Awaiting current value'), findsOneWidget);
       expect(find.textContaining('\$'), findsNothing);

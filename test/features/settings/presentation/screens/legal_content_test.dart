@@ -138,6 +138,7 @@ void main() {
         'firebase_analytics': 'Analytics',
         'firebase_crashlytics': 'Crashlytics',
         'firebase_performance': 'Performance Monitoring',
+        'firebase_app_check': 'App Check',
         'google_sign_in': 'Google Sign-In',
         'google_fonts': 'Google Fonts',
         'in_app_update': 'in-app update',

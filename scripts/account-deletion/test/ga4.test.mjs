@@ -1,7 +1,7 @@
 // Unit tests for the Google Analytics user-deletion request (A102). No emulator: the HTTP call is injected.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { createGa4Deletion, USER_DELETION_SCOPE, USER_DELETION_URL } from '../ga4.mjs';
+import { createGa4Deletion, USER_DELETION_SCOPE, userDeletionUrl } from '../ga4.mjs';
 
 const recorder = (impl = async () => ({ status: 200 })) => {
   const calls = [];
@@ -13,23 +13,22 @@ const recorder = (impl = async () => ({ status: 200 })) => {
 };
 
 describe('GA4 User Deletion API request', () => {
-  it('pins the endpoint and OAuth scope from Google\'s User Deletion API', () => {
-    assert.equal(USER_DELETION_URL, 'https://www.googleapis.com/analytics/v3/userDeletion/userDeletionRequests:upsert');
-    assert.equal(USER_DELETION_SCOPE, 'https://www.googleapis.com/auth/analytics.user.deletion');
+  it('pins the GA4 Admin API endpoint and OAuth scope (the v3 User Deletion API answers 404 for GA4 properties)', () => {
+    assert.equal(
+      userDeletionUrl('123456789'),
+      'https://analyticsadmin.googleapis.com/v1alpha/properties/123456789:submitUserDeletion',
+    );
+    assert.equal(USER_DELETION_SCOPE, 'https://www.googleapis.com/auth/analytics.edit');
   });
 
-  it('sends one POST per uid with the USER_ID body and the property ID', async () => {
+  it('sends one POST per uid with the userId body to the property\'s endpoint', async () => {
     const { calls, request } = recorder();
     const result = await createGa4Deletion({ propertyId: '123456789', request })('u1');
     assert.deepEqual(result, { outcome: 'requested', status: 200 });
     assert.equal(calls.length, 1);
-    assert.equal(calls[0].url, USER_DELETION_URL);
+    assert.equal(calls[0].url, userDeletionUrl('123456789'));
     assert.equal(calls[0].method, 'POST');
-    assert.deepEqual(calls[0].data, {
-      kind: 'analytics#userDeletionRequest',
-      id: { type: 'USER_ID', userId: 'u1' },
-      propertyId: '123456789',
-    });
+    assert.deepEqual(calls[0].data, { userId: 'u1' });
   });
 
   for (const propertyId of [undefined, '', '   ', 'abc', '12 34', '123456789; drop']) {

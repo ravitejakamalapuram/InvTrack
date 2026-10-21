@@ -112,7 +112,7 @@ declare namespace InvTrack {
     /** On a narrow card or with large text the label wraps to more lines; it is never cut. */
     maturity?: { tone: 'success' | 'warning' | 'accent'; icon?: string; label: string } | null;
     last: string; entries: string;
-    /** Already formatted, base currency. In the strip as "Invested: ", or the main figure with `status`. */
+    /** Already formatted, base currency. In the strip as "Total cost: ", or the main figure with `status`. */
     invested?: string;
     selectionMode?: boolean; selected?: boolean;
   }

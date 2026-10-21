@@ -16,6 +16,7 @@ import 'package:inv_tracker/core/analytics/run_guarded.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
+import 'package:inv_tracker/core/security/app_check_service.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/income_guardian_service_providers.dart';
 import 'package:inv_tracker/firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -42,6 +43,9 @@ void main() async {
       // Apply the user's analytics and crash-reporting choices (A34) before
       // anything can report.
       await ConsentService(sharedPreferences).applyAtStartup();
+
+      // Monitor mode only (#774); must follow Firebase.initializeApp.
+      await AppCheckService.initialize();
 
       // A sign-out queued a wipe of the offline cache; it must run before
       // Firestore is first used.
