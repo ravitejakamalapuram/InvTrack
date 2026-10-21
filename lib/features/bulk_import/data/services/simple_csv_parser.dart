@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:any_date/any_date.dart';
+import 'package:inv_tracker/core/utils/csv_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
@@ -493,9 +494,13 @@ class _CsvParserSession {
       final investmentName = _getValue(values, columnMap['investment']!);
       final typeStr = _getValue(values, columnMap['type']!);
       final amountStr = _getValue(values, columnMap['amount']!);
-      final notes = columnMap.containsKey('notes')
+      final rawNotes = columnMap.containsKey('notes')
           ? _getValue(values, columnMap['notes']!)
           : null;
+      // The app guards such cells on export; a restore takes the guard off.
+      final notes = fromBackup && rawNotes != null
+          ? CsvUtils.restoreField(rawNotes)
+          : rawNotes;
 
       // Optional investment metadata (from enhanced export format)
       final investmentTypeStr = columnMap.containsKey('investmentType')

@@ -147,6 +147,38 @@ void main() {
     expect(notes, unorderedEquals(['first\nsecond', 'only']));
   });
 
+  test(
+    'notes that start like a spreadsheet formula come back unchanged',
+    () async {
+      // The export guards such cells with a leading quote (CSV injection);
+      // restoring them must take the guard off again, not keep it as data.
+      const risky = ['-5% drawdown', '=SUM(A1)', '+91 broker call', '@desk'];
+      await repo.bulkImport(
+        investments: [rich('a', 'Plain')],
+        cashFlows: [
+          for (var i = 0; i < risky.length; i++) flow('f$i', 'a', risky[i]),
+        ],
+      );
+      final zip = await export.exportAsZipBytes();
+      await repo.bulkDelete(['a']);
+
+      final result = await import.importFromZip(
+        zip.bytes,
+        ImportStrategy.replace,
+        baseCurrency: 'INR',
+      );
+      expect(result.errors, isEmpty);
+
+      final back = await repo.getAllInvestments();
+      final notes = [
+        for (final inv in back)
+          for (final cf in await repo.getCashFlowsByInvestment(inv.id))
+            cf.notes,
+      ];
+      expect(notes, unorderedEquals(risky));
+    },
+  );
+
   // The backup with investments.json replaced by [json].
   Uint8List withInvestmentsJson(Uint8List zip, String json) {
     final out = Archive();

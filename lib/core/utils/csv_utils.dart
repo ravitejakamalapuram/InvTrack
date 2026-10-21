@@ -20,4 +20,14 @@ class CsvUtils {
     }
     return value;
   }
+
+  /// Undoes [sanitizeField] for a file this app exported itself: drops the
+  /// guard quote, but only when what follows would have needed one.
+  static String restoreField(String value) {
+    if (value.startsWith("'") &&
+        _injectionPattern.hasMatch(value.substring(1))) {
+      return value.substring(1);
+    }
+    return value;
+  }
 }
