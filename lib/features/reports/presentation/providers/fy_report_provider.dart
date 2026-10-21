@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/valuation_providers.dart';
 import 'package:inv_tracker/features/reports/data/services/fy_report_service.dart';
 import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
 
@@ -46,13 +47,26 @@ final fyReportProvider =
       error: (e, st) => throw e,
     );
 
+    // Valuation snapshots give holdings that cross a FY edge their opening
+    // and closing value; while they load, or when there are none, those
+    // holdings keep an undefined XIRR.
+    final snapshots = ref.watch(validValuationSnapshotsProvider).value ?? [];
+
     // Generate report
     final service = ref.read(fyReportServiceProvider);
+    final edges = await service.valuationsAtFYEdges(
+      fyYear: fyYear,
+      investments: investments,
+      snapshots: snapshots,
+      baseCurrency: baseCurrency,
+    );
     return await service.generateReport(
       fyYear: fyYear,
       allCashFlows: cashFlows,
       allInvestments: investments,
       baseCurrency: baseCurrency,
+      openingValues: edges.opening,
+      closingValues: edges.closing,
     );
   },
 );

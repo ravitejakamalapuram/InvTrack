@@ -5,9 +5,11 @@ import 'package:inv_tracker/core/calculations/calculation_engine.dart';
 import 'package:inv_tracker/core/calculations/modules/currency_module.dart';
 import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/reports/data/services/fy_report_service.dart';
 import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
+import '../../../../mocks/mock_currency_conversion_service.dart';
 
 void main() {
   group('FYReportService', () {
@@ -626,6 +628,237 @@ void main() {
       expect((await report(2024, flows, investments)).interestIncome, 20.0);
       expect((await report(2025, flows, investments)).interestIncome, 0.0);
       expect((await report(2026, flows, investments)).interestIncome, 0.0);
+    });
+  });
+
+  // A60 (#800) slice 2: opening and closing values come from the latest
+  // valuation snapshot before each 1 April.
+  group('FYReportService valuationsAtFYEdges', () {
+    late FYReportService service;
+
+    setUp(() {
+      final engine = CalculationEngine()
+        ..registerModule(
+          CurrencyConverterModule(MockCurrencyConversionService()),
+        )
+        ..registerModule(FinancialCalculatorModule());
+      service = FYReportService(engine);
+    });
+
+    InvestmentEntity holding(String id, {String currency = 'INR'}) =>
+        InvestmentEntity(
+          id: id,
+          name: id,
+          type: InvestmentType.fixedDeposit,
+          status: InvestmentStatus.open,
+          startDate: DateTime(2024, 6, 1),
+          createdAt: DateTime(2024, 6, 1),
+          updatedAt: DateTime(2024, 6, 1),
+          currency: currency,
+        );
+
+    InvestmentValuationSnapshot snap(
+      String id,
+      String investmentId,
+      double amount,
+      DateTime date, {
+      ValuationKind kind = ValuationKind.carryingValue,
+      String currency = 'INR',
+      DateTime? deletedAt,
+    }) => InvestmentValuationSnapshot(
+      id: id,
+      investmentId: investmentId,
+      amount: amount,
+      currency: currency,
+      effectiveDate: date,
+      kind: kind,
+      provenance: ValuationProvenance.manual,
+      createdAt: DateTime(2025, 1, 1),
+      updatedAt: DateTime(2025, 1, 1),
+      deletedAt: deletedAt,
+    );
+
+    CashFlowEntity invest(String id, String inv, double amt, String cur) =>
+        CashFlowEntity(
+          id: id,
+          investmentId: inv,
+          amount: amt,
+          date: DateTime(2024, 6, 1),
+          type: CashFlowType.invest,
+          currency: cur,
+          createdAt: DateTime(2024, 6, 1),
+        );
+
+    Future<FYReport> reportFor(
+      List<InvestmentEntity> investments,
+      List<CashFlowEntity> flows,
+      List<InvestmentValuationSnapshot> snapshots,
+    ) async {
+      final edges = await service.valuationsAtFYEdges(
+        fyYear: 2025,
+        investments: investments,
+        snapshots: snapshots,
+        baseCurrency: 'INR',
+      );
+      return service.generateReport(
+        fyYear: 2025,
+        allCashFlows: flows,
+        allInvestments: investments,
+        baseCurrency: 'INR',
+        openingValues: edges.opening,
+        closingValues: edges.closing,
+      );
+    }
+
+    test('an FD crossing both edges takes the snapshots before each 1 April; '
+        'a snapshot dated on the edge is ignored', () async {
+      final snaps = [
+        snap('a', 'fd', 500000, DateTime(2024, 6, 1)),
+        snap('b', 'fd', 530000, DateTime(2025, 3, 31)),
+        snap('c', 'fd', 531000, DateTime(2025, 4, 1)),
+        snap('d', 'fd', 572400, DateTime(2026, 3, 31)),
+        snap('e', 'fd', 580000, DateTime(2026, 4, 1)),
+      ];
+      final edges = await service.valuationsAtFYEdges(
+        fyYear: 2025,
+        investments: [holding('fd')],
+        snapshots: snaps,
+        baseCurrency: 'INR',
+      );
+      expect(edges.opening, {'fd': 530000.0});
+      expect(edges.closing, {'fd': 572400.0});
+
+      final r = await reportFor(
+        [holding('fd')],
+        [invest('1', 'fd', 500000, 'INR')],
+        snaps,
+      );
+      // 572400 / 530000 = 1.08 over exactly 365 days.
+      expect(r.xirr, closeTo(0.08, 1e-6));
+    });
+
+    test(
+      'a market value snapshot is preferred over a later carrying value, '
+      'and the latest of any kind is used when there is no market value',
+      () async {
+        final edges = await service.valuationsAtFYEdges(
+          fyYear: 2025,
+          investments: [holding('m'), holding('c')],
+          snapshots: [
+            snap(
+              '1',
+              'm',
+              90000,
+              DateTime(2025, 1, 1),
+              kind: ValuationKind.marketValue,
+            ),
+            snap(
+              '2',
+              'm',
+              95000,
+              DateTime(2025, 1, 15),
+              kind: ValuationKind.marketValue,
+            ),
+            snap('3', 'm', 99999, DateTime(2025, 3, 20)),
+            snap(
+              '4',
+              'm',
+              121000,
+              DateTime(2026, 3, 15),
+              kind: ValuationKind.marketValue,
+            ),
+            snap('5', 'c', 70000, DateTime(2025, 2, 1)),
+            snap(
+              '6',
+              'c',
+              72000,
+              DateTime(2025, 3, 1),
+              kind: ValuationKind.principalOutstanding,
+            ),
+            snap('7', 'c', 80000, DateTime(2026, 3, 1)),
+          ],
+          baseCurrency: 'INR',
+        );
+        expect(edges.opening, {'m': 95000.0, 'c': 72000.0});
+        expect(edges.closing, {'m': 121000.0, 'c': 80000.0});
+      },
+    );
+
+    test(
+      'a USD holding is converted to the base currency (1 USD = 83 INR)',
+      () async {
+        final usd = holding('us', currency: 'USD');
+        final snaps = [
+          snap('1', 'us', 1000, DateTime(2025, 3, 31), currency: 'USD'),
+          snap('2', 'us', 1100, DateTime(2026, 3, 31), currency: 'USD'),
+        ];
+        final edges = await service.valuationsAtFYEdges(
+          fyYear: 2025,
+          investments: [usd],
+          snapshots: snaps,
+          baseCurrency: 'INR',
+        );
+        expect(edges.opening, {'us': 83000.0});
+        expect(edges.closing, {'us': 91300.0});
+
+        final r = await reportFor(
+          [usd],
+          [invest('1', 'us', 1000, 'USD')],
+          snaps,
+        );
+        expect(r.xirr, closeTo(0.10, 1e-6));
+      },
+    );
+
+    test(
+      'a holding with no snapshot gets no value and the XIRR stays null',
+      () async {
+        final snaps = [
+          snap('1', 'a', 100000, DateTime(2025, 3, 31)),
+          snap('2', 'a', 110000, DateTime(2026, 3, 31)),
+        ];
+        final both = [holding('a'), holding('b')];
+        final edges = await service.valuationsAtFYEdges(
+          fyYear: 2025,
+          investments: both,
+          snapshots: snaps,
+          baseCurrency: 'INR',
+        );
+        expect(edges.opening, {'a': 100000.0});
+        expect(edges.closing, {'a': 110000.0});
+
+        final r = await reportFor(both, [
+          invest('1', 'a', 100000, 'INR'),
+          invest('2', 'b', 50000, 'INR'),
+        ], snaps);
+        expect(r.xirr, isNull);
+      },
+    );
+
+    test('a deleted snapshot, one in another currency, and one whose rate is '
+        'unknown are all left out', () async {
+      final edges = await service.valuationsAtFYEdges(
+        fyYear: 2025,
+        investments: [
+          holding('del'),
+          holding('cur'),
+          holding('xyz', currency: 'XYZ'),
+        ],
+        snapshots: [
+          snap(
+            '1',
+            'del',
+            100,
+            DateTime(2025, 3, 1),
+            deletedAt: DateTime(2025, 3, 2),
+          ),
+          snap('2', 'cur', 100, DateTime(2025, 3, 1), currency: 'USD'),
+          snap('3', 'xyz', 100, DateTime(2025, 3, 1), currency: 'XYZ'),
+        ],
+        baseCurrency: 'INR',
+      );
+      expect(edges.opening, isEmpty);
+      expect(edges.closing, isEmpty);
     });
   });
 }
