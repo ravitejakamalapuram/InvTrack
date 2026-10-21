@@ -5,6 +5,8 @@ import 'package:inv_tracker/core/widgets/in_app_update_initializer.dart';
 import 'package:inv_tracker/core/providers/in_app_update_provider.dart';
 import 'package:inv_tracker/core/services/in_app_update_service.dart';
 import 'package:in_app_update/in_app_update.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockUpdateService extends InAppUpdateService {
   @override
@@ -25,11 +27,18 @@ class MockUpdateService extends InAppUpdateService {
 }
 
 void main() {
+  late SharedPreferences prefs;
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+  });
+
   testWidgets('InAppUpdateInitializer handles missing AppLocalizations without crashing', (WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           inAppUpdateServiceProvider.overrideWithValue(MockUpdateService()),
+          sharedPreferencesProvider.overrideWithValue(prefs),
         ],
         child: MaterialApp(
           // Deliberately omit localizationsDelegates to force AppLocalizations.of(context) to return null
@@ -55,6 +64,7 @@ void main() {
       ProviderScope(
         overrides: [
           inAppUpdateServiceProvider.overrideWithValue(MockUpdateService()),
+          sharedPreferencesProvider.overrideWithValue(prefs),
         ],
         child: MaterialApp(
           home: InAppUpdateInitializer(
@@ -83,6 +93,7 @@ void main() {
       ProviderScope(
         overrides: [
           inAppUpdateServiceProvider.overrideWithValue(MockUpdateService()),
+          sharedPreferencesProvider.overrideWithValue(prefs),
         ],
         child: MaterialApp(
           navigatorKey: customKey,
@@ -116,6 +127,7 @@ void main() {
       ProviderScope(
         overrides: [
           inAppUpdateServiceProvider.overrideWithValue(MockUpdateService()),
+          sharedPreferencesProvider.overrideWithValue(prefs),
         ],
         child: MaterialApp(
           home: InAppUpdateInitializer(
@@ -137,4 +149,121 @@ void main() {
     // Dialog should be dismissed without crashing
     expect(find.text('Update Available'), findsNothing);
   });
+
+  group('update policy (GAP3-08)', () {
+    Future<_PolicyService> pump(
+      WidgetTester tester, {
+      required int staleness,
+      Map<String, Object> prefs = const {},
+    }) async {
+      SharedPreferences.setMockInitialValues(prefs);
+      final service = _PolicyService(staleness);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            inAppUpdateServiceProvider.overrideWithValue(service),
+            sharedPreferencesProvider.overrideWithValue(
+              await SharedPreferences.getInstance(),
+            ),
+          ],
+          child: const MaterialApp(
+            home: InAppUpdateInitializer(child: Scaffold(body: Text('Home'))),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return service;
+    }
+
+    testWidgets(
+      'a high-priority update under 60 days old is flexible, not blocking',
+      (tester) async {
+        final service = await pump(tester, staleness: 59);
+        expect(service.immediateStarts, 0);
+        expect(find.text('Update Available'), findsOneWidget);
+      },
+    );
+
+    testWidgets('an update 60 days or more behind starts the immediate flow', (
+      tester,
+    ) async {
+      final service = await pump(tester, staleness: 60);
+      expect(service.immediateStarts, 1);
+    });
+
+    testWidgets('does not prompt again within 3 days', (tester) async {
+      final recent = DateTime.now().subtract(const Duration(days: 1));
+      final service = await pump(
+        tester,
+        staleness: 60,
+        prefs: {'in_app_update_last_prompt_ms': recent.millisecondsSinceEpoch},
+      );
+      expect(service.immediateStarts, 0);
+      expect(find.text('Update Available'), findsNothing);
+    });
+
+    testWidgets('prompts again after 3 days', (tester) async {
+      final old = DateTime.now().subtract(const Duration(days: 4));
+      await pump(
+        tester,
+        staleness: 1,
+        prefs: {'in_app_update_last_prompt_ms': old.millisecondsSinceEpoch},
+      );
+      expect(find.text('Update Available'), findsOneWidget);
+    });
+
+    testWidgets('a Play error is swallowed: no dialog, no crash', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            inAppUpdateServiceProvider.overrideWithValue(_ThrowingService()),
+            sharedPreferencesProvider.overrideWithValue(
+              await SharedPreferences.getInstance(),
+            ),
+          ],
+          child: const MaterialApp(
+            home: InAppUpdateInitializer(child: Scaffold(body: Text('Home'))),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Update Available'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  });
+}
+
+class _PolicyService extends InAppUpdateService {
+  _PolicyService(this.staleness);
+  final int staleness;
+  int immediateStarts = 0;
+
+  @override
+  Future<AppUpdateInfo?> checkForUpdate() async => AppUpdateInfo(
+    updateAvailability: UpdateAvailability.updateAvailable,
+    immediateUpdateAllowed: true,
+    flexibleUpdateAllowed: true,
+    availableVersionCode: 2,
+    installStatus: InstallStatus.unknown,
+    packageName: 'com.example',
+    clientVersionStalenessDays: staleness,
+    updatePriority: 5,
+    immediateAllowedPreconditions: [],
+    flexibleAllowedPreconditions: [],
+  );
+
+  @override
+  Future<AppUpdateResult> startImmediateUpdate() async {
+    immediateStarts++;
+    return AppUpdateResult.success;
+  }
+}
+
+class _ThrowingService extends InAppUpdateService {
+  @override
+  Future<AppUpdateInfo?> checkForUpdate() async => throw Exception('play down');
 }

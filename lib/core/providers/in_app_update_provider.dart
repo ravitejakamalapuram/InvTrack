@@ -5,7 +5,16 @@ import 'package:in_app_update/in_app_update.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/services/in_app_update_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 
+/// Offer a blocking (immediate) update only when the installed version is at
+/// least this many days behind Play's latest (`clientVersionStalenessDays`).
+const int kImmediateUpdateStalenessDays = 60;
+
+/// Minimum gap between two automatic update prompts.
+const Duration kUpdatePromptInterval = Duration(days: 3);
+
+const String _lastPromptKey = 'in_app_update_last_prompt_ms';
 
 /// Provider for InAppUpdateService
 final inAppUpdateServiceProvider = Provider<InAppUpdateService>((ref) {
@@ -41,6 +50,11 @@ class InAppUpdateState {
   /// Check if this is a high priority update
   /// Priority 0-5: Google's update priority (5 = highest)
   bool get isHighPriority => (updateInfo?.updatePriority ?? 0) >= 4;
+
+  /// True when the installed version is at least
+  /// [kImmediateUpdateStalenessDays] behind. Unknown staleness is not stale.
+  bool get isStale =>
+      (updateInfo?.clientVersionStalenessDays ?? 0) >= kImmediateUpdateStalenessDays;
 
   // Sentinel object to distinguish "not provided" from "explicit null"
   static const _sentinel = Object();
@@ -118,6 +132,21 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
       // InAppUpdate might throw on non-Android platforms, catch silently
       LoggerService.debug('Failed to listen to install updates (likely non-Android platform)');
     }
+  }
+
+  /// Whether enough time has passed since the last automatic update prompt.
+  bool shouldPromptNow(DateTime now) {
+    final lastMs = ref.read(sharedPreferencesProvider).getInt(_lastPromptKey);
+    if (lastMs == null) return true;
+    final last = DateTime.fromMillisecondsSinceEpoch(lastMs);
+    return now.difference(last) >= kUpdatePromptInterval;
+  }
+
+  /// Records that an automatic update prompt was shown at [now].
+  Future<void> markPrompted(DateTime now) async {
+    await ref
+        .read(sharedPreferencesProvider)
+        .setInt(_lastPromptKey, now.millisecondsSinceEpoch);
   }
 
   /// Check for updates from Google Play

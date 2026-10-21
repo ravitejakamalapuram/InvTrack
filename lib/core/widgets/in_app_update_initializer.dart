@@ -8,8 +8,9 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 /// Initializes in-app update check on app start
 ///
 /// Strategy:
-/// - High priority updates (4-5): Show immediate update (blocking)
-/// - Low priority updates (0-3): Show flexible update dialog (non-blocking)
+/// - Installed version 60+ days behind: immediate update (blocking)
+/// - Otherwise: flexible update dialog (non-blocking)
+/// - At most one automatic prompt per 3 days; Play errors are logged only
 ///
 /// Note: Only works on Android via Google Play
 class InAppUpdateInitializer extends ConsumerStatefulWidget {
@@ -87,16 +88,25 @@ class _InAppUpdateInitializerState
         return;
       }
 
-      // High priority updates: Use immediate update (blocking)
-      if (state.isHighPriority && state.immediateUpdateAllowed) {
-        LoggerService.info('Starting immediate update for high priority');
-        await ref.read(inAppUpdateProvider.notifier).startImmediateUpdate();
+      final notifier = ref.read(inAppUpdateProvider.notifier);
+      final now = DateTime.now();
+      if (!notifier.shouldPromptNow(now)) {
+        LoggerService.debug('Update prompt skipped: prompted within the last 3 days');
         return;
       }
 
-      // Low priority updates: Show flexible update dialog
+      // Very stale installs: use immediate update (blocking)
+      if (state.isStale && state.immediateUpdateAllowed) {
+        LoggerService.info('Starting immediate update for stale install');
+        await notifier.markPrompted(now);
+        await notifier.startImmediateUpdate();
+        return;
+      }
+
+      // Everything else: flexible update dialog
       if (state.flexibleUpdateAllowed && !_hasDeferredUpdate) {
         LoggerService.info('Showing flexible update dialog');
+        await notifier.markPrompted(now);
         _showFlexibleUpdateDialog();
       }
     } catch (e, st) {
