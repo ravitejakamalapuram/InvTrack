@@ -139,7 +139,7 @@ final _croreSmall = _Fx(
 );
 
 // Cr-scale cards that keep a net figure: closed, and open with a confirmed
-// value. Their strip shows "Invested: " and the amount.
+// value. Their strip shows "Total cost: " and the amount.
 final _croreClosed = _Fx(
   _investment(
     id: 'flat-closed',
@@ -510,12 +510,12 @@ void main() {
       await _pumpCards(tester, [_p2p]);
 
       expect(find.text('₹4 L'), findsOneWidget);
-      expect(find.text('invested'), findsOneWidget);
+      expect(find.text('total cost'), findsOneWidget);
       expect(find.text('₹2.52 L'), findsOneWidget);
       expect(find.text('received'), findsOneWidget);
       expect(find.text('Awaiting current value'), findsOneWidget);
       // The strip no longer repeats the invested amount.
-      expect(find.text('Invested: '), findsNothing);
+      expect(find.text('Total cost: '), findsNothing);
 
       final invested = _rect(tester, '₹4 L');
       final received = _rect(tester, '₹2.52 L');
@@ -530,7 +530,7 @@ void main() {
         await _pumpCards(tester, [_gold]);
 
         expect(find.text('₹1.5 L'), findsOneWidget);
-        expect(find.text('invested'), findsOneWidget);
+        expect(find.text('total cost'), findsOneWidget);
         expect(find.text('₹0'), findsOneWidget);
         expect(find.text('received'), findsOneWidget);
         expect(find.text('Awaiting first payout'), findsOneWidget);
@@ -541,11 +541,11 @@ void main() {
       await _pumpCards(tester, [_p2p.archived()]);
 
       expect(find.text('₹4 L'), findsOneWidget);
-      expect(find.text('invested'), findsOneWidget);
+      expect(find.text('total cost'), findsOneWidget);
       expect(find.text('₹2.52 L'), findsOneWidget);
       expect(find.text('received'), findsOneWidget);
       expect(find.text('Awaiting current value'), findsOneWidget);
-      expect(find.text('Invested: '), findsNothing);
+      expect(find.text('Total cost: '), findsNothing);
     });
 
     for (final fx in [_p2p, _gold]) {
@@ -583,14 +583,14 @@ void main() {
       expect(
         _label(tester, 0),
         contains(
-          'Invested: 4 lakh rupees. Received: 2.52 lakh rupees. '
+          'Total cost: 4 lakh rupees. Received: 2.52 lakh rupees. '
           'Returns: Awaiting current value',
         ),
       );
       expect(
         _label(tester, 1),
         contains(
-          'Invested: 1.5 lakh rupees. Received: 0 rupees. '
+          'Total cost: 1.5 lakh rupees. Received: 0 rupees. '
           'Returns: Awaiting first payout',
         ),
       );
@@ -618,7 +618,7 @@ void main() {
 
         expect(find.textContaining('₹'), findsNothing);
         expect(find.text('•••••'), findsNWidgets(2));
-        expect(find.text('invested'), findsOneWidget);
+        expect(find.text('total cost'), findsOneWidget);
         expect(find.text('received'), findsOneWidget);
         expect(find.textContaining('Awaiting'), findsOneWidget);
 
@@ -626,7 +626,7 @@ void main() {
         expect(
           label,
           contains(
-            'Invested: $sentinelHiddenAmount. Received: $sentinelHiddenAmount. '
+            'Total cost: $sentinelHiddenAmount. Received: $sentinelHiddenAmount. '
             'Returns: '
             'Awaiting',
           ),
@@ -687,8 +687,8 @@ void main() {
           // The words line up too: same left edge for "invested", same right
           // edge for "received".
           expect(
-            _rect(tester, 'invested', 0).left,
-            closeTo(_rect(tester, 'invested', 1).left, 0.01),
+            _rect(tester, 'total cost', 0).left,
+            closeTo(_rect(tester, 'total cost', 1).left, 0.01),
           );
           expect(
             _rect(tester, 'received', 0).right,
@@ -715,7 +715,7 @@ void main() {
           // R2
           expect(
             _baseline(tester, '₹4 L'),
-            closeTo(_baseline(tester, 'invested'), 0.01),
+            closeTo(_baseline(tester, 'total cost'), 0.01),
           );
           expect(
             _baseline(tester, '₹2.52 L'),
@@ -1224,9 +1224,9 @@ void main() {
         closeTo(_rect(tester, '₹0').right, 0.01),
       );
       for (final (amount, word, i) in [
-        ('₹12.35 Cr', 'invested', 0),
+        ('₹12.35 Cr', 'total cost', 0),
         ('₹9.88 Cr', 'received', 0),
-        ('₹10 Cr', 'invested', 1),
+        ('₹10 Cr', 'total cost', 1),
         ('₹0', 'received', 1),
       ]) {
         expect(
@@ -1261,17 +1261,17 @@ void main() {
           closeTo(_rect(tester, '₹9.88 Cr').right, 0.01),
         );
         for (final (word, i) in [
-          ('invested', 0),
+          ('total cost', 0),
           ('received', 0),
-          ('invested', 1),
+          ('total cost', 1),
           ('received', 1),
         ]) {
           expect(_rect(tester, word, i).right, closeTo(content.right, 0.01));
         }
         for (final (amount, word, i) in [
-          ('₹12.35 Cr', 'invested', 0),
+          ('₹12.35 Cr', 'total cost', 0),
           ('₹9.88 Cr', 'received', 0),
-          ('₹10 Cr', 'invested', 1),
+          ('₹10 Cr', 'total cost', 1),
           ('₹0', 'received', 1),
         ]) {
           expect(
@@ -1295,10 +1295,10 @@ void main() {
 
       expect(tester.takeException(), isNull);
       final words = find.byWidgetPredicate(
-        (w) => w is Text && (w.data == 'invested' || w.data == 'received'),
+        (w) => w is Text && (w.data == 'total cost' || w.data == 'received'),
       );
       expect(words, findsNWidgets(4));
-      final invested = find.text('invested');
+      final invested = find.text('total cost');
       final received = find.text('received');
       expect(
         tester.getRect(invested.at(0)).left,
@@ -1316,7 +1316,7 @@ void main() {
     });
   });
 
-  // The strip's "Invested: " and amount are one group that cannot be cut, so it
+  // The strip's "Total cost: " and amount are one group that cannot be cut, so it
   // must be allowed to wrap rather than run past the card on a Cr-scale card.
   group('the bottom strip fits a Cr-scale invested amount', () {
     final cards = <String, _Fx>{
@@ -1335,7 +1335,7 @@ void main() {
             textScale: scale,
           );
 
-          expect(find.text('Invested: '), findsOneWidget);
+          expect(find.text('Total cost: '), findsOneWidget);
           expect(tester.takeException(), isNull);
           _expectInsideCard(tester);
         });
@@ -1364,7 +1364,7 @@ void main() {
           final amount = find.descendant(
             of: find
                 .ancestor(
-                  of: find.text('Invested: '),
+                  of: find.text('Total cost: '),
                   matching: find.byType(Row),
                 )
                 .first,
@@ -1438,7 +1438,7 @@ void main() {
       for (final text in shows) {
         expect(find.text(text), findsOneWidget, reason: text);
       }
-      expect(find.text('invested'), findsNothing);
+      expect(find.text('total cost'), findsNothing);
       expect(find.text('received'), findsNothing);
       expect(find.textContaining('Awaiting'), findsNothing);
     }
@@ -1447,7 +1447,7 @@ void main() {
       await expectUnchanged(
         tester,
         _confirmedValue,
-        shows: ['-₹1 L', '+7.2% IRR', 'Invested: '],
+        shows: ['-₹1 L', '+7.2% IRR', 'Total cost: '],
       );
     });
 
@@ -1455,7 +1455,7 @@ void main() {
       await expectUnchanged(
         tester,
         _estimate,
-        shows: ['-₹1 L', '+7.2% Expected XIRR', 'Invested: '],
+        shows: ['-₹1 L', '+7.2% Expected XIRR', 'Total cost: '],
       );
     });
 
@@ -1463,7 +1463,7 @@ void main() {
       await expectUnchanged(
         tester,
         _paidBack(),
-        shows: ['+₹10,000', '+4.9% IRR so far', 'Invested: '],
+        shows: ['+₹10,000', '+4.9% IRR so far', 'Total cost: '],
       );
     });
 
@@ -1471,7 +1471,7 @@ void main() {
       await expectUnchanged(
         tester,
         _closed,
-        shows: ['+₹10,000', '+4.9% IRR', 'CLOSED', 'Invested: '],
+        shows: ['+₹10,000', '+4.9% IRR', 'CLOSED', 'Total cost: '],
       );
     });
 
@@ -1489,7 +1489,7 @@ void main() {
       await _pumpCards(tester, [_paidBack(returned: 100000)]);
 
       expect(find.textContaining('so far'), findsOneWidget);
-      expect(find.text('invested'), findsNothing);
+      expect(find.text('total cost'), findsNothing);
       expect(find.text('received'), findsNothing);
     });
   });
