@@ -19,7 +19,6 @@
 /// - [ScheduledNotificationHandler]: Weekly, monthly, FY summaries & tax reminders
 /// - [InvestmentNotificationHandler]: Income & maturity reminders, milestones
 /// - [GoalNotificationHandler]: Goal milestones and alerts
-/// - [AlertNotificationHandler]: Risk alerts, idle investment checks
 ///
 /// ## Notification Types
 ///
@@ -104,7 +103,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
-import 'package:inv_tracker/core/notifications/handlers/alert_notification_handler.dart';
 import 'package:inv_tracker/core/notifications/handlers/goal_notification_handler.dart';
 import 'package:inv_tracker/core/notifications/handlers/investment_notification_handler.dart';
 import 'package:inv_tracker/core/notifications/handlers/scheduled_notification_handler.dart';
@@ -185,7 +183,6 @@ class NotificationService with NotificationPreferencesMixin {
   late final ScheduledNotificationHandler _scheduledHandler;
   late final InvestmentNotificationHandler _investmentHandler;
   late final GoalNotificationHandler _goalHandler;
-  late final AlertNotificationHandler _alertHandler;
 
   /// [clock] supplies "now" for reminder scheduling; tests inject a fixed
   /// time. Defaults to [DateTime.now].
@@ -194,6 +191,7 @@ class NotificationService with NotificationPreferencesMixin {
     this._prefs, {
     DateTime Function()? clock,
   }) {
+    NotificationIdSlots.bind(_prefs);
     // Initialize handlers with required dependencies
     _scheduledHandler = ScheduledNotificationHandler(
       plugin: _plugin,
@@ -220,13 +218,6 @@ class NotificationService with NotificationPreferencesMixin {
       ensureInitialized: _ensureInitialized,
       ensurePermissionsForShow: _ensurePermissionsForShow,
       formatCurrency: _formatCurrency,
-    );
-
-    _alertHandler = AlertNotificationHandler(
-      plugin: _plugin,
-      prefs: _prefs,
-      ensureInitialized: _ensureInitialized,
-      ensurePermissionsForShow: _ensurePermissionsForShow,
     );
   }
 
@@ -309,10 +300,34 @@ class NotificationService with NotificationPreferencesMixin {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
+    // Before _isInitialized, so no caller can schedule a reminder that this
+    // cleanup would then cancel.
+    await _dropReminderIdsFromHashScheme();
+
     _isInitialized = true;
     LoggerService.info('NotificationService initialized');
 
     await _queueLaunchTap();
+  }
+
+  static const _slotIdsMigratedKey = 'notification_ids_slot_scheme';
+
+  /// Income and maturity reminders scheduled by earlier versions have IDs from
+  /// `hashCode % range`, which slot IDs can now equal. Cancel them once; the
+  /// next sync schedules every reminder again under its slot ID.
+  Future<void> _dropReminderIdsFromHashScheme() async {
+    try {
+      if (_prefs.getBool(_slotIdsMigratedKey) ?? false) return;
+      for (final request in await _plugin.pendingNotificationRequests()) {
+        if (NotificationIds.isIncomeReminderId(request.id) ||
+            NotificationIds.isMaturityReminderId(request.id)) {
+          await _plugin.cancel(id: request.id);
+        }
+      }
+      await _prefs.setBool(_slotIdsMigratedKey, true);
+    } catch (e) {
+      LoggerService.warn('Could not drop old reminder IDs', error: e);
+    }
   }
 
   /// The plugin does not deliver the tap that started a killed app through
@@ -982,23 +997,6 @@ class NotificationService with NotificationPreferencesMixin {
     lastActivityDate: lastActivityDate,
   );
 
-  // --- Alert Notifications ---
-
-  /// Show a concentration/risk alert notification
-  Future<void> showRiskAlert({
-    required String alertType,
-    required String title,
-    required String body,
-  }) => _alertHandler.showRiskAlert(
-    alertType: alertType,
-    title: title,
-    body: body,
-  );
-
-  /// Check for idle investments and show alerts
-  Future<void> checkIdleInvestments(List<IdleInvestmentInfo> investments) =>
-      _alertHandler.checkIdleInvestments(investments);
-
   // ============ New User Activation Sequence ============
 
   /// Whether activation notifications are enabled
@@ -1087,8 +1085,8 @@ class NotificationService with NotificationPreferencesMixin {
       NotificationChannels.activation,
       'Activation',
       channelDescription: 'New user activation nudges',
-      importance: Importance.high,
-      priority: Priority.high,
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
       playSound: true,
     );
 
@@ -1193,8 +1191,8 @@ class NotificationService with NotificationPreferencesMixin {
     if (day14Time.isAfter(now) && !_isActivationDaySent(14)) {
       await _plugin.zonedSchedule(
         id: NotificationIds.activationDay14,
-        title: '📈 Join Smart Investors',
-        body: 'Thousands of investors track their real returns with InvTrack. Add your first investment and join them!',
+        title: '📈 Track Every Investment',
+        body: 'Track FD, P2P and bond returns in one place. Add your first investment to see your real returns.',
         scheduledDate: tz.TZDateTime.from(day14Time, tz.local),
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
