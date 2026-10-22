@@ -12,6 +12,7 @@ import 'package:inv_tracker/features/investment/presentation/providers/investmen
 
 import '../../../../mocks/fake_documents.dart';
 import '../../../../mocks/mock_analytics_service.dart';
+import '../../valuation/in_memory_valuation_repository.dart';
 import '../../../../mocks/mock_notification_service.dart';
 import '../../data/repositories/mock_investment_repository.dart';
 
@@ -57,6 +58,9 @@ void main() {
     container = ProviderContainer(
       overrides: [
         investmentRepositoryProvider.overrideWithValue(repo),
+        valuationRepositoryProvider.overrideWithValue(
+          InMemoryValuationRepository(),
+        ),
         documentRepositoryProvider.overrideWithValue(FakeDocumentRepository()),
         documentStorageServiceProvider.overrideWithValue(
           FakeDocumentStorageService(),

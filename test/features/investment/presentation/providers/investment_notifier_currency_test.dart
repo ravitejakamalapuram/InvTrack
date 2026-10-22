@@ -9,6 +9,7 @@ import 'package:inv_tracker/features/investment/presentation/providers/investmen
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import '../../data/repositories/mock_investment_repository.dart';
 import '../../../../mocks/fake_documents.dart';
+import '../../valuation/in_memory_valuation_repository.dart';
 import '../../../../mocks/mock_analytics_service.dart';
 import '../../../../mocks/mock_notification_service.dart';
 
@@ -26,6 +27,9 @@ void main() {
         documentRepositoryProvider.overrideWithValue(FakeDocumentRepository()),
         documentStorageServiceProvider.overrideWithValue(
           FakeDocumentStorageService(),
+        ),
+        valuationRepositoryProvider.overrideWithValue(
+          InMemoryValuationRepository(),
         ),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
         notificationServiceProvider.overrideWithValue(

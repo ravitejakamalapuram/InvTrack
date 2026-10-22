@@ -24,6 +24,10 @@ class CashFlowCardWidget extends ConsumerWidget {
   final Future<bool?> Function() onConfirmDelete;
   final VoidCallback onDeleted;
 
+  /// A read-only card has no swipe, edit or delete: used for archived
+  /// investments, whose flows are not in the collection those actions write to.
+  final bool isReadOnly;
+
   const CashFlowCardWidget({
     super.key,
     required this.cashFlow,
@@ -33,6 +37,7 @@ class CashFlowCardWidget extends ConsumerWidget {
     required this.onEdit,
     required this.onConfirmDelete,
     required this.onDeleted,
+    this.isReadOnly = false,
   });
 
   @override
@@ -41,6 +46,15 @@ class CashFlowCardWidget extends ConsumerWidget {
     final color = isOutflow
         ? (isDark ? AppColors.errorDark : AppColors.errorLight)
         : (isDark ? AppColors.successDark : AppColors.successLight);
+
+    if (isReadOnly) {
+      return RepaintBoundary(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _buildCardContent(color, isOutflow, ref),
+        ),
+      );
+    }
 
     return RepaintBoundary(
       child: Padding(
@@ -112,7 +126,7 @@ class CashFlowCardWidget extends ConsumerWidget {
       elevation: isDark ? 0 : 1,
       shadowColor: Colors.black.withValues(alpha: 0.1),
       child: InkWell(
-        onTap: onTap,
+        onTap: isReadOnly ? null : onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -250,7 +264,8 @@ class CashFlowCardWidget extends ConsumerWidget {
               child: Consumer(
                 builder: (context, ref, child) {
                   final isPrivacyMode = ref.watch(privacyModeProvider);
-                  final exchangeText = '1 ${cashFlow.currency} = ${rate.toStringAsFixed(4)} $baseCurrency • ${currencyFormat.formatSmart(convertedAmount)}';
+                  final exchangeText =
+                      '1 ${cashFlow.currency} = ${rate.toStringAsFixed(4)} $baseCurrency • ${currencyFormat.formatSmart(convertedAmount)}';
 
                   return isPrivacyMode
                       ? MaskedAmountText(

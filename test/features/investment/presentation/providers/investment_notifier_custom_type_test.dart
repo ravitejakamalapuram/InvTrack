@@ -22,6 +22,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../data/repositories/fake_custom_investment_type_repository.dart';
 import '../../data/repositories/mock_investment_repository.dart';
 import '../../../../mocks/fake_documents.dart';
+import '../../valuation/in_memory_valuation_repository.dart';
 import '../../../../mocks/mock_analytics_service.dart';
 import '../../../../mocks/mock_notification_service.dart';
 
@@ -62,6 +63,9 @@ void main() {
         documentRepositoryProvider.overrideWithValue(FakeDocumentRepository()),
         documentStorageServiceProvider.overrideWithValue(
           FakeDocumentStorageService(),
+        ),
+        valuationRepositoryProvider.overrideWithValue(
+          InMemoryValuationRepository(),
         ),
         customInvestmentTypeRepositoryProvider.overrideWithValue(types),
         analyticsServiceProvider.overrideWithValue(analytics),
@@ -148,6 +152,9 @@ void main() {
       container = ProviderContainer(
         overrides: [
           investmentRepositoryProvider.overrideWithValue(investments),
+          valuationRepositoryProvider.overrideWithValue(
+            InMemoryValuationRepository(),
+          ),
           customInvestmentTypeRepositoryProvider.overrideWithValue(
             _UnreachableTypes(),
           ),

@@ -15,6 +15,7 @@ import 'package:inv_tracker/features/investment/presentation/providers/investmen
 
 import '../../../../mocks/fake_documents.dart';
 import '../../../../mocks/mock_analytics_service.dart';
+import '../../valuation/in_memory_valuation_repository.dart';
 import '../../../../mocks/mock_notification_service.dart';
 import '../../data/repositories/mock_investment_repository.dart';
 
@@ -55,6 +56,9 @@ void main() {
     container = ProviderContainer(
       overrides: [
         investmentRepositoryProvider.overrideWithValue(repo),
+        valuationRepositoryProvider.overrideWithValue(
+          InMemoryValuationRepository(),
+        ),
         documentRepositoryProvider.overrideWithValue(docs),
         documentStorageServiceProvider.overrideWithValue(storage),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
@@ -142,10 +146,12 @@ void main() {
       'investment', () async {
     docs.failOnCreate = true;
     docs.failOnDeleteByInvestment = true;
+    final originalPaths = storage.files.keys.toList();
 
     await expectLater(merge(), throwsException);
 
     expect(repo.investments.map((i) => i.id), unorderedEquals(['a', 'b', 'c']));
+    expect(storage.files.keys, unorderedEquals(originalPaths));
   });
 
   test('a document whose file is missing keeps its record and path', () async {
