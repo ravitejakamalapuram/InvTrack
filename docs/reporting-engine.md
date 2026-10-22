@@ -12,7 +12,7 @@ Status: design, 2026-10-21. One engine builds every report (weekly, monthly, yea
 | `WeeklySummaryService`, `ReportBuilderService._buildWeeklySummary` | Replace. They sum unconverted amounts, step days with `add(Duration(days: 1))` (wrong across DST), use `isAfter/isBefore` windows with a one-day pad, and format money with `toStringAsFixed`. The weekly and monthly report screens are served by the engine. `WeeklySummaryService` and `WeeklySummary` stay for now because notifications and smart insights still read them; they are removed in a follow-up once those move to `ReportResult`. The report-builder weekly branch is left for the same follow-up. |
 | `ReportSection`/`KpiData` (`dynamic_report_data.dart`) | Do not extend. `KpiData.value` is a pre-formatted `String`, which loses unknown-vs-zero and cannot be privacy-masked or exported. The engine returns typed values; renderers format. `DynamicReportData` stays for the other report types until they move. |
 | `report_builder_screen`, `dynamic_report_screen`, `base_report_screen`, `historical_reports_list`, `report_stat_card` | Reuse the widgets (`BaseReportScreen` shell, `ReportStatCard`, `PrivacyMask`). The new screen is a renderer over `ReportResult`, not a new framework. |
-| `ReportCacheService` | Reuse, keyed by definition id + period. |
+| `ReportCacheService` | Reuse, but its current key is only report type + period bounds, which is not enough: two currencies, definitions or portfolios would collide. Before the engine uses it, the key becomes definition id + period bounds + base currency + scope (identity/portfolio), applied identically on read and write; the cache is also cleared when the scope changes. The same scope fix applies to `weeklySummaryServiceProvider` while `WeeklySummaryService` remains. A cache-key test covers USD vs EUR, two definitions, and two scopes. |
 
 No second parallel system for the screens: after slice 3 the Weekly and Monthly tiles use the engine. The remaining old path is notification/insight data, tracked as the follow-up above.
 
@@ -39,7 +39,7 @@ No second parallel system for the screens: after slice 3 the Weekly and Monthly 
 
 ## Report definition and result
 
-```
+```text
 ReportDefinition { id, titleKey(l10n key), metrics: List<ReportMetric>,
                    breakdowns: List<Breakdown>, comparePrevious: bool }
 Breakdown = byInvestmentType | byCurrency | byMonth
@@ -58,8 +58,8 @@ Rules the engine enforces once:
 1. Archived investments (and their flows) are dropped first; a note records that, and the screen says so (money rule 9).
 2. Flows are converted with `batchConvertToBase`. A flow with no rate is dropped from the totals and counted in an `excludedFlows` note so the screen can say "N entries left out: no exchange rate". Native amounts are never summed under the base symbol. A missing currency is never defaulted to USD (rule 1).
 3. Flows are windowed with `period.contains`.
-4. Comparison: the same metrics are computed for `period.previous()`. `delta(metric)` is `Known` only when both values are known; percentage change is `Unknown(notApplicable)` when the previous value is 0, so there is no divide-by-zero and no "+inf%".
-5. Breakdown rows come from running the same metric functions on the subset (by investment type, by currency of the original flow, by calendar month), so a breakdown always sums to the total of the same metric (a test asserts this).
+4. Comparison: the same metrics are computed for `period.previous()`. `delta(metric)` is `Known` only when both values are known; percentage change is `Unknown(notApplicable)` when the previous value is 0, so there is no divide-by-zero and no "+inf%". If the current or previous value is `Unknown`, the delta and percentage change are `Unknown` with the same reason as the unknown operand (the previous operand's reason when both are unknown). Comparison tests cover unknown current, unknown previous, both unknown, and zero previous.
+5. Breakdown rows come from running the same metric functions on the subset (by investment type, by currency of the original flow, by calendar month), so for additive metrics (money totals, flow counts) the rows sum to the total (a test asserts this). Non-additive metrics (`periodXirr`, `periodMoic`) are recomputed on each subset and are never summed; no sum-equals-total assertion applies to them.
 
 ## Rendering contract
 
