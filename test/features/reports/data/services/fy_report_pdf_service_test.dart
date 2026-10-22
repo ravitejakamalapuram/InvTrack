@@ -198,6 +198,8 @@ void main() {
     test('footer is the not-tax-advice disclaimer', () {
       final c = _content(_report());
       expect(c.disclaimer, contains('It is not tax advice.'));
+      expect(c.disclaimer, contains('not calculated in this report'));
+      expect(c.disclaimer, isNot(contains('until')));
     });
 
     test('non-INR base currency uses its own symbol and locale', () {
