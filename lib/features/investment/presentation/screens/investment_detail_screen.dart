@@ -937,6 +937,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     final isArchived = widget.investment.isArchived;
     // Capture navigator and messenger upfront before any async operations
     final navigator = Navigator.of(context);
+    final detailRoute = ModalRoute.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context);
     final successMessage = isArchived
@@ -991,8 +992,14 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
         );
         // Navigate back after either change: this screen holds the old entity,
         // and after unarchive its Delete would target a stale archived copy.
+        // Remove this screen's own route: pop() would close whatever is on
+        // top, such as an options sheet opened while the write was pending.
         if (mounted) {
-          navigator.pop();
+          if (detailRoute != null) {
+            navigator.removeRoute(detailRoute);
+          } else {
+            navigator.pop();
+          }
         }
       } catch (e) {
         if (mounted) {

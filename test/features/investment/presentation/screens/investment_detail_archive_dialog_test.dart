@@ -3,6 +3,8 @@
 // FIRE, and which goals change), and its messages come from the ARB file.
 // Before, the detail screen had its own inline dialog that only said the item
 // would be hidden, and nothing tested it.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,6 +33,9 @@ class _FakeInvestmentNotifier extends InvestmentNotifier {
   _FakeInvestmentNotifier({this.fails = false});
 
   final bool fails;
+
+  /// When set, unarchive waits for it, to mimic a slow write.
+  Completer<void>? gate;
   final archived = <String>[];
   final restored = <String>[];
 
@@ -45,6 +50,7 @@ class _FakeInvestmentNotifier extends InvestmentNotifier {
 
   @override
   Future<void> unarchiveInvestment(String id) async {
+    await gate?.future;
     if (fails) throw Exception('offline');
     restored.add(id);
   }
@@ -275,5 +281,24 @@ void main() {
 
     expect(find.text(_l10n(tester).unarchiveInvestmentFailed), findsOneWidget);
     expect(find.text('Failed to unarchive investment'), findsOneWidget);
+  });
+
+  testWidgets('unarchive: a sheet opened while it is pending does not stop '
+      'the detail screen from going back', (tester) async {
+    final notifier = _FakeInvestmentNotifier()..gate = Completer<void>();
+    await _pump(tester, notifier: notifier, archived: true);
+
+    await _openArchiveDialog(tester, 'Unarchive Investment');
+    await tester.tap(find.widgetWithText(TextButton, _l10n(tester).unarchive));
+    await tester.pump();
+    // The write is pending; the user opens the options sheet again.
+    await tester.tap(find.byTooltip(_l10n(tester).tooltipMoreOptions));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete Investment'), findsOneWidget);
+
+    notifier.gate!.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(InvestmentDetailScreen), findsNothing);
   });
 }
