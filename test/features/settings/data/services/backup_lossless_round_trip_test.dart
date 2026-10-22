@@ -9,6 +9,7 @@ import 'package:archive/archive.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -42,6 +43,7 @@ void main() {
   late Directory tempDir;
   late _Docs docsRepo;
   late _Storage storageSvc;
+  late FakeGoalRepository goalRepo;
 
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -52,7 +54,7 @@ void main() {
           (call) async => tempDir.path,
         );
     repo = FakeInvestmentRepository();
-    final goals = FakeGoalRepository();
+    final goals = goalRepo = FakeGoalRepository();
     final docs = docsRepo = _Docs();
     when(
       () => docs.getDocumentsByInvestment(any()),
@@ -182,6 +184,50 @@ void main() {
             cf.notes,
       ];
       expect(notes, unorderedEquals(risky));
+    },
+  );
+
+  test(
+    'goal names that start like a spreadsheet formula come back unchanged',
+    () async {
+      const risky = [
+        '-5% drawdown',
+        '=Plan',
+        '+91 fund',
+        '@home',
+        "'=Plan",
+        "''=Plan",
+      ];
+      for (var i = 0; i < risky.length; i++) {
+        goalRepo.seed(
+          goals: [
+            GoalEntity(
+              id: 'g$i',
+              name: risky[i],
+              type: GoalType.targetAmount,
+              targetAmount: 5000,
+              trackingMode: GoalTrackingMode.all,
+              icon: 'x',
+              colorValue: 1,
+              createdAt: DateTime(2026, 1, 1),
+              updatedAt: DateTime(2026, 1, 1),
+              currency: 'USD',
+            ),
+          ],
+        );
+      }
+      final zip = await export.exportAsZipBytes();
+      goalRepo.reset();
+
+      final result = await import.importFromZip(
+        zip.bytes,
+        ImportStrategy.replace,
+        baseCurrency: 'INR',
+      );
+      expect(result.errors, isEmpty);
+
+      final names = [for (final g in await goalRepo.getAllGoals()) g.name];
+      expect(names, unorderedEquals(risky));
     },
   );
 

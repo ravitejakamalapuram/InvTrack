@@ -48,10 +48,17 @@ const _owner = UserEntity(id: 'uidA', email: 'a@example.com');
 
 class _FakeExportService extends Fake implements DataExportService {
   final shared = <List<String>>[];
+  final passwords = <String?>[];
 
   @override
-  Future<void> shareZipFiles(List<String> filePaths) async =>
-      shared.add(filePaths);
+  Future<void> shareZipFiles(
+    List<String> filePaths, {
+    String? password,
+    int kdfIterations = 0,
+  }) async {
+    shared.add(filePaths);
+    passwords.add(password);
+  }
 }
 
 /// A05-F1 / auth-account-02: a guest backup left after a partial merge must
@@ -152,8 +159,11 @@ void main() {
 
     await tester.tap(find.byTooltip('Share backup'));
     await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Export Backup'));
+    await tester.pumpAndSettle();
 
     expect(exportService.shared, [backups]);
+    expect(exportService.passwords, [null]);
     expect(store.files, backups, reason: 'sharing alone keeps the backups');
   });
 

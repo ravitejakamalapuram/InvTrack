@@ -6,10 +6,27 @@ name: nightly
 # within the last 36 h (A85, gate job in auto-release.yml), so a failure stops automatic releases until
 # a nightly run passes. To unblock a hotfix, dispatch this workflow on main and wait for it to pass.
 # A failure posts to Slack (notify-failure job: failing job names and the run link only).
+#
+# Regenerating goldens: the committed PNGs must be rendered on ubuntu-latest with the pinned Flutter
+# below, because font rasterisation differs per OS (PNGs made on macOS fail here with large diffs).
+# Never regenerate them locally. Instead run:
+#   gh workflow run nightly.yml --ref <your-branch> -f update_goldens=true
+#   gh run download <run-id> -n updated-goldens -D /tmp/updated-goldens
+# then copy the downloaded contents into test/golden/ (the artifact paths start below test/golden) and commit them.
+# The update run only uploads an artifact: it pushes nothing and skips the integration job.
 on:
   schedule:
     - cron: '37 1 * * *' # 01:37 UTC = 07:07 IST
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      update_goldens:
+        description: 'Regenerate golden PNGs on ubuntu-latest and upload them as an artifact'
+        type: boolean
+        default: false
+
+# The release gate rejects a golden regeneration run (it skips the integration job); keep this name in
+# step with regenerationRunName in scripts/nightly_gate.dart.
+run-name: ${{ inputs.update_goldens && 'nightly golden regeneration' || 'nightly' }}
 
 concurrency:
   group: nightly
@@ -35,10 +52,23 @@ jobs:
       - name: Install dependencies
         run: flutter pub get && flutter gen-l10n
       - name: Golden tests
+        if: ${{ !inputs.update_goldens }}
         run: flutter test --tags golden test/golden
+      - name: Regenerate goldens
+        if: ${{ inputs.update_goldens }}
+        run: flutter test --tags golden --update-goldens test/golden
+      - name: Upload regenerated goldens
+        if: ${{ inputs.update_goldens }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: updated-goldens
+          path: test/golden/**/goldens/*.png
+          if-no-files-found: error
+          retention-days: 7
 
   integration:
     name: Integration tests (Android emulator)
+    if: ${{ !inputs.update_goldens }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -69,7 +99,9 @@ jobs:
           api-level: 34
           arch: x86_64
           target: google_apis
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          # swiftshader_indirect hangs and then kills the emulator as soon as the Flutter app draws its first
+          # frame (Impeller); swangle_indirect renders the same app and the suite completes.
+          emulator-options: -no-window -gpu swangle_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
             flutter test integration_test/app_test.dart -d emulator-5554

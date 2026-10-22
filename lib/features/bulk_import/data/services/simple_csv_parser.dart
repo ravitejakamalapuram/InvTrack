@@ -977,7 +977,11 @@ class GoalsCsvParser {
   ///
   /// A missing or blank Currency becomes [baseCurrency]; without one,
   /// [ParsedGoalRow.currency] stays null for the caller to resolve.
-  static ParsedGoalsResult parseString(String content, {String? baseCurrency}) {
+  static ParsedGoalsResult parseString(
+    String content, {
+    String? baseCurrency,
+    bool fromBackup = false,
+  }) {
     final records = _readCsvRecords(content, isRecord: _looksLikeRow);
     if (records.isEmpty) {
       return const ParsedGoalsResult(
@@ -1018,6 +1022,7 @@ class GoalsCsvParser {
         record.values,
         columnMap,
         baseCurrency,
+        fromBackup,
       );
 
       if (result.isValid) {
@@ -1092,9 +1097,12 @@ class GoalsCsvParser {
     List<String> values,
     Map<String, int> columnMap,
     String? baseCurrency,
+    bool fromBackup,
   ) {
     try {
-      final name = _getValue(values, columnMap['name']!);
+      final rawName = _getValue(values, columnMap['name']!);
+      // The app guards such cells on export; a restore takes the guard off.
+      final name = fromBackup ? CsvUtils.restoreField(rawName) : rawName;
       final type = _getValue(values, columnMap['type']!);
       final targetAmountStr = _getValue(values, columnMap['targetAmount']!);
 

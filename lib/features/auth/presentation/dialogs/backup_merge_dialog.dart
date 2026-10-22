@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
+import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/guest_backup_merge_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/backup_password_dialogs.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Asks a guest whether to back up their data and sign in to a Google
@@ -224,7 +226,11 @@ Future<void> _offerBackup(
 }) async {
   Future<void> share(BuildContext? context) async {
     try {
-      await service.shareBackup(backupPath);
+      final dialogContext = context ?? rootNavigatorKey.currentContext;
+      if (dialogContext == null || !dialogContext.mounted) return;
+      final choice = await showBackupExportDialog(dialogContext);
+      if (choice == null) return;
+      await service.shareBackup(backupPath, password: choice.password);
     } catch (e, st) {
       ErrorHandler.handle(
         e,

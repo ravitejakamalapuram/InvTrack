@@ -44,10 +44,7 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 value: settings.weeklySummaryEnabled,
                 onChanged: (value) => ref
                     .read(notificationSettingsProvider.notifier)
-                    .setSetting(
-                      NotificationSettingType.weeklySummary,
-                      value,
-                    ),
+                    .setSetting(NotificationSettingType.weeklySummary, value),
               ),
               SettingsToggleTile(
                 icon: Icons.summarize,
@@ -57,10 +54,27 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 value: settings.monthlySummaryEnabled,
                 onChanged: (value) => ref
                     .read(notificationSettingsProvider.notifier)
-                    .setSetting(
-                      NotificationSettingType.monthlySummary,
-                      value,
-                    ),
+                    .setSetting(NotificationSettingType.monthlySummary, value),
+              ),
+              SettingsToggleTile(
+                icon: Icons.event_note,
+                iconColor: Colors.indigo,
+                title: l10n.notificationToggleFySummary,
+                subtitle: l10n.notificationToggleFySummarySubtitle,
+                value: settings.fySummaryEnabled,
+                onChanged: (value) => ref
+                    .read(notificationSettingsProvider.notifier)
+                    .setSetting(NotificationSettingType.fySummary, value),
+              ),
+              SettingsToggleTile(
+                icon: Icons.fact_check,
+                iconColor: Colors.blue,
+                title: l10n.notificationToggleWeeklyCheckIn,
+                subtitle: l10n.notificationToggleWeeklyCheckInSubtitle,
+                value: settings.weeklyCheckInEnabled,
+                onChanged: (value) => ref
+                    .read(notificationSettingsProvider.notifier)
+                    .setSetting(NotificationSettingType.weeklyCheckIn, value),
               ),
             ],
           ),
@@ -78,10 +92,7 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 value: settings.incomeRemindersEnabled,
                 onChanged: (value) => ref
                     .read(notificationSettingsProvider.notifier)
-                    .setSetting(
-                      NotificationSettingType.incomeReminders,
-                      value,
-                    ),
+                    .setSetting(NotificationSettingType.incomeReminders, value),
               ),
               SettingsToggleTile(
                 icon: Icons.event_available,
@@ -95,6 +106,26 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                       NotificationSettingType.maturityReminders,
                       value,
                     ),
+              ),
+              SettingsToggleTile(
+                icon: Icons.emoji_events,
+                iconColor: Colors.amber,
+                title: l10n.notificationToggleInvestmentMilestones,
+                subtitle: l10n.notificationToggleInvestmentMilestonesSubtitle,
+                value: settings.milestonesEnabled,
+                onChanged: (value) => ref
+                    .read(notificationSettingsProvider.notifier)
+                    .setSetting(NotificationSettingType.milestones, value),
+              ),
+              SettingsToggleTile(
+                icon: Icons.receipt_long,
+                iconColor: Colors.green,
+                title: l10n.notificationToggleTaxReminders,
+                subtitle: l10n.notificationToggleTaxRemindersSubtitle,
+                value: settings.taxRemindersEnabled,
+                onChanged: (value) => ref
+                    .read(notificationSettingsProvider.notifier)
+                    .setSetting(NotificationSettingType.taxReminders, value),
               ),
             ],
           ),
@@ -113,10 +144,27 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 value: settings.goalMilestonesEnabled,
                 onChanged: (value) => ref
                     .read(notificationSettingsProvider.notifier)
-                    .setSetting(
-                      NotificationSettingType.goalMilestones,
-                      value,
-                    ),
+                    .setSetting(NotificationSettingType.goalMilestones, value),
+              ),
+              SettingsToggleTile(
+                icon: Icons.trending_down,
+                iconColor: Colors.orange,
+                title: l10n.notificationToggleGoalAtRisk,
+                subtitle: l10n.notificationToggleGoalAtRiskSubtitle,
+                value: settings.goalAtRiskEnabled,
+                onChanged: (value) => ref
+                    .read(notificationSettingsProvider.notifier)
+                    .setSetting(NotificationSettingType.goalAtRisk, value),
+              ),
+              SettingsToggleTile(
+                icon: Icons.hourglass_empty,
+                iconColor: Colors.grey,
+                title: l10n.notificationToggleGoalStale,
+                subtitle: l10n.notificationToggleGoalStaleSubtitle,
+                value: settings.goalStaleEnabled,
+                onChanged: (value) => ref
+                    .read(notificationSettingsProvider.notifier)
+                    .setSetting(NotificationSettingType.goalStale, value),
               ),
             ],
           ),
