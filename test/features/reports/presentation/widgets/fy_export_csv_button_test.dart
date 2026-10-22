@@ -64,10 +64,19 @@ Widget _app({
   required FYCsvSharer share,
   required Future<FYReport> Function() report,
   bool privacy = false,
+  ValueNotifier<String>? currency,
 }) => ProviderScope(
   overrides: [
     fyReportProvider(2025).overrideWith((ref) => report()),
-    currencyCodeProvider.overrideWithValue('INR'),
+    if (currency == null)
+      currencyCodeProvider.overrideWithValue('INR')
+    else
+      currencyCodeProvider.overrideWith((ref) {
+        void l() => ref.invalidateSelf();
+        currency.addListener(l);
+        ref.onDispose(() => currency.removeListener(l));
+        return currency.value;
+      }),
     privacyModeProvider.overrideWith(() => _Privacy(privacy)),
   ],
   child: MaterialApp(
@@ -122,6 +131,28 @@ void main() {
         t.widget<TextButton>(find.bySubtype<TextButton>()).onPressed,
         isNotNull,
       );
+    });
+
+    testWidgets('uses the currency from when the export started', (t) async {
+      final completer = Completer<FYReport>();
+      final cur = ValueNotifier('INR');
+      String? currency;
+      await t.pumpWidget(
+        _app(
+          currency: cur,
+          report: () => completer.future,
+          share: (r, c, {required subject, required maskSensitiveData}) async {
+            currency = c;
+          },
+        ),
+      );
+      await t.tap(find.bySubtype<TextButton>());
+      await t.pump();
+      cur.value = 'USD';
+      await t.pump();
+      completer.complete(_report);
+      await t.pumpAndSettle();
+      expect(currency, 'INR');
     });
 
     testWidgets('disposal while the report loads does not share or throw', (

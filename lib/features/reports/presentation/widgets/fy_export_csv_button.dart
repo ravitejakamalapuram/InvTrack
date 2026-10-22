@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
@@ -39,13 +38,16 @@ class _FYExportCsvButtonState extends ConsumerState<FYExportCsvButton> {
   Future<void> _export() async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    // One snapshot, taken before the async load, so the CSV currency matches
+    // the report even if the base currency changes meanwhile.
+    final currency = ref.read(currencyCodeProvider);
     setState(() => _busy = true);
     try {
       final report = await ref.read(fyReportProvider(widget.fyYear).future);
       if (!mounted) return;
       await widget.share(
         report,
-        ref.read(currencyCodeProvider),
+        currency,
         subject: l10n.fyExportCsvSubject(report.fyLabel),
         maskSensitiveData: ref.read(privacyModeProvider),
       );
