@@ -64,6 +64,10 @@ jobs:
       # Critical flows: app start and tabs, add an investment, add cash flows, and the export/import
       # screen. Each line runs on its own; the first failure fails the job.
       - name: Integration tests
+        env:
+          # The Gradle daemon (8 GB heap, android/gradle.properties) outlives the build and starves the
+          # emulator, which then drops off adb while the tests run. Build without a daemon.
+          GRADLE_OPTS: -Dorg.gradle.daemon=false
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 34
@@ -72,10 +76,17 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
+            sh -c 'while true; do echo "$(date +%T) $(free -m | sed -n 2p)"; sleep 10; done > /tmp/mem.log 2>&1 &'
             flutter test integration_test/app_test.dart -d emulator-5554
             flutter test integration_test/flows/investment_form_flow_test.dart -d emulator-5554
             flutter test integration_test/flows/cash_flow_crud_test.dart -d emulator-5554
             flutter test integration_test/flows/data_management_flow_test.dart -d emulator-5554
+      - name: Memory diagnostics
+        if: ${{ always() }}
+        run: |
+          cat /tmp/mem.log || true
+          free -m
+          sudo dmesg | grep -iE 'out of memory|killed process' | tail -5 || true
 
   # Own job so the webhook secret never reaches the test jobs. Sends only job names and the run URL.
   notify-failure:
