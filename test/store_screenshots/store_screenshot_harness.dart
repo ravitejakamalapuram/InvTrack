@@ -21,6 +21,7 @@ import 'package:inv_tracker/features/income_projection/presentation/providers/in
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
+import '../../integration_test/mocks/fake_deletion_request_service.dart';
 import '../../integration_test/mocks/fake_fire_settings_repository.dart';
 import '../../integration_test/mocks/store_demo_data.dart';
 import '../../integration_test/test_app.dart';
@@ -222,6 +223,9 @@ List<Override> _storeOverrides(StoreDemoData demo) => [
     FlutterLocalNotificationsPlugin(),
   ),
   firestoreProvider.overrideWithValue(_NoFirestore()),
+  deletionRequestServiceProvider.overrideWithValue(
+    FakeDeletionRequestService(),
+  ),
   legacyCurrencyBackfillServiceProvider.overrideWithValue(null),
   usdTagRepairServiceProvider.overrideWithValue(null),
   connectivityStatusProvider.overrideWith((ref) => Stream.value(true)),
