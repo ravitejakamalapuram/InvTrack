@@ -76,7 +76,7 @@ final consentServiceProvider = Provider<ConsentService>(
 
 class AnalyticsConsentNotifier extends Notifier<bool> {
   @override
-  bool build() => ref.read(consentServiceProvider).analyticsEnabled;
+  bool build() => ref.watch(consentServiceProvider).analyticsEnabled;
 
   Future<void> setEnabled(bool value) async {
     await ref.read(consentServiceProvider).setAnalytics(value);
@@ -86,7 +86,7 @@ class AnalyticsConsentNotifier extends Notifier<bool> {
 
 class CrashReportingConsentNotifier extends Notifier<bool> {
   @override
-  bool build() => ref.read(consentServiceProvider).crashReportingEnabled;
+  bool build() => ref.watch(consentServiceProvider).crashReportingEnabled;
 
   Future<void> setEnabled(bool value) async {
     await ref.read(consentServiceProvider).setCrashReporting(value);
