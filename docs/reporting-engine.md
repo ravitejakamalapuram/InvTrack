@@ -23,7 +23,7 @@ No second parallel system for the screens: after slice 3 the Weekly and Monthly 
 - Half-open `[start, endExclusive)`. `contains(date)` normalises to the calendar day first (money rule 5). Nothing uses `isAfter/isBefore` on raw instants and no `Duration(days:)` arithmetic: next/previous use `DateTime(y, m, d + n)`, which is DST-safe. Day counts go through `DateTime.utc`.
 - Factories: `week(anchor, weekStart)`, `month(y, m)`, `quarter(y, q)`, `fy(startYear)` (1 Apr to next 1 Apr), `custom(start, endInclusive)`, and `containing(kind, day)`.
 - `weekStart` is a `DateTime.monday..sunday` argument, default Monday (matches the old report); a setting can feed it later. YAGNI: no setting UI in this work.
-- `previous()` gives the same-kind period before (for comparison). Month of 31 days vs 28/29 is handled by constructing from year/month, never by subtracting days. Leap day: 29 Feb is inside the month and FY periods like any other day.
+- `previous()` gives the same-kind period before (for comparison). Month of 31 days vs 28/29 is handled by constructing from year/month, never by subtracting days. Leap day: 29 Feb is inside the month and FY periods like any other day. For `custom(start, endInclusive)`, `previous()` is the equal-length window immediately before: with `n` = day count of `[start, endExclusive)`, it is `[start - n days, start)` built with `DateTime(y, m, d - n)` (DST-safe). A test covers it, including across a month and year boundary.
 - `months()` lists the calendar months a period touches (for the by-month breakdown).
 - Quarter is calendar-year based here; an FY quarter (Apr-Jun) is `custom` until a ticket needs it.
 
