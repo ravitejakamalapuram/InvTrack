@@ -97,10 +97,11 @@ enum FeatureFlag {
 
   /// Small info marker on the Overview total when a converted amount used an
   /// exchange rate older than 24 hours (A14, #759).
-  /// - Off by default; it ships by changing the default in a release PR
+  /// - On by default; the flag is only a kill switch
   approximateRatesIndicator(
     'approximate_rates_indicator',
     'Approximate Rates Marker',
+    defaultEnabled: true,
   );
 
   const FeatureFlag(this.key, this.displayName, {this.defaultEnabled = false});
@@ -266,7 +267,7 @@ final isGuestLinkBannerEnabledProvider = Provider<bool>((ref) {
 final isApproximateRatesIndicatorEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
-      (flags) => flags[FeatureFlag.approximateRatesIndicator] ?? false,
+      (flags) => flags[FeatureFlag.approximateRatesIndicator] ?? true,
     ),
   );
 });
