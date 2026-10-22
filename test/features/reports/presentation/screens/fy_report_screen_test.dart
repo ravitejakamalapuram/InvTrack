@@ -124,154 +124,163 @@ const _amounts = <String>[
 ];
 
 void main() {
-  testWidgets('every amount is visible when privacy mode is off', (
-    tester,
-  ) async {
-    await _pump(tester, _report());
-    await tester.scrollUntilVisible(
-      find.textContaining('not tax advice'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    for (final amount in _amounts) {
-      expect(
-        find.textContaining(amount, skipOffstage: false),
-        findsWidgets,
-        reason: '$amount must be visible',
+  group('FyReportScreen', () {
+    testWidgets('every amount is visible when privacy mode is off', (
+      tester,
+    ) async {
+      await _pump(tester, _report());
+      await tester.scrollUntilVisible(
+        find.textContaining('not tax advice'),
+        300,
+        scrollable: find.byType(Scrollable).first,
       );
-    }
-  });
+      for (final amount in _amounts) {
+        expect(
+          find.textContaining(amount, skipOffstage: false),
+          findsWidgets,
+          reason: '$amount must be visible',
+        );
+      }
+    });
 
-  testWidgets('shows the hero, tiles, tax card, performers and disclaimer', (
-    tester,
-  ) async {
-    await _pump(tester, _report());
+    testWidgets('shows the hero, tiles, tax card, performers and disclaimer', (
+      tester,
+    ) async {
+      await _pump(tester, _report());
 
-    expect(find.text('Tax-Year Report'), findsOneWidget);
-    expect(find.text('FY 2025-26'), findsOneWidget);
-    expect(find.textContaining('2,38,400'), findsOneWidget);
-    expect(find.text('11.4%'), findsOneWidget);
-    expect(find.textContaining('6,50,000'), findsOneWidget);
+      expect(find.text('Tax-Year Report'), findsOneWidget);
+      expect(find.text('FY 2025-26'), findsOneWidget);
+      expect(find.textContaining('2,38,400'), findsOneWidget);
+      expect(find.text('11.4%'), findsOneWidget);
+      expect(find.textContaining('6,50,000'), findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      find.textContaining('not tax advice'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('For your tax filing'), findsOneWidget);
-    expect(find.textContaining('4,21,000'), findsOneWidget);
-    expect(find.text('Fixed deposit, Bank A'), findsOneWidget);
-    expect(find.textContaining('It is not tax advice'), findsOneWidget);
-  });
-
-  testWidgets('null XIRR is an em dash with a hint, never 0%', (tester) async {
-    await _pump(tester, _report(xirr: null));
-
-    expect(find.text('—'), findsWidgets);
-    expect(
-      find.textContaining('Add a current value to calculate'),
-      findsOneWidget,
-    );
-    expect(find.textContaining('0%'), findsNothing);
-    expect(find.textContaining('0.0%'), findsNothing);
-  });
-
-  testWidgets('capital gains read Not calculated, not an amount', (
-    tester,
-  ) async {
-    await _pump(tester, _report());
-    await tester.scrollUntilVisible(
-      find.text('Not calculated'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('Not calculated'), findsOneWidget);
-  });
-
-  testWidgets('privacy mode hides every amount', (tester) async {
-    final handle = tester.ensureSemantics();
-    await _pump(tester, _report(), privacy: true);
-    await tester.scrollUntilVisible(
-      find.textContaining('not tax advice'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-
-    for (final amount in _amounts) {
-      expect(
-        find.textContaining(amount, skipOffstage: false),
-        findsNothing,
-        reason: '$amount must be masked',
+      await tester.scrollUntilVisible(
+        find.textContaining('not tax advice'),
+        300,
+        scrollable: find.byType(Scrollable).first,
       );
-    }
-    expect(find.textContaining('11.4%', skipOffstage: false), findsNothing);
-    expect(find.textContaining('8.1%', skipOffstage: false), findsNothing);
-    expect(find.bySemanticsLabel(RegExp('Hidden percentage')), findsWidgets);
-    handle.dispose();
-  });
+      expect(find.text('For your tax filing'), findsOneWidget);
+      expect(find.textContaining('4,21,000'), findsOneWidget);
+      expect(find.text('Fixed deposit, Bank A'), findsOneWidget);
+      expect(find.textContaining('It is not tax advice'), findsOneWidget);
+    });
 
-  testWidgets('selecting an FY requests and selects that year', (tester) async {
-    final handle = tester.ensureSemantics();
-    final requested = <int>[];
-    await _pump(tester, _report(), onYearRequested: requested.add);
-    requested.clear();
+    testWidgets('null XIRR is an em dash with a hint, never 0%', (
+      tester,
+    ) async {
+      await _pump(tester, _report(xirr: null));
 
-    await tester.tap(find.text('FY 2024-25'));
-    await tester.pumpAndSettle();
-
-    expect(requested, contains(2024));
-    expect(
-      tester.getSemantics(find.bySemanticsLabel('FY 2024-25')),
-      matchesSemantics(
-        label: 'FY 2024-25',
-        isSelected: true,
-        hasSelectedState: true,
-        isButton: true,
-        hasTapAction: true,
-        hasFocusAction: true,
-        isFocusable: true,
-      ),
-    );
-    handle.dispose();
-  });
-
-  testWidgets('no overflow at 320dp and 1.8x text; targets are 48dp', (
-    tester,
-  ) async {
-    await _pump(tester, _report(), scale: 1.8, size: const Size(320, 700));
-    expect(tester.takeException(), isNull);
-
-    for (final chip in ['FY 2025-26']) {
+      expect(find.text('—'), findsWidgets);
       expect(
-        tester
-            .getSize(
-              find
-                  .ancestor(of: find.text(chip), matching: find.byType(InkWell))
-                  .first,
-            )
-            .height,
+        find.textContaining('Add a current value to calculate'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('0%'), findsNothing);
+      expect(find.textContaining('0.0%'), findsNothing);
+    });
+
+    testWidgets('capital gains read Not calculated, not an amount', (
+      tester,
+    ) async {
+      await _pump(tester, _report());
+      await tester.scrollUntilVisible(
+        find.text('Not calculated'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Not calculated'), findsOneWidget);
+    });
+
+    testWidgets('privacy mode hides every amount', (tester) async {
+      final handle = tester.ensureSemantics();
+      await _pump(tester, _report(), privacy: true);
+      await tester.scrollUntilVisible(
+        find.textContaining('not tax advice'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      for (final amount in _amounts) {
+        expect(
+          find.textContaining(amount, skipOffstage: false),
+          findsNothing,
+          reason: '$amount must be masked',
+        );
+      }
+      expect(find.textContaining('11.4%', skipOffstage: false), findsNothing);
+      expect(find.textContaining('8.1%', skipOffstage: false), findsNothing);
+      expect(find.bySemanticsLabel(RegExp('Hidden percentage')), findsWidgets);
+      handle.dispose();
+    });
+
+    testWidgets('selecting an FY requests and selects that year', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final requested = <int>[];
+      await _pump(tester, _report(), onYearRequested: requested.add);
+      requested.clear();
+
+      await tester.tap(find.text('FY 2024-25'));
+      await tester.pumpAndSettle();
+
+      expect(requested, contains(2024));
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('FY 2024-25')),
+        matchesSemantics(
+          label: 'FY 2024-25',
+          isSelected: true,
+          hasSelectedState: true,
+          isButton: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+          isFocusable: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('no overflow at 320dp and 1.8x text; targets are 48dp', (
+      tester,
+    ) async {
+      await _pump(tester, _report(), scale: 1.8, size: const Size(320, 700));
+      expect(tester.takeException(), isNull);
+
+      for (final chip in ['FY 2025-26']) {
+        expect(
+          tester
+              .getSize(
+                find
+                    .ancestor(
+                      of: find.text(chip),
+                      matching: find.byType(InkWell),
+                    )
+                    .first,
+              )
+              .height,
+          greaterThanOrEqualTo(48),
+        );
+      }
+      expect(
+        tester.getSize(find.byTooltip('Hide amounts')).shortestSide,
         greaterThanOrEqualTo(48),
       );
-    }
-    expect(
-      tester.getSize(find.byTooltip('Hide amounts')).shortestSide,
-      greaterThanOrEqualTo(48),
-    );
-  });
+    });
 
-  testWidgets('privacy mode draws the monthly bars flat', (tester) async {
-    Set<double> factors() => tester
-        .widgetList<FractionallySizedBox>(
-          find.byType(FractionallySizedBox, skipOffstage: false),
-        )
-        .map((w) => w.heightFactor!)
-        .toSet();
+    testWidgets('privacy mode draws the monthly bars flat', (tester) async {
+      Set<double> factors() => tester
+          .widgetList<FractionallySizedBox>(
+            find.byType(FractionallySizedBox, skipOffstage: false),
+          )
+          .map((w) => w.heightFactor!)
+          .toSet();
 
-    await _pump(tester, _report());
-    expect(factors().length, greaterThan(1));
+      await _pump(tester, _report());
+      expect(factors().length, greaterThan(1));
 
-    await tester.pumpWidget(const SizedBox());
-    await _pump(tester, _report(), privacy: true);
-    expect(factors(), {0.3});
+      await tester.pumpWidget(const SizedBox());
+      await _pump(tester, _report(), privacy: true);
+      expect(factors(), {0.3});
+    });
   });
 }
