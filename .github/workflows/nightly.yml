@@ -79,7 +79,7 @@ jobs:
             sh -c 'adb logcat -v time > /tmp/logcat.log 2>&1 &'
             sh -c 'while true; do echo "$(date +%T) $(adb get-state 2>&1) $(pgrep -c qemu-system || true)"; sleep 2; done > /tmp/adb.log 2>&1 &'
             sh -c 'while true; do echo "$(date +%T) $(free -m | sed -n 2p)"; sleep 10; done > /tmp/mem.log 2>&1 &'
-            flutter test integration_test/app_test.dart -d emulator-5554
+            flutter test --reporter expanded integration_test/app_test.dart -d emulator-5554
             flutter test integration_test/flows/investment_form_flow_test.dart -d emulator-5554
             flutter test integration_test/flows/cash_flow_crud_test.dart -d emulator-5554
             flutter test integration_test/flows/data_management_flow_test.dart -d emulator-5554
