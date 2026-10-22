@@ -38,11 +38,17 @@ class ReportPeriod {
     );
   }
 
-  factory ReportPeriod.month(int year, int month) => ReportPeriod._(
-    ReportPeriodKind.month,
-    DateTime(year, month, 1),
-    DateTime(year, month + 1, 1),
-  );
+  /// Calendar month [month] (1..12) of [year].
+  factory ReportPeriod.month(int year, int month) {
+    if (month < DateTime.january || month > DateTime.december) {
+      throw ArgumentError.value(month, 'month', 'must be 1..12');
+    }
+    return ReportPeriod._(
+      ReportPeriodKind.month,
+      DateTime(year, month, 1),
+      DateTime(year, month + 1, 1),
+    );
+  }
 
   /// Calendar quarter [quarter] (1..4) of [year].
   factory ReportPeriod.quarter(int year, int quarter) {
@@ -138,7 +144,11 @@ class ReportPeriod {
           start,
         );
       case ReportPeriodKind.month:
-        return ReportPeriod.month(start.year, start.month - 1);
+        return ReportPeriod._(
+          kind,
+          DateTime(start.year, start.month - 1, 1),
+          start,
+        );
       case ReportPeriodKind.quarter:
         return ReportPeriod._(
           kind,

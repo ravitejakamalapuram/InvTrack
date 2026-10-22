@@ -98,10 +98,19 @@ void main() {
       expect(p.previous().endExclusive, p.start);
     });
     test('stays 7 calendar days over DST changes in any zone', () {
-      // US spring-forward week and EU autumn week; calendar math only.
-      expect(ReportPeriod.week(DateTime(2024, 3, 10)).dayCount, 7);
+      // US spring-forward (2024-03-10) and fall-back (2024-11-03) weeks.
+      final spring = ReportPeriod.week(DateTime(2024, 3, 10));
+      expect(spring.start, DateTime(2024, 3, 4));
+      expect(spring.endExclusive, DateTime(2024, 3, 11));
+      expect(spring.dayCount, 7);
+      expect(spring.days().length, 7);
+      final fall = ReportPeriod.week(DateTime(2024, 11, 3));
+      expect(fall.start, DateTime(2024, 10, 28));
+      expect(fall.endExclusive, DateTime(2024, 11, 4));
+      expect(fall.dayCount, 7);
+      expect(fall.days().length, 7);
+      // EU autumn change.
       expect(ReportPeriod.week(DateTime(2024, 10, 27)).dayCount, 7);
-      expect(ReportPeriod.week(DateTime(2024, 3, 10)).days().length, 7);
     });
     test('rejects a bad week start', () {
       expect(
@@ -141,6 +150,46 @@ void main() {
       final prev = p.previous();
       expect(prev.endExclusive, p.start);
       expect(prev.dayCount, 10);
+    });
+  });
+
+  group('validation and remaining paths', () {
+    test('month rejects values outside 1..12', () {
+      expect(() => ReportPeriod.month(2024, 0), throwsArgumentError);
+      expect(() => ReportPeriod.month(2024, 13), throwsArgumentError);
+    });
+    test('quarter rejects values outside 1..4', () {
+      expect(() => ReportPeriod.quarter(2024, 0), throwsArgumentError);
+      expect(() => ReportPeriod.quarter(2024, 5), throwsArgumentError);
+    });
+    test('fy previous is the prior financial year', () {
+      expect(ReportPeriod.fy(2023).previous(), ReportPeriod.fy(2022));
+    });
+    test('containing week, month, quarter', () {
+      expect(
+        ReportPeriod.containing(ReportPeriodKind.week, DateTime(2024, 5, 15)),
+        ReportPeriod.week(DateTime(2024, 5, 15)),
+      );
+      expect(
+        ReportPeriod.containing(ReportPeriodKind.month, DateTime(2024, 5, 15)),
+        ReportPeriod.month(2024, 5),
+      );
+      expect(
+        ReportPeriod.containing(
+          ReportPeriodKind.quarter,
+          DateTime(2024, 5, 15),
+        ),
+        ReportPeriod.quarter(2024, 2),
+      );
+    });
+    test('containing custom throws', () {
+      expect(
+        () => ReportPeriod.containing(
+          ReportPeriodKind.custom,
+          DateTime(2024, 5, 15),
+        ),
+        throwsArgumentError,
+      );
     });
   });
 
