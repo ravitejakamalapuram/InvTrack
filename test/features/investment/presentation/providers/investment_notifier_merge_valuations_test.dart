@@ -20,22 +20,25 @@ void main() {
   late InMemoryValuationRepository valuations;
   late ProviderContainer container;
 
+  ProviderContainer buildContainer({bool snapshotsActive = true}) =>
+      ProviderContainer(
+        overrides: [
+          investmentRepositoryProvider.overrideWithValue(repo),
+          valuationRepositoryProvider.overrideWithValue(valuations),
+          valuationSnapshotsActiveProvider.overrideWithValue(snapshotsActive),
+          analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
+          notificationServiceProvider.overrideWithValue(
+            FakeNotificationService(),
+          ),
+          isAuthenticatedProvider.overrideWithValue(true),
+          currencyCodeProvider.overrideWithValue('INR'),
+        ],
+      );
+
   setUp(() {
     repo = FakeInvestmentRepository();
     valuations = InMemoryValuationRepository();
-    container = ProviderContainer(
-      overrides: [
-        investmentRepositoryProvider.overrideWithValue(repo),
-        valuationRepositoryProvider.overrideWithValue(valuations),
-        valuationSnapshotsActiveProvider.overrideWithValue(true),
-        analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
-        notificationServiceProvider.overrideWithValue(
-          FakeNotificationService(),
-        ),
-        isAuthenticatedProvider.overrideWithValue(true),
-        currencyCodeProvider.overrideWithValue('INR'),
-      ],
-    );
+    container = buildContainer();
   });
 
   tearDown(() {
@@ -111,6 +114,31 @@ void main() {
       );
 
       expect(repo.investments.map((i) => i.id), unorderedEquals(['a', 'b']));
+    },
+  );
+
+  test(
+    'with dated valuations off, snapshots are carried but not mirrored',
+    () async {
+      container.dispose();
+      container = buildContainer(snapshotsActive: false);
+      await seed('a');
+      await seed('b');
+      valuations.docs['s1'] = snap('s1', 'a', 1000);
+      valuations.docs['s2'] = snap('s2', 'b', 500);
+      container.listen(allInvestmentsProvider, (_, _) {});
+
+      await container
+          .read(investmentNotifierProvider.notifier)
+          .mergeInvestments(['a', 'b'], 'Both');
+
+      final merged = repo.investments.single;
+      expect(
+        valuations.docs.values.where((s) => s.investmentId == merged.id),
+        hasLength(1),
+      );
+      expect(merged.currentValue, isNull);
+      expect(merged.currentValueDate, isNull);
     },
   );
 }

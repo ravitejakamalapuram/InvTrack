@@ -1050,7 +1050,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           } catch (e) {
             LoggerService.warn(
               'Could not remove half-merged investment',
-              metadata: {'error': e.toString()},
+              metadata: {'errorType': e.runtimeType.toString()},
             );
           }
           rethrow;
