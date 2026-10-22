@@ -7930,5 +7930,10 @@
   "fyPdfFaqAnswer": "Open Reports, choose the Tax-Year report, then tap Export PDF. The PDF summarises what you recorded and is not tax advice. Capital gains are not calculated until sale proceeds and cost are recorded. Check every figure with your tax professional before you file.",
   "@fyPdfFaqAnswer": {
     "description": "FAQ answer about the Tax-Year PDF export"
+  },
+
+  "archivedReadOnlyBanner": "Archived. Unarchive to add or change transactions and documents.",
+  "@archivedReadOnlyBanner": {
+    "description": "Banner on an archived investment's detail screen explaining that it is read-only"
   }
 }
