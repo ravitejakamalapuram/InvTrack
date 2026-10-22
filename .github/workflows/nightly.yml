@@ -32,103 +32,28 @@ concurrency:
   group: nightly
   cancel-in-progress: false
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
-  goldens:
-    name: Golden tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          persist-credentials: false
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
-        with:
-          flutter-version: '3.38.4' # keep in step with release.yaml
-          channel: stable
-          cache: true
-      - name: Install dependencies
-        run: flutter pub get && flutter gen-l10n
-      - name: Golden tests
-        if: ${{ !inputs.update_goldens }}
-        run: flutter test --tags golden test/golden
-      - name: Regenerate goldens
-        if: ${{ inputs.update_goldens }}
-        run: flutter test --tags golden --update-goldens test/golden
-      - name: Upload regenerated goldens
-        if: ${{ inputs.update_goldens }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: updated-goldens
-          path: test/golden/**/goldens/*.png
-          if-no-files-found: error
-          retention-days: 7
-
-  integration:
-    name: Integration tests (Android emulator)
-    if: ${{ !inputs.update_goldens }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          persist-credentials: false
-      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
-        with:
-          flutter-version: '3.38.4' # keep in step with release.yaml
-          channel: stable
-          cache: true
-      - name: Install dependencies
-        run: flutter pub get && flutter gen-l10n
-      - name: Enable KVM for the emulator
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
+  nightly:
+    permissions:
+      contents: read
+    # TODO(pin): switch to @v2 once release-platform tags the reusable nightly (v2.10.0).
+    uses: ravitejakamalapuram/release-platform/.github/workflows/nightly.yml@feat/nightly-workflow
+    with:
+      app_name: InvTrack
+      flutter_version: '3.38.4' # keep in step with release.yaml
+      setup_command: flutter pub get && flutter gen-l10n
+      golden_command: flutter test --tags golden test/golden
+      golden_update_command: flutter test --tags golden --update-goldens test/golden
+      golden_artifact_path: test/golden/**/goldens/*.png
+      update_goldens: ${{ inputs.update_goldens == true }}
       # Critical flows: app start and tabs, add an investment, add cash flows, and the export/import
       # screen. Each line runs on its own; the first failure fails the job.
-      - name: Integration tests
-        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
-        with:
-          api-level: 34
-          arch: x86_64
-          target: google_apis
-          # swiftshader_indirect hangs and then kills the emulator as soon as the Flutter app draws its first
-          # frame (Impeller); swangle_indirect renders the same app and the suite completes.
-          emulator-options: -no-window -gpu swangle_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: true
-          script: |
-            flutter test integration_test/app_test.dart -d emulator-5554
-            flutter test integration_test/flows/investment_form_flow_test.dart -d emulator-5554
-            flutter test integration_test/flows/cash_flow_crud_test.dart -d emulator-5554
-            flutter test integration_test/flows/data_management_flow_test.dart -d emulator-5554
-
-  # Own job so the webhook secret never reaches the test jobs. Sends only job names and the run URL.
-  notify-failure:
-    name: Notify Slack of Failure
-    needs: [goldens, integration]
-    if: ${{ !cancelled() && (needs.goldens.result == 'failure' || needs.integration.result == 'failure') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions: {}
-    steps:
-      - name: Notify Slack
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          GOLDENS_RESULT: ${{ needs.goldens.result }}
-          INTEGRATION_RESULT: ${{ needs.integration.result }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          failed=""
-          [ "$GOLDENS_RESULT" = "failure" ] && failed="goldens"
-          [ "$INTEGRATION_RESULT" = "failure" ] && failed="${failed:+$failed, }integration"
-          PAYLOAD=$(jq -n --arg text "❌ *Nightly failed for InvTrack*: $failed — $RUN_URL" '{ text: $text }')
-          curl -fsS -o /dev/null -X POST -H 'Content-type: application/json' \
-            --data "$PAYLOAD" "$SLACK_WEBHOOK_URL"
-        shell: bash
+      integration_script: |
+        flutter test integration_test/app_test.dart -d emulator-5554
+        flutter test integration_test/flows/investment_form_flow_test.dart -d emulator-5554
+        flutter test integration_test/flows/cash_flow_crud_test.dart -d emulator-5554
+        flutter test integration_test/flows/data_management_flow_test.dart -d emulator-5554
+    secrets:
+      slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
