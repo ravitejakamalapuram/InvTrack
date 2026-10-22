@@ -98,72 +98,88 @@ void main() {
     ], 'Merged FD');
   }
 
-  test('the documents of the merged investments move to the new one', () async {
-    await merge();
+  group('merging investments with documents', () {
+    test(
+      'the documents of the merged investments move to the new one',
+      () async {
+        await merge();
 
-    final mergedId = repo.investments.singleWhere((i) => i.id != 'c').id;
-    final moved = docs.records.values
-        .where((d) => d.investmentId == mergedId)
-        .toList();
-    expect(
-      moved.map((d) => d.name),
-      unorderedEquals(['Receipt d1', 'Receipt d2']),
+        final mergedId = repo.investments.singleWhere((i) => i.id != 'c').id;
+        final moved = docs.records.values
+            .where((d) => d.investmentId == mergedId)
+            .toList();
+        expect(
+          moved.map((d) => d.name),
+          unorderedEquals(['Receipt d1', 'Receipt d2']),
+        );
+        for (final d in moved) {
+          expect(d.localPath, startsWith('$mergedId/'));
+          expect(storage.files[d.localPath], [1, 2, 3]);
+        }
+      },
     );
-    for (final d in moved) {
-      expect(d.localPath, startsWith('$mergedId/'));
-      expect(storage.files[d.localPath], [1, 2, 3]);
-    }
-  });
 
-  test('the old files and records are gone, other investments are '
-      'untouched', () async {
-    await merge();
+    test('the old files and records are gone, other investments are '
+        'untouched', () async {
+      await merge();
 
-    expect(
-      docs.records.values.where((d) => {'a', 'b'}.contains(d.investmentId)),
-      isEmpty,
+      expect(
+        docs.records.values.where((d) => {'a', 'b'}.contains(d.investmentId)),
+        isEmpty,
+      );
+      expect(
+        storage.files.keys.where(
+          (p) => p.startsWith('a/') || p.startsWith('b/'),
+        ),
+        isEmpty,
+      );
+      expect(docs.records['d3']?.investmentId, 'c');
+      expect(storage.files.containsKey(docs.records['d3']!.localPath), isTrue);
+    });
+
+    test('a document that cannot be carried over aborts the merge and leaves '
+        'the sources whole', () async {
+      docs.failOnCreate = true;
+
+      await expectLater(merge(), throwsException);
+
+      expect(
+        repo.investments.map((i) => i.id),
+        unorderedEquals(['a', 'b', 'c']),
+      );
+      expect(docs.records.keys, unorderedEquals(['d1', 'd2', 'd3']));
+      expect(storage.files.keys.length, 3);
+    });
+
+    test('a failing document cleanup still removes the half-merged '
+        'investment', () async {
+      docs.failOnCreate = true;
+      docs.failOnDeleteByInvestment = true;
+      final originalPaths = storage.files.keys.toList();
+
+      await expectLater(merge(), throwsException);
+
+      expect(
+        repo.investments.map((i) => i.id),
+        unorderedEquals(['a', 'b', 'c']),
+      );
+      expect(storage.files.keys, unorderedEquals(originalPaths));
+    });
+
+    test(
+      'a document whose file is missing keeps its record and path',
+      () async {
+        storage.files.remove(docs.records['d1']!.localPath);
+        final oldPath = docs.records['d1']!.localPath;
+
+        await merge();
+
+        final mergedId = repo.investments.singleWhere((i) => i.id != 'c').id;
+        final moved = docs.records.values.singleWhere(
+          (d) => d.investmentId == mergedId && d.name == 'Receipt d1',
+        );
+        expect(moved.localPath, oldPath);
+      },
     );
-    expect(
-      storage.files.keys.where((p) => p.startsWith('a/') || p.startsWith('b/')),
-      isEmpty,
-    );
-    expect(docs.records['d3']?.investmentId, 'c');
-    expect(storage.files.containsKey(docs.records['d3']!.localPath), isTrue);
-  });
-
-  test('a document that cannot be carried over aborts the merge and leaves '
-      'the sources whole', () async {
-    docs.failOnCreate = true;
-
-    await expectLater(merge(), throwsException);
-
-    expect(repo.investments.map((i) => i.id), unorderedEquals(['a', 'b', 'c']));
-    expect(docs.records.keys, unorderedEquals(['d1', 'd2', 'd3']));
-    expect(storage.files.keys.length, 3);
-  });
-
-  test('a failing document cleanup still removes the half-merged '
-      'investment', () async {
-    docs.failOnCreate = true;
-    docs.failOnDeleteByInvestment = true;
-    final originalPaths = storage.files.keys.toList();
-
-    await expectLater(merge(), throwsException);
-
-    expect(repo.investments.map((i) => i.id), unorderedEquals(['a', 'b', 'c']));
-    expect(storage.files.keys, unorderedEquals(originalPaths));
-  });
-
-  test('a document whose file is missing keeps its record and path', () async {
-    storage.files.remove(docs.records['d1']!.localPath);
-    final oldPath = docs.records['d1']!.localPath;
-
-    await merge();
-
-    final mergedId = repo.investments.singleWhere((i) => i.id != 'c').id;
-    final moved = docs.records.values.singleWhere(
-      (d) => d.investmentId == mergedId && d.name == 'Receipt d1',
-    );
-    expect(moved.localPath, oldPath);
   });
 }
