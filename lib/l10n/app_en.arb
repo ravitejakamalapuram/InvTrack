@@ -7995,5 +7995,15 @@
   "fyPdfExportFailed": "Could not create the PDF. Please try again.",
   "@fyPdfExportFailed": {
     "description": "Snackbar when PDF export fails"
+  },
+
+  "fyExportCsv": "Export CSV",
+  "@fyExportCsv": {
+    "description": "Button on the Tax-Year report that shares the report as a CSV file"
+  },
+
+  "fyExportCsvFailed": "Could not export the report. Please try again.",
+  "@fyExportCsvFailed": {
+    "description": "Error shown when the Tax-Year report CSV export fails"
   }
 }
