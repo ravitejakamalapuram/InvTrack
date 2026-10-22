@@ -27,13 +27,31 @@ InvestmentEntity _fd(String id) => InvestmentEntity(
   currency: 'INR',
 );
 
+/// Fails the deletes it is told to, so reminders of survivors can be checked.
+class _FailingRepository extends FakeInvestmentRepository {
+  Set<String> failDeleteOf = {};
+  bool failBulkDelete = false;
+
+  @override
+  Future<void> deleteInvestment(String id) async {
+    if (failDeleteOf.contains(id)) throw Exception('delete failed');
+    return super.deleteInvestment(id);
+  }
+
+  @override
+  Future<int> bulkDelete(List<String> investmentIds) async {
+    if (failBulkDelete) throw Exception('bulk delete failed');
+    return super.bulkDelete(investmentIds);
+  }
+}
+
 void main() {
-  late FakeInvestmentRepository repo;
+  late _FailingRepository repo;
   late FakeNotificationService notifications;
   late ProviderContainer container;
 
   setUp(() async {
-    repo = FakeInvestmentRepository();
+    repo = _FailingRepository();
     notifications = FakeNotificationService();
     container = ProviderContainer(
       overrides: [
@@ -83,4 +101,28 @@ void main() {
       expect(notifications.cancelledIncomeReminders, isNot(contains('c')));
     },
   );
+
+  test('a failed bulkDelete keeps every reminder', () async {
+    repo.failBulkDelete = true;
+
+    await expectLater(notifier().bulkDelete(['a', 'b']), throwsException);
+
+    expect(notifications.cancelledIncomeReminders, isEmpty);
+    expect(notifications.cancelledMaturityReminders, isEmpty);
+  });
+
+  test('a merge that fails on one source cancels only the sources already '
+      'deleted', () async {
+    container.listen(allInvestmentsProvider, (_, _) {});
+    await container.read(allInvestmentsProvider.future);
+    repo.failDeleteOf = {'b'};
+
+    await expectLater(
+      notifier().mergeInvestments(['a', 'b'], 'Merged FD'),
+      throwsException,
+    );
+
+    expect(notifications.cancelledIncomeReminders, ['a']);
+    expect(notifications.cancelledMaturityReminders, ['a']);
+  });
 }

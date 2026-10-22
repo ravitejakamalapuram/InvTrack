@@ -1015,8 +1015,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       // Delete old investments
       for (final id in investmentIds) {
         await repo.deleteInvestment(id);
+        // Only a source that is really gone loses its reminders.
+        await _cancelRemindersFor([id]);
       }
-      await _cancelRemindersFor(investmentIds);
 
       _invalidateAll();
       state = const AsyncValue.data(null);
