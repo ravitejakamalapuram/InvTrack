@@ -696,6 +696,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       final deletedCount = await ref
           .read(investmentRepositoryProvider)
           .bulkDelete(investmentIds);
+      await _cancelRemindersFor(investmentIds);
       await _deleteDocumentFiles(investmentIds);
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -1015,6 +1016,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       for (final id in investmentIds) {
         await repo.deleteInvestment(id);
       }
+      await _cancelRemindersFor(investmentIds);
 
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -1278,6 +1280,14 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     } catch (e) {
       // Don't fail the main operation if notification scheduling fails
       // Just log and continue
+    }
+  }
+
+  /// Cancels the income and maturity reminders of investments that are gone.
+  Future<void> _cancelRemindersFor(List<String> investmentIds) async {
+    for (final id in investmentIds) {
+      await _cancelIncomeReminder(id);
+      await _cancelMaturityReminders(id);
     }
   }
 
