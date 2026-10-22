@@ -28,6 +28,7 @@ import 'mocks/mock_analytics_service.dart';
 import 'mocks/mock_goal_repository.dart';
 import 'mocks/mock_investment_repository.dart';
 import 'mocks/mock_notification_service.dart';
+import 'mocks/no_firebase_overrides.dart';
 
 /// Fake implementation of LocalAuthentication for testing.
 class FakeLocalAuthentication implements LocalAuthentication {
@@ -197,6 +198,7 @@ class TestApp {
           goalRepositoryProvider.overrideWithValue(goalRepository),
           analyticsServiceProvider.overrideWithValue(analyticsService),
           notificationServiceProvider.overrideWithValue(notificationService),
+          ...noFirebaseOverrides(),
           ...extraOverrides,
         ],
         child: const InvTrackerApp(),
