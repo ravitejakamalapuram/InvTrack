@@ -571,16 +571,18 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Tap + Add to start tracking',
-              textAlign: TextAlign.center,
-              style: AppTypography.caption.copyWith(
-                color: isDark
-                    ? AppColors.neutral400Dark
-                    : AppColors.neutral500Light,
+            if (!widget.investment.isArchived) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Tap + Add to start tracking',
+                textAlign: TextAlign.center,
+                style: AppTypography.caption.copyWith(
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),

@@ -68,6 +68,7 @@ Future<void> _pump(
   WidgetTester tester, {
   required _FakeInvestmentNotifier notifier,
   bool archived = false,
+  List<CashFlowEntity>? flows,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
@@ -84,10 +85,10 @@ Future<void> _pump(
         investmentNotifierProvider.overrideWith(() => notifier),
         cashFlowsByInvestmentProvider(
           'inv-1',
-        ).overrideWith((ref) => Stream.value(_flows)),
+        ).overrideWith((ref) => Stream.value(flows ?? _flows)),
         archivedCashFlowsByInvestmentProvider(
           'inv-1',
-        ).overrideWith((ref) => Stream.value(_flows)),
+        ).overrideWith((ref) => Stream.value(flows ?? _flows)),
         expectedCashFlowsByInvestmentProvider(
           'inv-1',
         ).overrideWith((ref) => Stream.value([])),
@@ -170,5 +171,22 @@ void main() {
     await _openOptions(tester);
     expect(find.text('Edit Investment'), findsOneWidget);
     expect(find.text('Close Investment'), findsOneWidget);
+  });
+
+  testWidgets('archived and empty: no instruction to tap a missing add '
+      'button; active and empty keeps it', (tester) async {
+    await _pump(
+      tester,
+      notifier: _FakeInvestmentNotifier(),
+      archived: true,
+      flows: const [],
+    );
+    expect(find.text('No Cash Flows Yet'), findsOneWidget);
+    expect(find.text('Tap + Add to start tracking'), findsNothing);
+  });
+
+  testWidgets('active and empty keeps the add instruction', (tester) async {
+    await _pump(tester, notifier: _FakeInvestmentNotifier(), flows: const []);
+    expect(find.text('Tap + Add to start tracking'), findsOneWidget);
   });
 }
