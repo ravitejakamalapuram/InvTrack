@@ -7841,5 +7841,159 @@
   "fyReportLoadError": "This report could not be loaded. Please try again.",
   "@fyReportLoadError": {
     "description": "Error text on the FY report screen"
+  },
+
+  "fyPdfTitle": "Tax-Year Report",
+  "@fyPdfTitle": {
+    "description": "Title on the exported tax-year PDF"
+  },
+
+  "fyPdfFinancialYear": "Financial year {label} ({start} to {end})",
+  "@fyPdfFinancialYear": {
+    "description": "Subtitle on the tax-year PDF",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+
+  "fyPdfGenerated": "Generated {date}",
+  "@fyPdfGenerated": {
+    "description": "Generation date line on the tax-year PDF",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+
+  "fyPdfAmountsIn": "All amounts in {symbol} ({code})",
+  "@fyPdfAmountsIn": {
+    "description": "Base currency note on the tax-year PDF",
+    "placeholders": {
+      "symbol": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+
+  "fyPdfIncomeHeading": "Income for your return",
+  "@fyPdfIncomeHeading": {
+    "description": "Heading of the income table"
+  },
+
+  "fyPdfColType": "Type",
+  "@fyPdfColType": {
+    "description": "Income table column header"
+  },
+
+  "fyPdfColAmount": "Amount",
+  "@fyPdfColAmount": {
+    "description": "Income table column header"
+  },
+
+  "fyPdfInterestIncome": "Interest income",
+  "@fyPdfInterestIncome": {
+    "description": "Income table row"
+  },
+
+  "fyPdfDividendIncome": "Dividend income",
+  "@fyPdfDividendIncome": {
+    "description": "Income table row"
+  },
+
+  "fyPdfCapitalGains": "Capital gains",
+  "@fyPdfCapitalGains": {
+    "description": "Income table row"
+  },
+
+  "fyPdfCapitalGainsNotCalculated": "Not calculated (needs sale proceeds and cost)",
+  "@fyPdfCapitalGainsNotCalculated": {
+    "description": "Capital gains value when it cannot be computed"
+  },
+
+  "fyPdfCashFlowHeading": "Cash flow",
+  "@fyPdfCashFlowHeading": {
+    "description": "Heading of the cash flow tiles"
+  },
+
+  "fyPdfInvested": "Invested",
+  "@fyPdfInvested": {
+    "description": "Cash flow tile label"
+  },
+
+  "fyPdfReturned": "Returned",
+  "@fyPdfReturned": {
+    "description": "Cash flow tile label"
+  },
+
+  "fyPdfIncome": "Income",
+  "@fyPdfIncome": {
+    "description": "Cash flow tile label"
+  },
+
+  "fyPdfFees": "Fees",
+  "@fyPdfFees": {
+    "description": "Cash flow tile label"
+  },
+
+  "fyPdfNetCashFlow": "Net cash flow",
+  "@fyPdfNetCashFlow": {
+    "description": "Net cash flow label"
+  },
+
+  "fyPdfXirrForYear": "XIRR for the year",
+  "@fyPdfXirrForYear": {
+    "description": "XIRR label"
+  },
+
+  "fyPdfByMonth": "By month",
+  "@fyPdfByMonth": {
+    "description": "Heading of the monthly table"
+  },
+
+  "fyPdfColMonth": "Month",
+  "@fyPdfColMonth": {
+    "description": "Monthly table column header"
+  },
+
+  "fyPdfColInvested": "Invested",
+  "@fyPdfColInvested": {
+    "description": "Monthly table column header"
+  },
+
+  "fyPdfColIncomeReturns": "Income and returns",
+  "@fyPdfColIncomeReturns": {
+    "description": "Monthly table column header"
+  },
+
+  "fyPdfColNet": "Net",
+  "@fyPdfColNet": {
+    "description": "Monthly table column header"
+  },
+
+  "fyPdfDisclaimer": "This report summarises what you recorded in InvTrack. It is not tax advice. Check every figure with your tax professional before you file. Capital gains are not calculated until sale proceeds and cost are recorded.",
+  "@fyPdfDisclaimer": {
+    "description": "Footer disclaimer"
+  },
+
+  "fyPdfExport": "Export PDF",
+  "@fyPdfExport": {
+    "description": "Button that exports the tax-year report as PDF"
+  },
+
+  "fyPdfExportFailed": "Could not create the PDF. Please try again.",
+  "@fyPdfExportFailed": {
+    "description": "Snackbar when PDF export fails"
   }
 }

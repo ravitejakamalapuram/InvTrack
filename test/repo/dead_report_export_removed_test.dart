@@ -2,6 +2,10 @@
 /// providers) was unreachable from the app and has been deleted together with
 /// the `pdf` package. These plain file checks keep it from coming back by
 /// accident: a report export would need a new, reachable entry point.
+///
+/// #800 adds exactly that: the Tax-Year PDF, imported by the report screen
+/// through [FyPdfExportButton]. The `pdf` package is therefore allowed, but
+/// only in that one service, and the service must stay reachable.
 library;
 
 import 'dart:io';
@@ -24,9 +28,9 @@ void main() {
     }
   });
 
-  test('the pdf package is not a dependency and nothing imports it', () {
-    final pubspec = File('pubspec.yaml').readAsStringSync();
-    expect(RegExp(r'^\s+pdf:', multiLine: true).hasMatch(pubspec), isFalse);
+  test('the pdf package is used only by the reachable Tax-Year PDF service', () {
+    const allowed =
+        'lib/features/reports/data/services/fy_report_pdf_service.dart';
 
     // Only import/export directives count, not comments or strings.
     final directive = RegExp(
@@ -40,6 +44,21 @@ void main() {
         .where((f) => directive.hasMatch(f.readAsStringSync()))
         .map((f) => f.path)
         .toList();
-    expect(importers, isEmpty);
+    expect(importers, [allowed]);
+
+    // Reachable: the report screen imports the button, which imports the
+    // service.
+    expect(
+      File(
+        'lib/features/reports/presentation/screens/dynamic_report_screen.dart',
+      ).readAsStringSync(),
+      contains('fy_pdf_export_button.dart'),
+    );
+    expect(
+      File(
+        'lib/features/reports/presentation/widgets/fy_pdf_export_button.dart',
+      ).readAsStringSync(),
+      contains('fy_report_pdf_service.dart'),
+    );
   });
 }
