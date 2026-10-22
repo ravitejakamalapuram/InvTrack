@@ -80,6 +80,7 @@ Future<void> _pump(
   bool privacy = false,
   double scale = 1.0,
   Size size = const Size(390, 900),
+  void Function(int)? onYearRequested,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
@@ -89,7 +90,10 @@ Future<void> _pump(
       overrides: [
         currencyCodeProvider.overrideWithValue('INR'),
         privacyModeProvider.overrideWith(() => _Privacy(privacy)),
-        fyReportProvider.overrideWith((ref, year) async => report),
+        fyReportProvider.overrideWith((ref, year) async {
+          onYearRequested?.call(year);
+          return report;
+        }),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -185,6 +189,7 @@ void main() {
   });
 
   testWidgets('privacy mode hides every amount', (tester) async {
+    final handle = tester.ensureSemantics();
     await _pump(tester, _report(), privacy: true);
     await tester.scrollUntilVisible(
       find.textContaining('not tax advice'),
@@ -201,6 +206,33 @@ void main() {
     }
     expect(find.textContaining('11.4%', skipOffstage: false), findsNothing);
     expect(find.textContaining('8.1%', skipOffstage: false), findsNothing);
+    expect(find.bySemanticsLabel(RegExp('Hidden percentage')), findsWidgets);
+    handle.dispose();
+  });
+
+  testWidgets('selecting an FY requests and selects that year', (tester) async {
+    final handle = tester.ensureSemantics();
+    final requested = <int>[];
+    await _pump(tester, _report(), onYearRequested: requested.add);
+    requested.clear();
+
+    await tester.tap(find.text('FY 2024-25'));
+    await tester.pumpAndSettle();
+
+    expect(requested, contains(2024));
+    expect(
+      tester.getSemantics(find.bySemanticsLabel('FY 2024-25')),
+      matchesSemantics(
+        label: 'FY 2024-25',
+        isSelected: true,
+        hasSelectedState: true,
+        isButton: true,
+        hasTapAction: true,
+        hasFocusAction: true,
+        isFocusable: true,
+      ),
+    );
+    handle.dispose();
   });
 
   testWidgets('no overflow at 320dp and 1.8x text; targets are 48dp', (

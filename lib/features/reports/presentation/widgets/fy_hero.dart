@@ -92,6 +92,7 @@ class FyHero extends StatelessWidget {
                     : MaskedAmountText(
                         text: fyPercent(context, xirr),
                         style: chipValue,
+                        maskedSemanticsLabel: l10n.hiddenPercentage,
                       ),
               ),
               if (report.portfolioValueAtEnd > 0)

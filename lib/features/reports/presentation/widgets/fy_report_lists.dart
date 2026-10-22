@@ -190,6 +190,7 @@ class FyPerformer extends StatelessWidget {
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: muted,
                         ),
+                        maskedSemanticsLabel: l10n.hiddenPercentage,
                       ),
               ],
             ),
