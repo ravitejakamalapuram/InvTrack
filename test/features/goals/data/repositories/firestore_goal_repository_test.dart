@@ -6,7 +6,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fake_async/fake_async.dart'; // ignore: depend_on_referenced_packages
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/goals/data/repositories/firestore_goal_repository.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
