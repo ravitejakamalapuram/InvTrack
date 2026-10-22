@@ -33,55 +33,64 @@ void main() {
     prefs = await SharedPreferences.getInstance();
   });
 
-  testWidgets('InAppUpdateInitializer handles missing AppLocalizations without crashing', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          inAppUpdateServiceProvider.overrideWithValue(MockUpdateService()),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
-        child: MaterialApp(
-          // Deliberately omit localizationsDelegates to force AppLocalizations.of(context) to return null
-          home: InAppUpdateInitializer(
-            child: Scaffold(body: Text('Home')),
+  testWidgets(
+    'InAppUpdateInitializer handles missing AppLocalizations without crashing',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            inAppUpdateServiceProvider.overrideWithValue(MockUpdateService()),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: MaterialApp(
+            // Deliberately omit localizationsDelegates to force AppLocalizations.of(context) to return null
+            home: InAppUpdateInitializer(child: Scaffold(body: Text('Home'))),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Verify fallback text is rendered when dialog opens
-    expect(find.text('Update Available'), findsOneWidget);
-    expect(find.text('A new version of InvTrack is available. Would you like to update now?'), findsOneWidget);
-    expect(find.text('Later'), findsOneWidget);
-    expect(find.text('Update'), findsOneWidget);
-  });
+      // Verify fallback text is rendered when dialog opens
+      expect(find.text('Update Available'), findsOneWidget);
+      expect(
+        find.text(
+          'A new version of InvTrack is available. Would you like to update now?',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Later'), findsOneWidget);
+      expect(find.text('Update'), findsOneWidget);
+    },
+  );
 
-  testWidgets('InAppUpdateInitializer handles null Navigator.maybeOf context gracefully', (WidgetTester tester) async {
-    // Create a widget tree where Navigator.maybeOf(context) returns null
-    // but rootNavigatorKey.currentContext provides a valid Navigator context
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          inAppUpdateServiceProvider.overrideWithValue(MockUpdateService()),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
-        child: MaterialApp(
-          home: InAppUpdateInitializer(
-            child: Scaffold(body: Text('Home')),
+  testWidgets(
+    'InAppUpdateInitializer handles null Navigator.maybeOf context gracefully',
+    (WidgetTester tester) async {
+      // Create a widget tree where Navigator.maybeOf(context) returns null
+      // but rootNavigatorKey.currentContext provides a valid Navigator context
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            inAppUpdateServiceProvider.overrideWithValue(MockUpdateService()),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: MaterialApp(
+            home: InAppUpdateInitializer(child: Scaffold(body: Text('Home'))),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // The widget should render without crashing
-    expect(find.text('Home'), findsOneWidget);
-    // Dialog should appear using rootNavigatorKey.currentContext fallback
-    expect(find.text('Update Available'), findsOneWidget);
-  });
+      // The widget should render without crashing
+      expect(find.text('Home'), findsOneWidget);
+      // Dialog should appear using rootNavigatorKey.currentContext fallback
+      expect(find.text('Update Available'), findsOneWidget);
+    },
+  );
 
-  testWidgets('InAppUpdateInitializer logs warning when both contexts are null', (WidgetTester tester) async {
+  testWidgets('InAppUpdateInitializer logs warning when both contexts are null', (
+    WidgetTester tester,
+  ) async {
     // This test verifies that when both Navigator.maybeOf and rootNavigatorKey.currentContext
     // are null, the widget logs a warning instead of crashing
 
@@ -103,9 +112,7 @@ void main() {
               // Wrap in a widget that has no Navigator ancestor
               return Directionality(
                 textDirection: TextDirection.ltr,
-                child: InAppUpdateInitializer(
-                  child: Text('Home'),
-                ),
+                child: InAppUpdateInitializer(child: Text('Home')),
               );
             },
           ),
@@ -122,42 +129,44 @@ void main() {
     expect(find.text('Home'), findsOneWidget);
   });
 
-  testWidgets('InAppUpdateInitializer guards against unmounted context in dialog callbacks', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          inAppUpdateServiceProvider.overrideWithValue(MockUpdateService()),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
-        child: MaterialApp(
-          home: InAppUpdateInitializer(
-            child: Scaffold(body: Text('Home')),
+  testWidgets(
+    'InAppUpdateInitializer guards against unmounted context in dialog callbacks',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            inAppUpdateServiceProvider.overrideWithValue(MockUpdateService()),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: MaterialApp(
+            home: InAppUpdateInitializer(child: Scaffold(body: Text('Home'))),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Verify dialog appears
-    expect(find.text('Update Available'), findsOneWidget);
+      // Verify dialog appears
+      expect(find.text('Update Available'), findsOneWidget);
 
-    // The dialog should handle context.mounted checks correctly
-    // Tap "Later" button to verify no errors occur
-    await tester.tap(find.text('Later'));
-    await tester.pumpAndSettle();
+      // The dialog should handle context.mounted checks correctly
+      // Tap "Later" button to verify no errors occur
+      await tester.tap(find.text('Later'));
+      await tester.pumpAndSettle();
 
-    // Dialog should be dismissed without crashing
-    expect(find.text('Update Available'), findsNothing);
-  });
+      // Dialog should be dismissed without crashing
+      expect(find.text('Update Available'), findsNothing);
+    },
+  );
 
   group('update policy (GAP3-08)', () {
     Future<_PolicyService> pump(
       WidgetTester tester, {
       required int staleness,
       Map<String, Object> prefs = const {},
+      AppUpdateResult immediateResult = AppUpdateResult.success,
     }) async {
       SharedPreferences.setMockInitialValues(prefs);
-      final service = _PolicyService(staleness);
+      final service = _PolicyService(staleness, immediateResult);
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -202,7 +211,63 @@ void main() {
       expect(find.text('Update Available'), findsNothing);
     });
 
-    testWidgets('showing the flexible dialog records the prompt time', (tester) async {
+    testWidgets('a failed immediate update does not start the 3-day throttle', (
+      tester,
+    ) async {
+      final service = await pump(
+        tester,
+        staleness: 60,
+        immediateResult: AppUpdateResult.inAppUpdateFailed,
+      );
+      expect(service.immediateStarts, 1);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt('in_app_update_last_prompt_ms'), isNull);
+    });
+
+    testWidgets('a started immediate update records the prompt time', (
+      tester,
+    ) async {
+      await pump(tester, staleness: 60);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt('in_app_update_last_prompt_ms'), isNotNull);
+    });
+
+    test('provider picks the automatic mode from staleness', () {
+      AppUpdateInfo info(int days, {bool imm = true, bool flex = true}) =>
+          AppUpdateInfo(
+            updateAvailability: UpdateAvailability.updateAvailable,
+            immediateUpdateAllowed: imm,
+            flexibleUpdateAllowed: flex,
+            availableVersionCode: 2,
+            installStatus: InstallStatus.unknown,
+            packageName: 'com.example',
+            clientVersionStalenessDays: days,
+            updatePriority: 1,
+            immediateAllowedPreconditions: [],
+            flexibleAllowedPreconditions: [],
+          );
+      expect(
+        InAppUpdateState(updateInfo: info(60)).autoUpdateMode,
+        AutoUpdateMode.immediate,
+      );
+      expect(
+        InAppUpdateState(updateInfo: info(59)).autoUpdateMode,
+        AutoUpdateMode.flexible,
+      );
+      expect(
+        InAppUpdateState(updateInfo: info(90, imm: false)).autoUpdateMode,
+        AutoUpdateMode.flexible,
+      );
+      expect(
+        InAppUpdateState(updateInfo: info(1, flex: false)).autoUpdateMode,
+        AutoUpdateMode.none,
+      );
+      expect(const InAppUpdateState().autoUpdateMode, AutoUpdateMode.none);
+    });
+
+    testWidgets('showing the flexible dialog records the prompt time', (
+      tester,
+    ) async {
       await pump(tester, staleness: 1);
       expect(find.text('Update Available'), findsOneWidget);
       final prefs = await SharedPreferences.getInstance();
@@ -245,8 +310,12 @@ void main() {
 }
 
 class _PolicyService extends InAppUpdateService {
-  _PolicyService(this.staleness);
+  _PolicyService(
+    this.staleness, [
+    this.immediateResult = AppUpdateResult.success,
+  ]);
   final int staleness;
+  final AppUpdateResult immediateResult;
   int immediateStarts = 0;
 
   @override
@@ -266,7 +335,7 @@ class _PolicyService extends InAppUpdateService {
   @override
   Future<AppUpdateResult> startImmediateUpdate() async {
     immediateStarts++;
-    return AppUpdateResult.success;
+    return immediateResult;
   }
 }
 
