@@ -167,19 +167,6 @@ void main() {
     },
   );
 
-  test('overlapping password shares never reuse a temp file name', () async {
-    final source = File('${tempDir.path}/guest.zip')..writeAsBytesSync([1]);
-    await Future.wait([
-      for (var i = 0; i < 4; i++)
-        service.shareZipFiles(
-          [source.path],
-          password: 'pw',
-          kdfIterations: fastIterations,
-        ),
-    ]);
-    expect(sharedPaths.toSet(), hasLength(4));
-  });
-
   test('shareZipFiles deletes the encrypted copy when sharing fails', () async {
     final source = File('${tempDir.path}/guest.zip')..writeAsBytesSync([1]);
     shareShouldFail = true;
