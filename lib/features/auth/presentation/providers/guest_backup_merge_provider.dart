@@ -446,14 +446,15 @@ class GuestBackupMergeService {
   /// Opens the share sheet for the backup of a [GuestMergeImportFailed].
   /// Sharing does not delete it: only the user can say they have saved it
   /// ([deleteSavedBackups]).
-  Future<void> shareBackup(String backupPath) => _share([backupPath]);
+  Future<void> shareBackup(String backupPath, {String? password}) =>
+      _share([backupPath], password: password);
 
   /// Opens the share sheet for every guest backup the signed-in account owns.
-  Future<void> shareSavedBackups() async {
+  Future<void> shareSavedBackups({String? password}) async {
     final paths = await _ref
         .read(guestBackupStoreProvider)
         .list(ownerId: _signedInUserId());
-    if (paths.isNotEmpty) await _share(paths);
+    if (paths.isNotEmpty) await _share(paths, password: password);
   }
 
   /// Deletes every guest backup the signed-in account owns, after the user
@@ -491,12 +492,12 @@ class GuestBackupMergeService {
     return userId;
   }
 
-  Future<void> _share(List<String> paths) async {
+  Future<void> _share(List<String> paths, {String? password}) async {
     final exportService = _ref.read(dataExportServiceProvider);
     if (exportService == null) {
       throw StateError('No signed-in user to share the backup');
     }
-    await exportService.shareZipFiles(paths);
+    await exportService.shareZipFiles(paths, password: password);
   }
 
   /// Completes once [authStateProvider] reports the user [userId], so that
