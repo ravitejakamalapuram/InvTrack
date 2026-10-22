@@ -237,7 +237,7 @@ void main() {
   });
 
   testWidgets('unarchive: the dialog says what counts again, and restoring '
-      'says so', (tester) async {
+      'says so and goes back', (tester) async {
     final notifier = _FakeInvestmentNotifier();
     await _pump(tester, notifier: notifier, archived: true);
 
@@ -260,8 +260,9 @@ void main() {
 
     expect(notifier.restored, ['inv-1']);
     expect(find.text(_l10n(tester).investmentRestored), findsOneWidget);
-    // Unarchiving stays on the screen.
-    expect(find.byType(InvestmentDetailScreen), findsOneWidget);
+    // The screen holds the archived entity, so it goes back; the list then
+    // shows the fresh one (A23: Delete on a stale entity did nothing).
+    expect(find.byType(InvestmentDetailScreen), findsNothing);
   });
 
   testWidgets('unarchive: a failure says so, from the ARB', (tester) async {

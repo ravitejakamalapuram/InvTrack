@@ -989,8 +989,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             duration: const Duration(seconds: 2),
           ),
         );
-        // Navigate back after archiving (but not for unarchive)
-        if (!isArchived && mounted) {
+        // Navigate back after either change: this screen holds the old entity,
+        // and after unarchive its Delete would target a stale archived copy.
+        if (mounted) {
           navigator.pop();
         }
       } catch (e) {
