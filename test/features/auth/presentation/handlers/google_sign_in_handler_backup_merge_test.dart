@@ -120,12 +120,16 @@ class _FakeBackupStore implements GuestBackupStore {
 class _FakeExportService extends Fake implements DataExportService {
   int exportCalls = 0;
   final sharedFiles = <List<String>>[];
+  final sharedPasswords = <String?>[];
 
   /// Replaces the default in-memory backup when set.
   ZipExport? export;
 
   @override
-  Future<String> exportAsZip() async {
+  Future<String> exportAsZip({
+    String? password,
+    int kdfIterations = 600000,
+  }) async {
     exportCalls++;
     return '/cache/InvTrack_Export_1.zip';
   }
@@ -148,8 +152,13 @@ class _FakeExportService extends Fake implements DataExportService {
   }
 
   @override
-  Future<void> shareZipFiles(List<String> filePaths) async {
+  Future<void> shareZipFiles(
+    List<String> filePaths, {
+    String? password,
+    int kdfIterations = 0,
+  }) async {
     sharedFiles.add(filePaths);
+    sharedPasswords.add(password);
   }
 }
 
@@ -414,8 +423,15 @@ void main() {
 
       await tester.tap(find.widgetWithText(FilledButton, 'Share backup'));
       await tester.pumpAndSettle();
+      await tester.tap(find.byType(SwitchListTile));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField).at(0), 'longenough1');
+      await tester.enterText(find.byType(TextFormField).at(1), 'longenough1');
+      await tester.tap(find.widgetWithText(FilledButton, 'Export Backup'));
+      await tester.pumpAndSettle();
 
       expect(exportService.sharedFiles, [backupStore.files.keys.toList()]);
+      expect(exportService.sharedPasswords, ['longenough1']);
       expect(
         backupStore.files.values,
         [_backupBytes],
@@ -498,6 +514,8 @@ void main() {
 
         await tester.tap(find.widgetWithText(FilledButton, 'Share backup'));
         await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(FilledButton, 'Export Backup'));
+        await tester.pumpAndSettle();
 
         expect(exportService.sharedFiles, [backupStore.files.keys.toList()]);
         expect(backupStore.files.values, [_backupBytes]);
@@ -566,6 +584,8 @@ void main() {
       expect(find.text('Save your guest backup'), findsOneWidget);
 
       await tester.tap(find.widgetWithText(FilledButton, 'Share backup'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Export Backup'));
       await tester.pumpAndSettle();
 
       expect(exportService.sharedFiles, [backupStore.files.keys.toList()]);

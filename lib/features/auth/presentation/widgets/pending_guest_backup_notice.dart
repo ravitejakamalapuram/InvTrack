@@ -10,6 +10,7 @@ import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/guest_backup_merge_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/backup_password_dialogs.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 enum _Answer { keep, share, importNow }
@@ -118,7 +119,11 @@ class _PendingGuestBackupNoticeState
   /// False if the share sheet could not be opened.
   Future<bool> _share(GuestBackupMergeService service, String path) async {
     try {
-      await service.shareBackup(path);
+      final context = rootNavigatorKey.currentContext;
+      if (context == null || !context.mounted) return false;
+      final choice = await showBackupExportDialog(context);
+      if (choice == null) return false;
+      await service.shareBackup(path, password: choice.password);
       return true;
     } catch (e, st) {
       final context = rootNavigatorKey.currentContext;
