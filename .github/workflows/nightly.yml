@@ -24,6 +24,10 @@ on:
         type: boolean
         default: false
 
+# The release gate rejects a golden regeneration run (it skips the integration job); keep this name in
+# step with regenerationRunName in scripts/nightly_gate.dart.
+run-name: ${{ inputs.update_goldens && 'nightly golden regeneration' || 'nightly' }}
+
 concurrency:
   group: nightly
   cancel-in-progress: false

@@ -45,6 +45,28 @@ void main() {
     expect(check(runs('success', '2026-10-03T13:00:00Z')), isNotNull);
   });
 
+  test('a golden regeneration run is not a full nightly and blocks', () {
+    final json = jsonEncode([
+      {
+        'conclusion': 'success',
+        'createdAt': '2026-10-03T02:00:00Z',
+        'displayTitle': regenerationRunName,
+      },
+    ]);
+    expect(check(json), contains('regeneration'));
+  });
+
+  test('a normally titled success still allows', () {
+    final json = jsonEncode([
+      {
+        'conclusion': 'success',
+        'createdAt': '2026-10-03T02:00:00Z',
+        'displayTitle': 'nightly',
+      },
+    ]);
+    expect(check(json), isNull);
+  });
+
   test('no nightly runs blocks', () {
     expect(check('[]'), contains('No completed nightly'));
   });
