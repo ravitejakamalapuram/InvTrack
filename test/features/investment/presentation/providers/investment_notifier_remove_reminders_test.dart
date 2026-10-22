@@ -75,54 +75,64 @@ void main() {
   InvestmentNotifier notifier() =>
       container.read(investmentNotifierProvider.notifier);
 
-  test(
-    'bulkDelete cancels the income and maturity reminders of each',
-    () async {
-      await notifier().bulkDelete(['a', 'b']);
+  group('bulkDelete', () {
+    test(
+      'bulkDelete cancels the income and maturity reminders of each',
+      () async {
+        await notifier().bulkDelete(['a', 'b']);
 
-      expect(notifications.cancelledIncomeReminders, containsAll(['a', 'b']));
-      expect(notifications.cancelledMaturityReminders, containsAll(['a', 'b']));
-      expect(notifications.cancelledIncomeReminders, isNot(contains('c')));
-      expect(notifications.cancelledMaturityReminders, isNot(contains('c')));
-    },
-  );
-
-  test(
-    'mergeInvestments cancels the reminders of the merged sources',
-    () async {
-      // The app always has a screen listening to the investments stream.
-      container.listen(allInvestmentsProvider, (_, _) {});
-      await container.read(allInvestmentsProvider.future);
-
-      await notifier().mergeInvestments(['a', 'b'], 'Merged FD');
-
-      expect(notifications.cancelledIncomeReminders, containsAll(['a', 'b']));
-      expect(notifications.cancelledMaturityReminders, containsAll(['a', 'b']));
-      expect(notifications.cancelledIncomeReminders, isNot(contains('c')));
-    },
-  );
-
-  test('a failed bulkDelete keeps every reminder', () async {
-    repo.failBulkDelete = true;
-
-    await expectLater(notifier().bulkDelete(['a', 'b']), throwsException);
-
-    expect(notifications.cancelledIncomeReminders, isEmpty);
-    expect(notifications.cancelledMaturityReminders, isEmpty);
-  });
-
-  test('a merge that fails on one source cancels only the sources already '
-      'deleted', () async {
-    container.listen(allInvestmentsProvider, (_, _) {});
-    await container.read(allInvestmentsProvider.future);
-    repo.failDeleteOf = {'b'};
-
-    await expectLater(
-      notifier().mergeInvestments(['a', 'b'], 'Merged FD'),
-      throwsException,
+        expect(notifications.cancelledIncomeReminders, containsAll(['a', 'b']));
+        expect(
+          notifications.cancelledMaturityReminders,
+          containsAll(['a', 'b']),
+        );
+        expect(notifications.cancelledIncomeReminders, isNot(contains('c')));
+        expect(notifications.cancelledMaturityReminders, isNot(contains('c')));
+      },
     );
 
-    expect(notifications.cancelledIncomeReminders, ['a']);
-    expect(notifications.cancelledMaturityReminders, ['a']);
+    test('a failed bulkDelete keeps every reminder', () async {
+      repo.failBulkDelete = true;
+
+      await expectLater(notifier().bulkDelete(['a', 'b']), throwsException);
+
+      expect(notifications.cancelledIncomeReminders, isEmpty);
+      expect(notifications.cancelledMaturityReminders, isEmpty);
+    });
+  });
+
+  group('mergeInvestments', () {
+    test(
+      'mergeInvestments cancels the reminders of the merged sources',
+      () async {
+        // The app always has a screen listening to the investments stream.
+        container.listen(allInvestmentsProvider, (_, _) {});
+        await container.read(allInvestmentsProvider.future);
+
+        await notifier().mergeInvestments(['a', 'b'], 'Merged FD');
+
+        expect(notifications.cancelledIncomeReminders, containsAll(['a', 'b']));
+        expect(
+          notifications.cancelledMaturityReminders,
+          containsAll(['a', 'b']),
+        );
+        expect(notifications.cancelledIncomeReminders, isNot(contains('c')));
+      },
+    );
+
+    test('a merge that fails on one source cancels only the sources already '
+        'deleted', () async {
+      container.listen(allInvestmentsProvider, (_, _) {});
+      await container.read(allInvestmentsProvider.future);
+      repo.failDeleteOf = {'b'};
+
+      await expectLater(
+        notifier().mergeInvestments(['a', 'b'], 'Merged FD'),
+        throwsException,
+      );
+
+      expect(notifications.cancelledIncomeReminders, ['a']);
+      expect(notifications.cancelledMaturityReminders, ['a']);
+    });
   });
 }
