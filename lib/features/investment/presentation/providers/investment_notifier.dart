@@ -1058,11 +1058,28 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           rethrow;
         }
       }
-      await _carryDocuments(
-        sourceIds: investmentIds,
-        mergedId: newInvestmentId,
-        repo: repo,
-      );
+      try {
+        await _carryDocuments(
+          sourceIds: investmentIds,
+          mergedId: newInvestmentId,
+          repo: repo,
+        );
+      } catch (_) {
+        // The merged investment is already removed; so are its valuations.
+        if (mergedValuations.isNotEmpty) {
+          try {
+            await ref
+                .read(valuationRepositoryProvider)
+                .deleteByInvestment(newInvestmentId);
+          } catch (e) {
+            LoggerService.warn(
+              'Could not remove half-merged valuations',
+              metadata: {'errorType': e.runtimeType.toString()},
+            );
+          }
+        }
+        rethrow;
+      }
 
       // Delete old investments
       for (final id in investmentIds) {

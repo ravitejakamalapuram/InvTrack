@@ -83,4 +83,8 @@ abstract class ValuationRepository {
   /// more) gets chunks of its own, and a failure can leave part of it
   /// written. The caller writes the investments' mirrors.
   Future<int> importAll(List<InvestmentValuationSnapshot> snapshots);
+
+  /// Permanently deletes every snapshot of [investmentId], cleared ones
+  /// included. Used to undo a merge that failed after importing.
+  Future<void> deleteByInvestment(String investmentId);
 }

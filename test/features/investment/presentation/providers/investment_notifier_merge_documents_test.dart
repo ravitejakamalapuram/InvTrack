@@ -16,6 +16,7 @@ import 'package:inv_tracker/features/investment/presentation/providers/investmen
 import '../../../../mocks/fake_documents.dart';
 import '../../../../mocks/mock_analytics_service.dart';
 import '../../valuation/in_memory_valuation_repository.dart';
+import '../../valuation/valuation_fixtures.dart';
 import '../../../../mocks/mock_notification_service.dart';
 import '../../data/repositories/mock_investment_repository.dart';
 
@@ -47,18 +48,18 @@ void main() {
   late FakeInvestmentRepository repo;
   late FakeDocumentRepository docs;
   late FakeDocumentStorageService storage;
+  late InMemoryValuationRepository valuations;
   late ProviderContainer container;
 
   setUp(() async {
     repo = FakeInvestmentRepository();
     docs = FakeDocumentRepository();
     storage = FakeDocumentStorageService();
+    valuations = InMemoryValuationRepository();
     container = ProviderContainer(
       overrides: [
         investmentRepositoryProvider.overrideWithValue(repo),
-        valuationRepositoryProvider.overrideWithValue(
-          InMemoryValuationRepository(),
-        ),
+        valuationRepositoryProvider.overrideWithValue(valuations),
         documentRepositoryProvider.overrideWithValue(docs),
         documentStorageServiceProvider.overrideWithValue(storage),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
@@ -181,5 +182,22 @@ void main() {
         expect(moved.localPath, oldPath);
       },
     );
+
+    test('a document failure after the valuations were imported removes '
+        'them again', () async {
+      for (final (id, inv) in [('v1', 'a'), ('v2', 'b')]) {
+        valuations.docs[id] = testSnapshot(
+          id,
+          investmentId: inv,
+          amount: 100,
+          date: DateTime(2026, 3, 1),
+        );
+      }
+      docs.failOnCreate = true;
+
+      await expectLater(merge(), throwsException);
+
+      expect(valuations.docs.keys, unorderedEquals(['v1', 'v2']));
+    });
   });
 }
