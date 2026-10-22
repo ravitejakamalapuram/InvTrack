@@ -39,7 +39,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           NIGHTLY_RUNS="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow nightly.yml --branch main \
-            --status completed --limit 1 --json conclusion,createdAt 2>/dev/null || true)"
+            --status completed --limit 1 --json conclusion,createdAt,displayTitle 2>/dev/null || true)"
           # Run outside the Flutter package so plain Dart does not try to resolve Flutter dependencies.
           cp scripts/nightly_gate.dart "$RUNNER_TEMP/nightly_gate.dart"
           NIGHTLY_RUNS="$NIGHTLY_RUNS" dart run "$RUNNER_TEMP/nightly_gate.dart"

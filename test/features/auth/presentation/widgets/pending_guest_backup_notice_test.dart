@@ -192,12 +192,29 @@ void main() {
     expect(find.text(_title), findsOneWidget);
   });
 
+  testWidgets('Share with a password forwards it to the share', (tester) async {
+    await launch(tester);
+
+    await tester.tap(find.text('Share'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'longenough1');
+    await tester.enterText(find.byType(TextFormField).at(1), 'longenough1');
+    await tester.tap(find.widgetWithText(FilledButton, 'Export Backup'));
+    await tester.pumpAndSettle();
+
+    expect(exportService.sharedPasswords, ['longenough1']);
+  });
+
   testWidgets('Share opens the share sheet and keeps the backup', (
     tester,
   ) async {
     await launch(tester);
 
     await tester.tap(find.text('Share'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Export Backup'));
     await tester.pumpAndSettle();
 
     expect(exportService.sharedFiles, [await googleBackups()]);
@@ -212,6 +229,8 @@ void main() {
     await launch(tester);
 
     await tester.tap(find.text('Share'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Export Backup'));
     await tester.pumpAndSettle();
     expect(exportService.sharedFiles, isEmpty);
     expect(await googleBackups(), hasLength(1));
