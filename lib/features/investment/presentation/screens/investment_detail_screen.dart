@@ -996,6 +996,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
         // top, such as an options sheet opened while the write was pending.
         if (mounted) {
           if (detailRoute != null) {
+            // Close sheets and dialogs above this screen first: they would
+            // outlive it with a stale context.
+            navigator.popUntil((r) => r == detailRoute || r is! PopupRoute);
             navigator.removeRoute(detailRoute);
           } else {
             navigator.pop();

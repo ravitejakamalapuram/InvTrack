@@ -300,5 +300,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(InvestmentDetailScreen), findsNothing);
+    // The sheet must not outlive the screen it was opened from.
+    expect(find.text('Delete Investment'), findsNothing);
   });
 }
