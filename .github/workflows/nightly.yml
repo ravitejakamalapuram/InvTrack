@@ -12,7 +12,7 @@ name: nightly
 # Never regenerate them locally. Instead run:
 #   gh workflow run nightly.yml --ref <your-branch> -f update_goldens=true
 #   gh run download <run-id> -n updated-goldens -D /tmp/updated-goldens
-# then copy the PNGs over test/golden (paths in the artifact mirror the repo) and commit them.
+# then copy the downloaded contents into test/golden/ (the artifact paths start below test/golden) and commit them.
 # The update run only uploads an artifact: it pushes nothing and skips the integration job.
 on:
   schedule:

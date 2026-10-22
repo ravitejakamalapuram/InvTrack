@@ -24,7 +24,7 @@ class NightlyRun {
   const NightlyRun({
     required this.conclusion,
     required this.createdAt,
-    this.title = '',
+    required this.title,
   });
 
   final String conclusion;
@@ -69,8 +69,9 @@ String? nightlyBlockReason({
 }
 
 /// The runs in [json], the output of `gh run list --workflow nightly.yml
-/// --json conclusion,createdAt`. Returns null when it cannot be read or a run
-/// has no start time.
+/// --json conclusion,createdAt,displayTitle`. Returns null when it cannot be
+/// read or a run has no start time or title: without the title a golden
+/// regeneration run cannot be told from a full nightly.
 List<NightlyRun>? nightlyRuns(String json) {
   final Object? decoded;
   try {
@@ -85,14 +86,12 @@ List<NightlyRun>? nightlyRuns(String json) {
     final conclusion = run['conclusion'];
     final created = run['createdAt'];
     final createdAt = created is String ? DateTime.tryParse(created) : null;
-    if (conclusion is! String || createdAt == null) return null;
     final title = run['displayTitle'];
+    if (conclusion is! String || createdAt == null || title is! String) {
+      return null;
+    }
     runs.add(
-      NightlyRun(
-        conclusion: conclusion,
-        createdAt: createdAt,
-        title: title is String ? title : '',
-      ),
+      NightlyRun(conclusion: conclusion, createdAt: createdAt, title: title),
     );
   }
   return runs;
