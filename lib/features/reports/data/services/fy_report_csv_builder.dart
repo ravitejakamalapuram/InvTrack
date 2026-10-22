@@ -12,8 +12,16 @@ class FYReportCsvBuilder {
 
   static const notCalculated = 'Not calculated';
 
-  static String build(FYReport r, String baseCurrency) {
-    String amt(double v) => v.toStringAsFixed(2);
+  static const masked = '••••••';
+
+  /// With [maskSensitiveData] (privacy mode) amounts, XIRR and investment
+  /// names are replaced by [masked].
+  static String build(
+    FYReport r,
+    String baseCurrency, {
+    bool maskSensitiveData = false,
+  }) {
+    String amt(double v) => maskSensitiveData ? masked : v.toStringAsFixed(2);
     String day(DateTime d) =>
         '${d.year}-${d.month.toString().padLeft(2, '0')}-'
         '${d.day.toString().padLeft(2, '0')}';
@@ -38,7 +46,11 @@ class FYReportCsvBuilder {
       [
         'Performance',
         'XIRR (%)',
-        r.xirr == null ? '' : (r.xirr! * 100).toStringAsFixed(2),
+        r.xirr == null
+            ? ''
+            : maskSensitiveData
+            ? masked
+            : (r.xirr! * 100).toStringAsFixed(2),
       ],
     ];
 
@@ -49,7 +61,9 @@ class FYReportCsvBuilder {
       for (final p in r.topPerformersByReturns) {
         rows.add([
           'Top performers',
-          CsvUtils.sanitizeField(p.investment.name),
+          maskSensitiveData
+              ? masked
+              : CsvUtils.sanitizeField(p.investment.name),
           amt(p.absoluteReturns),
         ]);
       }

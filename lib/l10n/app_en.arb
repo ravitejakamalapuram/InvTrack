@@ -7705,5 +7705,12 @@
   "fyExportCsvFailed": "Could not export the report. Please try again.",
   "@fyExportCsvFailed": {
     "description": "Error shown when the Tax-Year report CSV export fails"
+  },
+  "fyExportCsvSubject": "InvTrack FY {fyLabel} report",
+  "@fyExportCsvSubject": {
+    "description": "Subject line for the Tax-Year report CSV share",
+    "placeholders": {
+      "fyLabel": {"type": "String"}
+    }
   }
 }

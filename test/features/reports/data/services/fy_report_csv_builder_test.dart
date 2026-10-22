@@ -144,5 +144,20 @@ void main() {
       expect(rows.any((r) => r.contains('=HYPERLINK("x")')), isFalse);
       expect(rows.any((r) => r.contains('Safe')), isTrue);
     });
+
+    test('privacy mode masks amounts, XIRR and investment names', () {
+      final csv = FYReportCsvBuilder.build(
+        _report(names: ['Secret FD']),
+        'INR',
+        maskSensitiveData: true,
+      );
+      for (final leak in ['100000', '54000', '150.25', '12.34', 'Secret FD']) {
+        expect(csv.contains(leak), isFalse, reason: leak);
+      }
+      final rows = _parse(csv);
+      expect(_row(rows, 'Total invested')[2], '••••••');
+      expect(_row(rows, 'XIRR (%)')[2], '••••••');
+      expect(_row(rows, 'Financial year')[2], '2025-26');
+    });
   });
 }
