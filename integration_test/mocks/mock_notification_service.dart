@@ -151,7 +151,13 @@ class FakeNotificationService implements NotificationService {
     _logShown('goal_stale_$goalId');
   }
 
-  // Allow no-op for any methods not explicitly defined
   @override
-  dynamic noSuchMethod(Invocation invocation) => null;
+  Future<bool> arePermissionsGranted() async => true;
+
+  // Every other method is a no-op. Methods return Future<void>, so a bare
+  // null would throw "type 'Null' is not a subtype of type 'Future<void>'"
+  // in callers that await them. Accessors have no future to return.
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      invocation.isMethod ? Future<void>.value() : null;
 }

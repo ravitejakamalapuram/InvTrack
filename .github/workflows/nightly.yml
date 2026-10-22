@@ -69,7 +69,9 @@ jobs:
           api-level: 34
           arch: x86_64
           target: google_apis
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          # swiftshader_indirect hangs and then kills the emulator as soon as the Flutter app draws its first
+          # frame (Impeller); swangle_indirect renders the same app and the suite completes.
+          emulator-options: -no-window -gpu swangle_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
             flutter test integration_test/app_test.dart -d emulator-5554
