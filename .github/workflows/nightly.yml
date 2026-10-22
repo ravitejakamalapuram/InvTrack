@@ -76,6 +76,8 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
+            sh -c 'adb logcat -v time > /tmp/logcat.log 2>&1 &'
+            sh -c 'while true; do echo "$(date +%T) $(adb get-state 2>&1) $(pgrep -c qemu-system || true)"; sleep 2; done > /tmp/adb.log 2>&1 &'
             sh -c 'while true; do echo "$(date +%T) $(free -m | sed -n 2p)"; sleep 10; done > /tmp/mem.log 2>&1 &'
             flutter test integration_test/app_test.dart -d emulator-5554
             flutter test integration_test/flows/investment_form_flow_test.dart -d emulator-5554
@@ -84,7 +86,9 @@ jobs:
       - name: Memory diagnostics
         if: ${{ always() }}
         run: |
-          cat /tmp/mem.log || true
+          tail -n 40 /tmp/adb.log || true
+          grep -iE 'fatal|died|lowmemory|lmkd|signal 11|SIGSEGV|anr in|crash' /tmp/logcat.log | tail -n 40 || true
+          tail -n 30 /tmp/logcat.log || true
           free -m
           sudo dmesg | grep -iE 'out of memory|killed process' | tail -5 || true
 
