@@ -38,25 +38,9 @@ jobs:
         run: flutter test --tags golden test/golden
 
   integration:
-    name: Integration tests (Android emulator) ${{ matrix.name }}
+    name: Integration tests (Android emulator)
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: v1-noimpeller
-            gpu: swiftshader_indirect
-            impeller: off
-          - name: v2-guest
-            gpu: guest
-            impeller: on
-          - name: v3-swangle
-            gpu: swangle_indirect
-            impeller: on
-          - name: v4-cores4
-            gpu: swiftshader_indirect
-            impeller: on
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -79,45 +63,21 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       # Critical flows: app start and tabs, add an investment, add cash flows, and the export/import
       # screen. Each line runs on its own; the first failure fails the job.
-      - name: Disable Impeller (experiment)
-        if: ${{ matrix.impeller == 'off' }}
-        run: |
-          sed -i 's#<uses-permission android:name="android.permission.INTERNET"/>#<uses-permission android:name="android.permission.INTERNET"/><application><meta-data android:name="io.flutter.embedding.android.EnableImpeller" android:value="false"/></application>#' android/app/src/debug/AndroidManifest.xml
-          cat android/app/src/debug/AndroidManifest.xml
       - name: Integration tests
-        env:
-          # The Gradle daemon (8 GB heap, android/gradle.properties) outlives the build and starves the
-          # emulator, which then drops off adb while the tests run. Build without a daemon.
-          GRADLE_OPTS: -Dorg.gradle.daemon=false
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 34
           arch: x86_64
           target: google_apis
-          cores: 4
-          ram-size: 4096M
-          emulator-options: -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -camera-back none
+          # swiftshader_indirect hangs and then kills the emulator as soon as the Flutter app draws its first
+          # frame (Impeller); swangle_indirect renders the same app and the suite completes.
+          emulator-options: -no-window -gpu swangle_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
-            sh -c 'adb logcat -v time > /tmp/logcat.log 2>&1 &'
-            sh -c 'while true; do echo "$(date +%T) $(adb get-state 2>&1) $(pgrep -c qemu-system || true)"; sleep 2; done > /tmp/adb.log 2>&1 &'
-            sh -c 'while true; do echo "$(date +%T) $(free -m | sed -n 2p)"; sleep 10; done > /tmp/mem.log 2>&1 &'
-            flutter test --reporter expanded integration_test/app_test.dart -d emulator-5554
+            flutter test integration_test/app_test.dart -d emulator-5554
             flutter test integration_test/flows/investment_form_flow_test.dart -d emulator-5554
             flutter test integration_test/flows/cash_flow_crud_test.dart -d emulator-5554
             flutter test integration_test/flows/data_management_flow_test.dart -d emulator-5554
-      - name: Memory diagnostics
-        if: ${{ always() }}
-        run: |
-          tail -n 40 /tmp/adb.log || true
-          grep -iE 'fatal|died|lowmemory|lmkd|signal 11|SIGSEGV|anr in|crash' /tmp/logcat.log | tail -n 40 || true
-          tail -n 30 /tmp/logcat.log || true
-          ls -laR /tmp/android-runner | head -40 || true
-          for f in /tmp/android-runner/emu-crash-*/completed/*.dmp /tmp/android-runner/emu-crash-*/pending/*.dmp; do echo "== $f"; strings "$f" | grep -iE '\.so|signal|swiftshader|vulkan|gl' | head -30; done 2>/dev/null || true
-          sudo dmesg | tail -n 30 || true
-          pgrep -a qemu || echo 'no qemu'
-          free -m
-          sudo dmesg | grep -iE 'out of memory|killed process' | tail -5 || true
 
   # Own job so the webhook secret never reaches the test jobs. Sends only job names and the run URL.
   notify-failure:
