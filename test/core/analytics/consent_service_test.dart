@@ -1,7 +1,9 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/consent_service.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -132,4 +134,23 @@ void main() {
       verifyNever(() => crashlytics.deleteUnsentReports());
     });
   });
+
+  test(
+    'consent notifiers rebuild when the consent service is invalidated',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+      expect(container.read(analyticsConsentProvider), isTrue);
+      expect(container.read(crashReportingConsentProvider), isTrue);
+      await prefs.setBool(analyticsConsentPrefKey, false);
+      await prefs.setBool(crashReportingConsentPrefKey, false);
+      container.invalidate(consentServiceProvider);
+      expect(container.read(analyticsConsentProvider), isFalse);
+      expect(container.read(crashReportingConsentProvider), isFalse);
+    },
+  );
 }
