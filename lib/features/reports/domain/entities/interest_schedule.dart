@@ -26,9 +26,9 @@ class InterestSchedule {
   final List<InterestScheduleRow> rows;
   final double grandTotal;
 
-  const InterestSchedule({
+  InterestSchedule({
     required this.fyLabel,
-    required this.rows,
+    required List<InterestScheduleRow> rows,
     required this.grandTotal,
-  });
+  }) : rows = List.unmodifiable(rows);
 }

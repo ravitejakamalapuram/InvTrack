@@ -128,6 +128,16 @@ void main() {
     expect(s.grandTotal, 0.0);
   });
 
+  test('rows are unmodifiable so they cannot drift from grandTotal', () async {
+    final s = await service.generate(
+      fyYear: 2023,
+      allCashFlows: flows,
+      allInvestments: investments,
+      baseCurrency: 'USD',
+    );
+    expect(() => s.rows.clear(), throwsUnsupportedError);
+  });
+
   group('schedule edge cases', () {
     test(
       'interest for an unknown investment is grouped under a null payer',
@@ -142,12 +152,15 @@ void main() {
           allInvestments: investments,
           baseCurrency: 'USD',
         );
-        expect(s.rows.map((r) => r.payer).toList(), ['HDFC Bank', null]);
+        expect(
+          s.rows.map((r) => r.payer).toList(),
+          equals(['HDFC Bank', null]),
+        );
         final ghost = s.rows.last;
         expect(ghost.totalInterest, 50.0);
         expect(ghost.paymentCount, 2);
-        expect(ghost.firstPaymentDate, DateTime(2023, 5, 1));
-        expect(ghost.lastPaymentDate, DateTime(2023, 8, 9));
+        expect(ghost.firstPaymentDate, equals(DateTime(2023, 5, 1)));
+        expect(ghost.lastPaymentDate, equals(DateTime(2023, 8, 9)));
         expect(s.grandTotal, 150.0);
       },
     );
