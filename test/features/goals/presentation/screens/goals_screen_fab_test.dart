@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/screens/goals_screen.dart';
+import 'package:inv_tracker/features/goals/presentation/widgets/goal_card.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,7 +25,11 @@ GoalEntity _goal({bool archived = false}) => GoalEntity(
   isArchived: archived,
 );
 
-Future<void> _pump(WidgetTester tester, List<GoalEntity> active) async {
+Future<void> _pump(
+  WidgetTester tester,
+  List<GoalEntity> active, {
+  List<GoalEntity> archived = const <GoalEntity>[],
+}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   await tester.pumpWidget(
@@ -32,9 +37,7 @@ Future<void> _pump(WidgetTester tester, List<GoalEntity> active) async {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         activeGoalsProvider.overrideWith((ref) => Stream.value(active)),
-        archivedGoalsProvider.overrideWith(
-          (ref) => Stream.value(const <GoalEntity>[]),
-        ),
+        archivedGoalsProvider.overrideWith((ref) => Stream.value(archived)),
       ],
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -54,8 +57,16 @@ void main() {
       expect(find.byType(FloatingActionButton), findsOneWidget);
     });
 
-    testWidgets('FAB is hidden when no goal is visible', (tester) async {
-      await _pump(tester, [_goal(archived: true)]);
+    testWidgets('FAB is hidden in the archived filter', (tester) async {
+      final archivedGoal = _goal(archived: true);
+      await _pump(tester, const <GoalEntity>[], archived: [archivedGoal]);
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(GoalsScreen)),
+      );
+      await tester.tap(find.text(l10n.filterArchived));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(GoalCard), findsOneWidget);
       expect(find.byType(FloatingActionButton), findsNothing);
     });
   });
