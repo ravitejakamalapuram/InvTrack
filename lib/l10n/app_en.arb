@@ -7922,5 +7922,13 @@
   "backupUnsupportedFile": "This backup file isn’t supported. It may be damaged or made by a newer version of InvTrack. Nothing was changed.",
   "@backupUnsupportedFile": {
     "description": "Error shown when an encrypted backup has an unreadable or unknown header"
+  },
+  "fyPdfFaqQuestion": "How do I export a Tax-Year PDF?",
+  "@fyPdfFaqQuestion": {
+    "description": "FAQ question about the Tax-Year PDF export"
+  },
+  "fyPdfFaqAnswer": "Open Reports, choose the Tax-Year report, then tap Export PDF. The PDF summarises what you recorded and is not tax advice. Capital gains are not calculated until sale proceeds and cost are recorded. Check every figure with your tax professional before you file.",
+  "@fyPdfFaqAnswer": {
+    "description": "FAQ answer about the Tax-Year PDF export"
   }
 }
