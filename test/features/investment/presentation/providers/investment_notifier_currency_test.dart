@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_notifier.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import '../../data/repositories/mock_investment_repository.dart';
+import '../../../../mocks/fake_documents.dart';
 import '../../../../mocks/mock_analytics_service.dart';
 import '../../../../mocks/mock_notification_service.dart';
 
@@ -22,6 +23,10 @@ void main() {
     container = ProviderContainer(
       overrides: [
         investmentRepositoryProvider.overrideWithValue(repo),
+        documentRepositoryProvider.overrideWithValue(FakeDocumentRepository()),
+        documentStorageServiceProvider.overrideWithValue(
+          FakeDocumentStorageService(),
+        ),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
         notificationServiceProvider.overrideWithValue(
           FakeNotificationService(),
