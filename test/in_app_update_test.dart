@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -278,10 +280,45 @@ void main() {
       tester,
     ) async {
       SharedPreferences.setMockInitialValues({});
+      // Keep the prompt-time write pending so the 3-day throttle cannot be
+      // what stops the resume checks; only _flexibleDialogPending can.
+      final prefs = _SlowPrefs(await SharedPreferences.getInstance());
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             inAppUpdateServiceProvider.overrideWithValue(_PolicyService(1)),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: const MaterialApp(
+            home: InAppUpdateInitializer(child: Scaffold(body: Text('Home'))),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump(const Duration(milliseconds: 1));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump(const Duration(milliseconds: 1));
+      prefs.release.complete();
+      await tester.pumpAndSettle();
+      expect(prefs.setCalls, 1);
+      expect(
+        find.text('Update Available', skipOffstage: false),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('overlapping resume checks start only one immediate update', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final gate = Completer<void>();
+      final service = _PolicyService(60, AppUpdateResult.success, gate);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            inAppUpdateServiceProvider.overrideWithValue(service),
             sharedPreferencesProvider.overrideWithValue(
               await SharedPreferences.getInstance(),
             ),
@@ -291,14 +328,13 @@ void main() {
           ),
         ),
       );
-      // Let the first check finish and the dialog's navigator wait begin.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 1));
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pump(const Duration(milliseconds: 1));
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      gate.complete();
       await tester.pumpAndSettle();
-      expect(find.text('Update Available'), findsOneWidget);
+      expect(service.immediateStarts, 1);
     });
 
     testWidgets('prompts again after 3 days', (tester) async {
@@ -340,8 +376,10 @@ class _PolicyService extends InAppUpdateService {
   _PolicyService(
     this.staleness, [
     this.immediateResult = AppUpdateResult.success,
+    this.immediateGate,
   ]);
   final int staleness;
+  final Completer<void>? immediateGate;
   final AppUpdateResult immediateResult;
   int immediateStarts = 0;
 
@@ -362,6 +400,7 @@ class _PolicyService extends InAppUpdateService {
   @override
   Future<AppUpdateResult> startImmediateUpdate() async {
     immediateStarts++;
+    await immediateGate?.future;
     return immediateResult;
   }
 }
@@ -369,4 +408,26 @@ class _PolicyService extends InAppUpdateService {
 class _ThrowingService extends InAppUpdateService {
   @override
   Future<AppUpdateInfo?> checkForUpdate() async => throw Exception('play down');
+}
+
+/// Prefs whose first write waits on [release]; everything else is real.
+class _SlowPrefs implements SharedPreferences {
+  _SlowPrefs(this._real);
+  final SharedPreferences _real;
+  final Completer<void> release = Completer<void>();
+  int setCalls = 0;
+
+  @override
+  Future<bool> setInt(String key, int value) async {
+    setCalls++;
+    await release.future;
+    return _real.setInt(key, value);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError(invocation.memberName.toString());
+
+  @override
+  int? getInt(String key) => _real.getInt(key);
 }

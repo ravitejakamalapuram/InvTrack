@@ -31,6 +31,9 @@ class _InAppUpdateInitializerState extends ConsumerState<InAppUpdateInitializer>
   bool _hasDeferredInstall = false;
   // True while a flexible dialog attempt is in flight or its dialog is open.
   bool _flexibleDialogPending = false;
+  // True while an automatic immediate update is in flight, so a resume check
+  // cannot start a second platform request.
+  bool _immediatePending = false;
 
   @override
   void initState() {
@@ -105,11 +108,17 @@ class _InAppUpdateInitializerState extends ConsumerState<InAppUpdateInitializer>
 
       switch (state.autoUpdateMode) {
         case AutoUpdateMode.immediate:
-          LoggerService.info('Starting immediate update for stale install');
-          final result = await notifier.startImmediateUpdate();
-          // A failed start was never shown to the user, so do not throttle.
-          if (result != AppUpdateResult.inAppUpdateFailed) {
-            await notifier.markPrompted(now);
+          if (_immediatePending) return;
+          _immediatePending = true;
+          try {
+            LoggerService.info('Starting immediate update for stale install');
+            final result = await notifier.startImmediateUpdate();
+            // A failed start was never shown to the user, so do not throttle.
+            if (result != AppUpdateResult.inAppUpdateFailed) {
+              await notifier.markPrompted(now);
+            }
+          } finally {
+            _immediatePending = false;
           }
         case AutoUpdateMode.flexible:
           if (!_hasDeferredUpdate && !_flexibleDialogPending) {
