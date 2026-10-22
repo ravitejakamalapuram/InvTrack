@@ -398,6 +398,25 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             ),
           ),
 
+          if (isArchived)
+            SliverToBoxAdapter(
+              child: ScreenEdge(
+                top: AppSpacing.xs,
+                bottom: AppSpacing.xs,
+                child: Semantics(
+                  container: true,
+                  child: Text(
+                    l10n.archivedReadOnlyBanner,
+                    style: AppTypography.caption.copyWith(
+                      color: isDark
+                          ? AppColors.neutral400Dark
+                          : AppColors.neutral500Light,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
           // Content based on selected segment
           if (selectedSegment == 0) ...[
             // Cash Flows List (Transactions)
@@ -428,6 +447,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                           onConfirmDelete: () =>
                               _confirmDeleteCashFlow(context, isDark),
                           onDeleted: () => _deleteCashFlow(cashFlow.id),
+                          isReadOnly: isArchived,
                         );
                       },
                       childCount: sortedFlows.length,
@@ -471,7 +491,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               child: ScreenEdge(
                 child: DocumentListWidget(
                   investmentId: widget.investment.id,
-                  isReadOnly: isClosed,
+                  isReadOnly: isClosed || isArchived,
                 ),
               ),
             ),
@@ -481,7 +501,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           const SliverFabClearance(),
         ],
       ),
-      floatingActionButton: isClosed
+      floatingActionButton: isClosed || isArchived
           ? null
           : selectedSegment == 0
           ? TransactionFab(
@@ -848,51 +868,53 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 ),
               ),
               const SizedBox(height: 20),
-              ListTile(
-                leading: Icon(
-                  Icons.edit_rounded,
-                  color: AppColors.primaryLight,
-                ),
-                title: Text(
-                  'Edit Investment',
-                  style: AppTypography.body.copyWith(
-                    color: isDark ? Colors.white : AppColors.neutral900Light,
+              if (!isArchived)
+                ListTile(
+                  leading: Icon(
+                    Icons.edit_rounded,
+                    color: AppColors.primaryLight,
                   ),
-                ),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  final navigator = Navigator.of(screenContext);
-                  navigator
-                      .push(
-                        MaterialPageRoute(
-                          builder: (_) => AddInvestmentScreen(
-                            investmentToEdit: widget.investment,
+                  title: Text(
+                    'Edit Investment',
+                    style: AppTypography.body.copyWith(
+                      color: isDark ? Colors.white : AppColors.neutral900Light,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    final navigator = Navigator.of(screenContext);
+                    navigator
+                        .push(
+                          MaterialPageRoute(
+                            builder: (_) => AddInvestmentScreen(
+                              investmentToEdit: widget.investment,
+                            ),
                           ),
-                        ),
-                      )
-                      .then((result) {
-                        if (result == true && mounted) {
-                          navigator.pop();
-                        }
-                      });
-                },
-              ),
-              ListTile(
-                leading: Icon(
-                  isClosed ? Icons.lock_open_rounded : Icons.lock_rounded,
-                  color: AppColors.graphAmber,
+                        )
+                        .then((result) {
+                          if (result == true && mounted) {
+                            navigator.pop();
+                          }
+                        });
+                  },
                 ),
-                title: Text(
-                  isClosed ? 'Reopen Investment' : 'Close Investment',
-                  style: AppTypography.body.copyWith(
-                    color: isDark ? Colors.white : AppColors.neutral900Light,
+              if (!isArchived)
+                ListTile(
+                  leading: Icon(
+                    isClosed ? Icons.lock_open_rounded : Icons.lock_rounded,
+                    color: AppColors.graphAmber,
                   ),
+                  title: Text(
+                    isClosed ? 'Reopen Investment' : 'Close Investment',
+                    style: AppTypography.body.copyWith(
+                      color: isDark ? Colors.white : AppColors.neutral900Light,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _toggleInvestmentStatus(screenContext, isDark);
+                  },
                 ),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _toggleInvestmentStatus(screenContext, isDark);
-                },
-              ),
               ListTile(
                 leading: Icon(
                   isArchived ? Icons.unarchive_rounded : Icons.archive_rounded,
