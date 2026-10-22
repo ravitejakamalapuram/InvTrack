@@ -13,7 +13,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/current_value_dialog.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/fy_report_provider.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/fy_report_actions.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/fy_report_sections.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -78,7 +80,21 @@ class _FyReportScreenState extends ConsumerState<FyReportScreen> {
           ),
           const SizedBox(height: AppSpacing.xl),
           report.when(
-            data: (r) => FyReportBody(report: r),
+            data: (r) => Column(
+              children: [
+                FyReportBody(
+                  report: r,
+                  onAddValue: (inv) => showCurrentValueDialog(
+                    context,
+                    ref,
+                    investment: inv,
+                    hasUserValue: false,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                FyReportActions(fyYear: _fyYear),
+              ],
+            ),
             loading: () => const Padding(
               padding: EdgeInsets.all(AppSpacing.xxl),
               child: Center(child: CircularProgressIndicator()),

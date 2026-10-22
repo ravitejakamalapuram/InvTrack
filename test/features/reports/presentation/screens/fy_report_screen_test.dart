@@ -30,7 +30,12 @@ InvestmentEntity _inv(String name) => InvestmentEntity(
   currency: 'INR',
 );
 
-FYReport _report({double? xirr = 0.114, double endValue = 1840000}) => FYReport(
+FYReport _report({
+  double? xirr = 0.114,
+  double endValue = 1840000,
+  List<FYMissingValue> missing = const [],
+}) => FYReport(
+  missingValues: missing,
   fyStart: DateTime(2025, 4, 1),
   fyEnd: DateTime(2026, 3, 31, 23, 59, 59),
   fyLabel: '2025-26',
@@ -241,5 +246,75 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await _pump(tester, _report(), privacy: true);
     expect(factors(), {0.3});
+  });
+
+  group('actions and missing values', () {
+    final missing = [
+      FYMissingValue(
+        investment: _inv('Fixed deposit, Bank A'),
+        needsOpening: true,
+        needsClosing: true,
+      ),
+      FYMissingValue(
+        investment: _inv('P2P lending, Platform B'),
+        needsOpening: false,
+        needsClosing: true,
+      ),
+    ];
+
+    Future<void> toBottom(WidgetTester tester) => tester.scrollUntilVisible(
+      find.text('Export CSV'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+
+    testWidgets('Export PDF and Export CSV sit at the bottom, 48dp', (
+      tester,
+    ) async {
+      await _pump(tester, _report());
+      await toBottom(tester);
+      expect(find.text('Export PDF'), findsOneWidget);
+      expect(find.text('Export CSV'), findsOneWidget);
+      for (final label in ['Export PDF', 'Export CSV']) {
+        final button = find.ancestor(
+          of: find.text(label),
+          matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+        );
+        expect(tester.getSize(button.first).height, greaterThanOrEqualTo(48));
+      }
+    });
+
+    testWidgets('lists each holding that needs a value when XIRR is unknown', (
+      tester,
+    ) async {
+      await _pump(tester, _report(xirr: null, missing: missing));
+      expect(find.textContaining('Needs a current value'), findsOneWidget);
+      expect(find.text('P2P lending, Platform B'), findsWidgets);
+      expect(find.text('Add value'), findsNWidgets(2));
+      expect(find.text('Awaiting current value'), findsNWidgets(2));
+      expect(
+        tester.getSize(find.widgetWithText(TextButton, 'Add value').first).height,
+        greaterThanOrEqualTo(48),
+      );
+      expect(find.textContaining('0%'), findsNothing);
+    });
+
+    testWidgets('no list when XIRR is known or nothing is missing', (
+      tester,
+    ) async {
+      await _pump(tester, _report(missing: missing));
+      expect(find.text('Add value'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      await _pump(tester, _report(xirr: null));
+      expect(find.text('Add value'), findsNothing);
+    });
+
+    testWidgets('the list shows no amount in privacy mode', (tester) async {
+      await _pump(tester, _report(xirr: null, missing: missing), privacy: true);
+      expect(find.text('Add value'), findsNWidgets(2));
+      for (final amount in _amounts) {
+        expect(find.textContaining(amount, skipOffstage: false), findsNothing);
+      }
+    });
   });
 }

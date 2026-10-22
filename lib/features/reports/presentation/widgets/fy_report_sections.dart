@@ -9,15 +9,20 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/fy_hero.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/fy_missing_values.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/fy_report_lists.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class FyReportBody extends ConsumerWidget {
-  const FyReportBody({super.key, required this.report});
+  const FyReportBody({super.key, required this.report, this.onAddValue});
 
   final FYReport report;
+
+  /// Opens the add current value flow; the list is hidden without it.
+  final void Function(InvestmentEntity investment)? onAddValue;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -49,6 +54,12 @@ class FyReportBody extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.md),
         FyHero(report: report, money: money),
+        if (report.xirr == null &&
+            report.missingValues.isNotEmpty &&
+            onAddValue != null) ...[
+          const SizedBox(height: AppSpacing.xl),
+          FyMissingValues(report: report, onAddValue: onAddValue!),
+        ],
         const SizedBox(height: AppSpacing.xl),
         Text(l10n.fyReportMoneyTitle, style: heading),
         const SizedBox(height: AppSpacing.sm),

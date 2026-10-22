@@ -538,6 +538,34 @@ void main() {
       expect(r.xirr, isNull);
     });
 
+    test('a holding with no value at an edge is listed as missing, with '
+        'which edge it lacks', () async {
+      final r = await report(
+        2025,
+        [flow('1', 'h', 100000, CashFlowType.invest, DateTime(2024, 6, 1))],
+        [investment('h', DateTime(2024, 6, 1))],
+        openingValues: {'h': 100000},
+      );
+
+      expect(r.xirr, isNull);
+      expect(r.missingValues, hasLength(1));
+      expect(r.missingValues.single.investment.id, 'h');
+      expect(r.missingValues.single.needsOpening, isFalse);
+      expect(r.missingValues.single.needsClosing, isTrue);
+    });
+
+    test('nothing is missing when the XIRR is known', () async {
+      final r = await report(
+        2025,
+        [flow('1', 'h', 100000, CashFlowType.invest, DateTime(2024, 6, 1))],
+        [investment('h', DateTime(2024, 6, 1))],
+        openingValues: {'h': 100000},
+        closingValues: {'h': 110000},
+      );
+
+      expect(r.missingValues, isEmpty);
+    });
+
     test('FY XIRR uses the opening value as an outflow and the closing value '
         'as an inflow', () async {
       final r = await report(
