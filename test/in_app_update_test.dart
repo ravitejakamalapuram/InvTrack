@@ -274,6 +274,33 @@ void main() {
       expect(prefs.getInt('in_app_update_last_prompt_ms'), isNotNull);
     });
 
+    testWidgets('overlapping resume checks open only one flexible dialog', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            inAppUpdateServiceProvider.overrideWithValue(_PolicyService(1)),
+            sharedPreferencesProvider.overrideWithValue(
+              await SharedPreferences.getInstance(),
+            ),
+          ],
+          child: const MaterialApp(
+            home: InAppUpdateInitializer(child: Scaffold(body: Text('Home'))),
+          ),
+        ),
+      );
+      // Let the first check finish and the dialog's navigator wait begin.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump(const Duration(milliseconds: 1));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(find.text('Update Available'), findsOneWidget);
+    });
+
     testWidgets('prompts again after 3 days', (tester) async {
       final old = DateTime.now().subtract(const Duration(days: 4));
       await pump(

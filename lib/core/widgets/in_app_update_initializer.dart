@@ -29,6 +29,8 @@ class _InAppUpdateInitializerState extends ConsumerState<InAppUpdateInitializer>
   bool _hasChecked = false;
   bool _hasDeferredUpdate = false;
   bool _hasDeferredInstall = false;
+  // True while a flexible dialog attempt is in flight or its dialog is open.
+  bool _flexibleDialogPending = false;
 
   @override
   void initState() {
@@ -110,8 +112,9 @@ class _InAppUpdateInitializerState extends ConsumerState<InAppUpdateInitializer>
             await notifier.markPrompted(now);
           }
         case AutoUpdateMode.flexible:
-          if (!_hasDeferredUpdate) {
+          if (!_hasDeferredUpdate && !_flexibleDialogPending) {
             LoggerService.info('Showing flexible update dialog');
+            _flexibleDialogPending = true;
             _showFlexibleUpdateDialog();
           }
         case AutoUpdateMode.none:
@@ -145,6 +148,14 @@ class _InAppUpdateInitializerState extends ConsumerState<InAppUpdateInitializer>
   }
 
   Future<void> _showFlexibleUpdateDialog() async {
+    try {
+      await _openFlexibleUpdateDialog();
+    } finally {
+      _flexibleDialogPending = false;
+    }
+  }
+
+  Future<void> _openFlexibleUpdateDialog() async {
     final dialogContext = await _getValidDialogContext();
     if (dialogContext == null || !dialogContext.mounted) {
       LoggerService.warn(
@@ -187,7 +198,8 @@ class _InAppUpdateInitializerState extends ConsumerState<InAppUpdateInitializer>
     }
     if (!dialogContext.mounted) return;
 
-    showDialog(
+    // Awaiting keeps the pending flag set until the dialog is dismissed.
+    await showDialog<void>(
       context: dialogContext,
       barrierDismissible: true,
       builder: (dialogCtx) => AlertDialog(
