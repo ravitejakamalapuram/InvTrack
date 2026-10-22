@@ -7849,5 +7849,17 @@
   "fyPdfExportFailed": "Could not create the PDF. Please try again.",
   "@fyPdfExportFailed": {
     "description": "Snackbar when PDF export fails"
+  },
+  "fyPdfPrivacyConfirmTitle": "Export with privacy mode on?",
+  "@fyPdfPrivacyConfirmTitle": {
+    "description": "Title of the dialog shown before exporting the FY PDF while privacy mode is on"
+  },
+  "fyPdfPrivacyConfirmBody": "This PDF will show your amounts even though privacy mode is on.",
+  "@fyPdfPrivacyConfirmBody": {
+    "description": "Body of the FY PDF export confirmation dialog when privacy mode is on"
+  },
+  "fyPdfPrivacyConfirmExport": "Export anyway",
+  "@fyPdfPrivacyConfirmExport": {
+    "description": "Confirm button of the FY PDF privacy-mode dialog"
   }
 }
