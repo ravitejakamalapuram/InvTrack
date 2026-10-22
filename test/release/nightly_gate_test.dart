@@ -11,7 +11,11 @@ void main() {
   final now = DateTime.utc(2026, 10, 3, 12);
 
   String runs(String conclusion, String createdAt) => jsonEncode([
-    {'conclusion': conclusion, 'createdAt': createdAt},
+    {
+      'conclusion': conclusion,
+      'createdAt': createdAt,
+      'displayTitle': 'nightly',
+    },
   ]);
 
   String? check(String json) => nightlyBlockReason(
@@ -45,6 +49,35 @@ void main() {
     expect(check(runs('success', '2026-10-03T13:00:00Z')), isNotNull);
   });
 
+  test('a golden regeneration run is not a full nightly and blocks', () {
+    final json = jsonEncode([
+      {
+        'conclusion': 'success',
+        'createdAt': '2026-10-03T02:00:00Z',
+        'displayTitle': regenerationRunName,
+      },
+    ]);
+    expect(check(json), contains('regeneration'));
+  });
+
+  test('a run with no readable title blocks', () {
+    final json = jsonEncode([
+      {'conclusion': 'success', 'createdAt': '2026-10-03T02:00:00Z'},
+    ]);
+    expect(check(json), contains('Cannot read'));
+  });
+
+  test('a normally titled success still allows', () {
+    final json = jsonEncode([
+      {
+        'conclusion': 'success',
+        'createdAt': '2026-10-03T02:00:00Z',
+        'displayTitle': 'nightly',
+      },
+    ]);
+    expect(check(json), isNull);
+  });
+
   test('no nightly runs blocks', () {
     expect(check('[]'), contains('No completed nightly'));
   });
@@ -71,8 +104,16 @@ void main() {
     'only the newest run counts: an older success does not hide a failure',
     () {
       final json = jsonEncode([
-        {'conclusion': 'failure', 'createdAt': '2026-10-03T01:37:00Z'},
-        {'conclusion': 'success', 'createdAt': '2026-10-02T01:37:00Z'},
+        {
+          'conclusion': 'failure',
+          'createdAt': '2026-10-03T01:37:00Z',
+          'displayTitle': 'nightly',
+        },
+        {
+          'conclusion': 'success',
+          'createdAt': '2026-10-02T01:37:00Z',
+          'displayTitle': 'nightly',
+        },
       ]);
       expect(check(json), contains('failure'));
     },

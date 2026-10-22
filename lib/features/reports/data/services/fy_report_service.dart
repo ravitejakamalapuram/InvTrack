@@ -13,7 +13,9 @@ import 'package:inv_tracker/core/calculations/calculation_engine.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
 import 'package:inv_tracker/core/calculations/tax_and_basis_calculator.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
+import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
 import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
@@ -219,6 +221,87 @@ class FYReportService {
     }
 
     return breakdown;
+  }
+
+  /// Base-currency value of each holding at the two FY edges, from its
+  /// valuation snapshots (#800 slice 2).
+  ///
+  /// The opening value is the latest snapshot dated before 1 April of
+  /// [fyYear], the closing value the latest dated before the next 1 April. A
+  /// market value snapshot is preferred; with none, the latest of any kind
+  /// is used. Only live snapshots in the holding's own currency count. A
+  /// holding with no such snapshot, or whose conversion is impossible, is
+  /// left out of the map so the FY XIRR stays null; no value is invented.
+  Future<({Map<String, double> opening, Map<String, double> closing})>
+  valuationsAtFYEdges({
+    required int fyYear,
+    required List<InvestmentEntity> investments,
+    required List<InvestmentValuationSnapshot> snapshots,
+    required String baseCurrency,
+  }) async {
+    Future<Map<String, double>> at(DateTime edge) async {
+      final held = _heldBefore(investments, edge);
+      final amounts = <String, double>{};
+      final probes = <CashFlowEntity>[];
+      for (final inv in investments) {
+        if (!held.contains(inv.id)) continue;
+        InvestmentValuationSnapshot? market;
+        InvestmentValuationSnapshot? any;
+        for (final s in snapshots) {
+          if (!ValuationSnapshotSelector.applies(s, inv.id, inv.currency)) {
+            continue;
+          }
+          final d = DateTime(
+            s.effectiveDate.year,
+            s.effectiveDate.month,
+            s.effectiveDate.day,
+          );
+          if (!d.isBefore(edge)) continue;
+          if (any == null || ValuationSnapshotSelector.compare(s, any) > 0) {
+            any = s;
+          }
+          if (s.kind == ValuationKind.marketValue &&
+              (market == null ||
+                  ValuationSnapshotSelector.compare(s, market) > 0)) {
+            market = s;
+          }
+        }
+        final chosen = market ?? any;
+        if (chosen == null) continue;
+        // One unit is converted as a cash flow so the existing conversion
+        // applies (the rate for the snapshot date, else the latest known,
+        // else dropped) and the rate is checked even for a zero value.
+        amounts[inv.id] = chosen.amount;
+        probes.add(
+          CashFlowEntity(
+            id: inv.id,
+            investmentId: inv.id,
+            amount: 1,
+            date: chosen.effectiveDate,
+            type: CashFlowType.invest,
+            currency: chosen.currency,
+            createdAt: chosen.effectiveDate,
+          ),
+        );
+      }
+      final converted = await _engine.currency.batchConvertToBase(
+        cashFlows: probes,
+        baseCurrency: baseCurrency,
+      );
+      // A rate that is zero or not finite is no rate: the holding is left out.
+      final values = <String, double>{};
+      for (final cf in converted) {
+        if (!cf.amount.isFinite || cf.amount <= 0) continue;
+        final value = amounts[cf.investmentId]! * cf.amount;
+        if (value.isFinite) values[cf.investmentId] = value;
+      }
+      return values;
+    }
+
+    return (
+      opening: await at(DateTime(fyYear, 4, 1)),
+      closing: await at(DateTime(fyYear + 1, 4, 1)),
+    );
   }
 
   /// Whether [date] falls in the half-open range [start, endExclusive).
