@@ -276,8 +276,10 @@ Future<void> pumpStoreApp(
   final app = await TestApp.create(tester);
   app.seedInvestments(demo.investments, demo.cashFlows);
   app.seedGoals(demo.goals);
+  // _storeOverrides already stands in for Firestore and the currency service.
   await app.pumpApp(
     extraOverrides: [..._storeOverrides(demo), ...extraOverrides],
+    stubFirebase: false,
   );
   await _settle(tester);
 }

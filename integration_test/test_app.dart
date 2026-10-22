@@ -171,10 +171,14 @@ class TestApp {
     notificationService.reset();
   }
 
-  /// Pump the app with all mocked providers
+  /// Pump the app with all mocked providers.
+  ///
+  /// [stubFirebase] adds [noFirebaseOverrides]; a caller that overrides the
+  /// same providers itself passes false (a provider can be overridden once).
   Future<void> pumpApp({
     bool showOnboarding = false,
     List<Override> extraOverrides = const [],
+    bool stubFirebase = true,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -198,7 +202,7 @@ class TestApp {
           goalRepositoryProvider.overrideWithValue(goalRepository),
           analyticsServiceProvider.overrideWithValue(analyticsService),
           notificationServiceProvider.overrideWithValue(notificationService),
-          ...noFirebaseOverrides(),
+          if (stubFirebase) ...noFirebaseOverrides(),
           ...extraOverrides,
         ],
         child: const InvTrackerApp(),
