@@ -272,7 +272,9 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
           closedStats: closedStats,
           currencyFormat: currencyFormat,
           archivedCount: archivedCount,
-          isApproximate: ref.watch(ratesApproximateProvider),
+          isApproximate:
+              ref.watch(isApproximateRatesIndicatorEnabledProvider) &&
+              ref.watch(ratesApproximateProvider),
           errorBuilder: (error) => OverviewErrorCard(error: error),
         ),
 

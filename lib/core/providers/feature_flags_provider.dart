@@ -93,7 +93,15 @@ enum FeatureFlag {
   /// device, with a Link Google button (A43, #786).
   /// - Hidden for 14 days after a dismiss
   /// - Off by default; it ships by changing the default in a release PR
-  guestLinkBanner('guest_link_banner', 'Guest Link Banner');
+  guestLinkBanner('guest_link_banner', 'Guest Link Banner'),
+
+  /// Small info marker on the Overview total when a converted amount used an
+  /// exchange rate older than 24 hours (A14, #759).
+  /// - Off by default; it ships by changing the default in a release PR
+  approximateRatesIndicator(
+    'approximate_rates_indicator',
+    'Approximate Rates Marker',
+  );
 
   const FeatureFlag(this.key, this.displayName, {this.defaultEnabled = false});
 
@@ -250,6 +258,15 @@ final isGuestLinkBannerEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.guestLinkBanner] ?? false,
+    ),
+  );
+});
+
+/// Whether the approximate-rates marker on the Overview total is enabled
+final isApproximateRatesIndicatorEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagsProvider.select(
+      (flags) => flags[FeatureFlag.approximateRatesIndicator] ?? false,
     ),
   );
 });

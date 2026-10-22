@@ -7631,5 +7631,13 @@
   "approximateRatesNote": "Some amounts use older exchange rates",
   "@approximateRatesNote": {
     "description": "Tooltip and accessibility label of the small info marker on the Overview total card, shown when a converted amount used a cached exchange rate older than 24 hours"
+  },
+  "approximateRatesFeature": "Approximate Rates Marker",
+  "@approximateRatesFeature": {
+    "description": "Debug settings title for the approximate exchange rates marker on the Overview total"
+  },
+  "approximateRatesFeatureSubtitle": "Info marker on the Overview total when an amount used an exchange rate older than 24 hours",
+  "@approximateRatesFeatureSubtitle": {
+    "description": "Debug settings subtitle for the approximate exchange rates marker feature flag"
   }
 }
