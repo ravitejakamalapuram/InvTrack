@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
@@ -467,6 +468,14 @@ class DataExportService {
     );
   }
 
+  static String _randomTag() {
+    final random = Random.secure();
+    return List.generate(
+      8,
+      (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0'),
+    ).join();
+  }
+
   /// Saves export ZIP bytes to the temp directory and returns the file path.
   Future<String> _saveToTempFile(
     Uint8List zipData, {
@@ -543,14 +552,18 @@ class DataExportService {
     try {
       var shared = filePaths;
       if (password != null) {
-        for (final (i, filePath) in filePaths.indexed) {
+        for (final filePath in filePaths) {
           final encrypted = await BackupCrypto.encryptInBackground(
             await File(filePath).readAsBytes(),
             password,
             iterations: kdfIterations,
           );
           copies.add(
-            await _saveToTempFile(encrypted, encrypted: true, tag: '_$i'),
+            await _saveToTempFile(
+              encrypted,
+              encrypted: true,
+              tag: '_${_randomTag()}',
+            ),
           );
         }
         shared = copies;

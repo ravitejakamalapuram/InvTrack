@@ -100,6 +100,9 @@ class InMemoryGuestBackupStore implements GuestBackupStore {
 class FakeGuestExportService extends Fake implements DataExportService {
   final sharedFiles = <List<String>>[];
 
+  /// The password each share was asked to protect the copy with (null: none).
+  final sharedPasswords = <String?>[];
+
   /// Thrown by [shareZipFiles] instead of sharing, when set.
   Object? shareError;
 
@@ -114,6 +117,7 @@ class FakeGuestExportService extends Fake implements DataExportService {
   }) async {
     if (shareError != null) throw shareError!;
     sharedFiles.add(filePaths);
+    sharedPasswords.add(password);
   }
 }
 
