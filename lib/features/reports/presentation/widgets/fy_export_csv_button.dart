@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
@@ -5,13 +6,28 @@ import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/fy_report_export_provider.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/fy_report_provider.dart';
+import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+
+/// Signature of [shareFYReportCsv]; injectable for tests.
+typedef FYCsvSharer =
+    Future<void> Function(
+      FYReport report,
+      String currency, {
+      required String subject,
+      required bool maskSensitiveData,
+    });
 
 /// Drop-in "Export CSV" button for the Tax-Year report screen.
 class FYExportCsvButton extends ConsumerStatefulWidget {
-  const FYExportCsvButton({super.key, required this.fyYear});
+  const FYExportCsvButton({
+    super.key,
+    required this.fyYear,
+    @visibleForTesting this.share = shareFYReportCsv,
+  });
 
   final int fyYear;
+  final FYCsvSharer share;
 
   @override
   ConsumerState<FYExportCsvButton> createState() => _FYExportCsvButtonState();
@@ -26,7 +42,8 @@ class _FYExportCsvButtonState extends ConsumerState<FYExportCsvButton> {
     setState(() => _busy = true);
     try {
       final report = await ref.read(fyReportProvider(widget.fyYear).future);
-      await shareFYReportCsv(
+      if (!mounted) return;
+      await widget.share(
         report,
         ref.read(currencyCodeProvider),
         subject: l10n.fyExportCsvSubject(report.fyLabel),
@@ -34,6 +51,7 @@ class _FYExportCsvButtonState extends ConsumerState<FYExportCsvButton> {
       );
     } catch (e, st) {
       ErrorHandler.handle(e, st, showFeedback: false);
+      if (!mounted) return;
       messenger.showSnackBar(SnackBar(content: Text(l10n.fyExportCsvFailed)));
     } finally {
       if (mounted) setState(() => _busy = false);
