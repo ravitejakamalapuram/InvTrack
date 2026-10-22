@@ -38,9 +38,25 @@ jobs:
         run: flutter test --tags golden test/golden
 
   integration:
-    name: Integration tests (Android emulator)
+    name: Integration tests (Android emulator) ${{ matrix.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: v1-noimpeller
+            gpu: swiftshader_indirect
+            impeller: off
+          - name: v2-guest
+            gpu: guest
+            impeller: on
+          - name: v3-swangle
+            gpu: swangle_indirect
+            impeller: on
+          - name: v4-cores4
+            gpu: swiftshader_indirect
+            impeller: on
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -63,6 +79,11 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       # Critical flows: app start and tabs, add an investment, add cash flows, and the export/import
       # screen. Each line runs on its own; the first failure fails the job.
+      - name: Disable Impeller (experiment)
+        if: ${{ matrix.impeller == 'off' }}
+        run: |
+          sed -i 's#<uses-permission android:name="android.permission.INTERNET"/>#<uses-permission android:name="android.permission.INTERNET"/><application><meta-data android:name="io.flutter.embedding.android.EnableImpeller" android:value="false"/></application>#' android/app/src/debug/AndroidManifest.xml
+          cat android/app/src/debug/AndroidManifest.xml
       - name: Integration tests
         env:
           # The Gradle daemon (8 GB heap, android/gradle.properties) outlives the build and starves the
@@ -73,7 +94,9 @@ jobs:
           api-level: 34
           arch: x86_64
           target: google_apis
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          cores: 4
+          ram-size: 4096M
+          emulator-options: -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
             sh -c 'adb logcat -v time > /tmp/logcat.log 2>&1 &'
