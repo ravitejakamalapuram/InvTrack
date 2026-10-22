@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/fy_report_export_provider.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/fy_pdf_export_button.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Drop-in "Export CSV" button for the Tax-Year report screen.
 class FYExportCsvButton extends ConsumerStatefulWidget {
-  const FYExportCsvButton({super.key, required this.fyYear});
+  const FYExportCsvButton({
+    super.key,
+    required this.fyYear,
+    this.style = FyExportStyle.text,
+  });
 
   final int fyYear;
+  final FyExportStyle style;
 
   @override
   ConsumerState<FYExportCsvButton> createState() => _FYExportCsvButtonState();
@@ -31,10 +37,11 @@ class _FYExportCsvButtonState extends ConsumerState<FYExportCsvButton> {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton.icon(
+    return fyExportButton(
+      style: widget.style,
       onPressed: _busy ? null : _export,
       icon: const Icon(Icons.ios_share),
-      label: Text(AppLocalizations.of(context).fyExportCsv),
+      label: AppLocalizations.of(context).fyExportCsv,
     );
   }
 }

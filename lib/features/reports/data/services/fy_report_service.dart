@@ -136,6 +136,15 @@ class FYReportService {
     );
 
     return FYReport(
+      missingValues: xirr == null
+          ? _missingValues(
+              allInvestments,
+              fyStart,
+              fyEndExclusive,
+              openingValues ?? const {},
+              closingValues ?? const {},
+            )
+          : const [],
       fyStart: fyStart,
       fyEnd: fyEnd,
       fyLabel: fyLabel,
@@ -319,6 +328,30 @@ class FYReportService {
             !(inv.closedAt != null && inv.closedAt!.isBefore(limit)))
           inv.id,
     };
+  }
+
+  /// Holdings held at an FY edge with no value there, in list order.
+  List<FYMissingValue> _missingValues(
+    List<InvestmentEntity> investments,
+    DateTime fyStart,
+    DateTime fyEndExclusive,
+    Map<String, double> opening,
+    Map<String, double> closing,
+  ) {
+    final heldAtStart = _heldBefore(investments, fyStart);
+    final heldAtEnd = _heldBefore(investments, fyEndExclusive);
+    return [
+      for (final inv in investments)
+        if ((heldAtStart.contains(inv.id) && !opening.containsKey(inv.id)) ||
+            (heldAtEnd.contains(inv.id) && !closing.containsKey(inv.id)))
+          FYMissingValue(
+            investment: inv,
+            needsOpening:
+                heldAtStart.contains(inv.id) && !opening.containsKey(inv.id),
+            needsClosing:
+                heldAtEnd.contains(inv.id) && !closing.containsKey(inv.id),
+          ),
+    ];
   }
 
   /// FY XIRR, or null when it is undefined or cannot be proven.

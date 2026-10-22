@@ -1,16 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
+import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/reports/data/services/fy_report_pdf_service.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/fy_report_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
+/// How an FY export button is drawn: [text] in an app bar, [primary] on the
+/// gradient action row (48dp, white label), [outlined] beside it.
+enum FyExportStyle { text, primary, outlined }
+
+/// Button of [style] with [icon] and [label]; null [onPressed] disables it.
+Widget fyExportButton({
+  required FyExportStyle style,
+  required VoidCallback? onPressed,
+  required Widget icon,
+  required String label,
+}) {
+  final shape = RoundedRectangleBorder(borderRadius: AppSizes.borderRadiusXl);
+  const size = Size(48, 48);
+  final text = Text(label);
+  switch (style) {
+    case FyExportStyle.text:
+      return TextButton.icon(onPressed: onPressed, icon: icon, label: text);
+    case FyExportStyle.primary:
+      return FilledButton.icon(
+        onPressed: onPressed,
+        icon: icon,
+        label: text,
+        style: FilledButton.styleFrom(
+          minimumSize: size,
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: shape,
+        ),
+      );
+    case FyExportStyle.outlined:
+      return OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: icon,
+        label: text,
+        style: OutlinedButton.styleFrom(minimumSize: size, shape: shape),
+      );
+  }
+}
+
 /// "Export PDF" action for the Tax-Year report of [fyYear].
 class FyPdfExportButton extends ConsumerStatefulWidget {
   final int fyYear;
 
-  const FyPdfExportButton({super.key, required this.fyYear});
+  final FyExportStyle style;
+
+  const FyPdfExportButton({
+    super.key,
+    required this.fyYear,
+    this.style = FyExportStyle.text,
+  });
 
   @override
   ConsumerState<FyPdfExportButton> createState() => _FyPdfExportButtonState();
@@ -44,7 +92,8 @@ class _FyPdfExportButtonState extends ConsumerState<FyPdfExportButton> {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton.icon(
+    return fyExportButton(
+      style: widget.style,
       onPressed: _busy ? null : _export,
       icon: _busy
           ? const SizedBox(
@@ -53,7 +102,7 @@ class _FyPdfExportButtonState extends ConsumerState<FyPdfExportButton> {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : const Icon(Icons.picture_as_pdf_outlined),
-      label: Text(AppLocalizations.of(context).fyPdfExport),
+      label: AppLocalizations.of(context).fyPdfExport,
     );
   }
 }

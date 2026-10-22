@@ -67,7 +67,12 @@ class FYReport {
   /// Total interest income for tax purposes
   final double interestIncome;
 
+  /// Holdings with no opening or closing value, which is why [xirr] is null.
+  /// Empty when the XIRR is known.
+  final List<FYMissingValue> missingValues;
+
   const FYReport({
+    this.missingValues = const [],
     required this.fyStart,
     required this.fyEnd,
     required this.fyLabel,
@@ -106,6 +111,23 @@ class FYReport {
 
   /// Returns true if this was a profitable year
   bool get isProfitable => netCashFlow > 0;
+}
+
+/// A holding that crossed an FY edge without a value there.
+class FYMissingValue {
+  final InvestmentEntity investment;
+
+  /// No value before 1 April at the start of the year.
+  final bool needsOpening;
+
+  /// No value before the next 1 April at the end of the year.
+  final bool needsClosing;
+
+  const FYMissingValue({
+    required this.investment,
+    required this.needsOpening,
+    required this.needsClosing,
+  });
 }
 
 /// Monthly data for FY breakdown
