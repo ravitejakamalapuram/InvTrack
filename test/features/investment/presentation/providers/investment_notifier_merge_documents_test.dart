@@ -137,4 +137,27 @@ void main() {
     expect(docs.records.keys, unorderedEquals(['d1', 'd2', 'd3']));
     expect(storage.files.keys.length, 3);
   });
+
+  test('a failing document cleanup still removes the half-merged '
+      'investment', () async {
+    docs.failOnCreate = true;
+    docs.failOnDeleteByInvestment = true;
+
+    await expectLater(merge(), throwsException);
+
+    expect(repo.investments.map((i) => i.id), unorderedEquals(['a', 'b', 'c']));
+  });
+
+  test('a document whose file is missing keeps its record and path', () async {
+    storage.files.remove(docs.records['d1']!.localPath);
+    final oldPath = docs.records['d1']!.localPath;
+
+    await merge();
+
+    final mergedId = repo.investments.singleWhere((i) => i.id != 'c').id;
+    final moved = docs.records.values.singleWhere(
+      (d) => d.investmentId == mergedId && d.name == 'Receipt d1',
+    );
+    expect(moved.localPath, oldPath);
+  });
 }

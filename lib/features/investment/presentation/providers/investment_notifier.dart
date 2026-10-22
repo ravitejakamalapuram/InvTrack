@@ -1325,15 +1325,21 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         }
       }
     } catch (_) {
-      try {
-        await docs.deleteDocumentsByInvestment(mergedId);
-        await storage.deleteInvestmentDocuments(mergedId);
-        await repo.deleteInvestment(mergedId);
-      } catch (e) {
-        LoggerService.warn(
-          'Could not remove half-merged investment',
-          metadata: {'error': e.toString()},
-        );
+      // The merged investment goes first and each step has its own guard, so
+      // one failing step cannot leave the half-merged investment behind.
+      for (final cleanup in <Future<void> Function()>[
+        () => repo.deleteInvestment(mergedId),
+        () => docs.deleteDocumentsByInvestment(mergedId),
+        () => storage.deleteInvestmentDocuments(mergedId),
+      ]) {
+        try {
+          await cleanup();
+        } catch (e) {
+          LoggerService.warn(
+            'Could not remove half-merged investment',
+            metadata: {'errorType': e.runtimeType.toString()},
+          );
+        }
       }
       rethrow;
     }

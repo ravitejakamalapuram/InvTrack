@@ -11,6 +11,9 @@ class FakeDocumentRepository implements DocumentRepository {
   /// Set to make [createDocument] throw, to test failure handling.
   bool failOnCreate = false;
 
+  /// Set to make [deleteDocumentsByInvestment] throw.
+  bool failOnDeleteByInvestment = false;
+
   @override
   Stream<List<DocumentEntity>> watchDocumentsByInvestment(
     String investmentId,
@@ -43,8 +46,10 @@ class FakeDocumentRepository implements DocumentRepository {
       records.remove(documentId);
 
   @override
-  Future<void> deleteDocumentsByInvestment(String investmentId) async =>
-      records.removeWhere((_, d) => d.investmentId == investmentId);
+  Future<void> deleteDocumentsByInvestment(String investmentId) async {
+    if (failOnDeleteByInvestment) throw Exception('delete failed');
+    records.removeWhere((_, d) => d.investmentId == investmentId);
+  }
 
   @override
   Future<void> deleteAllDocuments() async => records.clear();
