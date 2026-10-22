@@ -107,7 +107,11 @@ class FakeGuestExportService extends Fake implements DataExportService {
   Future<ZipExport> exportAsZipBytes() async => guestExport();
 
   @override
-  Future<void> shareZipFiles(List<String> filePaths) async {
+  Future<void> shareZipFiles(
+    List<String> filePaths, {
+    String? password,
+    int kdfIterations = 0,
+  }) async {
     if (shareError != null) throw shareError!;
     sharedFiles.add(filePaths);
   }

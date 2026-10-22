@@ -199,6 +199,8 @@ void main() {
 
     await tester.tap(find.text('Share'));
     await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Export Backup'));
+    await tester.pumpAndSettle();
 
     expect(exportService.sharedFiles, [await googleBackups()]);
     expect(await googleBackups(), hasLength(1));
@@ -212,6 +214,8 @@ void main() {
     await launch(tester);
 
     await tester.tap(find.text('Share'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Export Backup'));
     await tester.pumpAndSettle();
     expect(exportService.sharedFiles, isEmpty);
     expect(await googleBackups(), hasLength(1));

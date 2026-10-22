@@ -471,11 +471,12 @@ class DataExportService {
   Future<String> _saveToTempFile(
     Uint8List zipData, {
     bool encrypted = false,
+    String tag = '',
   }) async {
     final directory = await getTemporaryDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final extension = encrypted ? backupEncryptedExtension : 'zip';
-    final fileName = '$_exportPrefix$timestamp.$extension';
+    final fileName = '$_exportPrefix$timestamp$tag.$extension';
     final filePath = '${directory.path}/$fileName';
     final file = File(filePath);
     await file.writeAsBytes(zipData);
@@ -527,14 +528,53 @@ class DataExportService {
   }
 
   /// Shares export ZIP files already on disk, such as kept guest backups.
-  Future<void> shareZipFiles(List<String> filePaths) async {
-    await SharePlus.instance.share(
-      ShareParams(
-        files: [for (final filePath in filePaths) XFile(filePath)],
-        text: 'InvTrack data export. Keep this file safe for backup or import.',
-        subject: 'InvTrack Data Export',
-      ),
-    );
+  ///
+  /// With a [password] each file is shared as an encrypted `.invbackup` copy
+  /// written to the temp directory and deleted afterwards (also when sharing
+  /// fails; on Android after [_androidShareCleanupDelay], and a leftover from
+  /// a crash is purged by [purgeStaleBackupExports]). The stored file is not
+  /// changed. [kdfIterations] is only lowered in tests.
+  Future<void> shareZipFiles(
+    List<String> filePaths, {
+    String? password,
+    int kdfIterations = BackupCrypto.defaultIterations,
+  }) async {
+    final copies = <String>[];
+    try {
+      var shared = filePaths;
+      if (password != null) {
+        for (final (i, filePath) in filePaths.indexed) {
+          final encrypted = await BackupCrypto.encryptInBackground(
+            await File(filePath).readAsBytes(),
+            password,
+            iterations: kdfIterations,
+          );
+          copies.add(
+            await _saveToTempFile(encrypted, encrypted: true, tag: '_$i'),
+          );
+        }
+        shared = copies;
+      }
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [for (final filePath in shared) XFile(filePath)],
+          text:
+              'InvTrack data export. Keep this file safe for backup or import.',
+          subject: 'InvTrack Data Export',
+        ),
+      );
+    } finally {
+      final delay = Platform.isAndroid
+          ? _androidShareCleanupDelay
+          : Duration.zero;
+      for (final copy in copies) {
+        if (delay == Duration.zero) {
+          await _deleteQuietly(copy);
+        } else {
+          Timer(delay, () => _deleteQuietly(copy));
+        }
+      }
+    }
   }
 
   // ============ CSV Generation ============
