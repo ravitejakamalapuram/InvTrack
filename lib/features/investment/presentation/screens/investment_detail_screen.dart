@@ -571,7 +571,8 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 fontWeight: FontWeight.w600,
               ),
             ),
-            if (!widget.investment.isArchived) ...[
+            if (!(widget.investment.status == InvestmentStatus.closed ||
+                widget.investment.isArchived)) ...[
               const SizedBox(height: 4),
               Text(
                 'Tap + Add to start tracking',
@@ -1013,8 +1014,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             duration: const Duration(seconds: 2),
           ),
         );
-        // Navigate back after archiving (but not for unarchive)
-        if (!isArchived && mounted) {
+        // Leave the screen either way: after unarchive this route still holds
+        // the stale archived investment, so the user reopens the active one.
+        if (mounted) {
           navigator.pop();
         }
       } catch (e) {

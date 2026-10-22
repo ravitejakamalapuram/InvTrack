@@ -10,6 +10,8 @@ import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/cash_flow_card_widget.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_fab_widgets.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -68,11 +70,12 @@ Future<void> _pump(
   WidgetTester tester, {
   required _FakeInvestmentNotifier notifier,
   bool archived = false,
+  InvestmentStatus status = InvestmentStatus.open,
   List<CashFlowEntity>? flows,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
-  final investment = _fund.copyWith(isArchived: archived);
+  final investment = _fund.copyWith(isArchived: archived, status: status);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -136,6 +139,15 @@ void main() {
     expect(find.byType(TransactionFab), findsNothing);
     expect(find.byType(Dismissible), findsNothing);
     expect(find.text(_l10n(tester).archivedReadOnlyBanner), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.byType(CashFlowCardWidget),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.byType(CashFlowCardWidget));
+    await tester.pumpAndSettle();
+    expect(find.byType(AddTransactionScreen), findsNothing);
   });
 
   testWidgets('archived: Docs tab offers no add button', (tester) async {
@@ -188,5 +200,32 @@ void main() {
   testWidgets('active and empty keeps the add instruction', (tester) async {
     await _pump(tester, notifier: _FakeInvestmentNotifier(), flows: const []);
     expect(find.text('Tap + Add to start tracking'), findsOneWidget);
+  });
+
+  testWidgets('closed and empty: no instruction to tap a missing add button', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      notifier: _FakeInvestmentNotifier(),
+      status: InvestmentStatus.closed,
+      flows: const [],
+    );
+    expect(find.text('No Cash Flows Yet'), findsOneWidget);
+    expect(find.text('Tap + Add to start tracking'), findsNothing);
+  });
+
+  testWidgets('unarchive leaves the stale archived screen', (tester) async {
+    final notifier = _FakeInvestmentNotifier();
+    await _pump(tester, notifier: notifier, archived: true);
+
+    await _openOptions(tester);
+    await tester.tap(find.text('Unarchive Investment'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(_l10n(tester).unarchive).last);
+    await tester.pumpAndSettle();
+
+    expect(notifier.restored, ['inv-1']);
+    expect(find.byType(InvestmentDetailScreen), findsNothing);
   });
 }
