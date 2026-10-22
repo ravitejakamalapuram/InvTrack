@@ -42,6 +42,12 @@ class _FYExportCsvButtonState extends ConsumerState<FYExportCsvButton> {
     // the report even if the base currency changes meanwhile.
     final currency = ref.read(currencyCodeProvider);
     setState(() => _busy = true);
+    // The report provider is autoDispose; hold a listener so it is not
+    // disposed while the load or the share sheet is still in flight.
+    final keepAlive = ref.listenManual(
+      fyReportProvider(widget.fyYear),
+      (_, _) {},
+    );
     try {
       final report = await ref.read(fyReportProvider(widget.fyYear).future);
       if (!mounted) return;
@@ -56,6 +62,7 @@ class _FYExportCsvButtonState extends ConsumerState<FYExportCsvButton> {
       if (!mounted) return;
       messenger.showSnackBar(SnackBar(content: Text(l10n.fyExportCsvFailed)));
     } finally {
+      keepAlive.close();
       if (mounted) setState(() => _busy = false);
     }
   }

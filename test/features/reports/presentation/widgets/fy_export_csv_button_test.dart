@@ -65,9 +65,13 @@ Widget _app({
   required Future<FYReport> Function() report,
   bool privacy = false,
   ValueNotifier<String>? currency,
+  VoidCallback? onReportDisposed,
 }) => ProviderScope(
   overrides: [
-    fyReportProvider(2025).overrideWith((ref) => report()),
+    fyReportProvider(2025).overrideWith((ref) {
+      if (onReportDisposed != null) ref.onDispose(onReportDisposed);
+      return report();
+    }),
     if (currency == null)
       currencyCodeProvider.overrideWithValue('INR')
     else
@@ -109,6 +113,27 @@ void main() {
       expect(masked, isTrue);
       expect(currency, 'INR');
       expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('keeps the FY report provider alive until the share ends', (
+      t,
+    ) async {
+      var disposed = false;
+      final shareGate = Completer<void>();
+      await t.pumpWidget(
+        _app(
+          report: () async => _report,
+          onReportDisposed: () => disposed = true,
+          share: (r, c, {required subject, required maskSensitiveData}) =>
+              shareGate.future,
+        ),
+      );
+      await t.tap(find.bySubtype<TextButton>());
+      await t.pump();
+      await t.pump(const Duration(seconds: 1));
+      expect(disposed, isFalse, reason: 'disposed while share in flight');
+      shareGate.complete();
+      await t.pumpAndSettle();
     });
 
     testWidgets('share failure shows the failure snackbar and re-enables', (
