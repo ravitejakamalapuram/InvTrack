@@ -89,6 +89,10 @@ jobs:
           tail -n 40 /tmp/adb.log || true
           grep -iE 'fatal|died|lowmemory|lmkd|signal 11|SIGSEGV|anr in|crash' /tmp/logcat.log | tail -n 40 || true
           tail -n 30 /tmp/logcat.log || true
+          ls -laR /tmp/android-runner | head -40 || true
+          for f in /tmp/android-runner/emu-crash-*/completed/*.dmp /tmp/android-runner/emu-crash-*/pending/*.dmp; do echo "== $f"; strings "$f" | grep -iE '\.so|signal|swiftshader|vulkan|gl' | head -30; done 2>/dev/null || true
+          sudo dmesg | tail -n 30 || true
+          pgrep -a qemu || echo 'no qemu'
           free -m
           sudo dmesg | grep -iE 'out of memory|killed process' | tail -5 || true
 
