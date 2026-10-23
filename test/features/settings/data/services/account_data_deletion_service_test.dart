@@ -303,6 +303,10 @@ void main() {
         );
 
         expect(filesDeleted, isTrue);
+        expect(
+          AccountDataDeletionService.userPreferenceKeys,
+          contains('in_app_update_last_prompt_ms'),
+        );
         for (final k in AccountDataDeletionService.userPreferenceKeys) {
           expect(prefs.containsKey(k), isFalse, reason: k);
         }

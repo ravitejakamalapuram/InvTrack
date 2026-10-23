@@ -7633,6 +7633,19 @@
     "description": "Second FAQ paragraph under the backup answer: expected cash flows and health scores are derived data and are not in the backup"
   },
 
+  "approximateRatesNote": "Some amounts use older exchange rates",
+  "@approximateRatesNote": {
+    "description": "Tooltip and accessibility label of the small info marker on the Overview total card, shown when a converted amount used a cached exchange rate older than 24 hours"
+  },
+  "approximateRatesFeature": "Approximate Rates Marker",
+  "@approximateRatesFeature": {
+    "description": "Debug settings title for the approximate exchange rates marker on the Overview total"
+  },
+  "approximateRatesFeatureSubtitle": "Info marker on the Overview total when an amount used an exchange rate older than 24 hours",
+  "@approximateRatesFeatureSubtitle": {
+    "description": "Debug settings subtitle for the approximate exchange rates marker feature flag"
+  },
+
   "notificationToggleInvestmentMilestones": "Investment Milestones",
   "@notificationToggleInvestmentMilestones": {
     "description": "Title of the Settings > Notifications switch for the investment milestone notification"
@@ -7699,6 +7712,23 @@
     "placeholders": {
       "count": {"type": "int"},
       "total": {"type": "int"}
+    }
+  },
+
+  "fyExportCsv": "Export CSV",
+  "@fyExportCsv": {
+    "description": "Button on the Tax-Year report that shares the report as a CSV file"
+  },
+
+  "fyExportCsvFailed": "Could not export the report. Please try again.",
+  "@fyExportCsvFailed": {
+    "description": "Error shown when the Tax-Year report CSV export fails"
+  },
+  "fyExportCsvSubject": "InvTrack FY {fyLabel} report",
+  "@fyExportCsvSubject": {
+    "description": "Subject line for the Tax-Year report CSV share",
+    "placeholders": {
+      "fyLabel": {"type": "String"}
     }
   },
 
