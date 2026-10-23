@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
 import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
+import 'package:inv_tracker/core/calculations/merged_valuation_snapshots.dart';
 import 'package:inv_tracker/core/calculations/valuation_snapshot_selector.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
@@ -696,6 +697,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       final deletedCount = await ref
           .read(investmentRepositoryProvider)
           .bulkDelete(investmentIds);
+      await _cancelRemindersFor(investmentIds);
       await _deleteDocumentFiles(investmentIds);
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -960,6 +962,34 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
                   i.type == InvestmentType.other && i.customTypeLabel != null,
             )
           : const <InvestmentEntity>[];
+      // The sources' dated valuations go with them, so the merged investment
+      // takes their sum (and mirrors the latest, as every snapshot write does).
+      final mergedCurrency = resolveSharedCurrency(
+        toMerge.map((i) => i.currency),
+        ref.read(currencyCodeProvider),
+      );
+      final mergedValuations = MergedValuationSnapshots.combine(
+        snapshots: [
+          for (final inv in toMerge)
+            ...await ref
+                .read(valuationRepositoryProvider)
+                .getByInvestment(inv.id),
+        ],
+        sourceIds: [for (final inv in toMerge) inv.id],
+        mergedId: newInvestmentId,
+        newId: () => const Uuid().v4(),
+        now: now,
+      ).where((s) => s.currency == mergedCurrency).toList();
+      // While the feature is off the investment keeps its single legacy value,
+      // so the pair is only mirrored when it is on; the snapshots are carried
+      // either way, or deleting the sources would lose them.
+      final mergedMirror =
+          mergedValuations.isEmpty ||
+              !ref.read(valuationSnapshotsActiveProvider)
+          ? null
+          : mergedValuations.reduce(
+              (a, b) => ValuationSnapshotSelector.compare(a, b) >= 0 ? a : b,
+            );
       final newInvestment = InvestmentEntity(
         id: newInvestmentId,
         name: newName,
@@ -972,10 +1002,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         notes: 'Merged from: ${toMerge.map((i) => i.name).join(', ')}',
         createdAt: now,
         updatedAt: now,
-        currency: resolveSharedCurrency(
-          toMerge.map((i) => i.currency),
-          ref.read(currencyCodeProvider),
-        ),
+        currency: mergedCurrency,
+        currentValue: mergedMirror?.amount,
+        currentValueDate: mergedMirror?.effectiveDate,
         startDate: earliestStart,
         maturityDate: latestMaturity,
         expectedRate: firstSet((i) => i.expectedRate),
@@ -1010,10 +1039,30 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         investments: [newInvestment],
         cashFlows: newCashFlows,
       );
+      if (mergedValuations.isNotEmpty) {
+        try {
+          await ref
+              .read(valuationRepositoryProvider)
+              .importAll(mergedValuations);
+        } catch (_) {
+          // Leave the sources as they were rather than a half-merged copy.
+          try {
+            await repo.deleteInvestment(newInvestmentId);
+          } catch (e) {
+            LoggerService.warn(
+              'Could not remove half-merged investment',
+              metadata: {'errorType': e.runtimeType.toString()},
+            );
+          }
+          rethrow;
+        }
+      }
 
       // Delete old investments
       for (final id in investmentIds) {
         await repo.deleteInvestment(id);
+        // Only a source that is really gone loses its reminders.
+        await _cancelRemindersFor([id]);
       }
 
       _invalidateAll();
@@ -1278,6 +1327,14 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     } catch (e) {
       // Don't fail the main operation if notification scheduling fails
       // Just log and continue
+    }
+  }
+
+  /// Cancels the income and maturity reminders of investments that are gone.
+  Future<void> _cancelRemindersFor(List<String> investmentIds) async {
+    for (final id in investmentIds) {
+      await _cancelIncomeReminder(id);
+      await _cancelMaturityReminders(id);
     }
   }
 
