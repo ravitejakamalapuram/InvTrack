@@ -48,18 +48,18 @@ class _FailingRepository extends FakeInvestmentRepository {
 
 void main() {
   late _FailingRepository repo;
+  late InMemoryValuationRepository valuations;
   late FakeNotificationService notifications;
   late ProviderContainer container;
 
   setUp(() async {
     repo = _FailingRepository();
+    valuations = InMemoryValuationRepository();
     notifications = FakeNotificationService();
     container = ProviderContainer(
       overrides: [
         investmentRepositoryProvider.overrideWithValue(repo),
-        valuationRepositoryProvider.overrideWithValue(
-          InMemoryValuationRepository(),
-        ),
+        valuationRepositoryProvider.overrideWithValue(valuations),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
         notificationServiceProvider.overrideWithValue(notifications),
         isAuthenticatedProvider.overrideWithValue(true),
@@ -73,6 +73,7 @@ void main() {
 
   tearDown(() {
     container.dispose();
+    valuations.dispose();
     repo.reset();
   });
 
