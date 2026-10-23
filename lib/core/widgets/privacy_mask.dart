@@ -100,6 +100,9 @@ class MaskedAmountText extends ConsumerWidget {
   /// Text alignment.
   final TextAlign? textAlign;
 
+  /// Screen-reader label while masked; defaults to "Hidden amount".
+  final String? maskedSemanticsLabel;
+
   const MaskedAmountText({
     super.key,
     required this.text,
@@ -107,6 +110,7 @@ class MaskedAmountText extends ConsumerWidget {
     this.maxLines,
     this.overflow,
     this.textAlign,
+    this.maskedSemanticsLabel,
   });
 
   @override
@@ -136,6 +140,7 @@ class MaskedAmountText extends ConsumerWidget {
               maxLines: maxLines,
               overflow: overflow,
               textAlign: textAlign,
+              semanticsLabel: maskedSemanticsLabel,
             )
           : Text(
               text,
@@ -170,6 +175,7 @@ class _MaskedText extends StatelessWidget {
   final int? maxLines;
   final TextOverflow? overflow;
   final TextAlign? textAlign;
+  final String? semanticsLabel;
 
   const _MaskedText({
     super.key,
@@ -177,6 +183,7 @@ class _MaskedText extends StatelessWidget {
     this.maxLines,
     this.overflow,
     this.textAlign,
+    this.semanticsLabel,
   });
 
   @override
@@ -188,7 +195,8 @@ class _MaskedText extends StatelessWidget {
     // Also fixed bug where dots were white-on-white in light mode.
     return Text(
       dots.text,
-      semanticsLabel: AppLocalizations.of(context).hiddenAmount,
+      semanticsLabel:
+          semanticsLabel ?? AppLocalizations.of(context).hiddenAmount,
       style: dots.style,
       maxLines: maxLines,
       overflow: overflow,
