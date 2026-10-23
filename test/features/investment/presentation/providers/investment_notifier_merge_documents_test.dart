@@ -44,6 +44,19 @@ DocumentEntity _doc(String id, String investmentId, String path) =>
       updatedAt: DateTime(2026, 2, 1),
     );
 
+/// Like the Firestore repository, deleting an investment also deletes its
+/// document records.
+class _DocAwareRepository extends FakeInvestmentRepository {
+  _DocAwareRepository(this.docs);
+  final FakeDocumentRepository docs;
+
+  @override
+  Future<void> deleteInvestment(String id) async {
+    await super.deleteInvestment(id);
+    docs.records.removeWhere((_, d) => d.investmentId == id);
+  }
+}
+
 void main() {
   late FakeInvestmentRepository repo;
   late FakeDocumentRepository docs;
@@ -52,8 +65,8 @@ void main() {
   late ProviderContainer container;
 
   setUp(() async {
-    repo = FakeInvestmentRepository();
     docs = FakeDocumentRepository();
+    repo = _DocAwareRepository(docs);
     storage = FakeDocumentStorageService();
     valuations = InMemoryValuationRepository();
     container = ProviderContainer(
@@ -151,6 +164,24 @@ void main() {
       expect(docs.records.keys, unorderedEquals(['d1', 'd2', 'd3']));
       expect(storage.files.keys.length, 3);
     });
+
+    test(
+      'removing a source does not depend on a second record deletion',
+      () async {
+        docs.failOnDeleteByInvestment = true;
+
+        await merge();
+
+        expect(repo.investments.map((i) => i.id), isNot(contains('a')));
+        expect(repo.investments.map((i) => i.id), isNot(contains('b')));
+        expect(
+          storage.files.keys.where(
+            (p) => p.startsWith('a/') || p.startsWith('b/'),
+          ),
+          isEmpty,
+        );
+      },
+    );
 
     test('a failing document cleanup still removes the half-merged '
         'investment', () async {

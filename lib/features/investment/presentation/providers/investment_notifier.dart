@@ -1083,10 +1083,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
       // Delete old investments
       for (final id in investmentIds) {
+        // deleteInvestment also deletes the source's document records.
         await repo.deleteInvestment(id);
-        await ref
-            .read(documentRepositoryProvider)
-            .deleteDocumentsByInvestment(id);
         // Only a source that is really gone loses its reminders and files.
         await _deleteDocumentFiles([id]);
         await _cancelRemindersFor([id]);
