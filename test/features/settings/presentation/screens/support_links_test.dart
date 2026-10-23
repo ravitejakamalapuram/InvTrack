@@ -281,6 +281,9 @@ void main() {
         300,
         scrollable: find.byType(Scrollable).first,
       );
+      // The list builds the link ahead of the viewport; settle at the end.
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -2000));
+      await tester.pumpAndSettle();
       await tester.tap(link);
       await tester.pumpAndSettle();
 
@@ -407,6 +410,12 @@ void main() {
           300,
           scrollable: find.byType(Scrollable).first,
         );
+        // The list builds the link ahead of the viewport; settle at the end.
+        await tester.drag(
+          find.byType(Scrollable).first,
+          const Offset(0, -2000),
+        );
+        await tester.pumpAndSettle();
         await tester.tap(link);
         await tester.pumpAndSettle();
       },
@@ -511,6 +520,12 @@ void main() {
                 300,
                 scrollable: find.byType(Scrollable).first,
               );
+              // The list builds the link ahead of the viewport; settle at the end.
+              await tester.drag(
+                find.byType(Scrollable).first,
+                const Offset(0, -2000),
+              );
+              await tester.pumpAndSettle();
               await tester.tap(link);
               await tester.pump();
             },
