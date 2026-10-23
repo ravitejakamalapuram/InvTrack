@@ -57,6 +57,26 @@ class CurrencyConverterModule implements CalculationModule {
     );
   }
 
+  /// Like [batchConvert], and also says whether any flow used an approximate
+  /// rate (see [BatchCurrencyConverter.batchConvertWithApproximation]).
+  Future<({List<CashFlowEntity> cashFlows, bool isApproximate})>
+  batchConvertWithApproximation({
+    required List<CashFlowEntity> cashFlows,
+    required String baseCurrency,
+    ConversionFallbackStrategy fallbackStrategy =
+        ConversionFallbackStrategy.useLastKnown,
+  }) async {
+    final converter = _batchConverter;
+    if (cashFlows.isEmpty || converter == null) {
+      return (cashFlows: cashFlows, isApproximate: false);
+    }
+    return converter.batchConvertWithApproximation(
+      cashFlows: cashFlows,
+      baseCurrency: baseCurrency,
+      fallbackStrategy: fallbackStrategy,
+    );
+  }
+
   /// Like [batchConvert], but a flow that could not be converted (no rate, no
   /// cached rate, or conversion unavailable) is left out instead of being
   /// returned in its own currency, so totals never add a native amount under
