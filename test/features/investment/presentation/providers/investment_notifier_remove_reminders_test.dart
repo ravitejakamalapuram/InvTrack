@@ -13,6 +13,7 @@ import 'package:inv_tracker/features/investment/presentation/providers/investmen
 import '../../../../mocks/mock_analytics_service.dart';
 import '../../../../mocks/mock_notification_service.dart';
 import '../../data/repositories/mock_investment_repository.dart';
+import '../../valuation/in_memory_valuation_repository.dart';
 
 InvestmentEntity _fd(String id) => InvestmentEntity(
   id: id,
@@ -47,15 +48,18 @@ class _FailingRepository extends FakeInvestmentRepository {
 
 void main() {
   late _FailingRepository repo;
+  late InMemoryValuationRepository valuations;
   late FakeNotificationService notifications;
   late ProviderContainer container;
 
   setUp(() async {
     repo = _FailingRepository();
+    valuations = InMemoryValuationRepository();
     notifications = FakeNotificationService();
     container = ProviderContainer(
       overrides: [
         investmentRepositoryProvider.overrideWithValue(repo),
+        valuationRepositoryProvider.overrideWithValue(valuations),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
         notificationServiceProvider.overrideWithValue(notifications),
         isAuthenticatedProvider.overrideWithValue(true),
@@ -69,6 +73,7 @@ void main() {
 
   tearDown(() {
     container.dispose();
+    valuations.dispose();
     repo.reset();
   });
 
