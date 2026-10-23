@@ -72,7 +72,9 @@ void main() {
     expect(const ImportError.invalidZip().code, 'invalidZip');
     expect(const ImportError.archiveFailures(2).code, 'archiveFailures');
     expect(const ImportError.fileDamaged('goals.csv').code, 'fileDamaged');
-    expect(const ImportError.rowDetail('Row 3: Name X').code, 'rowDetail');
+    const rowDetail = ImportError.rowDetail('Row 3: Name X, Amount 100000');
+    expect(rowDetail.code, 'rowDetail');
+    expect(rowDetail.toString(), 'rowDetail');
   });
 
   test('errors with the same kind and parameter are equal', () {
