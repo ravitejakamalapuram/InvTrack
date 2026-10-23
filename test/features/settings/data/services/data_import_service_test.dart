@@ -118,7 +118,7 @@ void main() {
         );
 
         expect(result.isSuccess, false);
-        expect(result.errors, contains(contains('Invalid ZIP file')));
+        expect(result.errors, [const ImportError.invalidZip()]);
       });
 
       test('returns error for empty ZIP archive (missing metadata)', () async {
@@ -134,7 +134,7 @@ void main() {
 
         expect(result.isSuccess, false);
         // Empty archive returns "metadata.json not found" error
-        expect(result.errors, contains(contains('metadata.json')));
+        expect(result.errors, [const ImportError.metadataMissing()]);
       });
 
       test('returns error for missing metadata.json', () async {
@@ -150,7 +150,7 @@ void main() {
         );
 
         expect(result.isSuccess, false);
-        expect(result.errors, contains(contains('metadata.json')));
+        expect(result.errors, [const ImportError.metadataMissing()]);
       });
     });
 

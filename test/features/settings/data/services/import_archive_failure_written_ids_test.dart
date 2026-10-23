@@ -125,9 +125,7 @@ void main() {
         );
 
         expect(result.isSuccess, isFalse);
-        expect(result.errors, [
-          '1 restored item could not be moved to the archive',
-        ]);
+        expect(result.errors, [const ImportError.archiveFailures(1)]);
         expect(result.importedInvestmentIds, hasLength(1));
       },
     );
@@ -162,9 +160,7 @@ void main() {
         );
 
         expect(result.isSuccess, isFalse);
-        expect(result.errors, [
-          '1 restored item could not be moved to the archive',
-        ]);
+        expect(result.errors, [const ImportError.archiveFailures(1)]);
         expect(result.importedGoalIds, hasLength(1));
       },
     );
@@ -204,9 +200,7 @@ void main() {
         FakeGoalRepository(),
       );
 
-      expect(result.errors, [
-        '2 restored items could not be moved to the archive',
-      ]);
+      expect(result.errors, [const ImportError.archiveFailures(2)]);
       expect(result.importedInvestmentIds, hasLength(2));
     });
 
@@ -256,9 +250,7 @@ void main() {
             baseCurrency: 'INR',
           );
 
-      expect(result.errors, [
-        '1 restored item could not be moved to the archive',
-      ]);
+      expect(result.errors, [const ImportError.archiveFailures(1)]);
       expect(result.importedInvestmentIds, hasLength(1));
     });
   });

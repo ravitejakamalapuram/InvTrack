@@ -595,9 +595,7 @@ void main() {
   group('a damaged custom_types.json', () {
     // The label is in the file so the messages can be checked for it.
     const secret = 'Secret Hobby';
-    const stopped =
-        'Backup not imported: custom_types.json is damaged. Your existing '
-        'data was not changed.';
+    const stopped = ImportError.fileDamaged('custom_types.json');
 
     Future<ZipImportResult> importBroken(
       List<int> fileBytes, {

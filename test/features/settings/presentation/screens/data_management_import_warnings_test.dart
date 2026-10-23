@@ -52,7 +52,7 @@ class _Privacy extends PrivacyModeNotifier {
 }
 
 ZipImportResult _result({
-  List<String> errors = const [],
+  List<ImportError> errors = const [],
   List<String> warnings = const [],
 }) => ZipImportResult(
   investmentsImported: 3,
@@ -287,13 +287,13 @@ void main() {
       await importZip(
         tester,
         _result(
-          errors: const ['Invalid backup'],
+          errors: const [ImportError.invalidZip()],
           warnings: const ['Archived goals not imported: invalid'],
         ),
       );
 
       expect(
-        find.text('Import completed with errors: Invalid backup'),
+        find.text('Import completed with errors: Invalid ZIP file'),
         findsOneWidget,
       );
       expect(find.textContaining('warning'), findsNothing);
