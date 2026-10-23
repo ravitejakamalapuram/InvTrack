@@ -44,8 +44,25 @@ class BatchCurrencyConverter {
     required String baseCurrency,
     ConversionFallbackStrategy fallbackStrategy =
         ConversionFallbackStrategy.useLastKnown,
+  }) async => (await batchConvertWithApproximation(
+    cashFlows: cashFlows,
+    baseCurrency: baseCurrency,
+    fallbackStrategy: fallbackStrategy,
+  )).cashFlows;
+
+  /// Like [batchConvert], and also says whether any flow was converted with
+  /// an approximate rate (a cached or last-known rate over 24 hours old, or
+  /// from another date). The converted amounts are the same as [batchConvert].
+  Future<({List<CashFlowEntity> cashFlows, bool isApproximate})>
+  batchConvertWithApproximation({
+    required List<CashFlowEntity> cashFlows,
+    required String baseCurrency,
+    ConversionFallbackStrategy fallbackStrategy =
+        ConversionFallbackStrategy.useLastKnown,
   }) async {
-    if (cashFlows.isEmpty) return [];
+    if (cashFlows.isEmpty) {
+      return (cashFlows: <CashFlowEntity>[], isApproximate: false);
+    }
 
     // Build conversion requests map with deduplication
     final requests = <String, ConversionRequest>{};
@@ -71,7 +88,7 @@ class BatchCurrencyConverter {
     }
 
     // If no conversions needed, return original list
-    if (requests.isEmpty) return cashFlows;
+    if (requests.isEmpty) return (cashFlows: cashFlows, isApproximate: false);
 
     // Batch convert with deduplication
     Map<String, double> convertedAmounts;
@@ -126,7 +143,8 @@ class BatchCurrencyConverter {
     return converted;
   }
 
-  Future<List<CashFlowEntity>> _applyConvertedRates({
+  Future<({List<CashFlowEntity> cashFlows, bool isApproximate})>
+  _applyConvertedRates({
     required List<CashFlowEntity> cashFlows,
     required String baseCurrency,
     required ConversionFallbackStrategy fallbackStrategy,
@@ -134,6 +152,7 @@ class BatchCurrencyConverter {
   }) async {
     // Apply converted amounts to cash flows
     final result = <CashFlowEntity>[];
+    var isApproximate = false;
     for (var i = 0; i < cashFlows.length; i++) {
       final cf = cashFlows[i];
 
@@ -154,23 +173,25 @@ class BatchCurrencyConverter {
         );
       } else {
         // Individual conversion failed - apply fallback strategy
-        final fallbackCf = await _handleIndividualConversionFailure(
+        final fallback = await _handleIndividualConversionFailure(
           cashFlow: cf,
           baseCurrency: baseCurrency,
           fallbackStrategy: fallbackStrategy,
         );
-        if (fallbackCf != null) {
-          result.add(fallbackCf);
+        if (fallback.cashFlow != null) {
+          result.add(fallback.cashFlow!);
         }
+        if (fallback.isApproximate) isApproximate = true;
         // If null, skip this cash flow (skipTransaction strategy)
       }
     }
 
-    return result;
+    return (cashFlows: result, isApproximate: isApproximate);
   }
 
   /// Handle individual conversion failure
-  Future<CashFlowEntity?> _handleIndividualConversionFailure({
+  Future<({CashFlowEntity? cashFlow, bool isApproximate})>
+  _handleIndividualConversionFailure({
     required CashFlowEntity cashFlow,
     required String baseCurrency,
     required ConversionFallbackStrategy fallbackStrategy,
@@ -183,13 +204,13 @@ class BatchCurrencyConverter {
 
     switch (fallbackStrategy) {
       case ConversionFallbackStrategy.useOriginal:
-        return cashFlow; // Keep original
+        return (cashFlow: cashFlow, isApproximate: false); // Keep original
 
       case ConversionFallbackStrategy.useLastKnown:
         // Try to get last known rate
-        double? lastKnownRate;
+        RateLookup? lastKnownRate;
         try {
-          lastKnownRate = await _conversionService.getLastKnownRate(
+          lastKnownRate = await _conversionService.getLastKnownRateResult(
             from: cashFlow.currency,
             to: baseCurrency,
           );
@@ -197,12 +218,18 @@ class BatchCurrencyConverter {
           // A cache that cannot be read counts as no cached rate.
         }
         if (lastKnownRate != null) {
-          return cashFlow.copyWith(
-            amount: cashFlow.amount * lastKnownRate,
-            currency: baseCurrency,
+          return (
+            cashFlow: cashFlow.copyWith(
+              amount: cashFlow.amount * lastKnownRate.rate,
+              currency: baseCurrency,
+            ),
+            isApproximate: lastKnownRate.isApproximate,
           );
         }
-        return cashFlow; // Fallback to original
+        return (
+          cashFlow: cashFlow,
+          isApproximate: false,
+        ); // Fallback to original
 
       case ConversionFallbackStrategy.throwError:
         throw CurrencyConversionException(
@@ -210,7 +237,7 @@ class BatchCurrencyConverter {
         );
 
       case ConversionFallbackStrategy.skipTransaction:
-        return null; // Skip this cash flow
+        return (cashFlow: null, isApproximate: false); // Skip this cash flow
     }
   }
 

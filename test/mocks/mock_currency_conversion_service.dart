@@ -98,6 +98,15 @@ class MockCurrencyConversionService implements CurrencyConversionService {
     return fromRate / toRate;
   }
 
+  @override
+  Future<RateLookup?> getLastKnownRateResult({
+    required String from,
+    required String to,
+  }) async {
+    final rate = await getLastKnownRate(from: from, to: to);
+    return rate == null ? null : RateLookup(rate, isApproximate: true);
+  }
+
   void reset() {
     clearCacheCalled = false;
     clearCacheCallCount = 0;
