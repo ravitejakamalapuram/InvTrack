@@ -194,7 +194,7 @@ jobs:
       - name: Date tests in America/Los_Angeles
         env:
           TZ: America/Los_Angeles
-        run: flutter test --exclude-tags=golden test/core/calculations test/core/utils test/core/notifications test/features/investment
+        run: flutter test --exclude-tags=golden test/core/calculations test/core/utils test/core/notifications test/core/reporting test/features/investment
 
   # Preserves the old workflow's single "notify Slack on any CI failure" behavior now that the
   # checks are split across two jobs. Kept as its own job so the Slack webhook secret never
