@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
@@ -18,6 +20,7 @@ import 'package:inv_tracker/features/goals/domain/repositories/goal_repository.d
 import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
 import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/settings/data/services/backup_crypto.dart';
 import 'package:inv_tracker/features/settings/data/services/investment_backup_json.dart';
 import 'package:inv_tracker/features/settings/data/services/zip_off_ui_thread.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
@@ -90,10 +93,10 @@ class ZipExport {
   final int? expectedCashFlows;
 
   /// Whether an import of [bytes] can recreate everything counted here.
+  /// Expected cash flows do not count: they are derived data that the app
+  /// predicts again from the real cash flows (#768).
   bool get carriesEverything =>
-      investmentsWithDetailsNotInExport == 0 &&
-      investmentsNotInExport == 0 &&
-      expectedCashFlows == 0;
+      investmentsWithDetailsNotInExport == 0 && investmentsNotInExport == 0;
 
   /// The investments an import of [bytes] can recreate.
   int get investmentsInExport => investments - investmentsNotInExport;
@@ -106,6 +109,44 @@ class ZipExport {
 /// [ZipExport], so the guest merge keeps asking the question until a follow-up
 /// removes it.
 bool investmentHasDetailsNotInExport(InvestmentEntity investment) => false;
+
+/// File extension of a password-protected backup.
+const backupEncryptedExtension = 'invbackup';
+
+const _exportPrefix = 'InvTrack_Export_';
+
+/// How long an Android share leaves the temp file in place. The share result
+/// arrives when the user picks a target app, which may still be reading the
+/// file; deleting at once can make the attachment fail.
+const _androidShareCleanupDelay = Duration(minutes: 2);
+
+/// Exports younger than this are never purged: an export in progress, or one
+/// an Android share is still handing to another app ([_androidShareCleanupDelay]).
+const _staleExportAge = Duration(minutes: 10);
+
+/// Deletes backup exports earlier runs left in the cache (a crash or a killed
+/// app can skip the cleanup in [DataExportService.exportAndShare]). Only files
+/// older than [_staleExportAge] go, so an overlapping export is never hit.
+/// Best effort.
+Future<void> purgeStaleBackupExports() async {
+  try {
+    final directory = await getTemporaryDirectory();
+    final cutoff = DateTime.now().subtract(_staleExportAge);
+    await for (final entity in directory.list()) {
+      final name = entity.uri.pathSegments.last;
+      if (entity is! File || !name.startsWith(_exportPrefix)) continue;
+      try {
+        if ((await entity.lastModified()).isBefore(cutoff)) {
+          await entity.delete();
+        }
+      } on FileSystemException {
+        // One unreadable or vanished file must not stop the rest.
+      }
+    }
+  } on Exception {
+    // Leftovers are cleaned on the next start or export.
+  }
+}
 
 /// Service for exporting all user data as a ZIP file with CSV data files
 class DataExportService {
@@ -141,11 +182,26 @@ class DataExportService {
 
   /// Export all user data as a ZIP file
   /// Returns the path to the exported ZIP file
-  Future<String> exportAsZip() async {
-    return _performanceService.trackOperation(
-      'data_export',
-      () async => _saveToTempFile((await _buildZip()).bytes),
-    );
+  ///
+  /// With a [password] the file is an encrypted `.invbackup` container
+  /// ([BackupCrypto]); the key derivation runs on a background isolate. The
+  /// password is never logged or kept. [kdfIterations] is only lowered in tests.
+  Future<String> exportAsZip({
+    String? password,
+    int kdfIterations = BackupCrypto.defaultIterations,
+  }) async {
+    return _performanceService.trackOperation('data_export', () async {
+      await purgeStaleBackupExports();
+      var bytes = (await _buildZip()).bytes;
+      if (password != null) {
+        bytes = await BackupCrypto.encryptInBackground(
+          bytes,
+          password,
+          iterations: kdfIterations,
+        );
+      }
+      return _saveToTempFile(bytes, encrypted: password != null);
+    });
   }
 
   /// Export all user data as a ZIP held in memory, without writing a file.
@@ -412,11 +468,24 @@ class DataExportService {
     );
   }
 
+  static String _randomTag() {
+    final random = Random.secure();
+    return List.generate(
+      8,
+      (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0'),
+    ).join();
+  }
+
   /// Saves export ZIP bytes to the temp directory and returns the file path.
-  Future<String> _saveToTempFile(Uint8List zipData) async {
+  Future<String> _saveToTempFile(
+    Uint8List zipData, {
+    bool encrypted = false,
+    String tag = '',
+  }) async {
     final directory = await getTemporaryDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final fileName = 'InvTrack_Export_$timestamp.zip';
+    final extension = encrypted ? backupEncryptedExtension : 'zip';
+    final fileName = '$_exportPrefix$timestamp$tag.$extension';
     final filePath = '${directory.path}/$fileName';
     final file = File(filePath);
     await file.writeAsBytes(zipData);
@@ -432,20 +501,93 @@ class DataExportService {
     return filePath;
   }
 
-  /// Export and share the ZIP file
-  Future<void> exportAndShare() async {
-    await shareZipFiles([await exportAsZip()]);
+  /// Export and share the file, then delete the temp copy (also when sharing
+  /// fails), so no plaintext backup stays in the cache. On Android the delete
+  /// waits [cleanupDelay] (the receiving app may still be reading); a crash in
+  /// between is covered by [purgeStaleBackupExports] at the next start.
+  Future<void> exportAndShare({
+    String? password,
+    int kdfIterations = BackupCrypto.defaultIterations,
+    Duration? cleanupDelay,
+  }) async {
+    final path = await exportAsZip(
+      password: password,
+      kdfIterations: kdfIterations,
+    );
+    final delay =
+        cleanupDelay ??
+        (Platform.isAndroid ? _androidShareCleanupDelay : Duration.zero);
+    try {
+      await shareZipFiles([path]);
+    } finally {
+      if (delay == Duration.zero) {
+        await _deleteQuietly(path);
+      } else {
+        Timer(delay, () => _deleteQuietly(path));
+      }
+    }
+  }
+
+  static Future<void> _deleteQuietly(String path) async {
+    try {
+      await File(path).delete();
+    } on Exception {
+      // Already gone; the next start or export purges any leftover.
+    }
   }
 
   /// Shares export ZIP files already on disk, such as kept guest backups.
-  Future<void> shareZipFiles(List<String> filePaths) async {
-    await SharePlus.instance.share(
-      ShareParams(
-        files: [for (final filePath in filePaths) XFile(filePath)],
-        text: 'InvTrack data export. Keep this file safe for backup or import.',
-        subject: 'InvTrack Data Export',
-      ),
-    );
+  ///
+  /// With a [password] each file is shared as an encrypted `.invbackup` copy
+  /// written to the temp directory and deleted afterwards (also when sharing
+  /// fails; on Android after [_androidShareCleanupDelay], and a leftover from
+  /// a crash is purged by [purgeStaleBackupExports]). The stored file is not
+  /// changed. [kdfIterations] is only lowered in tests.
+  Future<void> shareZipFiles(
+    List<String> filePaths, {
+    String? password,
+    int kdfIterations = BackupCrypto.defaultIterations,
+  }) async {
+    final copies = <String>[];
+    try {
+      var shared = filePaths;
+      if (password != null) {
+        for (final filePath in filePaths) {
+          final encrypted = await BackupCrypto.encryptInBackground(
+            await File(filePath).readAsBytes(),
+            password,
+            iterations: kdfIterations,
+          );
+          copies.add(
+            await _saveToTempFile(
+              encrypted,
+              encrypted: true,
+              tag: '_${_randomTag()}',
+            ),
+          );
+        }
+        shared = copies;
+      }
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [for (final filePath in shared) XFile(filePath)],
+          text:
+              'InvTrack data export. Keep this file safe for backup or import.',
+          subject: 'InvTrack Data Export',
+        ),
+      );
+    } finally {
+      final delay = Platform.isAndroid
+          ? _androidShareCleanupDelay
+          : Duration.zero;
+      for (final copy in copies) {
+        if (delay == Duration.zero) {
+          await _deleteQuietly(copy);
+        } else {
+          Timer(delay, () => _deleteQuietly(copy));
+        }
+      }
+    }
   }
 
   // ============ CSV Generation ============
