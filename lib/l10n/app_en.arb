@@ -7710,6 +7710,23 @@
     }
   },
 
+  "fyExportCsv": "Export CSV",
+  "@fyExportCsv": {
+    "description": "Button on the Tax-Year report that shares the report as a CSV file"
+  },
+
+  "fyExportCsvFailed": "Could not export the report. Please try again.",
+  "@fyExportCsvFailed": {
+    "description": "Error shown when the Tax-Year report CSV export fails"
+  },
+  "fyExportCsvSubject": "InvTrack FY {fyLabel} report",
+  "@fyExportCsvSubject": {
+    "description": "Subject line for the Tax-Year report CSV share",
+    "placeholders": {
+      "fyLabel": {"type": "String"}
+    }
+  },
+
   "backupExportTitle": "Export Backup",
   "@backupExportTitle": {
     "description": "Title of the dialog shown before exporting a full backup"
