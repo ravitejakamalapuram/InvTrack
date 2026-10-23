@@ -23,7 +23,7 @@ store_ids:
   play: com.invtracker.inv_tracker
 monetization:
   model: freemium
-  provider: admob # dormant in current release builds — see notes
+  provider: none # no ads SDK or advertising ID (A34)
 permissions: .appforge/permissions.yaml
 data_collection:
   # Sourced from the founder-approved privacy audit of 2026-09-23 and kept in step with
@@ -37,7 +37,6 @@ data_collection:
     - app_interactions_analytics
     - crash_logs_diagnostics
     - device_id_firebase_installation_id
-    - advertising_id
     - approximate_location_from_ip
   stored:
     local: [documents_dir_uid_scoped_attachment_files, app_lock_pin_pbkdf2_encrypted]
@@ -49,7 +48,7 @@ data_collection:
       - "frankfurter.dev" # exchange rates
       - "exchangerate-api.com" # exchange rates
   sensitive: [financial_holdings_and_amounts, personal_info_name_email_age_locale]
-  third_party: [firebase_google, admob_dormant]
+  third_party: [firebase_google]
   retention: { firestore: "until account deletion", local_attachments: "until account deletion or app data clear" }
   deletion: "In-app: Settings > Data & Account > Delete Account; on the web, at hostedAccountDeletionUrl (legal_content.dart, https://ravitejakamalapuram.github.io/delete/invtrack.html), the APP-333 page where a Google sign-in writes deletionRequests/{uid} and can withdraw it, linked from About and Help & FAQ; the page is live once the Pages repo merges APP-333 (its PR #6)"
 security_classification: high
@@ -70,6 +69,6 @@ notes: |
     ACCOUNT_DELETION_SCHEDULE_ENABLED is 'true', and a manual run that defaults to a dry run.
   - Only the app-lock PIN is encrypted (PBKDF2); Firestore data itself is not additionally
     encrypted at the app layer (relies on Firebase's transport/at-rest encryption).
-  - AdMob code is present but dormant in release builds (SDK never started, test ad unit IDs,
-    consent flow is a stub) — Data Safety form language should reflect "declared but not
-    currently active" rather than "no ads" outright, given AD_ID is still requested.
+  - The ads SDK, the AdMob application ID and the AD_ID permission are removed (A34); a CI check
+    reads the merged release manifest. Analytics and crash reporting have user switches in
+    Settings > Security > Privacy, on by default.

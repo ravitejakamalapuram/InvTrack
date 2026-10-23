@@ -96,9 +96,12 @@ void main() {
 
   group('Security settings, app lock on', () {
     Future<void> pump(WidgetTester tester, ThemeData theme) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
       await tester.pumpWidget(
         _app(theme, const SecuritySettingsScreen(), [
           securityProvider.overrideWith(() => _Pin(true)),
+          sharedPreferencesProvider.overrideWithValue(prefs),
         ]),
       );
       await tester.pumpAndSettle();

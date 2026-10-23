@@ -17,6 +17,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/consent_service.dart';
 import 'package:inv_tracker/core/analytics/crash_report_sanitizer.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
@@ -55,7 +56,9 @@ class CrashlyticsDebugModeNotifier extends Notifier<bool> {
 
     // Update Crashlytics collection state FIRST (atomic - only persist if this succeeds)
     final shouldEnable = !kDebugMode || enabled;
-    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(shouldEnable);
+    final consent = crashReportingConsentFrom(prefs);
+    await FirebaseCrashlytics.instance
+        .setCrashlyticsCollectionEnabled(shouldEnable && consent);
 
     // Only update state and prefs if Firebase call succeeded
     await prefs.setBool(prefKey, enabled);
@@ -76,8 +79,14 @@ class CrashlyticsService {
   FirebaseCrashlytics get _crashlytics => _injectedCrashlytics ?? FirebaseCrashlytics.instance;
   final bool debugModeEnabled;
 
-  CrashlyticsService({required this.debugModeEnabled, FirebaseCrashlytics? crashlytics})
-      : _injectedCrashlytics = crashlytics;
+  /// The user's crash-reporting choice (A34); true when they never chose.
+  final bool collectionConsent;
+
+  CrashlyticsService({
+    required this.debugModeEnabled,
+    this.collectionConsent = true,
+    FirebaseCrashlytics? crashlytics,
+  }) : _injectedCrashlytics = crashlytics;
 
   // Track whether handlers have been installed to make installation idempotent
   static bool _handlersInstalled = false;
@@ -115,7 +124,7 @@ class CrashlyticsService {
 
     // Update Crashlytics collection state
     final shouldEnable = !kDebugMode || debugModeEnabled;
-    await _crashlytics.setCrashlyticsCollectionEnabled(shouldEnable);
+    await _crashlytics.setCrashlyticsCollectionEnabled(shouldEnable && collectionConsent);
 
     // Normally already installed by runGuarded in main; never twice.
     installGlobalHandlers(this);
@@ -123,7 +132,7 @@ class CrashlyticsService {
     LoggerService.info(
       'Crashlytics initialized',
       metadata: {
-        'enabled': shouldEnable,
+        'enabled': shouldEnable && collectionConsent,
         'debugMode': kDebugMode,
         'debugOverride': debugModeEnabled,
         'handlers': 'FlutterError.onError + PlatformDispatcher.onError',

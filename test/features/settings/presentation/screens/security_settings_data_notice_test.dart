@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/security_settings_screen.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _TestSecurityNotifier extends SecurityNotifier {
   @override
@@ -25,9 +27,14 @@ void main() {
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [securityProvider.overrideWith(_TestSecurityNotifier.new)],
+        overrides: [
+          securityProvider.overrideWith(_TestSecurityNotifier.new),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
