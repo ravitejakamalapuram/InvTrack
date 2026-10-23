@@ -3771,7 +3771,7 @@
     "description": "FAQ question about score persistence"
   },
 
-  "isHealthScoreDataSavedAnswer": "Yes! Your health scores are automatically saved in your Firebase account and synced across devices. You can view your score trend over time in the details screen. Score history is included in data exports and deleted when you delete your account.",
+  "isHealthScoreDataSavedAnswer": "Yes! Your health scores are automatically saved in your Firebase account and synced across devices. You can view your score trend over time in the details screen. Score history is not included in the backup ZIP; the app recalculates health scores from your restored data. Stored score history is deleted when you delete your account.",
   "@isHealthScoreDataSavedAnswer": {
     "description": "FAQ answer about score persistence"
   },
@@ -7626,6 +7626,11 @@
   "guestLinkBannerDismiss": "Dismiss",
   "@guestLinkBannerDismiss": {
     "description": "Accessibility label of the close button on the guest link banner; hides it for 14 days"
+  },
+
+  "howToBackupDataDerivedNote": "A backup does not include expected cash flows or health scores. The app calculates them again from your restored data.",
+  "@howToBackupDataDerivedNote": {
+    "description": "Second FAQ paragraph under the backup answer: expected cash flows and health scores are derived data and are not in the backup"
   },
 
   "approximateRatesNote": "Some amounts use older exchange rates",
