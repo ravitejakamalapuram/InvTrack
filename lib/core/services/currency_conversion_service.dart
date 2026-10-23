@@ -57,6 +57,17 @@ class ConversionRequest {
   }
 }
 
+/// A cached or last-known rate and whether it is too old to be shown as exact.
+class RateLookup {
+  final double rate;
+
+  /// True when the rate is over 24 hours old, or is for another date than the
+  /// one wanted (the nearest-date fallback). False for a fresh rate.
+  final bool isApproximate;
+
+  const RateLookup(this.rate, {required this.isApproximate});
+}
+
 /// Metrics for monitoring currency conversion performance
 class ConversionMetrics {
   int apiCalls = 0;
@@ -163,6 +174,7 @@ class CurrencyConversionService {
   final String _userId;
   final http.Client _httpClient;
   final AnalyticsService? _analytics;
+  final DateTime Function() _clock;
 
   // Tier 1: Memory cache (current session)
   final Map<String, double> _memoryCache = {};
@@ -195,13 +207,18 @@ class CurrencyConversionService {
   // Live cache staleness threshold (refresh if older than 1 hour)
   static const Duration _liveCacheStaleness = Duration(hours: 1);
 
+  // A cached rate older than this is shown as approximate
+  static const Duration _approximateAfter = Duration(hours: 24);
+
   CurrencyConversionService({
     required FirebaseFirestore firestore,
     required String userId,
     http.Client? httpClient,
     AnalyticsService? analytics,
+    DateTime Function()? clock,
   }) : _firestore = firestore,
        _userId = userId,
+       _clock = clock ?? DateTime.now,
        _httpClient = httpClient ?? http.Client(),
        _analytics = analytics;
 
@@ -478,6 +495,15 @@ class CurrencyConversionService {
   Future<double?> getLastKnownRate({
     required String from,
     required String to,
+  }) async => (await getLastKnownRateResult(from: from, to: to))?.rate;
+
+  /// Like [getLastKnownRate], but also says whether the rate is approximate:
+  /// over 24 hours old, or a historical rate for another date. A live rate
+  /// counts from when it was fetched (a memory-cache live rate, from the start
+  /// of its day); a historical rate counts from its own date.
+  Future<RateLookup?> getLastKnownRateResult({
+    required String from,
+    required String to,
   }) async {
     // Check memory cache first (any key matching currency pair)
     // Use precise matching to avoid false positives (e.g., USD_EUR vs AUSD_EUR)
@@ -488,7 +514,10 @@ class CurrencyConversionService {
         final cachedFrom = parts[parts.length - 2];
         final cachedTo = parts[parts.length - 1];
         if (cachedFrom == from && cachedTo == to) {
-          return entry.value;
+          return _lookup(
+            entry.value,
+            DateTime.tryParse(parts[parts.length - 3]),
+          );
         }
       }
     }
@@ -505,7 +534,13 @@ class CurrencyConversionService {
 
       if (snapshot.docs.isNotEmpty) {
         final data = snapshot.docs.first.data();
-        return (data['rate'] as num).toDouble();
+        final historicalDate = data['type'] == 'historical'
+            ? DateTime.tryParse('${data['date']}')
+            : null;
+        return _lookup(
+          (data['rate'] as num).toDouble(),
+          historicalDate ?? (data['fetchedAt'] as Timestamp?)?.toDate(),
+        );
       }
     } catch (e) {
       if (kDebugMode) {
@@ -515,6 +550,13 @@ class CurrencyConversionService {
 
     return null; // No cached rate found
   }
+
+  /// [asOf] is when the rate applies from; unknown counts as approximate.
+  RateLookup _lookup(double rate, DateTime? asOf) => RateLookup(
+    rate,
+    isApproximate:
+        asOf == null || _clock().difference(asOf) > _approximateAfter,
+  );
 
   /// Preload common rates in background (don't block UI)
   ///

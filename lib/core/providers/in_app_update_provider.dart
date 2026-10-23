@@ -5,7 +5,19 @@ import 'package:in_app_update/in_app_update.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/services/in_app_update_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 
+/// Offer a blocking (immediate) update only when the installed version is at
+/// least this many days behind Play's latest (`clientVersionStalenessDays`).
+const int kImmediateUpdateStalenessDays = 60;
+
+/// Minimum gap between two automatic update prompts.
+const Duration kUpdatePromptInterval = Duration(days: 3);
+
+/// How an automatic update prompt should be performed.
+enum AutoUpdateMode { immediate, flexible, none }
+
+const String _lastPromptKey = 'in_app_update_last_prompt_ms';
 
 /// Provider for InAppUpdateService
 final inAppUpdateServiceProvider = Provider<InAppUpdateService>((ref) {
@@ -41,6 +53,19 @@ class InAppUpdateState {
   /// Check if this is a high priority update
   /// Priority 0-5: Google's update priority (5 = highest)
   bool get isHighPriority => (updateInfo?.updatePriority ?? 0) >= 4;
+
+  /// True when the installed version is at least
+  /// [kImmediateUpdateStalenessDays] behind. Unknown staleness is not stale.
+  bool get isStale =>
+      (updateInfo?.clientVersionStalenessDays ?? 0) >= kImmediateUpdateStalenessDays;
+
+  /// Automatic prompt policy: blocking update for very stale installs,
+  /// otherwise the flexible dialog, otherwise nothing.
+  AutoUpdateMode get autoUpdateMode {
+    if (isStale && immediateUpdateAllowed) return AutoUpdateMode.immediate;
+    if (flexibleUpdateAllowed) return AutoUpdateMode.flexible;
+    return AutoUpdateMode.none;
+  }
 
   // Sentinel object to distinguish "not provided" from "explicit null"
   static const _sentinel = Object();
@@ -120,6 +145,21 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
     }
   }
 
+  /// Whether enough time has passed since the last automatic update prompt.
+  bool shouldPromptNow(DateTime now) {
+    final lastMs = ref.read(sharedPreferencesProvider).getInt(_lastPromptKey);
+    if (lastMs == null) return true;
+    final last = DateTime.fromMillisecondsSinceEpoch(lastMs);
+    return now.difference(last) >= kUpdatePromptInterval;
+  }
+
+  /// Records that an automatic update prompt was shown at [now].
+  Future<void> markPrompted(DateTime now) async {
+    await ref
+        .read(sharedPreferencesProvider)
+        .setInt(_lastPromptKey, now.millisecondsSinceEpoch);
+  }
+
   /// Check for updates from Google Play
   ///
   /// Call this on app start or manually from settings
@@ -168,7 +208,7 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
   /// Start immediate update (blocking)
   ///
   /// Use for critical/breaking updates
-  Future<void> startImmediateUpdate() async {
+  Future<AppUpdateResult> startImmediateUpdate() async {
     try {
       final result = await _service.startImmediateUpdate();
 
@@ -183,6 +223,7 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
         LoggerService.warn('Immediate update result: ${result.name}');
         state = state.copyWith(error: 'Update installation failed. Please try again.');
       }
+      return result;
     } catch (e, st) {
       final exception = UpdateException.fromPlatformException(e, st);
       if (exception.shouldReport) {
@@ -194,6 +235,7 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
         );
       }
       state = state.copyWith(error: 'Failed to start update. Please try again later.');
+      return AppUpdateResult.inAppUpdateFailed;
     }
   }
 
