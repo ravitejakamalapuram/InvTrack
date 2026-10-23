@@ -88,6 +88,11 @@ Future<bool> _pump(
   SharedPreferences.setMockInitialValues(stored);
   final prefs = await SharedPreferences.getInstance();
   var expectedFlowsQueried = false;
+  // The archived banner adds a line, which pushed the lazily built Docs list
+  // past the default 800x600 view.
+  tester.view.physicalSize = const Size(800, 1200);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
 
   await tester.pumpWidget(
     ProviderScope(

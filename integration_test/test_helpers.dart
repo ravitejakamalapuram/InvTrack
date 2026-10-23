@@ -18,6 +18,7 @@ import 'mocks/mock_investment_repository.dart';
 import 'mocks/mock_goal_repository.dart';
 import 'mocks/mock_analytics_service.dart';
 import 'mocks/mock_notification_service.dart';
+import 'mocks/no_firebase_overrides.dart';
 
 /// Test user for authenticated flows
 const testUser = UserEntity(
@@ -50,6 +51,7 @@ Future<ProviderScope> createTestApp({
       goalRepositoryProvider.overrideWithValue(goalRepo),
       analyticsServiceProvider.overrideWithValue(analytics),
       notificationServiceProvider.overrideWithValue(notifications),
+      ...noFirebaseOverrides(),
     ],
     child: const InvTrackerApp(),
   );
