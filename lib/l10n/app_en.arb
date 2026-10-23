@@ -438,7 +438,7 @@
   },
 
   "privacySectionTitle": "Privacy",
-  "privacySectionFooter": "Changes apply right away and every time the app starts. Turning these off does not delete data already sent.",
+  "privacySectionFooter": "Analytics changes apply right away. Crash report changes apply the next time the app starts. Turning these off does not delete data already sent.",
   "analyticsConsentTitle": "Usage analytics",
   "analyticsConsentSubtitle": "Share which features are used, with no amounts",
   "crashReportingConsentTitle": "Crash reports",
@@ -447,7 +447,7 @@
     "description": "Heading of the Privacy section on the Security settings screen, which holds the analytics and crash-report switches"
   },
   "@privacySectionFooter": {
-    "description": "Note under the Privacy section: the switches take effect at once and on each start, and do not delete data already sent"
+    "description": "Note under the Privacy section: the analytics switch takes effect at once, the crash-report switch on the next app start, and neither deletes data already sent"
   },
   "@analyticsConsentTitle": {
     "description": "Title of the switch that turns usage analytics on or off"
@@ -469,7 +469,7 @@
   "@whatDoAnalyticsAndCrashSwitchesDo": {
     "description": "FAQ question about the analytics and crash report switches"
   },
-  "whatDoAnalyticsAndCrashSwitchesDoAnswer": "Yes. Open Settings > Security > Privacy and switch off Usage analytics, Crash reports, or both. The choice applies right away and each time the app starts. Turning crash reports off also deletes crash reports that are saved on your device and not yet sent. Data already sent is not deleted, and Performance Monitoring has no switch.",
+  "whatDoAnalyticsAndCrashSwitchesDoAnswer": "Yes. Open Settings > Security > Privacy and switch off Usage analytics, Crash reports, or both. Analytics changes apply right away and crash report changes apply the next time the app starts. Turning crash reports off also deletes crash reports that are saved on your device and not yet sent. Data already sent is not deleted, and Performance Monitoring has no switch.",
   "@whatDoAnalyticsAndCrashSwitchesDoAnswer": {
     "description": "FAQ answer about the analytics and crash report switches"
   },

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/analytics/consent_service.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -111,7 +112,8 @@ class SecuritySettingsScreen extends ConsumerWidget {
                     await ref
                         .read(analyticsConsentProvider.notifier)
                         .setEnabled(value);
-                  } on Exception {
+                  } on Exception catch (e, st) {
+                    ErrorHandler.handle(e, st, showFeedback: false);
                     if (context.mounted) {
                       AppFeedback.showError(context, l10n.consentChangeFailed);
                     }
@@ -129,7 +131,8 @@ class SecuritySettingsScreen extends ConsumerWidget {
                     await ref
                         .read(crashReportingConsentProvider.notifier)
                         .setEnabled(value);
-                  } on Exception {
+                  } on Exception catch (e, st) {
+                    ErrorHandler.handle(e, st, showFeedback: false);
                     if (context.mounted) {
                       AppFeedback.showError(context, l10n.consentChangeFailed);
                     }
