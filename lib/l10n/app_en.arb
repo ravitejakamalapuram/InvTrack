@@ -7957,7 +7957,7 @@
   "@fyPdfFaqQuestion": {
     "description": "FAQ question about the Tax-Year PDF export"
   },
-  "fyPdfFaqAnswer": "Open Reports, choose the Tax-Year report, then tap Export PDF. The PDF summarises what you recorded and is not tax advice. Capital gains are not calculated until sale proceeds and cost are recorded. Check every figure with your tax professional before you file.",
+  "fyPdfFaqAnswer": "Open Reports, choose the Tax-Year report, then tap Export PDF. The PDF summarises what you recorded in InvTrack. It is not tax advice. Check every figure with your tax professional before you file. Capital gains are not calculated in this report.",
   "@fyPdfFaqAnswer": {
     "description": "FAQ answer about the Tax-Year PDF export"
   },
