@@ -240,6 +240,26 @@ class FeatureFlagsSection extends ConsumerWidget {
           },
         ),
 
+        // Approximate-rates marker on the Overview total (A14)
+        SettingsToggleTile(
+          icon: Icons.info_outline,
+          iconColor: AppColors.primaryLight,
+          title: l10n.approximateRatesFeature,
+          subtitle: l10n.approximateRatesFeatureSubtitle,
+          value: featureFlags[FeatureFlag.approximateRatesIndicator] ?? false,
+          onChanged: (value) async {
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.approximateRatesIndicator);
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
+            }
+          },
+        ),
+
         // Play review prompt feature flag
         SettingsToggleTile(
           icon: Icons.star_outline,

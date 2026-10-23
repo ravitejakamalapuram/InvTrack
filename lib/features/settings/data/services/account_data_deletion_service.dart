@@ -79,6 +79,7 @@ class AccountDataDeletionService {
     'sample_data_goal_ids',
     'last_live_cache_refresh',
     'currency_live_cache_last_refresh',
+    'in_app_update_last_prompt_ms',
   ];
 
   /// Full deletion: server data first (must be confirmed), then local files
