@@ -553,7 +553,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
     );
   }
 
-  Widget? _buildFab(AsyncValue<List<dynamic>> allGoalsAsync) {
+  Widget? _buildFab(AsyncValue<List<GoalEntity>> allGoalsAsync) {
     final l10n = AppLocalizations.of(context);
 
     return allGoalsAsync.maybeWhen(
