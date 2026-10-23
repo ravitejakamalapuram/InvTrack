@@ -13,6 +13,7 @@ import 'package:inv_tracker/features/investment/presentation/providers/investmen
 import '../../../../mocks/mock_analytics_service.dart';
 import '../../../../mocks/mock_notification_service.dart';
 import '../../data/repositories/mock_investment_repository.dart';
+import '../../valuation/in_memory_valuation_repository.dart';
 
 InvestmentEntity _fd(String id) => InvestmentEntity(
   id: id,
@@ -56,6 +57,9 @@ void main() {
     container = ProviderContainer(
       overrides: [
         investmentRepositoryProvider.overrideWithValue(repo),
+        valuationRepositoryProvider.overrideWithValue(
+          InMemoryValuationRepository(),
+        ),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
         notificationServiceProvider.overrideWithValue(notifications),
         isAuthenticatedProvider.overrideWithValue(true),
