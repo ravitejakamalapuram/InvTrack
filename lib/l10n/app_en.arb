@@ -7781,5 +7781,9 @@
   "backupUnsupportedFile": "This backup file isn’t supported. It may be damaged or made by a newer version of InvTrack. Nothing was changed.",
   "@backupUnsupportedFile": {
     "description": "Error shown when an encrypted backup has an unreadable or unknown header"
+  },
+  "archivedReadOnlyBanner": "Archived. Unarchive to add or change transactions and documents.",
+  "@archivedReadOnlyBanner": {
+    "description": "Banner on an archived investment's detail screen explaining that it is read-only"
   }
 }
