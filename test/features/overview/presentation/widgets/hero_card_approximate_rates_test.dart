@@ -92,4 +92,14 @@ void main() {
 
     expect(find.byTooltip(note), findsNothing);
   });
+
+  testWidgets('the marker is a 48dp touch target', (tester) async {
+    await _pumpHero(tester, approximate: true);
+
+    final target = find.descendant(
+      of: find.byTooltip(note),
+      matching: find.byType(SizedBox),
+    );
+    expect(tester.getSize(target.first), const Size(48, 48));
+  });
 }
