@@ -645,7 +645,11 @@ class DataImportService {
 
   /// The goals in a goals.csv or goals_archived.csv, or null if it is damaged.
   ParsedGoalsResult? _parseGoals(String text, String baseCurrency) {
-    final parsed = GoalsCsvParser.parseString(text, baseCurrency: baseCurrency);
+    final parsed = GoalsCsvParser.parseString(
+      text,
+      baseCurrency: baseCurrency,
+      fromBackup: true,
+    );
     return _isDamaged(parsed.validRows, parsed.errors) ? null : parsed;
   }
 

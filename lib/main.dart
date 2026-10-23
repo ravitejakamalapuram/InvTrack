@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:inv_tracker/features/auth/data/services/sign_out_cleanup_service.dart';
+import 'package:inv_tracker/features/settings/data/services/data_export_service.dart';
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -136,6 +137,9 @@ Future<void> _initializeNonCriticalServices(
         );
       }),
     );
+
+    // Remove backup exports a crash or killed app left in the cache.
+    unawaited(purgeStaleBackupExports());
 
     // Initialize Performance Monitoring in background
     final performanceService = PerformanceService();

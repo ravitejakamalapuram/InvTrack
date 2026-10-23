@@ -7663,5 +7663,151 @@
   "guestLinkBannerDismiss": "Dismiss",
   "@guestLinkBannerDismiss": {
     "description": "Accessibility label of the close button on the guest link banner; hides it for 14 days"
+  },
+
+  "notificationToggleInvestmentMilestones": "Investment Milestones",
+  "@notificationToggleInvestmentMilestones": {
+    "description": "Title of the Settings > Notifications switch for the investment milestone notification"
+  },
+
+  "notificationToggleInvestmentMilestonesSubtitle": "Celebrate when an investment reaches 2x, 3x and beyond",
+  "@notificationToggleInvestmentMilestonesSubtitle": {
+    "description": "Subtitle of the Settings > Notifications switch for the investment milestone notification"
+  },
+
+  "notificationToggleTaxReminders": "Tax Reminders",
+  "@notificationToggleTaxReminders": {
+    "description": "Title of the Settings > Notifications switch for the India tax reminder notification"
+  },
+
+  "notificationToggleTaxRemindersSubtitle": "India tax deadlines and advance-tax dates",
+  "@notificationToggleTaxRemindersSubtitle": {
+    "description": "Subtitle of the Settings > Notifications switch for the India tax reminder notification"
+  },
+
+  "notificationToggleWeeklyCheckIn": "Weekly Check-In",
+  "@notificationToggleWeeklyCheckIn": {
+    "description": "Title of the Settings > Notifications switch for the weekly check-in notification"
+  },
+
+  "notificationToggleWeeklyCheckInSubtitle": "A Sunday prompt to log income you received",
+  "@notificationToggleWeeklyCheckInSubtitle": {
+    "description": "Subtitle of the Settings > Notifications switch for the weekly check-in notification"
+  },
+
+  "notificationToggleFySummary": "Financial Year Summary",
+  "@notificationToggleFySummary": {
+    "description": "Title of the Settings > Notifications switch for the financial year summary notification"
+  },
+
+  "notificationToggleFySummarySubtitle": "When a new financial year begins",
+  "@notificationToggleFySummarySubtitle": {
+    "description": "Subtitle of the Settings > Notifications switch for the financial year summary notification"
+  },
+
+  "notificationToggleGoalAtRisk": "Goals At Risk",
+  "@notificationToggleGoalAtRisk": {
+    "description": "Title of the Settings > Notifications switch for the goal at-risk alert notification"
+  },
+
+  "notificationToggleGoalAtRiskSubtitle": "When a goal is behind schedule",
+  "@notificationToggleGoalAtRiskSubtitle": {
+    "description": "Subtitle of the Settings > Notifications switch for the goal at-risk alert notification"
+  },
+
+  "notificationToggleGoalStale": "Stale Goals",
+  "@notificationToggleGoalStale": {
+    "description": "Title of the Settings > Notifications switch for the stale goal alert notification"
+  },
+
+  "notificationToggleGoalStaleSubtitle": "When a goal has had no activity for a while",
+  "@notificationToggleGoalStaleSubtitle": {
+    "description": "Subtitle of the Settings > Notifications switch for the stale goal alert notification"
+  },
+
+  "passcodeDigitsEntered": "{count} of {total} digits entered",
+  "@passcodeDigitsEntered": {
+    "description": "Screen-reader label of the PIN dots on the lock screen; says how many digits are typed, never which",
+    "placeholders": {
+      "count": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+
+  "backupExportTitle": "Export Backup",
+  "@backupExportTitle": {
+    "description": "Title of the dialog shown before exporting a full backup"
+  },
+  "backupProtectToggle": "Protect With Password",
+  "@backupProtectToggle": {
+    "description": "Switch label: encrypt the exported backup with a password"
+  },
+  "backupProtectToggleHint": "Only your password can open the file.",
+  "@backupProtectToggleHint": {
+    "description": "Helper text under the Protect With Password switch"
+  },
+  "backupUnprotectedWarning": "Without a password, anyone who gets this file can read your investments, notes and documents.",
+  "@backupUnprotectedWarning": {
+    "description": "Warning shown when the backup export is not password protected"
+  },
+  "backupPasswordLabel": "Password",
+  "@backupPasswordLabel": {
+    "description": "Label of the backup password field"
+  },
+  "backupConfirmPasswordLabel": "Confirm Password",
+  "@backupConfirmPasswordLabel": {
+    "description": "Label of the backup password confirmation field"
+  },
+  "backupPasswordLossWarning": "If you lose this password, we can’t recover your backup. Keep it somewhere safe.",
+  "@backupPasswordLossWarning": {
+    "description": "Warning shown when choosing a backup password; the password cannot be recovered"
+  },
+  "backupPasswordTooShort": "Use at least 8 characters.",
+  "@backupPasswordTooShort": {
+    "description": "Error shown when the backup password is shorter than 8 characters"
+  },
+  "backupPasswordMismatch": "The passwords don’t match.",
+  "@backupPasswordMismatch": {
+    "description": "Error shown when the two backup password fields differ"
+  },
+  "backupShowPassword": "Show Password",
+  "@backupShowPassword": {
+    "description": "Tooltip and screen-reader label of the button that reveals a password"
+  },
+  "backupHidePassword": "Hide Password",
+  "@backupHidePassword": {
+    "description": "Tooltip and screen-reader label of the button that hides a password"
+  },
+  "backupExportAction": "Export Backup",
+  "@backupExportAction": {
+    "description": "Confirm button of the export backup dialog"
+  },
+  "backupUnlockTitle": "Unlock Backup",
+  "@backupUnlockTitle": {
+    "description": "Title of the dialog asking for the password of an encrypted backup before restoring"
+  },
+  "backupUnlockMessage": "This backup is protected with a password. Enter it to restore your data.",
+  "@backupUnlockMessage": {
+    "description": "Body of the dialog asking for the password of an encrypted backup"
+  },
+  "backupUnlockAction": "Unlock",
+  "@backupUnlockAction": {
+    "description": "Confirm button of the unlock backup dialog"
+  },
+  "backupUnlocking": "Unlocking backup",
+  "@backupUnlocking": {
+    "description": "Screen-reader label while an encrypted backup is being unlocked"
+  },
+  "backupWrongPassword": "That password didn’t work, or the backup file is damaged. Check the password and try again. Nothing was changed.",
+  "@backupWrongPassword": {
+    "description": "Error shown when an encrypted backup cannot be opened: wrong password or corrupt file"
+  },
+  "backupUnsupportedFile": "This backup file isn’t supported. It may be damaged or made by a newer version of InvTrack. Nothing was changed.",
+  "@backupUnsupportedFile": {
+    "description": "Error shown when an encrypted backup has an unreadable or unknown header"
+  },
+  "archivedReadOnlyBanner": "Archived. Unarchive to add or change transactions and documents.",
+  "@archivedReadOnlyBanner": {
+    "description": "Banner on an archived investment's detail screen explaining that it is read-only"
   }
 }

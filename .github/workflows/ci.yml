@@ -194,7 +194,7 @@ jobs:
       - name: Date tests in America/Los_Angeles
         env:
           TZ: America/Los_Angeles
-        run: flutter test --exclude-tags=golden test/core/calculations test/core/utils test/core/notifications test/features/investment
+        run: flutter test --exclude-tags=golden test/core/calculations test/core/utils test/core/notifications test/core/reporting test/features/investment
 
   # A34 (#778): the app ships no ads SDK and no advertising ID. Firebase Analytics can merge
   # the AD_ID permission back in, so check the merged release manifest, not the source one.

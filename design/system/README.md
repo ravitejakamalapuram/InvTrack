@@ -140,4 +140,4 @@ Fixing a pair means changing the Dart widget and the token together. The greys, 
 
 ## Not in this system
 
-Not built: swipe wrappers (`SwipeActions`, `SwipeToDelete`; their gradient backgrounds are in GradientCard), selection controls and action bar, `CurrencySelector`, the connectivity toast, the ads widgets (the SDK is being removed), the animation helpers other than the shimmer (counter, stagger, pulse, float, glow, gradient border), and the `InAppUpdate` and `CurrencyCache` initialisers (no UI).
+Not built: swipe wrappers (`SwipeActions`; their gradient backgrounds are in GradientCard), selection controls and action bar, `CurrencySelector`, the connectivity toast, the ads widgets (the SDK is being removed), the animation helpers other than the shimmer (counter, stagger, pulse, float, glow, gradient border), and the `InAppUpdate` and `CurrencyCache` initialisers (no UI).
