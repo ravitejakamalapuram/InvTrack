@@ -3,15 +3,22 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:inv_tracker/core/ads/rewarded_export_gate.dart';
 
-/// Google's published test rewarded ad unit. Release builds must pass the real
-/// one: `--dart-define=REWARDED_AD_UNIT_ID=ca-app-pub-.../...`.
+/// Google's published test rewarded ad unit. Debug and test builds use it, so
+/// we never click our own real ads.
 const String _testRewardedAdUnit = 'ca-app-pub-3940256099942544/5224354917';
+
+/// InvTrack's real rewarded ad unit "fy_export_csv" (public, safe to commit).
+const String _liveRewardedAdUnit = 'ca-app-pub-7886969733687639/6600871162';
+
+/// Release builds use the live unit; `--dart-define=REWARDED_AD_UNIT_ID=...`
+/// overrides either.
 const String rewardedAdUnitId = String.fromEnvironment(
   'REWARDED_AD_UNIT_ID',
-  defaultValue: _testRewardedAdUnit,
+  defaultValue: kReleaseMode ? _liveRewardedAdUnit : _testRewardedAdUnit,
 );
 
 class AdMobRewardedPlayer implements RewardedAdPlayer {
@@ -20,6 +27,11 @@ class AdMobRewardedPlayer implements RewardedAdPlayer {
   @override
   Future<RewardedAdResult> play() async {
     try {
+      // A release build without the real ad unit must not show test ads to
+      // real users; the export just goes ahead.
+      if (kReleaseMode && rewardedAdUnitId == _testRewardedAdUnit) {
+        return RewardedAdResult.unavailable;
+      }
       if (!await _consentAllowsAds()) return RewardedAdResult.unavailable;
       await MobileAds.instance.initialize();
       final ad = await _load();
@@ -34,17 +46,26 @@ class AdMobRewardedPlayer implements RewardedAdPlayer {
   /// Google's consent form (UMP). It appears only where the law requires it,
   /// such as the EU and UK; elsewhere this finishes without showing anything.
   Future<bool> _consentAllowsAds() async {
-    final done = Completer<void>();
-    void finish() {
-      if (!done.isCompleted) done.complete();
-    }
-
+    // The timeout covers only the network update. The consent form itself
+    // waits for the user, as long as they need.
+    final updated = Completer<bool>();
     ConsentInformation.instance.requestConsentInfoUpdate(
       ConsentRequestParameters(),
-      () => ConsentForm.loadAndShowConsentFormIfRequired((_) => finish()),
-      (_) => finish(),
+      () {
+        if (!updated.isCompleted) updated.complete(true);
+      },
+      (_) {
+        if (!updated.isCompleted) updated.complete(false);
+      },
     );
-    await done.future.timeout(_timeout, onTimeout: () {});
+    final ok = await updated.future.timeout(_timeout, onTimeout: () => false);
+    if (ok) {
+      final dismissed = Completer<void>();
+      await ConsentForm.loadAndShowConsentFormIfRequired((_) {
+        if (!dismissed.isCompleted) dismissed.complete();
+      });
+      await dismissed.future;
+    }
     return ConsentInformation.instance.canRequestAds();
   }
 

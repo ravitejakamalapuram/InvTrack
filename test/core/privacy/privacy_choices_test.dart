@@ -80,6 +80,29 @@ void main() {
       expect(applier.calls, ['analytics:true', 'performance:true']);
     });
 
+    test(
+      'analytics goes back to its old value if a later step fails',
+      () async {
+        final (_, _, prefs) = await _setup();
+        final applier = _FailsOnPerformanceApplier();
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            privacyCollectionApplierProvider.overrideWithValue(applier),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await expectLater(
+          container.read(analyticsSharingProvider.notifier).setEnabled(false),
+          throwsA(isA<StateError>()),
+        );
+        expect(applier.calls, ['analytics:false', 'analytics:true']);
+        expect(prefs.containsKey(privacyAnalyticsKey), isFalse);
+        expect(container.read(analyticsSharingProvider), isTrue);
+      },
+    );
+
     test('nothing is saved when applying to Firebase fails', () async {
       final (container, applier, prefs) = await _setup();
       final failing = _ThrowingApplier();
@@ -119,6 +142,14 @@ void main() {
         ]);
       },
     );
+
+    test('one failing setting does not stop the others', () async {
+      final (_, _, prefs) = await _setup({privacyCrashReportsKey: false});
+      final applier = _FailsOnAnalyticsApplier();
+      await applyStoredPrivacyChoices(prefs, applier);
+
+      expect(applier.calls, ['performance:true', 'crash:false']);
+    });
 
     test('with nothing saved, start-up keeps collection on', () async {
       final (_, applier, prefs) = await _setup();
@@ -185,4 +216,33 @@ class _ThrowingApplier implements PrivacyCollectionApplier {
 
   @override
   Future<void> setCrashReports(bool enabled) async => throw StateError('x');
+}
+
+class _FailsOnPerformanceApplier implements PrivacyCollectionApplier {
+  final List<String> calls = [];
+
+  @override
+  Future<void> setAnalytics(bool enabled) async =>
+      calls.add('analytics:$enabled');
+
+  @override
+  Future<void> setPerformance(bool enabled) async => throw StateError('x');
+
+  @override
+  Future<void> setCrashReports(bool enabled) async {}
+}
+
+class _FailsOnAnalyticsApplier implements PrivacyCollectionApplier {
+  final List<String> calls = [];
+
+  @override
+  Future<void> setAnalytics(bool enabled) async => throw StateError('x');
+
+  @override
+  Future<void> setPerformance(bool enabled) async =>
+      calls.add('performance:$enabled');
+
+  @override
+  Future<void> setCrashReports(bool enabled) async =>
+      calls.add('crash:$enabled');
 }

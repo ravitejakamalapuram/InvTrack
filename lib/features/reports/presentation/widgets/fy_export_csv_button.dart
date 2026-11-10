@@ -40,19 +40,29 @@ class _FYExportCsvButtonState extends ConsumerState<FYExportCsvButton> {
   Future<void> _export() async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    // Busy first, so a second tap cannot open a second ad prompt.
+    setState(() => _busy = true);
     // An opt-in rewarded ad (see ExportAdGate for the rules). If the user says
-    // no, nothing is exported.
-    final mayExport = await ref
-        .read(exportAdGateProvider)
-        .mayExport(
-          privacyMode: ref.read(privacyModeProvider),
-          askUser: () => showRewardedExportPrompt(context),
-        );
-    if (!mayExport || !mounted) return;
+    // no, nothing is exported. If the gate itself fails, the export goes on.
+    var mayExport = true;
+    try {
+      mayExport = await ref
+          .read(exportAdGateProvider)
+          .mayExport(
+            privacyMode: ref.read(privacyModeProvider),
+            askUser: () => showRewardedExportPrompt(context),
+          );
+    } catch (e, st) {
+      ErrorHandler.handle(e, st, showFeedback: false);
+    }
+    if (!mounted) return;
+    if (!mayExport) {
+      setState(() => _busy = false);
+      return;
+    }
     // One snapshot, taken before the async load, so the CSV currency matches
     // the report even if the base currency changes meanwhile.
     final currency = ref.read(currencyCodeProvider);
-    setState(() => _busy = true);
     // The report provider is autoDispose; hold a listener so it is not
     // disposed while the load or the share sheet is still in flight.
     final keepAlive = ref.listenManual(

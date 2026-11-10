@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/privacy/privacy_choices.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
@@ -23,18 +24,34 @@ class PrivacySettingsSection extends ConsumerWidget {
           title: l10n.shareUsageData,
           subtitle: l10n.shareUsageDataSubtitle,
           value: ref.watch(analyticsSharingProvider),
-          onChanged: (value) =>
-              ref.read(analyticsSharingProvider.notifier).setEnabled(value),
+          onChanged: (value) => _change(
+            context,
+            () => ref.read(analyticsSharingProvider.notifier).setEnabled(value),
+          ),
         ),
         SettingsToggleTile(
           icon: Icons.bug_report_outlined,
           title: l10n.sendCrashReports,
           subtitle: l10n.sendCrashReportsSubtitle,
           value: ref.watch(crashReportsProvider),
-          onChanged: (value) =>
-              ref.read(crashReportsProvider.notifier).setEnabled(value),
+          onChanged: (value) => _change(
+            context,
+            () => ref.read(crashReportsProvider.notifier).setEnabled(value),
+          ),
         ),
       ],
     );
+  }
+
+  /// A failed change leaves the switch where it was and tells the user.
+  Future<void> _change(
+    BuildContext context,
+    Future<void> Function() change,
+  ) async {
+    try {
+      await change();
+    } catch (e, st) {
+      if (context.mounted) ErrorHandler.handle(e, st, context: context);
+    }
   }
 }

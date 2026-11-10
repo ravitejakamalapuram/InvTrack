@@ -21,6 +21,7 @@ Future<(ExportAdGate, _FakePlayer, SharedPreferences)> _gate(
   RewardedAdResult result, {
   DateTime? now,
   Map<String, Object> prefs = const {},
+  void Function(String)? onEvent,
 }) async {
   SharedPreferences.setMockInitialValues({
     adsFirstOpenKey: _firstOpen.millisecondsSinceEpoch,
@@ -29,7 +30,12 @@ Future<(ExportAdGate, _FakePlayer, SharedPreferences)> _gate(
   final p = await SharedPreferences.getInstance();
   final player = _FakePlayer(result);
   return (
-    ExportAdGate(prefs: p, player: player, clock: () => now ?? _afterAdFree),
+    ExportAdGate(
+      prefs: p,
+      player: player,
+      clock: () => now ?? _afterAdFree,
+      onEvent: onEvent,
+    ),
     player,
     p,
   );
@@ -117,6 +123,24 @@ void main() {
       expect(player.plays, 1);
       expect(p.getString(adsDayKey), '2026-11-08');
       expect(p.getInt(adsDayCountKey), 1);
+    });
+
+    test('sends one event per step, and nothing else', () async {
+      final events = <String>[];
+      final (gate, _, _) = await _gate(
+        RewardedAdResult.earned,
+        onEvent: events.add,
+      );
+      await gate.mayExport(privacyMode: false, askUser: () async => true);
+      expect(events, ['rewarded_prompt_shown', 'rewarded_ad_earned']);
+
+      events.clear();
+      final (declined, _, _) = await _gate(
+        RewardedAdResult.earned,
+        onEvent: events.add,
+      );
+      await declined.mayExport(privacyMode: false, askUser: () async => false);
+      expect(events, ['rewarded_prompt_shown', 'rewarded_prompt_declined']);
     });
 
     test('closing the ad early does not allow the export', () async {

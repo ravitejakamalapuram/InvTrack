@@ -45,8 +45,9 @@ class _Privacy extends PrivacyModeNotifier {
 }
 
 class _FakeGate implements ExportAdGate {
-  _FakeGate(this.allow);
+  _FakeGate(this.allow, {this.fails = false});
   final bool allow;
+  final bool fails;
   int asked = 0;
   bool? privacySeen;
 
@@ -57,6 +58,7 @@ class _FakeGate implements ExportAdGate {
   }) async {
     asked++;
     privacySeen = privacyMode;
+    if (fails) throw StateError('ad problem');
     return allow;
   }
 }
@@ -129,6 +131,22 @@ void main() {
       expect(gate.asked, 1);
       expect(shared, isFalse);
       expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('exports anyway when the gate itself fails', (t) async {
+      var shared = false;
+      await t.pumpWidget(
+        _app(
+          adGate: _FakeGate(false, fails: true),
+          report: () async => _report,
+          share: (r, c, {required subject, required maskSensitiveData}) async {
+            shared = true;
+          },
+        ),
+      );
+      await t.tap(find.bySubtype<TextButton>());
+      await t.pumpAndSettle();
+      expect(shared, isTrue);
     });
 
     testWidgets('exports when the gate says yes, and tells it about '

@@ -87,7 +87,7 @@ void main() {
   });
 
   test('privacy policy says plainly who can read stored data', () {
-    expect(privacyPolicyContent, contains('Last updated: October 21, 2026'));
+    expect(privacyPolicyContent, contains('Last updated: November 10, 2026'));
     expect(
       privacyPolicyContent,
       contains(
@@ -107,8 +107,8 @@ void main() {
   // why, where it is stored, how long it is kept, how to use your rights and
   // whom to ask. Every sentence is backed by code; the PR lists the evidence.
   group('privacy policy facts', () {
-    test('was last updated on 21 October 2026', () {
-      expect(privacyPolicyLastUpdated, DateTime(2026, 10, 21));
+    test('was last updated on 10 November 2026', () {
+      expect(privacyPolicyLastUpdated, DateTime(2026, 11, 10));
     });
 
     test('names every processor the app calls', () {

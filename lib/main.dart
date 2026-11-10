@@ -45,6 +45,9 @@ void main() async {
       await recordFirstOpen(sharedPreferences, DateTime.now());
 
       // Honour the user's privacy switches before anything is collected.
+      CrashlyticsService.userAllowsReports = PrivacyChoices.crashReportsEnabled(
+        sharedPreferences,
+      );
       await applyStoredPrivacyChoices(
         sharedPreferences,
         FirebasePrivacyApplier(),
