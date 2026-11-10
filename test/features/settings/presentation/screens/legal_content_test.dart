@@ -311,11 +311,15 @@ void main() {
     // statement would stop being true, not every possible way. They list what
     // is allowed instead of what is forbidden, so a new call site fails until
     // someone has read it and updated the policy.
-    test('says plainly that analytics and crash reports cannot be turned '
-        'off, for as long as that is true', () {
+    test('says plainly where analytics and crash reports are turned off, '
+        'for as long as that is true', () {
       expect(
         privacyPolicyContent,
-        contains('There is currently no switch to turn off'),
+        contains(
+          'In Settings under Privacy, you can turn off Share usage data '
+          '(Analytics and Performance Monitoring) and Send crash reports '
+          '(Crashlytics).',
+        ),
       );
 
       // 1. Every call that changes collection or consent is known.
@@ -330,25 +334,33 @@ void main() {
       }
       const crashlyticsFile = 'lib/core/analytics/crashlytics_service.dart';
       const performanceFile = 'lib/core/performance/performance_service.dart';
+      const privacyFile = 'lib/core/privacy/privacy_choices.dart';
       expect(
         calls..sort(),
         [
           '$crashlyticsFile: setCrashlyticsCollectionEnabled(shouldEnable)',
           '$crashlyticsFile: setCrashlyticsCollectionEnabled(shouldEnable)',
-          '$performanceFile: setPerformanceCollectionEnabled(true)',
+          '$performanceFile: setPerformanceCollectionEnabled(collectionEnabled)',
+          // The three calls behind the two Settings > Privacy switches.
+          '$privacyFile: setAnalyticsCollectionEnabled(enabled)',
+          '$privacyFile: setCrashlyticsCollectionEnabled(collect)',
+          '$privacyFile: setPerformanceCollectionEnabled(enabled)',
         ],
         reason:
             'a collection or consent call changed: update the withdrawal text',
       );
 
-      // 2. shouldEnable is the debug-build rule, which is always true in a
-      // release build, and never a stored choice.
+      // 2. shouldEnable is the user's "Send crash reports" choice plus the
+      // debug-build rule (always true in a release build).
       final crashlytics = File(crashlyticsFile).readAsStringSync();
       final rules = RegExp(
         r'shouldEnable\s*=\s*([^;]+);',
       ).allMatches(crashlytics).map((m) => m[1]!.trim()).toList();
       expect(rules, hasLength(2));
-      expect(rules, everyElement(startsWith('!kDebugMode ||')));
+      expect(
+        rules,
+        everyElement(contains('userAllowsReports && (!kDebugMode ||')),
+      );
 
       // 3. No platform-level collection switch in the manifest.
       final manifest = File(
@@ -363,21 +375,26 @@ void main() {
       );
     });
 
-    test('says the app shows no ads, and no ads or mock-purchase code is left',
-        () {
-      expect(privacyPolicyContent, contains('The app shows no ads.'));
-      final offenders = [
-        for (final file in _libDartFiles())
-          if (RegExp(
-            r'core/ads/|NativeAd|AdService|MobileAds|adServiceProvider|features/premium/|PremiumGate|PaywallScreen|premiumServiceProvider',
-          ).hasMatch(file.source))
-            file.path,
-      ];
-      expect(offenders, isEmpty,
-          reason: 'ads or mock-premium code is back: update the ads text');
-      expect(Directory('lib/core/ads').existsSync(), isFalse);
-      expect(Directory('lib/features/premium').existsSync(), isFalse);
-    });
+    test(
+      'says the app shows no ads, and no ads or mock-purchase code is left',
+      () {
+        expect(privacyPolicyContent, contains('The app shows no ads.'));
+        final offenders = [
+          for (final file in _libDartFiles())
+            if (RegExp(
+              r'core/ads/|NativeAd|AdService|MobileAds|adServiceProvider|features/premium/|PremiumGate|PaywallScreen|premiumServiceProvider',
+            ).hasMatch(file.source))
+              file.path,
+        ];
+        expect(
+          offenders,
+          isEmpty,
+          reason: 'ads or mock-premium code is back: update the ads text',
+        );
+        expect(Directory('lib/core/ads').existsSync(), isFalse);
+        expect(Directory('lib/features/premium').existsSync(), isFalse);
+      },
+    );
   });
 
   testWidgets('LegalScreen shows hosted-policy link when provided', (

@@ -16,6 +16,7 @@ import 'package:inv_tracker/core/analytics/run_guarded.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
+import 'package:inv_tracker/core/privacy/privacy_choices.dart';
 import 'package:inv_tracker/core/security/app_check_service.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/income_guardian_service_providers.dart';
 import 'package:inv_tracker/firebase_options.dart';
@@ -39,6 +40,12 @@ void main() async {
       ]);
 
       final sharedPreferences = results[1] as SharedPreferences;
+
+      // Honour the user's privacy switches before anything is collected.
+      await applyStoredPrivacyChoices(
+        sharedPreferences,
+        FirebasePrivacyApplier(),
+      );
 
       // Monitor mode only (#774); must follow Firebase.initializeApp.
       await AppCheckService.initialize();
@@ -127,7 +134,11 @@ Future<void> _initializeNonCriticalServices(
 
     // Initialize Performance Monitoring in background
     final performanceService = PerformanceService();
-    unawaited(performanceService.initialize());
+    unawaited(
+      performanceService.initialize(
+        collectionEnabled: PrivacyChoices.analyticsEnabled(prefs),
+      ),
+    );
 
     // Initialize notifications in background
     await notificationService.initialize();
