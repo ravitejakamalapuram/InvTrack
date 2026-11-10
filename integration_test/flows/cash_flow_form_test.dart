@@ -87,7 +87,7 @@ void main() {
       await cashFlows.tapSave();
 
       // Verify validation error
-      cashFlows.verifyAmountRequired();
+      await cashFlows.verifyAmountRequired();
     });
 
     testWidgets('should add invest (deposit) cash flow', (tester) async {
@@ -157,7 +157,7 @@ void main() {
       await cashFlows.selectType(CashFlowType.invest);
 
       // Verify cash out preview
-      cashFlows.verifyCashOutPreview();
+      await cashFlows.verifyCashOutPreview();
     });
 
     testWidgets('should show cash in preview for income type', (tester) async {
@@ -190,7 +190,7 @@ void main() {
       await cashFlows.selectType(CashFlowType.income);
 
       // Verify cash in preview
-      cashFlows.verifyCashInPreview();
+      await cashFlows.verifyCashInPreview();
     });
   });
 }

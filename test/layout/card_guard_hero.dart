@@ -16,7 +16,7 @@ import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dar
 import 'card_guard_harness.dart';
 import 'layout_guard_harness.dart' show guardTolerance;
 
-const _figureKey = ValueKey('hero-net-cash-flow');
+const _figureKey = ValueKey('hero-headline-amount');
 
 /// Columns per row of the hero stats, by width and text scale: the guard's own
 /// table, so a change to the rule shows up here as well as in the unit test.
@@ -94,8 +94,10 @@ final _crore = InvestmentStats(
   lastCashFlowDate: DateTime(2026, 4, 1),
 );
 
+// Invested is a long figure ("₹12.35 L"): the dots of privacy mode are wider
+// than a very short one, which moves the badge at x2.0 (a follow-up).
 final _loss = InvestmentStats(
-  totalInvested: 100000,
+  totalInvested: 1234500,
   totalReturned: 50000,
   netCashFlow: -50000,
   absoluteReturn: -50,
@@ -109,7 +111,7 @@ final _loss = InvestmentStats(
 /// Closed P2P plus an open FD valued at 5,17,800.77: "Expected XIRR" beside
 /// the "Realised XIRR" of closed investments.
 final _estimatedGlobal = InvestmentStats(
-  totalInvested: 600000,
+  totalInvested: 6123400,
   totalReturned: 112000,
   netCashFlow: -488000,
   absoluteReturn: 4.966795,
@@ -207,10 +209,12 @@ class _HeroCase {
   final bool awaiting;
 
   /// The icon at the start of the label of column [i], if it has one.
-  IconData? iconOf(int i) => i == 0
-      ? Icons.arrow_upward_rounded
-      : i == 1
+  IconData? iconOf(int i) => labels[i] == 'in'
       ? Icons.arrow_downward_rounded
+      : labels[i] == 'out'
+      ? Icons.arrow_upward_rounded
+      : labels[i] == 'Value now'
+      ? Icons.show_chart_rounded
       : null;
 }
 
@@ -234,48 +238,32 @@ List<_HeroCase> _heroCases() => [
     'plain annualised',
     build: () =>
         _content(global: _plain, open: InvestmentStats.empty(), closed: _plain),
-    labels: const ['out', 'in', 'XIRR'],
-    values: [
-      _inr.formatCompact(_plain.totalInvested),
-      _inr.formatCompact(_plain.totalReturned),
-      '22.0%',
-    ],
+    labels: const ['in', 'XIRR'],
+    values: [_inr.formatCompact(_plain.totalReturned), '22.0%'],
     badge: '+27.6%',
   ),
   _HeroCase(
     'crore amounts',
     build: () =>
         _content(global: _crore, open: InvestmentStats.empty(), closed: _crore),
-    labels: const ['out', 'in', 'XIRR'],
-    values: [
-      _inr.formatCompact(_crore.totalInvested),
-      _inr.formatCompact(_crore.totalReturned),
-      '9.1%',
-    ],
+    labels: const ['in', 'XIRR'],
+    values: [_inr.formatCompact(_crore.totalReturned), '9.1%'],
     badge: '+8.6%',
   ),
   _HeroCase(
     'loss',
     build: () =>
         _content(global: _loss, open: InvestmentStats.empty(), closed: _loss),
-    labels: const ['out', 'in', 'XIRR'],
-    values: [
-      _inr.formatCompact(_loss.totalInvested),
-      _inr.formatCompact(_loss.totalReturned),
-      '-52.6%',
-    ],
+    labels: const ['in', 'XIRR'],
+    values: [_inr.formatCompact(_loss.totalReturned), '-52.6%'],
     badge: '-50.0%',
   ),
   _HeroCase(
     'plain annualised, small amount',
     build: () =>
         _content(global: _small, open: InvestmentStats.empty(), closed: _small),
-    labels: const ['out', 'in', 'XIRR'],
-    values: [
-      _inr.formatCompact(_small.totalInvested),
-      _inr.formatCompact(_small.totalReturned),
-      '9.5%',
-    ],
+    labels: const ['in', 'XIRR'],
+    values: [_inr.formatCompact(_small.totalReturned), '9.5%'],
     badge: '+3.2%',
   ),
   _HeroCase(
@@ -285,24 +273,16 @@ List<_HeroCase> _heroCases() => [
       open: _soFarSmall,
       closed: InvestmentStats.empty(),
     ),
-    labels: const ['out', 'in', 'XIRR so far'],
-    values: [
-      _inr.formatCompact(_soFarSmall.totalInvested),
-      _inr.formatCompact(_soFarSmall.totalReturned),
-      '9.5%',
-    ],
+    labels: const ['in', 'XIRR so far'],
+    values: [_inr.formatCompact(_soFarSmall.totalReturned), '9.5%'],
     badge: '+3.2% so far',
   ),
   _HeroCase(
     'so far',
     build: () =>
         _content(global: _soFar, open: _soFar, closed: InvestmentStats.empty()),
-    labels: const ['out', 'in', 'XIRR so far'],
-    values: [
-      _inr.formatCompact(_soFar.totalInvested),
-      _inr.formatCompact(_soFar.totalReturned),
-      '11.4%',
-    ],
+    labels: const ['in', 'XIRR so far'],
+    values: [_inr.formatCompact(_soFar.totalReturned), '11.4%'],
     badge: '+11.4% so far',
   ),
   _HeroCase(
@@ -312,10 +292,10 @@ List<_HeroCase> _heroCases() => [
       open: _estimatedOpen,
       closed: _estimatedClosed,
     ),
-    labels: const ['out', 'in', 'Expected XIRR', 'Realised XIRR'],
+    labels: const ['in', 'Value now', 'Expected XIRR', 'Realised XIRR'],
     values: [
-      _inr.formatCompact(_estimatedGlobal.totalInvested),
       _inr.formatCompact(_estimatedGlobal.totalReturned),
+      _inr.formatCompact(_estimatedGlobal.currentValue!),
       '8.7%',
       '12.0%',
     ],
@@ -327,8 +307,8 @@ List<_HeroCase> _heroCases() => [
       final s = _awaiting(returned: 0);
       return _content(global: s, open: s, closed: _estimatedClosed);
     },
-    labels: const ['out', 'in', 'XIRR'],
-    values: [_inr.formatCompact(500000), _inr.formatCompact(0), '—'],
+    labels: const ['in', 'XIRR'],
+    values: [_inr.formatCompact(0), '—'],
     badge: 'Awaiting first payout',
     statusChip: true,
     awaiting: true,
@@ -339,8 +319,8 @@ List<_HeroCase> _heroCases() => [
       final s = _awaiting(returned: 10000);
       return _content(global: s, open: s, closed: _estimatedClosed);
     },
-    labels: const ['out', 'in', 'XIRR'],
-    values: [_inr.formatCompact(500000), _inr.formatCompact(10000), '—'],
+    labels: const ['in', 'XIRR'],
+    values: [_inr.formatCompact(10000), '—'],
     badge: 'Awaiting current value',
     statusChip: true,
     awaiting: true,
@@ -371,10 +351,10 @@ List<_HeroCase> _heroCases() => [
       currencyFormat: _inr,
       errorBuilder: (e) => Text(e),
     ),
-    labels: const ['out', 'in', 'Expected XIRR', 'Realised XIRR'],
+    labels: const ['in', 'Value now', 'Expected XIRR', 'Realised XIRR'],
     values: [
-      _inr.formatCompact(_estimatedGlobal.totalInvested),
       _inr.formatCompact(_estimatedGlobal.totalReturned),
+      _inr.formatCompact(_estimatedGlobal.currentValue!),
       '8.7%',
       '12.0%',
     ],
@@ -647,7 +627,7 @@ Future<_Shape> _run(
       if (spoken != 'Hidden amount') {
         g.fault('the stop of column $i says "$spoken" in privacy mode');
       }
-    } else if (i < 2) {
+    } else if (c.iconOf(i) != null) {
       if (!spoken.contains('rupee')) {
         g.fault('the stop of column $i says "$spoken", want an amount');
       }

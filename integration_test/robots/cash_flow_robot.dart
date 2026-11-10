@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/widgets/app_text_field.dart';
+import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
 import 'base_robot.dart';
@@ -35,30 +37,38 @@ class CashFlowRobot extends BaseRobot {
     await pumpAndSettle();
   }
 
-  /// Enter notes
-  Future<void> enterNotes(String notes) async {
-    final notesField = find.byType(TextFormField).at(1);
-    await tester.enterText(notesField, notes);
+  /// Scroll the form (a lazy ListView, the outermost Scrollable) until
+  /// [target] is built, then bring its first match fully on screen. Unlike
+  /// WidgetTester.scrollUntilVisible this accepts more than one match, because
+  /// a field label can be drawn twice.
+  Future<void> _scrollFormTo(Finder target, {double delta = 300}) async {
+    final form = find.byType(Scrollable).first;
+    for (var i = 0; i < 20 && !tester.any(target); i++) {
+      await tester.drag(form, Offset(0, -delta));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.ensureVisible(target.first);
     await pumpAndSettle();
   }
 
-  /// Tap add/update button
-  Future<void> tapSave() async {
-    // The button text depends on the selected type
-    final addInvest = find.text('Add Invest');
-    final addReturn = find.text('Add Return');
-    final addIncome = find.text('Add Income');
-    final addFee = find.text('Add Fee');
+  /// Enter notes. The form is a lazy ListView, so scroll to the field first.
+  Future<void> enterNotes(String notes) async {
+    final field = find.widgetWithText(AppTextField, 'Notes (Optional)');
+    await _scrollFormTo(field);
+    // By label, not position: scrolling can unbuild the Amount field.
+    final input = find.descendant(
+      of: field.first,
+      matching: find.byType(TextFormField),
+    );
+    await tester.enterText(input, notes);
+    await pumpAndSettle();
+  }
 
-    if (tester.any(addInvest)) {
-      await tapText('Add Invest');
-    } else if (tester.any(addReturn)) {
-      await tapText('Add Return');
-    } else if (tester.any(addIncome)) {
-      await tapText('Add Income');
-    } else if (tester.any(addFee)) {
-      await tapText('Add Fee');
-    }
+  /// Tap the Save Cash Flow button (the label no longer depends on the type).
+  Future<void> tapSave() async {
+    final save = find.widgetWithText(GradientButton, 'Save Cash Flow');
+    await _scrollFormTo(save);
+    await tap(save);
   }
 
   /// Add a cash flow with type and amount
@@ -81,18 +91,22 @@ class CashFlowRobot extends BaseRobot {
   }
 
   /// Verify cash flow preview shows correct direction
-  void verifyCashOutPreview() {
+  Future<void> verifyCashOutPreview() async {
+    await _scrollFormTo(find.text('Cash Out'));
     verifyTextDisplayed('Cash Out');
   }
 
-  void verifyCashInPreview() {
+  Future<void> verifyCashInPreview() async {
+    await _scrollFormTo(find.text('Cash In'));
     verifyTextDisplayed('Cash In');
   }
 
   // ============ VALIDATION ============
 
   /// Verify validation error for amount
-  void verifyAmountRequired() {
+  Future<void> verifyAmountRequired() async {
+    // Saving scrolled the form down; the error sits under the Amount field.
+    await _scrollFormTo(find.text('Required'), delta: -300);
     verifyTextDisplayed('Required');
   }
 
@@ -101,7 +115,7 @@ class CashFlowRobot extends BaseRobot {
   }
 
   void verifyAmountMustBePositive() {
-    verifyTextDisplayed('Must be greater than 0');
+    verifyTextDisplayed('Must be positive');
   }
 
   // ============ TRANSACTION LIST ============

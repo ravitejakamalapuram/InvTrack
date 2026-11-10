@@ -33,6 +33,16 @@ void main() {
         expect(c.read(isReviewPromptEnabledProvider), isTrue);
       });
 
+      test('$build: the approximate-rates marker (A14) is on (kill switch)', () async {
+        final c = await _container(overridesAllowed: overridesAllowed);
+        expect(c.read(isApproximateRatesIndicatorEnabledProvider), isTrue);
+        expect(
+          FeatureFlag.approximateRatesIndicator.key,
+          'approximate_rates_indicator',
+        );
+        expect(FeatureFlag.approximateRatesIndicator.defaultEnabled, isTrue);
+      });
+
       test('$build: dated valuations (#941) are off', () async {
         final c = await _container(overridesAllowed: overridesAllowed);
         expect(c.read(isValuationSnapshotsEnabledProvider), isFalse);

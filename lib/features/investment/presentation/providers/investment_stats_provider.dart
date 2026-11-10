@@ -41,10 +41,16 @@ class ConvertedCashFlows {
   /// The unconverted list this snapshot was built from.
   final List<CashFlowEntity> source;
 
+  /// True when a flow was converted with a cached or last-known rate over 24
+  /// hours old (or from another date). The amounts are unchanged; the
+  /// Overview card only says so.
+  final bool isApproximate;
+
   const ConvertedCashFlows({
     required this.baseCurrency,
     required this.cashFlows,
     required this.source,
+    this.isApproximate = false,
   });
 }
 
@@ -89,18 +95,26 @@ final convertedCashFlowsSnapshotProvider = FutureProvider<ConvertedCashFlows>((
   if (!engine.currency.isAvailable) {
     throw StateError('Currency conversion is unavailable');
   }
-  final converted = await engine.currency.batchConvert(
+  final converted = await engine.currency.batchConvertWithApproximation(
     cashFlows: cashFlows,
     baseCurrency: baseCurrency,
     fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
   );
-  requireBaseCurrency(converted, baseCurrency);
+  requireBaseCurrency(converted.cashFlows, baseCurrency);
   return ConvertedCashFlows(
     baseCurrency: baseCurrency,
-    cashFlows: converted,
+    cashFlows: converted.cashFlows,
     source: cashFlows,
+    isApproximate: converted.isApproximate,
   );
 });
+
+/// Whether the converted totals used an approximate exchange rate.
+final ratesApproximateProvider = Provider<bool>(
+  (ref) =>
+      ref.watch(convertedCashFlowsSnapshotProvider).value?.isApproximate ??
+      false,
+);
 
 /// Throws a [CurrencyConversionException] if any of [cashFlows] is still in
 /// a currency other than [baseCurrency].

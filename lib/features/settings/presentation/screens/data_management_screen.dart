@@ -7,6 +7,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
+import 'package:inv_tracker/features/settings/data/services/backup_crypto.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/backup_password_dialogs.dart';
 import 'package:inv_tracker/core/error/error_message.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
@@ -27,7 +29,9 @@ import 'package:inv_tracker/features/settings/data/services/account_deletion_flo
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/deletion_request_status_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/export_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/support_ad_offer.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/utils/import_error_text.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/deletion_request_banner.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/saved_guest_backup_tile.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
@@ -247,11 +251,16 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       );
     } else {
       ref.read(analyticsServiceProvider).logExportGenerated(format: 'csv');
+      if (context.mounted) await offerSupportAd(context, ref);
     }
   }
 
   Future<void> _handleZipExport(BuildContext context, WidgetRef ref) async {
-    await ref.read(zipExportStateProvider.notifier).exportAsZip();
+    final choice = await showBackupExportDialog(context);
+    if (choice == null || !context.mounted) return;
+    await ref
+        .read(zipExportStateProvider.notifier)
+        .exportAsZip(password: choice.password);
     final state = ref.read(zipExportStateProvider);
     if (state.hasError && context.mounted) {
       final l10n = AppLocalizations.of(context);
@@ -271,7 +280,26 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           backgroundColor: Colors.green,
         ),
       );
+      if (context.mounted) await offerSupportAd(context, ref);
     }
+  }
+
+  /// The decrypted ZIP, or null when the user cancels or the file cannot be
+  /// read as a backup (the user is told which).
+  Future<Uint8List?> _unlockBackup(BuildContext context, Uint8List data) async {
+    try {
+      BackupCrypto.readIterations(data);
+    } on BackupFormatException {
+      AppFeedback.showError(
+        context,
+        AppLocalizations.of(context).backupUnsupportedFile,
+      );
+      return null;
+    }
+    return showBackupUnlockDialog(
+      context,
+      unlock: (password) => BackupCrypto.decryptInBackground(data, password),
+    );
   }
 
   Future<void> _handleZipImport(BuildContext context, WidgetRef ref) async {
@@ -370,10 +398,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     // Pick ZIP file
     Uint8List zipBytes;
     try {
-      final picked = await FilePicker.pickFile(
-        type: FileType.custom,
-        allowedExtensions: ['zip'],
-      );
+      // Any type: Android hides unknown extensions such as .invbackup from a
+      // custom filter. The content is checked after picking.
+      final picked = await FilePicker.pickFile(type: FileType.any);
 
       if (picked == null) return;
       try {
@@ -394,6 +421,14 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
 
     if (!context.mounted) return;
 
+    // A password-protected backup is unlocked first; a wrong password stops
+    // here, before anything is read into the app or changed.
+    if (BackupCrypto.isEncrypted(zipBytes)) {
+      final unlocked = await _unlockBackup(context, zipBytes);
+      if (unlocked == null || !context.mounted) return;
+      zipBytes = unlocked;
+    }
+
     // Import the ZIP
     try {
       final importResult = await ref
@@ -406,7 +441,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                l10n.importCompletedWithErrors(importResult.errors.first),
+                l10n.importCompletedWithErrors(
+                  importErrorText(l10n, importResult.errors.first),
+                ),
               ),
               backgroundColor: Colors.orange,
             ),

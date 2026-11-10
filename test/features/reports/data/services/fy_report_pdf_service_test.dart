@@ -198,6 +198,21 @@ void main() {
     test('footer is the not-tax-advice disclaimer', () {
       final c = _content(_report());
       expect(c.disclaimer, contains('It is not tax advice.'));
+      expect(c.disclaimer, contains('not calculated in this report'));
+      expect(c.disclaimer, isNot(contains('until')));
+    });
+
+    test('the Help & FAQ answer carries the same disclaimer sentences', () {
+      final l10n = AppLocalizationsEn();
+      final faq = l10n.fyPdfFaqAnswer;
+      final sentences = l10n.fyPdfDisclaimer
+          .split('. ')
+          .map((s) => s.endsWith('.') ? s : '$s.')
+          .where((s) => !s.startsWith('This report'));
+      expect(sentences, hasLength(3));
+      for (final s in sentences) {
+        expect(faq, contains(s));
+      }
     });
 
     test('non-INR base currency uses its own symbol and locale', () {

@@ -8,19 +8,28 @@
 // Run by the workflow as `dart run scripts/nightly_gate.dart` with the
 // environment variable NIGHTLY_RUNS (JSON from `gh run list --workflow
 // nightly.yml --branch main --status completed --limit 1 --json
-// conclusion,createdAt`).
+// conclusion,createdAt,displayTitle`).
 import 'dart:convert';
 import 'dart:io';
 
 /// The oldest a successful nightly may be: a day plus slack for a late cron.
 const Duration maxNightlyAge = Duration(hours: 36);
 
-/// A completed nightly run: how it ended and when it started.
+/// The run name `nightly.yml` gives a golden regeneration run, which skips the
+/// integration tests and so is not a full nightly.
+const String regenerationRunName = 'nightly golden regeneration';
+
+/// A completed nightly run: how it ended, when it started and its title.
 class NightlyRun {
-  const NightlyRun({required this.conclusion, required this.createdAt});
+  const NightlyRun({
+    required this.conclusion,
+    required this.createdAt,
+    required this.title,
+  });
 
   final String conclusion;
   final DateTime createdAt;
+  final String title;
 }
 
 /// Returns why the release must not run, or null when it may run.
@@ -46,6 +55,10 @@ String? nightlyBlockReason({
     return 'The latest nightly run on main ended with ${run.conclusion}. '
         '$unblock';
   }
+  if (run.title == regenerationRunName) {
+    return 'The latest nightly run on main was a golden regeneration, which '
+        'skips the integration tests. $unblock';
+  }
   final age = now.difference(run.createdAt);
   if (age > maxAge || age.isNegative) {
     return 'The latest successful nightly run started '
@@ -56,8 +69,9 @@ String? nightlyBlockReason({
 }
 
 /// The runs in [json], the output of `gh run list --workflow nightly.yml
-/// --json conclusion,createdAt`. Returns null when it cannot be read or a run
-/// has no start time.
+/// --json conclusion,createdAt,displayTitle`. Returns null when it cannot be
+/// read or a run has no start time or title: without the title a golden
+/// regeneration run cannot be told from a full nightly.
 List<NightlyRun>? nightlyRuns(String json) {
   final Object? decoded;
   try {
@@ -72,8 +86,13 @@ List<NightlyRun>? nightlyRuns(String json) {
     final conclusion = run['conclusion'];
     final created = run['createdAt'];
     final createdAt = created is String ? DateTime.tryParse(created) : null;
-    if (conclusion is! String || createdAt == null) return null;
-    runs.add(NightlyRun(conclusion: conclusion, createdAt: createdAt));
+    final title = run['displayTitle'];
+    if (conclusion is! String || createdAt == null || title is! String) {
+      return null;
+    }
+    runs.add(
+      NightlyRun(conclusion: conclusion, createdAt: createdAt, title: title),
+    );
   }
   return runs;
 }

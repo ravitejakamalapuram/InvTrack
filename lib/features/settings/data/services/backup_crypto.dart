@@ -1,7 +1,9 @@
+import 'dart:isolate';
 import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
 /// The password is wrong or the data was modified (indistinguishable by design).
 class BackupDecryptionException implements Exception {
@@ -48,6 +50,19 @@ abstract final class BackupCrypto {
     return true;
   }
 
+  /// [encrypt] on a background isolate, so the PBKDF2 work cannot freeze the UI.
+  static Future<Uint8List> encryptInBackground(
+    Uint8List plain,
+    String password, {
+    int iterations = defaultIterations,
+  }) => Isolate.run(() => encrypt(plain, password, iterations: iterations));
+
+  /// [decrypt] on a background isolate, so the PBKDF2 work cannot freeze the UI.
+  static Future<Uint8List> decryptInBackground(
+    Uint8List data,
+    String password,
+  ) => Isolate.run(() => decrypt(data, password));
+
   /// Iteration count stored in the header of [data].
   static int readIterations(Uint8List data) {
     _checkHeader(data);
@@ -55,9 +70,8 @@ abstract final class BackupCrypto {
   }
 
   /// Slow by design: PBKDF2 at 600k iterations in pure Dart can take seconds on
-  /// low-end phones. Callers must run this off the UI isolate (compute or
-  /// Isolate.run). The password is used as given (no Unicode normalisation);
-  /// the UI step should normalise it (NFKC) before calling.
+  /// low-end phones. UI code should call [encryptInBackground]. The password
+  /// is normalised to NFKC before key derivation (see [_deriveKey]).
   static Future<Uint8List> encrypt(
     Uint8List plain,
     String password, {
@@ -91,10 +105,8 @@ abstract final class BackupCrypto {
     return out.takeBytes();
   }
 
-  /// Slow by design (same cost as encrypt): PBKDF2 at 600k iterations in pure Dart can take seconds on
-  /// low-end phones. Callers must run this off the UI isolate (compute or
-  /// Isolate.run). The password is used as given (no Unicode normalisation);
-  /// the UI step should normalise it (NFKC) before calling.
+  /// Slow by design (same cost as encrypt). UI code should call
+  /// [decryptInBackground]. The password is normalised like in [encrypt].
   static Future<Uint8List> decrypt(Uint8List data, String password) async {
     _checkHeader(data);
     if (data.length < headerLength + _tagLength) {
@@ -137,7 +149,10 @@ abstract final class BackupCrypto {
     int iterations,
   ) => Pbkdf2(macAlgorithm: Hmac.sha256(), iterations: iterations, bits: 256)
       .deriveKeyFromPassword(
-        password: password,
+        // NFKC, applied here so encrypt and decrypt cannot differ: the same
+        // typed password can reach us as different code points depending on the
+        // keyboard or OS (composed vs decomposed accents, full-width forms).
+        password: unorm.nfkc(password),
         nonce: header.sublist(_saltOffset, _saltOffset + _saltLength),
       );
 }

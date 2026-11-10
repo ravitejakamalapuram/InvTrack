@@ -449,7 +449,7 @@
       return '<div class="it-shimmer" role="status" aria-label="Loading content">' + GlassCard(box(140, 16) + '<div style="margin-top:16px">' + box('100%', (o.height || 150) - 60) + '</div>') + '</div>';
     }
     if (k === 'fullscreen') {
-      return '<div class="it-loading" role="status" aria-label="' + esc(o.message || 'Loading') + '"><span class="it-loading__disc">' + icon('account_balance_wallet', { size: 48 }) + '</span><span class="it-loading__ring"></span>' +
+      return '<div class="it-loading" role="status" aria-label="' + esc(o.message || 'Loading') + '"><span class="it-loading__disc">' + icon('show_chart', { size: 48 }) + '</span><span class="it-loading__ring"></span>' +
         (o.message ? '<p class="it-loading__msg">' + esc(o.message) + '</p>' : '') + '</div>';
     }
     return '';
@@ -462,7 +462,7 @@
       return '<div class="it-hero it-stack" style="gap:12px" role="status" aria-label="Loading summary"><span class="it-skel it-hero__bar" style="width:100px;height:14px;background:rgba(255,255,255,.3);border-radius:4px"></span><span class="it-skel" style="width:200px;height:36px;background:rgba(255,255,255,.3);border-radius:8px"></span></div>';
     }
     var scope = o.scope === 'realized';
-    var title = scope ? 'Realized Net Position' : 'Net cash flow so far';
+    var title = scope ? 'Realized Net Position' : 'Invested';
     var badge = o.status
       ? '<span class="it-hero__badge it-hero__badge--status it-hide-private">' + esc(o.status) + '</span>'
       : '<span class="' + cls('it-hero__badge', o.positive === false ? 'it-hero__badge--down' : 'it-hero__badge--up', 'it-hide-private') + '">' + esc(o.returnText) + '</span>';
@@ -470,12 +470,13 @@
     var valueRow = o.status
       ? '<div class="it-hero__value">' + value + badge + '</div>'
       : '<div class="it-hero__value it-hero__value--row">' + value + badge + '</div>';
-    // StatColumns: out, in, XIRR, then Realised XIRR. Each column is a subgrid over a label row and a value row (see bundle.css).
+    // StatColumns: all scope: in, Value now (when known), XIRR, then Realised XIRR; realized scope: out, in, XIRR. Each column is a subgrid over a label row and a value row (see bundle.css).
     function statCol(value, label, ic, xirr) {
       return '<div class="' + cls('it-statcol', xirr && 'it-statcol--xirr') + '"><span class="it-statcol__l">' +
         (ic ? icon(ic, { size: 14 }) : '') + '<span>' + esc(label) + '</span></span><b class="it-statcol__v">' + value + '</b></div>';
     }
-    var statCols = statCol(amount(o.out), 'out', 'arrow_upward') + statCol(amount(o.inn), 'in', 'arrow_downward') +
+    var statCols = (scope ? statCol(amount(o.out), 'out', 'arrow_upward') : '') + statCol(amount(o.inn), 'in', 'arrow_downward') +
+      (!scope && o.valueNow ? statCol(amount(o.valueNow), 'Value now', 'show_chart') : '') +
       statCol(amount(o.xirr), o.xirrLabel || 'XIRR', null, true) + (o.realisedXirr ? statCol(amount(o.realisedXirr), 'Realised XIRR', null, true) : '');
     return '<div class="it-hero" role="group" aria-label="' + esc(title) + '">' +
       '<div class="it-hero__title-row"><div class="it-hero__title">' + esc(title) + '</div>' + PrivacyMask({ kind: 'toggle', on: !!o.privacy, size: 18 }) +
@@ -588,7 +589,7 @@
   function Navigation(o) {
     o = o || {};
     var items = o.items || [
-      { label: 'Overview', icon: 'pie_chart_outline', on: 'pie_chart' }, { label: 'Investments', icon: 'account_balance_wallet', on: 'account_balance_wallet', outlined: true },
+      { label: 'Overview', icon: 'pie_chart_outline', on: 'pie_chart' }, { label: 'Investments', icon: 'show_chart', on: 'account_balance_wallet', outlined: true },
       { label: 'Goals', icon: 'flag', on: 'flag', outlined: true }, { label: 'Reports', icon: 'assessment', on: 'assessment', outlined: true }, { label: 'Settings', icon: 'settings', on: 'settings', outlined: true }
     ];
     var active = o.active == null ? 0 : o.active;

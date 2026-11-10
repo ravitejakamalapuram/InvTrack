@@ -22,7 +22,7 @@ class _PrivacyOn extends PrivacyModeNotifier {
 }
 
 /// A closed investment: ₹1,00,00,000 in, ₹99,94,999 net out, so the hero
-/// shows a net position of -₹99.95 L (intl printed '-₹0.999Cr').
+/// shows an invested headline of ₹1 Cr.
 final _stats = InvestmentStats(
   totalInvested: 10000000,
   totalReturned: 5001,
@@ -68,13 +68,13 @@ Future<void> _pump(WidgetTester tester, {required bool privacy}) async {
 }
 
 void main() {
-  testWidgets('shows and reads the net position in lakh', (tester) async {
+  testWidgets('shows and reads the invested amount in crore', (tester) async {
     await _pump(tester, privacy: false);
 
-    expect(find.text('-₹99.95 L'), findsOneWidget);
+    expect(find.text('₹1 Cr'), findsOneWidget);
     expect(find.textContaining('0.999'), findsNothing);
     final label = tester.getSemantics(find.byType(HeroCardContent)).label;
-    expect(label, contains('Net cash flow so far: negative 99.95 lakh rupees'));
+    expect(label, contains('Invested: 1 crore rupees'));
   });
 
   testWidgets('privacy mode hides the amount from the screen reader too', (
@@ -82,9 +82,9 @@ void main() {
   ) async {
     await _pump(tester, privacy: true);
 
-    expect(find.text('-₹99.95 L'), findsNothing);
+    expect(find.text('₹1 Cr'), findsNothing);
     final label = tester.getSemantics(find.byType(HeroCardContent)).label;
-    expect(label, contains('Net cash flow so far: $sentinelHiddenAmount'));
+    expect(label, contains('Invested: $sentinelHiddenAmount'));
     expect(label, contains('Return: $sentinelHiddenPercentage'));
     expect(label, isNot(contains('lakh')));
     expect(label, isNot(contains('99')));

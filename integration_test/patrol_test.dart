@@ -28,6 +28,7 @@ import 'mocks/mock_analytics_service.dart';
 import 'mocks/mock_goal_repository.dart';
 import 'mocks/mock_investment_repository.dart';
 import 'mocks/mock_notification_service.dart';
+import 'mocks/no_firebase_overrides.dart';
 
 /// Mock for LocalAuthentication
 class MockLocalAuthentication extends Mock implements LocalAuthentication {}
@@ -127,6 +128,7 @@ Future<void> pumpApp(
         goalRepositoryProvider.overrideWithValue(goalRepository),
         analyticsServiceProvider.overrideWithValue(analyticsService),
         notificationServiceProvider.overrideWithValue(notificationService),
+        ...noFirebaseOverrides(),
       ],
       child: const InvTrackerApp(),
     ),

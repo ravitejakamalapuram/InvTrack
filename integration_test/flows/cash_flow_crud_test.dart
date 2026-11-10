@@ -123,7 +123,7 @@ void main() {
       await cashFlows.tapSave();
 
       // Verify validation error
-      cashFlows.verifyAmountRequired();
+      await cashFlows.verifyAmountRequired();
     });
 
     testWidgets('should add income cash flow', (tester) async {
@@ -155,7 +155,7 @@ void main() {
       // Select income type and add
       await cashFlows.selectType(CashFlowType.income);
       await cashFlows.enterAmount('500');
-      cashFlows.verifyCashInPreview();
+      await cashFlows.verifyCashInPreview();
     });
   });
 }

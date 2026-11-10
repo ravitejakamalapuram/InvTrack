@@ -12,7 +12,29 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+/// True when [source] has an import/export directive for `package:pdf/`.
+/// Comments are stripped first so `import /* x */ 'package:pdf/...'` counts.
+bool importsPdfPackage(String source) {
+  final code = source
+      .replaceAll(RegExp(r'/\*[\s\S]*?\*/'), ' ')
+      .replaceAll(RegExp(r'//[^\n]*'), '');
+  return RegExp(
+    r'''^\s*(?:import|export)\s+['"]package:pdf/''',
+    multiLine: true,
+  ).hasMatch(code);
+}
+
 void main() {
+  test('importsPdfPackage sees directives with inline comments only', () {
+    expect(importsPdfPackage("import 'package:pdf/widgets.dart';"), isTrue);
+    expect(
+      importsPdfPackage("import /* c */ 'package:pdf/widgets.dart';"),
+      isTrue,
+    );
+    expect(importsPdfPackage("// import 'package:pdf/pdf.dart';"), isFalse);
+    expect(importsPdfPackage("/* import 'package:pdf/pdf.dart'; */"), isFalse);
+  });
+
   const removedFiles = [
     'lib/features/reports/data/services/report_csv_exporter.dart',
     'lib/features/reports/data/services/report_pdf_exporter.dart',
@@ -33,15 +55,11 @@ void main() {
         'lib/features/reports/data/services/fy_report_pdf_service.dart';
 
     // Only import/export directives count, not comments or strings.
-    final directive = RegExp(
-      r'''^\s*(?:import|export)\s+['"]package:pdf/''',
-      multiLine: true,
-    );
     final importers = Directory('lib')
         .listSync(recursive: true)
         .whereType<File>()
         .where((f) => f.path.endsWith('.dart'))
-        .where((f) => directive.hasMatch(f.readAsStringSync()))
+        .where((f) => importsPdfPackage(f.readAsStringSync()))
         .map((f) => f.path)
         .toList();
     expect(importers, [allowed]);

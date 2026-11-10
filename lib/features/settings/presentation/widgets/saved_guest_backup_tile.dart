@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/guest_backup_merge_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/backup_password_dialogs.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Offers the guest backups kept on this device after a guest-to-Google
@@ -34,7 +35,7 @@ class SavedGuestBackupTile extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.share),
             tooltip: l10n.shareBackup,
-            onPressed: () => _run(context, service.shareSavedBackups),
+            onPressed: () => _share(context, service),
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
@@ -43,6 +44,20 @@ class SavedGuestBackupTile extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// Asks for an optional password (the export dialog), then shares: the
+  /// share sheet hands the file to other apps, so it can be encrypted.
+  Future<void> _share(
+    BuildContext context,
+    GuestBackupMergeService service,
+  ) async {
+    final choice = await showBackupExportDialog(context);
+    if (choice == null || !context.mounted) return;
+    await _run(
+      context,
+      () => service.shareSavedBackups(password: choice.password),
     );
   }
 

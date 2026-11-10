@@ -266,7 +266,10 @@ void main() {
         baseCurrency: 'INR',
       );
 
-      expect(result.errors.single, contains('investments.json is damaged'));
+      expect(
+        result.errors.single,
+        const ImportError.fileDamaged('investments.json'),
+      );
       expect(await repo.getAllInvestments(), hasLength(2));
     });
 
@@ -307,7 +310,10 @@ void main() {
         baseCurrency: 'INR',
       );
 
-      expect(result.errors.single, contains('investments.json is damaged'));
+      expect(
+        result.errors.single,
+        const ImportError.fileDamaged('investments.json'),
+      );
       expect(await repo.getAllInvestments(), hasLength(2));
     },
   );
@@ -375,7 +381,10 @@ void main() {
         baseCurrency: 'INR',
       );
 
-      expect(result.errors.single, contains('investments.json is damaged'));
+      expect(
+        result.errors.single,
+        const ImportError.fileDamaged('investments.json'),
+      );
       expect(await repo.getAllInvestments(), hasLength(2));
     });
   }
