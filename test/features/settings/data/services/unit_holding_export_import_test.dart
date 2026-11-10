@@ -263,7 +263,10 @@ void main() {
         ),
         isTrue,
       );
-      expect(result.errors.where((e) => e.contains('valuations')), isEmpty);
+      expect(
+        result.errors.where((e) => e.detail.contains('valuations')),
+        isEmpty,
+      );
     },
   );
 }
