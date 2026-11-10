@@ -8,7 +8,9 @@ import 'package:inv_tracker/features/investment/presentation/screens/add_investm
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
 import 'package:inv_tracker/features/reports/domain/entities/dynamic_report_data.dart';
+import 'package:inv_tracker/features/reports/domain/entities/report_type.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/dynamic_report_provider.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/fy_pdf_export_button.dart';
 
 /// Dynamic Report Screen - Unified view for all report types
 ///
@@ -32,6 +34,13 @@ class DynamicReportScreen extends ConsumerWidget {
             orElse: () => configuration.titleOverride ?? 'Report',
           ),
         ),
+        actions: [
+          if (configuration.reportType == ReportType.fyReport &&
+              configuration.parameters['fyYear'] is int)
+            FyPdfExportButton(
+              fyYear: configuration.parameters['fyYear'] as int,
+            ),
+        ],
       ),
       body: reportAsync.when(
         data: (report) => _buildReportBody(context, ref, report),
