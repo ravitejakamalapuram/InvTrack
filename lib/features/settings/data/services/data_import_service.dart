@@ -17,6 +17,7 @@ import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/repositories/goal_repository.dart';
 import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
@@ -1031,6 +1032,9 @@ class DataImportService {
     final typeCol = header.indexOf('Investment Type');
     final statusCol = header.indexOf('Investment Status');
     final investmentIdCol = header.indexOf('Investment ID');
+    final quantityCol = header.indexOf('Quantity');
+    final unitCol = header.indexOf('Unit');
+    final unitPriceCol = header.indexOf('Unit Price');
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -1073,6 +1077,30 @@ class DataImportService {
         continue;
       }
       final type = cell(typeCol);
+      final hasUnitCells =
+          cell(quantityCol).isNotEmpty ||
+          cell(unitCol).isNotEmpty ||
+          cell(unitPriceCol).isNotEmpty;
+      final unit = QuantityUnit.tryParse(cell(unitCol));
+      final holding = unit == null
+          ? null
+          : UnitHolding(
+              quantity: double.tryParse(cell(quantityCol)) ?? double.nan,
+              unit: unit,
+              unitPrice: double.tryParse(cell(unitPriceCol)) ?? double.nan,
+            );
+      // The value is what was saved; weight details that are incomplete or
+      // disagree with it are dropped, never the value.
+      final keptHolding =
+          holding != null &&
+              holding.isValid &&
+              holding.value(currency) ==
+                  MoneyPrecision.round(value, currencyCode: currency)
+          ? holding
+          : null;
+      if (hasUnitCells && keptHolding == null) {
+        rowWarnings.add('Weight details of "$name" not imported: invalid row');
+      }
       (result[(
                 cell(archivedCol).toLowerCase() == 'true',
                 name.toLowerCase(),
@@ -1087,6 +1115,7 @@ class DataImportService {
               snapshotId: cell(idCol),
               kind: kind,
               provenance: provenance,
+              holding: keptHolding,
               updatedAt: DateTime.tryParse(cell(updatedCol))?.toUtc(),
               investmentType: type.isEmpty
                   ? null
@@ -1171,6 +1200,7 @@ class DataImportService {
           effectiveDate: row.date,
           kind: row.kind,
           provenance: row.provenance,
+          holding: row.holding,
           createdAt: now,
           updatedAt: row.updatedAt ?? now,
         ),
@@ -1728,6 +1758,7 @@ class _ImportedValuation {
   final String snapshotId;
   final ValuationKind kind;
   final ValuationProvenance provenance;
+  final UnitHolding? holding;
   final DateTime? updatedAt;
 
   /// For an investment that has no cash flows to take them from.
@@ -1745,6 +1776,7 @@ class _ImportedValuation {
     required this.snapshotId,
     required this.kind,
     required this.provenance,
+    this.holding,
     this.updatedAt,
     this.investmentType,
     this.investmentStatus,
