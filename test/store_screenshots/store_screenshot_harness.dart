@@ -10,6 +10,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/providers/connectivity_provider.dart';
 import 'package:inv_tracker/core/providers/in_app_update_provider.dart';
@@ -223,6 +224,7 @@ List<Override> _storeOverrides(StoreDemoData demo) => [
     FlutterLocalNotificationsPlugin(),
   ),
   firestoreProvider.overrideWithValue(_NoFirestore()),
+  valuationSnapshotsActiveProvider.overrideWithValue(false),
   deletionRequestServiceProvider.overrideWithValue(
     FakeDeletionRequestService(),
   ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart' show Fake;
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 
 import 'fake_deletion_request_service.dart';
 
@@ -22,4 +23,7 @@ List<Override> noFirebaseOverrides() => [
     FakeDeletionRequestService(),
   ),
   currencyConversionServiceProvider.overrideWithValue(null),
+  // Dated values are on by default and read Firestore; a harness without a
+  // Firebase app keeps the single current value.
+  valuationSnapshotsActiveProvider.overrideWithValue(false),
 ];

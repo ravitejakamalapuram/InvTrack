@@ -1,10 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
-import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
@@ -232,6 +231,7 @@ void main() {
       );
       container = ProviderContainer(
         overrides: [
+          valuationSnapshotsActiveProvider.overrideWithValue(false),
           investmentRepositoryProvider.overrideWithValue(fakeRepository),
           isAuthenticatedProvider.overrideWith((ref) => true),
           // The flows are in USD, the base currency: no conversion needed.
@@ -347,11 +347,14 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
+          valuationSnapshotsActiveProvider.overrideWithValue(false),
           investmentRepositoryProvider.overrideWithValue(fakeRepository),
           sharedPreferencesProvider.overrideWithValue(prefs),
           isAuthenticatedProvider.overrideWith((ref) => true),
           currencyCodeProvider.overrideWith((ref) => 'USD'),
-          currencyConversionServiceProvider.overrideWithValue(mockConversionService),
+          currencyConversionServiceProvider.overrideWithValue(
+            mockConversionService,
+          ),
         ],
       );
     });
