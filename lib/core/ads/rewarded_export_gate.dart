@@ -1,5 +1,5 @@
 /// The one place an ad is shown: an opt-in rewarded ad offered after the CSV
-/// and ZIP data export (and ready before the Tax-Year CSV export).
+/// and ZIP data export and after the Tax-Year CSV export.
 ///
 /// Rules (owner decisions 2026-11-10): never in the first 7 days, at most 3
 /// ads a day, never while Privacy mode is on, and never forced. If no ad can
