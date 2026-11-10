@@ -39,6 +39,8 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Temporary: print the real error. Remove once the review works.
+          show_full_output: true
           prompt: |
             Review pull request #${{ github.event.issue.number }} in ${{ github.repository }}.
 
