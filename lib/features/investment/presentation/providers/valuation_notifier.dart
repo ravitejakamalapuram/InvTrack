@@ -150,12 +150,14 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
   }
 
   /// Changes the amount, the date or the kind of a live snapshot. The rest,
-  /// its provenance included, stays.
+  /// its provenance included, stays. A new [amount] without a [holding] drops
+  /// any weight the snapshot had; a [holding] must agree with [amount].
   Future<InvestmentValuationSnapshot> editValuation({
     required String snapshotId,
     double? amount,
     DateTime? date,
     ValuationKind? kind,
+    UnitHolding? holding,
   }) async {
     if (amount != null) _validateAmount(amount);
     final day = date == null ? null : _validatedDay(date);
@@ -163,10 +165,21 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
       final (snapshot: current, ofInvestment: own) =
           await _liveSnapshotWithSiblings(snapshotId);
       final investment = await _writableInvestment(current.investmentId);
+      final roundedAmount = amount == null
+          ? null
+          : _roundedInput(amount, _requireCurrency(current.currency));
+      if (holding != null &&
+          (roundedAmount == null ||
+              !holding.isValid ||
+              holding.value(current.currency) != roundedAmount)) {
+        throw _rejected(
+          'The weight and price do not match the value.',
+          'holding does not match the amount',
+        );
+      }
       final edited = current.copyWith(
-        amount: amount == null
-            ? null
-            : _roundedInput(amount, _requireCurrency(current.currency)),
+        amount: roundedAmount,
+        holding: holding,
         effectiveDate: day,
         kind: kind,
       );

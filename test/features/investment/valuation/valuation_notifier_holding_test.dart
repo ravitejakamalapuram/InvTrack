@@ -131,4 +131,55 @@ void main() {
       expect(valuations.docs[first.id]!.amount, 60000);
     },
   );
+
+  test('editing a value by weight and price stores the holding', () async {
+    final first = await notifier().setValuation(
+      investmentId: 'gold',
+      amount: 50000,
+      date: day,
+    );
+    final edited = await notifier().editValuation(
+      snapshotId: first.id,
+      amount: 60000,
+      holding: holding,
+    );
+    expect(edited.holding, holding);
+    expect(valuations.docs[first.id]!.amount, 60000);
+    expect(valuations.mirrors['gold']!.value, 60000);
+  });
+
+  test('editing a weighed value to a plain total drops the weight', () async {
+    final first = await notifier().setValuation(
+      investmentId: 'gold',
+      amount: 60000,
+      date: day,
+      holding: holding,
+    );
+    final edited = await notifier().editValuation(
+      snapshotId: first.id,
+      amount: 61000,
+    );
+    expect(edited.holding, isNull);
+    expect(valuations.docs[first.id]!.amount, 61000);
+  });
+
+  test(
+    'editing with a weight that disagrees with the value is refused',
+    () async {
+      final first = await notifier().setValuation(
+        investmentId: 'gold',
+        amount: 50000,
+        date: day,
+      );
+      await expectLater(
+        notifier().editValuation(
+          snapshotId: first.id,
+          amount: 59999,
+          holding: holding,
+        ),
+        throwsA(anything),
+      );
+      expect(valuations.docs[first.id]!.amount, 50000);
+    },
+  );
 }
