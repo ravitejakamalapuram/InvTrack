@@ -1,0 +1,53 @@
+name: telegram-daily-tip
+
+# Posts one money tip a day to the public InvTrack Telegram channel (t.me/invtrack_tips).
+# Safe by default: the scheduled run only posts when the repository variable TELEGRAM_POSTING_ENABLED is
+# 'true'; otherwise it prints the post to the log and sends nothing. A manual run is a dry run unless
+# "post" is ticked. The tip text is public content from assets/tips/tips.json. No cloud login, no repository
+# write rights.
+on:
+  schedule:
+    - cron: '30 3 * * *' # 09:00 in India
+  workflow_dispatch:
+    inputs:
+      post:
+        description: 'Really post to the channel (leave off for a dry run)'
+        type: boolean
+        default: false
+
+permissions: {}
+
+jobs:
+  post:
+    name: post
+    if: github.ref == 'refs/heads/main' && github.repository == 'ravitejakamalapuram/InvTrack'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/telegram-tip
+            assets/tips
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Post today's tip
+        env:
+          EVENT: ${{ github.event_name }}
+          POST_INPUT: ${{ inputs.post }}
+          POSTING_ENABLED: ${{ vars.TELEGRAM_POSTING_ENABLED }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+        run: |
+          if [ "$EVENT" = "schedule" ] && [ "$POSTING_ENABLED" = "true" ]; then
+            node scripts/telegram-tip/post-tip.mjs
+          elif [ "$EVENT" = "workflow_dispatch" ] && [ "$POST_INPUT" = "true" ]; then
+            node scripts/telegram-tip/post-tip.mjs
+          else
+            echo "Dry run: nothing is sent."
+            node scripts/telegram-tip/post-tip.mjs --dry-run
+          fi
