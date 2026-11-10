@@ -21,14 +21,14 @@ class PerformanceService {
   bool _isInitialized = false;
 
   /// Initialize Firebase Performance Monitoring
-  Future<void> initialize() async {
+  Future<void> initialize({bool collectionEnabled = true}) async {
     if (_isInitialized) return;
 
     try {
       _performance = FirebasePerformance.instance;
 
-      // Enable performance monitoring
-      await _performance!.setPerformanceCollectionEnabled(true);
+      // Follows the user's "Share usage data" switch
+      await _performance!.setPerformanceCollectionEnabled(collectionEnabled);
 
       _isInitialized = true;
 

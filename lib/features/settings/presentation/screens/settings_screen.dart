@@ -28,6 +28,7 @@ import 'package:inv_tracker/features/settings/presentation/screens/feature_flags
 import 'package:inv_tracker/features/settings/presentation/screens/notifications_settings_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/security_settings_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/legacy_currency_backfill_initializer.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/privacy_settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/user_profile_card.dart';
@@ -97,6 +98,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ],
           ),
+
+          const PrivacySettingsSection(),
 
           // Notifications
           SettingsSection(

@@ -63,6 +63,7 @@ service cloud.firestore {
     function validValuation(d) {
       return optStr(d, 'investmentId', 200) && optStr(d, 'currency', 10)
         && optStr(d, 'kind', 50) && optStr(d, 'provenance', 50) && optNum(d, 'amount')
+        && optNum(d, 'quantity') && optNum(d, 'unitPrice') && optStr(d, 'unit', 50)
         && optTs(d, 'effectiveDate') && optTs(d, 'createdAt') && optTs(d, 'updatedAt')
         && optTs(d, 'deletedAt');
     }

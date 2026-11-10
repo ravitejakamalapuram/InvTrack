@@ -29,7 +29,9 @@ import 'package:inv_tracker/features/settings/data/services/account_deletion_flo
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/deletion_request_status_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/export_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/support_ad_offer.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/utils/import_error_text.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/deletion_request_banner.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/saved_guest_backup_tile.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
@@ -249,6 +251,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       );
     } else {
       ref.read(analyticsServiceProvider).logExportGenerated(format: 'csv');
+      if (context.mounted) await offerSupportAd(context, ref);
     }
   }
 
@@ -277,6 +280,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           backgroundColor: Colors.green,
         ),
       );
+      if (context.mounted) await offerSupportAd(context, ref);
     }
   }
 
@@ -437,7 +441,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                l10n.importCompletedWithErrors(importResult.errors.first),
+                l10n.importCompletedWithErrors(
+                  importErrorText(l10n, importResult.errors.first),
+                ),
               ),
               backgroundColor: Colors.orange,
             ),
