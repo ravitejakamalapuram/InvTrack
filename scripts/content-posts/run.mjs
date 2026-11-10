@@ -44,7 +44,13 @@ async function main() {
     const chat = process.env.TELEGRAM_CHANNEL_ID;
     if (!dryRun && (!token || !chat)) throw new Error('TELEGRAM_BOT_TOKEN and TELEGRAM_CHANNEL_ID must be set');
     const r = await postNextToTelegram({ db, dryRun, send: (p) => sendToTelegram(p, { token, chat }) });
-    console.log(r.postId ? `${dryRun ? 'Would post' : 'Posted'} ${r.postId}.` : 'Nothing to post.');
+    if (!r.postId) {
+      // An empty queue on a live run must be noticed, or the channel goes quiet without any failure.
+      if (!dryRun) throw new Error('No approved post is waiting to be sent. Import more posts.');
+      console.log('Nothing to post.');
+    } else {
+      console.log(`${dryRun ? 'Would post' : 'Posted'} ${r.postId}.`);
+    }
   } else {
     throw new Error('usage: run.mjs import <posts.json> | post [--dry-run]');
   }
