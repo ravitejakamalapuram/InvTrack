@@ -4757,6 +4757,46 @@
     }
   },
 
+  "currentValueByWeight": "Enter weight and price instead",
+  "@currentValueByWeight": {
+    "description": "Button in the current value editor of a gold or metal holding: switch from typing a total to typing a weight and a price per unit"
+  },
+  "currentValueByTotal": "Enter total value instead",
+  "@currentValueByTotal": {
+    "description": "Button in the current value editor: switch back from weight and price to typing the total value"
+  },
+  "weightQuantityLabel": "Weight",
+  "@weightQuantityLabel": {
+    "description": "Label of the weight (quantity) field in the current value editor"
+  },
+  "weightUnitLabel": "Unit",
+  "@weightUnitLabel": {
+    "description": "Label of the unit picker (gram, kilogram...) in the current value editor"
+  },
+  "weightPriceLabel": "Price per {unit} in {currency}",
+  "@weightPriceLabel": {
+    "description": "Label of the price-per-unit field, e.g. 'Price per gram in INR'",
+    "placeholders": {
+      "unit": {"type": "String"},
+      "currency": {"type": "String"}
+    }
+  },
+  "weightTotalPreview": "Total: {amount}",
+  "@weightTotalPreview": {
+    "description": "Live total (weight x price) under the weight fields, e.g. 'Total: INR 60000.00'",
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "weightInvalid": "Enter a weight above 0 and a price.",
+  "@weightInvalid": {
+    "description": "Error when the weight is empty or 0, or the price is missing"
+  },
+  "quantityUnitGram": "gram",
+  "quantityUnitKilogram": "kilogram",
+  "quantityUnitTroyOunce": "troy ounce",
+  "quantityUnitTola": "tola",
+  "quantityUnitSovereign": "sovereign (8 g)",
   "currentValueDateLabel": "Value as of {date}",
   "@currentValueDateLabel": {
     "description": "Button showing, and letting the user change, the date of a current value, e.g. 'Value as of Oct 2, 2026'",
