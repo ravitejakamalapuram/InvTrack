@@ -25,6 +25,7 @@ import 'package:inv_tracker/features/settings/data/services/investment_backup_js
 import 'package:inv_tracker/features/settings/data/services/zip_off_ui_thread.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/custom_investment_type_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
@@ -718,6 +719,9 @@ class DataExportService {
         'Investment Type',
         'Investment Status',
         'Investment ID',
+        'Quantity',
+        'Unit',
+        'Unit Price',
       ],
     ];
     for (final (inv, isArchived) in [
@@ -738,6 +742,9 @@ class DataExportService {
           inv.type.name,
           inv.status.name,
           inv.id,
+          row.holding?.quantity ?? '',
+          row.holding?.unit.name ?? '',
+          row.holding?.unitPrice ?? '',
         ]);
       }
     }
@@ -764,6 +771,7 @@ class DataExportService {
           snapshotId: s.id,
           kind: s.kind,
           provenance: s.provenance,
+          holding: s.holding,
           updatedAt: s.updatedAt ?? DateTime.now(),
         ),
     ];
@@ -928,6 +936,7 @@ class _ValuationRow {
   final String? snapshotId;
   final ValuationKind kind;
   final ValuationProvenance provenance;
+  final UnitHolding? holding;
   final DateTime? updatedAt;
 
   const _ValuationRow({
@@ -937,6 +946,7 @@ class _ValuationRow {
     this.snapshotId,
     required this.kind,
     required this.provenance,
+    this.holding,
     this.updatedAt,
   });
 }
