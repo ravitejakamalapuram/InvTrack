@@ -82,6 +82,14 @@ class FakeAnalyticsService implements AnalyticsService {
       _log('guest_link_banner_dismissed', {});
 
   @override
+  Future<void> logDailyTipShown({required String tipId}) async =>
+      _log('daily_tip_shown', {'tip_id': tipId});
+
+  @override
+  Future<void> logDailyTipDismissed({required String tipId}) async =>
+      _log('daily_tip_dismissed', {'tip_id': tipId});
+
+  @override
   Future<void> logValuationSet({
     required String kind,
     required String provenance,

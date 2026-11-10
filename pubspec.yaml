@@ -133,6 +133,7 @@ flutter:
   # assets/icons/ are inputs to flutter_launcher_icons and stay out of the app.
   assets:
     - assets/icons/app_icon_mark.png
+    - assets/tips/tips.json
 
   # Custom fonts for consistent rendering in tests (golden tests)
   fonts:
