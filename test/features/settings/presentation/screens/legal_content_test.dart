@@ -392,6 +392,7 @@ void main() {
       'says ads are opt-in, and only the one rewarded ad exists in the code',
       () {
         expect(privacyPolicyContent, contains('shows ads only if you choose'));
+        expect(privacyPolicyContent, contains('as CSV or ZIP'));
         // Only the rewarded-ad player may touch the ads library, and no other
         // ad format or mock-purchase code may exist.
         final usesAdsLibrary = [
