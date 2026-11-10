@@ -257,7 +257,7 @@
     "description": "Switch title: allow crash reports"
   },
 
-  "sendCrashReportsSubtitle": "Sends error details if the app crashes. No amounts or names.",
+  "sendCrashReportsSubtitle": "Sends error details if the app crashes. No amounts or names. Turning it off fully applies the next time you open the app.",
   "@sendCrashReportsSubtitle": {
     "description": "Switch subtitle for crash reports"
   },
