@@ -134,6 +134,25 @@ class FirestoreValuationRepository implements ValuationRepository {
     return documents.length;
   }
 
+  @override
+  Future<void> deleteByInvestment(String investmentId) async {
+    final refs = [
+      for (final doc
+          in (await _valuationsRef
+                  .where('investmentId', isEqualTo: investmentId)
+                  .get())
+              .docs)
+        doc.reference,
+    ];
+    for (var i = 0; i < refs.length; i += _importBatchSize) {
+      final batch = _firestore.batch();
+      for (final ref in refs.skip(i).take(_importBatchSize)) {
+        batch.delete(ref);
+      }
+      await _executeWrite(() => batch.commit());
+    }
+  }
+
   /// [documents] in chunks of at most [_importBatchSize] that keep an
   /// investment's documents together, so that a batch which fails after
   /// earlier ones committed leaves an investment with all of its snapshots or

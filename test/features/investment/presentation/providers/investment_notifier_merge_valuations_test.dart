@@ -8,6 +8,7 @@ import 'package:inv_tracker/features/investment/domain/entities/investment_valua
 import 'package:inv_tracker/features/investment/presentation/providers/investment_notifier.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 
+import '../../../../mocks/fake_documents.dart';
 import '../../../../mocks/mock_analytics_service.dart';
 import '../../../../mocks/mock_notification_service.dart';
 import '../../data/repositories/mock_investment_repository.dart';
@@ -20,20 +21,23 @@ void main() {
   late InMemoryValuationRepository valuations;
   late ProviderContainer container;
 
-  ProviderContainer buildContainer({bool snapshotsActive = true}) =>
-      ProviderContainer(
-        overrides: [
-          investmentRepositoryProvider.overrideWithValue(repo),
-          valuationRepositoryProvider.overrideWithValue(valuations),
-          valuationSnapshotsActiveProvider.overrideWithValue(snapshotsActive),
-          analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
-          notificationServiceProvider.overrideWithValue(
-            FakeNotificationService(),
-          ),
-          isAuthenticatedProvider.overrideWithValue(true),
-          currencyCodeProvider.overrideWithValue('INR'),
-        ],
-      );
+  ProviderContainer buildContainer({
+    bool snapshotsActive = true,
+  }) => ProviderContainer(
+    overrides: [
+      investmentRepositoryProvider.overrideWithValue(repo),
+      valuationRepositoryProvider.overrideWithValue(valuations),
+      documentRepositoryProvider.overrideWithValue(FakeDocumentRepository()),
+      documentStorageServiceProvider.overrideWithValue(
+        FakeDocumentStorageService(),
+      ),
+      valuationSnapshotsActiveProvider.overrideWithValue(snapshotsActive),
+      analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
+      notificationServiceProvider.overrideWithValue(FakeNotificationService()),
+      isAuthenticatedProvider.overrideWithValue(true),
+      currencyCodeProvider.overrideWithValue('INR'),
+    ],
+  );
 
   setUp(() {
     repo = FakeInvestmentRepository();
