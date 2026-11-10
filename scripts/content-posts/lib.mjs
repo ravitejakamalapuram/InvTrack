@@ -16,13 +16,24 @@ export async function importPosts(db, posts) {
     if (p.image) data.image = p.image;
     return [p.id, data];
   });
-  for (const [id, data] of docs) await db.doc(`contentPosts/${id}`).set(data);
+  // Never re-approve a post that was later withdrawn or turned back into a draft.
+  const refs = docs.map(([id]) => db.doc(`contentPosts/${id}`));
+  const existing = await Promise.all(refs.map((r) => r.get()));
+  const batch = db.batch();
+  docs.forEach(([, data], i) => {
+    const old = existing[i];
+    if (old.exists && old.data().status !== 'approved') return;
+    batch.set(refs[i], data, { merge: true });
+  });
+  await batch.commit();
 }
 
 /**
  * Sends the oldest approved post that has no successful delivery on this channel, then records it.
  * A failed attempt is recorded with a short code only, and that post is tried again on the next run.
  */
+export const MAX_ATTEMPTS = 3;
+
 export async function postNextToTelegram({ db, send, now = new Date(), dryRun = false, channel = 'telegram' }) {
   const snap = await db.collection('contentPosts').where('status', '==', 'approved').get();
   const posts = snap.docs
@@ -31,18 +42,40 @@ export async function postNextToTelegram({ db, send, now = new Date(), dryRun = 
 
   for (const post of posts) {
     const ref = db.doc(`contentPosts/${post.id}/deliveries/${channel}`);
-    if ((await ref.get()).data()?.status === 'posted') continue;
+    const prev = (await ref.get()).data();
+    // posted: done. sending: an earlier run may have sent it, so never resend on its own.
+    if (prev?.status === 'posted' || prev?.status === 'sending') continue;
+    const attempts = prev?.attempts ?? 0;
+    if (attempts >= MAX_ATTEMPTS) continue; // a permanently bad post must not block newer ones
     if (dryRun) return { postId: post.id, dryRun: true };
+
+    // Claim the post before sending. create() fails if another run already claimed it.
+    try {
+      if (prev) await ref.set({ status: 'sending', startedAt: now, attempts: attempts + 1 });
+      else await ref.create({ status: 'sending', startedAt: now, attempts: 1 });
+    } catch {
+      continue;
+    }
 
     let messageId;
     try {
       messageId = await send(post);
     } catch (e) {
       const code = SAFE_CODE.test(e?.code ?? '') ? e.code : 'send-failed';
-      await ref.set({ status: 'failed', failedAt: now, error: code });
+      try {
+        await ref.set({ status: 'failed', failedAt: now, error: code, attempts: attempts + 1 });
+      } catch { /* keep the original error */ }
       throw new Error(code);
     }
-    await ref.set({ status: 'posted', postedAt: now, externalMessageId: String(messageId) });
+    const posted = { status: 'posted', postedAt: now, externalMessageId: String(messageId), attempts: attempts + 1 };
+    for (let i = 1; ; i++) {
+      try {
+        await ref.set(posted);
+        break;
+      } catch (e) {
+        if (i === 3) throw e;
+      }
+    }
     if ((await ref.get()).data()?.status !== 'posted') throw new Error('delivery-not-recorded');
     return { postId: post.id };
   }

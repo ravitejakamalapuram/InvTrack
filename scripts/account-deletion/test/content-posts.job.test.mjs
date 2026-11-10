@@ -85,4 +85,26 @@ describe('postNextToTelegram', () => {
     assert.equal(r.postId, 'a');
     assert.equal((await db.doc('contentPosts/a/deliveries/telegram').get()).exists, false);
   });
+
+  it('does not resend a post that an earlier run claimed but never recorded', async () => {
+    await importPosts(db, [post('a', '2026-11-11')]);
+    await db.doc('contentPosts/a/deliveries/telegram').set({ status: 'sending', attempts: 1 });
+    const r = await postNextToTelegram({ db, now: T0, send: async () => assert.fail('resent') });
+    assert.equal(r.postId, null);
+  });
+
+  it('skips a post that failed three times so newer posts still go out', async () => {
+    await importPosts(db, [post('a', '2026-11-11'), post('b', '2026-11-12')]);
+    await db.doc('contentPosts/a/deliveries/telegram').set({ status: 'failed', attempts: 3, error: 'telegram-http-400' });
+    const r = await postNextToTelegram({ db, now: T0, send: async () => '5' });
+    assert.equal(r.postId, 'b');
+  });
+});
+
+describe('importPosts keeps withdrawn posts withdrawn', () => {
+  it('does not re-approve a post that is no longer approved', async () => {
+    await db.doc('contentPosts/w').set({ title: 't', body: 'b', status: 'withdrawn', approvedAt: Timestamp.fromDate(new Date('2026-11-01')) });
+    await importPosts(db, [post('w', '2026-11-11')]);
+    assert.equal((await db.doc('contentPosts/w').get()).data().status, 'withdrawn');
+  });
 });
