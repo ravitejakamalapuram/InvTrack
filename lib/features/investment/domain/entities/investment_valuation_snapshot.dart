@@ -1,3 +1,5 @@
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
+
 /// What a dated valuation says it measures. Only [carryingValue] and
 /// [principalOutstanding] are carried forward by principal that moves after
 /// their date; a [marketValue] needs a new price, which cash flows cannot
@@ -65,6 +67,11 @@ class InvestmentValuationSnapshot {
 
   /// Date-only, the day the value applies to.
   final DateTime effectiveDate;
+
+  /// How [amount] was reached when it is quantity × price (#946); null for
+  /// an amount typed in. When set, [amount] equals `holding.value(currency)`;
+  /// [copyWith] keeps the two in step.
+  final UnitHolding? holding;
   final ValuationKind kind;
   final ValuationProvenance provenance;
 
@@ -88,6 +95,7 @@ class InvestmentValuationSnapshot {
     required this.kind,
     required this.provenance,
     required this.createdAt,
+    this.holding,
     this.updatedAt,
     this.deletedAt,
   });
@@ -103,6 +111,7 @@ class InvestmentValuationSnapshot {
   /// [updatedAt] cannot express.
   InvestmentValuationSnapshot copyWith({
     double? amount,
+    UnitHolding? holding,
     DateTime? effectiveDate,
     ValuationKind? kind,
     ValuationProvenance? provenance,
@@ -113,7 +122,11 @@ class InvestmentValuationSnapshot {
   }) => InvestmentValuationSnapshot(
     id: id,
     investmentId: investmentId,
-    amount: amount ?? this.amount,
+    // A new holding sets the amount (it must be a valid holding, see
+    // [UnitHolding.valueOrNull]);  a new amount alone drops the old
+    // holding, so the two can never disagree.
+    amount: holding != null ? holding.value(currency) : amount ?? this.amount,
+    holding: holding ?? (amount != null ? null : this.holding),
     currency: currency,
     effectiveDate: effectiveDate ?? this.effectiveDate,
     kind: kind ?? this.kind,
@@ -132,6 +145,7 @@ class InvestmentValuationSnapshot {
           other.amount == amount &&
           other.currency == currency &&
           other.effectiveDate == effectiveDate &&
+          other.holding == holding &&
           other.kind == kind &&
           other.provenance == provenance &&
           other.createdAt == createdAt &&
@@ -145,6 +159,7 @@ class InvestmentValuationSnapshot {
     amount,
     currency,
     effectiveDate,
+    holding,
     kind,
     provenance,
     createdAt,

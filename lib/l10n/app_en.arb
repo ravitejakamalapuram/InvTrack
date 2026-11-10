@@ -217,6 +217,56 @@
     "description": "Security settings section title"
   },
 
+  "rewardedExportTitle": "Watch a short ad to export?",
+  "@rewardedExportTitle": {
+    "description": "Title of the prompt before the Tax-Year CSV export"
+  },
+
+  "rewardedExportBody": "InvTrack is free. One short ad helps pay for it. We never share your investments with advertisers.",
+  "@rewardedExportBody": {
+    "description": "Body of the prompt before the Tax-Year CSV export"
+  },
+
+  "supportAdTitle": "Help keep InvTrack free?",
+  "@supportAdTitle": {
+    "description": "Title of the optional ad offer shown after a data export finishes"
+  },
+
+  "rewardedExportWatch": "Watch ad",
+  "@rewardedExportWatch": {
+    "description": "Button: agree to watch the ad and export"
+  },
+
+  "rewardedExportNotNow": "Not now",
+  "@rewardedExportNotNow": {
+    "description": "Button: skip the ad and do not export"
+  },
+
+  "privacySectionTitle": "Privacy",
+  "@privacySectionTitle": {
+    "description": "Settings section with the usage data and crash report switches"
+  },
+
+  "shareUsageData": "Share usage data",
+  "@shareUsageData": {
+    "description": "Switch title: allow usage analytics and performance monitoring"
+  },
+
+  "shareUsageDataSubtitle": "Helps us fix and improve the app. No amounts or names are sent.",
+  "@shareUsageDataSubtitle": {
+    "description": "Switch subtitle for usage data sharing"
+  },
+
+  "sendCrashReports": "Send crash reports",
+  "@sendCrashReports": {
+    "description": "Switch title: allow crash reports"
+  },
+
+  "sendCrashReportsSubtitle": "Sends error details if the app crashes. No amounts or names. Turning it off fully applies the next time you open the app.",
+  "@sendCrashReportsSubtitle": {
+    "description": "Switch subtitle for crash reports"
+  },
+
   "appLock": "App Lock",
   "@appLock": {
     "description": "App lock settings title"
@@ -557,7 +607,7 @@
     "description": "Screen-reader hint for a link that leaves the app and opens a web page in the browser"
   },
 
-  "privacyPolicyBody": "**Privacy Policy**\n\nLast updated: {lastUpdated}\n\n1. **Introduction**\n   InvTrack (\"we\", \"our\", or \"us\") is an app for tracking investments, made by an individual developer. This Privacy Policy explains what personal information the app collects, who processes it and why, where it is stored, how long it is kept, and how to use your rights.\n\n2. **Data Collection**\n   Your data is stored in InvTrack''s Google Firebase (Cloud Firestore) project under your account, so it syncs across your devices and works offline. Google encrypts it in transit and at rest. In the app, only your signed-in account can see your records. The developer can technically access stored data and does so only to answer a support request from you, to process a deletion request, or when the law requires it. We do not sell your data, and we do not use it for advertising. If you choose to sign in with Google, we receive your name, email and a unique user ID to create your account; we do not access your Drive, Gmail or Sheets. If you continue as a guest, Firebase creates an anonymous account with a random user ID, and we receive no name or email.\n\n   Under your account we store what you enter and what the app calculates from it, such as investments, cash flows, expected payments, goals, FIRE settings, health score history, profile preferences and cached exchange rates, and the details of files you attach (such as name, type and size). The attached files themselves stay on your device and are not uploaded.\n\n   We also use Google Firebase Analytics, Crashlytics and Performance Monitoring to measure app usage and diagnose crashes and slowness. This diagnostic data is associated with your user ID and device identifiers, and it is always on (there is currently no opt-out). Amounts are reported only in ranges, not exact values. We also use Firebase App Check, which sends a device and app integrity check (Google Play Integrity on Android, Apple DeviceCheck on iOS) to Google to confirm that requests come from the genuine app. It is used only to protect our backend. You can delete your account and data in Settings > Data & Account.\n\n3. **Data Usage**\n   Your records are used only to provide the tracking features: returns, goals, reminders and syncing across your devices. Usage data shows us which features are used. Crash and performance data is used to fix crashes and slowness. We do not sell, trade, or rent your personal identification information to others.\n\n4. **Who Processes Your Data**\n   Google processes your data for us through Firebase Authentication, Cloud Firestore, Analytics, Crashlytics and Performance Monitoring, and through Google Sign-In if you use it.\n\n   To convert currencies, the app asks api.frankfurter.dev for a rate and, if that fails, api.exchangerate-api.com. It sends only currency codes and dates. Like any internet request, this shows your device''s IP address to them.\n\n   The app may download its fonts from Google Fonts, which then sees your device''s IP address, and it checks for updates through Google Play''s in-app update service. When the app asks you to rate it, Google Play shows and handles the review prompt; the app is not told whether you left a review.\n\n   The app shows no ads. It still includes Google''s mobile ads library (Google Mobile Ads), and its Android permissions include the advertising ID permission, which Firebase Analytics can use.\n\n5. **Where Your Data Is Stored**\n   Your records are stored in Google Firebase (Cloud Firestore), and usage, crash and performance data is processed by Google. Google may store and process this data on servers outside India. A copy of your records and the files you attach are also kept on your device. Android backup is turned off for the app, so that copy is not saved to your Google backups.\n\n6. **How Long We Keep Data**\n   Your records stay until you delete them or delete your account. A guest account that is not opened for 180 days is deleted with its data. Analytics events and crash reports are kept by Google for its own retention period for each service, and are then deleted automatically. Data on your device stays until you delete it in the app, clear the app''s storage or uninstall the app.\n\n7. **Your Rights and How to Use Them**\n   - See and export your data: Settings > Data & Account > Export as CSV or Export as ZIP.\n   - Correct your data: edit any record in the app.\n   - Delete your account and data: Settings > Data & Account > Delete Account. If you cannot use the app, open {deletionUrl} and sign in with the same Google account to ask for deletion (you can withdraw the request there before it is processed), or email {supportEmail} from the email address you signed in with. A guest account cannot be requested on that page; delete it in the app.\n   - Withdraw consent: There is currently no switch to turn off Analytics, Crashlytics or Performance Monitoring. Signing out or deleting your account removes your user ID from new reports, and uninstalling the app stops them.\n\n8. **After You Delete Your Account**\n   We delete your records and your sign-in account. Analytics events tied to your user ID are deleted automatically at the end of Google''s retention period. We may also ask Google to delete them sooner; Google carries out any such request on its own schedule. We cannot delete individual crash reports. They are deleted automatically at the end of the Crashlytics retention period. Once you are signed out, new crash and analytics reports from this device no longer carry your user ID.\n\n9. **Security**\n   We use administrative, technical, and physical security measures to help protect your personal information. While we have taken reasonable steps to secure the personal information you provide to us, please be aware that despite our efforts, no security measures are perfect or impenetrable.\n\n10. **Contact Us**\n   If you have questions about this Privacy Policy, or a request or complaint about your data, please contact us at {supportEmail}.\n\n   The full, current policy is available at {policyUrl}",
+  "privacyPolicyBody": "**Privacy Policy**\n\nLast updated: {lastUpdated}\n\n1. **Introduction**\n   InvTrack (\"we\", \"our\", or \"us\") is an app for tracking investments, made by an individual developer. This Privacy Policy explains what personal information the app collects, who processes it and why, where it is stored, how long it is kept, and how to use your rights.\n\n2. **Data Collection**\n   Your data is stored in InvTrack''s Google Firebase (Cloud Firestore) project under your account, so it syncs across your devices and works offline. Google encrypts it in transit and at rest. In the app, only your signed-in account can see your records. The developer can technically access stored data and does so only to answer a support request from you, to process a deletion request, or when the law requires it. We do not sell your data, and we do not use it for advertising. If you choose to sign in with Google, we receive your name, email and a unique user ID to create your account; we do not access your Drive, Gmail or Sheets. If you continue as a guest, Firebase creates an anonymous account with a random user ID, and we receive no name or email.\n\n   Under your account we store what you enter and what the app calculates from it, such as investments, cash flows, expected payments, goals, FIRE settings, health score history, profile preferences and cached exchange rates, and the details of files you attach (such as name, type and size). The attached files themselves stay on your device and are not uploaded.\n\n   We also use Google Firebase Analytics, Crashlytics and Performance Monitoring to measure app usage and diagnose crashes and slowness. This diagnostic data is associated with your user ID and device identifiers, and you can turn usage data and crash reports off in Settings under Privacy. Amounts are reported only in ranges, not exact values. We also use Firebase App Check, which sends a device and app integrity check (Google Play Integrity on Android, Apple DeviceCheck on iOS) to Google to confirm that requests come from the genuine app. It is used only to protect our backend. You can delete your account and data in Settings > Data & Account.\n\n3. **Data Usage**\n   Your records are used only to provide the tracking features: returns, goals, reminders and syncing across your devices. Usage data shows us which features are used. Crash and performance data is used to fix crashes and slowness. We do not sell, trade, or rent your personal identification information to others.\n\n4. **Who Processes Your Data**\n   Google processes your data for us through Firebase Authentication, Cloud Firestore, Analytics, Crashlytics and Performance Monitoring, and through Google Sign-In if you use it.\n\n   To convert currencies, the app asks api.frankfurter.dev for a rate and, if that fails, api.exchangerate-api.com. It sends only currency codes and dates. Like any internet request, this shows your device''s IP address to them.\n\n   The app may download its fonts from Google Fonts, which then sees your device''s IP address, and it checks for updates through Google Play''s in-app update service. When the app asks you to rate it, Google Play shows and handles the review prompt; the app is not told whether you left a review.\n\n   The app shows ads only if you choose to watch one: after you export your data as CSV or ZIP, or before you export the Tax-Year report as CSV, you are asked whether to watch one short rewarded ad. It uses Google AdMob (the Google Mobile Ads library), shows non-personalised ads, and never shows ads while Privacy mode is on or during your first 7 days. If you are in the EU or UK, Google shows its consent form first. Your investments, amounts and names are never sent to advertisers. Google collects the device information it needs to serve and measure the ad, such as your IP address and device identifiers. The app does not request the advertising ID permission.\n\n5. **Where Your Data Is Stored**\n   Your records are stored in Google Firebase (Cloud Firestore), and usage, crash and performance data is processed by Google. Google may store and process this data on servers outside India. A copy of your records and the files you attach are also kept on your device. Android backup is turned off for the app, so that copy is not saved to your Google backups.\n\n6. **How Long We Keep Data**\n   Your records stay until you delete them or delete your account. A guest account that is not opened for 180 days is deleted with its data. Analytics events and crash reports are kept by Google for its own retention period for each service, and are then deleted automatically. Data on your device stays until you delete it in the app, clear the app''s storage or uninstall the app.\n\n7. **Your Rights and How to Use Them**\n   - See and export your data: Settings > Data & Account > Export as CSV or Export as ZIP.\n   - Correct your data: edit any record in the app.\n   - Delete your account and data: Settings > Data & Account > Delete Account. If you cannot use the app, open {deletionUrl} and sign in with the same Google account to ask for deletion (you can withdraw the request there before it is processed), or email {supportEmail} from the email address you signed in with. A guest account cannot be requested on that page; delete it in the app.\n   - Withdraw consent: In Settings under Privacy, you can turn off Share usage data (Analytics and Performance Monitoring) and Send crash reports (Crashlytics). Signing out or deleting your account removes your user ID from new reports, and uninstalling the app stops them.\n\n8. **After You Delete Your Account**\n   We delete your records and your sign-in account. Analytics events tied to your user ID are deleted automatically at the end of Google''s retention period. We may also ask Google to delete them sooner; Google carries out any such request on its own schedule. We cannot delete individual crash reports. They are deleted automatically at the end of the Crashlytics retention period. Once you are signed out, new crash and analytics reports from this device no longer carry your user ID.\n\n9. **Security**\n   We use administrative, technical, and physical security measures to help protect your personal information. While we have taken reasonable steps to secure the personal information you provide to us, please be aware that despite our efforts, no security measures are perfect or impenetrable.\n\n10. **Contact Us**\n   If you have questions about this Privacy Policy, or a request or complaint about your data, please contact us at {supportEmail}.\n\n   The full, current policy is available at {policyUrl}",
   "@privacyPolicyBody": {
     "description": "Full in-app Privacy Policy shown on the Privacy Policy screen (Markdown-style emphasis is shown as typed). Keep it in step with the hosted policy.",
     "placeholders": {
@@ -4707,6 +4757,46 @@
     }
   },
 
+  "currentValueByWeight": "Enter weight and price instead",
+  "@currentValueByWeight": {
+    "description": "Button in the current value editor of a gold or metal holding: switch from typing a total to typing a weight and a price per unit"
+  },
+  "currentValueByTotal": "Enter total value instead",
+  "@currentValueByTotal": {
+    "description": "Button in the current value editor: switch back from weight and price to typing the total value"
+  },
+  "weightQuantityLabel": "Weight",
+  "@weightQuantityLabel": {
+    "description": "Label of the weight (quantity) field in the current value editor"
+  },
+  "weightUnitLabel": "Unit",
+  "@weightUnitLabel": {
+    "description": "Label of the unit picker (gram, kilogram...) in the current value editor"
+  },
+  "weightPriceLabel": "Price per {unit} in {currency}",
+  "@weightPriceLabel": {
+    "description": "Label of the price-per-unit field, e.g. 'Price per gram in INR'",
+    "placeholders": {
+      "unit": {"type": "String"},
+      "currency": {"type": "String"}
+    }
+  },
+  "weightTotalPreview": "Total: {amount}",
+  "@weightTotalPreview": {
+    "description": "Live total (weight x price) under the weight fields, e.g. 'Total: INR 60000.00'",
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "weightInvalid": "Enter a weight above 0 and a price.",
+  "@weightInvalid": {
+    "description": "Error when the weight is empty or 0, or the price is missing"
+  },
+  "quantityUnitGram": "gram",
+  "quantityUnitKilogram": "kilogram",
+  "quantityUnitTroyOunce": "troy ounce",
+  "quantityUnitTola": "tola",
+  "quantityUnitSovereign": "sovereign (8 g)",
   "currentValueDateLabel": "Value as of {date}",
   "@currentValueDateLabel": {
     "description": "Button showing, and letting the user change, the date of a current value, e.g. 'Value as of Oct 2, 2026'",
@@ -4736,6 +4826,16 @@
   "netCashFlowSoFar": "Net cash flow so far",
   "@netCashFlowSoFar": {
     "description": "Headline for money received minus money invested while investments are still open"
+  },
+
+  "heroInvestedTitle": "Invested",
+  "@heroInvestedTitle": {
+    "description": "Title of the Overview hero card's headline amount: everything put into open and closed investments"
+  },
+
+  "heroValueNowLabel": "Value now",
+  "@heroValueNowLabel": {
+    "description": "Label under the Overview hero card for the current value of the open investments that have one"
   },
 
   "projectedAtMaturity": "Projected at maturity {amount} ({rate} p.a.)",
@@ -7643,6 +7743,57 @@
     "description": "Accessibility label of the close button on the daily tip; hides it until tomorrow"
   },
 
+  "importErrorInvalidZip": "Invalid ZIP file",
+  "@importErrorInvalidZip": {
+    "description": "Import error: the chosen file is not a readable ZIP backup"
+  },
+
+  "importErrorMetadataMissing": "Invalid ZIP file: metadata.json not found",
+  "@importErrorMetadataMissing": {
+    "description": "Import error: the backup ZIP has no metadata.json file; metadata.json is a file name and stays as is"
+  },
+
+  "importErrorMetadataUnparseable": "Failed to parse metadata.json",
+  "@importErrorMetadataUnparseable": {
+    "description": "Import error: metadata.json in the backup could not be read; metadata.json is a file name and stays as is"
+  },
+
+  "importErrorCashflowsUnreadable": "Backup not imported: cashflows.csv could not be read. Your existing data was not changed.",
+  "@importErrorCashflowsUnreadable": {
+    "description": "Import error: cashflows.csv in the backup could not be read, so the restore stopped before changing anything; cashflows.csv is a file name and stays as is"
+  },
+
+  "importErrorCashflowsMissing": "Backup not imported: cashflows.csv is missing. Your existing data was not changed.",
+  "@importErrorCashflowsMissing": {
+    "description": "Import error: the backup has no cashflows.csv, so the restore stopped before changing anything; cashflows.csv is a file name and stays as is"
+  },
+
+  "importErrorCashflowsNoRows": "Backup not imported: cashflows.csv has no readable rows. Your existing data was not changed.",
+  "@importErrorCashflowsNoRows": {
+    "description": "Import error: cashflows.csv in the backup has no usable rows, so the restore stopped before changing anything; cashflows.csv is a file name and stays as is"
+  },
+
+  "importErrorFileDamaged": "Backup not imported: {file} is damaged. Your existing data was not changed.",
+  "@importErrorFileDamaged": {
+    "description": "Import error: a file inside the backup is damaged, so the restore stopped before changing anything",
+    "placeholders": {
+      "file": {
+        "type": "String",
+        "example": "goals.csv"
+      }
+    }
+  },
+
+  "importErrorArchiveFailures": "{count, plural, =1{{count} restored item could not be moved to the archive} other{{count} restored items could not be moved to the archive}}",
+  "@importErrorArchiveFailures": {
+    "description": "Import error: how many restored investments or goals could not be archived after the restore",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
   "approximateRatesNote": "Some amounts use older exchange rates",
   "@approximateRatesNote": {
     "description": "Tooltip and accessibility label of the small info marker on the Overview total card, shown when a converted amount used a cached exchange rate older than 24 hours"
@@ -7817,5 +7968,77 @@
   "archivedReadOnlyBanner": "Archived. Unarchive to add or change transactions and documents.",
   "@archivedReadOnlyBanner": {
     "description": "Banner on an archived investment's detail screen explaining that it is read-only"
+  },
+
+  "valueHistoryTitle": "Value history",
+  "@valueHistoryTitle": {
+    "description": "Title of the screen that lists the dated values of one investment"
+  },
+
+  "valueHistoryLink": "History",
+  "@valueHistoryLink": {
+    "description": "Button on the current value card that opens the value history"
+  },
+
+  "valueHistoryIntro": "The latest value counts for your totals. Older ones show how it moved.",
+  "@valueHistoryIntro": {
+    "description": "Explanation at the top of the value history screen"
+  },
+
+  "valueHistoryEmpty": "No values yet. Add one to see how this investment moved.",
+  "@valueHistoryEmpty": {
+    "description": "Shown on the value history screen when the investment has no dated values"
+  },
+
+  "valueHistoryAdd": "Add a value",
+  "@valueHistoryAdd": {
+    "description": "Button on the value history screen that adds a dated value"
+  },
+
+  "valueHistoryRemove": "Remove",
+  "@valueHistoryRemove": {
+    "description": "Button in the editor of one dated value that removes it from the value history"
+  },
+
+  "valueHistoryRemoved": "Value removed",
+  "@valueHistoryRemoved": {
+    "description": "Message after a dated value was removed from the value history"
+  },
+
+  "valueHistoryUndo": "Undo",
+  "@valueHistoryUndo": {
+    "description": "Action on the message shown after a dated value was removed"
+  },
+
+  "valueHistoryRowLabel": "{date}, {amount}",
+  "@valueHistoryRowLabel": {
+    "description": "Screen reader label of a row in the value history: its date and its amount",
+    "placeholders": {
+      "date": {"type": "String", "example": "12 Nov 2026"},
+      "amount": {"type": "String", "example": "INR 64,500"}
+    }
+  },
+
+  "valueHistoryRowHidden": "{date}, value hidden",
+  "@valueHistoryRowHidden": {
+    "description": "Screen reader label of a row in the value history while privacy mode hides amounts",
+    "placeholders": {
+      "date": {"type": "String", "example": "12 Nov 2026"}
+    }
+  },
+
+  "holdingSummary": "{quantity} {unit} × {price}",
+  "@holdingSummary": {
+    "description": "A holding as weight times price per unit, e.g. '10 gram × ₹6,450'",
+    "placeholders": {
+      "quantity": {"type": "String", "example": "10"},
+      "unit": {"type": "String", "example": "gram"},
+      "price": {"type": "String", "example": "₹6,450"}
+    }
+  },
+
+  "holdingSummaryHidden": "Weight and price hidden",
+  "@holdingSummaryHidden": {
+    "description": "Screen reader label for a holding's weight and price while privacy mode hides amounts"
   }
 }
