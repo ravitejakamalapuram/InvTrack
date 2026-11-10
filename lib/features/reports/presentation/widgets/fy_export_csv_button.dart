@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/ads/rewarded_export_gate.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/fy_report_export_provider.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/fy_report_provider.dart';
 import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/rewarded_export_prompt.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Signature of [shareFYReportCsv]; injectable for tests.
@@ -38,10 +40,29 @@ class _FYExportCsvButtonState extends ConsumerState<FYExportCsvButton> {
   Future<void> _export() async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    // Busy first, so a second tap cannot open a second ad prompt.
+    setState(() => _busy = true);
+    // An opt-in rewarded ad (see ExportAdGate for the rules). If the user says
+    // no, nothing is exported. If the gate itself fails, the export goes on.
+    var mayExport = true;
+    try {
+      mayExport = await ref
+          .read(exportAdGateProvider)
+          .mayExport(
+            privacyMode: ref.read(privacyModeProvider),
+            askUser: () => showRewardedExportPrompt(context),
+          );
+    } catch (e, st) {
+      ErrorHandler.handle(e, st, showFeedback: false);
+    }
+    if (!mounted) return;
+    if (!mayExport) {
+      setState(() => _busy = false);
+      return;
+    }
     // One snapshot, taken before the async load, so the CSV currency matches
     // the report even if the base currency changes meanwhile.
     final currency = ref.read(currencyCodeProvider);
-    setState(() => _busy = true);
     // The report provider is autoDispose; hold a listener so it is not
     // disposed while the load or the share sheet is still in flight.
     final keepAlive = ref.listenManual(

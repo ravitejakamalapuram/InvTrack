@@ -91,7 +91,7 @@ declare namespace InvTrack {
   function Skeleton(props?: SkeletonProps): Html;
 
   interface HeroCardProps {
-    amount?: string; returnText?: string; status?: string; positive?: boolean; out?: string; inn?: string;
+    amount?: string; returnText?: string; status?: string; positive?: boolean; out?: string; inn?: string; valueNow?: string;
     xirr?: string; xirrLabel?: string; realisedXirr?: string; note?: string; hint?: string;
     scope?: 'all' | 'realized'; privacy?: boolean; currencyLabel?: string; loading?: boolean;
   }

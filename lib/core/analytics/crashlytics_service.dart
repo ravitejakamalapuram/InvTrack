@@ -54,7 +54,7 @@ class CrashlyticsDebugModeNotifier extends Notifier<bool> {
     final prefs = ref.read(sharedPreferencesProvider);
 
     // Update Crashlytics collection state FIRST (atomic - only persist if this succeeds)
-    final shouldEnable = !kDebugMode || enabled;
+    final shouldEnable = CrashlyticsService.userAllowsReports && (!kDebugMode || enabled);
     await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(shouldEnable);
 
     // Only update state and prefs if Firebase call succeeded
@@ -95,6 +95,10 @@ class CrashlyticsService {
   /// **Do NOT modify this directly** - use [crashlyticsDebugModeProvider] instead.
   static bool enableInDebugMode = false;
 
+  /// The user's "Send crash reports" switch (default on). Mirrors the saved
+  /// choice for static contexts; set at app start and by the switch itself.
+  static bool userAllowsReports = true;
+
   /// Single source of truth for debug mode checks
   bool get _debugMode => enableInDebugMode;
 
@@ -114,7 +118,7 @@ class CrashlyticsService {
     enableInDebugMode = debugModeEnabled;
 
     // Update Crashlytics collection state
-    final shouldEnable = !kDebugMode || debugModeEnabled;
+    final shouldEnable = userAllowsReports && (!kDebugMode || debugModeEnabled);
     await _crashlytics.setCrashlyticsCollectionEnabled(shouldEnable);
 
     // Normally already installed by runGuarded in main; never twice.

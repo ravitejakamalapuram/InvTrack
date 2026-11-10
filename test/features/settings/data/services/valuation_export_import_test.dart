@@ -296,6 +296,9 @@ void main() {
         'Investment Type',
         'Investment Status',
         'Investment ID',
+        'Quantity',
+        'Unit',
+        'Unit Price',
       ]);
       final gold = [
         for (final row in rows.skip(1))
@@ -581,9 +584,7 @@ void main() {
 
     // A file with nothing usable in it is damaged (#956): Merge skips it with
     // one warning, Replace stops before it deletes anything.
-    const damaged =
-        'Backup not imported: valuations.csv is damaged. Your existing data '
-        'was not changed.';
+    const damaged = ImportError.fileDamaged('valuations.csv');
     const skipped = 'Current values not imported: valuations.csv is invalid';
     const blankCurrency =
         'SGB 2031,false,2026-01-01,100,,,carryingValue,manual,,gold,open\n';

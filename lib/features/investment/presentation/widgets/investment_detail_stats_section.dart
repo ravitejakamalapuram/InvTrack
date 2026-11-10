@@ -18,6 +18,8 @@ import 'package:inv_tracker/features/investment/domain/entities/investment_stats
 import 'package:inv_tracker/features/investment/presentation/utils/return_display.dart';
 import 'package:inv_tracker/features/investment/presentation/utils/xirr_viewed_logger.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/metric_with_tooltip.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/holding_text.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Stats section widget for investment detail screen.
@@ -33,6 +35,12 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
   /// none.
   final VoidCallback? onUpdateCurrentValue;
 
+  /// Opens the value history; null while dated values are off.
+  final VoidCallback? onViewValueHistory;
+
+  /// Weight x price behind the current value, when it was entered that way.
+  final UnitHolding? currentHolding;
+
   /// The moment the maturity card counts from; the real clock when null. Only
   /// the golden gallery passes one, so its picture does not change daily.
   final DateTime? now;
@@ -45,6 +53,8 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
     required this.currencyFormat,
     required this.isPrivacyMode,
     this.onUpdateCurrentValue,
+    this.onViewValueHistory,
+    this.currentHolding,
     this.now,
   });
 
@@ -103,6 +113,9 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
             currencyFormat: currencyFormat,
             isPrivacyMode: isPrivacyMode,
             onUpdate: onUpdateCurrentValue,
+            onHistory: onViewValueHistory,
+            holding: currentHolding,
+            currency: investment.currency,
           ),
         ],
         for (final caption in [?projection, ?paidBackHint]) ...[
@@ -559,6 +572,9 @@ class _CurrentValueCard extends StatelessWidget {
   final NumberFormat currencyFormat;
   final bool isPrivacyMode;
   final VoidCallback? onUpdate;
+  final VoidCallback? onHistory;
+  final UnitHolding? holding;
+  final String currency;
 
   const _CurrentValueCard({
     required this.stats,
@@ -566,6 +582,9 @@ class _CurrentValueCard extends StatelessWidget {
     required this.currencyFormat,
     required this.isPrivacyMode,
     required this.onUpdate,
+    required this.onHistory,
+    required this.holding,
+    required this.currency,
   });
 
   @override
@@ -577,6 +596,9 @@ class _CurrentValueCard extends StatelessWidget {
         : AppColors.neutral500Light;
     final amountText = value == null ? null : currencyFormat.format(value);
     final basis = _basis(l10n, value);
+    final holdingLine = holding == null
+        ? null
+        : holdingText(l10n, holding!, currency);
     final semanticsLabel = isPrivacyMode && value != null
         ? l10n.currentValueHidden
         : [l10n.currentValueLabel, ?amountText, basis].join(', ');
@@ -608,6 +630,11 @@ class _CurrentValueCard extends StatelessWidget {
                       ),
                     ),
                   ],
+                  if (holdingLine != null)
+                    MaskedAmountText(
+                      text: holdingLine,
+                      style: AppTypography.small.copyWith(color: mutedColor),
+                    ),
                   const SizedBox(height: 2),
                   Text(
                     basis,
@@ -617,13 +644,25 @@ class _CurrentValueCard extends StatelessWidget {
               ),
             ),
           ),
-          if (onUpdate != null)
-            TextButton(
-              onPressed: onUpdate,
-              child: Text(
-                value == null ? l10n.currentValueAdd : l10n.currentValueUpdate,
-              ),
-            ),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (onHistory != null)
+                TextButton(
+                  onPressed: onHistory,
+                  child: Text(l10n.valueHistoryLink),
+                ),
+              if (onUpdate != null)
+                TextButton(
+                  onPressed: onUpdate,
+                  child: Text(
+                    value == null
+                        ? l10n.currentValueAdd
+                        : l10n.currentValueUpdate,
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );
