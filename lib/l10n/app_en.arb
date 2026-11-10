@@ -4828,6 +4828,16 @@
     "description": "Headline for money received minus money invested while investments are still open"
   },
 
+  "heroInvestedTitle": "Invested",
+  "@heroInvestedTitle": {
+    "description": "Title of the Overview hero card's headline amount: everything put into open and closed investments"
+  },
+
+  "heroValueNowLabel": "Value now",
+  "@heroValueNowLabel": {
+    "description": "Label under the Overview hero card for the current value of the open investments that have one"
+  },
+
   "projectedAtMaturity": "Projected at maturity {amount} ({rate} p.a.)",
   "@projectedAtMaturity": {
     "description": "Projected maturity value of an open investment from its expected rate, e.g. 'Projected at maturity ₹1,23,144 (7.19% p.a.)'",
