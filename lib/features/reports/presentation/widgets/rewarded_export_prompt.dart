@@ -5,12 +5,17 @@ import 'package:flutter/material.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// True when the user agrees to watch the ad. Closing the dialog means no.
-Future<bool> showRewardedExportPrompt(BuildContext context) async {
+/// [afterExport] asks for support once the export is done, instead of asking
+/// permission to start it.
+Future<bool> showRewardedExportPrompt(
+  BuildContext context, {
+  bool afterExport = false,
+}) async {
   final l10n = AppLocalizations.of(context);
   final agreed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: Text(l10n.rewardedExportTitle),
+      title: Text(afterExport ? l10n.supportAdTitle : l10n.rewardedExportTitle),
       content: Text(l10n.rewardedExportBody),
       actions: [
         TextButton(

@@ -6,6 +6,7 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 Future<bool?> _open(
   WidgetTester tester, {
   required Future<void> Function() tap,
+  bool afterExport = false,
 }) async {
   bool? result;
   await tester.pumpWidget(
@@ -15,8 +16,10 @@ Future<bool?> _open(
       home: Builder(
         builder: (context) => Scaffold(
           body: TextButton(
-            onPressed: () async =>
-                result = await showRewardedExportPrompt(context),
+            onPressed: () async => result = await showRewardedExportPrompt(
+              context,
+              afterExport: afterExport,
+            ),
             child: const Text('open'),
           ),
         ),
@@ -36,6 +39,15 @@ void main() {
     expect(find.text('Watch a short ad to export?'), findsOneWidget);
     expect(find.textContaining('never share your investments'), findsOneWidget);
     expect(find.text('Watch ad'), findsOneWidget);
+    expect(find.text('Not now'), findsOneWidget);
+  });
+
+  testWidgets('after an export it asks for support, not permission', (
+    tester,
+  ) async {
+    await _open(tester, tap: () async {}, afterExport: true);
+    expect(find.text('Help keep InvTrack free?'), findsOneWidget);
+    expect(find.text('Watch a short ad to export?'), findsNothing);
     expect(find.text('Not now'), findsOneWidget);
   });
 

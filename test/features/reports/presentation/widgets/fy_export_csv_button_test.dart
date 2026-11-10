@@ -61,6 +61,12 @@ class _FakeGate implements ExportAdGate {
     if (fails) throw StateError('ad problem');
     return allow;
   }
+
+  @override
+  Future<void> offerAfterExport({
+    required bool privacyMode,
+    required Future<bool> Function() askUser,
+  }) async {}
 }
 
 class _FakePathProvider extends PathProviderPlatform

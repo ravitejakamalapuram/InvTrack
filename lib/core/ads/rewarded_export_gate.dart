@@ -1,5 +1,5 @@
-/// The one place an ad is shown: an opt-in rewarded ad before the Tax-Year
-/// CSV export.
+/// The one place an ad is shown: an opt-in rewarded ad offered after the CSV
+/// and ZIP data export (and ready before the Tax-Year CSV export).
 ///
 /// Rules (owner decisions 2026-11-10): never in the first 7 days, at most 3
 /// ads a day, never while Privacy mode is on, and never forced. If no ad can
@@ -20,7 +20,7 @@ const String adsDayKey = 'ads_day';
 const String adsDayCountKey = 'ads_day_count';
 
 /// Name sent to Analytics for the only ad spot. Never a path or an id.
-const String rewardedPlacementFyExport = 'fy_export_csv';
+const String rewardedPlacementFyExport = 'export';
 
 enum RewardedAdResult { earned, dismissed, unavailable }
 
@@ -109,6 +109,13 @@ class ExportAdGate {
     _onEvent?.call(AnalyticsEvents.rewardedAdDismissed);
     return false;
   }
+
+  /// After an export has finished: offers the same ad, which the user can
+  /// skip. Never blocks or undoes the export, whatever the answer.
+  Future<void> offerAfterExport({
+    required bool privacyMode,
+    required Future<bool> Function() askUser,
+  }) => mayExport(privacyMode: privacyMode, askUser: askUser);
 
   static String _dayKey(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-'

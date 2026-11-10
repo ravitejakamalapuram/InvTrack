@@ -227,6 +227,11 @@
     "description": "Body of the prompt before the Tax-Year CSV export"
   },
 
+  "supportAdTitle": "Help keep InvTrack free?",
+  "@supportAdTitle": {
+    "description": "Title of the optional ad offer shown after a data export finishes"
+  },
+
   "rewardedExportWatch": "Watch ad",
   "@rewardedExportWatch": {
     "description": "Button: agree to watch the ad and export"

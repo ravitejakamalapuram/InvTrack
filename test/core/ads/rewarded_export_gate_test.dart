@@ -208,6 +208,47 @@ void main() {
     });
   });
 
+  group('ExportAdGate.offerAfterExport', () {
+    test('declining just ends it, nothing is shown or counted', () async {
+      final (gate, player, p) = await _gate(RewardedAdResult.earned);
+      await gate.offerAfterExport(
+        privacyMode: false,
+        askUser: () async => false,
+      );
+      expect(player.plays, 0);
+      expect(p.getInt(adsDayCountKey), isNull);
+    });
+
+    test('agreeing plays one ad and counts it', () async {
+      final (gate, player, p) = await _gate(RewardedAdResult.earned);
+      await gate.offerAfterExport(
+        privacyMode: false,
+        askUser: () async => true,
+      );
+      expect(player.plays, 1);
+      expect(p.getInt(adsDayCountKey), 1);
+    });
+
+    test('nothing is asked in Privacy mode or in the first 7 days', () async {
+      var asked = 0;
+      final (gate, player, _) = await _gate(RewardedAdResult.earned);
+      await gate.offerAfterExport(
+        privacyMode: true,
+        askUser: () async => ++asked > 0,
+      );
+      final (early, _, _) = await _gate(
+        RewardedAdResult.earned,
+        now: DateTime(2026, 11, 3),
+      );
+      await early.offerAfterExport(
+        privacyMode: false,
+        askUser: () async => ++asked > 0,
+      );
+      expect(asked, 0);
+      expect(player.plays, 0);
+    });
+  });
+
   group('recordFirstOpen', () {
     test('saves the first date once and never overwrites it', () async {
       SharedPreferences.setMockInitialValues({});
