@@ -89,6 +89,9 @@ void main() {
 
   final today = DateTime.now();
   final day = DateTime(today.year, today.month, today.day);
+  // Calendar days, not 24-hour spans: subtracting a Duration across a DST
+  // change lands an hour off midnight in zones that observe it.
+  DateTime daysFrom(int n) => DateTime(day.year, day.month, day.day + n);
 
   group('set (plan test 1)', () {
     test('an opening baseline needs no cash flow and writes none', () async {
@@ -131,7 +134,7 @@ void main() {
       final chosen = await notifier().setValuation(
         investmentId: 'gold',
         amount: 2,
-        date: day.subtract(const Duration(days: 1)),
+        date: daysFrom(-1),
         kind: ValuationKind.principalOutstanding,
       );
       expect(gold.kind, ValuationKind.marketValue);
@@ -175,7 +178,7 @@ void main() {
         () => n.setValuation(
           investmentId: 'gold',
           amount: 1,
-          date: day.add(const Duration(days: 1)),
+          date: daysFrom(1),
         ),
         because: 'future',
       );
@@ -274,7 +277,7 @@ void main() {
 
   group('adopting a legacy value', () {
     test('the value an older version stored is kept as a snapshot', () async {
-      final legacyDate = day.subtract(const Duration(days: 100));
+      final legacyDate = daysFrom(-100);
       investments.seed(
         investments: [
           testInvestment('legacy', compatValue: 125000, compatDate: legacyDate),
@@ -283,7 +286,7 @@ void main() {
       final saved = await notifier().setValuation(
         investmentId: 'legacy',
         amount: 90000,
-        date: day.subtract(const Duration(days: 300)),
+        date: daysFrom(-300),
         openingBaseline: true,
       );
 
@@ -342,7 +345,7 @@ void main() {
       await expectRejected(
         () => notifier().editValuation(
           snapshotId: saved.id,
-          date: day.add(const Duration(days: 1)),
+          date: daysFrom(1),
         ),
       );
       await expectLater(
@@ -388,7 +391,7 @@ void main() {
       await notifier().setValuation(
         investmentId: 'gold',
         amount: 100,
-        date: day.subtract(const Duration(days: 40)),
+        date: daysFrom(-40),
       );
       final latest = await notifier().setValuation(
         investmentId: 'gold',
@@ -401,7 +404,7 @@ void main() {
       expect(valuations.mirrors['gold']!.value, 100);
       expect(
         valuations.mirrors['gold']!.date,
-        day.subtract(const Duration(days: 40)),
+        daysFrom(-40),
       );
 
       expect(await notifier().undoClear(), isTrue);
@@ -439,7 +442,7 @@ void main() {
       final first = await notifier().setValuation(
         investmentId: 'gold',
         amount: 100,
-        date: day.subtract(const Duration(days: 30)),
+        date: daysFrom(-30),
         openingBaseline: true,
       );
       await notifier().clearValuation(first.id);
@@ -786,7 +789,7 @@ void main() {
       await notifier().setValuation(
         investmentId: 'gold',
         amount: 50,
-        date: day.subtract(const Duration(days: 3)),
+        date: daysFrom(-3),
       );
       expect(valuations.mirrors['gold']!.value, 120);
     });
@@ -803,7 +806,7 @@ void main() {
         'a',
         investmentId: 'gold',
         amount: 100,
-        date: day.subtract(const Duration(days: 5)),
+        date: daysFrom(-5),
       );
       valuations.docs['a'] = first;
       valuations.docs['b'] = testSnapshot(
@@ -878,7 +881,7 @@ void main() {
             'gold',
             CashFlowType.invest,
             90,
-            day.subtract(const Duration(days: 400)),
+            daysFrom(-400),
           ),
         ],
       );
@@ -905,13 +908,13 @@ void main() {
         'gold',
         CashFlowType.invest,
         400000,
-        day.subtract(const Duration(days: 400)),
+        daysFrom(-400),
       );
       investments.seed(cashFlows: [history]);
       final baseline = await notifier().setValuation(
         investmentId: 'gold',
         amount: 500000,
-        date: day.subtract(const Duration(days: 200)),
+        date: daysFrom(-200),
         openingBaseline: true,
       );
       final later = await notifier().setValuation(
