@@ -11,6 +11,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:inv_tracker/app/app.dart';
+import 'package:inv_tracker/core/ads/rewarded_export_gate.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/analytics/run_guarded.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
@@ -40,6 +41,8 @@ void main() async {
       ]);
 
       final sharedPreferences = results[1] as SharedPreferences;
+
+      await recordFirstOpen(sharedPreferences, DateTime.now());
 
       // Honour the user's privacy switches before anything is collected.
       await applyStoredPrivacyChoices(
@@ -76,7 +79,9 @@ void main() async {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             notificationServiceProvider.overrideWithValue(notificationService),
-            flutterLocalNotificationsPluginProvider.overrideWithValue(notificationPlugin),
+            flutterLocalNotificationsPluginProvider.overrideWithValue(
+              notificationPlugin,
+            ),
           ],
           child: const InvTrackerApp(),
         ),
@@ -113,7 +118,9 @@ Future<void> _initializeNonCriticalServices(
     // Set static field for backward compatibility with direct instantiation
     CrashlyticsService.enableInDebugMode = debugModeEnabled;
 
-    final crashlyticsService = CrashlyticsService(debugModeEnabled: debugModeEnabled);
+    final crashlyticsService = CrashlyticsService(
+      debugModeEnabled: debugModeEnabled,
+    );
     unawaited(
       crashlyticsService.initialize().catchError((error, stack) {
         // Log Crashlytics initialization failure

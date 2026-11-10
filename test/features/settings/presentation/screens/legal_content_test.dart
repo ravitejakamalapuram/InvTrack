@@ -171,15 +171,28 @@ void main() {
       }
     });
 
-    test('says the ads library and advertising ID permission are present', () {
-      expect(privacyPolicyContent, contains('The app shows no ads.'));
-      expect(privacyPolicyContent, contains('Google Mobile Ads'));
-      expect(privacyPolicyContent, contains('advertising ID'));
-      final manifest = File(
-        'android/app/src/main/AndroidManifest.xml',
-      ).readAsStringSync();
-      expect(manifest, contains('com.google.android.gms.permission.AD_ID'));
-    });
+    test(
+      'says ads are opt-in via AdMob and no advertising ID is requested',
+      () {
+        expect(privacyPolicyContent, contains('shows ads only if you choose'));
+        expect(privacyPolicyContent, contains('Google Mobile Ads'));
+        expect(
+          privacyPolicyContent,
+          contains('does not request the advertising ID permission'),
+        );
+        final manifest = File(
+          'android/app/src/main/AndroidManifest.xml',
+        ).readAsStringSync();
+        expect(
+          RegExp(
+            r'permission\.AD_ID"\s+tools:node="remove"',
+          ).hasMatch(manifest),
+          isTrue,
+          reason:
+              'the advertising ID permission must be removed from the build',
+        );
+      },
+    );
 
     test('says who shows the app-rating prompt', () {
       expect(
@@ -376,22 +389,34 @@ void main() {
     });
 
     test(
-      'says the app shows no ads, and no ads or mock-purchase code is left',
+      'says ads are opt-in, and only the one rewarded ad exists in the code',
       () {
-        expect(privacyPolicyContent, contains('The app shows no ads.'));
-        final offenders = [
+        expect(privacyPolicyContent, contains('shows ads only if you choose'));
+        // Only the rewarded-ad player may touch the ads library, and no other
+        // ad format or mock-purchase code may exist.
+        final usesAdsLibrary = [
+          for (final file in _libDartFiles())
+            if (file.source.contains('google_mobile_ads')) file.path,
+        ];
+        expect(usesAdsLibrary, ['lib/core/ads/admob_rewarded_player.dart']);
+        final otherFormats = [
           for (final file in _libDartFiles())
             if (RegExp(
-              r'core/ads/|NativeAd|AdService|MobileAds|adServiceProvider|features/premium/|PremiumGate|PaywallScreen|premiumServiceProvider',
+              r'NativeAd|BannerAd|InterstitialAd|AppOpenAd|features/premium/|PremiumGate|PaywallScreen|premiumServiceProvider',
             ).hasMatch(file.source))
               file.path,
         ];
         expect(
-          offenders,
+          otherFormats,
           isEmpty,
-          reason: 'ads or mock-premium code is back: update the ads text',
+          reason: 'another ad format or mock-premium code: update the ads text',
         );
-        expect(Directory('lib/core/ads').existsSync(), isFalse);
+        expect(
+          Directory(
+            'lib/core/ads',
+          ).listSync().map((e) => e.path.split('/').last).toList()..sort(),
+          ['admob_rewarded_player.dart', 'rewarded_export_gate.dart'],
+        );
         expect(Directory('lib/features/premium').existsSync(), isFalse);
       },
     );

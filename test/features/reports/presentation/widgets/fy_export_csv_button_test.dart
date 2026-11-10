@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/ads/rewarded_export_gate.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
@@ -43,6 +44,23 @@ class _Privacy extends PrivacyModeNotifier {
   bool build() => value;
 }
 
+class _FakeGate implements ExportAdGate {
+  _FakeGate(this.allow);
+  final bool allow;
+  int asked = 0;
+  bool? privacySeen;
+
+  @override
+  Future<bool> mayExport({
+    required bool privacyMode,
+    required Future<bool> Function() askUser,
+  }) async {
+    asked++;
+    privacySeen = privacyMode;
+    return allow;
+  }
+}
+
 class _FakePathProvider extends PathProviderPlatform
     with MockPlatformInterfaceMixin {
   _FakePathProvider(this.dir);
@@ -64,10 +82,12 @@ Widget _app({
   required FYCsvSharer share,
   required Future<FYReport> Function() report,
   bool privacy = false,
+  ExportAdGate? adGate,
   ValueNotifier<String>? currency,
   VoidCallback? onReportDisposed,
 }) => ProviderScope(
   overrides: [
+    exportAdGateProvider.overrideWithValue(adGate ?? _FakeGate(true)),
     fyReportProvider(2025).overrideWith((ref) {
       if (onReportDisposed != null) ref.onDispose(onReportDisposed);
       return report();
@@ -91,6 +111,47 @@ Widget _app({
 );
 
 void main() {
+  group('FYExportCsvButton ad gate', () {
+    testWidgets('does not export when the gate says no', (t) async {
+      var shared = false;
+      final gate = _FakeGate(false);
+      await t.pumpWidget(
+        _app(
+          adGate: gate,
+          report: () async => _report,
+          share: (r, c, {required subject, required maskSensitiveData}) async {
+            shared = true;
+          },
+        ),
+      );
+      await t.tap(find.bySubtype<TextButton>());
+      await t.pumpAndSettle();
+      expect(gate.asked, 1);
+      expect(shared, isFalse);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('exports when the gate says yes, and tells it about '
+        'Privacy mode', (t) async {
+      var shared = false;
+      final gate = _FakeGate(true);
+      await t.pumpWidget(
+        _app(
+          adGate: gate,
+          privacy: true,
+          report: () async => _report,
+          share: (r, c, {required subject, required maskSensitiveData}) async {
+            shared = true;
+          },
+        ),
+      );
+      await t.tap(find.bySubtype<TextButton>());
+      await t.pumpAndSettle();
+      expect(shared, isTrue);
+      expect(gate.privacySeen, isTrue);
+    });
+  });
+
   group('FYExportCsvButton share flow', () {
     testWidgets('shares with localized subject and privacy flag', (t) async {
       String? subjectOut;
