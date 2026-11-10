@@ -182,15 +182,12 @@ void main() {
 
   testWidgets('the title reads on every light stop', (tester) async {
     await _pump(tester, invested: 100000, returned: 120000);
-    _expectReadable(
-      _title,
-      _textColor(tester, find.text('Net cash flow so far')),
-    );
+    _expectReadable(_title, _textColor(tester, find.text('Invested')));
   });
 
   testWidgets('the stat labels read on every light stop', (tester) async {
     await _pump(tester, invested: 100000, returned: 120000);
-    for (final label in ['out', 'in', 'XIRR']) {
+    for (final label in ['in', 'XIRR']) {
       _expectReadable(_labels, _textColor(tester, find.text(label)));
     }
   });

@@ -15,6 +15,8 @@ import 'package:inv_tracker/core/widgets/tonal_icon_action.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
+import 'package:inv_tracker/features/investment/presentation/screens/value_history_screen.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/valuation_providers.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_providers.dart';
 import 'package:inv_tracker/features/income_projection/presentation/widgets/expected_income_section.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/add_document_sheet.dart';
@@ -343,6 +345,28 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                     isDark: isDark,
                     currencyFormat: currencyFormat,
                     isPrivacyMode: isPrivacyMode,
+                    currentHolding: stats.currentValueIsEstimate
+                        ? null
+                        : ref
+                              .watch(
+                                investmentValuationSnapshotsProvider(
+                                  widget.investment.id,
+                                ),
+                              )
+                              .firstOrNull
+                              ?.holding,
+                    onViewValueHistory:
+                        widget.investment.isOpen &&
+                            ref.watch(valuationSnapshotsActiveProvider)
+                        ? () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => ValueHistoryScreen(
+                                investment: widget.investment,
+                                firstCashFlowDate: stats.firstCashFlowDate,
+                              ),
+                            ),
+                          )
+                        : null,
                     onUpdateCurrentValue:
                         widget.investment.isOpen && !isArchived
                         ? () => showCurrentValueDialog(

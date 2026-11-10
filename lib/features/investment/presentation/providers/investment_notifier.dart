@@ -27,6 +27,7 @@ import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/domain/models/custom_type_catalog.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
@@ -361,10 +362,13 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   /// It becomes the terminal inflow of its XIRR, MOIC and return %.
   /// Throws [ValidationException] for a negative or non-finite value, one of
   /// 15 digits or more, a future date, or an investment that is not open.
+  /// [holding] (weight x price, #946) is kept only with dated valuations on;
+  /// the editor offers it only then.
   Future<void> setCurrentValue({
     required String id,
     required double value,
     required DateTime date,
+    UnitHolding? holding,
   }) async {
     if (!value.isFinite || value < 0) {
       // No amount in the message: it may reach logs (money rule 7).
@@ -392,6 +396,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
               amount: value,
               date: day,
               replaceSameDay: true,
+              holding: holding,
             ),
       );
       return;

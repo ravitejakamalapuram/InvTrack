@@ -296,6 +296,9 @@ void main() {
         'Investment Type',
         'Investment Status',
         'Investment ID',
+        'Quantity',
+        'Unit',
+        'Unit Price',
       ]);
       final gold = [
         for (final row in rows.skip(1))
