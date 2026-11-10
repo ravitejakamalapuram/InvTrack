@@ -98,6 +98,13 @@ describe('postNextToTelegram', () => {
     assert.equal(r.postId, null);
   });
 
+  it('skips an approved post with no valid approvedAt instead of crashing', async () => {
+    await db.doc('contentPosts/broken').set({ title: 't', body: 'b', status: 'approved' });
+    await importPosts(db, [post('a', '2026-11-11')]);
+    const r = await postNextToTelegram({ db, now: T0, send: async () => '1' });
+    assert.equal(r.postId, 'a');
+  });
+
   it('dry run picks the post but sends and writes nothing', async () => {
     await importPosts(db, [post('a', '2026-11-11')]);
     const r = await postNextToTelegram({ db, now: T0, dryRun: true, send: async () => assert.fail('sent') });
