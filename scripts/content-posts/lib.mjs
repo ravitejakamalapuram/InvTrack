@@ -29,15 +29,15 @@ export async function importPosts(db, posts) {
   await batch.commit();
 }
 
-/** Takes the post for this run, or returns false if another run has it, it is done, or it has failed too often. */
+/** Takes the post for this run and returns its attempt number, or 0 if another run has it, it is done, or it has failed too often. */
 function claim(db, ref, now) {
   return db.runTransaction(async (tx) => {
     const cur = (await tx.get(ref)).data();
-    if (cur && cur.status !== 'failed') return false; // posted, or another run is sending it
+    if (cur && cur.status !== 'failed') return 0; // posted, or another run is sending it
     const attempts = (cur?.attempts ?? 0) + 1;
-    if (attempts > MAX_ATTEMPTS) return false;
+    if (attempts > MAX_ATTEMPTS) return 0;
     tx.set(ref, { status: 'sending', startedAt: now, attempts });
-    return true;
+    return attempts;
   });
 }
 
@@ -68,7 +68,8 @@ export async function postNextToTelegram({ db, send, now = new Date(), dryRun = 
       if ((cur?.attempts ?? 0) >= MAX_ATTEMPTS) continue;
       return { postId: post.id, dryRun: true };
     }
-    if (!(await claim(db, ref, now))) continue;
+    const attempt = await claim(db, ref, now);
+    if (!attempt) continue;
 
     let messageId;
     try {
@@ -80,7 +81,9 @@ export async function postNextToTelegram({ db, send, now = new Date(), dryRun = 
       // for a person to check the channel before any resend.
       if (/^telegram-http-4\d\d$/.test(code)) {
         try {
-          await ref.update({ status: 'failed', failedAt: now, error: code });
+          // A bad token, bot or chat (401/403/404) says nothing about this post, so it does not use up an attempt.
+          const configError = /^telegram-http-(401|403|404)$/.test(code);
+          await ref.update({ status: 'failed', failedAt: now, error: code, attempts: configError ? attempt - 1 : attempt });
         } catch {
           // The record stays "sending"; the original code below is still reported.
         }

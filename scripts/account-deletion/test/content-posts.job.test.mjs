@@ -105,6 +105,25 @@ describe('postNextToTelegram', () => {
     assert.equal(r.postId, 'a');
   });
 
+  for (const code of ['telegram-http-500', 'telegram-bad-reply']) {
+    it(`keeps the record "sending" after ${code}, so the post is never sent twice`, async () => {
+      await importPosts(db, [post('a', '2026-11-11')]);
+      const bad = async () => { throw Object.assign(new Error('x'), { code }); };
+      await assert.rejects(postNextToTelegram({ db, now: T0, send: bad }), new RegExp(code));
+      assert.equal((await db.doc('contentPosts/a/deliveries/telegram').get()).data().status, 'sending');
+      const r = await postNextToTelegram({ db, now: T0, send: async () => assert.fail('resent') });
+      assert.equal(r.postId, null);
+    });
+  }
+
+  it('does not use up a post\'s attempts when the token or chat is rejected (401/403/404)', async () => {
+    await importPosts(db, [post('a', '2026-11-11')]);
+    const badToken = async () => { throw Object.assign(new Error('x'), { code: 'telegram-http-401' }); };
+    for (let i = 0; i < 5; i++) await assert.rejects(postNextToTelegram({ db, now: T0, send: badToken }), /telegram-http-401/);
+    const r = await postNextToTelegram({ db, now: T0, send: async () => '7' });
+    assert.equal(r.postId, 'a');
+  });
+
   it('dry run picks the post but sends and writes nothing', async () => {
     await importPosts(db, [post('a', '2026-11-11')]);
     const r = await postNextToTelegram({ db, now: T0, dryRun: true, send: async () => assert.fail('sent') });
