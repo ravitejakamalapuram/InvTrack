@@ -56,10 +56,10 @@ enum ReportType {
 
   /// Get priority 0 reports (core reports shown first)
   static List<ReportType> get coreReports => [
-    weeklySummary,
-    monthlyIncome,
-    fyReport,
-    performance,
-    goalProgress,
-  ];
+        weeklySummary,
+        monthlyIncome,
+        fyReport,
+        performance,
+        goalProgress,
+      ];
 }

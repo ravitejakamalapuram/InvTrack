@@ -111,8 +111,7 @@ abstract class BaseReportScreen<T> extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<BaseReportScreen<T>> createState() =>
-      _BaseReportScreenState<T>();
+  ConsumerState<BaseReportScreen<T>> createState() => _BaseReportScreenState<T>();
 }
 
 /// State for BaseReportScreen with analytics tracking
@@ -195,8 +194,7 @@ class _BaseReportScreenState<T> extends ConsumerState<BaseReportScreen<T>> {
       final year = int.tryParse(parts[0]) ?? 0;
       final month = int.tryParse(parts[1]) ?? 0;
       final periodDate = DateTime(year, month);
-      final monthsDiff =
-          (now.year - periodDate.year) * 12 + (now.month - periodDate.month);
+      final monthsDiff = (now.year - periodDate.year) * 12 + (now.month - periodDate.month);
       return monthsDiff;
     }
 

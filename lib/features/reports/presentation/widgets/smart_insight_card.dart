@@ -14,13 +14,16 @@ import 'package:inv_tracker/features/reports/domain/entities/smart_insight.dart'
 class SmartInsightCard extends StatelessWidget {
   /// The insight to display
   final SmartInsight insight;
-
-  const SmartInsightCard({required this.insight, super.key});
-
+  
+  const SmartInsightCard({
+    required this.insight,
+    super.key,
+  });
+  
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    
     return GlassCard(
       child: InkWell(
         onTap: insight.actionPath != null
@@ -44,9 +47,9 @@ class SmartInsightCard extends StatelessWidget {
                   size: 24,
                 ),
               ),
-
+              
               const SizedBox(width: AppSpacing.md),
-
+              
               // Content
               Expanded(
                 child: Column(
@@ -59,24 +62,22 @@ class SmartInsightCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-
+                    
                     const SizedBox(height: 4),
-
+                    
                     // Subtitle
                     Text(
                       insight.subtitle,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                        color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
                 ),
               ),
-
+              
               const SizedBox(width: AppSpacing.sm),
-
+              
               // Value
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -94,9 +95,7 @@ class SmartInsightCard extends StatelessWidget {
                     Text(
                       insight.secondaryValue!,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                        color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -108,7 +107,7 @@ class SmartInsightCard extends StatelessWidget {
       ),
     );
   }
-
+  
   /// Get icon based on insight type
   IconData _getIcon() {
     switch (insight.icon) {
@@ -130,7 +129,7 @@ class SmartInsightCard extends StatelessWidget {
         return Icons.analytics_outlined;
     }
   }
-
+  
   /// Get color based on priority, for the icon and the value
   Color _getPriorityColor(BuildContext context, bool isDark) {
     switch (insight.priority) {

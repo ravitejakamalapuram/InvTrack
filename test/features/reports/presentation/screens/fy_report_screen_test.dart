@@ -337,9 +337,7 @@ void main() {
       expect(find.text('Add value'), findsNWidgets(2));
       expect(find.text('Awaiting current value'), findsNWidgets(2));
       expect(
-        tester
-            .getSize(find.widgetWithText(TextButton, 'Add value').first)
-            .height,
+        tester.getSize(find.widgetWithText(TextButton, 'Add value').first).height,
         greaterThanOrEqualTo(48),
       );
       expect(find.textContaining('0%'), findsNothing);

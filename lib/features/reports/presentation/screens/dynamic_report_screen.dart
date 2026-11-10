@@ -83,15 +83,16 @@ class DynamicReportScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Section title
-            Text(section.title, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              section.title,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             if (section.subtitle != null) ...[
               const SizedBox(height: 4),
               Text(
                 section.subtitle!,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                  color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -161,17 +162,15 @@ class DynamicReportScreen extends ConsumerWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(
-                context,
-              ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+              color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 8),
           Text(
             value,
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           if (trend != null) ...[
             const SizedBox(height: 4),
@@ -179,20 +178,20 @@ class DynamicReportScreen extends ConsumerWidget {
               children: [
                 Icon(
                   isTrendPositive == true
-                      ? Icons.trending_up_rounded
-                      : Icons.trending_down_rounded,
+                    ? Icons.trending_up_rounded
+                    : Icons.trending_down_rounded,
                   size: 16,
                   color: isTrendPositive == true
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.error,
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.error,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   trend,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: isTrendPositive == true
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.error,
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.error,
                   ),
                 ),
               ],
@@ -209,9 +208,7 @@ class DynamicReportScreen extends ConsumerWidget {
       return Text(
         l10n.noItemsToDisplay,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+          color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
         ),
       );
     }
@@ -228,7 +225,10 @@ class DynamicReportScreen extends ConsumerWidget {
   }
 
   Widget _buildTextSummary(BuildContext context, String text) {
-    return Text(text, style: Theme.of(context).textTheme.bodyMedium);
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.bodyMedium,
+    );
   }
 
   Widget _buildEmptyState(BuildContext context, String? message) {
@@ -248,9 +248,9 @@ class DynamicReportScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             Text(
               message ?? l10n.noDataForReport,
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),

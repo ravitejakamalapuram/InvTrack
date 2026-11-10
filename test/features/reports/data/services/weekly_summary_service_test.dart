@@ -147,11 +147,7 @@ void main() {
           id: '3',
           investmentId: 'inv1',
           amount: 500,
-          date: DateTime(
-            2024,
-            1,
-            9,
-          ), // 2 days after week (outside filter range)
+          date: DateTime(2024, 1, 9), // 2 days after week (outside filter range)
           type: CashFlowType.income,
           currency: 'USD',
           createdAt: DateTime(2024, 1, 9),

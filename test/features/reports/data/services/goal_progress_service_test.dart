@@ -13,7 +13,7 @@ void main() {
 
     test('should categorize goals by status', () {
       final now = DateTime.now();
-
+      
       final onTrackGoal = GoalEntity(
         currency: 'INR',
         id: 'goal1',
@@ -84,7 +84,7 @@ void main() {
 
     test('should calculate aggregate stats correctly', () {
       final now = DateTime.now();
-
+      
       final goals = List.generate(
         3,
         (i) => GoalEntity(
@@ -210,7 +210,10 @@ void main() {
     });
 
     test('should handle empty data', () {
-      final report = service.generateReport(allGoals: [], progressMap: {});
+      final report = service.generateReport(
+        allGoals: [],
+        progressMap: {},
+      );
 
       expect(report.allGoals, isEmpty);
       expect(report.onTrackGoals, isEmpty);

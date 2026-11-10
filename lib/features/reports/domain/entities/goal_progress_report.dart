@@ -10,8 +10,7 @@ import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 
 // Re-export GoalStatus to avoid ambiguity
-export 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart'
-    show GoalStatus;
+export 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart' show GoalStatus;
 
 /// Goal progress report
 class GoalProgressReport {

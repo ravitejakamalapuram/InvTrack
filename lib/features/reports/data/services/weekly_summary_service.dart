@@ -44,7 +44,10 @@ class WeeklySummaryService {
 
     LoggerService.info(
       'Generating weekly summary',
-      metadata: {'start': periodStart.toString(), 'end': periodEnd.toString()},
+      metadata: {
+        'start': periodStart.toString(),
+        'end': periodEnd.toString(),
+      },
     );
 
     // Optimization: Single pass loop for all cashflow metrics
@@ -74,12 +77,10 @@ class WeeklySummaryService {
         }
       }
 
-      if (cf.date.isAfter(prevWeekStartLimit) &&
-          cf.date.isBefore(prevWeekEndLimit)) {
+      if (cf.date.isAfter(prevWeekStartLimit) && cf.date.isBefore(prevWeekEndLimit)) {
         if (cf.type == CashFlowType.invest) {
           prevInvested += cf.amount;
-        } else if (cf.type == CashFlowType.returnFlow ||
-            cf.type == CashFlowType.income) {
+        } else if (cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income) {
           prevReturned += cf.amount;
         }
       }
@@ -97,8 +98,7 @@ class WeeklySummaryService {
     final nextWeekEndLimit = periodEnd.add(const Duration(days: 8));
 
     for (final inv in allInvestments) {
-      if (inv.createdAt.isAfter(weekStartLimit) &&
-          inv.createdAt.isBefore(weekEndLimit)) {
+      if (inv.createdAt.isAfter(weekStartLimit) && inv.createdAt.isBefore(weekEndLimit)) {
         newInvestments.add(inv);
       }
 
@@ -175,24 +175,22 @@ class WeeklySummaryService {
       for (final cf in dayFlows) {
         if (cf.type == CashFlowType.invest || cf.type == CashFlowType.fee) {
           outflows += cf.amount;
-        } else if (cf.type == CashFlowType.returnFlow ||
-            cf.type == CashFlowType.income) {
+        } else if (cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income) {
           inflows += cf.amount;
         }
       }
 
-      dailyFlows.add(
-        DailyCashFlow(
-          dayOfWeek: current.weekday - 1, // 0=Monday
-          date: current,
-          outflows: outflows,
-          inflows: inflows,
-        ),
-      );
+      dailyFlows.add(DailyCashFlow(
+        dayOfWeek: current.weekday - 1, // 0=Monday
+        date: current,
+        outflows: outflows,
+        inflows: inflows,
+      ));
 
       current = current.add(const Duration(days: 1));
     }
 
     return dailyFlows;
   }
+
 }

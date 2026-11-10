@@ -36,9 +36,7 @@ void main() {
 
       expect(report.allActions.length, greaterThan(0));
       final overdueAction = report.allActions.firstWhere(
-        (a) =>
-            a.type == ActionType.maturity &&
-            a.priority == ActionPriority.critical,
+        (a) => a.type == ActionType.maturity && a.priority == ActionPriority.critical,
       );
       expect(overdueAction.title, contains('Overdue'));
     });
@@ -103,9 +101,7 @@ void main() {
           type: InvestmentType.fixedDeposit,
           status: InvestmentStatus.closed,
           startDate: now.subtract(const Duration(days: 365)),
-          maturityDate: now.add(
-            const Duration(days: 5),
-          ), // Would be critical if open
+          maturityDate: now.add(const Duration(days: 5)), // Would be critical if open
           createdAt: now.subtract(const Duration(days: 365)),
           updatedAt: now.subtract(const Duration(days: 365)),
           currency: 'USD',
