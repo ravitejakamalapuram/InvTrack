@@ -8,6 +8,7 @@ import 'package:inv_tracker/features/reports/presentation/providers/fy_report_ex
 import 'package:inv_tracker/features/reports/presentation/providers/fy_report_provider.dart';
 import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/rewarded_export_prompt.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/fy_pdf_export_button.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Signature of [shareFYReportCsv]; injectable for tests.
@@ -25,10 +26,12 @@ class FYExportCsvButton extends ConsumerStatefulWidget {
     super.key,
     required this.fyYear,
     @visibleForTesting this.share = shareFYReportCsv,
+    this.style = FyExportStyle.text,
   });
 
   final int fyYear;
   final FYCsvSharer share;
+  final FyExportStyle style;
 
   @override
   ConsumerState<FYExportCsvButton> createState() => _FYExportCsvButtonState();
@@ -90,10 +93,11 @@ class _FYExportCsvButtonState extends ConsumerState<FYExportCsvButton> {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton.icon(
+    return fyExportButton(
+      style: widget.style,
       onPressed: _busy ? null : _export,
       icon: const Icon(Icons.ios_share),
-      label: Text(AppLocalizations.of(context).fyExportCsv),
+      label: AppLocalizations.of(context).fyExportCsv,
     );
   }
 }

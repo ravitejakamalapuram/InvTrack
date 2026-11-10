@@ -18,6 +18,7 @@ Future<CurrentValueEdit?> _open(
   bool allowWeight = false,
   String currency = 'INR',
   DateTime? firstDate,
+  DateTime? initialDate,
   required Future<void> Function() interact,
 }) async {
   CurrentValueEdit? result;
@@ -36,6 +37,7 @@ Future<CurrentValueEdit?> _open(
                 allowWeight: allowWeight,
                 today: DateTime(2026, 10, 2),
                 firstDate: firstDate,
+                initialDate: initialDate,
               ),
             );
           },
@@ -70,6 +72,23 @@ class _RejectingNotifier extends InvestmentNotifier {
 }
 
 void main() {
+  testWidgets('a start date in the future is clamped to today', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      initialDate: DateTime(2027, 3, 31),
+      interact: () async {
+        expect(find.text('Value as of Oct 2, 2026'), findsOneWidget);
+        // Opening the picker must not trip its initialDate <= lastDate assert.
+        await tester.tap(find.text('Value as of Oct 2, 2026'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.text('Cancel').last);
+      },
+    );
+  });
+
   testWidgets('saves a value in the investment currency as of today', (
     tester,
   ) async {

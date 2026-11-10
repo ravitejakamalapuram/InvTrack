@@ -8367,5 +8367,28 @@
   "holdingSummaryHidden": "Weight and price hidden",
   "@holdingSummaryHidden": {
     "description": "Screen reader label for a holding's weight and price while privacy mode hides amounts"
+  },
+
+
+  "fyReportNeedsValueTitle": "Needs a current value on {opening} and {closing}",
+  "@fyReportNeedsValueTitle": {
+    "description": "Heading of the list of holdings missing an opening or closing value on the FY report",
+    "placeholders": {
+      "opening": {"type": "String"},
+      "closing": {"type": "String"}
+    }
+  },
+
+  "fyReportAddValue": "Add value",
+  "@fyReportAddValue": {
+    "description": "Button that opens the add current value dialog for one holding on the FY report"
+  },
+
+  "fyReportAddValueFor": "Add a current value for {name}",
+  "@fyReportAddValueFor": {
+    "description": "Accessibility label of the Add value button",
+    "placeholders": {
+      "name": {"type": "String"}
+    }
   }
 }

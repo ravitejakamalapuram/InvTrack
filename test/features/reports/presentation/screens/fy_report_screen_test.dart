@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/fy_report_provider.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/fy_report_screen.dart';
@@ -30,7 +31,12 @@ InvestmentEntity _inv(String name) => InvestmentEntity(
   currency: 'INR',
 );
 
-FYReport _report({double? xirr = 0.114, double endValue = 1840000}) => FYReport(
+FYReport _report({
+  double? xirr = 0.114,
+  double endValue = 1840000,
+  List<FYMissingValue> missing = const [],
+}) => FYReport(
+  missingValues: missing,
   fyStart: DateTime(2025, 4, 1),
   fyEnd: DateTime(2026, 3, 31, 23, 59, 59),
   fyLabel: '2025-26',
@@ -78,6 +84,7 @@ Future<void> _pump(
   WidgetTester tester,
   FYReport report, {
   bool privacy = false,
+  bool snapshots = true,
   double scale = 1.0,
   Size size = const Size(390, 900),
   void Function(int)? onYearRequested,
@@ -89,6 +96,7 @@ Future<void> _pump(
     ProviderScope(
       overrides: [
         currencyCodeProvider.overrideWithValue('INR'),
+        valuationSnapshotsActiveProvider.overrideWithValue(snapshots),
         privacyModeProvider.overrideWith(() => _Privacy(privacy)),
         fyReportProvider.overrideWith((ref, year) async {
           onYearRequested?.call(year);
@@ -281,6 +289,99 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await _pump(tester, _report(), privacy: true);
       expect(factors(), {0.3});
+    });
+  });
+
+  group('actions and missing values', () {
+    final missing = [
+      FYMissingValue(
+        investment: _inv('Fixed deposit, Bank A'),
+        needsOpening: true,
+        needsClosing: true,
+      ),
+      FYMissingValue(
+        investment: _inv('P2P lending, Platform B'),
+        needsOpening: false,
+        needsClosing: true,
+      ),
+    ];
+
+    Future<void> toBottom(WidgetTester tester) => tester.scrollUntilVisible(
+      find.text('Export CSV'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+
+    testWidgets('Export PDF and Export CSV sit at the bottom, 48dp', (
+      tester,
+    ) async {
+      await _pump(tester, _report());
+      await toBottom(tester);
+      expect(find.text('Export PDF'), findsOneWidget);
+      expect(find.text('Export CSV'), findsOneWidget);
+      for (final label in ['Export PDF', 'Export CSV']) {
+        final button = find.ancestor(
+          of: find.text(label),
+          matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+        );
+        expect(tester.getSize(button.first).height, greaterThanOrEqualTo(48));
+      }
+    });
+
+    testWidgets('lists each holding that needs a value when XIRR is unknown', (
+      tester,
+    ) async {
+      await _pump(tester, _report(xirr: null, missing: missing));
+      expect(find.textContaining('Needs a current value'), findsOneWidget);
+      expect(find.text('P2P lending, Platform B'), findsWidgets);
+      expect(find.text('Add value'), findsNWidgets(2));
+      expect(find.text('Awaiting current value'), findsNWidgets(2));
+      expect(
+        tester.getSize(find.widgetWithText(TextButton, 'Add value').first).height,
+        greaterThanOrEqualTo(48),
+      );
+      expect(find.textContaining('0%'), findsNothing);
+    });
+
+    testWidgets('Add value starts on the missing edge date', (tester) async {
+      await _pump(tester, _report(xirr: null, missing: missing));
+      // Opening edge is 1 Apr 2025; the value must be dated before it.
+      await tester.tap(find.text('Add value').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Value as of Mar 31, 2025'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      // Second row needs only a closing value: 31 Mar 2026.
+      await tester.tap(find.text('Add value').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Value as of Mar 31, 2026'), findsOneWidget);
+    });
+
+    testWidgets('no Add value without dated valuations', (tester) async {
+      await _pump(
+        tester,
+        _report(xirr: null, missing: missing),
+        snapshots: false,
+      );
+      expect(find.text('Add value'), findsNothing);
+    });
+
+    testWidgets('no list when XIRR is known or nothing is missing', (
+      tester,
+    ) async {
+      await _pump(tester, _report(missing: missing));
+      expect(find.text('Add value'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      await _pump(tester, _report(xirr: null));
+      expect(find.text('Add value'), findsNothing);
+    });
+
+    testWidgets('the list shows no amount in privacy mode', (tester) async {
+      await _pump(tester, _report(xirr: null, missing: missing), privacy: true);
+      expect(find.text('Add value'), findsNWidgets(2));
+      for (final amount in _amounts) {
+        expect(find.textContaining(amount, skipOffstage: false), findsNothing);
+      }
     });
   });
 }
