@@ -131,10 +131,7 @@ void main() {
     });
 
     test('should handle empty data', () {
-      final report = service.generateReport(
-        investments: [],
-        statsMap: {},
-      );
+      final report = service.generateReport(investments: [], statsMap: {});
 
       expect(report.upcoming30Days, isEmpty);
       expect(report.next90Days, isEmpty);

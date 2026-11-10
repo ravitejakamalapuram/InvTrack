@@ -118,7 +118,9 @@ class _ReportTypeCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outline,
+            color: isSelected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.outline,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -138,7 +140,9 @@ class _ReportTypeCard extends StatelessWidget {
               ),
               child: Icon(
                 icon,
-                color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant,
                 size: 24,
               ),
             ),
@@ -150,7 +154,9 @@ class _ReportTypeCard extends StatelessWidget {
                   Text(
                     title,
                     style: theme.textTheme.labelLarge?.copyWith(
-                      color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

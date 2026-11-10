@@ -87,7 +87,9 @@ class ReportStatCard extends ConsumerWidget {
                   child: Icon(
                     Icons.help_outline_rounded,
                     size: 16,
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -103,16 +105,14 @@ class ReportStatCard extends ConsumerWidget {
                     ? PrivacyMask(
                         child: Text(
                           value,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       )
                     : Text(
                         value,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
               ),
 
@@ -154,9 +154,9 @@ class ReportStatCard extends ConsumerWidget {
         Text(
           '${trendValue!.abs().toStringAsFixed(1)}%',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );

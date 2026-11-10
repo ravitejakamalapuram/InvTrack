@@ -45,28 +45,28 @@ class _Privacy extends PrivacyModeNotifier {
 }
 
 class _FakeGate implements ExportAdGate {
-  _FakeGate(this.allow, {this.fails = false});
-  final bool allow;
+  _FakeGate({this.fails = false, this.events});
   final bool fails;
-  int asked = 0;
+  final List<String>? events;
+  int offered = 0;
   bool? privacySeen;
 
   @override
   Future<bool> mayExport({
     required bool privacyMode,
     required Future<bool> Function() askUser,
-  }) async {
-    asked++;
-    privacySeen = privacyMode;
-    if (fails) throw StateError('ad problem');
-    return allow;
-  }
+  }) async => throw StateError('the ad must never come before the export');
 
   @override
   Future<void> offerAfterExport({
     required bool privacyMode,
     required Future<bool> Function() askUser,
-  }) async {}
+  }) async {
+    offered++;
+    events?.add('offer');
+    privacySeen = privacyMode;
+    if (fails) throw StateError('ad problem');
+  }
 }
 
 class _FakePathProvider extends PathProviderPlatform
@@ -95,7 +95,7 @@ Widget _app({
   VoidCallback? onReportDisposed,
 }) => ProviderScope(
   overrides: [
-    exportAdGateProvider.overrideWithValue(adGate ?? _FakeGate(true)),
+    exportAdGateProvider.overrideWithValue(adGate ?? _FakeGate()),
     fyReportProvider(2025).overrideWith((ref) {
       if (onReportDisposed != null) ref.onDispose(onReportDisposed);
       return report();
@@ -120,51 +120,34 @@ Widget _app({
 
 void main() {
   group('FYExportCsvButton ad gate', () {
-    testWidgets('does not export when the gate says no', (t) async {
-      var shared = false;
-      final gate = _FakeGate(false);
-      await t.pumpWidget(
-        _app(
-          adGate: gate,
-          report: () async => _report,
-          share: (r, c, {required subject, required maskSensitiveData}) async {
-            shared = true;
-          },
-        ),
-      );
-      await t.tap(find.bySubtype<TextButton>());
-      await t.pumpAndSettle();
-      expect(gate.asked, 1);
-      expect(shared, isFalse);
-      expect(find.byType(SnackBar), findsNothing);
-    });
-
-    testWidgets('exports anyway when the gate itself fails', (t) async {
-      var shared = false;
-      await t.pumpWidget(
-        _app(
-          adGate: _FakeGate(false, fails: true),
-          report: () async => _report,
-          share: (r, c, {required subject, required maskSensitiveData}) async {
-            shared = true;
-          },
-        ),
-      );
-      await t.tap(find.bySubtype<TextButton>());
-      await t.pumpAndSettle();
-      expect(shared, isTrue);
-    });
-
-    testWidgets('exports when the gate says yes, and tells it about '
-        'Privacy mode', (t) async {
-      var shared = false;
-      final gate = _FakeGate(true);
+    testWidgets('exports first, then offers the ad', (t) async {
+      final events = <String>[];
+      final gate = _FakeGate(events: events);
       await t.pumpWidget(
         _app(
           adGate: gate,
           privacy: true,
           report: () async => _report,
           share: (r, c, {required subject, required maskSensitiveData}) async {
+            events.add('share');
+          },
+        ),
+      );
+      await t.tap(find.bySubtype<TextButton>());
+      await t.pumpAndSettle();
+      expect(events, ['share', 'offer']);
+      expect(gate.privacySeen, isTrue);
+    });
+
+    testWidgets('a failing ad gate does not matter after the export', (
+      t,
+    ) async {
+      var shared = false;
+      await t.pumpWidget(
+        _app(
+          adGate: _FakeGate(fails: true),
+          report: () async => _report,
+          share: (r, c, {required subject, required maskSensitiveData}) async {
             shared = true;
           },
         ),
@@ -172,7 +155,22 @@ void main() {
       await t.tap(find.bySubtype<TextButton>());
       await t.pumpAndSettle();
       expect(shared, isTrue);
-      expect(gate.privacySeen, isTrue);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('no ad offer when the export fails', (t) async {
+      final gate = _FakeGate();
+      await t.pumpWidget(
+        _app(
+          adGate: gate,
+          report: () async => _report,
+          share: (r, c, {required subject, required maskSensitiveData}) async =>
+              throw Exception('boom'),
+        ),
+      );
+      await t.tap(find.bySubtype<TextButton>());
+      await t.pumpAndSettle();
+      expect(gate.offered, 0);
     });
   });
 

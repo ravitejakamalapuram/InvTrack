@@ -118,9 +118,7 @@ void main() {
       });
 
       test('builds filtered report by goal ID', () async {
-        final config = ReportConfiguration.goalProgress(
-          goalId: 'goal1',
-        );
+        final config = ReportConfiguration.goalProgress(goalId: 'goal1');
 
         final report = await service.buildReport(config);
 

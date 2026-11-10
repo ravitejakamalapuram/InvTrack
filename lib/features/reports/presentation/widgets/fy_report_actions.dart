@@ -27,7 +27,10 @@ class FyReportActions extends StatelessWidget {
                 : AppColors.primaryGradient,
             borderRadius: AppSizes.borderRadiusXl,
           ),
-          child: FyPdfExportButton(fyYear: fyYear, style: FyExportStyle.primary),
+          child: FyPdfExportButton(
+            fyYear: fyYear,
+            style: FyExportStyle.primary,
+          ),
         ),
         const SizedBox(height: AppSpacing.sm),
         FYExportCsvButton(fyYear: fyYear, style: FyExportStyle.outlined),

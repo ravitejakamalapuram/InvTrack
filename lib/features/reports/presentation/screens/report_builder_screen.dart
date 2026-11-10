@@ -18,7 +18,8 @@ class ReportBuilderScreen extends ConsumerStatefulWidget {
   const ReportBuilderScreen({super.key});
 
   @override
-  ConsumerState<ReportBuilderScreen> createState() => _ReportBuilderScreenState();
+  ConsumerState<ReportBuilderScreen> createState() =>
+      _ReportBuilderScreenState();
 }
 
 class _ReportBuilderScreenState extends ConsumerState<ReportBuilderScreen> {
@@ -29,17 +30,14 @@ class _ReportBuilderScreenState extends ConsumerState<ReportBuilderScreen> {
   DateRangePreset _dateRangePreset = DateRangePreset.thisMonth;
   String? _selectedInvestmentId;
   String? _selectedGoalId;
-  
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.createCustomReport),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: Text(l10n.createCustomReport), elevation: 0),
       body: Theme(
         data: theme.copyWith(
           colorScheme: theme.colorScheme.copyWith(
@@ -95,24 +93,26 @@ class _ReportBuilderScreenState extends ConsumerState<ReportBuilderScreen> {
       ),
     );
   }
-  
+
   void _onStepContinue() {
     if (_currentStep < 2) {
       // Validate current step
       if (_currentStep == 0 && _selectedReportType == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context).pleaseSelectReportType)),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).pleaseSelectReportType),
+          ),
         );
         return;
       }
-      
+
       setState(() => _currentStep++);
     } else {
       // Final step - generate report
       _generateReport();
     }
   }
-  
+
   void _onStepCancel() {
     if (_currentStep > 0) {
       setState(() => _currentStep--);
@@ -120,7 +120,7 @@ class _ReportBuilderScreenState extends ConsumerState<ReportBuilderScreen> {
       context.pop();
     }
   }
-  
+
   void _generateReport() {
     if (_selectedReportType == null) return;
 
@@ -134,7 +134,7 @@ class _ReportBuilderScreenState extends ConsumerState<ReportBuilderScreen> {
     // Navigate to dynamic report screen
     context.push('/reports/builder?${config.toQueryParams()}');
   }
-  
+
   Widget _buildControls(BuildContext context, ControlsDetails details) {
     final l10n = AppLocalizations.of(context);
     final isLastStep = details.stepIndex == 2;

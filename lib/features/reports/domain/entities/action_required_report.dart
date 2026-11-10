@@ -104,11 +104,11 @@ class ActionRequiredReport {
 
   /// Get all actions sorted by priority
   List<ActionItem> get allActions => [
-        ...criticalActions,
-        ...highPriorityActions,
-        ...mediumPriorityActions,
-        ...lowPriorityActions,
-      ];
+    ...criticalActions,
+    ...highPriorityActions,
+    ...mediumPriorityActions,
+    ...lowPriorityActions,
+  ];
 
   /// Whether there are any critical or high priority actions
   bool get hasUrgentActions =>

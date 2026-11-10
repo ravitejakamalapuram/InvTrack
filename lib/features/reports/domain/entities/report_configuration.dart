@@ -136,7 +136,9 @@ class ReportConfiguration {
       reportType: ReportType.goalProgress,
       goalId: goalId,
       parameters: {
-        ...?milestonePercent != null ? {'milestonePercent': milestonePercent} : null,
+        ...?milestonePercent != null
+            ? {'milestonePercent': milestonePercent}
+            : null,
       },
       fromNotification: notificationContext != null,
       notificationContext: notificationContext,
@@ -203,9 +205,7 @@ class ReportConfiguration {
 
   /// Convert to query parameters for deep linking
   Map<String, String> toQueryParams() {
-    final params = <String, String>{
-      'type': reportType.id,
-    };
+    final params = <String, String>{'type': reportType.id};
 
     if (investmentId != null) params['investmentId'] = investmentId!;
     if (goalId != null) params['goalId'] = goalId!;
@@ -312,10 +312,7 @@ class DateRangeFilter {
   final DateTime start;
   final DateTime end;
 
-  const DateRangeFilter({
-    required this.start,
-    required this.end,
-  });
+  const DateRangeFilter({required this.start, required this.end});
 
   /// Duration between start and end
   Duration get duration => end.difference(start);
@@ -327,7 +324,8 @@ class DateRangeFilter {
   }
 
   @override
-  String toString() => 'DateRangeFilter(${start.toIso8601String()} - ${end.toIso8601String()})';
+  String toString() =>
+      'DateRangeFilter(${start.toIso8601String()} - ${end.toIso8601String()})';
 }
 
 /// Preset date ranges for report builder
@@ -412,4 +410,3 @@ class NotificationContext {
   @override
   String toString() => 'NotificationContext($notificationType at $timestamp)';
 }
-

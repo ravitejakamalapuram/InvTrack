@@ -105,11 +105,15 @@ class _DateRangeChip extends StatelessWidget {
       selectedColor: theme.colorScheme.primary.withValues(alpha: 0.2),
       checkmarkColor: theme.colorScheme.primary,
       labelStyle: theme.textTheme.labelMedium?.copyWith(
-        color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+        color: isSelected
+            ? theme.colorScheme.primary
+            : theme.colorScheme.onSurface,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
       ),
       side: BorderSide(
-        color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outline,
+        color: isSelected
+            ? theme.colorScheme.primary
+            : theme.colorScheme.outline,
         width: isSelected ? 2 : 1,
       ),
     );
