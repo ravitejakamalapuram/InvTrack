@@ -160,11 +160,16 @@ void main() {
       amount: 1000,
       date: DateTime(2026, 1, 1),
     );
-    final rows = valuationRows((await export()).bytes);
+    final bytes = (await export()).bytes;
+    final rows = valuationRows(bytes);
     final q = rows.first.indexOf('Quantity');
     expect(rows[1][q].toString(), '');
     wipe();
-    // And it imports back with no holding.
+    final result = await importZip(bytes);
+    expect(result.errors, isEmpty);
+    final snapshot = (await imported()).single;
+    expect(snapshot.amount, 1000);
+    expect(snapshot.holding, isNull);
   });
 
   const unitHeader =

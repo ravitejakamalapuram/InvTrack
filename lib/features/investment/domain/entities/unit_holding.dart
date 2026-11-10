@@ -46,14 +46,50 @@ class UnitHolding {
       quantity.isFinite && quantity > 0 && unitPrice.isFinite && unitPrice >= 0;
 
   /// quantity × price at the precision of [currencyCode] (round half away
-  /// from zero, once, at the end). Throws if the holding is not [isValid].
-  double value(String currencyCode) {
-    if (!isValid) {
-      throw StateError('Cannot value an invalid holding');
-    }
-    return MoneyPrecision.round(
-      quantity * unitPrice,
-      currencyCode: currencyCode,
+  /// from zero, once, at the end). The product is taken on the decimal
+  /// numbers as written, not on their binary forms, so 0.1 g at 0.35 a gram
+  /// is 0.035 and rounds to 0.04. Throws if the holding is not [isValid] or
+  /// the product overflows; use [valueOrNull] on stored data.
+  double value(String currencyCode) =>
+      valueOrNull(currencyCode) ??
+      (throw StateError('Cannot value this holding'));
+
+  /// As [value], or null when the holding is not [isValid] or its value is
+  /// not finite or too large to store (money rule 19.1).
+  double? valueOrNull(String currencyCode) {
+    if (!isValid) return null;
+    final product = _decimalProduct(quantity, unitPrice);
+    if (!product.isFinite) return null;
+    final rounded = MoneyPrecision.round(product, currencyCode: currencyCode);
+    return MoneyPrecision.reachesMaxAmount(rounded, currencyCode: currencyCode)
+        ? null
+        : rounded;
+  }
+
+  /// [a] × [b] computed on the shortest decimal form of each (both are
+  /// finite and non-negative here), as the nearest double.
+  static double _decimalProduct(double a, double b) {
+    final (digitsA, scaleA) = _decimal(a);
+    final (digitsB, scaleB) = _decimal(b);
+    final digits = (digitsA * digitsB).toString();
+    final scale = scaleA + scaleB;
+    if (scale <= 0) return double.parse('$digits${'0' * -scale}');
+    final padded = digits.padLeft(scale + 1, '0');
+    final point = padded.length - scale;
+    return double.parse(
+      '${padded.substring(0, point)}.${padded.substring(point)}',
+    );
+  }
+
+  /// [value] as integer digits and a count of decimal places.
+  static (BigInt, int) _decimal(double value) {
+    final parts = value.toString().toLowerCase().split('e');
+    final exponent = parts.length == 2 ? int.parse(parts[1]) : 0;
+    final number = parts.first.split('.');
+    final fraction = number.length == 2 ? number[1] : '';
+    return (
+      BigInt.parse('${number.first}$fraction'),
+      fraction.length - exponent,
     );
   }
 

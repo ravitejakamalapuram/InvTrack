@@ -334,7 +334,11 @@ class FirestoreValuationRepository implements ValuationRepository {
       unit: unit,
       unitPrice: unitPrice.toDouble(),
     );
-    if (!holding.isValid || holding.value(currency) != amount) return null;
+    final value = holding.valueOrNull(currency);
+    if (value == null ||
+        value != MoneyPrecision.round(amount, currencyCode: currency)) {
+      return null;
+    }
     return holding;
   }
 }
