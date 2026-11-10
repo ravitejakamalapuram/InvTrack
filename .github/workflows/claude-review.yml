@@ -1,0 +1,60 @@
+# Claude reviews a pull request only when the repo owner comments "@claude review".
+# CodeRabbit is the first reviewer. Ask for this one only when CodeRabbit is rate-limited or down.
+# Needs the repo secret ANTHROPIC_API_KEY. Without it the job fails and nothing else is affected.
+#
+# Token use is kept low on purpose: it runs only on request, Claude reads the diff instead of
+# the whole repo, and turns are capped.
+name: Claude review
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+concurrency:
+  group: claude-review-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Claude review
+    if: |
+      github.event.issue.pull_request &&
+      github.event.comment.author_association == 'OWNER' &&
+      contains(github.event.comment.body, '@claude review')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: refs/pull/${{ github.event.issue.number }}/merge
+          persist-credentials: false
+      # claude-code-action has no pinned commit here yet; pin it to a full SHA when convenient.
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            Review pull request #${{ github.event.issue.number }} in ${{ github.repository }}.
+
+            Read CLAUDE.md first: it has the money and data rules this app must never break.
+            Run `gh pr diff ${{ github.event.issue.number }}` and review only the changed code.
+            Open other files only to confirm a suspected bug.
+
+            Report only real problems, most serious first, and skip style, naming and nitpicks:
+            1. Correctness bugs and crashes.
+            2. Money and data rules in CLAUDE.md (currency, XIRR and MOIC from lib/core/calculations, date-only cash flows, privacy mode, account deletion and export coverage).
+            3. Security and privacy (secrets, amounts or names sent to analytics or logs, workflow permissions, untrusted input).
+            4. Missing tests for calculations, data, currency, notifications, auth, import and export.
+
+            For each problem, post one inline comment on the line with what is wrong, why it matters and the fix.
+            If you find nothing serious, post one short comment saying so. Do not summarise the PR.
+          claude_args: |
+            --model claude-sonnet-5-5
+            --max-turns 12
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr diff:*),Bash(gh pr view:*)"
