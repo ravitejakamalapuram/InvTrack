@@ -7,6 +7,7 @@ import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_notifier.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/holding_text.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// What the user chose in [CurrentValueDialog]: a value as of a date, or
@@ -80,6 +81,15 @@ class CurrentValueDialog extends StatefulWidget {
   /// Whether the value can also be typed as weight x price (#946).
   final bool allowWeight;
 
+  /// Label of the remove button; the default says the estimate applies again.
+  final String? removeLabel;
+
+  /// What an edit starts from: the value, its date and its weight x price.
+  /// All null for a new value.
+  final double? initialValue;
+  final DateTime? initialDate;
+  final UnitHolding? initialHolding;
+
   /// Today; injectable for tests.
   final DateTime? today;
 
@@ -91,6 +101,10 @@ class CurrentValueDialog extends StatefulWidget {
     required this.currency,
     required this.canRemove,
     this.allowWeight = false,
+    this.removeLabel,
+    this.initialValue,
+    this.initialDate,
+    this.initialHolding,
     this.today,
     this.firstDate,
   });
@@ -121,7 +135,25 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
         : DateTime(first.year, first.month, first.day);
     // A first cash flow in the future leaves only today to pick.
     _firstDate = firstDay.isAfter(_today) ? _today : firstDay;
-    _date = _today;
+    final initialDay = widget.initialDate;
+    _date = initialDay == null
+        ? _today
+        : DateTime(initialDay.year, initialDay.month, initialDay.day);
+    final holding = widget.initialHolding;
+    if (holding != null && widget.allowWeight) {
+      _byWeight = true;
+      _quantity.text = _plain(holding.quantity);
+      _price.text = _plain(holding.unitPrice);
+      _unit = holding.unit;
+    } else if (widget.initialValue != null) {
+      _controller.text = _plain(widget.initialValue!);
+    }
+  }
+
+  /// A number as typed: no trailing ".0", no exponent.
+  static String _plain(double value) {
+    final text = value.toStringAsFixed(10);
+    return text.contains('.') ? text.replaceFirst(RegExp(r'\.?0+$'), '') : text;
   }
 
   @override
@@ -190,14 +222,6 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
     ).pop(CurrentValueEdit.set(value: value, date: _date, holding: holding));
   }
 
-  String _unitName(AppLocalizations l10n, QuantityUnit unit) => switch (unit) {
-    QuantityUnit.gram => l10n.quantityUnitGram,
-    QuantityUnit.kilogram => l10n.quantityUnitKilogram,
-    QuantityUnit.troyOunce => l10n.quantityUnitTroyOunce,
-    QuantityUnit.tola => l10n.quantityUnitTola,
-    QuantityUnit.sovereign => l10n.quantityUnitSovereign,
-  };
-
   List<Widget> _weightFields(AppLocalizations l10n) {
     const decimalKeys = TextInputType.numberWithOptions(decimal: true);
     final digits = [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))];
@@ -224,7 +248,10 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
         decoration: InputDecoration(labelText: l10n.weightUnitLabel),
         items: [
           for (final unit in QuantityUnit.values)
-            DropdownMenuItem(value: unit, child: Text(_unitName(l10n, unit))),
+            DropdownMenuItem(
+              value: unit,
+              child: Text(quantityUnitName(l10n, unit)),
+            ),
         ],
         onChanged: (unit) => setState(() => _unit = unit ?? _unit),
       ),
@@ -234,7 +261,7 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
         inputFormatters: digits,
         decoration: InputDecoration(
           labelText: l10n.weightPriceLabel(
-            _unitName(l10n, _unit),
+            quantityUnitName(l10n, _unit),
             widget.currency,
           ),
         ),
@@ -322,7 +349,7 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
           TextButton(
             onPressed: () =>
                 Navigator.of(context).pop(const CurrentValueEdit.remove()),
-            child: Text(l10n.currentValueRemove),
+            child: Text(widget.removeLabel ?? l10n.currentValueRemove),
           ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),

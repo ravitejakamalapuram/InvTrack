@@ -7943,5 +7943,77 @@
   "archivedReadOnlyBanner": "Archived. Unarchive to add or change transactions and documents.",
   "@archivedReadOnlyBanner": {
     "description": "Banner on an archived investment's detail screen explaining that it is read-only"
+  },
+
+  "valueHistoryTitle": "Value history",
+  "@valueHistoryTitle": {
+    "description": "Title of the screen that lists the dated values of one investment"
+  },
+
+  "valueHistoryLink": "History",
+  "@valueHistoryLink": {
+    "description": "Button on the current value card that opens the value history"
+  },
+
+  "valueHistoryIntro": "The latest value counts for your totals. Older ones show how it moved.",
+  "@valueHistoryIntro": {
+    "description": "Explanation at the top of the value history screen"
+  },
+
+  "valueHistoryEmpty": "No values yet. Add one to see how this investment moved.",
+  "@valueHistoryEmpty": {
+    "description": "Shown on the value history screen when the investment has no dated values"
+  },
+
+  "valueHistoryAdd": "Add a value",
+  "@valueHistoryAdd": {
+    "description": "Button on the value history screen that adds a dated value"
+  },
+
+  "valueHistoryRemove": "Remove",
+  "@valueHistoryRemove": {
+    "description": "Button in the editor of one dated value that removes it from the value history"
+  },
+
+  "valueHistoryRemoved": "Value removed",
+  "@valueHistoryRemoved": {
+    "description": "Message after a dated value was removed from the value history"
+  },
+
+  "valueHistoryUndo": "Undo",
+  "@valueHistoryUndo": {
+    "description": "Action on the message shown after a dated value was removed"
+  },
+
+  "valueHistoryRowLabel": "{date}, {amount}",
+  "@valueHistoryRowLabel": {
+    "description": "Screen reader label of a row in the value history: its date and its amount",
+    "placeholders": {
+      "date": {"type": "String", "example": "12 Nov 2026"},
+      "amount": {"type": "String", "example": "INR 64,500"}
+    }
+  },
+
+  "valueHistoryRowHidden": "{date}, value hidden",
+  "@valueHistoryRowHidden": {
+    "description": "Screen reader label of a row in the value history while privacy mode hides amounts",
+    "placeholders": {
+      "date": {"type": "String", "example": "12 Nov 2026"}
+    }
+  },
+
+  "holdingSummary": "{quantity} {unit} × {price}",
+  "@holdingSummary": {
+    "description": "A holding as weight times price per unit, e.g. '10 gram × ₹6,450'",
+    "placeholders": {
+      "quantity": {"type": "String", "example": "10"},
+      "unit": {"type": "String", "example": "gram"},
+      "price": {"type": "String", "example": "₹6,450"}
+    }
+  },
+
+  "holdingSummaryHidden": "Weight and price hidden",
+  "@holdingSummaryHidden": {
+    "description": "Screen reader label for a holding's weight and price while privacy mode hides amounts"
   }
 }
