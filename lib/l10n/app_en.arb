@@ -7728,6 +7728,21 @@
     "description": "Accessibility label of the close button on the guest link banner; hides it for 14 days"
   },
 
+  "dailyTipLabel": "Tip of the day",
+  "@dailyTipLabel": {
+    "description": "Small label above the daily money tip on the Overview"
+  },
+
+  "dailyTipDisclaimer": "Education, not investment advice.",
+  "@dailyTipDisclaimer": {
+    "description": "Line under every daily tip saying it is not financial advice"
+  },
+
+  "dailyTipDismiss": "Dismiss",
+  "@dailyTipDismiss": {
+    "description": "Accessibility label of the close button on the daily tip; hides it until tomorrow"
+  },
+
   "importErrorInvalidZip": "Invalid ZIP file",
   "@importErrorInvalidZip": {
     "description": "Import error: the chosen file is not a readable ZIP backup"
