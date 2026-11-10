@@ -139,9 +139,11 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
     // A first cash flow in the future leaves only today to pick.
     _firstDate = firstDay.isAfter(_today) ? _today : firstDay;
     final initialDay = widget.initialDate;
-    _date = initialDay == null
+    final start = initialDay == null
         ? _today
         : DateTime(initialDay.year, initialDay.month, initialDay.day);
+    // A value cannot be dated in the future (the date picker ends today).
+    _date = start.isAfter(_today) ? _today : start;
     final holding = widget.initialHolding;
     if (holding != null && widget.allowWeight) {
       _byWeight = true;
