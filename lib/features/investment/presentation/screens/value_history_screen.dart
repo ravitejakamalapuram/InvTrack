@@ -36,6 +36,9 @@ class ValueHistoryScreen extends ConsumerWidget {
     WidgetRef ref,
     InvestmentValuationSnapshot snapshot,
   ) async {
+    // Privacy mode hides every amount, so the editor does not open on the
+    // saved ones; the date stays, and the user types the new value.
+    final hideSaved = ref.read(privacyModeProvider);
     final result = await showDialog<CurrentValueEdit>(
       context: context,
       builder: (_) => CurrentValueDialog(
@@ -44,9 +47,9 @@ class ValueHistoryScreen extends ConsumerWidget {
         removeLabel: AppLocalizations.of(context).valueHistoryRemove,
         firstDate: firstCashFlowDate,
         allowWeight: _byWeight,
-        initialValue: snapshot.amount,
+        initialValue: hideSaved ? null : snapshot.amount,
         initialDate: snapshot.effectiveDate,
-        initialHolding: snapshot.holding,
+        initialHolding: hideSaved ? null : snapshot.holding,
       ),
     );
     if (result == null || !context.mounted) return;
