@@ -644,8 +644,8 @@ class _CurrentValueCard extends StatelessWidget {
               ),
             ),
           ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               if (onHistory != null)
                 TextButton(
