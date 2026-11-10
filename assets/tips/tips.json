@@ -1,0 +1,12 @@
+[
+  {"id": "xirr-one-line", "title": "XIRR in one line", "body": "XIRR turns payments on different dates into one yearly rate, so a 6-month loan and a 3-year bond can be compared fairly."},
+  {"id": "moic-meaning", "title": "What MOIC tells you", "body": "MOIC shows how many times your money came back. 1.5x means every ₹100 put in became ₹150. It ignores time, so read it together with XIRR."},
+  {"id": "fd-interest-tax", "title": "FD interest is taxable", "body": "Interest on a fixed deposit is added to your income and taxed at your slab rate. A bank may cut tax before paying you, but you still report all of it."},
+  {"id": "p2p-spread", "title": "Spread P2P lending", "body": "A P2P borrower can default, and getting money back can take long. Lending a little to many borrowers hurts less than lending a lot to one."},
+  {"id": "chit-registered", "title": "Check the chit is registered", "body": "Before joining a chit fund, ask for its registration with the state's chit fund registrar. An unregistered chit leaves you with few options if it goes wrong."},
+  {"id": "gold-making-charges", "title": "Gold jewellery costs extra", "body": "Making charges and GST on jewellery rarely come back when you sell. Coins and bars lose less, so compare before you buy."},
+  {"id": "mark-closed", "title": "Close what is finished", "body": "When an investment has paid everything back, mark it closed. Open ones with no current value show Awaiting instead of a made-up return."},
+  {"id": "inflation-real-return", "title": "Look past the headline rate", "body": "A 7% return with 6% price rise grows your buying power by only about 1%. Compare returns after inflation, not before."},
+  {"id": "indian-financial-year", "title": "April to March", "body": "India's tax year runs 1 April to 31 March. A payout on 31 March and one on 1 April fall in different years, and InvTrack's reports follow the same split."},
+  {"id": "emergency-fund-first", "title": "Keep cash you can reach", "body": "Hold 3 to 6 months of expenses somewhere you can withdraw quickly before locking money into a bond, chit or property."}
+]

@@ -7628,6 +7628,21 @@
     "description": "Accessibility label of the close button on the guest link banner; hides it for 14 days"
   },
 
+  "dailyTipLabel": "Tip of the day",
+  "@dailyTipLabel": {
+    "description": "Small label above the daily money tip on the Overview"
+  },
+
+  "dailyTipDisclaimer": "Education, not investment advice.",
+  "@dailyTipDisclaimer": {
+    "description": "Line under every daily tip saying it is not financial advice"
+  },
+
+  "dailyTipDismiss": "Dismiss",
+  "@dailyTipDismiss": {
+    "description": "Accessibility label of the close button on the daily tip; hides it until tomorrow"
+  },
+
   "approximateRatesNote": "Some amounts use older exchange rates",
   "@approximateRatesNote": {
     "description": "Tooltip and accessibility label of the small info marker on the Overview total card, shown when a converted amount used a cached exchange rate older than 24 hours"
