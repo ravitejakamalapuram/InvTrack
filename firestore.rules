@@ -186,6 +186,16 @@ service cloud.firestore {
       allow list, update: if false;
     }
 
+    // Approved posts for the Telegram channel and the app's tip card. Public content, not user data, so
+    // account deletion and export do not cover it. Anyone signed in (a guest counts) may read APPROVED posts;
+    // a list must filter on status == 'approved'. Only the posting job (Admin SDK) writes. Per-channel
+    // delivery records (posted, failed, message id) are for the job only.
+    match /contentPosts/{postId} {
+      allow get, list: if request.auth != null && resource.data.status == 'approved';
+      allow write: if false;
+      match /deliveries/{channel} { allow read, write: if false; }
+    }
+
     // Written only by the job (Admin SDK). Never readable from a client.
     match /deletionAudit/{entry} { allow read, write: if false; }
     match /deletionRuns/{run}   { allow read, write: if false; }

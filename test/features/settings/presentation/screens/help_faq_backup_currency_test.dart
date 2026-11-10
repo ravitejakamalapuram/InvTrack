@@ -61,4 +61,29 @@ void main() {
       expect(l10n.howToBackupDataDerivedNote, contains('expected cash flows'));
     });
   });
+
+  testWidgets('the Tax-Year PDF export has a Help & FAQ entry (#800)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: HelpFaqScreen(
+          showDeveloperFaq: false,
+          showPortfolioHealthFaq: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('How do I export a Tax-Year PDF?', skipOffstage: false),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('not tax advice', skipOffstage: false),
+      findsOneWidget,
+    );
+  });
 }
