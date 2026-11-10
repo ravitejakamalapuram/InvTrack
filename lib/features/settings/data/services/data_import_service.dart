@@ -1091,14 +1091,20 @@ class DataImportService {
             );
       // The value is what was saved; weight details that are incomplete or
       // disagree with it are dropped, never the value.
+      // Without a usable currency nothing can be rounded or compared.
       final keptHolding =
           holding != null &&
+              currency.trim().isNotEmpty &&
               holding.valueOrNull(currency) ==
                   MoneyPrecision.round(value, currencyCode: currency)
           ? holding
           : null;
       if (hasUnitCells && keptHolding == null) {
-        rowWarnings.add('Weight details of "$name" not imported: invalid row');
+        // The row number only, so the warning carries no name or amount.
+        rowWarnings.add(
+          'Weight details on valuations.csv row ${i + 1} not imported: '
+          'invalid row',
+        );
       }
       (result[(
                 cell(archivedCol).toLowerCase() == 'true',
