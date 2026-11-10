@@ -345,10 +345,10 @@ void main() {
 
     testWidgets('Add value starts on the missing edge date', (tester) async {
       await _pump(tester, _report(xirr: null, missing: missing));
-      // First row needs an opening value: 1 Apr 2025.
+      // Opening edge is 1 Apr 2025; the value must be dated before it.
       await tester.tap(find.text('Add value').first);
       await tester.pumpAndSettle();
-      expect(find.text('Value as of Apr 1, 2025'), findsOneWidget);
+      expect(find.text('Value as of Mar 31, 2025'), findsOneWidget);
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       // Second row needs only a closing value: 31 Mar 2026.

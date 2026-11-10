@@ -93,12 +93,14 @@ class _FyReportScreenState extends ConsumerState<FyReportScreen> {
                           ref,
                           investment: inv,
                           hasUserValue: false,
-                          // Start on the missing edge: 1 Apr, else 31 Mar.
+                          // The edge value is the latest one dated before the
+                          // edge, so start on the day before it: 31 Mar of
+                          // the opening year, else 31 Mar of the closing year.
                           initialDate:
                               r.missingValues
                                   .firstWhere((m) => m.investment.id == inv.id)
                                   .needsOpening
-                              ? r.fyStart
+                              ? DateTime(_fyYear, 3, 31)
                               : DateTime(_fyYear + 1, 3, 31),
                         )
                       : null,
