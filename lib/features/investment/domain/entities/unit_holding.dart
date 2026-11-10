@@ -55,9 +55,10 @@ class UnitHolding {
       (throw StateError('Cannot value this holding'));
 
   /// As [value], or null when the holding is not [isValid] or its value is
-  /// not finite or too large to store (money rule 19.1).
+  /// not finite or too large to store (money rule 19.1), or [currencyCode] is
+  /// blank (a value needs a currency to be rounded in).
   double? valueOrNull(String currencyCode) {
-    if (!isValid) return null;
+    if (!isValid || currencyCode.trim().isEmpty) return null;
     final product = _decimalProduct(quantity, unitPrice);
     if (!product.isFinite) return null;
     final rounded = MoneyPrecision.round(product, currencyCode: currencyCode);
