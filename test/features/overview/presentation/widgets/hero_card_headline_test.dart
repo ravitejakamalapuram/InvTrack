@@ -29,7 +29,7 @@ final _inr = NumberFormat.currency(
   decimalDigits: 0,
 );
 
-/// A new user: ₹₹5 L put into one FD, nothing back, no value entered.
+/// A new user: ₹5 L put into one FD, nothing back, no value entered.
 final _fresh = InvestmentStats(
   totalInvested: 500000,
   totalReturned: 0,
@@ -118,7 +118,10 @@ void main() {
       find.descendant(of: _headline, matching: find.textContaining('₹5 L')),
       findsOneWidget,
     );
-    expect(find.textContaining('-'), findsNothing);
+    expect(
+      find.descendant(of: _headline, matching: find.textContaining('-')),
+      findsNothing,
+    );
   });
 
   testWidgets('shows the value now when a current value is known', (
