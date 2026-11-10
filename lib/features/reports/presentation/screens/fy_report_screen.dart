@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/current_value_dialog.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/fy_report_provider.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/fy_report_actions.dart';
@@ -84,12 +85,23 @@ class _FyReportScreenState extends ConsumerState<FyReportScreen> {
               children: [
                 FyReportBody(
                   report: r,
-                  onAddValue: (inv) => showCurrentValueDialog(
-                    context,
-                    ref,
-                    investment: inv,
-                    hasUserValue: false,
-                  ),
+                  // A value only reaches the report as a dated snapshot, so
+                  // without snapshots the row could never be cleared.
+                  onAddValue: ref.watch(valuationSnapshotsActiveProvider)
+                      ? (inv) => showCurrentValueDialog(
+                          context,
+                          ref,
+                          investment: inv,
+                          hasUserValue: false,
+                          // Start on the missing edge: 1 Apr, else 31 Mar.
+                          initialDate:
+                              r.missingValues
+                                  .firstWhere((m) => m.investment.id == inv.id)
+                                  .needsOpening
+                              ? r.fyStart
+                              : DateTime(_fyYear + 1, 3, 31),
+                        )
+                      : null,
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 FyReportActions(fyYear: _fyYear),

@@ -33,12 +33,14 @@ class CurrentValueEdit {
 /// Opens [CurrentValueDialog] for [investment] and saves the result.
 /// [hasUserValue] offers to remove the user's value so the estimate applies.
 /// [firstCashFlowDate] is the earliest date the value can be dated.
+/// [initialDate] is the date a new value starts on (default: today).
 Future<void> showCurrentValueDialog(
   BuildContext context,
   WidgetRef ref, {
   required InvestmentEntity investment,
   required bool hasUserValue,
   DateTime? firstCashFlowDate,
+  DateTime? initialDate,
 }) async {
   final edit = await showDialog<CurrentValueEdit>(
     context: context,
@@ -46,6 +48,7 @@ Future<void> showCurrentValueDialog(
       currency: investment.currency,
       canRemove: hasUserValue,
       firstDate: firstCashFlowDate,
+      initialDate: initialDate,
       // Weight is kept with dated valuations, so it is offered only then.
       allowWeight:
           investment.type == InvestmentType.gold &&

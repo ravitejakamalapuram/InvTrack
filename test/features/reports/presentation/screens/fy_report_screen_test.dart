@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/fy_report_provider.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/fy_report_screen.dart';
@@ -83,6 +84,7 @@ Future<void> _pump(
   WidgetTester tester,
   FYReport report, {
   bool privacy = false,
+  bool snapshots = true,
   double scale = 1.0,
   Size size = const Size(390, 900),
   void Function(int)? onYearRequested,
@@ -94,6 +96,7 @@ Future<void> _pump(
     ProviderScope(
       overrides: [
         currencyCodeProvider.overrideWithValue('INR'),
+        valuationSnapshotsActiveProvider.overrideWithValue(snapshots),
         privacyModeProvider.overrideWith(() => _Privacy(privacy)),
         fyReportProvider.overrideWith((ref, year) async {
           onYearRequested?.call(year);
@@ -338,6 +341,29 @@ void main() {
         greaterThanOrEqualTo(48),
       );
       expect(find.textContaining('0%'), findsNothing);
+    });
+
+    testWidgets('Add value starts on the missing edge date', (tester) async {
+      await _pump(tester, _report(xirr: null, missing: missing));
+      // First row needs an opening value: 1 Apr 2025.
+      await tester.tap(find.text('Add value').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Value as of Apr 1, 2025'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      // Second row needs only a closing value: 31 Mar 2026.
+      await tester.tap(find.text('Add value').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Value as of Mar 31, 2026'), findsOneWidget);
+    });
+
+    testWidgets('no Add value without dated valuations', (tester) async {
+      await _pump(
+        tester,
+        _report(xirr: null, missing: missing),
+        snapshots: false,
+      );
+      expect(find.text('Add value'), findsNothing);
     });
 
     testWidgets('no list when XIRR is known or nothing is missing', (
