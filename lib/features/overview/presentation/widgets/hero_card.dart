@@ -271,8 +271,8 @@ class HeroCardContent extends ConsumerWidget {
               excludeFromSemantics: true,
               triggerMode: TooltipTriggerMode.tap,
               child: SizedBox(
-                width: 44,
-                height: 44,
+                width: 48,
+                height: 48,
                 child: Center(
                   child: Icon(
                     Icons.info_outline,
