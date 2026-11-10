@@ -28,6 +28,7 @@ import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
 import 'package:inv_tracker/features/investment/domain/models/custom_type_catalog.dart';
+import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
@@ -1057,11 +1058,35 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           rethrow;
         }
       }
+      try {
+        await _carryDocuments(
+          sourceIds: investmentIds,
+          mergedId: newInvestmentId,
+          repo: repo,
+        );
+      } catch (_) {
+        // The merged investment is already removed; so are its valuations.
+        if (mergedValuations.isNotEmpty) {
+          try {
+            await ref
+                .read(valuationRepositoryProvider)
+                .deleteByInvestment(newInvestmentId);
+          } catch (e) {
+            LoggerService.warn(
+              'Could not remove half-merged valuations',
+              metadata: {'errorType': e.runtimeType.toString()},
+            );
+          }
+        }
+        rethrow;
+      }
 
       // Delete old investments
       for (final id in investmentIds) {
+        // deleteInvestment also deletes the source's document records.
         await repo.deleteInvestment(id);
-        // Only a source that is really gone loses its reminders.
+        // Only a source that is really gone loses its reminders and files.
+        await _deleteDocumentFiles([id]);
         await _cancelRemindersFor([id]);
       }
 
@@ -1327,6 +1352,57 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     } catch (e) {
       // Don't fail the main operation if notification scheduling fails
       // Just log and continue
+    }
+  }
+
+  /// Copies the documents of merged investments (file and record) to the
+  /// merged one, so deleting the sources does not take them along. If any
+  /// copy fails, the merged investment and what was copied are removed and the
+  /// error is rethrown, leaving the sources whole. A file already missing on
+  /// this device keeps its record, which the viewer reports as missing.
+  Future<void> _carryDocuments({
+    required List<String> sourceIds,
+    required String mergedId,
+    required InvestmentRepository repo,
+  }) async {
+    final docs = ref.read(documentRepositoryProvider);
+    final storage = ref.read(documentStorageServiceProvider);
+    try {
+      for (final sourceId in sourceIds) {
+        for (final doc in await docs.getDocumentsByInvestment(sourceId)) {
+          final newId = const Uuid().v4();
+          final bytes = await storage.readDocument(doc.localPath);
+          final newPath = bytes == null
+              ? doc.localPath
+              : await storage.saveDocument(
+                  investmentId: mergedId,
+                  documentId: newId,
+                  fileName: doc.fileName,
+                  bytes: bytes,
+                );
+          await docs.createDocument(
+            doc.copyWith(id: newId, investmentId: mergedId, localPath: newPath),
+          );
+        }
+      }
+    } catch (_) {
+      // The merged investment goes first and each step has its own guard, so
+      // one failing step cannot leave the half-merged investment behind.
+      for (final cleanup in <Future<void> Function()>[
+        () => repo.deleteInvestment(mergedId),
+        () => docs.deleteDocumentsByInvestment(mergedId),
+        () => storage.deleteInvestmentDocuments(mergedId),
+      ]) {
+        try {
+          await cleanup();
+        } catch (e) {
+          LoggerService.warn(
+            'Could not remove half-merged investment',
+            metadata: {'errorType': e.runtimeType.toString()},
+          );
+        }
+      }
+      rethrow;
     }
   }
 
