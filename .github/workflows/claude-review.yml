@@ -36,8 +36,7 @@ jobs:
         with:
           ref: refs/pull/${{ github.event.issue.number }}/merge
           persist-credentials: false
-      # claude-code-action has no pinned commit here yet; pin it to a full SHA when convenient.
-      - uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@4fa93a88de49bbef68b10eb15aabedf28ca0e1ed # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
