@@ -89,6 +89,15 @@ describe('postNextToTelegram', () => {
     assert.equal((await db.doc('contentPosts/a/deliveries/telegram').get()).data().status, 'posted');
   });
 
+  it('keeps the record "sending" after an unclear failure, so the post is never sent twice', async () => {
+    await importPosts(db, [post('a', '2026-11-11')]);
+    const dropped = async () => { throw new Error('connection reset'); }; // no code: Telegram may have got it
+    await assert.rejects(postNextToTelegram({ db, now: T0, send: dropped }), /send-failed/);
+    assert.equal((await db.doc('contentPosts/a/deliveries/telegram').get()).data().status, 'sending');
+    const r = await postNextToTelegram({ db, now: T0, send: async () => assert.fail('resent') });
+    assert.equal(r.postId, null);
+  });
+
   it('dry run picks the post but sends and writes nothing', async () => {
     await importPosts(db, [post('a', '2026-11-11')]);
     const r = await postNextToTelegram({ db, now: T0, dryRun: true, send: async () => assert.fail('sent') });

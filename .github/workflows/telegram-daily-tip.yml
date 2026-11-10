@@ -18,6 +18,12 @@ on:
 
 permissions: {}
 
+# One live post at a time, and never cancel one that is running (a cancel after the post is claimed would leave
+# it half done). Dry runs get their own group so they cannot replace a waiting live run.
+concurrency:
+  group: telegram-tip-${{ (github.event_name == 'schedule' || inputs.post) && 'live' || 'dry' }}
+  cancel-in-progress: false
+
 jobs:
   post:
     name: post

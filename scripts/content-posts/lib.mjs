@@ -69,10 +69,15 @@ export async function postNextToTelegram({ db, send, now = new Date(), dryRun = 
       messageId = await send(post);
     } catch (e) {
       const code = SAFE_CODE.test(e?.code ?? '') ? e.code : 'send-failed';
-      try {
-        await ref.update({ status: 'failed', failedAt: now, error: code });
-      } catch {
-        // The record stays "sending"; the original code below is still reported.
+      // Only a clear rejection by Telegram (HTTP 4xx, including 429) is safe to retry. Anything else, such as a
+      // dropped connection or an unreadable reply, may have delivered the post, so the record stays "sending"
+      // for a person to check the channel before any resend.
+      if (/^telegram-http-4\d\d$/.test(code)) {
+        try {
+          await ref.update({ status: 'failed', failedAt: now, error: code });
+        } catch {
+          // The record stays "sending"; the original code below is still reported.
+        }
       }
       throw new Error(code);
     }
