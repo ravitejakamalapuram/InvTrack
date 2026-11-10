@@ -1093,8 +1093,7 @@ class DataImportService {
       // disagree with it are dropped, never the value.
       final keptHolding =
           holding != null &&
-              holding.isValid &&
-              holding.value(currency) ==
+              holding.valueOrNull(currency) ==
                   MoneyPrecision.round(value, currencyCode: currency)
           ? holding
           : null;

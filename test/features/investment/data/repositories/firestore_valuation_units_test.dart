@@ -77,4 +77,19 @@ void main() {
       expect(back.amount, data['amount']);
     }
   });
+
+  test('a document with an overflowing weight still loads, without it', () {
+    final data = stored()
+      ..['quantity'] = 1e200
+      ..['unitPrice'] = 1e200;
+    final back = read(data);
+    expect(back, isNotNull);
+    expect(back!.holding, isNull);
+    expect(back.amount, 81790.63);
+  });
+
+  test('an unrounded stored amount still matches its weight', () {
+    final data = stored()..['amount'] = 81790.625;
+    expect(read(data)!.holding, holding);
+  });
 }

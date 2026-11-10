@@ -37,6 +37,31 @@ void main() {
       expect(h.value('JPY'), 1502); // 1501.5 rounds up
     });
 
+    test('multiplies the decimals as written: 0.1 x 0.35 is 0.035 -> 0.04', () {
+      const h = UnitHolding(
+        quantity: 0.1,
+        unit: QuantityUnit.gram,
+        unitPrice: 0.35,
+      );
+      expect(h.value('INR'), 0.04);
+    });
+
+    test('an overflowing product has no value instead of throwing', () {
+      const h = UnitHolding(
+        quantity: 1e200,
+        unit: QuantityUnit.gram,
+        unitPrice: 1e200,
+      );
+      expect(h.valueOrNull('INR'), isNull);
+      expect(() => h.value('INR'), throwsStateError);
+      const big = UnitHolding(
+        quantity: 1e10,
+        unit: QuantityUnit.gram,
+        unitPrice: 1e10,
+      );
+      expect(big.valueOrNull('INR'), isNull); // 16 digits or more
+    });
+
     test('is deterministic for repeated fractional values', () {
       const h = UnitHolding(
         quantity: 0.1,

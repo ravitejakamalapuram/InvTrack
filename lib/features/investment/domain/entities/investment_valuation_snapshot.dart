@@ -122,7 +122,8 @@ class InvestmentValuationSnapshot {
   }) => InvestmentValuationSnapshot(
     id: id,
     investmentId: investmentId,
-    // A new holding sets the amount; a new amount alone drops the old
+    // A new holding sets the amount (it must be a valid holding, see
+    // [UnitHolding.valueOrNull]);  a new amount alone drops the old
     // holding, so the two can never disagree.
     amount: holding != null ? holding.value(currency) : amount ?? this.amount,
     holding: holding ?? (amount != null ? null : this.holding),
