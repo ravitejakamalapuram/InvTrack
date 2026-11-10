@@ -29,6 +29,16 @@ describe('importPosts', () => {
     assert.equal((await db.doc('contentPosts/a/deliveries/telegram').get()).data().status, 'posted');
   });
 
+  it('does not re-approve a post that was withdrawn after the first import', async () => {
+    await importPosts(db, [post('a', '2026-11-11')]);
+    await db.doc('contentPosts/a').update({ status: 'withdrawn', note: 'kept' });
+    await importPosts(db, [post('a', '2026-11-11', { title: 'Edited' })]);
+    const doc = (await db.doc('contentPosts/a').get()).data();
+    assert.equal(doc.status, 'withdrawn');
+    assert.equal(doc.note, 'kept');
+    assert.equal(doc.title, 'Edited');
+  });
+
   it('rejects a post without a title, body or valid date', async () => {
     await assert.rejects(importPosts(db, [{ id: 'x', title: 't', body: '' , approvedAt: '2026-11-11' }]));
     await assert.rejects(importPosts(db, [post('y', 'not-a-date')]));
@@ -86,3 +96,31 @@ describe('postNextToTelegram', () => {
     assert.equal((await db.doc('contentPosts/a/deliveries/telegram').get()).exists, false);
   });
 });
+
+describe('postNextToTelegram safety', () => {
+  it('never resends a post whose delivery is stuck in "sending"', async () => {
+    await importPosts(db, [post('a', '2026-11-11'), post('b', '2026-11-12')]);
+    await db.doc('contentPosts/a/deliveries/telegram').set({ status: 'sending' });
+    const sent = [];
+    await postNextToTelegram({ db, now: T0, send: async (p) => { sent.push(p.id); return '1'; } });
+    assert.deepEqual(sent, ['b']);
+  });
+
+  it('two overlapping runs send a post only once', async () => {
+    await importPosts(db, [post('a', '2026-11-11')]);
+    const sent = [];
+    const send = async (p) => { sent.push(p.id); await new Promise((r) => setTimeout(r, 50)); return '1'; };
+    await Promise.all([postNextToTelegram({ db, now: T0, send }), postNextToTelegram({ db, now: T0, send })]);
+    assert.deepEqual(sent, ['a']);
+  });
+
+  it('gives up on a post after 3 failed attempts so newer posts are not blocked', async () => {
+    await importPosts(db, [post('a', '2026-11-11'), post('b', '2026-11-12')]);
+    const bad = async (p) => { if (p.id === 'a') throw Object.assign(new Error('x'), { code: 'telegram-http-400' }); return '5'; };
+    for (let i = 0; i < 3; i++) await assert.rejects(postNextToTelegram({ db, now: T0, send: bad }));
+    assert.equal((await db.doc('contentPosts/a/deliveries/telegram').get()).data().attempts, 3);
+    const r = await postNextToTelegram({ db, now: T0, send: bad });
+    assert.equal(r.postId, 'b');
+  });
+});
+
