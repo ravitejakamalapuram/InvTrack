@@ -192,7 +192,9 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
   }
 
   /// The weight typed so far, or null while it is not a usable holding.
-  UnitHolding? get _holding {
+  /// The typed weight and price, if both are usable numbers. Its value may
+  /// still be too large to store; see [_holding].
+  UnitHolding? get _typedHolding {
     final quantity = _parse(_quantity.text);
     final price = _parse(_price.text);
     if (quantity == null || price == null) return null;
@@ -202,6 +204,13 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
       unitPrice: price,
     );
     return holding.isValid ? holding : null;
+  }
+
+  /// The typed holding only when it has a value that can be stored, so
+  /// callers can use [UnitHolding.value] without it throwing.
+  UnitHolding? get _holding {
+    final holding = _typedHolding;
+    return holding?.valueOrNull(widget.currency) == null ? null : holding;
   }
 
   void _save() {
@@ -228,7 +237,11 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
         decoration: InputDecoration(labelText: l10n.weightQuantityLabel),
         onChanged: (_) => setState(() {}),
         // One message for both fields; it names both.
-        validator: (_) => _holding == null ? l10n.weightInvalid : null,
+        validator: (_) {
+          if (_typedHolding == null) return l10n.weightInvalid;
+          // Fits as numbers but not as a stored amount (rules 19.1).
+          return _holding == null ? l10n.amountInvestedTooLarge : null;
+        },
       ),
       DropdownButtonFormField<QuantityUnit>(
         initialValue: _unit,

@@ -10,6 +10,8 @@ import 'package:inv_tracker/features/investment/presentation/providers/investmen
 import 'package:inv_tracker/features/investment/presentation/widgets/current_value_dialog.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
+const _tooLarge = 'That amount is too large';
+
 Future<CurrentValueEdit?> _open(
   WidgetTester tester, {
   bool canRemove = false,
@@ -356,6 +358,54 @@ void main() {
             find.text('Enter a weight above 0 and a price.'),
             findsOneWidget,
           );
+          await tester.tap(find.text('Cancel'));
+        },
+      );
+      expect(result, isNull);
+    });
+
+    testWidgets('a weight x price too large to store is refused, not thrown', (
+      tester,
+    ) async {
+      final result = await _open(
+        tester,
+        allowWeight: true,
+        interact: () async {
+          await tester.tap(find.text('Enter weight and price instead'));
+          await tester.pumpAndSettle();
+          await tester.enterText(find.bySemanticsLabel('Weight'), '99999999');
+          await tester.enterText(
+            find.bySemanticsLabel('Price per gram in INR'),
+            '99999999999',
+          );
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          await tester.tap(find.text('Save'));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          expect(find.text(_tooLarge), findsOneWidget);
+          await tester.tap(find.text('Cancel'));
+        },
+      );
+      expect(result, isNull);
+    });
+
+    testWidgets('a blank currency does not throw in weight mode', (
+      tester,
+    ) async {
+      final result = await _open(
+        tester,
+        currency: '',
+        allowWeight: true,
+        interact: () async {
+          await tester.tap(find.text('Enter weight and price instead'));
+          await tester.pumpAndSettle();
+          await tester.enterText(find.bySemanticsLabel('Weight'), '10');
+          await tester.enterText(find.byType(TextFormField).last, '6000');
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Save'));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
           await tester.tap(find.text('Cancel'));
         },
       );
