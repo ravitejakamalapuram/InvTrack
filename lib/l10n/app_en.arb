@@ -7628,6 +7628,57 @@
     "description": "Accessibility label of the close button on the guest link banner; hides it for 14 days"
   },
 
+  "importErrorInvalidZip": "Invalid ZIP file",
+  "@importErrorInvalidZip": {
+    "description": "Import error: the chosen file is not a readable ZIP backup"
+  },
+
+  "importErrorMetadataMissing": "Invalid ZIP file: metadata.json not found",
+  "@importErrorMetadataMissing": {
+    "description": "Import error: the backup ZIP has no metadata.json file; metadata.json is a file name and stays as is"
+  },
+
+  "importErrorMetadataUnparseable": "Failed to parse metadata.json",
+  "@importErrorMetadataUnparseable": {
+    "description": "Import error: metadata.json in the backup could not be read; metadata.json is a file name and stays as is"
+  },
+
+  "importErrorCashflowsUnreadable": "Backup not imported: cashflows.csv could not be read. Your existing data was not changed.",
+  "@importErrorCashflowsUnreadable": {
+    "description": "Import error: cashflows.csv in the backup could not be read, so the restore stopped before changing anything; cashflows.csv is a file name and stays as is"
+  },
+
+  "importErrorCashflowsMissing": "Backup not imported: cashflows.csv is missing. Your existing data was not changed.",
+  "@importErrorCashflowsMissing": {
+    "description": "Import error: the backup has no cashflows.csv, so the restore stopped before changing anything; cashflows.csv is a file name and stays as is"
+  },
+
+  "importErrorCashflowsNoRows": "Backup not imported: cashflows.csv has no readable rows. Your existing data was not changed.",
+  "@importErrorCashflowsNoRows": {
+    "description": "Import error: cashflows.csv in the backup has no usable rows, so the restore stopped before changing anything; cashflows.csv is a file name and stays as is"
+  },
+
+  "importErrorFileDamaged": "Backup not imported: {file} is damaged. Your existing data was not changed.",
+  "@importErrorFileDamaged": {
+    "description": "Import error: a file inside the backup is damaged, so the restore stopped before changing anything",
+    "placeholders": {
+      "file": {
+        "type": "String",
+        "example": "goals.csv"
+      }
+    }
+  },
+
+  "importErrorArchiveFailures": "{count, plural, =1{{count} restored item could not be moved to the archive} other{{count} restored items could not be moved to the archive}}",
+  "@importErrorArchiveFailures": {
+    "description": "Import error: how many restored investments or goals could not be archived after the restore",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
   "approximateRatesNote": "Some amounts use older exchange rates",
   "@approximateRatesNote": {
     "description": "Tooltip and accessibility label of the small info marker on the Overview total card, shown when a converted amount used a cached exchange rate older than 24 hours"
