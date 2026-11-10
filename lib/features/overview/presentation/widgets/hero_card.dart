@@ -523,7 +523,7 @@ class HeroCardContent extends ConsumerWidget {
         ),
         if (!showRealizedOnly && stats.currentValue != null)
           _buildCashFlowStat(
-            icon: Icons.account_balance_wallet_outlined,
+            icon: Icons.show_chart_rounded,
             amount: stats.currentValue!,
             value: currencyFormat.formatCompact(stats.currentValue!),
             label: l10n.heroValueNowLabel,

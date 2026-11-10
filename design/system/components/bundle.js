@@ -449,7 +449,7 @@
       return '<div class="it-shimmer" role="status" aria-label="Loading content">' + GlassCard(box(140, 16) + '<div style="margin-top:16px">' + box('100%', (o.height || 150) - 60) + '</div>') + '</div>';
     }
     if (k === 'fullscreen') {
-      return '<div class="it-loading" role="status" aria-label="' + esc(o.message || 'Loading') + '"><span class="it-loading__disc">' + icon('account_balance_wallet', { size: 48 }) + '</span><span class="it-loading__ring"></span>' +
+      return '<div class="it-loading" role="status" aria-label="' + esc(o.message || 'Loading') + '"><span class="it-loading__disc">' + icon('show_chart', { size: 48 }) + '</span><span class="it-loading__ring"></span>' +
         (o.message ? '<p class="it-loading__msg">' + esc(o.message) + '</p>' : '') + '</div>';
     }
     return '';
@@ -476,7 +476,7 @@
         (ic ? icon(ic, { size: 14 }) : '') + '<span>' + esc(label) + '</span></span><b class="it-statcol__v">' + value + '</b></div>';
     }
     var statCols = (scope ? statCol(amount(o.out), 'out', 'arrow_upward') : '') + statCol(amount(o.inn), 'in', 'arrow_downward') +
-      (!scope && o.valueNow ? statCol(amount(o.valueNow), 'Value now', 'account_balance_wallet') : '') +
+      (!scope && o.valueNow ? statCol(amount(o.valueNow), 'Value now', 'show_chart') : '') +
       statCol(amount(o.xirr), o.xirrLabel || 'XIRR', null, true) + (o.realisedXirr ? statCol(amount(o.realisedXirr), 'Realised XIRR', null, true) : '');
     return '<div class="it-hero" role="group" aria-label="' + esc(title) + '">' +
       '<div class="it-hero__title-row"><div class="it-hero__title">' + esc(title) + '</div>' + PrivacyMask({ kind: 'toggle', on: !!o.privacy, size: 18 }) +
@@ -589,7 +589,7 @@
   function Navigation(o) {
     o = o || {};
     var items = o.items || [
-      { label: 'Overview', icon: 'pie_chart_outline', on: 'pie_chart' }, { label: 'Investments', icon: 'account_balance_wallet', on: 'account_balance_wallet', outlined: true },
+      { label: 'Overview', icon: 'pie_chart_outline', on: 'pie_chart' }, { label: 'Investments', icon: 'show_chart', on: 'account_balance_wallet', outlined: true },
       { label: 'Goals', icon: 'flag', on: 'flag', outlined: true }, { label: 'Reports', icon: 'assessment', on: 'assessment', outlined: true }, { label: 'Settings', icon: 'settings', on: 'settings', outlined: true }
     ];
     var active = o.active == null ? 0 : o.active;

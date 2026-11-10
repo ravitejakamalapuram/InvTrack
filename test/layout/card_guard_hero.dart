@@ -214,7 +214,7 @@ class _HeroCase {
       : labels[i] == 'out'
       ? Icons.arrow_upward_rounded
       : labels[i] == 'Value now'
-      ? Icons.account_balance_wallet_outlined
+      ? Icons.show_chart_rounded
       : null;
 }
 
