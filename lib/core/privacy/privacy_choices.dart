@@ -111,9 +111,12 @@ class AnalyticsSharingNotifier extends Notifier<bool> {
           .read(sharedPreferencesProvider)
           .setBool(privacyAnalyticsKey, enabled);
     } catch (_) {
-      // Put analytics back so what is collected matches what is saved.
+      // Put both back so what is collected matches what is saved.
       try {
         await applier.setAnalytics(previous);
+      } catch (_) {}
+      try {
+        await applier.setPerformance(previous);
       } catch (_) {}
       rethrow;
     }
@@ -134,10 +137,20 @@ class CrashReportsNotifier extends Notifier<bool> {
 
   Future<void> setEnabled(bool enabled) async {
     if (state == enabled) return;
-    await ref.read(privacyCollectionApplierProvider).setCrashReports(enabled);
-    await ref
-        .read(sharedPreferencesProvider)
-        .setBool(privacyCrashReportsKey, enabled);
+    final applier = ref.read(privacyCollectionApplierProvider);
+    final previous = state;
+    await applier.setCrashReports(enabled);
+    try {
+      await ref
+          .read(sharedPreferencesProvider)
+          .setBool(privacyCrashReportsKey, enabled);
+    } catch (_) {
+      // The choice was not saved, so put the Crashlytics setting back.
+      try {
+        await applier.setCrashReports(previous);
+      } catch (_) {}
+      rethrow;
+    }
     state = enabled;
   }
 }

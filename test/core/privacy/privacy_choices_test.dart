@@ -36,7 +36,69 @@ Future<(ProviderContainer, _FakeApplier, SharedPreferences)> _setup([
   return (container, applier, prefs);
 }
 
+/// A preferences store whose writes fail.
+class _FailingPrefs implements SharedPreferences {
+  @override
+  bool? getBool(String key) => null;
+
+  @override
+  Future<bool> setBool(String key, bool value) async =>
+      throw StateError('disk full');
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
+  group('when the save fails', () {
+    test(
+      'turning crash reports off puts the Crashlytics setting back',
+      () async {
+        final applier = _FakeApplier();
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(_FailingPrefs()),
+            privacyCollectionApplierProvider.overrideWithValue(applier),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await expectLater(
+          container.read(crashReportsProvider.notifier).setEnabled(false),
+          throwsStateError,
+        );
+        expect(applier.calls, ['crash:false', 'crash:true']);
+        expect(container.read(crashReportsProvider), isTrue);
+      },
+    );
+
+    test(
+      'turning usage data off puts analytics and performance back',
+      () async {
+        final applier = _FakeApplier();
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(_FailingPrefs()),
+            privacyCollectionApplierProvider.overrideWithValue(applier),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await expectLater(
+          container.read(analyticsSharingProvider.notifier).setEnabled(false),
+          throwsStateError,
+        );
+        expect(applier.calls, [
+          'analytics:false',
+          'performance:false',
+          'analytics:true',
+          'performance:true',
+        ]);
+        expect(container.read(analyticsSharingProvider), isTrue);
+      },
+    );
+  });
+
   group('defaults', () {
     test('both choices are on when nothing was saved', () async {
       final (container, _, _) = await _setup();
