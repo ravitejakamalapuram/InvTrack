@@ -1,6 +1,8 @@
 # Claude reviews a pull request only when the repo owner comments "@claude review".
 # CodeRabbit is the first reviewer. Ask for this one only when CodeRabbit is rate-limited or down.
-# Needs the repo secret ANTHROPIC_API_KEY. Without it the job fails and nothing else is affected.
+# Needs the repo secret CLAUDE_CODE_OAUTH_TOKEN (made with `claude setup-token`), so the
+# review uses the owner's Claude plan instead of paid API credit. Without it the job fails
+# and nothing else is affected.
 #
 # Token use is kept low on purpose: it runs only on request, Claude reads the diff instead of
 # the whole repo, and turns are capped.
@@ -37,7 +39,7 @@ jobs:
       # claude-code-action has no pinned commit here yet; pin it to a full SHA when convenient.
       - uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           # Temporary: print the real error. Remove once the review works.
           show_full_output: true
