@@ -140,6 +140,14 @@ class InMemoryValuationRepository implements ValuationRepository {
     return snapshots.length;
   }
 
+  @override
+  Future<void> deleteByInvestment(String investmentId) async {
+    _checkFailure();
+    docs.removeWhere((_, s) => s.investmentId == investmentId);
+    log.add('deleteByInvestment:$investmentId');
+    _emit();
+  }
+
   void dispose() {
     _controller.close();
     _server.close();
