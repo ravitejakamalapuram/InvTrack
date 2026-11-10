@@ -127,6 +127,14 @@ class AnalyticsEvents {
   static const String dailyTipShown = 'daily_tip_shown';
   static const String dailyTipDismissed = 'daily_tip_dismissed';
 
+  // Rewarded ad before the Tax-Year export. Always sent with a
+  // `placement` string and nothing else: no amounts, no names.
+  static const String rewardedPromptShown = 'rewarded_prompt_shown';
+  static const String rewardedPromptDeclined = 'rewarded_prompt_declined';
+  static const String rewardedAdEarned = 'rewarded_ad_earned';
+  static const String rewardedAdDismissed = 'rewarded_ad_dismissed';
+  static const String rewardedAdUnavailable = 'rewarded_ad_unavailable';
+
   // Investment lifecycle
   static const String investmentClosed = 'investment_closed';
   static const String investmentReopened = 'investment_reopened';

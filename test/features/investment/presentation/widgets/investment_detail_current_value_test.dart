@@ -11,6 +11,7 @@ import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_stats_section.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -80,6 +81,8 @@ Future<void> _pump(
   InvestmentEntity? investment,
   bool privacy = false,
   VoidCallback? onUpdate,
+  VoidCallback? onHistory,
+  UnitHolding? holding,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -100,6 +103,8 @@ Future<void> _pump(
               currencyFormat: _inr,
               isPrivacyMode: privacy,
               onUpdateCurrentValue: onUpdate,
+              onViewValueHistory: onHistory,
+              currentHolding: holding,
             ),
           ),
         ),
@@ -186,5 +191,33 @@ void main() {
 
     expect(find.text('Current value'), findsNothing);
     expect(find.text('Update'), findsNothing);
+  });
+
+  testWidgets('a value entered by weight shows it, and History opens', (
+    tester,
+  ) async {
+    var history = 0;
+    await _pump(
+      tester,
+      stats: _s1(estimate: false),
+      onUpdate: () {},
+      onHistory: () => history++,
+      holding: const UnitHolding(
+        quantity: 10,
+        unit: QuantityUnit.gram,
+        unitPrice: 6450,
+      ),
+    );
+    expect(find.text('10 gram × ₹6,450.00'), findsOneWidget);
+    await tester.tap(find.text('History'));
+    expect(history, 1);
+  });
+
+  testWidgets('no weight line and no History link when there are none', (
+    tester,
+  ) async {
+    await _pump(tester, stats: _s1(estimate: false), onUpdate: () {});
+    expect(find.textContaining('×'), findsNothing);
+    expect(find.text('History'), findsNothing);
   });
 }
