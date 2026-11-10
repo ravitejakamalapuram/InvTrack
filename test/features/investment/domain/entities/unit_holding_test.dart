@@ -104,6 +104,17 @@ void main() {
     });
   });
 
+  test('a blank currency has no value, and does not throw', () {
+    const h = UnitHolding(
+      quantity: 10,
+      unit: QuantityUnit.gram,
+      unitPrice: 6000,
+    );
+    expect(h.valueOrNull(''), isNull);
+    expect(h.valueOrNull('  '), isNull);
+    expect(() => h.value(''), throwsStateError);
+  });
+
   group('snapshot with a holding', () {
     const holding = UnitHolding(
       quantity: 10,

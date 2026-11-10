@@ -228,10 +228,42 @@ void main() {
       expect(snapshot.amount, 60000, reason: cells);
       expect(snapshot.holding, isNull, reason: cells);
       expect(
-        result.warnings.any((w) => w.contains('Weight details of "Gold"')),
+        result.warnings.any(
+          (w) => w.contains('Weight details on valuations.csv row 2'),
+        ),
         isTrue,
+        reason: cells,
+      );
+      // The row is named by its number: no investment name or amount.
+      expect(
+        result.warnings.any((w) => w.contains('Gold') || w.contains('60000')),
+        isFalse,
         reason: cells,
       );
     }
   });
+
+  test(
+    'weight cells with no usable currency keep the row and do not throw',
+    () async {
+      final result = await importService.importFromZip(
+        _zip({
+          'cashflows.csv':
+              '${_cashFlowsHeader}2025-10-01,Gold,INVEST,100000,INR,,gold,open\n',
+          'valuations.csv':
+              '${_newHeader.trim()},Quantity,Unit,Unit Price\n'
+              'Gold,false,2026-01-01,60000,,,marketValue,manual,,gold,open,10,gram,6000\n',
+        }),
+        ImportStrategy.replace,
+        baseCurrency: '',
+      );
+      expect(
+        result.warnings.any(
+          (w) => w.contains('Weight details on valuations.csv row 2'),
+        ),
+        isTrue,
+      );
+      expect(result.errors.where((e) => e.contains('valuations')), isEmpty);
+    },
+  );
 }
