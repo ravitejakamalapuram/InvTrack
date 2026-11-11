@@ -32,7 +32,7 @@
   {
     "id": "fd-interest-tax",
     "title": "FD interest is taxable",
-    "body": "Interest on a fixed deposit is added to your income and taxed at your slab rate. A bank may cut tax before paying you, but you still report all of it.",
+    "body": "Interest on a fixed deposit is added to your income and taxed at your slab rate. Some deductions, such as for senior citizens, may apply. A bank may cut tax before paying you, but you still report all of it.",
     "approvedAt": "2026-11-15"
   },
   {
@@ -50,7 +50,7 @@
   {
     "id": "gold-making-charges",
     "title": "Gold jewellery costs extra",
-    "body": "Making charges and GST on jewellery rarely come back when you sell. Coins and bars lose less, so compare before you buy.",
+    "body": "Making charges and GST on jewellery rarely come back when you sell. Coins and bars have their own costs, such as GST, minting charges and buyback spreads, so compare the price and buyback terms before you buy.",
     "approvedAt": "2026-11-18"
   },
   {
