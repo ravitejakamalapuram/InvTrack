@@ -111,4 +111,23 @@ void main() {
     await notifier().mergeInvestments([a.id, b.id], 'Both');
     expect(repo.investments.single.metal, Metal.silver);
   });
+
+  test('a merge takes the metal of the first source, a record without one '
+      'counting as gold', () async {
+    final old = await add(InvestmentType.gold, null);
+    final silver = await add(InvestmentType.gold, Metal.silver);
+    await notifier().mergeInvestments([old.id, silver.id], 'Both');
+    expect(repo.investments.single.metal, Metal.gold);
+  });
+
+  test('a merge into another type carries no metal', () async {
+    final a = await add(InvestmentType.gold, Metal.silver);
+    final b = await add(InvestmentType.gold, Metal.silver);
+    await notifier().mergeInvestments(
+      [a.id, b.id],
+      'Both',
+      type: InvestmentType.other,
+    );
+    expect(repo.investments.single.metal, isNull);
+  });
 }

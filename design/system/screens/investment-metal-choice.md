@@ -25,7 +25,7 @@ Silver held: 120 g
 - The Metal row shows only for Precious metals, on add and on edit. Gold is chosen on a new investment. An investment saved before the choice opens as Gold; it is only stored if the user saves the form.
 - Changing the type away from Precious metals clears the metal.
 - "Gold held" becomes "Silver held" for silver. A record without a metal reads as gold.
-- Silver and gold are separate investments: a merge keeps the metal of its first source.
+- A merge takes the metal of its first precious-metals source; a record without a metal counts as Gold. Merging gold with silver is the user's choice.
 - Backup: `metal` is one more field in investments.json; older files without it still import.
 - Accessibility: the chips are Material choice chips, so they announce as selected or not selected, with a 48dp touch target.
 - Copy is sentence case, as in `system/README.md`. The names come from the strings file.

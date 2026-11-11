@@ -1034,7 +1034,15 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         expectedRate: firstSet((i) => i.expectedRate),
         incomeFrequency: firstSet((i) => i.incomeFrequency),
         platform: firstSet((i) => i.platform),
-        metal: firstSet((i) => i.metal),
+        // The first precious-metals source decides; a record saved before the
+        // choice counts as gold, as everywhere else.
+        metal: finalType == InvestmentType.gold
+            ? (toMerge
+                      .where((i) => i.type == InvestmentType.gold)
+                      .firstOrNull
+                      ?.metal ??
+                  Metal.gold)
+            : null,
       );
 
       // Collect all cash flows from merged investments
