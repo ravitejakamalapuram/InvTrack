@@ -141,9 +141,16 @@ void main() {
     expect(guard, contains('gh api'));
   });
 
+  // The emulator itself is started by release-platform's reusable nightly workflow; this repo only
+  // supplies the flows to run.
   test('a nightly workflow runs the integration tests on an emulator', () {
     final nightly = read('.github/workflows/nightly.yml');
-    expect(nightly, contains('reactivecircus/android-emulator-runner'));
+    expect(
+      nightly,
+      contains('ravitejakamalapuram/release-platform/.github/workflows/nightly.yml@v2'),
+    );
+    expect(nightly, contains('integration_script:'));
+    expect(nightly, contains('-d emulator-5554'));
     for (final flow in [
       'integration_test/app_test.dart',
       'integration_test/flows/investment_form_flow_test.dart',
