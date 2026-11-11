@@ -520,7 +520,7 @@
   var TYPES = {
     'p2p-lending': ['P2P Lending', 'handshake'], 'fixed-deposit': ['Fixed Deposit', 'account_balance'], 'bonds': ['Bonds/Debentures', 'description'],
     'real-estate': ['Real Estate', 'home'], 'private-equity': ['Private Equity', 'business_center'], 'angel-investing': ['Angel Investing', 'rocket_launch'],
-    'chit-funds': ['Chit Funds', 'group'], 'gold': ['Gold/Commodities', 'monetization_on'], 'crypto': ['Crypto', 'currency_bitcoin'],
+    'chit-funds': ['Chit Funds', 'group'], 'gold': ['Precious metals', 'monetization_on'], 'crypto': ['Crypto', 'currency_bitcoin'],
     'mutual-funds': ['Mutual Funds', 'pie_chart'], 'stocks': ['Stocks', 'show_chart'], 'invoice-discounting': ['Invoice Discounting', 'receipt_long'],
     'financing': ['Financing', 'payments'], 'other': ['Other', 'attach_money']
   };

@@ -1,4 +1,5 @@
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/investment/domain/entities/metal.dart';
 import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -11,6 +12,12 @@ String quantityUnitName(AppLocalizations l10n, QuantityUnit unit) =>
       QuantityUnit.tola => l10n.quantityUnitTola,
       QuantityUnit.sovereign => l10n.quantityUnitSovereign,
     };
+
+/// "Gold" or "Silver" in the user's language.
+String metalName(AppLocalizations l10n, Metal metal) => switch (metal) {
+  Metal.gold => l10n.metalGold,
+  Metal.silver => l10n.metalSilver,
+};
 
 /// "10 gram × ₹6,450": the weight times the price per unit, the price in
 /// [currency] (never the base currency).

@@ -27,6 +27,7 @@ import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/metal.dart';
 import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/domain/models/custom_type_catalog.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
@@ -92,6 +93,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     String? currency,
     // Text typed in the "Custom type" field of an investment of type Other
     String? customTypeLabel,
+    // Gold or Silver, for type gold only; ignored for any other type.
+    Metal? metal,
     String? id,
     double? initialAmount,
     void Function(bool confirmed)? onWriteResult,
@@ -155,6 +158,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         currency: investmentCurrency,
         customTypeId: customType.id,
         customTypeLabel: customType.label,
+        metal: type == InvestmentType.gold ? metal : null,
       );
       firstFlow = firstAmount == null
           ? null
@@ -255,6 +259,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     // Text typed in the "Custom type" field of an investment of type Other;
     // null or blank clears the custom type.
     String? customTypeLabel,
+    // Gold or Silver, for type gold only; ignored for any other type.
+    Metal? metal,
   }) async {
     // Input validation
     _validateName(name);
@@ -317,6 +323,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             : mirror?.effectiveDate,
         customTypeId: customType.id,
         customTypeLabel: customType.label,
+        metal: type == InvestmentType.gold ? metal : null,
       );
       final repo = ref.read(investmentRepositoryProvider);
       // With dated valuations on, the pair mirrors the latest snapshot and is
@@ -503,6 +510,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     currentValueDate: date,
     customTypeId: existing.customTypeId,
     customTypeLabel: existing.customTypeLabel,
+    metal: existing.metal,
   );
 
   /// Close an investment
@@ -1026,6 +1034,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         expectedRate: firstSet((i) => i.expectedRate),
         incomeFrequency: firstSet((i) => i.incomeFrequency),
         platform: firstSet((i) => i.platform),
+        metal: firstSet((i) => i.metal),
       );
 
       // Collect all cash flows from merged investments

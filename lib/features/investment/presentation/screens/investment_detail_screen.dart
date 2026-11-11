@@ -433,6 +433,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 bottom: AppSpacing.xs,
                 child: MetalHeldLine(
                   grams: heldGrams(cashFlowsAsync.value ?? const [])!,
+                  metal: widget.investment.metal,
                 ),
               ),
             ),
