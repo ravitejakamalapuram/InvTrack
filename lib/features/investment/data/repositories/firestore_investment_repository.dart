@@ -9,6 +9,7 @@ import 'package:inv_tracker/core/utils/custom_type_label.dart';
 import 'package:inv_tracker/core/utils/stored_date.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -1132,7 +1133,11 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     return value;
   }
 
-  Map<String, dynamic> _cashFlowToFirestore(CashFlowEntity cashFlow) {
+  Map<String, dynamic> _cashFlowToFirestore(CashFlowEntity cashFlow) =>
+      cashFlowToFirestore(cashFlow);
+
+  @visibleForTesting
+  static Map<String, dynamic> cashFlowToFirestore(CashFlowEntity cashFlow) {
     return {
       'investmentId': cashFlow.investmentId,
       'date': _dateToFirestore(cashFlow.date),
@@ -1142,6 +1147,9 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       'createdAt': Timestamp.fromDate(cashFlow.createdAt),
       // Multi-currency support
       'currency': cashFlow.currency,
+      // Weight (#946); null clears a stored weight when a flow is updated.
+      'quantity': cashFlow.quantity,
+      'quantityUnit': cashFlow.quantityUnit?.name,
     };
   }
 
@@ -1159,8 +1167,17 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     required String baseCurrency,
     UtcOffsetAt? offsetAt,
   }) {
+    // A weight needs a positive finite number and a known unit; anything
+    // else is dropped, the money stays.
+    final rawQuantity = data['quantity'];
+    final unit = QuantityUnit.tryParse(data['quantityUnit']);
+    final quantity = rawQuantity is num ? rawQuantity.toDouble() : null;
+    final hasWeight =
+        unit != null && quantity != null && quantity.isFinite && quantity > 0;
     return CashFlowEntity(
       id: id,
+      quantity: hasWeight ? quantity : null,
+      quantityUnit: hasWeight ? unit : null,
       investmentId: data['investmentId'] as String,
       date: _dateFromFirestore(data['date'], offsetAt)!,
       type: CashFlowType.fromString(data['type'] as String),

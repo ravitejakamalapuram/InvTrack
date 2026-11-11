@@ -35,6 +35,7 @@ service cloud.firestore {
     function validCashFlow(d) {
       return optStr(d, 'investmentId', 200) && optStr(d, 'type', 50)
         && optStr(d, 'notes', 2000) && optStr(d, 'currency', 10)
+        && optStr(d, 'quantityUnit', 20) && optNum(d, 'quantity')
         && optNum(d, 'amount') && optTs(d, 'date') && optTs(d, 'createdAt');
     }
     function validGoal(d) {

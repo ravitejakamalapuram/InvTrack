@@ -232,6 +232,8 @@ class _ImportConfirmationScreenState
               date: row.date,
               notes: row.notes,
               createdAt: now,
+              quantity: row.quantity,
+              quantityUnit: row.quantityUnit,
             ),
           );
         }

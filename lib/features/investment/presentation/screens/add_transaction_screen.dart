@@ -23,7 +23,9 @@ import 'package:inv_tracker/core/widgets/form_helper_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/holding_text.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -65,6 +67,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
+  final _weightController = TextEditingController();
+  QuantityUnit _weightUnit = QuantityUnit.gram;
   DateTime _selectedDate = DateTime.now();
   CashFlowType _selectedType = CashFlowType.invest;
   bool _isLoading = false;
@@ -89,6 +93,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         ),
       );
       _notesController.text = cf.notes ?? '';
+      if (cf.quantity != null && cf.quantityUnit != null) {
+        _weightController.text = cf.quantity.toString().replaceFirst(
+          RegExp(r'\.0$'),
+          '',
+        );
+        _weightUnit = cf.quantityUnit!;
+      }
       _selectedDate = cf.date;
       _selectedType = cf.type;
     } else {
@@ -115,6 +126,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   void dispose() {
     _amountController.dispose();
     _notesController.dispose();
+    _weightController.dispose();
     disposeScreenAnimation();
     super.dispose();
   }
@@ -153,6 +165,23 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       ref.read(investmentStatusProvider(widget.investmentId)) ==
           InvestmentStatus.closed;
 
+  /// The weight row belongs to precious metals, on money going in or out of
+  /// the metal (not income or fees).
+  bool get _showsWeight {
+    if (_selectedType != CashFlowType.invest &&
+        _selectedType != CashFlowType.returnFlow) {
+      return false;
+    }
+    // A flow that already has a weight keeps its row, on any investment
+    // (an import can bring one), so saving an edit never erases it. Others
+    // get it for gold only.
+    if (widget.cashFlowToEdit?.quantity != null) return true;
+    return ref.read(investmentByIdProvider(widget.investmentId)).value?.type ==
+        InvestmentType.gold;
+  }
+
+  double? get _typedWeight => double.tryParse(_weightController.text.trim());
+
   Future<void> _submit() async {
     // The closed banner and the disabled button are the visible guard; this
     // refuses a tap handler that was built before the status changed.
@@ -168,6 +197,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           ? null
           : _notesController.text.trim();
 
+      final weight = _showsWeight && _weightController.text.trim().isNotEmpty
+          ? _typedWeight
+          : null;
+      final weightUnit = weight == null ? null : _weightUnit;
+
       if (widget.isEditing) {
         // Update existing cash flow
         await ref
@@ -181,6 +215,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               notes: notes,
               createdAt: widget.cashFlowToEdit!.createdAt,
               currency: _selectedCurrency,
+              quantity: weight,
+              quantityUnit: weightUnit,
             );
       } else {
         // Add new cash flow
@@ -193,6 +229,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               amount: amount,
               notes: notes,
               currency: _selectedCurrency,
+              quantity: weight,
+              quantityUnit: weightUnit,
             );
       }
 
@@ -232,6 +270,82 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  /// Optional weight of metal bought or sold. The amount above stays what the
+  /// user typed; the price per unit below is only a hint (making charges and
+  /// tax mean it is not weight times price).
+  Widget _weightRow(AppLocalizations l10n, String currency) {
+    final weight = _typedWeight;
+    final amount = double.tryParse(_amountController.text);
+    final implied = weight != null && weight > 0 && amount != null && amount > 0
+        ? amount / weight
+        : null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: AppTextField(
+                controller: _weightController,
+                label: l10n.weightQuantityLabel,
+                hint: l10n.weightOptionalHint,
+                prefixIcon: Icons.scale_rounded,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                ],
+                maxLength: ValidationConstants.maxAmountLength,
+                onChanged: (_) => setState(() {}),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) return null;
+                  final parsed = double.tryParse(value);
+                  if (parsed == null) return l10n.weightFieldInvalid;
+                  if (parsed <= 0) return l10n.weightFieldMustBePositive;
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: DropdownButtonFormField<QuantityUnit>(
+                initialValue: _weightUnit,
+                isExpanded: true,
+                decoration: InputDecoration(labelText: l10n.weightUnitLabel),
+                items: [
+                  for (final unit in QuantityUnit.values)
+                    DropdownMenuItem(
+                      value: unit,
+                      child: Text(
+                        quantityUnitName(l10n, unit),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+                onChanged: (unit) =>
+                    setState(() => _weightUnit = unit ?? _weightUnit),
+              ),
+            ),
+          ],
+        ),
+        if (implied != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: FormHelperText(
+              l10n.weightImpliedPrice(
+                formatCurrencyForCode(implied, currency),
+                quantityUnitName(l10n, _weightUnit),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   @override
@@ -439,6 +553,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               ),
 
               SizedBox(height: AppSpacing.formFieldSpacing),
+
+              if (_showsWeight) ...[
+                _weightRow(l10n, displayCurrency),
+                SizedBox(height: AppSpacing.formFieldSpacing),
+              ],
 
               // Notes Field
               AppTextField(

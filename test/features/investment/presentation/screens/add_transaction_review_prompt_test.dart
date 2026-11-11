@@ -9,6 +9,7 @@ import 'package:inv_tracker/core/providers/review_prompt_provider.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/core/review/review_prompt_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_notifier.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
@@ -43,6 +44,8 @@ class _RecordingInvestmentNotifier extends InvestmentNotifier {
     required DateTime date,
     String? notes,
     String? currency,
+    double? quantity,
+    QuantityUnit? quantityUnit,
   }) async {
     saved.add(_SavedCashFlow(type, amount));
   }
