@@ -167,11 +167,21 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
   /// The weight row belongs to precious metals, on money going in or out of
   /// the metal (not income or fees).
-  bool get _showsWeight =>
-      ref.read(investmentByIdProvider(widget.investmentId)).value?.type ==
-          InvestmentType.gold &&
-      (_selectedType == CashFlowType.invest ||
-          _selectedType == CashFlowType.returnFlow);
+  bool get _showsWeight {
+    if (_selectedType != CashFlowType.invest &&
+        _selectedType != CashFlowType.returnFlow) {
+      return false;
+    }
+    final type = ref
+        .read(investmentByIdProvider(widget.investmentId))
+        .value
+        ?.type;
+    // Until the investment has loaded, a flow that already has a weight keeps
+    // it, so saving an edit never erases it.
+    return type == null
+        ? widget.cashFlowToEdit?.quantity != null
+        : type == InvestmentType.gold;
+  }
 
   double? get _typedWeight => double.tryParse(_weightController.text.trim());
 

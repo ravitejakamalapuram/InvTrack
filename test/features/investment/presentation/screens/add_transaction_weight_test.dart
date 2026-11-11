@@ -1,6 +1,8 @@
 // Weight row on the Add Cash Flow screen (#946): shown for gold on Invest and
 // Return, optional, saved with the typed amount, never for other types.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,6 +43,22 @@ class _Recorder extends InvestmentNotifier {
   }) async {
     saved.add(_Saved(amount, quantity, quantityUnit));
   }
+
+  @override
+  Future<void> updateCashFlow({
+    required String id,
+    required String investmentId,
+    required CashFlowType type,
+    required double amount,
+    required DateTime date,
+    String? notes,
+    required DateTime createdAt,
+    String? currency,
+    double? quantity,
+    QuantityUnit? quantityUnit,
+  }) async {
+    saved.add(_Saved(amount, quantity, quantityUnit));
+  }
 }
 
 InvestmentEntity _inv(InvestmentType type) => InvestmentEntity(
@@ -58,6 +76,8 @@ Future<void> _open(
   InvestmentType type,
   List<_Saved> saved, {
   CashFlowType flow = CashFlowType.invest,
+  CashFlowEntity? edit,
+  bool investmentLoads = true,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
@@ -70,8 +90,11 @@ Future<void> _open(
       GoRoute(path: '/', builder: (_, _) => const SizedBox()),
       GoRoute(
         path: '/add',
-        builder: (_, _) =>
-            AddTransactionScreen(investmentId: 'inv-1', initialType: flow),
+        builder: (_, _) => AddTransactionScreen(
+          investmentId: 'inv-1',
+          initialType: flow,
+          cashFlowToEdit: edit,
+        ),
       ),
     ],
   );
@@ -81,7 +104,11 @@ Future<void> _open(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         currencyCodeProvider.overrideWithValue('INR'),
-        investmentByIdProvider('inv-1').overrideWith((ref) async => _inv(type)),
+        investmentByIdProvider('inv-1').overrideWith(
+          (ref) => investmentLoads
+              ? Future.value(_inv(type))
+              : Completer<InvestmentEntity?>().future,
+        ),
         investmentNotifierProvider.overrideWith(() => _Recorder(saved)),
       ],
       child: MaterialApp.router(
@@ -151,6 +178,37 @@ void main() {
     await _save(tester);
     expect(saved, isEmpty);
     expect(find.text('Weight must be above 0'), findsOneWidget);
+  });
+
+  testWidgets('editing a weighted flow keeps its weight while the investment '
+      'is still loading', (tester) async {
+    final saved = <_Saved>[];
+    final edit = CashFlowEntity(
+      id: 'cf1',
+      investmentId: 'inv-1',
+      date: DateTime(2026, 11, 3),
+      type: CashFlowType.invest,
+      amount: 64500,
+      createdAt: DateTime(2026, 11, 3),
+      currency: 'INR',
+      quantity: 10,
+      quantityUnit: QuantityUnit.gram,
+    );
+    await _open(
+      tester,
+      InvestmentType.gold,
+      saved,
+      edit: edit,
+      investmentLoads: false,
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Notes (Optional)'),
+      'x',
+    );
+    await _save(tester);
+    expect(saved, hasLength(1));
+    expect(saved.single.quantity, 10);
+    expect(saved.single.unit, QuantityUnit.gram);
   });
 
   testWidgets('the implied price per unit is shown as a hint', (tester) async {
