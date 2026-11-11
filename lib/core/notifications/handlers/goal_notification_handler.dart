@@ -79,13 +79,15 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
 
     if (reachedMilestone == 100) {
       title = '🎉 Goal Achieved!';
-      body =
-          'Congratulations! You\'ve reached your "$goalName" goal of $formattedTarget!';
+      body = privacyModeActive
+          ? 'Congratulations! You\'ve reached your "$goalName" goal!'
+          : 'Congratulations! You\'ve reached your "$goalName" goal of $formattedTarget!';
     } else {
       title = '🎯 $reachedMilestone% Progress!';
-      body =
-          'You\'re $reachedMilestone% of the way to your "$goalName" goal! '
-          'Current: $formattedCurrent of $formattedTarget.';
+      body = privacyModeActive
+          ? 'You\'re $reachedMilestone% of the way to your "$goalName" goal!'
+          : 'You\'re $reachedMilestone% of the way to your "$goalName" goal! '
+                'Current: $formattedCurrent of $formattedTarget.';
     }
 
     final androidDetails = AndroidNotificationDetails(

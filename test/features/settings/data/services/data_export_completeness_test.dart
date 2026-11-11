@@ -147,13 +147,40 @@ void main() {
       reason: 'investments.json carries every investment field',
     );
     expect(export.expectedCashFlows, 3);
-    expect(export.carriesEverything, isFalse);
+    expect(
+      export.carriesEverything,
+      isTrue,
+      reason: 'expected cash flows are derived data, not a loss (#768)',
+    );
+
+    // Decision on #768: expected cash flows and health scores are derived
+    // data (re-predicted from real cash flows, recomputed weekly), so the ZIP
+    // never holds them.
+    final names = ZipDecoder()
+        .decodeBytes(export.bytes)
+        .files
+        .map((f) => f.name.toLowerCase())
+        .toList();
+    expect(names, isNotEmpty);
+    expect(names.where((n) => n.contains('expected')), isEmpty);
+    expect(names.where((n) => n.contains('health')), isEmpty);
   });
 
   test('if expected cash flows cannot be counted, the export still works and '
-      'does not claim to carry everything', () async {
+      'still carries everything', () async {
     final investments = FakeInvestmentRepository();
     await investments.createInvestment(plain);
+    await investments.addCashFlow(
+      CashFlowEntity(
+        id: 'cf-plain',
+        investmentId: plain.id,
+        type: CashFlowType.invest,
+        amount: 100000,
+        date: DateTime(2026, 4, 1),
+        createdAt: created,
+        currency: 'INR',
+      ),
+    );
     final documents = _MockDocumentRepository();
     when(
       () => documents.getDocumentsByInvestment(any()),
@@ -175,7 +202,7 @@ void main() {
     expect(export.investments, 1);
     expect(export.investmentsWithDetailsNotInExport, 0);
     expect(export.expectedCashFlows, isNull);
-    expect(export.carriesEverything, isFalse);
+    expect(export.carriesEverything, isTrue);
   });
 
   test('an investment with no cash flows is not in the ZIP, so the export '

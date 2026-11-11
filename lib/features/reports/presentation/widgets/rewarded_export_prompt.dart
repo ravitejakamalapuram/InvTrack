@@ -1,0 +1,33 @@
+/// Asks whether to watch one short ad, offered after a data export.
+library;
+
+import 'package:flutter/material.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+
+/// True when the user agrees to watch the ad. Closing the dialog means no.
+/// [afterExport] asks for support once the export is done, instead of asking
+/// permission to start it.
+Future<bool> showRewardedExportPrompt(
+  BuildContext context, {
+  bool afterExport = false,
+}) async {
+  final l10n = AppLocalizations.of(context);
+  final agreed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(afterExport ? l10n.supportAdTitle : l10n.rewardedExportTitle),
+      content: Text(l10n.rewardedExportBody),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(l10n.rewardedExportNotNow),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text(l10n.rewardedExportWatch),
+        ),
+      ],
+    ),
+  );
+  return agreed ?? false;
+}

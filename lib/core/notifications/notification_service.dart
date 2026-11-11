@@ -225,6 +225,23 @@ class NotificationService with NotificationPreferencesMixin {
   @override
   SharedPreferences get prefs => _prefs;
 
+  // The handlers read these too, so setting them here sets them there.
+  @override
+  set preferencesUid(String? uid) {
+    super.preferencesUid = uid;
+    _scheduledHandler.preferencesUid = uid;
+    _investmentHandler.preferencesUid = uid;
+    _goalHandler.preferencesUid = uid;
+  }
+
+  @override
+  set privacyModeActive(bool active) {
+    super.privacyModeActive = active;
+    _scheduledHandler.privacyModeActive = active;
+    _investmentHandler.privacyModeActive = active;
+    _goalHandler.privacyModeActive = active;
+  }
+
   /// Initialize the notification service.
   ///
   /// **Must be called before using any notification features.**

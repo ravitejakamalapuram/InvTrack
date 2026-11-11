@@ -29,6 +29,7 @@ import 'mocks/mock_investment_repository.dart';
 import 'mocks/mock_goal_repository.dart';
 import 'mocks/mock_analytics_service.dart';
 import 'mocks/mock_notification_service.dart';
+import 'mocks/no_firebase_overrides.dart';
 
 /// Mock for LocalAuthentication
 class MockLocalAuthentication extends Mock implements LocalAuthentication {}
@@ -149,6 +150,7 @@ void main() {
           notificationServiceProvider.overrideWithValue(
             fakeNotificationService,
           ),
+          ...noFirebaseOverrides(),
         ],
         child: const InvTrackerApp(),
       ),

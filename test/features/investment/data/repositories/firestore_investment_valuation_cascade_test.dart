@@ -69,6 +69,7 @@ void main() {
   late Map<String, _MockDoc> investmentDocs;
   late List<_MockBatch> batches;
   late List<List<DocumentReference>> deletedPerBatch;
+  late List<Map<DocumentReference, Map<Object, Object?>>> updatedPerBatch;
   late FirestoreInvestmentRepository repository;
 
   /// A query on [collection] by investmentId whose cache answer holds [refs].
@@ -84,6 +85,35 @@ void main() {
       () => collections[collection]!.where(
         'investmentId',
         isEqualTo: investmentId,
+      ),
+    ).thenReturn(query);
+    when(
+      () => query.get(const GetOptions(source: Source.cache)),
+    ).thenAnswer((_) async => _snapshotOf(refs));
+    if (serverRefs == null) {
+      when(
+        () => query.get(const GetOptions(source: Source.server)),
+      ).thenThrow(TimeoutException('offline'));
+    } else {
+      when(
+        () => query.get(const GetOptions(source: Source.server)),
+      ).thenAnswer((_) async => _snapshotOf(serverRefs));
+    }
+  }
+
+  /// The goals in [collection] that link [investmentId]: the cache answers
+  /// [refs] and the server [serverRefs] (unreachable when null).
+  void stubGoals(
+    String collection,
+    String investmentId,
+    List<_MockDoc> refs, {
+    List<_MockDoc>? serverRefs,
+  }) {
+    final query = _MockQuery();
+    when(
+      () => collections[collection]!.where(
+        'linkedInvestmentIds',
+        arrayContains: investmentId,
       ),
     ).thenReturn(query);
     when(
@@ -120,6 +150,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(_MockDoc());
+    registerFallbackValue(<Object, Object?>{});
   });
 
   setUp(() {
@@ -134,12 +165,16 @@ void main() {
         'archivedCashflows',
         'valuations',
         'expectedCashFlows',
+        'documents',
+        'goals',
+        'archivedGoals',
       ])
         name: _MockCollection(),
     };
     investmentDocs = {};
     batches = [];
     deletedPerBatch = [];
+    updatedPerBatch = [];
     when(() => firestore.collection('users')).thenReturn(users);
     when(() => users.doc(uid)).thenReturn(userDoc);
     collections.forEach((name, collection) {
@@ -156,15 +191,30 @@ void main() {
     // Unless a test says otherwise, the investment has no expected payments.
     stubDocs('expectedCashFlows', id, []);
     stubDocs('expectedCashFlows', otherId, []);
+    // ... no snapshots, no documents, and no goal that links it.
+    stubDocs('valuations', id, []);
+    stubDocs('valuations', otherId, []);
+    stubDocs('documents', id, []);
+    stubDocs('documents', otherId, []);
+    for (final goals in ['goals', 'archivedGoals']) {
+      stubGoals(goals, id, []);
+      stubGoals(goals, otherId, []);
+    }
     when(() => firestore.batch()).thenAnswer((_) {
       final batch = _MockBatch();
       final deleted = <DocumentReference>[];
       when(() => batch.delete(any())).thenAnswer((i) {
         deleted.add(i.positionalArguments.first as DocumentReference);
       });
+      final updated = <DocumentReference, Map<Object, Object?>>{};
+      when(() => batch.update(any(), any())).thenAnswer((i) {
+        updated[i.positionalArguments.first as DocumentReference] =
+            i.positionalArguments[1] as Map<Object, Object?>;
+      });
       when(() => batch.commit()).thenAnswer((_) async {});
       batches.add(batch);
       deletedPerBatch.add(deleted);
+      updatedPerBatch.add(updated);
       return batch;
     });
     repository = FirestoreInvestmentRepository(
@@ -304,6 +354,133 @@ void main() {
         all.where((d) => d == investmentDocs['investments/$id']),
         hasLength(1),
       );
+    });
+  });
+
+  // #766 (A23): deleting an investment also deletes its document records and
+  // takes it out of the goals that link it, in the same batches, so that no
+  // document or goal link is left pointing at an investment that is gone.
+  group('documents and goal links', () {
+    void expectUnlinked(_MockDoc goal) {
+      final updates = updatedPerBatch.expand((u) => u.entries).toList();
+      expect(updates.map((e) => e.key), contains(goal));
+      expect(updates.firstWhere((e) => e.key == goal).value, {
+        'linkedInvestmentIds': FieldValue.arrayRemove([id]),
+      });
+    }
+
+    test('deleteInvestment deletes its documents and unlinks its goals in '
+        'one batch, the investment last', () async {
+      final document = _MockDoc();
+      final goal = _MockDoc();
+      final archivedGoal = _MockDoc();
+      stubDocs('cashflows', id, []);
+      stubDocs('documents', id, [document]);
+      stubGoals('goals', id, [goal]);
+      stubGoals('archivedGoals', id, [archivedGoal]);
+
+      await repository.deleteInvestment(id);
+
+      expect(batches, hasLength(1));
+      expect(deletedPerBatch.single, [
+        document,
+        investmentDocs['investments/$id'],
+      ]);
+      expectUnlinked(goal);
+      expectUnlinked(archivedGoal);
+    });
+
+    test(
+      'deleteInvestment finds documents and goals only the server holds',
+      () async {
+        final document = _MockDoc();
+        final goal = _MockDoc();
+        stubDocs('cashflows', id, []);
+        stubDocs('documents', id, [], serverRefs: [document]);
+        stubGoals('goals', id, [], serverRefs: [goal]);
+
+        await repository.deleteInvestment(id);
+
+        expect(deletedPerBatch.expand((d) => d), contains(document));
+        expectUnlinked(goal);
+      },
+    );
+
+    test('deleteInvestment throws, deleting nothing, when documents cannot be '
+        'listed', () async {
+      stubDocs('cashflows', id, []);
+      stubUnreadable('documents', id);
+
+      await expectLater(repository.deleteInvestment(id), throwsA(anything));
+
+      expect(batches, isEmpty);
+    });
+
+    test('deleteInvestment still deletes when no goal can be listed', () async {
+      stubDocs('cashflows', id, []);
+      final query = _MockQuery();
+      when(
+        () => collections['goals']!.where(
+          'linkedInvestmentIds',
+          arrayContains: id,
+        ),
+      ).thenReturn(query);
+      when(() => query.get(any())).thenThrow(Exception('unavailable'));
+
+      await repository.deleteInvestment(id);
+
+      expect(
+        deletedPerBatch.expand((d) => d),
+        contains(investmentDocs['investments/$id']),
+      );
+    });
+
+    test('keeps every batch within the limit with many goals', () async {
+      final goals = [for (var i = 0; i < 300; i++) _MockDoc()];
+      final documents = [for (var i = 0; i < 300; i++) _MockDoc()];
+      stubDocs('cashflows', id, []);
+      stubDocs('documents', id, documents);
+      stubGoals('goals', id, goals);
+
+      await repository.deleteInvestment(id);
+
+      for (var i = 0; i < batches.length; i++) {
+        expect(
+          deletedPerBatch[i].length + updatedPerBatch[i].length,
+          lessThanOrEqualTo(450),
+        );
+      }
+      expect(deletedPerBatch.last.last, investmentDocs['investments/$id']);
+      expect(updatedPerBatch.expand((u) => u.keys), hasLength(300));
+    });
+
+    test('deleteArchivedInvestment deletes its documents and unlinks its '
+        'goals', () async {
+      final document = _MockDoc();
+      final goal = _MockDoc();
+      stubDocs('archivedCashflows', id, []);
+      stubDocs('documents', id, [document]);
+      stubGoals('goals', id, [goal]);
+
+      await repository.deleteArchivedInvestment(id);
+
+      expect(deletedPerBatch.expand((d) => d), contains(document));
+      expectUnlinked(goal);
+    });
+
+    test('bulkDelete deletes the documents and unlinks the goals of every '
+        'investment', () async {
+      final document = _MockDoc();
+      final goal = _MockDoc();
+      stubDocs('cashflows', id, []);
+      stubDocs('cashflows', otherId, []);
+      stubDocs('documents', otherId, [document]);
+      stubGoals('goals', id, [goal]);
+
+      expect(await repository.bulkDelete([id, otherId]), 2);
+
+      expect(deletedPerBatch.expand((d) => d), contains(document));
+      expectUnlinked(goal);
     });
   });
 

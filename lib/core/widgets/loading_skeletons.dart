@@ -68,13 +68,16 @@ class _QuickStatCardSkeleton extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _SkeletonBox(width: 50, height: 12, isDark: isDark),
-              const SizedBox(height: 6),
-              _SkeletonBox(width: 70, height: 18, isDark: isDark),
-            ],
+          // Expanded so the bars shrink on a narrow card instead of overflowing.
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SkeletonBox(width: 50, height: 12, isDark: isDark),
+                const SizedBox(height: 6),
+                _SkeletonBox(width: 70, height: 18, isDark: isDark),
+              ],
+            ),
           ),
         ],
       ),

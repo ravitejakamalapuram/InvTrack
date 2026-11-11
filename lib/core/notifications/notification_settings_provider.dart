@@ -22,6 +22,8 @@ enum NotificationSettingType {
   taxReminders,
   weeklyCheckIn,
   fySummary,
+  goalAtRisk,
+  goalStale,
 }
 
 /// State class holding all notification settings.
@@ -35,6 +37,8 @@ class NotificationSettingsState {
   final bool taxRemindersEnabled;
   final bool weeklyCheckInEnabled;
   final bool fySummaryEnabled;
+  final bool goalAtRiskEnabled;
+  final bool goalStaleEnabled;
 
   const NotificationSettingsState({
     this.weeklySummaryEnabled = true,
@@ -46,6 +50,8 @@ class NotificationSettingsState {
     this.taxRemindersEnabled = true,
     this.weeklyCheckInEnabled = true,
     this.fySummaryEnabled = true,
+    this.goalAtRiskEnabled = true,
+    this.goalStaleEnabled = true,
   });
 
   /// Get setting value by type
@@ -69,6 +75,10 @@ class NotificationSettingsState {
         return weeklyCheckInEnabled;
       case NotificationSettingType.fySummary:
         return fySummaryEnabled;
+      case NotificationSettingType.goalAtRisk:
+        return goalAtRiskEnabled;
+      case NotificationSettingType.goalStale:
+        return goalStaleEnabled;
     }
   }
 
@@ -82,6 +92,8 @@ class NotificationSettingsState {
     bool? taxRemindersEnabled,
     bool? weeklyCheckInEnabled,
     bool? fySummaryEnabled,
+    bool? goalAtRiskEnabled,
+    bool? goalStaleEnabled,
   }) {
     return NotificationSettingsState(
       weeklySummaryEnabled: weeklySummaryEnabled ?? this.weeklySummaryEnabled,
@@ -97,6 +109,8 @@ class NotificationSettingsState {
       taxRemindersEnabled: taxRemindersEnabled ?? this.taxRemindersEnabled,
       weeklyCheckInEnabled: weeklyCheckInEnabled ?? this.weeklyCheckInEnabled,
       fySummaryEnabled: fySummaryEnabled ?? this.fySummaryEnabled,
+      goalAtRiskEnabled: goalAtRiskEnabled ?? this.goalAtRiskEnabled,
+      goalStaleEnabled: goalStaleEnabled ?? this.goalStaleEnabled,
     );
   }
 }
@@ -128,6 +142,8 @@ class NotificationSettingsNotifier extends Notifier<NotificationSettingsState> {
       taxRemindersEnabled: service.taxRemindersEnabled,
       weeklyCheckInEnabled: service.weeklyCheckInEnabled,
       fySummaryEnabled: service.fySummaryEnabled,
+      goalAtRiskEnabled: service.goalAtRiskEnabled,
+      goalStaleEnabled: service.goalStaleEnabled,
     );
   }
 
@@ -172,6 +188,12 @@ class NotificationSettingsNotifier extends Notifier<NotificationSettingsState> {
       case NotificationSettingType.fySummary:
         await service.setFySummaryEnabled(enabled);
         state = state.copyWith(fySummaryEnabled: enabled);
+      case NotificationSettingType.goalAtRisk:
+        await service.setGoalAtRiskEnabled(enabled);
+        state = state.copyWith(goalAtRiskEnabled: enabled);
+      case NotificationSettingType.goalStale:
+        await service.setGoalStaleEnabled(enabled);
+        state = state.copyWith(goalStaleEnabled: enabled);
     }
   }
 }

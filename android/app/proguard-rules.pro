@@ -1,83 +1,31 @@
-# Flutter-specific ProGuard rules
-# Keep Flutter's default rules
--keep class io.flutter.app.** { *; }
--keep class io.flutter.plugin.**  { *; }
--keep class io.flutter.util.**  { *; }
--keep class io.flutter.view.**  { *; }
--keep class io.flutter.**  { *; }
--keep class io.flutter.plugins.**  { *; }
+# R8 rules for the release build.
+#
+# Keep this file SMALL. Every broad `-keep class x.** { *; }` switches off renaming (and
+# shrinking) for that whole package. Google Play's "DEX code optimisation" check counts how
+# much of the DEX is renamed; blanket keeps for Firebase, Play Services and Flutter held it at
+# 19% (Play wants at least 25%). Flutter, the Firebase/Play Services libraries and the Flutter
+# plugins ship their own consumer rules inside their AARs, so none of them needs a rule here.
+# Add a rule only after a release build fails or crashes without it, and keep it narrow.
 
-# Keep Dart entry points
--keep class com.invtracker.inv_tracker.** { *; }
-
-# Firebase
--keep class com.google.firebase.** { *; }
--keep class com.google.android.gms.** { *; }
--dontwarn com.google.firebase.**
--dontwarn com.google.android.gms.**
-
-# Google Sign In
--keep class com.google.android.gms.auth.** { *; }
--keep class com.google.android.gms.common.** { *; }
-
-# Crashlytics
+# Readable Java/Kotlin stack traces. Play and Crashlytics map the renamed frames back using
+# the mapping file; the source file attribute is hidden behind a constant name.
 -keepattributes SourceFile,LineNumberTable
--keep public class * extends java.lang.Exception
--keep class com.crashlytics.** { *; }
--dontwarn com.crashlytics.**
+-renamesourcefileattribute SourceFile
 
-# Local Auth (Biometric)
--keep class androidx.biometric.** { *; }
-
-# File Picker
--keep class com.mr.flutter.plugin.filepicker.** { *; }
-
-# Image Picker
--keep class io.flutter.plugins.imagepicker.** { *; }
-
-# Flutter Local Notifications
--keep class com.dexterous.** { *; }
-
-# Gson (used by some plugins)
+# flutter_local_notifications stores its notification objects as JSON with Gson, which reads
+# generic types and fields by reflection.
 -keepattributes Signature
 -keepattributes *Annotation*
--dontwarn sun.misc.**
--keep class com.google.gson.stream.** { *; }
+-keep class * extends com.google.gson.reflect.TypeToken
+-keep class com.dexterous.flutterlocalnotifications.models.** { *; }
 
-# OkHttp / Retrofit (used by Dio)
--dontwarn okhttp3.**
--dontwarn okio.**
+# Missing-class warnings that R8 reports as errors for optional classes the libraries reference.
 -dontwarn javax.annotation.**
--keepnames class okhttp3.internal.publicsuffix.PublicSuffixDatabase
-
-# Prevent stripping of native methods
--keepclasseswithmembernames class * {
-    native <methods>;
-}
-
-# Keep enums
--keepclassmembers enum * {
-    public static **[] values();
-    public static ** valueOf(java.lang.String);
-}
-
-# Keep Parcelables
--keepclassmembers class * implements android.os.Parcelable {
-    static ** CREATOR;
-}
-
-# Keep R classes
--keepclassmembers class **.R$* {
-    public static <fields>;
-}
-
-# Suppress warnings for missing classes in dependencies
 -dontwarn org.bouncycastle.**
 -dontwarn org.conscrypt.**
 -dontwarn org.openjsse.**
 
-# Play Core (for deferred components - not used but referenced by Flutter)
+# Play Core (deferred components): Flutter references it but this app does not use it.
 -dontwarn com.google.android.play.core.splitcompat.**
 -dontwarn com.google.android.play.core.splitinstall.**
 -dontwarn com.google.android.play.core.tasks.**
-

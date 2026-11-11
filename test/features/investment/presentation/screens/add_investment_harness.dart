@@ -12,6 +12,7 @@ import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_theme.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
+import 'package:inv_tracker/features/investment/domain/entities/metal.dart';
 import 'package:inv_tracker/features/investment/domain/models/investment_template.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
@@ -40,6 +41,7 @@ class AddCall {
     required this.compoundingFrequency,
     required this.currency,
     required this.customTypeLabel,
+    required this.metal,
     required this.id,
     required this.initialAmount,
     required this.reportsWriteResult,
@@ -60,6 +62,7 @@ class AddCall {
   final CompoundingFrequency? compoundingFrequency;
   final String? currency;
   final String? customTypeLabel;
+  final Metal? metal;
   final String? id;
   final double? initialAmount;
 
@@ -102,6 +105,7 @@ class RecordingInvestmentNotifier extends InvestmentNotifier {
     CompoundingFrequency? compoundingFrequency,
     String? currency,
     String? customTypeLabel,
+    Metal? metal,
     String? id,
     double? initialAmount,
     void Function(bool confirmed)? onWriteResult,
@@ -123,6 +127,7 @@ class RecordingInvestmentNotifier extends InvestmentNotifier {
         compoundingFrequency: compoundingFrequency,
         currency: currency,
         customTypeLabel: customTypeLabel,
+        metal: metal,
         id: id,
         initialAmount: initialAmount,
         reportsWriteResult: onWriteResult != null,
@@ -166,8 +171,14 @@ class RecordingInvestmentNotifier extends InvestmentNotifier {
     CompoundingFrequency? compoundingFrequency,
     String? currency,
     String? customTypeLabel,
+    Metal? metal,
   }) async {
-    updates.add({'id': id, 'name': name, 'startDate': startDate});
+    updates.add({
+      'id': id,
+      'name': name,
+      'startDate': startDate,
+      'metal': metal,
+    });
   }
 }
 

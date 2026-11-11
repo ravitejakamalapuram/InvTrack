@@ -3,6 +3,12 @@ import 'package:inv_tracker/core/utils/csv_utils.dart';
 
 void main() {
   group('CsvUtils', () {
+    test('restoreField undoes sanitizeField for names with several quotes', () {
+      for (final v in ["''=x", "'''-5%", "'=x", '=x', "''plain", 'plain']) {
+        expect(CsvUtils.restoreField(CsvUtils.sanitizeField(v) as String), v);
+      }
+    });
+
     test('sanitizeField should return non-string values as is', () {
       expect(CsvUtils.sanitizeField(123), 123);
       expect(CsvUtils.sanitizeField(12.34), 12.34);
@@ -25,11 +31,14 @@ void main() {
       expect(CsvUtils.sanitizeField('\rCR'), "'\rCR");
     });
 
-    test('sanitizeField should sanitize when spaces precede dangerous characters', () {
-      expect(CsvUtils.sanitizeField(' =SUM(A1:B1)'), "' =SUM(A1:B1)");
-      expect(CsvUtils.sanitizeField('   +SUM(A1:B1)'), "'   +SUM(A1:B1)");
-      expect(CsvUtils.sanitizeField('\n-SUM(A1:B1)'), "'\n-SUM(A1:B1)");
-    });
+    test(
+      'sanitizeField should sanitize when spaces precede dangerous characters',
+      () {
+        expect(CsvUtils.sanitizeField(' =SUM(A1:B1)'), "' =SUM(A1:B1)");
+        expect(CsvUtils.sanitizeField('   +SUM(A1:B1)'), "'   +SUM(A1:B1)");
+        expect(CsvUtils.sanitizeField('\n-SUM(A1:B1)'), "'\n-SUM(A1:B1)");
+      },
+    );
 
     test(
       'sanitizeField should not sanitize if dangerous char is not at start',

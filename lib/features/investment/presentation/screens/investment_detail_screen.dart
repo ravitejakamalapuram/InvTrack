@@ -12,9 +12,13 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/screen_layout.dart';
 import 'package:inv_tracker/core/widgets/tonal_icon_action.dart';
+import 'package:inv_tracker/features/investment/domain/services/metal_holding.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/metal_held_line.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
+import 'package:inv_tracker/features/investment/presentation/screens/value_history_screen.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/valuation_providers.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_providers.dart';
 import 'package:inv_tracker/features/income_projection/presentation/widgets/expected_income_section.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/add_document_sheet.dart';
@@ -343,6 +347,28 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                     isDark: isDark,
                     currencyFormat: currencyFormat,
                     isPrivacyMode: isPrivacyMode,
+                    currentHolding: stats.currentValueIsEstimate
+                        ? null
+                        : ref
+                              .watch(
+                                investmentValuationSnapshotsProvider(
+                                  widget.investment.id,
+                                ),
+                              )
+                              .firstOrNull
+                              ?.holding,
+                    onViewValueHistory:
+                        widget.investment.isOpen &&
+                            ref.watch(valuationSnapshotsActiveProvider)
+                        ? () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => ValueHistoryScreen(
+                                investment: widget.investment,
+                                firstCashFlowDate: stats.firstCashFlowDate,
+                              ),
+                            ),
+                          )
+                        : null,
                     onUpdateCurrentValue:
                         widget.investment.isOpen && !isArchived
                         ? () => showCurrentValueDialog(
@@ -398,6 +424,39 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             ),
           ),
 
+          if (widget.investment.type == InvestmentType.gold &&
+              selectedSegment == 0 &&
+              heldGrams(cashFlowsAsync.value ?? const []) != null)
+            SliverToBoxAdapter(
+              child: ScreenEdge(
+                top: 0,
+                bottom: AppSpacing.xs,
+                child: MetalHeldLine(
+                  grams: heldGrams(cashFlowsAsync.value ?? const [])!,
+                  metal: widget.investment.metal,
+                ),
+              ),
+            ),
+
+          if (isArchived)
+            SliverToBoxAdapter(
+              child: ScreenEdge(
+                top: AppSpacing.xs,
+                bottom: AppSpacing.xs,
+                child: Semantics(
+                  container: true,
+                  child: Text(
+                    l10n.archivedReadOnlyBanner,
+                    style: AppTypography.caption.copyWith(
+                      color: isDark
+                          ? AppColors.neutral400Dark
+                          : AppColors.neutral500Light,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
           // Content based on selected segment
           if (selectedSegment == 0) ...[
             // Cash Flows List (Transactions)
@@ -428,6 +487,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                           onConfirmDelete: () =>
                               _confirmDeleteCashFlow(context, isDark),
                           onDeleted: () => _deleteCashFlow(cashFlow.id),
+                          isReadOnly: isArchived,
                         );
                       },
                       childCount: sortedFlows.length,
@@ -471,7 +531,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               child: ScreenEdge(
                 child: DocumentListWidget(
                   investmentId: widget.investment.id,
-                  isReadOnly: isClosed,
+                  isReadOnly: isClosed || isArchived,
                 ),
               ),
             ),
@@ -481,7 +541,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           const SliverFabClearance(),
         ],
       ),
-      floatingActionButton: isClosed
+      floatingActionButton: isClosed || isArchived
           ? null
           : selectedSegment == 0
           ? TransactionFab(
@@ -551,16 +611,19 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Tap + Add to start tracking',
-              textAlign: TextAlign.center,
-              style: AppTypography.caption.copyWith(
-                color: isDark
-                    ? AppColors.neutral400Dark
-                    : AppColors.neutral500Light,
+            if (!(widget.investment.status == InvestmentStatus.closed ||
+                widget.investment.isArchived)) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Tap + Add to start tracking',
+                textAlign: TextAlign.center,
+                style: AppTypography.caption.copyWith(
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -848,51 +911,53 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 ),
               ),
               const SizedBox(height: 20),
-              ListTile(
-                leading: Icon(
-                  Icons.edit_rounded,
-                  color: AppColors.primaryLight,
-                ),
-                title: Text(
-                  'Edit Investment',
-                  style: AppTypography.body.copyWith(
-                    color: isDark ? Colors.white : AppColors.neutral900Light,
+              if (!isArchived)
+                ListTile(
+                  leading: Icon(
+                    Icons.edit_rounded,
+                    color: AppColors.primaryLight,
                   ),
-                ),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  final navigator = Navigator.of(screenContext);
-                  navigator
-                      .push(
-                        MaterialPageRoute(
-                          builder: (_) => AddInvestmentScreen(
-                            investmentToEdit: widget.investment,
+                  title: Text(
+                    'Edit Investment',
+                    style: AppTypography.body.copyWith(
+                      color: isDark ? Colors.white : AppColors.neutral900Light,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    final navigator = Navigator.of(screenContext);
+                    navigator
+                        .push(
+                          MaterialPageRoute(
+                            builder: (_) => AddInvestmentScreen(
+                              investmentToEdit: widget.investment,
+                            ),
                           ),
-                        ),
-                      )
-                      .then((result) {
-                        if (result == true && mounted) {
-                          navigator.pop();
-                        }
-                      });
-                },
-              ),
-              ListTile(
-                leading: Icon(
-                  isClosed ? Icons.lock_open_rounded : Icons.lock_rounded,
-                  color: AppColors.graphAmber,
+                        )
+                        .then((result) {
+                          if (result == true && mounted) {
+                            navigator.pop();
+                          }
+                        });
+                  },
                 ),
-                title: Text(
-                  isClosed ? 'Reopen Investment' : 'Close Investment',
-                  style: AppTypography.body.copyWith(
-                    color: isDark ? Colors.white : AppColors.neutral900Light,
+              if (!isArchived)
+                ListTile(
+                  leading: Icon(
+                    isClosed ? Icons.lock_open_rounded : Icons.lock_rounded,
+                    color: AppColors.graphAmber,
                   ),
+                  title: Text(
+                    isClosed ? 'Reopen Investment' : 'Close Investment',
+                    style: AppTypography.body.copyWith(
+                      color: isDark ? Colors.white : AppColors.neutral900Light,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _toggleInvestmentStatus(screenContext, isDark);
+                  },
                 ),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _toggleInvestmentStatus(screenContext, isDark);
-                },
-              ),
               ListTile(
                 leading: Icon(
                   isArchived ? Icons.unarchive_rounded : Icons.archive_rounded,
@@ -937,6 +1002,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     final isArchived = widget.investment.isArchived;
     // Capture navigator and messenger upfront before any async operations
     final navigator = Navigator.of(context);
+    final detailRoute = ModalRoute.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context);
     final successMessage = isArchived
@@ -989,9 +1055,19 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             duration: const Duration(seconds: 2),
           ),
         );
-        // Navigate back after archiving (but not for unarchive)
-        if (!isArchived && mounted) {
-          navigator.pop();
+        // Navigate back after either change: this screen holds the old entity,
+        // and after unarchive its Delete would target a stale archived copy.
+        // Remove this screen's own route: pop() would close whatever is on
+        // top, such as an options sheet opened while the write was pending.
+        if (mounted) {
+          if (detailRoute != null) {
+            // Close sheets and dialogs above this screen first: they would
+            // outlive it with a stale context.
+            navigator.popUntil((r) => r == detailRoute || r is! PopupRoute);
+            navigator.removeRoute(detailRoute);
+          } else {
+            navigator.pop();
+          }
         }
       } catch (e) {
         if (mounted) {

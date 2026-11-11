@@ -200,6 +200,9 @@ flutter test --coverage
 
 # Golden tests (these also run nightly)
 flutter test --tags golden test/golden
+# Never run --update-goldens locally: the PNGs must be rendered on Linux (CI), not macOS.
+# Regenerate with: gh workflow run nightly.yml --ref <branch> -f update_goldens=true
+# then `gh run download <run-id> -n updated-goldens` and copy the PNGs into test/golden.
 
 # Integration tests (Android device or emulator)
 flutter test integration_test/app_test.dart

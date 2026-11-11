@@ -1,0 +1,82 @@
+name: telegram-daily-tip
+
+# Posts one money tip a day to the public InvTrack Telegram channel (t.me/invtrack_tips).
+# Safe by default: the scheduled run only posts when the repository variable TELEGRAM_POSTING_ENABLED is
+# 'true'; otherwise it prints the post to the log and sends nothing. A manual run is a dry run unless
+# "post" is ticked. The post is the oldest approved one in Firestore (contentPosts) that Telegram has not
+# had yet; each send is recorded so it cannot repeat. Keyless Google login as content-posting-bot (Cloud
+# Datastore User only); no repository write rights.
+on:
+  schedule:
+    - cron: '30 3 * * *' # 09:00 in India
+  workflow_dispatch:
+    inputs:
+      post:
+        description: 'Really post to the channel (leave off for a dry run)'
+        type: boolean
+        default: false
+      import_file:
+        description: 'Add the approved posts in this file (content/posts/<name>.json) to the database instead of posting'
+        type: string
+        default: ''
+
+permissions: {}
+
+# One live post at a time, and never cancel one that is running (a cancel after the post is claimed would leave
+# it half done). Dry runs get their own group so they cannot replace a waiting live run.
+concurrency:
+  group: telegram-tip-${{ (github.event_name == 'schedule' || inputs.post || inputs.import_file != '') && 'live' || 'dry' }}
+  cancel-in-progress: false
+
+jobs:
+  post:
+    name: post
+    if: github.ref == 'refs/heads/main' && github.repository == 'ravitejakamalapuram/InvTrack'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write # keyless Google login (workload identity)
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/telegram-tip
+            scripts/content-posts
+            scripts/account-deletion
+            content/posts
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Install dependencies (from the lockfile, production only, no install scripts)
+        run: npm --prefix scripts/account-deletion ci --omit=dev --ignore-scripts --no-audit --no-fund
+      - name: Authenticate to Google Cloud (keyless)
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: projects/784857267556/locations/global/workloadIdentityPools/github/providers/github-oidc
+          service_account: content-posting-bot@invtracker-b19d1.iam.gserviceaccount.com
+      - name: Post the next approved post
+        env:
+          EVENT: ${{ github.event_name }}
+          POST_INPUT: ${{ inputs.post }}
+          IMPORT_FILE: ${{ inputs.import_file }}
+          POSTING_ENABLED: ${{ vars.TELEGRAM_POSTING_ENABLED }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+        run: |
+          if [ -n "$IMPORT_FILE" ]; then
+            case "$IMPORT_FILE" in
+              content/posts/*.json) ;;
+              *) echo "import_file must be content/posts/<name>.json"; exit 1 ;;
+            esac
+            case "$IMPORT_FILE" in *..*) echo "bad path"; exit 1 ;; esac
+            node scripts/content-posts/run.mjs import "$IMPORT_FILE"
+          elif [ "$EVENT" = "schedule" ] && [ "$POSTING_ENABLED" = "true" ]; then
+            node scripts/content-posts/run.mjs post
+          elif [ "$EVENT" = "workflow_dispatch" ] && [ "$POST_INPUT" = "true" ]; then
+            node scripts/content-posts/run.mjs post
+          else
+            echo "Dry run: nothing is sent."
+            node scripts/content-posts/run.mjs post --dry-run
+          fi

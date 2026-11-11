@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/csv_template_service.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/import_confirmation_screen.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
@@ -267,6 +268,37 @@ void main() {
       } finally {
         semantics.dispose();
       }
+    });
+  });
+
+  group('weight (#946)', () {
+    testWidgets('a row with a weight is imported with it', (tester) async {
+      await pumpScreen(
+        tester,
+        result: ParsedCsvResult(
+          rows: [
+            ParsedCashFlowRow(
+              rowNumber: 2,
+              date: DateTime(2024, 1, 15),
+              investmentName: 'Gold',
+              type: CashFlowType.invest,
+              amount: 64500,
+              investmentType: InvestmentType.gold,
+              quantity: 10,
+              quantityUnit: QuantityUnit.gram,
+            ),
+          ],
+          errors: const [],
+          totalRows: 1,
+          validRows: 1,
+        ),
+      );
+
+      await tester.tap(find.text(_l10n.importAllButton));
+      await tester.pumpAndSettle();
+
+      expect(notifier.cashFlows.single.quantity, 10);
+      expect(notifier.cashFlows.single.quantityUnit, QuantityUnit.gram);
     });
   });
 

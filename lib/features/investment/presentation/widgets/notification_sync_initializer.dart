@@ -17,6 +17,7 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/notifications/notification_settings_provider.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/digest/domain/monthly_digest.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
@@ -63,6 +64,13 @@ class _NotificationSyncInitializerState
   void initState() {
     super.initState();
     _applyReportsRoute(_reportsRouteOn());
+    // Notification text leaves out amounts while privacy mode is on.
+    ref.listenManual<bool>(
+      privacyModeProvider,
+      (previous, next) => _applyPrivacyMode(next),
+      fireImmediately: true,
+      onError: (_, _) {},
+    );
     // fireImmediately records the user who is already signed in when this
     // widget is built, so a later sign-out is detected.
     _authSubscription = ref.listenManual<AsyncValue<UserEntity?>>(
@@ -90,6 +98,27 @@ class _NotificationSyncInitializerState
     }
   }
 
+  void _applyPrivacyMode(bool active) {
+    try {
+      ref.read(notificationServiceProvider).privacyModeActive = active;
+    } catch (e) {
+      LoggerService.debug('NotificationService not available for privacy');
+    }
+  }
+
+  /// Each account has its own notification toggles, so they follow the
+  /// signed-in account, and the settings state is read again for it.
+  void _applyPreferencesAccount(String? uid) {
+    try {
+      final service = ref.read(notificationServiceProvider);
+      if (service.preferencesUid == uid) return;
+      service.preferencesUid = uid;
+      ref.invalidate(notificationSettingsProvider);
+    } catch (e) {
+      LoggerService.debug('NotificationService not available for account');
+    }
+  }
+
   @override
   void dispose() {
     _debounceTimer?.cancel();
@@ -105,6 +134,7 @@ class _NotificationSyncInitializerState
     if (data == null) return; // Ignore loading and error states.
 
     final uid = data.value?.id;
+    _applyPreferencesAccount(uid);
     // After a restart, the persisted owner tells whose reminders are still
     // scheduled if the last sign-out was not cleared before the app stopped.
     final previousUid = _signedInUid ?? _persistedOwnerUid();

@@ -7,6 +7,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inv_tracker/features/investment/domain/entities/metal.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
@@ -50,6 +51,7 @@ class _RecordingNotifier extends InvestmentNotifier {
     CompoundingFrequency? compoundingFrequency,
     String? currency,
     String? customTypeLabel,
+    Metal? metal,
     String? id,
     double? initialAmount,
     void Function(bool confirmed)? onWriteResult,
@@ -84,6 +86,7 @@ class _RecordingNotifier extends InvestmentNotifier {
     CompoundingFrequency? compoundingFrequency,
     String? currency,
     String? customTypeLabel,
+    Metal? metal,
   }) async {
     updates.add({'id': id, 'type': type, 'customTypeLabel': customTypeLabel});
   }

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:inv_tracker/features/auth/data/services/sign_out_cleanup_service.dart';
+import 'package:inv_tracker/features/settings/data/services/data_export_service.dart';
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -10,11 +11,13 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:inv_tracker/app/app.dart';
+import 'package:inv_tracker/core/ads/rewarded_export_gate.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/analytics/run_guarded.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
+import 'package:inv_tracker/core/privacy/privacy_choices.dart';
 import 'package:inv_tracker/core/security/app_check_service.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/income_guardian_service_providers.dart';
 import 'package:inv_tracker/firebase_options.dart';
@@ -38,6 +41,17 @@ void main() async {
       ]);
 
       final sharedPreferences = results[1] as SharedPreferences;
+
+      await recordFirstOpen(sharedPreferences, DateTime.now());
+
+      // Honour the user's privacy switches before anything is collected.
+      CrashlyticsService.userAllowsReports = PrivacyChoices.crashReportsEnabled(
+        sharedPreferences,
+      );
+      await applyStoredPrivacyChoices(
+        sharedPreferences,
+        FirebasePrivacyApplier(),
+      );
 
       // Monitor mode only (#774); must follow Firebase.initializeApp.
       await AppCheckService.initialize();
@@ -68,7 +82,9 @@ void main() async {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             notificationServiceProvider.overrideWithValue(notificationService),
-            flutterLocalNotificationsPluginProvider.overrideWithValue(notificationPlugin),
+            flutterLocalNotificationsPluginProvider.overrideWithValue(
+              notificationPlugin,
+            ),
           ],
           child: const InvTrackerApp(),
         ),
@@ -105,7 +121,9 @@ Future<void> _initializeNonCriticalServices(
     // Set static field for backward compatibility with direct instantiation
     CrashlyticsService.enableInDebugMode = debugModeEnabled;
 
-    final crashlyticsService = CrashlyticsService(debugModeEnabled: debugModeEnabled);
+    final crashlyticsService = CrashlyticsService(
+      debugModeEnabled: debugModeEnabled,
+    );
     unawaited(
       crashlyticsService.initialize().catchError((error, stack) {
         // Log Crashlytics initialization failure
@@ -121,9 +139,16 @@ Future<void> _initializeNonCriticalServices(
       }),
     );
 
+    // Remove backup exports a crash or killed app left in the cache.
+    unawaited(purgeStaleBackupExports());
+
     // Initialize Performance Monitoring in background
     final performanceService = PerformanceService();
-    unawaited(performanceService.initialize());
+    unawaited(
+      performanceService.initialize(
+        collectionEnabled: PrivacyChoices.analyticsEnabled(prefs),
+      ),
+    );
 
     // Initialize notifications in background
     await notificationService.initialize();

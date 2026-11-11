@@ -7,6 +7,7 @@ on:
     types: [opened, reopened, ready_for_review, synchronize]
     paths:
       - 'scripts/account-deletion/**'
+      - 'scripts/content-posts/**'
       - 'firestore.rules'
       - '.github/workflows/deletion-job-tests.yml'
       - '.github/workflows/account-deletion.yml'
@@ -14,6 +15,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/account-deletion/**'
+      - 'scripts/content-posts/**'
       - 'firestore.rules'
       - '.github/workflows/deletion-job-tests.yml'
       - '.github/workflows/account-deletion.yml'

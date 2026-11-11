@@ -6,6 +6,7 @@ import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/core/utils/stored_date.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/valuation_repository.dart';
 
 /// Firestore implementation of [ValuationRepository]: one document per
@@ -134,6 +135,25 @@ class FirestoreValuationRepository implements ValuationRepository {
     return documents.length;
   }
 
+  @override
+  Future<void> deleteByInvestment(String investmentId) async {
+    final refs = [
+      for (final doc
+          in (await _valuationsRef
+                  .where('investmentId', isEqualTo: investmentId)
+                  .get())
+              .docs)
+        doc.reference,
+    ];
+    for (var i = 0; i < refs.length; i += _importBatchSize) {
+      final batch = _firestore.batch();
+      for (final ref in refs.skip(i).take(_importBatchSize)) {
+        batch.delete(ref);
+      }
+      await _executeWrite(() => batch.commit());
+    }
+  }
+
   /// [documents] in chunks of at most [_importBatchSize] that keep an
   /// investment's documents together, so that a batch which fails after
   /// earlier ones committed leaves an investment with all of its snapshots or
@@ -231,6 +251,11 @@ class FirestoreValuationRepository implements ValuationRepository {
       ),
       'kind': snapshot.kind.name,
       'provenance': snapshot.provenance.storageName,
+      if (snapshot.holding != null) ...{
+        'quantity': snapshot.holding!.quantity,
+        'unit': snapshot.holding!.unit.name,
+        'unitPrice': snapshot.holding!.unitPrice,
+      },
       'createdAt': Timestamp.fromDate(snapshot.createdAt),
       'updatedAt': keepUpdatedAt && updatedAt != null
           ? Timestamp.fromDate(updatedAt)
@@ -276,6 +301,7 @@ class FirestoreValuationRepository implements ValuationRepository {
     return InvestmentValuationSnapshot(
       id: id,
       investmentId: investmentId,
+      holding: _holdingFrom(data, currency, amount.toDouble()),
       amount: amount.toDouble(),
       currency: currency,
       effectiveDate: StoredDate.fromStorage(
@@ -288,5 +314,31 @@ class FirestoreValuationRepository implements ValuationRepository {
       updatedAt: updatedAt is Timestamp ? updatedAt.toDate() : null,
       deletedAt: deletedAt is Timestamp ? deletedAt.toDate() : null,
     );
+  }
+
+  /// The unit data in [data], or null when it is absent, partial, of an
+  /// unknown unit, invalid, or no longer agrees with [amount]. The amount is
+  /// what was saved and what totals use, so unit data that disagrees with it
+  /// is dropped, never the amount.
+  static UnitHolding? _holdingFrom(
+    Map<String, dynamic> data,
+    String currency,
+    double amount,
+  ) {
+    final quantity = data['quantity'];
+    final unit = QuantityUnit.tryParse(data['unit']);
+    final unitPrice = data['unitPrice'];
+    if (quantity is! num || unit == null || unitPrice is! num) return null;
+    final holding = UnitHolding(
+      quantity: quantity.toDouble(),
+      unit: unit,
+      unitPrice: unitPrice.toDouble(),
+    );
+    final value = holding.valueOrNull(currency);
+    if (value == null ||
+        value != MoneyPrecision.round(amount, currencyCode: currency)) {
+      return null;
+    }
+    return holding;
   }
 }

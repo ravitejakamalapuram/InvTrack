@@ -33,11 +33,24 @@ void main() {
         expect(c.read(isReviewPromptEnabledProvider), isTrue);
       });
 
-      test('$build: dated valuations (#941) are off', () async {
+      test(
+        '$build: the approximate-rates marker (A14) is on (kill switch)',
+        () async {
+          final c = await _container(overridesAllowed: overridesAllowed);
+          expect(c.read(isApproximateRatesIndicatorEnabledProvider), isTrue);
+          expect(
+            FeatureFlag.approximateRatesIndicator.key,
+            'approximate_rates_indicator',
+          );
+          expect(FeatureFlag.approximateRatesIndicator.defaultEnabled, isTrue);
+        },
+      );
+
+      test('$build: dated valuations (#941) are on', () async {
         final c = await _container(overridesAllowed: overridesAllowed);
-        expect(c.read(isValuationSnapshotsEnabledProvider), isFalse);
+        expect(c.read(isValuationSnapshotsEnabledProvider), isTrue);
         expect(FeatureFlag.valuationSnapshots.key, 'valuation_snapshots');
-        expect(FeatureFlag.valuationSnapshots.defaultEnabled, isFalse);
+        expect(FeatureFlag.valuationSnapshots.defaultEnabled, isTrue);
       });
 
       test('$build: the first investment flow (A40) is off', () async {
@@ -86,7 +99,7 @@ void main() {
       'feature_flag_income_guardian': true,
       'feature_flag_reports_tab': true,
       'feature_flag_portfolio_health_score': true,
-      'feature_flag_valuation_snapshots': true,
+      'feature_flag_valuation_snapshots': false,
       'feature_flag_custom_investment_types': true,
       'feature_flag_first_investment_flow': true,
     };
@@ -97,7 +110,7 @@ void main() {
       expect(c.read(isIncomeGuardianEnabledProvider), isFalse);
       expect(c.read(isReportsTabEnabledProvider), isFalse);
       expect(c.read(isPortfolioHealthEnabledProvider), isFalse);
-      expect(c.read(isValuationSnapshotsEnabledProvider), isFalse);
+      expect(c.read(isValuationSnapshotsEnabledProvider), isTrue);
       expect(c.read(isCustomInvestmentTypesEnabledProvider), isFalse);
       expect(c.read(isFirstInvestmentFlowEnabledProvider), isFalse);
     });
@@ -124,7 +137,7 @@ void main() {
       expect(c.read(isIncomeGuardianEnabledProvider), isTrue);
       expect(c.read(isReportsTabEnabledProvider), isTrue);
       expect(c.read(isPortfolioHealthEnabledProvider), isTrue);
-      expect(c.read(isValuationSnapshotsEnabledProvider), isTrue);
+      expect(c.read(isValuationSnapshotsEnabledProvider), isFalse);
       expect(c.read(isCustomInvestmentTypesEnabledProvider), isTrue);
       expect(c.read(isFirstInvestmentFlowEnabledProvider), isTrue);
     });

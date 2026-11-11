@@ -153,7 +153,7 @@ Widget _card(InvestmentStats stats) => HeroCardContent(
 );
 
 /// The net cash-flow figure of the hero card (not the out/in amounts).
-final _netAmount = find.byKey(const ValueKey('hero-net-cash-flow'));
+final _netAmount = find.byKey(const ValueKey('hero-headline-amount'));
 
 /// The semantics label of the node for [finder] and of every node below it.
 String _semanticsLabels(WidgetTester tester, Finder finder) {
@@ -215,8 +215,8 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Awaiting current value'), findsOneWidget);
-    // -4,90,000 is shown in lakh, still under the rupee symbol.
-    expect(find.text('-₹4.9 L'), findsOneWidget);
+    // The headline is what was invested, 5,00,000, shown in lakh.
+    expect(find.text('₹5 L'), findsOneWidget);
     expect(_netAmount, findsOneWidget);
     expect(
       tester.getRect(_netAmount).bottom,
@@ -235,7 +235,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Awaiting first payout'), findsOneWidget);
     expect(find.text('Awaiting current value'), findsNothing);
-    expect(find.text('-₹5 L'), findsOneWidget);
+    expect(find.text('₹5 L'), findsOneWidget);
     expect(
       tester.getRect(_netAmount).bottom,
       lessThan(tester.getRect(find.text('Awaiting first payout')).top),
@@ -260,8 +260,9 @@ void main() {
     expect(find.text('Awaiting first payout'), findsNothing);
   });
 
-  testWidgets('a large negative amount is shown in crore and read aloud as '
-      'negative', (tester) async {
+  testWidgets('a large invested amount is shown in crore and read aloud', (
+    tester,
+  ) async {
     final stats = InvestmentStats(
       totalInvested: 12345678,
       totalReturned: 0,
@@ -279,17 +280,17 @@ void main() {
     await _pump(tester, card: _card(stats));
 
     expect(tester.takeException(), isNull);
-    expect(find.text('-₹1.23 Cr'), findsOneWidget);
+    expect(find.text('₹1.23 Cr'), findsOneWidget);
     expect(
       _semanticsLabels(tester, find.byType(HeroCardContent)),
-      contains('Net cash flow so far: negative 1.23 crore rupees'),
+      contains('Invested: 1.23 crore rupees'),
     );
   });
 
   // A valued portfolio keeps the amount and the return badge on one row, so a
   // crore figure has the least room at the narrowest width with large text.
   for (final c in [
-    (name: 'positive', invested: 10000000.0, returned: 22345678.0),
+    (name: 'positive', invested: 12345678.0, returned: 22345678.0),
     (name: 'negative', invested: 12345678.0, returned: 0.0),
   ]) {
     testWidgets('a ${c.name} crore amount fits 320dp at 1.8x text', (
@@ -312,18 +313,15 @@ void main() {
       await _pump(tester, textScale: 1.8, card: _card(stats));
 
       expect(tester.takeException(), isNull);
-      expect(find.text('${net < 0 ? '-' : ''}₹1.23 Cr'), findsOneWidget);
+      expect(find.text('₹1.23 Cr'), findsOneWidget);
       expect(
         _semanticsLabels(tester, find.byType(HeroCardContent)),
-        contains(
-          'Net cash flow so far: ${net < 0 ? 'negative ' : ''}'
-          '1.23 crore rupees',
-        ),
+        contains('Invested: 1.23 crore rupees'),
       );
     });
   }
 
-  testWidgets('privacy mode hides the net amount in text and semantics', (
+  testWidgets('privacy mode hides the headline amount in text and semantics', (
     tester,
   ) async {
     _narrowPhone(tester);
@@ -336,13 +334,13 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    expect(find.text('-₹4.9 L'), findsNothing);
+    expect(find.text('₹5 L'), findsNothing);
     expect(
       find.descendant(of: _netAmount, matching: find.text('•••••')),
       findsOneWidget,
     );
     final labels = _semanticsLabels(tester, find.byType(HeroCardContent));
-    expect(labels, contains('Net cash flow so far: Hidden amount'));
+    expect(labels, contains('Invested: Hidden amount'));
     expect(labels, contains('Return: Awaiting current value'));
     expect(labels, isNot(contains('490000')));
     expect(labels, isNot(contains('lakh')));

@@ -484,13 +484,17 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     await ensureInitialized();
     if (!await ensurePermissionsForShow()) return;
 
-    final formattedIncome = formatCurrency(totalIncome, currency);
-    final formattedTDS = formatCurrency(totalTDS, currency);
-
     final buffer = StringBuffer();
     final nextFY = previousFY + 1;
-    buffer.write('FY$previousFY-$nextFY: Income: $formattedIncome');
-    if (totalTDS > 0) buffer.write(', TDS: $formattedTDS');
+    if (privacyModeActive) {
+      buffer.write('FY$previousFY-$nextFY: Your summary is ready');
+    } else {
+      final formattedIncome = formatCurrency(totalIncome, currency);
+      buffer.write('FY$previousFY-$nextFY: Income: $formattedIncome');
+      if (totalTDS > 0) {
+        buffer.write(', TDS: ${formatCurrency(totalTDS, currency)}');
+      }
+    }
     if (topPerformer != null) buffer.write('. Top: $topPerformer');
 
     const androidDetails = AndroidNotificationDetails(

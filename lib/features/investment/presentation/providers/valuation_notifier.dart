@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/utils/money_precision.dart';
 import 'package:inv_tracker/core/utils/stored_date.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/valuation_repository.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/valuation_providers.dart';
 import 'package:uuid/uuid.dart';
@@ -52,7 +53,8 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
   /// there is at most one, and it keeps lifetime XIRR, MOIC and return
   /// unknown. [kind] defaults by the type of the investment. With
   /// [replaceSameDay] a plain value already recorded for that day is
-  /// replaced instead of adding a second one.
+  /// replaced instead of adding a second one. [holding] says the amount was
+  /// reached as weight x price (#946); it must agree with [amount] exactly.
   ///
   /// Throws [ValidationException] for a negative or non-finite amount, a
   /// future date, an investment that is not open or is archived, a second
@@ -64,6 +66,7 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
     ValuationKind? kind,
     bool openingBaseline = false,
     bool replaceSameDay = false,
+    UnitHolding? holding,
   }) async {
     _validateAmount(amount);
     final day = _validatedDay(date);
@@ -73,6 +76,13 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
       // Before anything is written: an amount that rounds up to 16 digits is
       // refused here, not after the older value below has been adopted.
       final roundedAmount = _roundedInput(amount, currency);
+      if (holding != null &&
+          (!holding.isValid || holding.value(currency) != roundedAmount)) {
+        throw _rejected(
+          'The weight and price do not match the value.',
+          'holding does not match the amount',
+        );
+      }
       var existing = await _liveSnapshotsOf(investmentId);
 
       // A value an older app version stored is kept as a snapshot, so that
@@ -114,11 +124,12 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
       }
 
       final snapshot =
-          sameDay?.copyWith(amount: roundedAmount) ??
+          sameDay?.copyWith(amount: roundedAmount, holding: holding) ??
           InvestmentValuationSnapshot(
             id: const Uuid().v4(),
             investmentId: investmentId,
             amount: roundedAmount,
+            holding: holding,
             currency: currency,
             effectiveDate: day,
             kind: kind ?? CurrentValueCalculator.defaultKind(investment.type),
@@ -139,12 +150,14 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
   }
 
   /// Changes the amount, the date or the kind of a live snapshot. The rest,
-  /// its provenance included, stays.
+  /// its provenance included, stays. A new [amount] without a [holding] drops
+  /// any weight the snapshot had; a [holding] must agree with [amount].
   Future<InvestmentValuationSnapshot> editValuation({
     required String snapshotId,
     double? amount,
     DateTime? date,
     ValuationKind? kind,
+    UnitHolding? holding,
   }) async {
     if (amount != null) _validateAmount(amount);
     final day = date == null ? null : _validatedDay(date);
@@ -152,10 +165,21 @@ class ValuationNotifier extends Notifier<AsyncValue<void>> {
       final (snapshot: current, ofInvestment: own) =
           await _liveSnapshotWithSiblings(snapshotId);
       final investment = await _writableInvestment(current.investmentId);
+      final roundedAmount = amount == null
+          ? null
+          : _roundedInput(amount, _requireCurrency(current.currency));
+      if (holding != null &&
+          (roundedAmount == null ||
+              !holding.isValid ||
+              holding.value(current.currency) != roundedAmount)) {
+        throw _rejected(
+          'The weight and price do not match the value.',
+          'holding does not match the amount',
+        );
+      }
       final edited = current.copyWith(
-        amount: amount == null
-            ? null
-            : _roundedInput(amount, _requireCurrency(current.currency)),
+        amount: roundedAmount,
+        holding: holding,
         effectiveDate: day,
         kind: kind,
       );

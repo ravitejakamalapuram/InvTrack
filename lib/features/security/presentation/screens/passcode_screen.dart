@@ -435,31 +435,39 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
                       color: AppColors.primaryLight,
                     ),
                     const SizedBox(height: 24),
-                    Text(
-                      message,
-                      textAlign: TextAlign.center,
-                      style: AppTypography.h3.copyWith(
-                        color: _isError
-                            ? Colors.red
-                            : AppColors.textPrimaryLight,
+                    Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        style: AppTypography.h3.copyWith(
+                          color: _isError
+                              ? Colors.red
+                              : AppColors.textPrimaryLight,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 40),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(4, (index) {
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 12),
-                          width: 16,
-                          height: 16,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: index < _input.length
-                                ? AppColors.primaryLight
-                                : AppColors.neutral300Light,
-                          ),
-                        );
-                      }),
+                    Semantics(
+                      label: l10n.passcodeDigitsEntered(_input.length, 4),
+                      liveRegion: true,
+                      excludeSemantics: true,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(4, (index) {
+                          return Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 12),
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: index < _input.length
+                                  ? AppColors.primaryLight
+                                  : AppColors.neutral300Light,
+                            ),
+                          );
+                        }),
+                      ),
                     ),
                     const Spacer(),
                     if (isUnlock) ..._buildWayOut(security, canProveIdentity),

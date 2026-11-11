@@ -33,7 +33,9 @@ import 'package:inv_tracker/features/investment/presentation/providers/providers
 import 'package:inv_tracker/features/investment/presentation/widgets/maturity_reminder_prompt.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/add_investment_keys.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/amount_invested_field.dart';
+import 'package:inv_tracker/features/investment/domain/entities/metal.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/custom_type_field.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/metal_choice.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/first_investment_form_view.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/start_date_field.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/template_selector.dart';
@@ -73,6 +75,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   final _notesFocusNode = FocusNode();
 
   late InvestmentType _selectedType;
+  late Metal _metal;
   DateTime? _maturityDate;
   IncomeFrequency? _incomeFrequency;
   bool _isLoading = false;
@@ -144,6 +147,8 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       text: investment?.customTypeLabel ?? '',
     );
     _selectedType = investment?.type ?? InvestmentType.p2pLending;
+    // An investment saved before the choice is edited as gold.
+    _metal = investment?.metal ?? Metal.gold;
     _maturityDate = investment?.maturityDate;
     _incomeFrequency = investment?.incomeFrequency;
 
@@ -407,6 +412,11 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     return typed.isEmpty ? null : typed;
   }
 
+  /// The metal to send (#946): the choice for Precious metals, null for any
+  /// other type.
+  Metal? _metalForSave() =>
+      _selectedType == InvestmentType.gold ? _metal : null;
+
   /// Tracks which of the optional fields a new investment was saved with. Only
   /// flags go out, never what was typed.
   void _trackNewInvestment({
@@ -494,6 +504,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               // Multi-currency
               currency: _selectedCurrency,
               customTypeLabel: _customTypeForSave(),
+              metal: _metalForSave(),
             );
       } else {
         await ref
@@ -516,6 +527,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               // Multi-currency
               currency: _selectedCurrency,
               customTypeLabel: _customTypeForSave(),
+              metal: _metalForSave(),
             );
 
         _trackNewInvestment(
@@ -601,6 +613,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
             compoundingFrequency: _compoundingFrequency,
             currency: _selectedCurrency,
             customTypeLabel: _customTypeForSave(),
+            metal: _metalForSave(),
             id: _investmentId,
             initialAmount: amount,
             onWriteResult: (value) => confirmed = value,
@@ -871,6 +884,15 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                       ),
 
                       SizedBox(height: AppSpacing.sectionSpacing),
+
+                      // Gold or Silver, for Precious metals only (#946)
+                      if (_selectedType == InvestmentType.gold) ...[
+                        MetalChoice(
+                          selected: _metal,
+                          onChanged: (metal) => setState(() => _metal = metal),
+                        ),
+                        SizedBox(height: AppSpacing.sectionSpacing),
+                      ],
 
                       // Optional custom type, for type Other only (#936)
                       if (showCustomType) ...[

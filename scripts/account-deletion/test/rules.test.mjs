@@ -196,6 +196,7 @@ describe('users/{uid} write validation', () => {
       interestPayoutMode: null, autoRenewal: false, riskLevel: null, compoundingFrequency: null,
       currency: 'INR', currentValue: 1000.5, currentValueDate: ts(), customTypeId: null,
       customTypeLabel: null,
+      metal: null,
     },
     cashflows: {
       investmentId: 'i1', date: ts(), type: 'INVEST', amount: 100, notes: '', createdAt: ts(),
@@ -285,6 +286,13 @@ describe('users/{uid} write validation', () => {
     await assertFails(
       setDoc(doc(asAlice(), 'users/alice/investments/i1'), { ...realWrites.investments, notes: 'x'.repeat(2001) }),
     );
+  });
+
+  it('an investment metal is a short string: silver is allowed, a number or 21 characters are not', async () => {
+    const ref = doc(asAlice(), 'users/alice/investments/i1');
+    await assertSucceeds(setDoc(ref, { ...realWrites.investments, type: 'gold', metal: 'silver' }));
+    await assertFails(setDoc(ref, { ...realWrites.investments, type: 'gold', metal: 7 }));
+    await assertFails(setDoc(ref, { ...realWrites.investments, type: 'gold', metal: 'x'.repeat(21) }));
   });
 
   it('a wrong field type is denied', async () => {

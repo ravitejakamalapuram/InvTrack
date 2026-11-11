@@ -451,8 +451,8 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       buffer.write(' matures in $daysRemaining days ($formattedDate).');
     }
 
-    // Add financial context if available
-    if (currentValue != null) {
+    // Add financial context if available, unless privacy mode hides it
+    if (currentValue != null && !privacyModeActive) {
       buffer.write(' Value: ${formatCurrencyForCode(currentValue, currency)}');
       if (returnPercent != null) {
         buffer.write(' (${returnPercent.toStringAsFixed(1)}% return)');
@@ -695,9 +695,11 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
 
     final title =
         '🎉 ${reachedMilestone.toStringAsFixed(1)}x Returns Achieved!';
-    final body =
-        '$investmentName has reached ${reachedMilestone.toStringAsFixed(1)}x returns! '
-        'You\'ve earned $formattedProfit profit.';
+    final reached =
+        '$investmentName has reached ${reachedMilestone.toStringAsFixed(1)}x returns!';
+    final body = privacyModeActive
+        ? reached
+        : '$reached You\'ve earned $formattedProfit profit.';
 
     final androidDetails = AndroidNotificationDetails(
       NotificationChannels.milestones,

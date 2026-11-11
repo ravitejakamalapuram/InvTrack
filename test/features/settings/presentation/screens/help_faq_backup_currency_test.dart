@@ -21,8 +21,50 @@ void main() {
     binding.platformDispatcher.views.first.resetDevicePixelRatio();
   });
 
-  testWidgets('the backup answer explains empty currency cells and the older '
-      'release limit', (tester) async {
+  group('backup FAQ', () {
+    testWidgets('the backup answer explains empty currency cells and the older '
+        'release limit', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HelpFaqScreen(
+            showDeveloperFaq: false,
+            showPortfolioHealthFaq: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('empty Currency', skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('older version of InvTrack', skipOffstage: false),
+        findsOneWidget,
+      );
+    });
+
+    // #768: health scores are derived data and are not in the backup ZIP, so
+    // no FAQ may say the exports hold them.
+    test('FAQ answers agree that health scores are not in the backup', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        l10n.isHealthScoreDataSavedAnswer,
+        isNot(contains('included in data exports')),
+      );
+      expect(l10n.isHealthScoreDataSavedAnswer, contains('not included'));
+      expect(l10n.isHealthScoreDataSavedAnswer, contains('backup ZIP'));
+      expect(l10n.howToBackupDataDerivedNote, contains('health scores'));
+      expect(l10n.howToBackupDataDerivedNote, contains('does not include'));
+      expect(l10n.howToBackupDataDerivedNote, contains('expected cash flows'));
+    });
+  });
+
+  testWidgets('the Tax-Year PDF export has a Help & FAQ entry (#800)', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -36,11 +78,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.textContaining('empty Currency', skipOffstage: false),
+      find.text('How do I export a Tax-Year PDF?', skipOffstage: false),
       findsOneWidget,
     );
     expect(
-      find.textContaining('older version of InvTrack', skipOffstage: false),
+      find.textContaining('not tax advice', skipOffstage: false),
       findsOneWidget,
     );
   });

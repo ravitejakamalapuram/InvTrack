@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/notifications/notification_settings_provider.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
@@ -77,6 +79,7 @@ void main() {
       ProviderScope(
         overrides: [
           isReportsTabEnabledProvider.overrideWithValue(reports),
+          sharedPreferencesProvider.overrideWithValue(prefs),
           if (recap) ...[
             isMonthlyRecapEnabledProvider.overrideWith(
               (ref) => ref.watch(_recapFlag),
@@ -529,6 +532,48 @@ void main() {
 
       expect(recapSlot(), isNotNull);
       expect(recapSlot()?.payload, isNot(startsWith('monthly_recap')));
+    });
+  });
+
+  // A29 part 4 (#780): toggles follow the signed-in account and privacy mode
+  // reaches the notification text.
+  group('NotificationSyncInitializer - toggles and privacy', () {
+    testWidgets('the service uses the signed-in account\'s toggles', (
+      tester,
+    ) async {
+      final container = await pumpInitializer(tester);
+      auth.add(user('a'));
+      await settle(tester);
+      expect(service.preferencesUid, 'a');
+
+      await container
+          .read(notificationSettingsProvider.notifier)
+          .setSetting(NotificationSettingType.goalStale, false);
+      expect(
+        container.read(notificationSettingsProvider).goalStaleEnabled,
+        isFalse,
+      );
+
+      auth.add(user('b'));
+      await settle(tester);
+
+      expect(service.preferencesUid, 'b');
+      expect(
+        container.read(notificationSettingsProvider).goalStaleEnabled,
+        isTrue,
+      );
+    });
+
+    testWidgets('privacy mode reaches the notification service', (
+      tester,
+    ) async {
+      final container = await pumpInitializer(tester);
+      expect(service.privacyModeActive, isFalse);
+
+      await container.read(privacyModeProvider.notifier).setEnabled(true);
+      await settle(tester);
+
+      expect(service.privacyModeActive, isTrue);
     });
   });
 }

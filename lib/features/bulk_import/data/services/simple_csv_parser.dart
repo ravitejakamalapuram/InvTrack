@@ -5,6 +5,7 @@ import 'package:inv_tracker/core/utils/csv_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 
 /// Parsed row from CSV import
 class ParsedCashFlowRow {
@@ -29,6 +30,10 @@ class ParsedCashFlowRow {
   /// given a base currency; callers must then use the base currency.
   final String? currency;
 
+  /// Optional weight (Quantity and Unit columns of a backup). Both or neither.
+  final double? quantity;
+  final QuantityUnit? quantityUnit;
+
   const ParsedCashFlowRow({
     required this.rowNumber,
     required this.date,
@@ -41,6 +46,8 @@ class ParsedCashFlowRow {
     this.investmentType,
     this.investmentStatus,
     this.investmentId,
+    this.quantity,
+    this.quantityUnit,
   });
 
   bool get isValid => error == null;
@@ -54,7 +61,9 @@ class ParsedCashFlowRow {
       notes = null,
       investmentType = null,
       investmentStatus = null,
-      investmentId = null;
+      investmentId = null,
+      quantity = null,
+      quantityUnit = null;
 }
 
 /// How to read a numeric date such as 05/03/2024.
@@ -462,6 +471,10 @@ class _CsvParserSession {
         map['investmentStatus'] = i;
       } else if (header == 'investment id') {
         map['investmentId'] = i;
+      } else if (header == 'quantity') {
+        map['quantity'] = i;
+      } else if (header == 'unit') {
+        map['unit'] = i;
       } else if (header == 'type') {
         // Cashflow type (INVEST, INCOME, RETURN, FEE)
         map['type'] = i;
@@ -626,7 +639,23 @@ class _CsvParserSession {
         );
       }
 
+      // A weight needs a positive number and a known unit; otherwise it is
+      // dropped and the money row is kept.
+      final quantityRaw = columnMap.containsKey('quantity')
+          ? double.tryParse(_getValue(values, columnMap['quantity']!))
+          : null;
+      final unitRaw = columnMap.containsKey('unit')
+          ? QuantityUnit.tryParse(_getValue(values, columnMap['unit']!))
+          : null;
+      final hasWeight =
+          quantityRaw != null &&
+          unitRaw != null &&
+          quantityRaw.isFinite &&
+          quantityRaw > 0;
+
       return ParsedCashFlowRow(
+        quantity: hasWeight ? quantityRaw : null,
+        quantityUnit: hasWeight ? unitRaw : null,
         rowNumber: rowNum,
         date: date,
         investmentName: investmentName.trim(),
@@ -977,7 +1006,11 @@ class GoalsCsvParser {
   ///
   /// A missing or blank Currency becomes [baseCurrency]; without one,
   /// [ParsedGoalRow.currency] stays null for the caller to resolve.
-  static ParsedGoalsResult parseString(String content, {String? baseCurrency}) {
+  static ParsedGoalsResult parseString(
+    String content, {
+    String? baseCurrency,
+    bool fromBackup = false,
+  }) {
     final records = _readCsvRecords(content, isRecord: _looksLikeRow);
     if (records.isEmpty) {
       return const ParsedGoalsResult(
@@ -1018,6 +1051,7 @@ class GoalsCsvParser {
         record.values,
         columnMap,
         baseCurrency,
+        fromBackup,
       );
 
       if (result.isValid) {
@@ -1092,9 +1126,12 @@ class GoalsCsvParser {
     List<String> values,
     Map<String, int> columnMap,
     String? baseCurrency,
+    bool fromBackup,
   ) {
     try {
-      final name = _getValue(values, columnMap['name']!);
+      final rawName = _getValue(values, columnMap['name']!);
+      // The app guards such cells on export; a restore takes the guard off.
+      final name = fromBackup ? CsvUtils.restoreField(rawName) : rawName;
       final type = _getValue(values, columnMap['type']!);
       final targetAmountStr = _getValue(values, columnMap['targetAmount']!);
 

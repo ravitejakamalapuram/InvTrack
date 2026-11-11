@@ -112,14 +112,21 @@ class InvestmentRobot extends BaseRobot {
     verifyTextDisplayed(investmentName);
   }
 
-  /// Open edit from detail screen
-  Future<void> openEdit() async {
-    await tapIcon(Icons.edit_outlined);
+  /// Open the options sheet from the detail screen's app bar.
+  Future<void> _openOptionsSheet() async {
+    await tapIcon(Icons.more_vert_rounded);
   }
 
-  /// Tap delete from detail screen
+  /// Open edit from detail screen (Edit Investment in the options sheet)
+  Future<void> openEdit() async {
+    await _openOptionsSheet();
+    await tapText('Edit Investment');
+  }
+
+  /// Tap delete from detail screen (Delete Investment in the options sheet)
   Future<void> tapDelete() async {
-    await tapIcon(Icons.delete_outline_rounded);
+    await _openOptionsSheet();
+    await tapText('Delete Investment');
   }
 
   /// Confirm delete in dialog
