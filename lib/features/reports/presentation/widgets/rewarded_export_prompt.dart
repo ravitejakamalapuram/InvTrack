@@ -1,4 +1,4 @@
-/// Asks whether to watch one short ad before the Tax-Year CSV export.
+/// Asks whether to watch one short ad, offered after a data export.
 library;
 
 import 'package:flutter/material.dart';
