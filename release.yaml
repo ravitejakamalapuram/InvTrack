@@ -17,7 +17,11 @@ targets:
     # Release build: release-platform computes the version from the latest vX.Y.Z tag and exports it.
     # Signing needs no Gradle changes (the workflow injects android.injected.signing.* from the
     # ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD secrets).
-    build: flutter pub get && flutter gen-l10n && flutter build appbundle --release --build-name "$VERSION_NAME" --build-number "$VERSION_CODE"
+    build: flutter pub get && flutter gen-l10n && flutter build appbundle --release --split-debug-info=build/symbols --build-name "$VERSION_NAME" --build-number "$VERSION_CODE"
+    # Dart split-debug symbols (needs a release-platform tag that has android.symbols; no obfuscation).
+    symbols:
+      dir: build/symbols
+      crashlytics_app_id_secret: FIREBASE_APP_ID
     aab: build/app/outputs/bundle/release/app-release.aab
     track: internal
     release_notes: CHANGELOG.md
