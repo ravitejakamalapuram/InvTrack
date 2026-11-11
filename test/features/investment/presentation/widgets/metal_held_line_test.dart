@@ -1,9 +1,11 @@
-// "Gold held" (#946): purchases minus sales, in grams; hidden in privacy mode.
+// "Gold held" / "Silver held" (#946): purchases minus sales, in grams; a
+// record without a metal reads as gold; hidden in privacy mode.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
+import 'package:inv_tracker/features/investment/domain/entities/metal.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/domain/services/metal_holding.dart';
@@ -65,20 +67,33 @@ void main() {
   });
 
   group('MetalHeldLine', () {
-    Future<void> pump(WidgetTester t, double grams, {bool privacy = false}) =>
-        t.pumpWidget(
-          ProviderScope(
-            overrides: [privacyModeProvider.overrideWith(() => _Privacy(privacy))],
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(body: MetalHeldLine(grams: grams)),
-            ),
+    Future<void> pump(
+      WidgetTester t,
+      double grams, {
+      bool privacy = false,
+      Metal? metal,
+    }) => t.pumpWidget(
+      ProviderScope(
+        overrides: [privacyModeProvider.overrideWith(() => _Privacy(privacy))],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: MetalHeldLine(grams: grams, metal: metal),
           ),
-        );
+        ),
+      ),
+    );
 
     testWidgets('says how much is held', (t) async {
       await pump(t, 12.5);
+      expect(find.text('Gold held: 12.5 g'), findsOneWidget);
+    });
+
+    testWidgets('names the metal', (t) async {
+      await pump(t, 12.5, metal: Metal.silver);
+      expect(find.text('Silver held: 12.5 g'), findsOneWidget);
+      await pump(t, 12.5, metal: Metal.gold);
       expect(find.text('Gold held: 12.5 g'), findsOneWidget);
     });
 

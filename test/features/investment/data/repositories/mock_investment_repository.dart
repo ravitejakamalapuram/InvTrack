@@ -158,6 +158,7 @@ class FakeInvestmentRepository implements InvestmentRepository {
     currency: updated.currency,
     currentValue: stored.currentValue,
     currentValueDate: stored.currentValueDate,
+    metal: updated.metal,
   );
 
   @override

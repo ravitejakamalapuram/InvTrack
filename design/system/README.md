@@ -94,7 +94,7 @@ Icons are Material icons from the Flutter SDK's `MaterialIcons` font, almost alw
 | Private Equity | `business_center` | `inv-private-equity` |
 | Angel Investing | `rocket_launch` | `inv-angel-investing` |
 | Chit Funds | `group` | `inv-chit-funds` |
-| Gold/Commodities | `monetization_on` | `inv-gold` |
+| Precious metals | `monetization_on` | `inv-gold` |
 | Crypto | `currency_bitcoin` | `inv-crypto` |
 | Mutual Funds | `pie_chart` | `inv-mutual-funds` |
 | Stocks | `show_chart` | `inv-stocks` |

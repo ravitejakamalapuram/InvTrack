@@ -1,4 +1,5 @@
 import 'package:inv_tracker/core/calculations/investment_projector.dart';
+import 'package:inv_tracker/features/investment/domain/entities/metal.dart';
 
 // ============ NEW ENUMS FOR ENHANCED DATA CAPTURE ============
 
@@ -235,7 +236,7 @@ enum InvestmentType {
       case InvestmentType.chitFunds:
         return 'Chit Funds';
       case InvestmentType.gold:
-        return 'Gold/Commodities';
+        return 'Precious metals';
       case InvestmentType.crypto:
         return 'Crypto';
       case InvestmentType.mutualFunds:
@@ -340,6 +341,11 @@ class InvestmentEntity {
   /// which shows as Other.
   final String? customTypeLabel;
 
+  /// Gold or Silver, for an investment of type [InvestmentType.gold] (#946).
+  /// Null for any other type, and for a precious-metals investment saved
+  /// before the choice existed.
+  final Metal? metal;
+
   const InvestmentEntity({
     required this.id,
     required this.name,
@@ -367,6 +373,7 @@ class InvestmentEntity {
     this.currentValueDate,
     this.customTypeId,
     this.customTypeLabel,
+    this.metal,
   });
 
   /// Whether this is an investment of type Other with a custom label (#936).
@@ -375,10 +382,14 @@ class InvestmentEntity {
       (customTypeLabel?.trim().isNotEmpty ?? false);
 
   /// The name to show for this investment's type: its custom label when it is
-  /// of type Other and has one, otherwise the built-in type's name. Grouping
+  /// of type Other and has one, the metal's name for precious metals with a
+  /// metal, otherwise the built-in type's name. Grouping
   /// and filtering keep using [type].
-  String get typeLabel =>
-      hasCustomTypeLabel ? customTypeLabel!.trim() : type.displayName;
+  String get typeLabel => hasCustomTypeLabel
+      ? customTypeLabel!.trim()
+      : (type == InvestmentType.gold && metal != null
+            ? metal!.displayName
+            : type.displayName);
 
   bool get isOpen => status == InvestmentStatus.open;
   bool get isClosed => status == InvestmentStatus.closed;
@@ -458,6 +469,7 @@ class InvestmentEntity {
     DateTime? currentValueDate,
     String? customTypeId,
     String? customTypeLabel,
+    Metal? metal,
   }) {
     return InvestmentEntity(
       id: id ?? this.id,
@@ -488,6 +500,7 @@ class InvestmentEntity {
       currentValueDate: currentValueDate ?? this.currentValueDate,
       customTypeId: customTypeId ?? this.customTypeId,
       customTypeLabel: customTypeLabel ?? this.customTypeLabel,
+      metal: metal ?? this.metal,
     );
   }
 
@@ -520,7 +533,8 @@ class InvestmentEntity {
         other.currentValue == currentValue &&
         other.currentValueDate == currentValueDate &&
         other.customTypeId == customTypeId &&
-        other.customTypeLabel == customTypeLabel;
+        other.customTypeLabel == customTypeLabel &&
+        other.metal == metal;
   }
 
   @override
@@ -552,6 +566,7 @@ class InvestmentEntity {
       currentValueDate,
       customTypeId,
       customTypeLabel,
+      metal,
     ]);
   }
 }

@@ -4788,12 +4788,25 @@
       "amount": {"type": "String"}
     }
   },
-  "metalHeld": "Gold held: {weight}",
+  "metalHeld": "{metal} held: {weight}",
   "@metalHeld": {
-    "description": "Line on a gold investment's page: how much metal is still held (purchases minus sales), e.g. 'Gold held: 12.5 g'",
+    "description": "Line on a precious-metals investment's page: how much of the metal is still held (purchases minus sales), e.g. 'Gold held: 12.5 g' or 'Silver held: 12.5 g'",
     "placeholders": {
+      "metal": {"type": "String", "example": "Gold"},
       "weight": {"type": "String", "example": "12.5 g"}
     }
+  },
+  "metalChoiceLabel": "Metal",
+  "@metalChoiceLabel": {
+    "description": "Label above the Gold or Silver choice on the form of a precious-metals investment"
+  },
+  "metalGold": "Gold",
+  "@metalGold": {
+    "description": "The metal gold: a choice on a precious-metals investment and a word in the line that says how much is held"
+  },
+  "metalSilver": "Silver",
+  "@metalSilver": {
+    "description": "The metal silver: a choice on a precious-metals investment and a word in the line that says how much is held"
   },
   "weightFieldInvalid": "Enter a valid weight",
   "@weightFieldInvalid": {

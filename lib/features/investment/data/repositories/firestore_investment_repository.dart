@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/utils/custom_type_label.dart';
 import 'package:inv_tracker/core/utils/stored_date.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/metal.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
@@ -239,7 +240,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     await _executeWrite(
       () => _investmentsRef
           .doc(investment.id)
-          .set(_investmentToFirestore(investment)),
+          .set(investmentToFirestore(investment)),
     );
   }
 
@@ -252,7 +253,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       () => _investmentsRef
           .doc(investment.id)
           .update(
-            _investmentToFirestore(
+            investmentToFirestore(
               investment,
               preserveCurrentValue: preserveCurrentValue,
             ),
@@ -650,7 +651,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       () => _archivedInvestmentsRef
           .doc(investment.id)
           .update(
-            _investmentToFirestore(
+            investmentToFirestore(
               investment,
               preserveCurrentValue: preserveCurrentValue,
             ),
@@ -843,7 +844,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
       for (var j = i; j < end; j++) {
         final inv = investments[j];
-        batch.set(_investmentsRef.doc(inv.id), _investmentToFirestore(inv));
+        batch.set(_investmentsRef.doc(inv.id), investmentToFirestore(inv));
         investmentCount++;
       }
 
@@ -888,7 +889,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     final batch = _firestore.batch()
       ..set(
         _investmentsRef.doc(investment.id),
-        _investmentToFirestore(investment),
+        investmentToFirestore(investment),
       );
     if (firstFlow != null) {
       batch.set(
@@ -1007,7 +1008,8 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   /// With [preserveCurrentValue] the current value pair is left out, so an
   /// update keeps whatever is stored: the pair mirrors the latest valuation
   /// snapshot and a stale copy must not overwrite it.
-  Map<String, dynamic> _investmentToFirestore(
+  @visibleForTesting
+  static Map<String, dynamic> investmentToFirestore(
     InvestmentEntity investment, {
     bool preserveCurrentValue = false,
   }) {
@@ -1047,6 +1049,11 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
           : null,
       'customTypeLabel': investment.type == InvestmentType.other
           ? investment.customTypeLabel
+          : null,
+      // Gold or Silver (#946); null when none, so an edit clears a stored one.
+      // Only precious metals have one.
+      'metal': investment.type == InvestmentType.gold
+          ? investment.metal?.name
           : null,
     };
     if (preserveCurrentValue) {
@@ -1124,6 +1131,8 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       // Documents saved before custom types (#936) have neither field.
       customTypeId: isOther ? _nonBlank(data['customTypeId']) : null,
       customTypeLabel: customTypeLabel.isEmpty ? null : customTypeLabel,
+      // Documents saved before the metal choice (#946) have none.
+      metal: type == InvestmentType.gold ? Metal.tryParse(data['metal']) : null,
     );
   }
 

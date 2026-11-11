@@ -29,7 +29,7 @@ Current Value
 
 ## Rules
 
-- Offered only for the Gold/Commodities type, and only while dated valuations are on, because the weight is stored with the dated valuation. Otherwise the dialog is exactly as before.
+- Offered only for the Precious metals type, and only while dated valuations are on, because the weight is stored with the dated valuation. Otherwise the dialog is exactly as before.
 - Units: gram, kilogram, troy ounce, tola, sovereign (8 g). The label of the price field follows the unit ("Price per tola in INR").
 - The total is derived (weight x price, rounded once to the currency's minor unit) and never typed. Changing weight, unit or price updates it; leaving weight mode returns to a plain total.
 - Error (one message under Weight): "Enter a weight above 0 and a price."

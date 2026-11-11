@@ -26,7 +26,7 @@ service cloud.firestore {
         && optStr(d, 'platform', 200) && optStr(d, 'interestPayoutMode', 50)
         && optStr(d, 'riskLevel', 50) && optStr(d, 'compoundingFrequency', 50)
         && optStr(d, 'currency', 10) && optStr(d, 'customTypeId', 200)
-        && optStr(d, 'customTypeLabel', 100)
+        && optStr(d, 'customTypeLabel', 100) && optStr(d, 'metal', 20)
         && optBool(d, 'isArchived') && optBool(d, 'autoRenewal')
         && optNum(d, 'expectedRate') && optNum(d, 'tenureMonths') && optNum(d, 'currentValue')
         && optTs(d, 'createdAt') && optTs(d, 'closedAt') && optTs(d, 'updatedAt')

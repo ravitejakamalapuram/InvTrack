@@ -75,8 +75,15 @@ final _requiredOnly = InvestmentEntity(
 
 /// Written fields [_everyField] leaves at their default on purpose: it is
 /// open and active, so it has no closing date, and the server sets
-/// updatedAt.
-const _leftAtDefault = {'status', 'closedAt', 'isArchived', 'updatedAt'};
+/// updatedAt. The metal belongs to type gold and the fixture is type Other
+/// (investment_notifier_metal_test.dart covers the metal's edit).
+const _leftAtDefault = {
+  'status',
+  'closedAt',
+  'isArchived',
+  'updatedAt',
+  'metal',
+};
 
 /// Writes [investment] through the Firestore repository and returns the
 /// map passed to `set()` (create) or `update()` (edit).
