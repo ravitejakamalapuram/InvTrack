@@ -38,8 +38,7 @@ jobs:
   nightly:
     permissions:
       contents: read
-    # TODO(pin): switch to @v2 once release-platform tags the reusable nightly (v2.10.0).
-    uses: ravitejakamalapuram/release-platform/.github/workflows/nightly.yml@feat/nightly-workflow
+    uses: ravitejakamalapuram/release-platform/.github/workflows/nightly.yml@v2
     with:
       app_name: InvTrack
       flutter_version: '3.38.4' # keep in step with release.yaml
