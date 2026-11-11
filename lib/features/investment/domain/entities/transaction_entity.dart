@@ -174,6 +174,7 @@ class CashFlowEntity implements ICashFlow {
     bool? currencyAssumed,
     double? quantity,
     QuantityUnit? quantityUnit,
+    bool clearWeight = false,
   }) {
     return CashFlowEntity(
       id: id ?? this.id,
@@ -187,8 +188,9 @@ class CashFlowEntity implements ICashFlow {
       // Choosing a currency makes it a stored one.
       currencyAssumed:
           currencyAssumed ?? (currency == null && this.currencyAssumed),
-      quantity: quantity ?? this.quantity,
-      quantityUnit: quantityUnit ?? this.quantityUnit,
+      // The weight is a pair: change both, keep both, or [clearWeight].
+      quantity: clearWeight ? null : quantity ?? this.quantity,
+      quantityUnit: clearWeight ? null : quantityUnit ?? this.quantityUnit,
     );
   }
 

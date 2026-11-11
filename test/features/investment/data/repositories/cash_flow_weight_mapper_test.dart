@@ -59,6 +59,15 @@ void main() {
       expect(flow.copyWith(quantity: 12).quantity, 12);
     });
 
+    test('copyWith(clearWeight: true) removes the weight as a pair', () {
+      final cleared = _flow(
+        quantity: 10,
+        unit: QuantityUnit.gram,
+      ).copyWith(clearWeight: true);
+      expect(cleared.quantity, isNull);
+      expect(cleared.quantityUnit, isNull);
+    });
+
     test('the weight takes part in equality', () {
       expect(
         _flow(quantity: 10, unit: QuantityUnit.gram),
