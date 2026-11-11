@@ -15,6 +15,10 @@ on:
         description: 'Really post to the channel (leave off for a dry run)'
         type: boolean
         default: false
+      import_file:
+        description: 'Add the approved posts in this file (content/posts/<name>.json) to the database instead of posting'
+        type: string
+        default: ''
 
 permissions: {}
 
@@ -41,6 +45,7 @@ jobs:
             scripts/telegram-tip
             scripts/content-posts
             scripts/account-deletion
+            content/posts
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
@@ -55,11 +60,19 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           POST_INPUT: ${{ inputs.post }}
+          IMPORT_FILE: ${{ inputs.import_file }}
           POSTING_ENABLED: ${{ vars.TELEGRAM_POSTING_ENABLED }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
         run: |
-          if [ "$EVENT" = "schedule" ] && [ "$POSTING_ENABLED" = "true" ]; then
+          if [ -n "$IMPORT_FILE" ]; then
+            case "$IMPORT_FILE" in
+              content/posts/*.json) ;;
+              *) echo "import_file must be content/posts/<name>.json"; exit 1 ;;
+            esac
+            case "$IMPORT_FILE" in *..*) echo "bad path"; exit 1 ;; esac
+            node scripts/content-posts/run.mjs import "$IMPORT_FILE"
+          elif [ "$EVENT" = "schedule" ] && [ "$POSTING_ENABLED" = "true" ]; then
             node scripts/content-posts/run.mjs post
           elif [ "$EVENT" = "workflow_dispatch" ] && [ "$POST_INPUT" = "true" ]; then
             node scripts/content-posts/run.mjs post
