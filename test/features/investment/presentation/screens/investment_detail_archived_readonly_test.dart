@@ -79,6 +79,7 @@ Future<void> _pump(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        valuationSnapshotsActiveProvider.overrideWithValue(false),
         sharedPreferencesProvider.overrideWithValue(prefs),
         privacyModeProvider.overrideWith(_PrivacyOff.new),
         currencyCodeProvider.overrideWithValue('INR'),

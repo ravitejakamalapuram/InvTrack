@@ -30,4 +30,5 @@ The latest value counts for your totals. Older ones show how it moved.
 - Tap a row: the same editor as "Update", opened on that value, its date and its weight and price. Its remove button says "Remove" and removes that value; a snackbar offers "Undo".
 - Empty: "No values yet. Add one to see how this investment moved." with "Add a value".
 - Row label for screen readers: "12 Nov 2026, INR 64,500.00". In privacy mode: "12 Nov 2026, value hidden".
+- In privacy mode the editor opens without the saved amount, weight or price (the date stays); the user types the new value.
 - Weight and price are offered for gold only.

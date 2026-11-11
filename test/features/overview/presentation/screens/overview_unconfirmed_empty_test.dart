@@ -47,6 +47,7 @@ void main() {
       ProviderScope(
         retry: (_, _) => null,
         overrides: [
+          valuationSnapshotsActiveProvider.overrideWithValue(false),
           sharedPreferencesProvider.overrideWithValue(prefs),
           analyticsServiceProvider.overrideWithValue(analytics),
           currencyCodeProvider.overrideWith((ref) => 'INR'),

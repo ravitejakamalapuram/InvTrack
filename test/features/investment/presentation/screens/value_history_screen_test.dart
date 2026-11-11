@@ -148,6 +148,23 @@ void main() {
     expect(recorder.calls, ['edit s2 77400.0 12.0']);
   });
 
+  testWidgets('privacy mode opens the editor without the saved numbers', (
+    tester,
+  ) async {
+    await _pump(tester, privacy: true);
+    await tester.tap(find.text('Nov 12, 2026'));
+    await tester.pumpAndSettle();
+    expect(find.text('Save'), findsOneWidget);
+    for (final saved in ['10', '6450', '64500', '64,500', '6,450']) {
+      expect(
+        find.text(saved),
+        findsNothing,
+        reason: '$saved is a saved number',
+      );
+    }
+    expect(find.textContaining('64,500'), findsNothing);
+  });
+
   testWidgets('removing a value can be undone', (tester) async {
     final recorder = await _pump(tester);
     await tester.tap(find.text('Nov 3, 2026'));

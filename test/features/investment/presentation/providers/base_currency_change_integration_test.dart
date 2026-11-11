@@ -64,6 +64,7 @@ void main() {
 
         container = ProviderContainer(
           overrides: [
+            valuationSnapshotsActiveProvider.overrideWithValue(false),
             validCashFlowsProvider.overrideWith(
               (ref) => AsyncValue.data(mixedCurrencyCashFlows),
             ),
@@ -148,6 +149,7 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
+          valuationSnapshotsActiveProvider.overrideWithValue(false),
           // The detail stats read the converted snapshot of the active
           // cash flows (A13), the same source as the list cards.
           validCashFlowsProvider.overrideWith(
