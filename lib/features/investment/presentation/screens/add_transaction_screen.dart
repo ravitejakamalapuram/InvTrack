@@ -172,15 +172,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         _selectedType != CashFlowType.returnFlow) {
       return false;
     }
-    final type = ref
-        .read(investmentByIdProvider(widget.investmentId))
-        .value
-        ?.type;
-    // Until the investment has loaded, a flow that already has a weight keeps
-    // it, so saving an edit never erases it.
-    return type == null
-        ? widget.cashFlowToEdit?.quantity != null
-        : type == InvestmentType.gold;
+    // A flow that already has a weight keeps its row, on any investment
+    // (an import can bring one), so saving an edit never erases it. Others
+    // get it for gold only.
+    if (widget.cashFlowToEdit?.quantity != null) return true;
+    return ref.read(investmentByIdProvider(widget.investmentId)).value?.type ==
+        InvestmentType.gold;
   }
 
   double? get _typedWeight => double.tryParse(_weightController.text.trim());

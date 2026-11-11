@@ -211,6 +211,30 @@ void main() {
     expect(saved.single.unit, QuantityUnit.gram);
   });
 
+  testWidgets('editing a weighted flow on a non-gold investment keeps its '
+      'weight', (tester) async {
+    final saved = <_Saved>[];
+    final edit = CashFlowEntity(
+      id: 'cf1',
+      investmentId: 'inv-1',
+      date: DateTime(2026, 11, 3),
+      type: CashFlowType.invest,
+      amount: 64500,
+      createdAt: DateTime(2026, 11, 3),
+      currency: 'INR',
+      quantity: 10,
+      quantityUnit: QuantityUnit.gram,
+    );
+    await _open(tester, InvestmentType.other, saved, edit: edit);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Notes (Optional)'),
+      'x',
+    );
+    await _save(tester);
+    expect(saved.single.quantity, 10);
+    expect(saved.single.unit, QuantityUnit.gram);
+  });
+
   testWidgets('the implied price per unit is shown as a hint', (tester) async {
     await _open(tester, InvestmentType.gold, []);
     await tester.enterText(find.widgetWithText(TextField, 'Amount'), '64500');
