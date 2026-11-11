@@ -609,6 +609,8 @@ class DataExportService {
       'Investment Type',
       'Investment Status',
       'Investment ID',
+      'Quantity',
+      'Unit',
     ]);
 
     // Sort by date
@@ -628,6 +630,9 @@ class DataExportService {
         item.investment.type.name,
         item.investment.status.name,
         item.investment.id,
+        // Weight (#946); blank when the flow has none.
+        item.cashFlow.quantity ?? '',
+        item.cashFlow.quantityUnit?.name ?? '',
       ]);
     }
 

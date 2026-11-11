@@ -1,4 +1,5 @@
 import 'package:inv_tracker/core/calculations/models/cash_flow_interface.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 
 /// Cash Flow Type - direction of money
 ///
@@ -111,6 +112,13 @@ class CashFlowEntity implements ICashFlow {
   /// record, so a restore does not turn the guess into a stored value.
   final bool currencyAssumed;
 
+  /// Optional weight bought or sold with this cash flow (for example grams of
+  /// gold), kept with [quantityUnit]. Both are set or both are null. The
+  /// amount is still the money paid, since making charges and tax mean it is
+  /// not weight times price.
+  final double? quantity;
+  final QuantityUnit? quantityUnit;
+
   const CashFlowEntity({
     required this.id,
     required this.investmentId,
@@ -121,7 +129,19 @@ class CashFlowEntity implements ICashFlow {
     required this.createdAt,
     required this.currency,
     this.currencyAssumed = false,
-  });
+    this.quantity,
+    this.quantityUnit,
+  }) : assert(
+         (quantity == null) == (quantityUnit == null),
+         'quantity and quantityUnit are set together',
+       );
+
+  /// The weight in grams, or null when this flow has none.
+  double? get grams {
+    final q = quantity;
+    final u = quantityUnit;
+    return (q == null || u == null) ? null : q * u.gramsPerUnit;
+  }
 
   @override
   CalculationCashFlowType get calculationType {
@@ -152,6 +172,8 @@ class CashFlowEntity implements ICashFlow {
     DateTime? createdAt,
     String? currency,
     bool? currencyAssumed,
+    double? quantity,
+    QuantityUnit? quantityUnit,
   }) {
     return CashFlowEntity(
       id: id ?? this.id,
@@ -165,6 +187,8 @@ class CashFlowEntity implements ICashFlow {
       // Choosing a currency makes it a stored one.
       currencyAssumed:
           currencyAssumed ?? (currency == null && this.currencyAssumed),
+      quantity: quantity ?? this.quantity,
+      quantityUnit: quantityUnit ?? this.quantityUnit,
     );
   }
 
@@ -180,7 +204,9 @@ class CashFlowEntity implements ICashFlow {
         other.notes == notes &&
         other.createdAt == createdAt &&
         other.currency == currency &&
-        other.currencyAssumed == currencyAssumed;
+        other.currencyAssumed == currencyAssumed &&
+        other.quantity == quantity &&
+        other.quantityUnit == quantityUnit;
   }
 
   @override
@@ -193,6 +219,8 @@ class CashFlowEntity implements ICashFlow {
         notes.hashCode ^
         createdAt.hashCode ^
         currency.hashCode ^
-        currencyAssumed.hashCode;
+        currencyAssumed.hashCode ^
+        quantity.hashCode ^
+        quantityUnit.hashCode;
   }
 }

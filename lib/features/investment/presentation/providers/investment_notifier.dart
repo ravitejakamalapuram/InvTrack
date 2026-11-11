@@ -724,10 +724,13 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     required DateTime date,
     String? notes,
     String? currency,
+    double? quantity,
+    QuantityUnit? quantityUnit,
   }) async {
     // Input validation
     _validateAmount(amount);
     _validateNotes(notes);
+    _validateWeight(quantity, quantityUnit);
     final String flowCurrency = _requireCurrency(
       currency ?? ref.read(currencyCodeProvider),
     );
@@ -747,6 +750,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       notes: notes?.trim(),
       createdAt: DateTime.now(),
       currency: flowCurrency,
+      quantity: quantity,
+      quantityUnit: quantityUnit,
     );
     try {
       await ref.read(investmentRepositoryProvider).addCashFlow(cashFlow);
@@ -840,10 +845,13 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     String? notes,
     required DateTime createdAt,
     String? currency,
+    double? quantity,
+    QuantityUnit? quantityUnit,
   }) async {
     // Input validation
     _validateAmount(amount);
     _validateNotes(notes);
+    _validateWeight(quantity, quantityUnit);
     final String flowCurrency = _requireCurrency(
       currency ?? ref.read(currencyCodeProvider),
     );
@@ -864,6 +872,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         notes: notes?.trim(),
         createdAt: createdAt,
         currency: flowCurrency,
+        quantity: quantity,
+        quantityUnit: quantityUnit,
       );
       await ref.read(investmentRepositoryProvider).updateCashFlow(cashFlow);
 
@@ -1224,6 +1234,15 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   /// 15 digits (invtrack_rules 19.1). Callers check it before and after
   /// rounding, for rounding can carry an amount up to 16 digits.
   /// Throws [ValidationException] otherwise.
+  /// A weight is a positive finite number with a unit, or nothing at all.
+  void _validateWeight(double? quantity, QuantityUnit? unit) {
+    if (quantity == null && unit == null) return;
+    if (quantity == null || unit == null) {
+      throw ValidationException.invalidAmount(quantity ?? 0);
+    }
+    _validateAmount(quantity);
+  }
+
   void _validateAmount(double amount) {
     if (!amount.isFinite || amount <= 0) {
       throw ValidationException.invalidAmount(amount);

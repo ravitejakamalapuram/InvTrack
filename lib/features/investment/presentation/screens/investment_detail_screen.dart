@@ -12,6 +12,8 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/screen_layout.dart';
 import 'package:inv_tracker/core/widgets/tonal_icon_action.dart';
+import 'package:inv_tracker/features/investment/domain/services/metal_holding.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/metal_held_line.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
@@ -421,6 +423,19 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               ),
             ),
           ),
+
+          if (widget.investment.type == InvestmentType.gold &&
+              selectedSegment == 0 &&
+              heldGrams(cashFlowsAsync.value ?? const []) != null)
+            SliverToBoxAdapter(
+              child: ScreenEdge(
+                top: 0,
+                bottom: AppSpacing.xs,
+                child: MetalHeldLine(
+                  grams: heldGrams(cashFlowsAsync.value ?? const [])!,
+                ),
+              ),
+            ),
 
           if (isArchived)
             SliverToBoxAdapter(

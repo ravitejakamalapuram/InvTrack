@@ -1015,6 +1015,8 @@ class DataImportService {
             notes: row.notes,
             createdAt: now,
             currency: row.currency ?? baseCurrency, // Rule 21.4
+            quantity: row.quantity,
+            quantityUnit: row.quantityUnit,
           ),
         );
       }

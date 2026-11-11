@@ -4788,6 +4788,25 @@
       "amount": {"type": "String"}
     }
   },
+  "metalHeld": "Gold held: {weight}",
+  "@metalHeld": {
+    "description": "Line on a gold investment's page: how much metal is still held (purchases minus sales), e.g. 'Gold held: 12.5 g'",
+    "placeholders": {
+      "weight": {"type": "String", "example": "12.5 g"}
+    }
+  },
+  "weightImpliedPrice": "About {price} per {unit}",
+  "@weightImpliedPrice": {
+    "description": "Hint under the weight field of a gold purchase or sale: the amount divided by the weight, e.g. 'About ₹6,450.00 per gram'",
+    "placeholders": {
+      "price": {"type": "String", "example": "₹6,450.00"},
+      "unit": {"type": "String", "example": "gram"}
+    }
+  },
+  "weightOptionalHint": "Optional",
+  "@weightOptionalHint": {
+    "description": "Hint in the weight field of a gold purchase or sale: it can be left empty"
+  },
   "weightInvalid": "Enter a weight above 0 and a price.",
   "@weightInvalid": {
     "description": "Error when the weight is empty or 0, or the price is missing"
