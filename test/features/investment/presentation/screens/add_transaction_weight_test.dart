@@ -150,7 +150,7 @@ void main() {
     await tester.enterText(find.widgetWithText(TextField, 'Weight'), '0');
     await _save(tester);
     expect(saved, isEmpty);
-    expect(find.text('Must be positive'), findsOneWidget);
+    expect(find.text('Weight must be above 0'), findsOneWidget);
   });
 
   testWidgets('the implied price per unit is shown as a hint', (tester) async {

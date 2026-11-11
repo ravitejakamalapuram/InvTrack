@@ -298,8 +298,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) return null;
                   final parsed = double.tryParse(value);
-                  if (parsed == null) return 'Invalid amount';
-                  if (parsed <= 0) return 'Must be positive';
+                  if (parsed == null) return l10n.weightFieldInvalid;
+                  if (parsed <= 0) return l10n.weightFieldMustBePositive;
                   return null;
                 },
               ),

@@ -80,10 +80,12 @@ void main() {
       expect(map['quantityUnit'], 'tola');
     });
 
-    test('a flow without a weight writes neither field', () {
+    test('a flow without a weight writes null, so an update clears it', () {
       final map = FirestoreInvestmentRepository.cashFlowToFirestore(_flow());
-      expect(map.containsKey('quantity'), isFalse);
-      expect(map.containsKey('quantityUnit'), isFalse);
+      expect(map.containsKey('quantity'), isTrue);
+      expect(map['quantity'], isNull);
+      expect(map.containsKey('quantityUnit'), isTrue);
+      expect(map['quantityUnit'], isNull);
     });
 
     test('a written weight reads back', () {

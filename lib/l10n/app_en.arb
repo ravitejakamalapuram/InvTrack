@@ -4795,6 +4795,14 @@
       "weight": {"type": "String", "example": "12.5 g"}
     }
   },
+  "weightFieldInvalid": "Enter a valid weight",
+  "@weightFieldInvalid": {
+    "description": "Error under the optional weight field of a gold purchase or sale when the text is not a number"
+  },
+  "weightFieldMustBePositive": "Weight must be above 0",
+  "@weightFieldMustBePositive": {
+    "description": "Error under the optional weight field of a gold purchase or sale when the number is 0 or less"
+  },
   "weightImpliedPrice": "About {price} per {unit}",
   "@weightImpliedPrice": {
     "description": "Hint under the weight field of a gold purchase or sale: the amount divided by the weight, e.g. 'About ₹6,450.00 per gram'",

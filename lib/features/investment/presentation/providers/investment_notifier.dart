@@ -1045,6 +1045,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
                   : 'From ${inv.name}',
               createdAt: now,
               currency: cf.currency,
+              quantity: cf.quantity,
+              quantityUnit: cf.quantityUnit,
             ),
           );
         }

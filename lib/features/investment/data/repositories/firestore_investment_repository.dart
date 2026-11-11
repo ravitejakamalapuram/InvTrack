@@ -1147,11 +1147,9 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       'createdAt': Timestamp.fromDate(cashFlow.createdAt),
       // Multi-currency support
       'currency': cashFlow.currency,
-      // Weight (#946); left out when the flow has none.
-      if (cashFlow.quantity != null && cashFlow.quantityUnit != null) ...{
-        'quantity': cashFlow.quantity,
-        'quantityUnit': cashFlow.quantityUnit!.name,
-      },
+      // Weight (#946); null clears a stored weight when a flow is updated.
+      'quantity': cashFlow.quantity,
+      'quantityUnit': cashFlow.quantityUnit?.name,
     };
   }
 
