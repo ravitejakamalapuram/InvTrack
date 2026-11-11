@@ -26,7 +26,7 @@ service cloud.firestore {
         && optStr(d, 'platform', 200) && optStr(d, 'interestPayoutMode', 50)
         && optStr(d, 'riskLevel', 50) && optStr(d, 'compoundingFrequency', 50)
         && optStr(d, 'currency', 10) && optStr(d, 'customTypeId', 200)
-        && optStr(d, 'customTypeLabel', 100)
+        && optStr(d, 'customTypeLabel', 100) && optStr(d, 'metal', 20)
         && optBool(d, 'isArchived') && optBool(d, 'autoRenewal')
         && optNum(d, 'expectedRate') && optNum(d, 'tenureMonths') && optNum(d, 'currentValue')
         && optTs(d, 'createdAt') && optTs(d, 'closedAt') && optTs(d, 'updatedAt')
@@ -35,6 +35,7 @@ service cloud.firestore {
     function validCashFlow(d) {
       return optStr(d, 'investmentId', 200) && optStr(d, 'type', 50)
         && optStr(d, 'notes', 2000) && optStr(d, 'currency', 10)
+        && optStr(d, 'quantityUnit', 20) && optNum(d, 'quantity')
         && optNum(d, 'amount') && optTs(d, 'date') && optTs(d, 'createdAt');
     }
     function validGoal(d) {
@@ -63,6 +64,7 @@ service cloud.firestore {
     function validValuation(d) {
       return optStr(d, 'investmentId', 200) && optStr(d, 'currency', 10)
         && optStr(d, 'kind', 50) && optStr(d, 'provenance', 50) && optNum(d, 'amount')
+        && optNum(d, 'quantity') && optNum(d, 'unitPrice') && optStr(d, 'unit', 50)
         && optTs(d, 'effectiveDate') && optTs(d, 'createdAt') && optTs(d, 'updatedAt')
         && optTs(d, 'deletedAt');
     }
@@ -183,6 +185,16 @@ service cloud.firestore {
         && request.resource.data.version == 1;
       allow delete: if request.auth != null && request.auth.uid == userId;
       allow list, update: if false;
+    }
+
+    // Approved posts for the Telegram channel and the app's tip card. Public content, not user data, so
+    // account deletion and export do not cover it. Anyone signed in (a guest counts) may read APPROVED posts;
+    // a list must filter on status == 'approved'. Only the posting job (Admin SDK) writes. Per-channel
+    // delivery records (posted, failed, message id) are for the job only.
+    match /contentPosts/{postId} {
+      allow get, list: if request.auth != null && resource.data.status == 'approved';
+      allow write: if false;
+      match /deliveries/{channel} { allow read, write: if false; }
     }
 
     // Written only by the job (Admin SDK). Never readable from a client.

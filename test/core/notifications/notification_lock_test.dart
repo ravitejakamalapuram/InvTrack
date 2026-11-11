@@ -85,6 +85,7 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     container = ProviderContainer(
       overrides: [
+        valuationSnapshotsActiveProvider.overrideWithValue(false),
         sharedPreferencesProvider.overrideWithValue(prefs),
         currencyCodeProvider.overrideWithValue('INR'),
         currencyConversionServiceProvider.overrideWithValue(null),

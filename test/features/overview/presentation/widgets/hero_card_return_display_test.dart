@@ -98,7 +98,7 @@ void main() {
         realizedOnly: false,
       );
 
-      expect(find.text('Net cash flow so far'), findsOneWidget);
+      expect(find.text('Invested'), findsOneWidget);
       expect(find.text('Awaiting first payout'), findsOneWidget);
       expect(find.text('—'), findsOneWidget);
       expect(
@@ -213,7 +213,7 @@ void main() {
     // the return badge, which stays in the tree, is faded out.
     expect(
       find.ancestor(
-        of: find.byKey(const ValueKey('hero-net-cash-flow')),
+        of: find.byKey(const ValueKey('hero-headline-amount')),
         matching: find.byType(ImageFiltered),
       ),
       findsOneWidget,
@@ -268,9 +268,9 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final stats = InvestmentStats(
-      totalInvested: 10000000,
+      totalInvested: 12345678,
       totalReturned: 22345678,
-      netCashFlow: 12345678,
+      netCashFlow: 10000000,
       absoluteReturn: 123.45678,
       moic: 2.2345678,
       xirr: 0.05,
@@ -293,7 +293,7 @@ void main() {
     final badge = find.text('+123.5% so far');
     expect(badge, findsOneWidget);
     final amount = tester.getRect(
-      find.byKey(const ValueKey('hero-net-cash-flow')),
+      find.byKey(const ValueKey('hero-headline-amount')),
     );
     expect(tester.getRect(badge).top, greaterThanOrEqualTo(amount.bottom));
   });

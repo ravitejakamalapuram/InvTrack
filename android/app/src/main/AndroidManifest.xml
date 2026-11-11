@@ -1,8 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
-    <!-- AD_ID permission for Firebase Analytics -->
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+    <!-- Ads are non-personalised, so the advertising ID is not requested. The ads
+         library adds this permission on its own; remove it from the merged manifest. -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove"/>
     <!-- Biometric Authentication -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
@@ -55,11 +56,11 @@
             android:name="flutterEmbedding"
             android:value="2" />
         <!-- Google Mobile Ads App ID (REQUIRED to prevent Play Store rejection) -->
-        <!-- Using Google's test app ID - replace with actual AdMob App ID in production -->
-        <!-- To get your App ID: https://admob.google.com/home/ -->
+        <!-- InvTrack's AdMob app ID (public, safe to commit). Debug builds still
+             show only Google's test ads; see admob_rewarded_player.dart. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="ca-app-pub-7886969733687639~8454163839"/>
         <!-- FileProvider for share_plus file sharing -->
         <provider
             android:name="androidx.core.content.FileProvider"

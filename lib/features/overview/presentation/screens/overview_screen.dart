@@ -26,6 +26,7 @@ import 'package:inv_tracker/features/income_projection/presentation/widgets/inco
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_enums.dart';
+import 'package:inv_tracker/features/tips/presentation/widgets/daily_tip_card.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/widgets/portfolio_health_dashboard_card.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_analytics.dart';
@@ -272,6 +273,9 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
           closedStats: closedStats,
           currencyFormat: currencyFormat,
           archivedCount: archivedCount,
+          isApproximate:
+              ref.watch(isApproximateRatesIndicatorEnabledProvider) &&
+              ref.watch(ratesApproximateProvider),
           errorBuilder: (error) => OverviewErrorCard(error: error),
         ),
 
@@ -295,6 +299,12 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
 
         // FIRE Progress Card
         const FireDashboardCard(),
+
+        SizedBox(height: AppSpacing.xl),
+
+        // One money-learning tip a day (below the money cards, so the hero
+        // and the goal and FIRE cards keep the first screen)
+        const DailyTipCard(),
 
         SizedBox(height: AppSpacing.xl),
 

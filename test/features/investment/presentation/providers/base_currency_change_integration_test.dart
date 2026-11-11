@@ -64,6 +64,7 @@ void main() {
 
         container = ProviderContainer(
           overrides: [
+            valuationSnapshotsActiveProvider.overrideWithValue(false),
             validCashFlowsProvider.overrideWith(
               (ref) => AsyncValue.data(mixedCurrencyCashFlows),
             ),
@@ -148,6 +149,7 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
+          valuationSnapshotsActiveProvider.overrideWithValue(false),
           // The detail stats read the converted snapshot of the active
           // cash flows (A13), the same source as the list cards.
           validCashFlowsProvider.overrideWith(
@@ -229,6 +231,15 @@ class _MockCurrencyConversionService implements CurrencyConversionService {
       results[entry.key] = converted;
     }
     return results;
+  }
+
+  @override
+  Future<RateLookup?> getLastKnownRateResult({
+    required String from,
+    required String to,
+  }) async {
+    final rate = await getLastKnownRate(from: from, to: to);
+    return rate == null ? null : RateLookup(rate, isApproximate: true);
   }
 
   @override

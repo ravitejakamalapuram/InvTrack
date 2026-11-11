@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/utils/money_precision.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_notifier.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/holding_text.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// What the user chose in [CurrentValueDialog]: a value as of a date, or
@@ -14,12 +16,16 @@ class CurrentValueEdit {
   final double? value;
   final DateTime? date;
 
+  /// Set when the value was typed as weight x price (#946).
+  final UnitHolding? holding;
+
   const CurrentValueEdit.set({
     required double this.value,
     required DateTime this.date,
+    this.holding,
   });
 
-  const CurrentValueEdit.remove() : value = null, date = null;
+  const CurrentValueEdit.remove() : value = null, date = null, holding = null;
 
   bool get isRemove => value == null;
 }
@@ -27,12 +33,14 @@ class CurrentValueEdit {
 /// Opens [CurrentValueDialog] for [investment] and saves the result.
 /// [hasUserValue] offers to remove the user's value so the estimate applies.
 /// [firstCashFlowDate] is the earliest date the value can be dated.
+/// [initialDate] is the date a new value starts on (default: today).
 Future<void> showCurrentValueDialog(
   BuildContext context,
   WidgetRef ref, {
   required InvestmentEntity investment,
   required bool hasUserValue,
   DateTime? firstCashFlowDate,
+  DateTime? initialDate,
 }) async {
   final edit = await showDialog<CurrentValueEdit>(
     context: context,
@@ -40,6 +48,11 @@ Future<void> showCurrentValueDialog(
       currency: investment.currency,
       canRemove: hasUserValue,
       firstDate: firstCashFlowDate,
+      initialDate: initialDate,
+      // Weight is kept with dated valuations, so it is offered only then.
+      allowWeight:
+          investment.type == InvestmentType.gold &&
+          ref.read(valuationSnapshotsActiveProvider),
     ),
   );
   if (edit == null || !context.mounted) return;
@@ -55,6 +68,7 @@ Future<void> showCurrentValueDialog(
         id: investment.id,
         value: edit.value!,
         date: edit.date!,
+        holding: edit.holding,
       );
     }
   } catch (_) {
@@ -67,6 +81,18 @@ class CurrentValueDialog extends StatefulWidget {
   final String currency;
   final bool canRemove;
 
+  /// Whether the value can also be typed as weight x price (#946).
+  final bool allowWeight;
+
+  /// Label of the remove button; the default says the estimate applies again.
+  final String? removeLabel;
+
+  /// What an edit starts from: the value, its date and its weight x price.
+  /// All null for a new value.
+  final double? initialValue;
+  final DateTime? initialDate;
+  final UnitHolding? initialHolding;
+
   /// Today; injectable for tests.
   final DateTime? today;
 
@@ -77,6 +103,11 @@ class CurrentValueDialog extends StatefulWidget {
     super.key,
     required this.currency,
     required this.canRemove,
+    this.allowWeight = false,
+    this.removeLabel,
+    this.initialValue,
+    this.initialDate,
+    this.initialHolding,
     this.today,
     this.firstDate,
   });
@@ -88,6 +119,10 @@ class CurrentValueDialog extends StatefulWidget {
 class _CurrentValueDialogState extends State<CurrentValueDialog> {
   final _formKey = GlobalKey<FormState>();
   final _controller = TextEditingController();
+  final _quantity = TextEditingController();
+  final _price = TextEditingController();
+  QuantityUnit _unit = QuantityUnit.gram;
+  bool _byWeight = false;
   late final DateTime _today;
   late final DateTime _firstDate;
   late DateTime _date;
@@ -103,12 +138,34 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
         : DateTime(first.year, first.month, first.day);
     // A first cash flow in the future leaves only today to pick.
     _firstDate = firstDay.isAfter(_today) ? _today : firstDay;
-    _date = _today;
+    final initialDay = widget.initialDate;
+    final start = initialDay == null
+        ? _today
+        : DateTime(initialDay.year, initialDay.month, initialDay.day);
+    // A value cannot be dated in the future (the date picker ends today).
+    _date = start.isAfter(_today) ? _today : start;
+    final holding = widget.initialHolding;
+    if (holding != null && widget.allowWeight) {
+      _byWeight = true;
+      _quantity.text = _plain(holding.quantity);
+      _price.text = _plain(holding.unitPrice);
+      _unit = holding.unit;
+    } else if (widget.initialValue != null) {
+      _controller.text = _plain(widget.initialValue!);
+    }
+  }
+
+  /// A number as typed: no trailing ".0", no exponent.
+  static String _plain(double value) {
+    final text = value.toStringAsFixed(10);
+    return text.contains('.') ? text.replaceFirst(RegExp(r'\.?0+$'), '') : text;
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _quantity.dispose();
+    _price.dispose();
     super.dispose();
   }
 
@@ -139,11 +196,93 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
     }
   }
 
+  /// The weight typed so far, or null while it is not a usable holding.
+  /// The typed weight and price, if both are usable numbers. Its value may
+  /// still be too large to store; see [_holding].
+  UnitHolding? get _typedHolding {
+    final quantity = _parse(_quantity.text);
+    final price = _parse(_price.text);
+    if (quantity == null || price == null) return null;
+    final holding = UnitHolding(
+      quantity: quantity,
+      unit: _unit,
+      unitPrice: price,
+    );
+    return holding.isValid ? holding : null;
+  }
+
+  /// The typed holding only when it has a value that can be stored, so
+  /// callers can use [UnitHolding.value] without it throwing.
+  UnitHolding? get _holding {
+    final holding = _typedHolding;
+    return holding?.valueOrNull(widget.currency) == null ? null : holding;
+  }
+
   void _save() {
     if (!_formKey.currentState!.validate()) return;
+    final holding = _byWeight ? _holding! : null;
+    final value = holding?.value(widget.currency) ?? _parse(_controller.text)!;
     Navigator.of(
       context,
-    ).pop(CurrentValueEdit.set(value: _parse(_controller.text)!, date: _date));
+    ).pop(CurrentValueEdit.set(value: value, date: _date, holding: holding));
+  }
+
+  List<Widget> _weightFields(AppLocalizations l10n) {
+    const decimalKeys = TextInputType.numberWithOptions(decimal: true);
+    final digits = [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))];
+    final holding = _holding;
+    // Echo of what was typed, so it follows the entry fields.
+    final total = holding?.value(widget.currency);
+    return [
+      TextFormField(
+        controller: _quantity,
+        autofocus: true,
+        keyboardType: decimalKeys,
+        inputFormatters: digits,
+        decoration: InputDecoration(labelText: l10n.weightQuantityLabel),
+        onChanged: (_) => setState(() {}),
+        // One message for both fields; it names both.
+        validator: (_) {
+          if (_typedHolding == null) return l10n.weightInvalid;
+          // Fits as numbers but not as a stored amount (rules 19.1).
+          return _holding == null ? l10n.amountInvestedTooLarge : null;
+        },
+      ),
+      DropdownButtonFormField<QuantityUnit>(
+        initialValue: _unit,
+        decoration: InputDecoration(labelText: l10n.weightUnitLabel),
+        items: [
+          for (final unit in QuantityUnit.values)
+            DropdownMenuItem(
+              value: unit,
+              child: Text(quantityUnitName(l10n, unit)),
+            ),
+        ],
+        onChanged: (unit) => setState(() => _unit = unit ?? _unit),
+      ),
+      TextFormField(
+        controller: _price,
+        keyboardType: decimalKeys,
+        inputFormatters: digits,
+        decoration: InputDecoration(
+          labelText: l10n.weightPriceLabel(
+            quantityUnitName(l10n, _unit),
+            widget.currency,
+          ),
+        ),
+        onChanged: (_) => setState(() {}),
+        onFieldSubmitted: (_) => _save(),
+      ),
+      if (total != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Text(
+            l10n.weightTotalPreview(
+              '${widget.currency} ${total.toStringAsFixed(MoneyPrecision.fractionDigitsFor(widget.currency))}',
+            ),
+          ),
+        ),
+    ];
   }
 
   @override
@@ -157,36 +296,48 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextFormField(
-              controller: _controller,
-              autofocus: true,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+            if (_byWeight)
+              ..._weightFields(l10n)
+            else
+              TextFormField(
+                controller: _controller,
+                autofocus: true,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                ],
+                decoration: InputDecoration(
+                  labelText: l10n.currentValueAmountLabel(widget.currency),
+                ),
+                validator: (text) {
+                  final value = _parse(text);
+                  if (value == null) return l10n.currentValueInvalid;
+                  // 15 digits at most, also after rounding (rules 19.1). A
+                  // record with no currency cannot be rounded; the notifier
+                  // refuses its save with its own message.
+                  final rounded = widget.currency.trim().isEmpty
+                      ? value
+                      : MoneyPrecision.round(
+                          value,
+                          currencyCode: widget.currency,
+                        );
+                  return rounded >= ValidationConstants.maxAmount
+                      ? l10n.amountInvestedTooLarge
+                      : null;
+                },
+                onFieldSubmitted: (_) => _save(),
               ),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-              ],
-              decoration: InputDecoration(
-                labelText: l10n.currentValueAmountLabel(widget.currency),
+            if (widget.allowWeight)
+              TextButton(
+                onPressed: () => setState(() => _byWeight = !_byWeight),
+                child: Text(
+                  _byWeight
+                      ? l10n.currentValueByTotal
+                      : l10n.currentValueByWeight,
+                ),
               ),
-              validator: (text) {
-                final value = _parse(text);
-                if (value == null) return l10n.currentValueInvalid;
-                // 15 digits at most, also after rounding (rules 19.1). A
-                // record with no currency cannot be rounded; the notifier
-                // refuses its save with its own message.
-                final rounded = widget.currency.trim().isEmpty
-                    ? value
-                    : MoneyPrecision.round(
-                        value,
-                        currencyCode: widget.currency,
-                      );
-                return rounded >= ValidationConstants.maxAmount
-                    ? l10n.amountInvestedTooLarge
-                    : null;
-              },
-              onFieldSubmitted: (_) => _save(),
-            ),
             const SizedBox(height: 12),
             TextButton.icon(
               onPressed: _pickDate,
@@ -203,7 +354,7 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
           TextButton(
             onPressed: () =>
                 Navigator.of(context).pop(const CurrentValueEdit.remove()),
-            child: Text(l10n.currentValueRemove),
+            child: Text(widget.removeLabel ?? l10n.currentValueRemove),
           ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),

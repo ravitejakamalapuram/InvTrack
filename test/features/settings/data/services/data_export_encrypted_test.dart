@@ -137,6 +137,50 @@ void main() {
     expect(File(sharedPaths.single).existsSync(), isFalse);
   });
 
+  test(
+    'shareZipFiles with a password shares an encrypted copy, deletes it after '
+    'and leaves the source file alone',
+    () async {
+      final source = File('${tempDir.path}/guest.zip')
+        ..writeAsBytesSync([9, 8, 7]);
+      Uint8List? sharedBytes;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(shareChannel, (call) async {
+            final paths = ((call.arguments as Map)['paths'] as List)
+                .cast<String>();
+            sharedPaths.addAll(paths);
+            sharedBytes = File(paths.single).readAsBytesSync();
+            return 'dev.fluttercommunity.plus/share/success';
+          });
+
+      await service.shareZipFiles(
+        [source.path],
+        password: 'pw',
+        kdfIterations: fastIterations,
+      );
+
+      expect(sharedPaths.single, endsWith('.invbackup'));
+      expect(BackupCrypto.isEncrypted(sharedBytes!), isTrue);
+      expect(await BackupCrypto.decrypt(sharedBytes!, 'pw'), [9, 8, 7]);
+      expect(File(sharedPaths.single).existsSync(), isFalse);
+      expect(source.readAsBytesSync(), [9, 8, 7]);
+    },
+  );
+
+  test('shareZipFiles deletes the encrypted copy when sharing fails', () async {
+    final source = File('${tempDir.path}/guest.zip')..writeAsBytesSync([1]);
+    shareShouldFail = true;
+    await expectLater(
+      service.shareZipFiles(
+        [source.path],
+        password: 'pw',
+        kdfIterations: fastIterations,
+      ),
+      throwsA(isA<Exception>()),
+    );
+    expect(File(sharedPaths.single).existsSync(), isFalse);
+  });
+
   test('a new export purges stale exports left by earlier runs', () async {
     final stale = aged('InvTrack_Export_1.zip');
     final staleEnc = aged('InvTrack_Export_2.invbackup');

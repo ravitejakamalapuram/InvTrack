@@ -1,0 +1,387 @@
+// #800: the Tax-Year (FY) report screen. An undefined XIRR reads as an em dash
+// with a hint (never 0%), capital gains read "Not calculated", privacy mode
+// hides every amount, and the screen survives 320dp at 1.8x text.
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
+import 'package:inv_tracker/features/reports/presentation/providers/fy_report_provider.dart';
+import 'package:inv_tracker/features/reports/presentation/screens/fy_report_screen.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+
+class _Privacy extends PrivacyModeNotifier {
+  _Privacy(this.on);
+  final bool on;
+
+  @override
+  bool build() => on;
+}
+
+InvestmentEntity _inv(String name) => InvestmentEntity(
+  id: name,
+  name: name,
+  type: InvestmentType.fixedDeposit,
+  status: InvestmentStatus.open,
+  createdAt: DateTime(2025, 4, 1),
+  updatedAt: DateTime(2025, 4, 1),
+  currency: 'INR',
+);
+
+FYReport _report({
+  double? xirr = 0.114,
+  double endValue = 1840000,
+  List<FYMissingValue> missing = const [],
+}) => FYReport(
+  missingValues: missing,
+  fyStart: DateTime(2025, 4, 1),
+  fyEnd: DateTime(2026, 3, 31, 23, 59, 59),
+  fyLabel: '2025-26',
+  totalInvested: 650000,
+  totalReturns: 410000,
+  totalIncome: 492000,
+  totalFees: 13600,
+  netCashFlow: 238400,
+  xirr: xirr,
+  monthlyBreakdown: [
+    for (final m in [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3])
+      MonthlyFYData(
+        month: m,
+        year: m >= 4 ? 2025 : 2026,
+        invested: 0,
+        returns: 0,
+        income: m == 1 ? 46200 : 20000,
+        fees: 0,
+      ),
+  ],
+  topPerformersByReturns: [
+    InvestmentWithReturns(
+      investment: _inv('Fixed deposit, Bank A'),
+      absoluteReturns: 32400,
+      xirr: 0.081,
+      percentageGain: 8,
+    ),
+    InvestmentWithReturns(
+      investment: _inv('P2P lending, Platform B'),
+      absoluteReturns: 21900,
+      xirr: null,
+      percentageGain: 6,
+    ),
+  ],
+  topPerformersByXIRR: const [],
+  portfolioValueAtStart: 1500000,
+  portfolioValueAtEnd: endValue,
+  shortTermCapitalGains: 0,
+  longTermCapitalGains: 0,
+  dividendIncome: 71000,
+  interestIncome: 421000,
+);
+
+Future<void> _pump(
+  WidgetTester tester,
+  FYReport report, {
+  bool privacy = false,
+  bool snapshots = true,
+  double scale = 1.0,
+  Size size = const Size(390, 900),
+  void Function(int)? onYearRequested,
+}) async {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        currencyCodeProvider.overrideWithValue('INR'),
+        valuationSnapshotsActiveProvider.overrideWithValue(snapshots),
+        privacyModeProvider.overrideWith(() => _Privacy(privacy)),
+        fyReportProvider.overrideWith((ref, year) async {
+          onYearRequested?.call(year);
+          return report;
+        }),
+      ],
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(scale)),
+          child: child!,
+        ),
+        home: const FyReportScreen(initialFyYear: 2025),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+const _amounts = <String>[
+  '2,38,400',
+  '6,50,000',
+  '4,10,000',
+  '4,92,000',
+  '13,600',
+  '4,21,000',
+  '71,000',
+  '32,400',
+  '46,200',
+];
+
+void main() {
+  group('FyReportScreen', () {
+    testWidgets('every amount is visible when privacy mode is off', (
+      tester,
+    ) async {
+      await _pump(tester, _report());
+      await tester.scrollUntilVisible(
+        find.textContaining('not tax advice'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      for (final amount in _amounts) {
+        expect(
+          find.textContaining(amount, skipOffstage: false),
+          findsWidgets,
+          reason: '$amount must be visible',
+        );
+      }
+    });
+
+    testWidgets('shows the hero, tiles, tax card, performers and disclaimer', (
+      tester,
+    ) async {
+      await _pump(tester, _report());
+
+      expect(find.text('Tax-Year Report'), findsOneWidget);
+      expect(find.text('FY 2025-26'), findsOneWidget);
+      expect(find.textContaining('2,38,400'), findsOneWidget);
+      expect(find.text('11.4%'), findsOneWidget);
+      expect(find.textContaining('6,50,000'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.textContaining('not tax advice'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('For your tax filing'), findsOneWidget);
+      expect(find.textContaining('4,21,000'), findsOneWidget);
+      expect(find.text('Fixed deposit, Bank A'), findsOneWidget);
+      expect(find.textContaining('It is not tax advice'), findsOneWidget);
+    });
+
+    testWidgets('null XIRR is an em dash with a hint, never 0%', (
+      tester,
+    ) async {
+      await _pump(tester, _report(xirr: null));
+
+      expect(find.text('—'), findsWidgets);
+      expect(
+        find.textContaining('Add a current value to calculate'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('0%'), findsNothing);
+      expect(find.textContaining('0.0%'), findsNothing);
+    });
+
+    testWidgets('capital gains read Not calculated, not an amount', (
+      tester,
+    ) async {
+      await _pump(tester, _report());
+      await tester.scrollUntilVisible(
+        find.text('Not calculated'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Not calculated'), findsOneWidget);
+    });
+
+    testWidgets('privacy mode hides every amount', (tester) async {
+      final handle = tester.ensureSemantics();
+      await _pump(tester, _report(), privacy: true);
+      await tester.scrollUntilVisible(
+        find.textContaining('not tax advice'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      for (final amount in _amounts) {
+        expect(
+          find.textContaining(amount, skipOffstage: false),
+          findsNothing,
+          reason: '$amount must be masked',
+        );
+      }
+      expect(find.textContaining('11.4%', skipOffstage: false), findsNothing);
+      expect(find.textContaining('8.1%', skipOffstage: false), findsNothing);
+      expect(find.bySemanticsLabel(RegExp('Hidden percentage')), findsWidgets);
+      handle.dispose();
+    });
+
+    testWidgets('selecting an FY requests and selects that year', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final requested = <int>[];
+      await _pump(tester, _report(), onYearRequested: requested.add);
+      requested.clear();
+
+      await tester.tap(find.text('FY 2024-25'));
+      await tester.pumpAndSettle();
+
+      expect(requested, contains(2024));
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('FY 2024-25')),
+        matchesSemantics(
+          label: 'FY 2024-25',
+          isSelected: true,
+          hasSelectedState: true,
+          isButton: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+          isFocusable: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('no overflow at 320dp and 1.8x text; targets are 48dp', (
+      tester,
+    ) async {
+      await _pump(tester, _report(), scale: 1.8, size: const Size(320, 700));
+      expect(tester.takeException(), isNull);
+
+      for (final chip in ['FY 2025-26']) {
+        expect(
+          tester
+              .getSize(
+                find
+                    .ancestor(
+                      of: find.text(chip),
+                      matching: find.byType(InkWell),
+                    )
+                    .first,
+              )
+              .height,
+          greaterThanOrEqualTo(48),
+        );
+      }
+      expect(
+        tester.getSize(find.byTooltip('Hide amounts')).shortestSide,
+        greaterThanOrEqualTo(48),
+      );
+    });
+
+    testWidgets('privacy mode draws the monthly bars flat', (tester) async {
+      Set<double> factors() => tester
+          .widgetList<FractionallySizedBox>(
+            find.byType(FractionallySizedBox, skipOffstage: false),
+          )
+          .map((w) => w.heightFactor!)
+          .toSet();
+
+      await _pump(tester, _report());
+      expect(factors().length, greaterThan(1));
+
+      await tester.pumpWidget(const SizedBox());
+      await _pump(tester, _report(), privacy: true);
+      expect(factors(), {0.3});
+    });
+  });
+
+  group('actions and missing values', () {
+    final missing = [
+      FYMissingValue(
+        investment: _inv('Fixed deposit, Bank A'),
+        needsOpening: true,
+        needsClosing: true,
+      ),
+      FYMissingValue(
+        investment: _inv('P2P lending, Platform B'),
+        needsOpening: false,
+        needsClosing: true,
+      ),
+    ];
+
+    Future<void> toBottom(WidgetTester tester) => tester.scrollUntilVisible(
+      find.text('Export CSV'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+
+    testWidgets('Export PDF and Export CSV sit at the bottom, 48dp', (
+      tester,
+    ) async {
+      await _pump(tester, _report());
+      await toBottom(tester);
+      expect(find.text('Export PDF'), findsOneWidget);
+      expect(find.text('Export CSV'), findsOneWidget);
+      for (final label in ['Export PDF', 'Export CSV']) {
+        final button = find.ancestor(
+          of: find.text(label),
+          matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+        );
+        expect(tester.getSize(button.first).height, greaterThanOrEqualTo(48));
+      }
+    });
+
+    testWidgets('lists each holding that needs a value when XIRR is unknown', (
+      tester,
+    ) async {
+      await _pump(tester, _report(xirr: null, missing: missing));
+      expect(find.textContaining('Needs a current value'), findsOneWidget);
+      expect(find.text('P2P lending, Platform B'), findsWidgets);
+      expect(find.text('Add value'), findsNWidgets(2));
+      expect(find.text('Awaiting current value'), findsNWidgets(2));
+      expect(
+        tester.getSize(find.widgetWithText(TextButton, 'Add value').first).height,
+        greaterThanOrEqualTo(48),
+      );
+      expect(find.textContaining('0%'), findsNothing);
+    });
+
+    testWidgets('Add value starts on the missing edge date', (tester) async {
+      await _pump(tester, _report(xirr: null, missing: missing));
+      // Opening edge is 1 Apr 2025; the value must be dated before it.
+      await tester.tap(find.text('Add value').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Value as of Mar 31, 2025'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      // Second row needs only a closing value: 31 Mar 2026.
+      await tester.tap(find.text('Add value').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Value as of Mar 31, 2026'), findsOneWidget);
+    });
+
+    testWidgets('no Add value without dated valuations', (tester) async {
+      await _pump(
+        tester,
+        _report(xirr: null, missing: missing),
+        snapshots: false,
+      );
+      expect(find.text('Add value'), findsNothing);
+    });
+
+    testWidgets('no list when XIRR is known or nothing is missing', (
+      tester,
+    ) async {
+      await _pump(tester, _report(missing: missing));
+      expect(find.text('Add value'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      await _pump(tester, _report(xirr: null));
+      expect(find.text('Add value'), findsNothing);
+    });
+
+    testWidgets('the list shows no amount in privacy mode', (tester) async {
+      await _pump(tester, _report(xirr: null, missing: missing), privacy: true);
+      expect(find.text('Add value'), findsNWidgets(2));
+      for (final amount in _amounts) {
+        expect(find.textContaining(amount, skipOffstage: false), findsNothing);
+      }
+    });
+  });
+}

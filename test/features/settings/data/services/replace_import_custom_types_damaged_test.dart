@@ -113,9 +113,7 @@ const _goalName = 'Retirement Fund';
 
 const _customTypesWarning =
     'Custom types not imported: custom_types.json is invalid';
-const _customTypesError =
-    'Backup not imported: custom_types.json is damaged. Your existing data '
-    'was not changed.';
+const _customTypesError = ImportError.fileDamaged('custom_types.json');
 
 final _validCustomTypes = jsonEncode({
   'version': 1,
@@ -323,8 +321,10 @@ void main() {
     verifyZeroInteractions(documentStorage);
   }
 
-  void expectNoUserTextIn(Iterable<String> messages) {
-    final text = messages.join('\n');
+  void expectNoUserTextIn(Iterable<Object> messages) {
+    final text = messages
+        .map((e) => e is ImportError ? '${e.code} ${e.detail}' : '$e')
+        .join('\n');
     for (final secret in [
       _secretLabel,
       'Stamps',
@@ -361,11 +361,7 @@ void main() {
       );
 
       expect(result.errors, hasLength(1));
-      expect(result.errors.single, startsWith('Backup not imported: '));
-      expect(
-        result.errors.single,
-        endsWith(' is damaged. Your existing data was not changed.'),
-      );
+      expect(result.errors.single.kind, ImportErrorKind.fileDamaged);
       expect(result.warnings, isEmpty);
       expect(result.totalImported, 0);
       expectNoUserTextIn(result.errors);

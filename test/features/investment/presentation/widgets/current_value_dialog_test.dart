@@ -5,15 +5,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_notifier.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/current_value_dialog.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
+const _tooLarge = 'That amount is too large';
+
 Future<CurrentValueEdit?> _open(
   WidgetTester tester, {
   bool canRemove = false,
+  bool allowWeight = false,
   String currency = 'INR',
   DateTime? firstDate,
+  DateTime? initialDate,
   required Future<void> Function() interact,
 }) async {
   CurrentValueEdit? result;
@@ -29,8 +34,10 @@ Future<CurrentValueEdit?> _open(
               builder: (_) => CurrentValueDialog(
                 currency: currency,
                 canRemove: canRemove,
+                allowWeight: allowWeight,
                 today: DateTime(2026, 10, 2),
                 firstDate: firstDate,
+                initialDate: initialDate,
               ),
             );
           },
@@ -57,6 +64,7 @@ class _RejectingNotifier extends InvestmentNotifier {
     required String id,
     required double value,
     required DateTime date,
+    UnitHolding? holding,
   }) async => throw ValidationException(
     userMessage: 'Only open investments have a current value.',
     technicalMessage: 'setCurrentValue on a closed investment',
@@ -64,6 +72,23 @@ class _RejectingNotifier extends InvestmentNotifier {
 }
 
 void main() {
+  testWidgets('a start date in the future is clamped to today', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      initialDate: DateTime(2027, 3, 31),
+      interact: () async {
+        expect(find.text('Value as of Oct 2, 2026'), findsOneWidget);
+        // Opening the picker must not trip its initialDate <= lastDate assert.
+        await tester.tap(find.text('Value as of Oct 2, 2026'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.text('Cancel').last);
+      },
+    );
+  });
+
   testWidgets('saves a value in the investment currency as of today', (
     tester,
   ) async {
@@ -295,4 +320,132 @@ void main() {
       await tester.pumpAndSettle();
     },
   );
+
+  group('by weight (#946)', () {
+    testWidgets('is offered only when asked for', (tester) async {
+      await _open(
+        tester,
+        interact: () async {
+          expect(find.text('Enter weight and price instead'), findsNothing);
+          await tester.tap(find.text('Cancel'));
+        },
+      );
+    });
+
+    testWidgets('weight x price becomes the value and the holding', (
+      tester,
+    ) async {
+      final result = await _open(
+        tester,
+        allowWeight: true,
+        interact: () async {
+          await tester.tap(find.text('Enter weight and price instead'));
+          await tester.pumpAndSettle();
+          await tester.enterText(find.bySemanticsLabel('Weight'), '10');
+          await tester.enterText(
+            find.bySemanticsLabel('Price per gram in INR'),
+            '6,000',
+          );
+          await tester.pumpAndSettle();
+          expect(find.textContaining('60000.00'), findsOneWidget);
+          await tester.tap(find.text('Save'));
+        },
+      );
+      expect(result!.value, 60000.00);
+      expect(result.holding?.quantity, 10);
+      expect(result.holding?.unit, QuantityUnit.gram);
+      expect(result.holding?.unitPrice, 6000);
+    });
+
+    testWidgets('a zero weight is refused and nothing is returned', (
+      tester,
+    ) async {
+      final result = await _open(
+        tester,
+        allowWeight: true,
+        interact: () async {
+          await tester.tap(find.text('Enter weight and price instead'));
+          await tester.pumpAndSettle();
+          await tester.enterText(find.bySemanticsLabel('Weight'), '0');
+          await tester.enterText(
+            find.bySemanticsLabel('Price per gram in INR'),
+            '6000',
+          );
+          await tester.tap(find.text('Save'));
+          await tester.pumpAndSettle();
+          expect(
+            find.text('Enter a weight above 0 and a price.'),
+            findsOneWidget,
+          );
+          await tester.tap(find.text('Cancel'));
+        },
+      );
+      expect(result, isNull);
+    });
+
+    testWidgets('a weight x price too large to store is refused, not thrown', (
+      tester,
+    ) async {
+      final result = await _open(
+        tester,
+        allowWeight: true,
+        interact: () async {
+          await tester.tap(find.text('Enter weight and price instead'));
+          await tester.pumpAndSettle();
+          await tester.enterText(find.bySemanticsLabel('Weight'), '99999999');
+          await tester.enterText(
+            find.bySemanticsLabel('Price per gram in INR'),
+            '99999999999',
+          );
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          await tester.tap(find.text('Save'));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          expect(find.text(_tooLarge), findsOneWidget);
+          await tester.tap(find.text('Cancel'));
+        },
+      );
+      expect(result, isNull);
+    });
+
+    testWidgets('a blank currency does not throw in weight mode', (
+      tester,
+    ) async {
+      final result = await _open(
+        tester,
+        currency: '',
+        allowWeight: true,
+        interact: () async {
+          await tester.tap(find.text('Enter weight and price instead'));
+          await tester.pumpAndSettle();
+          await tester.enterText(find.bySemanticsLabel('Weight'), '10');
+          await tester.enterText(find.byType(TextFormField).last, '6000');
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Save'));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          await tester.tap(find.text('Cancel'));
+        },
+      );
+      expect(result, isNull);
+    });
+
+    testWidgets('going back to a total returns no holding', (tester) async {
+      final result = await _open(
+        tester,
+        allowWeight: true,
+        interact: () async {
+          await tester.tap(find.text('Enter weight and price instead'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Enter total value instead'));
+          await tester.pumpAndSettle();
+          await tester.enterText(find.byType(TextFormField).first, '75000');
+          await tester.tap(find.text('Save'));
+        },
+      );
+      expect(result!.value, 75000);
+      expect(result.holding, isNull);
+    });
+  });
 }

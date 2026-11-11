@@ -124,6 +124,16 @@ class AnalyticsEvents {
   static const String guestLinkBannerShown = 'guest_link_banner_shown';
   static const String guestLinkBannerTapped = 'guest_link_banner_tapped';
   static const String guestLinkBannerDismissed = 'guest_link_banner_dismissed';
+  static const String dailyTipShown = 'daily_tip_shown';
+  static const String dailyTipDismissed = 'daily_tip_dismissed';
+
+  // Rewarded ad before the Tax-Year export. Always sent with a
+  // `placement` string and nothing else: no amounts, no names.
+  static const String rewardedPromptShown = 'rewarded_prompt_shown';
+  static const String rewardedPromptDeclined = 'rewarded_prompt_declined';
+  static const String rewardedAdEarned = 'rewarded_ad_earned';
+  static const String rewardedAdDismissed = 'rewarded_ad_dismissed';
+  static const String rewardedAdUnavailable = 'rewarded_ad_unavailable';
 
   // Investment lifecycle
   static const String investmentClosed = 'investment_closed';
@@ -172,7 +182,8 @@ class AnalyticsEvents {
   // Income Guardian events
   static const String incomeGuardianEnabled = 'income_guardian_enabled';
   static const String incomeGuardianDisabled = 'income_guardian_disabled';
-  static const String incomeGuardianSettingChanged = 'income_guardian_setting_changed';
+  static const String incomeGuardianSettingChanged =
+      'income_guardian_setting_changed';
 
   // Multi-Currency events
   static const String currencySelected = 'currency_selected';
@@ -186,7 +197,8 @@ class AnalyticsEvents {
 
   // Portfolio Health Score events
   static const String portfolioHealthViewed = 'portfolio_health_viewed';
-  static const String portfolioHealthDetailsOpened = 'portfolio_health_details_opened';
+  static const String portfolioHealthDetailsOpened =
+      'portfolio_health_details_opened';
   static const String healthScoreCalculated = 'health_score_calculated';
   static const String healthScoreShared = 'health_score_shared';
 }
@@ -196,7 +208,7 @@ class AnalyticsEvents {
 /// See library documentation above for usage examples and privacy guidelines.
 class AnalyticsService {
   AnalyticsService({FirebaseAnalytics? analytics})
-      : _analytics = analytics ?? FirebaseAnalytics.instance;
+    : _analytics = analytics ?? FirebaseAnalytics.instance;
 
   final FirebaseAnalytics _analytics;
 
@@ -558,6 +570,19 @@ class AnalyticsService {
   /// Log that the guest dismissed the banner.
   Future<void> logGuestLinkBannerDismissed() =>
       logEvent(name: AnalyticsEvents.guestLinkBannerDismissed);
+
+  /// Log that the Overview daily tip was shown (once per process). [tipId] is
+  /// a content id from the bundled tips file, never user data.
+  Future<void> logDailyTipShown({required String tipId}) => logEvent(
+    name: AnalyticsEvents.dailyTipShown,
+    parameters: {'tip_id': tipId},
+  );
+
+  /// Log that the user dismissed the daily tip for today.
+  Future<void> logDailyTipDismissed({required String tipId}) => logEvent(
+    name: AnalyticsEvents.dailyTipDismissed,
+    parameters: {'tip_id': tipId},
+  );
 
   /// Log CSV import completed
   Future<void> logCsvImportCompleted({
@@ -1005,10 +1030,7 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.portfolioHealthViewed,
-      parameters: {
-        'score_tier': scoreTier,
-        'score_range': scoreRange,
-      },
+      parameters: {'score_tier': scoreTier, 'score_range': scoreRange},
     );
   }
 
@@ -1035,10 +1057,7 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.portfolioHealthDetailsOpened,
-      parameters: {
-        'score_tier': scoreTier,
-        'score_range': scoreRange,
-      },
+      parameters: {'score_tier': scoreTier, 'score_range': scoreRange},
     );
   }
 
@@ -1101,10 +1120,7 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.healthScoreShared,
-      parameters: {
-        'score_tier': scoreTier,
-        'share_method': shareMethod,
-      },
+      parameters: {'score_tier': scoreTier, 'share_method': shareMethod},
     );
   }
 }
@@ -1206,10 +1222,7 @@ extension IncomeGuardianAnalytics on AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.incomeGuardianSettingChanged,
-      parameters: {
-        'setting_name': settingName,
-        'new_value': newValue,
-      },
+      parameters: {'setting_name': settingName, 'new_value': newValue},
     );
   }
 }

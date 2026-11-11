@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
@@ -24,6 +25,7 @@ import 'package:inv_tracker/features/settings/data/services/investment_backup_js
 import 'package:inv_tracker/features/settings/data/services/zip_off_ui_thread.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/custom_investment_type_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
@@ -467,15 +469,24 @@ class DataExportService {
     );
   }
 
+  static String _randomTag() {
+    final random = Random.secure();
+    return List.generate(
+      8,
+      (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0'),
+    ).join();
+  }
+
   /// Saves export ZIP bytes to the temp directory and returns the file path.
   Future<String> _saveToTempFile(
     Uint8List zipData, {
     bool encrypted = false,
+    String tag = '',
   }) async {
     final directory = await getTemporaryDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final extension = encrypted ? backupEncryptedExtension : 'zip';
-    final fileName = '$_exportPrefix$timestamp.$extension';
+    final fileName = '$_exportPrefix$timestamp$tag.$extension';
     final filePath = '${directory.path}/$fileName';
     final file = File(filePath);
     await file.writeAsBytes(zipData);
@@ -527,14 +538,57 @@ class DataExportService {
   }
 
   /// Shares export ZIP files already on disk, such as kept guest backups.
-  Future<void> shareZipFiles(List<String> filePaths) async {
-    await SharePlus.instance.share(
-      ShareParams(
-        files: [for (final filePath in filePaths) XFile(filePath)],
-        text: 'InvTrack data export. Keep this file safe for backup or import.',
-        subject: 'InvTrack Data Export',
-      ),
-    );
+  ///
+  /// With a [password] each file is shared as an encrypted `.invbackup` copy
+  /// written to the temp directory and deleted afterwards (also when sharing
+  /// fails; on Android after [_androidShareCleanupDelay], and a leftover from
+  /// a crash is purged by [purgeStaleBackupExports]). The stored file is not
+  /// changed. [kdfIterations] is only lowered in tests.
+  Future<void> shareZipFiles(
+    List<String> filePaths, {
+    String? password,
+    int kdfIterations = BackupCrypto.defaultIterations,
+  }) async {
+    final copies = <String>[];
+    try {
+      var shared = filePaths;
+      if (password != null) {
+        for (final filePath in filePaths) {
+          final encrypted = await BackupCrypto.encryptInBackground(
+            await File(filePath).readAsBytes(),
+            password,
+            iterations: kdfIterations,
+          );
+          copies.add(
+            await _saveToTempFile(
+              encrypted,
+              encrypted: true,
+              tag: '_${_randomTag()}',
+            ),
+          );
+        }
+        shared = copies;
+      }
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [for (final filePath in shared) XFile(filePath)],
+          text:
+              'InvTrack data export. Keep this file safe for backup or import.',
+          subject: 'InvTrack Data Export',
+        ),
+      );
+    } finally {
+      final delay = Platform.isAndroid
+          ? _androidShareCleanupDelay
+          : Duration.zero;
+      for (final copy in copies) {
+        if (delay == Duration.zero) {
+          await _deleteQuietly(copy);
+        } else {
+          Timer(delay, () => _deleteQuietly(copy));
+        }
+      }
+    }
   }
 
   // ============ CSV Generation ============
@@ -555,6 +609,8 @@ class DataExportService {
       'Investment Type',
       'Investment Status',
       'Investment ID',
+      'Quantity',
+      'Unit',
     ]);
 
     // Sort by date
@@ -574,6 +630,9 @@ class DataExportService {
         item.investment.type.name,
         item.investment.status.name,
         item.investment.id,
+        // Weight (#946); blank when the flow has none.
+        item.cashFlow.quantity ?? '',
+        item.cashFlow.quantityUnit?.name ?? '',
       ]);
     }
 
@@ -665,6 +724,9 @@ class DataExportService {
         'Investment Type',
         'Investment Status',
         'Investment ID',
+        'Quantity',
+        'Unit',
+        'Unit Price',
       ],
     ];
     for (final (inv, isArchived) in [
@@ -685,6 +747,9 @@ class DataExportService {
           inv.type.name,
           inv.status.name,
           inv.id,
+          row.holding?.quantity ?? '',
+          row.holding?.unit.name ?? '',
+          row.holding?.unitPrice ?? '',
         ]);
       }
     }
@@ -711,6 +776,7 @@ class DataExportService {
           snapshotId: s.id,
           kind: s.kind,
           provenance: s.provenance,
+          holding: s.holding,
           updatedAt: s.updatedAt ?? DateTime.now(),
         ),
     ];
@@ -875,6 +941,7 @@ class _ValuationRow {
   final String? snapshotId;
   final ValuationKind kind;
   final ValuationProvenance provenance;
+  final UnitHolding? holding;
   final DateTime? updatedAt;
 
   const _ValuationRow({
@@ -884,6 +951,7 @@ class _ValuationRow {
     this.snapshotId,
     required this.kind,
     required this.provenance,
+    this.holding,
     this.updatedAt,
   });
 }

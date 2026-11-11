@@ -117,6 +117,18 @@ class FakeAnalyticsService implements AnalyticsService {
       logEvent(name: AnalyticsEvents.guestLinkBannerDismissed);
 
   @override
+  Future<void> logDailyTipShown({required String tipId}) => logEvent(
+    name: AnalyticsEvents.dailyTipShown,
+    parameters: {'tip_id': tipId},
+  );
+
+  @override
+  Future<void> logDailyTipDismissed({required String tipId}) => logEvent(
+    name: AnalyticsEvents.dailyTipDismissed,
+    parameters: {'tip_id': tipId},
+  );
+
+  @override
   Future<void> logAccountLinkFailure({required String reason}) async {
     await logEvent(
       name: AnalyticsEvents.accountLinkFailure,
@@ -459,10 +471,7 @@ class FakeAnalyticsService implements AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.portfolioHealthViewed,
-      parameters: {
-        'score_tier': scoreTier,
-        'score_range': scoreRange,
-      },
+      parameters: {'score_tier': scoreTier, 'score_range': scoreRange},
     );
   }
 
@@ -473,10 +482,7 @@ class FakeAnalyticsService implements AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.portfolioHealthDetailsOpened,
-      parameters: {
-        'score_tier': scoreTier,
-        'score_range': scoreRange,
-      },
+      parameters: {'score_tier': scoreTier, 'score_range': scoreRange},
     );
   }
 
@@ -503,10 +509,7 @@ class FakeAnalyticsService implements AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.healthScoreShared,
-      parameters: {
-        'score_tier': scoreTier,
-        'share_method': shareMethod,
-      },
+      parameters: {'score_tier': scoreTier, 'share_method': shareMethod},
     );
   }
 }

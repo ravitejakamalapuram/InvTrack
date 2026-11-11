@@ -152,6 +152,18 @@ void main() {
       isTrue,
       reason: 'expected cash flows are derived data, not a loss (#768)',
     );
+
+    // Decision on #768: expected cash flows and health scores are derived
+    // data (re-predicted from real cash flows, recomputed weekly), so the ZIP
+    // never holds them.
+    final names = ZipDecoder()
+        .decodeBytes(export.bytes)
+        .files
+        .map((f) => f.name.toLowerCase())
+        .toList();
+    expect(names, isNotEmpty);
+    expect(names.where((n) => n.contains('expected')), isEmpty);
+    expect(names.where((n) => n.contains('health')), isEmpty);
   });
 
   test('if expected cash flows cannot be counted, the export still works and '

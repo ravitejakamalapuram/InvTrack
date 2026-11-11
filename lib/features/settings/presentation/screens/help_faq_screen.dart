@@ -122,9 +122,11 @@ class HelpFaqScreen extends StatelessWidget {
               l10n.canExportMyDataAnswer,
               isDark,
             ),
+            _buildFaqItem(l10n.fyPdfFaqQuestion, l10n.fyPdfFaqAnswer, isDark),
             _buildFaqItem(
               l10n.howToBackupData,
-              l10n.howToBackupDataAnswer,
+              '${l10n.howToBackupDataAnswer}\n\n'
+              '${l10n.howToBackupDataDerivedNote}',
               isDark,
             ),
           ]),

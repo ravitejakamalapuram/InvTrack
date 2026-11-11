@@ -1,5 +1,6 @@
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/metal.dart';
 
 /// The version of investments.json that this app writes and reads.
 const investmentsBackupSchemaVersion = 1;
@@ -33,6 +34,7 @@ Map<String, dynamic> investmentToBackupJson(InvestmentEntity inv) => {
   if (inv.riskLevel != null) 'riskLevel': inv.riskLevel!.name,
   if (inv.compoundingFrequency != null)
     'compoundingFrequency': inv.compoundingFrequency!.name,
+  if (inv.metal != null) 'metal': inv.metal!.name,
 };
 
 T? _enumNamed<T extends Enum>(List<T> values, Object? name) {
@@ -101,5 +103,6 @@ InvestmentEntity? investmentFromBackupJson(Object? row) {
       CompoundingFrequency.values,
       row['compoundingFrequency'],
     ),
+    metal: type == InvestmentType.gold ? Metal.tryParse(row['metal']) : null,
   );
 }

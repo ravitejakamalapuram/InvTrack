@@ -10,12 +10,14 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/providers/connectivity_provider.dart';
 import 'package:inv_tracker/core/providers/in_app_update_provider.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
+import 'package:inv_tracker/features/tips/presentation/providers/daily_tip_provider.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/income_guardian_service_providers.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
@@ -223,6 +225,7 @@ List<Override> _storeOverrides(StoreDemoData demo) => [
     FlutterLocalNotificationsPlugin(),
   ),
   firestoreProvider.overrideWithValue(_NoFirestore()),
+  valuationSnapshotsActiveProvider.overrideWithValue(false),
   deletionRequestServiceProvider.overrideWithValue(
     FakeDeletionRequestService(),
   ),
@@ -231,6 +234,9 @@ List<Override> _storeOverrides(StoreDemoData demo) => [
   connectivityStatusProvider.overrideWith((ref) => Stream.value(true)),
   inAppUpdateProvider.overrideWith(_NoUpdateNotifier.new),
   currencyConversionServiceProvider.overrideWithValue(_OfflineCurrency()),
+  // A random daily tip must not change a store picture (its example figures
+  // also trip the amount check in Privacy mode).
+  tipsPoolProvider.overrideWith((ref) async => const []),
 ];
 
 /// Everything is INR here, so no conversion is ever needed; anything that

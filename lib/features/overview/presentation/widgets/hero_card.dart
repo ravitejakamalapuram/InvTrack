@@ -46,6 +46,9 @@ class HeroCardWithToggle extends ConsumerWidget {
   /// Archived investments, which the totals leave out (A17).
   final int archivedCount;
 
+  /// True when a total used an exchange rate over 24 hours old (A14).
+  final bool isApproximate;
+
   const HeroCardWithToggle({
     super.key,
     required this.globalStats,
@@ -54,6 +57,7 @@ class HeroCardWithToggle extends ConsumerWidget {
     required this.currencyFormat,
     required this.errorBuilder,
     this.archivedCount = 0,
+    this.isApproximate = false,
   });
 
   @override
@@ -76,6 +80,7 @@ class HeroCardWithToggle extends ConsumerWidget {
             currencyFormat: currencyFormat,
             showRealizedOnly: showRealizedOnly,
             archivedCount: archivedCount,
+            isApproximate: isApproximate,
           ),
           error: (e, s) => HeroCardContent(
             globalStats: global,
@@ -85,6 +90,7 @@ class HeroCardWithToggle extends ConsumerWidget {
             currencyFormat: currencyFormat,
             showRealizedOnly: showRealizedOnly,
             archivedCount: archivedCount,
+            isApproximate: isApproximate,
           ),
           data: (closed) => HeroCardContent(
             globalStats: global,
@@ -93,6 +99,7 @@ class HeroCardWithToggle extends ConsumerWidget {
             currencyFormat: currencyFormat,
             showRealizedOnly: showRealizedOnly,
             archivedCount: archivedCount,
+            isApproximate: isApproximate,
           ),
         );
       },
@@ -120,6 +127,10 @@ class HeroCardContent extends ConsumerWidget {
   /// the card says so when there are any.
   final int archivedCount;
 
+  /// True when a total used an exchange rate over 24 hours old (A14): the
+  /// card then carries a small marker saying so.
+  final bool isApproximate;
+
   const HeroCardContent({
     super.key,
     required this.globalStats,
@@ -129,6 +140,7 @@ class HeroCardContent extends ConsumerWidget {
     required this.currencyFormat,
     required this.showRealizedOnly,
     this.archivedCount = 0,
+    this.isApproximate = false,
   });
 
   @override
@@ -146,16 +158,20 @@ class HeroCardContent extends ConsumerWidget {
       display: display,
       isHidden: isPrivacyMode,
     );
-    final netPosition = stats.netCashFlow;
+    // Invested is never negative. The cash-only net is for closed investments,
+    // where it is a real profit or loss.
+    final headline = showRealizedOnly ? stats.netCashFlow : stats.totalInvested;
     final status = display.statusLabel(l10n);
 
     // Privacy mode hides amounts from the screen reader as well.
     final semanticLabel = AccessibilityUtils.statCardLabel(
-      title: showRealizedOnly ? 'Realized Net Position' : l10n.netCashFlowSoFar,
+      title: showRealizedOnly
+          ? 'Realized Net Position'
+          : l10n.heroInvestedTitle,
       value: isPrivacyMode
           ? l10n.hiddenAmount
           : AccessibilityUtils.formatCurrencyForScreenReader(
-              netPosition,
+              headline,
               currencyFormat.currencySymbol,
               locale: currencyFormat.locale,
             ),
@@ -180,7 +196,7 @@ class HeroCardContent extends ConsumerWidget {
             _buildTitleRow(context, ref),
             const SizedBox(height: 8),
             _buildValueRow(
-              netPosition,
+              headline,
               stats,
               status,
               display.badgeText(l10n),
@@ -247,10 +263,31 @@ class HeroCardContent extends ConsumerWidget {
           child: Text(
             showRealizedOnly
                 ? 'Realized Net Position'
-                : AppLocalizations.of(context).netCashFlowSoFar,
+                : AppLocalizations.of(context).heroInvestedTitle,
             style: TextStyle(color: AppColors.heroSecondaryText, fontSize: 14),
           ),
         ),
+        if (isApproximate) ...[
+          Semantics(
+            label: AppLocalizations.of(context).approximateRatesNote,
+            child: Tooltip(
+              message: AppLocalizations.of(context).approximateRatesNote,
+              excludeFromSemantics: true,
+              triggerMode: TooltipTriggerMode.tap,
+              child: SizedBox(
+                width: 48,
+                height: 48,
+                child: Center(
+                  child: Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: AppColors.heroSecondaryText,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
         // Privacy toggle button
         const PrivacyToggleButton(iconSize: 18),
         const SizedBox(width: 8),
@@ -330,7 +367,7 @@ class HeroCardContent extends ConsumerWidget {
   }
 
   Widget _buildValueRow(
-    double netPosition,
+    double headline,
     InvestmentStats stats,
     String? status,
     String badgeText,
@@ -349,7 +386,7 @@ class HeroCardContent extends ConsumerWidget {
       fontSize: 36,
       fontWeight: FontWeight.bold,
     );
-    final figureText = currencyFormat.formatSmart(netPosition);
+    final figureText = currencyFormat.formatSmart(headline);
     // Shrinks to fit the line instead of ending in an ellipsis: this is the
     // number people raise the text size to read (#1004). The box is the width
     // of the figure as written, so privacy mode, which draws dots in its
@@ -367,8 +404,8 @@ class HeroCardContent extends ConsumerWidget {
             widthFactor: 1,
             child: PrivacyMask(
               child: CompactAmountText(
-                key: const ValueKey('hero-net-cash-flow'),
-                amount: netPosition,
+                key: const ValueKey('hero-headline-amount'),
+                amount: headline,
                 compactText: figureText,
                 currencySymbol: currencyFormat.currencySymbol,
                 locale: currencyFormat.locale,
@@ -466,14 +503,16 @@ class HeroCardContent extends ConsumerWidget {
     return StatColumns(
       minColumnWidth: AppSizes.statColumnMinWidth,
       columns: [
-        // Cash Out with up arrow
-        _buildCashFlowStat(
-          icon: Icons.arrow_upward_rounded,
-          amount: stats.totalInvested,
-          value: currencyFormat.formatCompact(stats.totalInvested),
-          label: 'out',
-          isPrivacyMode: isPrivacyMode,
-        ),
+        // Invested is already the headline, so the open view shows money back
+        // and the value now; the realised view has no headline for them.
+        if (showRealizedOnly)
+          _buildCashFlowStat(
+            icon: Icons.arrow_upward_rounded,
+            amount: stats.totalInvested,
+            value: currencyFormat.formatCompact(stats.totalInvested),
+            label: 'out',
+            isPrivacyMode: isPrivacyMode,
+          ),
         // Cash In with down arrow
         _buildCashFlowStat(
           icon: Icons.arrow_downward_rounded,
@@ -482,6 +521,14 @@ class HeroCardContent extends ConsumerWidget {
           label: 'in',
           isPrivacyMode: isPrivacyMode,
         ),
+        if (!showRealizedOnly && stats.currentValue != null)
+          _buildCashFlowStat(
+            icon: Icons.show_chart_rounded,
+            amount: stats.currentValue!,
+            value: currencyFormat.formatCompact(stats.currentValue!),
+            label: l10n.heroValueNowLabel,
+            isPrivacyMode: isPrivacyMode,
+          ),
         // XIRR
         _buildXirrStat(
           display.metricLabel(l10n),
