@@ -47,9 +47,10 @@ function claim(db, ref, now) {
  * crash after sending can never cause a repeat: a stuck "sending" record is left for a person to look at.
  * A failed attempt is recorded with a short code only; the post is retried on later runs, up to
  * MAX_ATTEMPTS, so one bad post cannot block the newer ones.
+ * `clock` gives the time a send finished (tests pass a fixed one).
  * `skipIfPostedSince` (a Date) makes the run a no-op when a post already went out since then (one tip a day).
  */
-export async function postNextToTelegram({ db, send, now = new Date(), dryRun = false, channel = 'telegram', skipIfPostedSince = null }) {
+export async function postNextToTelegram({ db, send, now = new Date(), dryRun = false, channel = 'telegram', skipIfPostedSince = null, clock = () => new Date() }) {
   const snap = await db.collection('contentPosts').where('status', '==', 'approved').get();
   const posts = snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
@@ -107,7 +108,8 @@ export async function postNextToTelegram({ db, send, now = new Date(), dryRun = 
       }
       throw new Error(code);
     }
-    await recordPosted(ref, now, messageId);
+    // postedAt is when the send finished, not when the run began, so the one-a-day check sees the right day.
+    await recordPosted(ref, clock(), messageId);
     return { postId: post.id };
   }
   return { postId: null };
