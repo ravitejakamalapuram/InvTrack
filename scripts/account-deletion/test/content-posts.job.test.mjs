@@ -47,6 +47,25 @@ describe('importPosts', () => {
 });
 
 describe('postNextToTelegram', () => {
+  it('with a cutoff, does nothing if a post already went out since then', async () => {
+    await importPosts(db, [post('a', '2026-11-11'), post('b', '2026-11-12')]);
+    await db.doc('contentPosts/a/deliveries/telegram').set({ status: 'posted', postedAt: Timestamp.fromDate(new Date('2026-11-12T03:40:00Z')) });
+    const sent = [];
+    const r = await postNextToTelegram({ db, now: T0, skipIfPostedSince: new Date('2026-11-11T18:30:00Z'), send: async (p) => { sent.push(p.id); return '1'; } });
+    assert.deepEqual(sent, []);
+    assert.equal(r.postId, null);
+    assert.equal(r.skipped, true);
+  });
+
+  it('with a cutoff, still posts when the last post was before it', async () => {
+    await importPosts(db, [post('a', '2026-11-11'), post('b', '2026-11-12')]);
+    await db.doc('contentPosts/a/deliveries/telegram').set({ status: 'posted', postedAt: Timestamp.fromDate(new Date('2026-11-11T09:00:00Z')) });
+    const sent = [];
+    const r = await postNextToTelegram({ db, now: T0, skipIfPostedSince: new Date('2026-11-11T18:30:00Z'), send: async (p) => { sent.push(p.id); return '1'; } });
+    assert.deepEqual(sent, ['b']);
+    assert.equal(r.postId, 'b');
+  });
+
   it('posts the oldest approved post with no Telegram delivery and records it', async () => {
     await importPosts(db, [post('b', '2026-11-12'), post('a', '2026-11-11')]);
     const sent = [];

@@ -47,8 +47,9 @@ function claim(db, ref, now) {
  * crash after sending can never cause a repeat: a stuck "sending" record is left for a person to look at.
  * A failed attempt is recorded with a short code only; the post is retried on later runs, up to
  * MAX_ATTEMPTS, so one bad post cannot block the newer ones.
+ * `skipIfPostedSince` (a Date) makes the run a no-op when a post already went out since then (one tip a day).
  */
-export async function postNextToTelegram({ db, send, now = new Date(), dryRun = false, channel = 'telegram' }) {
+export async function postNextToTelegram({ db, send, now = new Date(), dryRun = false, channel = 'telegram', skipIfPostedSince = null }) {
   const snap = await db.collection('contentPosts').where('status', '==', 'approved').get();
   const posts = snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
@@ -59,6 +60,14 @@ export async function postNextToTelegram({ db, send, now = new Date(), dryRun = 
       return false;
     })
     .sort((a, b) => a.approvedAt.toMillis() - b.approvedAt.toMillis() || a.id.localeCompare(b.id));
+
+  // GitHub can start a scheduled run hours late, or two close together. With a cutoff, a post that already went
+  // out since then means today's tip is done, so this run does nothing.
+  if (skipIfPostedSince) {
+    const deliveries = await Promise.all(posts.map((p) => db.doc(`contentPosts/${p.id}/deliveries/${channel}`).get()));
+    const done = deliveries.some((d) => d.data()?.status === 'posted' && d.data().postedAt?.toMillis?.() >= skipIfPostedSince.getTime());
+    if (done) return { postId: null, skipped: true };
+  }
 
   for (const post of posts) {
     const ref = db.doc(`contentPosts/${post.id}/deliveries/${channel}`);
