@@ -62,10 +62,18 @@ export async function postNextToTelegram({ db, send, now = new Date(), dryRun = 
     .sort((a, b) => a.approvedAt.toMillis() - b.approvedAt.toMillis() || a.id.localeCompare(b.id));
 
   // GitHub can start a scheduled run hours late, or two close together. With a cutoff, a post that already went
-  // out since then means today's tip is done, so this run does nothing.
+  // out since then means today's tip is done, so this run does nothing. A post still "sending" since then may
+  // have reached the channel (the reply was lost), so it counts too until a person checks. A "failed" one was
+  // refused by Telegram and does not count.
   if (skipIfPostedSince) {
+    const cutoff = skipIfPostedSince.getTime();
     const deliveries = await Promise.all(posts.map((p) => db.doc(`contentPosts/${p.id}/deliveries/${channel}`).get()));
-    const done = deliveries.some((d) => d.data()?.status === 'posted' && d.data().postedAt?.toMillis?.() >= skipIfPostedSince.getTime());
+    const done = deliveries.some((d) => {
+      const x = d.data();
+      if (x?.status === 'posted') return x.postedAt?.toMillis?.() >= cutoff;
+      if (x?.status === 'sending') return x.startedAt?.toMillis?.() >= cutoff;
+      return false;
+    });
     if (done) return { postId: null, skipped: true };
   }
 
