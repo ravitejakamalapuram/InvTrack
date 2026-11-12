@@ -47,10 +47,57 @@ describe('importPosts', () => {
 });
 
 describe('postNextToTelegram', () => {
+  it('with a cutoff, does nothing if a post already went out since then', async () => {
+    await importPosts(db, [post('a', '2026-11-11'), post('b', '2026-11-12')]);
+    await db.doc('contentPosts/a/deliveries/telegram').set({ status: 'posted', postedAt: Timestamp.fromDate(new Date('2026-11-12T03:40:00Z')) });
+    const sent = [];
+    const r = await postNextToTelegram({ db, now: T0, skipIfPostedSince: new Date('2026-11-11T18:30:00Z'), send: async (p) => { sent.push(p.id); return '1'; } });
+    assert.deepEqual(sent, []);
+    assert.equal(r.postId, null);
+    assert.equal(r.skipped, true);
+  });
+
+  it('with a cutoff, a post left "sending" today blocks the next one, but a "failed" one does not', async () => {
+    await importPosts(db, [post('a', '2026-11-11'), post('b', '2026-11-12')]);
+    const cutoff = new Date('2026-11-11T18:30:00Z');
+    await db.doc('contentPosts/a/deliveries/telegram').set({ status: 'sending', startedAt: Timestamp.fromDate(new Date('2026-11-12T03:40:00Z')), attempts: 1 });
+    const sent = [];
+    const send = async (p) => { sent.push(p.id); return '1'; };
+    const blocked = await postNextToTelegram({ db, now: T0, skipIfPostedSince: cutoff, send });
+    assert.equal(blocked.skipped, true);
+    assert.deepEqual(sent, []);
+
+    await db.doc('contentPosts/a/deliveries/telegram').set({ status: 'failed', failedAt: Timestamp.fromDate(new Date('2026-11-12T03:40:00Z')), attempts: 3, error: 'telegram-http-400' });
+    const r = await postNextToTelegram({ db, now: T0, skipIfPostedSince: cutoff, send });
+    assert.equal(r.postId, 'b');
+    assert.deepEqual(sent, ['b']);
+  });
+
+  it('records the time the send finished, so a send that crosses India midnight counts for the new day', async () => {
+    await importPosts(db, [post('a', '2026-11-11'), post('b', '2026-11-12')]);
+    const started = new Date('2026-11-11T18:29:59Z');
+    const finished = new Date('2026-11-11T18:30:05Z');
+    await postNextToTelegram({ db, now: started, clock: () => finished, send: async () => '1' });
+    assert.equal((await db.doc('contentPosts/a/deliveries/telegram').get()).data().postedAt.toDate().toISOString(), finished.toISOString());
+    const sent = [];
+    const r = await postNextToTelegram({ db, now: finished, skipIfPostedSince: new Date('2026-11-11T18:30:00Z'), send: async (p) => { sent.push(p.id); return '2'; } });
+    assert.equal(r.skipped, true);
+    assert.deepEqual(sent, []);
+  });
+
+  it('with a cutoff, still posts when the last post was before it', async () => {
+    await importPosts(db, [post('a', '2026-11-11'), post('b', '2026-11-12')]);
+    await db.doc('contentPosts/a/deliveries/telegram').set({ status: 'posted', postedAt: Timestamp.fromDate(new Date('2026-11-11T09:00:00Z')) });
+    const sent = [];
+    const r = await postNextToTelegram({ db, now: T0, skipIfPostedSince: new Date('2026-11-11T18:30:00Z'), send: async (p) => { sent.push(p.id); return '1'; } });
+    assert.deepEqual(sent, ['b']);
+    assert.equal(r.postId, 'b');
+  });
+
   it('posts the oldest approved post with no Telegram delivery and records it', async () => {
     await importPosts(db, [post('b', '2026-11-12'), post('a', '2026-11-11')]);
     const sent = [];
-    const r = await postNextToTelegram({ db, now: T0, send: async (p) => { sent.push(p.id); return '777'; } });
+    const r = await postNextToTelegram({ db, now: T0, clock: () => T0, send: async (p) => { sent.push(p.id); return '777'; } });
     assert.deepEqual(sent, ['a']);
     assert.equal(r.postId, 'a');
     const d = (await db.doc('contentPosts/a/deliveries/telegram').get()).data();

@@ -47,8 +47,10 @@ function claim(db, ref, now) {
  * crash after sending can never cause a repeat: a stuck "sending" record is left for a person to look at.
  * A failed attempt is recorded with a short code only; the post is retried on later runs, up to
  * MAX_ATTEMPTS, so one bad post cannot block the newer ones.
+ * `clock` gives the time a send finished (tests pass a fixed one).
+ * `skipIfPostedSince` (a Date) makes the run a no-op when a post already went out since then (one tip a day).
  */
-export async function postNextToTelegram({ db, send, now = new Date(), dryRun = false, channel = 'telegram' }) {
+export async function postNextToTelegram({ db, send, now = new Date(), dryRun = false, channel = 'telegram', skipIfPostedSince = null, clock = () => new Date() }) {
   const snap = await db.collection('contentPosts').where('status', '==', 'approved').get();
   const posts = snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
@@ -59,6 +61,22 @@ export async function postNextToTelegram({ db, send, now = new Date(), dryRun = 
       return false;
     })
     .sort((a, b) => a.approvedAt.toMillis() - b.approvedAt.toMillis() || a.id.localeCompare(b.id));
+
+  // GitHub can start a scheduled run hours late, or two close together. With a cutoff, a post that already went
+  // out since then means today's tip is done, so this run does nothing. A post still "sending" since then may
+  // have reached the channel (the reply was lost), so it counts too until a person checks. A "failed" one was
+  // refused by Telegram and does not count.
+  if (skipIfPostedSince) {
+    const cutoff = skipIfPostedSince.getTime();
+    const deliveries = await Promise.all(posts.map((p) => db.doc(`contentPosts/${p.id}/deliveries/${channel}`).get()));
+    const done = deliveries.some((d) => {
+      const x = d.data();
+      if (x?.status === 'posted') return x.postedAt?.toMillis?.() >= cutoff;
+      if (x?.status === 'sending') return x.startedAt?.toMillis?.() >= cutoff;
+      return false;
+    });
+    if (done) return { postId: null, skipped: true };
+  }
 
   for (const post of posts) {
     const ref = db.doc(`contentPosts/${post.id}/deliveries/${channel}`);
@@ -90,7 +108,8 @@ export async function postNextToTelegram({ db, send, now = new Date(), dryRun = 
       }
       throw new Error(code);
     }
-    await recordPosted(ref, now, messageId);
+    // postedAt is when the send finished, not when the run began, so the one-a-day check sees the right day.
+    await recordPosted(ref, clock(), messageId);
     return { postId: post.id };
   }
   return { postId: null };
