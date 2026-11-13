@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/maturity_reminder_prompt.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -49,17 +48,12 @@ void main() {
       prefs = await SharedPreferences.getInstance();
     });
 
-    Future<void> pump(
-      WidgetTester tester,
-      DateTime? maturityDate, {
-      bool flagOn = true,
-    }) async {
+    Future<void> pump(WidgetTester tester, DateTime? maturityDate) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
             notificationServiceProvider.overrideWithValue(service),
-            isMaturityReminderPromptEnabledProvider.overrideWithValue(flagOn),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -110,12 +104,6 @@ void main() {
       tester,
     ) async {
       await pump(tester, null);
-      expect(find.text('Get a reminder when this pays out?'), findsNothing);
-      verifyNever(() => service.requestPermissions());
-    });
-
-    testWidgets('flag off: no dialog, no system request', (tester) async {
-      await pump(tester, maturity, flagOn: false);
       expect(find.text('Get a reminder when this pays out?'), findsNothing);
       verifyNever(() => service.requestPermissions());
     });

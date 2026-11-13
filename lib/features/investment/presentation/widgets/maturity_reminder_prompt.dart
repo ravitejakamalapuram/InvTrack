@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -25,10 +24,9 @@ Future<void> askMaturityReminderIfNeeded(
 }) async {
   final SharedPreferences prefs;
   try {
-    if (!ref.read(isMaturityReminderPromptEnabledProvider)) return;
     prefs = ref.read(sharedPreferencesProvider);
   } catch (_) {
-    // A saved investment never waits on a missing flag or preference store.
+    // A saved investment never waits on a missing preference store.
     return;
   }
   if (!shouldAskMaturityReminder(prefs, maturityDate)) return;
