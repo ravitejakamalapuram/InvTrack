@@ -6,7 +6,7 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _askedKey = 'notification_permissions_requested';
+const _askedKey = 'maturity_reminder_prompt_asked';
 
 /// Whether to offer a payout reminder: the investment has a maturity date and
 /// the user has not been asked before (A45, #788).

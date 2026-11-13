@@ -28,9 +28,20 @@ void main() {
       expect(shouldAskMaturityReminder(prefs, null), isFalse);
     });
 
+    test(
+      'the old sign-in permission key does not suppress the prompt',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'notification_permissions_requested': true,
+        });
+        final prefs = await SharedPreferences.getInstance();
+        expect(shouldAskMaturityReminder(prefs, maturity), isTrue);
+      },
+    );
+
     test('does not ask twice', () async {
       SharedPreferences.setMockInitialValues({
-        'notification_permissions_requested': true,
+        'maturity_reminder_prompt_asked': true,
       });
       final prefs = await SharedPreferences.getInstance();
       expect(shouldAskMaturityReminder(prefs, maturity), isFalse);
@@ -86,7 +97,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => service.requestPermissions()).called(1);
-      expect(prefs.getBool('notification_permissions_requested'), isTrue);
+      expect(prefs.getBool('maturity_reminder_prompt_asked'), isTrue);
     });
 
     testWidgets('Not now never calls the system and is not asked again', (
@@ -97,7 +108,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(() => service.requestPermissions());
-      expect(prefs.getBool('notification_permissions_requested'), isTrue);
+      expect(prefs.getBool('maturity_reminder_prompt_asked'), isTrue);
     });
 
     testWidgets('no maturity date: no dialog, no system request', (
@@ -116,7 +127,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(() => service.requestPermissions());
-      expect(prefs.getBool('notification_permissions_requested'), isNull);
+      expect(prefs.getBool('maturity_reminder_prompt_asked'), isNull);
     });
 
     testWidgets('a failing system request does not throw', (tester) async {
@@ -126,7 +137,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(prefs.getBool('notification_permissions_requested'), isTrue);
+      expect(prefs.getBool('maturity_reminder_prompt_asked'), isTrue);
     });
   });
 }
