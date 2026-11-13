@@ -75,6 +75,7 @@ jobs:
           elif [ "$EVENT" = "schedule" ] && [ "$POSTING_ENABLED" = "true" ]; then
             # Bring in any newly approved posts first. An import keeps the status of a post that already exists
             # and never touches its delivery record, so running it every day is safe.
+            shopt -s nullglob
             for f in content/posts/*.json; do
               node scripts/content-posts/run.mjs import "$f"
             done
