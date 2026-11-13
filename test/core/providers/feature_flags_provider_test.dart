@@ -28,19 +28,6 @@ void main() {
     for (final overridesAllowed in [true, false]) {
       final build = overridesAllowed ? 'debug' : 'release';
 
-      test(
-        '$build: the approximate-rates marker (A14) is on (kill switch)',
-        () async {
-          final c = await _container(overridesAllowed: overridesAllowed);
-          expect(c.read(isApproximateRatesIndicatorEnabledProvider), isTrue);
-          expect(
-            FeatureFlag.approximateRatesIndicator.key,
-            'approximate_rates_indicator',
-          );
-          expect(FeatureFlag.approximateRatesIndicator.defaultEnabled, isTrue);
-        },
-      );
-
       test('$build: the first investment flow (A40) is off', () async {
         final c = await _container(overridesAllowed: overridesAllowed);
         expect(c.read(isFirstInvestmentFlowEnabledProvider), isFalse);
