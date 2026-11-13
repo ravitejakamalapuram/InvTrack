@@ -2791,10 +2791,6 @@
     "description": "Diagnostics section title"
   },
 
-  "reviewPromptFeatureSubtitle": "Ask for a Play Store review after the first recorded exit",
-  "@reviewPromptFeatureSubtitle": {
-    "description": "Subtitle of the review prompt switch on the feature flags screen"
-  },
   "predictiveAlertsFeatureSubtitle": "Risk alerts (Coming soon)",
   "@predictiveAlertsFeatureSubtitle": {
     "description": "Subtitle of the disabled risk alerts entry on the feature flags screen"

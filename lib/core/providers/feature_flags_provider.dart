@@ -42,11 +42,6 @@ enum FeatureFlag {
   ///   tab and its background services are all hidden or stopped.
   incomeGuardian('income_guardian', 'Income Guardian'),
 
-  /// Play in-app review prompt after a first recorded INCOME or RETURN.
-  /// - One-shot per install, gated on a genuine success moment
-  /// - On by default (A42)
-  reviewPrompt('review_prompt', 'Play Review Prompt', defaultEnabled: true),
-
   /// Dated valuations of open investments (#941).
   /// - Snapshots in users/{uid}/valuations, mirrored into currentValue
   /// - Opening baselines for investments without history
@@ -273,15 +268,6 @@ final isApproximateRatesIndicatorEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.approximateRatesIndicator] ?? true,
-    ),
-  );
-});
-
-/// Convenience provider for checking if the Play review prompt is enabled
-final isReviewPromptEnabledProvider = Provider<bool>((ref) {
-  return ref.watch(
-    featureFlagsProvider.select(
-      (flags) => flags[FeatureFlag.reviewPrompt] ?? false,
     ),
   );
 });

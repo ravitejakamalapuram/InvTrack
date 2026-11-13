@@ -260,26 +260,6 @@ class FeatureFlagsSection extends ConsumerWidget {
           },
         ),
 
-        // Play review prompt feature flag
-        SettingsToggleTile(
-          icon: Icons.star_outline,
-          iconColor: Colors.amber,
-          title: FeatureFlag.reviewPrompt.displayName,
-          subtitle: l10n.reviewPromptFeatureSubtitle,
-          value: featureFlags[FeatureFlag.reviewPrompt] ?? false,
-          onChanged: (value) async {
-            try {
-              await ref
-                  .read(featureFlagsProvider.notifier)
-                  .toggle(FeatureFlag.reviewPrompt);
-            } catch (e, stackTrace) {
-              if (context.mounted) {
-                ErrorHandler.handle(e, stackTrace, context: context);
-              }
-            }
-          },
-        ),
-
         // Dated valuations feature flag (#941)
         SettingsToggleTile(
           icon: Icons.event_note,

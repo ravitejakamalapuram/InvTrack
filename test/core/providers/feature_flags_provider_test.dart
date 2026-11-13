@@ -28,11 +28,6 @@ void main() {
     for (final overridesAllowed in [true, false]) {
       final build = overridesAllowed ? 'debug' : 'release';
 
-      test('$build: the review prompt is on', () async {
-        final c = await _container(overridesAllowed: overridesAllowed);
-        expect(c.read(isReviewPromptEnabledProvider), isTrue);
-      });
-
       test(
         '$build: the approximate-rates marker (A14) is on (kill switch)',
         () async {
@@ -95,7 +90,6 @@ void main() {
 
   group('values stored on the device', () {
     const stored = <String, Object>{
-      'feature_flag_review_prompt': false,
       'feature_flag_income_guardian': true,
       'feature_flag_reports_tab': true,
       'feature_flag_portfolio_health_score': true,
@@ -106,7 +100,6 @@ void main() {
 
     test('release ignores them and uses the code defaults', () async {
       final c = await _container(overridesAllowed: false, stored: stored);
-      expect(c.read(isReviewPromptEnabledProvider), isTrue);
       expect(c.read(isIncomeGuardianEnabledProvider), isFalse);
       expect(c.read(isReportsTabEnabledProvider), isFalse);
       expect(c.read(isPortfolioHealthEnabledProvider), isFalse);
@@ -123,17 +116,12 @@ void main() {
       await c
           .read(featureFlagsProvider.notifier)
           .setEnabled(FeatureFlag.customInvestmentTypes, true);
-      await c
-          .read(featureFlagsProvider.notifier)
-          .toggle(FeatureFlag.reviewPrompt);
       expect(c.read(isIncomeGuardianEnabledProvider), isFalse);
       expect(c.read(isCustomInvestmentTypesEnabledProvider), isFalse);
-      expect(c.read(isReviewPromptEnabledProvider), isTrue);
     });
 
     test('debug builds still honour them (Debug Settings)', () async {
       final c = await _container(overridesAllowed: true, stored: stored);
-      expect(c.read(isReviewPromptEnabledProvider), isFalse);
       expect(c.read(isIncomeGuardianEnabledProvider), isTrue);
       expect(c.read(isReportsTabEnabledProvider), isTrue);
       expect(c.read(isPortfolioHealthEnabledProvider), isTrue);
