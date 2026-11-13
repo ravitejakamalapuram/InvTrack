@@ -4,7 +4,6 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_valuation_snapshot.dart';
@@ -115,17 +114,10 @@ final allCashFlowsStreamProvider = StreamProvider<List<CashFlowEntity>>((ref) {
 
 // ============ VALUATION SNAPSHOT STREAM PROVIDERS ============
 
-/// Whether dated valuations are on, as the data providers read it. A flag
-/// that cannot be read (its storage is not available, as in a test that does
-/// not set it up) is off, so the single current value is read and written as
-/// it always was.
-final valuationSnapshotsActiveProvider = Provider<bool>((ref) {
-  try {
-    return ref.watch(isValuationSnapshotsEnabledProvider);
-  } catch (_) {
-    return false;
-  }
-});
+/// Whether dated valuations are on, as the data providers read it. They are
+/// on for everyone; tests override this to exercise the single-current-value
+/// path.
+final valuationSnapshotsActiveProvider = Provider<bool>((ref) => true);
 
 /// Watch every valuation snapshot of the user, cleared ones included.
 /// Reads nothing, and opens no listener, when the feature is off or nobody is
