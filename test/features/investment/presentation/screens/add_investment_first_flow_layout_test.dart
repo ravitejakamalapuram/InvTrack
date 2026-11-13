@@ -31,7 +31,6 @@ void main() {
         testWidgets('More details does not overflow: $where', (tester) async {
           await pumpAddForm(
             tester,
-            flagOn: true,
             now: _now,
             size: Size(width, height),
             textScale: scale,
@@ -51,7 +50,6 @@ void main() {
         ) async {
           await pumpAddForm(
             tester,
-            flagOn: true,
             now: _now,
             size: Size(width, height),
             textScale: scale,

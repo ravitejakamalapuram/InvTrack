@@ -1,4 +1,4 @@
-// A40 (#783) PR-2: the add investment form behind FeatureFlag.firstInvestmentFlow.
+// A40 (#783) PR-2: the add investment form .
 // Type chips, a name, an optional amount invested, a start date that defaults
 // to today and dates the first cash flow, and everything else behind "More
 // details". The notifier is recorded, never run: what matters here is what the
@@ -84,7 +84,6 @@ Future<FormHarness> _open(
   InvestmentTemplate? template,
 }) => pumpAddForm(
   tester,
-  flagOn: true,
   now: _now,
   privacy: privacy,
   baseCurrency: baseCurrency,
@@ -159,7 +158,6 @@ void main() {
       final handle = tester.ensureSemantics();
       await pumpAddForm(
         tester,
-        flagOn: true,
         now: _now,
         l10nDelegate: const _MarkedDelegate(),
       );
@@ -851,10 +849,7 @@ void main() {
       await pumpAddForm(
         tester,
         now: _now,
-        storedPrefs: {
-          'feature_flag_first_investment_flow': true,
-          'privacy_mode_enabled': true,
-        },
+        storedPrefs: {'privacy_mode_enabled': true},
       );
 
       expect(find.byType(MoreDetailsTile), findsOneWidget);
@@ -862,26 +857,11 @@ void main() {
       expect(find.text('Hidden amount'), findsOneWidget);
     });
 
-    testWidgets('with the stored flag off it is today\'s form', (tester) async {
-      await pumpAddForm(
-        tester,
-        size: const Size(1080, 3200),
-        storedPrefs: {'feature_flag_first_investment_flow': false},
-      );
+    testWidgets('with nothing stored it is the new form', (tester) async {
+      await pumpAddForm(tester, storedPrefs: const {});
 
-      expect(find.byType(MoreDetailsTile), findsNothing);
-      expect(find.text('Start Date (Optional)'), findsOneWidget);
-    });
-
-    testWidgets('with nothing stored it is today\'s form', (tester) async {
-      await pumpAddForm(
-        tester,
-        size: const Size(1080, 3200),
-        storedPrefs: const {},
-      );
-
-      expect(find.byType(MoreDetailsTile), findsNothing);
-      expect(find.byType(StickyFormAction), findsNothing);
+      expect(find.byType(MoreDetailsTile), findsOneWidget);
+      expect(find.byType(StickyFormAction), findsOneWidget);
     });
   });
 
@@ -1483,7 +1463,6 @@ void main() {
       );
       final harness = await pumpAddForm(
         tester,
-        flagOn: true,
         now: _now,
         edit: investment,
         size: const Size(1080, 3200),

@@ -255,7 +255,6 @@ const _pageKey = ValueKey('opener-page');
 /// 'Opener'; tapping the screen's close button must come back to it.
 Future<FormHarness> pumpAddForm(
   WidgetTester tester, {
-  bool flagOn = false,
   bool privacy = false,
   String baseCurrency = 'INR',
   DateTime? now,
@@ -269,7 +268,7 @@ Future<FormHarness> pumpAddForm(
   bool settle = true,
 
   /// Stored shared preferences. When given, the flag and privacy mode are read
-  /// from them by the real providers ([flagOn] and [privacy] are ignored).
+  /// from them by the real providers ([privacy] is ignored).
   Map<String, Object>? storedPrefs,
 
   /// The app's own themes instead of the plain Material ones.
@@ -389,10 +388,8 @@ Future<FormHarness> pumpAddForm(
         isCustomInvestmentTypesEnabledProvider.overrideWithValue(false),
         if (prefs != null)
           sharedPreferencesProvider.overrideWithValue(prefs)
-        else ...[
-          firstInvestmentFormEnabledProvider.overrideWithValue(flagOn),
+        else
           isPrivacyModeActiveProvider.overrideWithValue(privacy),
-        ],
         if (now != null) valuationClockProvider.overrideWithValue(() => now),
         investmentNotifierProvider.overrideWith(() => notifier),
       ],

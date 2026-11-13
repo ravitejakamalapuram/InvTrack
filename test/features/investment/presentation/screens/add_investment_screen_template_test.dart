@@ -22,7 +22,9 @@ import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/models/investment_template.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/add_investment_keys.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/template_selector.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -89,16 +91,6 @@ double _hintOpacity(WidgetTester tester, String label, String hint) {
       .opacity;
 }
 
-/// Picks today in the start date picker.
-Future<void> _pickToday(WidgetTester tester) async {
-  final when = find.text('When did you invest?');
-  await _scrollTo(tester, when);
-  await tester.tap(when);
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('OK'));
-  await tester.pumpAndSettle();
-}
-
 Future<void> _scrollTo(WidgetTester tester, Finder target) async {
   await tester.scrollUntilVisible(
     target,
@@ -135,6 +127,10 @@ void main() {
           builder: (_, _) => const Scaffold(body: Text('Overview')),
           routes: [
             GoRoute(
+              path: 'investments/:id',
+              builder: (_, _) => const Scaffold(body: Text('Detail')),
+            ),
+            GoRoute(
               path: 'add',
               builder: (_, _) =>
                   AddInvestmentScreen(preselectedTemplate: template),
@@ -148,6 +144,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          isPrivacyModeActiveProvider.overrideWithValue(false),
           currencyCodeProvider.overrideWithValue('INR'),
           currencySymbolProvider.overrideWithValue('₹'),
           currencyLocaleProvider.overrideWithValue('en_IN'),
@@ -163,6 +160,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    // The first investment form keeps the rate, tenure and the rest behind
+    // "More details".
+    final more = find.byKey(AddInvestmentKeys.moreDetails);
+    await tester.ensureVisible(more);
+    await tester.tap(more);
+    await tester.pumpAndSettle();
   }
 
   /// Names the investment, saves it and returns what was stored.
@@ -172,7 +175,11 @@ void main() {
     await _scrollTo(tester, save);
     await tester.tap(save);
     await tester.pumpAndSettle();
-    expect(find.text('Overview'), findsOneWidget, reason: 'the form saved');
+    expect(
+      find.byType(AddInvestmentScreen),
+      findsNothing,
+      reason: 'the form saved',
+    );
     return repository.investments.single;
   }
 
@@ -240,65 +247,22 @@ void main() {
       });
     }
 
-    testWidgets('without a template the rate hint is the generic example', (
-      tester,
-    ) async {
-      await pumpForm(tester);
-      await tester.tap(
-        find.descendant(
-          of: find.byType(TypeSelector<InvestmentType>),
-          matching: find.text('Fixed Deposit'),
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'without a template the rate hint is the type\'s typical rate',
+      (tester) async {
+        await pumpForm(tester);
+        await tester.tap(
+          find.descendant(
+            of: find.byType(TypeSelector<InvestmentType>),
+            matching: find.text('Fixed Deposit'),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      expect(_textOf(tester, _rateLabel), isEmpty);
-      expect(find.text('e.g. 7.5'), findsOneWidget);
-    });
-
-    testWidgets('the form selector fills no rate or tenure either', (
-      tester,
-    ) async {
-      await pumpForm(tester);
-      await tester.tap(
-        find.descendant(
-          of: find.byType(TemplateSelector),
-          matching: find.text('Fixed Deposit'),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(_textOf(tester, _rateLabel), isEmpty);
-      expect(_textOf(tester, _tenureLabel), isEmpty);
-      expect(find.text('e.g. 7'), findsOneWidget);
-      // The card may still say what the template typically earns.
-      expect(find.text('~7% p.a.'), findsWidgets);
-    });
-
-    testWidgets('a rate the user already typed is kept', (tester) async {
-      await pumpForm(tester);
-      await tester.tap(
-        find.descendant(
-          of: find.byType(TypeSelector<InvestmentType>),
-          matching: find.text('Fixed Deposit'),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await _enter(tester, _rateLabel, '8.1');
-      await _enter(tester, _tenureLabel, '24');
-
-      await _scrollTo(tester, find.byType(TemplateSelector));
-      await tester.tap(
-        find.descendant(
-          of: find.byType(TemplateSelector),
-          matching: find.text('Fixed Deposit'),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(_textOf(tester, _rateLabel), '8.1');
-      expect(_textOf(tester, _tenureLabel), '24');
-    });
+        expect(_textOf(tester, _rateLabel), isEmpty);
+        expect(find.text('e.g. 7'), findsOneWidget);
+      },
+    );
 
     testWidgets('the hint goes when the type no longer matches the template', (
       tester,
@@ -315,7 +279,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('e.g. 7'), findsNothing);
-      expect(find.text('e.g. 7.5'), findsOneWidget);
+      expect(find.text('e.g. 9'), findsOneWidget);
     });
   });
 
@@ -338,8 +302,11 @@ void main() {
           stored.compoundingFrequency,
           template.defaultCompoundingFrequency,
         );
-        expect(stored.incomeFrequency, template.defaultIncomeFrequency);
-        expect(stored.riskLevel, template.defaultRiskLevel);
+        // The first investment form sets no income frequency (it would
+        // schedule income reminders for payouts the user never mentioned) and
+        // no risk level.
+        expect(stored.incomeFrequency, isNull);
+        expect(stored.riskLevel, isNull);
       });
     }
 
@@ -347,20 +314,25 @@ void main() {
     // user typed a tenure. A start date alone must not invent one (a "default
     // tenure" in the maturity calculation would).
     for (final template in InvestmentTemplates.all) {
-      testWidgets('${template.id}: a start date without a typed tenure stores '
-          'no maturity date and schedules no reminder', (tester) async {
-        await pumpForm(tester, template: template);
-        await _pickToday(tester);
+      testWidgets(
+        '${template.id}: the default start date without a typed tenure stores '
+        'no maturity date and schedules no reminder',
+        (tester) async {
+          await pumpForm(tester, template: template);
+          final stored = await saveNamed(tester);
 
-        final stored = await saveNamed(tester);
-
-        expect(stored.startDate, isNotNull, reason: 'the date was picked');
-        expect(stored.expectedRate, isNull);
-        expect(stored.tenureMonths, isNull);
-        expect(stored.maturityDate, isNull);
-        expect(stored.calculatedMaturityDate, isNull);
-        expect(notifications.scheduledMaturityReminders, isEmpty);
-      });
+          expect(
+            stored.startDate,
+            isNotNull,
+            reason: 'the form dates the investment today',
+          );
+          expect(stored.expectedRate, isNull);
+          expect(stored.tenureMonths, isNull);
+          expect(stored.maturityDate, isNull);
+          expect(stored.calculatedMaturityDate, isNull);
+          expect(notifications.scheduledMaturityReminders, isEmpty);
+        },
+      );
     }
 
     for (final template in const [
@@ -416,8 +388,7 @@ void main() {
       await _enter(tester, _rateLabel, '7.25');
       await _enter(tester, _tenureLabel, '12');
 
-      // Pick today as the start date: the maturity date follows from it.
-      await _pickToday(tester);
+      // The start date defaults to today: the maturity date follows from it.
 
       final stored = await saveNamed(tester);
       final start = stored.startDate!;

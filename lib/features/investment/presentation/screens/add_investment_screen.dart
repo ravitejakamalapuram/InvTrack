@@ -197,8 +197,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       _selectedCurrency = ref.read(currencyCodeProvider);
     }
 
-    _firstInvestmentForm =
-        investment == null && ref.read(firstInvestmentFormEnabledProvider);
+    _firstInvestmentForm = investment == null;
     if (_firstInvestmentForm) {
       final now = ref.read(valuationClockProvider)();
       _today = DateTime(now.year, now.month, now.day);
@@ -709,8 +708,15 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         ),
         itemKeyBuilder: AddInvestmentKeys.typeChip,
       ),
+      // The slot under the type chips: the optional custom type for Other
+      // (#936), or Gold or Silver for Precious metals (#946).
       customType: showCustomType
           ? CustomTypeField(controller: _customTypeController)
+          : _selectedType == InvestmentType.gold
+          ? MetalChoice(
+              selected: _metal,
+              onChanged: (metal) => setState(() => _metal = metal),
+            )
           : null,
       name: AppTextField(
         key: AddInvestmentKeys.name,

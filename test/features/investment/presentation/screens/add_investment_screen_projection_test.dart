@@ -10,7 +10,9 @@ import 'package:inv_tracker/core/widgets/app_text_field.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/investment/domain/models/investment_template.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/add_investment_keys.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 import '../../../../mocks/mock_analytics_service.dart';
@@ -31,6 +33,7 @@ Future<void> _pumpForm(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        isPrivacyModeActiveProvider.overrideWithValue(false),
         currencyCodeProvider.overrideWithValue('INR'),
         currencySymbolProvider.overrideWithValue('₹'),
         currencyLocaleProvider.overrideWithValue('en_IN'),
@@ -44,6 +47,14 @@ Future<void> _pumpForm(
       ),
     ),
   );
+  await tester.pumpAndSettle();
+  // The rate, tenure and the estimate are behind "More details", and the
+  // estimate needs an amount: the first investment form invents none.
+  await tester.enterText(find.byKey(AddInvestmentKeys.amount), '100000');
+  await tester.pumpAndSettle();
+  final more = find.byKey(AddInvestmentKeys.moreDetails);
+  await tester.ensureVisible(more);
+  await tester.tap(more);
   await tester.pumpAndSettle();
 }
 
