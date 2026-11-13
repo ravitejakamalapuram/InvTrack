@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/analytics/analytics_screens.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
@@ -61,6 +62,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          isPrivacyModeActiveProvider.overrideWithValue(false),
           currencyCodeProvider.overrideWithValue('INR'),
           currencySymbolProvider.overrideWithValue('₹'),
           currencyLocaleProvider.overrideWithValue('en_IN'),

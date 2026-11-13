@@ -14,13 +14,10 @@ import 'add_investment_harness.dart';
 void main() {
   setUpAll(loadInterFont);
 
-  for (final flagOn in [false, true]) {
-    group('flag ${flagOn ? 'on' : 'off'}', () {
-      Future<FormHarness> open(WidgetTester tester) => pumpAddForm(
-        tester,
-        flagOn: flagOn,
-        size: flagOn ? const Size(411, 842) : const Size(1080, 3200),
-      );
+  {
+    group('new investment form', () {
+      Future<FormHarness> open(WidgetTester tester) =>
+          pumpAddForm(tester, size: const Size(411, 842));
 
       testWidgets('name, submit and all 14 type chips have their keys', (
         tester,
@@ -49,13 +46,11 @@ void main() {
 
       testWidgets('the notes field is reachable by key', (tester) async {
         await open(tester);
-        if (flagOn) {
-          expect(find.byKey(AddInvestmentKeys.notes), findsNothing);
-          await tester.ensureVisible(find.byKey(AddInvestmentKeys.moreDetails));
-          await tester.pumpAndSettle();
-          await tester.tap(find.byKey(AddInvestmentKeys.moreDetails));
-          await tester.pumpAndSettle();
-        }
+        expect(find.byKey(AddInvestmentKeys.notes), findsNothing);
+        await tester.ensureVisible(find.byKey(AddInvestmentKeys.moreDetails));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(AddInvestmentKeys.moreDetails));
+        await tester.pumpAndSettle();
 
         expect(find.byKey(AddInvestmentKeys.notes), findsOneWidget);
         expect(fieldIn(AddInvestmentKeys.notes), findsOneWidget);

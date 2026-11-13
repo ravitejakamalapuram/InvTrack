@@ -190,17 +190,18 @@ void main() {
       expect(find.text('Debug Settings'), findsNothing);
     });
 
-    testWidgets('unlocked: Feature flags entry shows, Debug Settings does not', (
-      tester,
-    ) async {
-      final c = await pumpSettings(tester);
+    testWidgets(
+      'unlocked: Feature flags entry shows, Debug Settings does not',
+      (tester) async {
+        final c = await pumpSettings(tester);
 
-      c.read(featureFlagUnlockProvider.notifier).toggle();
-      await tester.pumpAndSettle();
+        c.read(featureFlagUnlockProvider.notifier).toggle();
+        await tester.pumpAndSettle();
 
-      expect(find.text('Feature flags'), findsOneWidget);
-      expect(find.text('Debug Settings'), findsNothing);
-    });
+        expect(find.text('Feature flags'), findsOneWidget);
+        expect(find.text('Debug Settings'), findsNothing);
+      },
+    );
 
     testWidgets('unlocked, then signed out: the entry is gone', (tester) async {
       final c = await pumpSettings(tester);
@@ -226,7 +227,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(FeatureFlagsScreen), findsOneWidget);
-      expect(find.text('First Investment Flow'), findsOneWidget);
+      expect(find.text('Portfolio Health Score'), findsOneWidget);
       for (final dataTool in [
         'Seed Demo Data',
         'Clear Sample Data',
@@ -243,12 +244,12 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Feature flags'));
       await tester.pumpAndSettle();
-      expect(c.read(isFirstInvestmentFlowEnabledProvider), isFalse);
+      expect(c.read(isPortfolioHealthEnabledProvider), isFalse);
 
-      await tester.tap(find.text('First Investment Flow'));
+      await tester.tap(find.text('Portfolio Health Score'));
       await tester.pumpAndSettle();
 
-      expect(c.read(isFirstInvestmentFlowEnabledProvider), isTrue);
+      expect(c.read(isPortfolioHealthEnabledProvider), isTrue);
       await tester.pump(const Duration(seconds: 3));
     });
   });
@@ -268,8 +269,9 @@ void main() {
     });
 
     test('the Help FAQ says five taps, like the gesture does', () {
-      final arb = jsonDecode(File('lib/l10n/app_en.arb').readAsStringSync())
-          as Map<String, dynamic>;
+      final arb =
+          jsonDecode(File('lib/l10n/app_en.arb').readAsStringSync())
+              as Map<String, dynamic>;
       for (final key in [
         'howToEnableDebugModeAnswer',
         'howToDisableDebugModeAnswer',

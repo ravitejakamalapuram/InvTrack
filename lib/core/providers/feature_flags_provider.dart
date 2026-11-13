@@ -49,13 +49,6 @@ enum FeatureFlag {
   ///   with the account while it is off
   customInvestmentTypes('custom_investment_types', 'Custom Investment Types'),
 
-  /// First Investment Flow (A40, #783).
-  /// - Add Investment takes an optional amount and start date, and saves the
-  ///   investment with its first cash flow in one write
-  /// - Off by default; it ships by changing the default in a release PR, and
-  ///   release builds read only that default
-  firstInvestmentFlow('first_investment_flow', 'First Investment Flow'),
-
   /// Base currency prompt and profile sync (A31, #772).
   /// - A new user confirms a currency proposed from their phone's country
   /// - The base currency is kept on the profile and restored on a new device
@@ -248,16 +241,6 @@ final isCustomInvestmentTypesEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.customInvestmentTypes] ?? false,
-    ),
-  );
-});
-
-/// Convenience provider for checking if the first investment flow (A40) is
-/// enabled
-final isFirstInvestmentFlowEnabledProvider = Provider<bool>((ref) {
-  return ref.watch(
-    featureFlagsProvider.select(
-      (flags) => flags[FeatureFlag.firstInvestmentFlow] ?? false,
     ),
   );
 });

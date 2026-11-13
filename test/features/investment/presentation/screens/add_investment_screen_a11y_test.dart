@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/add_investment_keys.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -17,6 +19,7 @@ void main() {
   testWidgets('AddInvestmentScreen accessibility test', (tester) async {
     // Setup overrides
     final overrides = [
+      isPrivacyModeActiveProvider.overrideWithValue(false),
       currencyCodeProvider.overrideWithValue('USD'),
       currencySymbolProvider.overrideWithValue('\$'),
       currencyLocaleProvider.overrideWithValue('en_US'),
@@ -36,22 +39,14 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // 1. Verify "Investment Type" selector
-    // Scroll down to find dynamic fields.
     final scrollable = find.byType(Scrollable).first;
 
-    // 2. Check "Start Date" picker semantics
-    // It might be hidden if config doesn't show it, but P2P Lending usually shows most fields.
-    // Let's check if we can find "Start Date (Optional)" text.
-    expect(find.text('Start Date (Optional)'), findsOneWidget);
-
-    // Find the GlassCard or GestureDetector that allows picking date.
-    // Currently it likely lacks proper semantics, so we look for what we *expect* to have after fix.
-    // Or we can look for what acts as the button.
-    // The button is "When did you invest?" text inside the card if not set.
-
-    final startDateText = find.text('When did you invest?');
-    expect(startDateText, findsOneWidget);
+    // The first investment form keeps the start date on top and the risk and
+    // income choices behind "More details".
+    final more = find.byKey(AddInvestmentKeys.moreDetails);
+    await tester.ensureVisible(more);
+    await tester.tap(more);
+    await tester.pumpAndSettle();
 
     // 3. Check Enum Chips (Risk Level, Payout Mode)
     // Find "Medium Risk" risk level chip

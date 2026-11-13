@@ -2638,22 +2638,6 @@
     "description": "Message shown when adding an investment failed. What was typed is kept so the user can try again (A40)"
   },
 
-  "firstInvestmentFlowFeature": "First Investment Flow",
-  "@firstInvestmentFlowFeature": {
-    "description": "Debug Settings: title of the toggle for the add investment form with an amount and start date (A40)"
-  },
-  "firstInvestmentFlowSubtitle": "Add Investment takes an amount and start date and saves both together",
-  "@firstInvestmentFlowSubtitle": {
-    "description": "Debug Settings: subtitle of the first investment flow toggle (A40)"
-  },
-  "firstInvestmentFlowEnabled": "First Investment Flow enabled",
-  "@firstInvestmentFlowEnabled": {
-    "description": "Debug Settings: message after turning the first investment flow on (A40)"
-  },
-  "firstInvestmentFlowDisabled": "First Investment Flow disabled",
-  "@firstInvestmentFlowDisabled": {
-    "description": "Debug Settings: message after turning the first investment flow off (A40)"
-  },
   "baseCurrencyPromptFeature": "Base Currency Prompt",
   "@baseCurrencyPromptFeature": {
     "description": "Debug Settings: title of the toggle for the base currency prompt and profile sync (A31)"

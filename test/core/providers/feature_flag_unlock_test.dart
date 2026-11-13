@@ -20,7 +20,7 @@ const _first = UserEntity(id: 'uid-1', email: '');
 const _second = UserEntity(id: 'uid-2', email: '');
 
 // The flag key a device stores when a flag was switched on in an older build.
-const _storedOn = {'feature_flag_first_investment_flow': true};
+const _storedOn = {'feature_flag_portfolio_health_score': true};
 
 void main() {
   late StreamController<UserEntity?> auth;
@@ -55,7 +55,7 @@ void main() {
 
       expect(c.read(featureFlagUnlockProvider), isFalse);
       expect(c.read(featureFlagOverridesAllowedProvider), isFalse);
-      expect(c.read(isFirstInvestmentFlowEnabledProvider), isFalse);
+      expect(c.read(isPortfolioHealthEnabledProvider), isFalse);
     });
 
     test('unlocking lets a value stored on the device decide', () async {
@@ -65,7 +65,7 @@ void main() {
 
       expect(c.read(featureFlagUnlockProvider), isTrue);
       expect(c.read(featureFlagOverridesAllowedProvider), isTrue);
-      expect(c.read(isFirstInvestmentFlowEnabledProvider), isTrue);
+      expect(c.read(isPortfolioHealthEnabledProvider), isTrue);
     });
 
     test('a toggle made while unlocked is saved and applied', () async {
@@ -74,9 +74,9 @@ void main() {
 
       await c
           .read(featureFlagsProvider.notifier)
-          .setEnabled(FeatureFlag.firstInvestmentFlow, true);
+          .setEnabled(FeatureFlag.portfolioHealthScore, true);
 
-      expect(c.read(isFirstInvestmentFlowEnabledProvider), isTrue);
+      expect(c.read(isPortfolioHealthEnabledProvider), isTrue);
     });
 
     test('a second unlock gesture locks it again', () async {
@@ -87,7 +87,7 @@ void main() {
       notifier.toggle();
 
       expect(c.read(featureFlagUnlockProvider), isFalse);
-      expect(c.read(isFirstInvestmentFlowEnabledProvider), isFalse);
+      expect(c.read(isPortfolioHealthEnabledProvider), isFalse);
     });
 
     test('signing out ends the unlock', () async {
@@ -98,7 +98,7 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(c.read(featureFlagUnlockProvider), isFalse);
-      expect(c.read(isFirstInvestmentFlowEnabledProvider), isFalse);
+      expect(c.read(isPortfolioHealthEnabledProvider), isFalse);
     });
 
     test('switching to another account ends the unlock', () async {
@@ -109,7 +109,7 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(c.read(featureFlagUnlockProvider), isFalse);
-      expect(c.read(isFirstInvestmentFlowEnabledProvider), isFalse);
+      expect(c.read(isPortfolioHealthEnabledProvider), isFalse);
     });
 
     test('is not written to the device', () async {

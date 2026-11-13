@@ -11,6 +11,7 @@ import 'package:inv_tracker/features/investment/domain/entities/metal.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
@@ -151,6 +152,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          isPrivacyModeActiveProvider.overrideWithValue(false),
           currencyCodeProvider.overrideWithValue('INR'),
           currencySymbolProvider.overrideWithValue('₹'),
           currencyLocaleProvider.overrideWithValue('en_IN'),
@@ -173,12 +175,14 @@ void main() {
   }
 
   Future<void> selectType(WidgetTester tester, String name) async {
-    await tester.tap(
-      find.descendant(
-        of: find.byType(TypeSelector<InvestmentType>),
-        matching: find.text(name),
-      ),
+    // The new form's type chips are a scrolling row: bring the chip into view.
+    final chip = find.descendant(
+      of: find.byType(TypeSelector<InvestmentType>),
+      matching: find.text(name),
     );
+    await tester.ensureVisible(chip);
+    await tester.pumpAndSettle();
+    await tester.tap(chip);
     await tester.pumpAndSettle();
   }
 

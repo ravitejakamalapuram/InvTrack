@@ -31,7 +31,6 @@ void main() {
   ) async {
     final harness = await pumpAddForm(
       tester,
-      flagOn: true,
       now: DateTime(2026, 10, 11, 14, 30),
       analyticsService: _FailingAnalytics(),
     );
