@@ -12,6 +12,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
@@ -128,6 +129,7 @@ void main() {
     fakeRepository = FakeInvestmentRepository();
     container = ProviderContainer(
       overrides: [
+        valuationSnapshotsActiveProvider.overrideWithValue(false),
         investmentRepositoryProvider.overrideWithValue(fakeRepository),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
         notificationServiceProvider.overrideWithValue(

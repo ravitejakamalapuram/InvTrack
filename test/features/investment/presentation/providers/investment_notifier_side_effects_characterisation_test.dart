@@ -74,6 +74,7 @@ void main() {
     goals = FakeGoalRepository();
     container = ProviderContainer(
       overrides: [
+        valuationSnapshotsActiveProvider.overrideWithValue(false),
         investmentRepositoryProvider.overrideWithValue(repo),
         goalRepositoryProvider.overrideWithValue(goals),
         analyticsServiceProvider.overrideWithValue(analytics),
@@ -155,6 +156,7 @@ void main() {
       container.dispose();
       final failing = ProviderContainer(
         overrides: [
+          valuationSnapshotsActiveProvider.overrideWithValue(false),
           investmentRepositoryProvider.overrideWithValue(_FailingRepository()),
           analyticsServiceProvider.overrideWithValue(analytics),
           notificationServiceProvider.overrideWithValue(notifications),
@@ -284,6 +286,7 @@ void main() {
       container.dispose();
       final failing = ProviderContainer(
         overrides: [
+          valuationSnapshotsActiveProvider.overrideWithValue(false),
           investmentRepositoryProvider.overrideWithValue(_FailingRepository()),
           goalRepositoryProvider.overrideWithValue(goals),
           analyticsServiceProvider.overrideWithValue(analytics),

@@ -103,6 +103,7 @@ void main() {
     setUp(() {
       container = ProviderContainer(
         overrides: [
+          valuationSnapshotsActiveProvider.overrideWithValue(false),
           // Override validCashFlowsProvider directly to bypass repository and streams
           validCashFlowsProvider.overrideWithValue(
             AsyncValue.data([

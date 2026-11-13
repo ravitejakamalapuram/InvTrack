@@ -110,6 +110,7 @@ ProviderContainer _container({List<Override> extraOverrides = const []}) {
               if (cf.investmentId == id) cf,
           ]),
         ),
+      allValuationSnapshotsProvider.overrideWith((ref) => Stream.value([])),
       currencyCodeProvider.overrideWith((ref) => 'INR'),
       currencyConversionServiceProvider.overrideWith(
         (ref) => MockCurrencyConversionService(),

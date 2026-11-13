@@ -187,6 +187,7 @@ void main() {
   }) {
     final container = ProviderContainer(
       overrides: [
+        valuationSnapshotsActiveProvider.overrideWithValue(false),
         investmentRepositoryProvider.overrideWithValue(repo),
         goalRepositoryProvider.overrideWithValue(goalRepository ?? goals),
         analyticsServiceProvider.overrideWithValue(
@@ -631,6 +632,7 @@ void main() {
         final failing = _FailingWriteRepository();
         final failingContainer = ProviderContainer(
           overrides: [
+            valuationSnapshotsActiveProvider.overrideWithValue(false),
             investmentRepositoryProvider.overrideWithValue(failing),
             goalRepositoryProvider.overrideWithValue(goals),
             analyticsServiceProvider.overrideWithValue(analytics),
