@@ -29,6 +29,16 @@ describe('importPosts', () => {
     assert.equal((await db.doc('contentPosts/a/deliveries/telegram').get()).data().status, 'posted');
   });
 
+  it('with createOnly, adds new posts but leaves existing ones exactly as they are', async () => {
+    await importPosts(db, [post('a', '2026-11-11')]);
+    await db.doc('contentPosts/a').update({ title: 'Fixed by hand' });
+    await importPosts(db, [post('a', '2026-11-11', { title: 'From file' }), post('b', '2026-11-12')], { createOnly: true });
+    assert.equal((await db.doc('contentPosts/a').get()).data().title, 'Fixed by hand');
+    const b = (await db.doc('contentPosts/b').get()).data();
+    assert.equal(b.status, 'approved');
+    assert.equal(b.title, 'Title b');
+  });
+
   it('does not re-approve a post that was withdrawn after the first import', async () => {
     await importPosts(db, [post('a', '2026-11-11')]);
     await db.doc('contentPosts/a').update({ status: 'withdrawn', note: 'kept' });

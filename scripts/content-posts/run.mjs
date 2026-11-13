@@ -2,6 +2,7 @@
 //
 //   node run.mjs import posts.json        add approved posts to Firestore (a JSON array: id, title, body, approvedAt)
 //   node run.mjs post [--dry-run]         send the next approved post to Telegram and record it
+//   node run.mjs import posts.json --create-only   same, but skip posts that already exist
 //                  [--once-per-day]     do nothing if a post already went out today (India time)
 //
 // Posting needs TELEGRAM_BOT_TOKEN and TELEGRAM_CHANNEL_ID. Firestore access comes from the environment's
@@ -43,7 +44,7 @@ async function main() {
 
   if (cmd === 'import') {
     const posts = JSON.parse(readFileSync(arg, 'utf8'));
-    await importPosts(db, posts);
+    await importPosts(db, posts, { createOnly: process.argv.includes('--create-only') });
     console.log(`Imported ${posts.length} post(s).`);
   } else if (cmd === 'post') {
     const dryRun = process.argv.includes('--dry-run');

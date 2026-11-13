@@ -73,6 +73,13 @@ jobs:
             case "$IMPORT_FILE" in *..*) echo "bad path"; exit 1 ;; esac
             node scripts/content-posts/run.mjs import "$IMPORT_FILE"
           elif [ "$EVENT" = "schedule" ] && [ "$POSTING_ENABLED" = "true" ]; then
+            # Bring in newly approved posts first. Existing posts are left exactly as they are (--create-only), so
+            # a text fix made in the database is never undone. A bad file must not stop today's post, so a failed
+            # import only prints a warning.
+            shopt -s nullglob
+            for f in content/posts/*.json; do
+              node scripts/content-posts/run.mjs import "$f" --create-only || echo "::warning::import of $f failed"
+            done
             node scripts/content-posts/run.mjs post --once-per-day
           elif [ "$EVENT" = "workflow_dispatch" ] && [ "$POST_INPUT" = "true" ]; then
             node scripts/content-posts/run.mjs post

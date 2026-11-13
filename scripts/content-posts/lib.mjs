@@ -10,8 +10,10 @@ export const MAX_ATTEMPTS = 3;
  * Adds approved posts, or updates their text. A post that already exists keeps its status (so a post
  * withdrawn later is not approved again by a re-import) and its other fields. Delivery records are never
  * touched. All posts are written in one batch: either every post is imported or none.
+ * With `createOnly`, posts that already exist are skipped entirely (no text change), so a daily import
+ * cannot undo an edit made in the database.
  */
-export async function importPosts(db, posts) {
+export async function importPosts(db, posts, { createOnly = false } = {}) {
   const prepared = posts.map((p) => {
     if (!p.id || !p.title?.trim() || !p.body?.trim()) throw new Error(`post ${p.id ?? '?'}: id, title and body are required`);
     if (!DAY_ISO.test(p.approvedAt ?? '') || Number.isNaN(Date.parse(`${p.approvedAt}T00:00:00Z`))) {
@@ -24,6 +26,7 @@ export async function importPosts(db, posts) {
   const existing = await Promise.all(prepared.map((x) => x.ref.get()));
   const batch = db.batch();
   prepared.forEach((x, i) => {
+    if (createOnly && existing[i].exists) return;
     batch.set(x.ref, existing[i].exists ? x.data : { ...x.data, status: 'approved' }, { merge: true });
   });
   await batch.commit();
