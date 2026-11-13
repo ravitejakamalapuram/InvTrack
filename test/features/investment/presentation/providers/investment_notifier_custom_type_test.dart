@@ -59,6 +59,7 @@ void main() {
     analytics = FakeAnalyticsService();
     container = ProviderContainer(
       overrides: [
+        valuationSnapshotsActiveProvider.overrideWithValue(false),
         investmentRepositoryProvider.overrideWithValue(investments),
         documentRepositoryProvider.overrideWithValue(FakeDocumentRepository()),
         documentStorageServiceProvider.overrideWithValue(
@@ -151,6 +152,7 @@ void main() {
       container.dispose();
       container = ProviderContainer(
         overrides: [
+          valuationSnapshotsActiveProvider.overrideWithValue(false),
           investmentRepositoryProvider.overrideWithValue(investments),
           valuationRepositoryProvider.overrideWithValue(
             InMemoryValuationRepository(),

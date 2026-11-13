@@ -124,6 +124,7 @@ void main() {
   }) {
     final container = ProviderContainer(
       overrides: [
+        valuationSnapshotsActiveProvider.overrideWithValue(false),
         investmentRepositoryProvider.overrideWithValue(repo),
         goalRepositoryProvider.overrideWithValue(goals),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),

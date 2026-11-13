@@ -260,45 +260,6 @@ class FeatureFlagsSection extends ConsumerWidget {
           },
         ),
 
-        // Dated valuations feature flag (#941)
-        SettingsToggleTile(
-          icon: Icons.event_note,
-          iconColor: Colors.teal,
-          title: l10n.valuationSnapshotsFeature,
-          subtitle: l10n.valuationSnapshotsSubtitle,
-          value: featureFlags[FeatureFlag.valuationSnapshots] ?? false,
-          onChanged: (value) async {
-            try {
-              await ref
-                  .read(featureFlagsProvider.notifier)
-                  .toggle(FeatureFlag.valuationSnapshots);
-
-              final newState =
-                  ref.read(
-                    featureFlagsProvider,
-                  )[FeatureFlag.valuationSnapshots] ??
-                  false;
-
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      newState
-                          ? l10n.valuationSnapshotsEnabled
-                          : l10n.valuationSnapshotsDisabled,
-                    ),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              }
-            } catch (e, stackTrace) {
-              if (context.mounted) {
-                ErrorHandler.handle(e, stackTrace, context: context);
-              }
-            }
-          },
-        ),
-
         // First investment flow feature flag (A40, #783)
         SettingsToggleTile(
           icon: Icons.add_card_rounded,

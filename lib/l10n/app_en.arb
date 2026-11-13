@@ -3618,25 +3618,9 @@
     "description": "Message when feature is disabled"
   },
 
-  "valuationSnapshotsFeature": "Dated Valuations",
-  "@valuationSnapshotsFeature": {
-    "description": "Dated valuations feature toggle title in Debug Settings"
-  },
 
-  "valuationSnapshotsSubtitle": "Record dated and opening valuations for open investments",
-  "@valuationSnapshotsSubtitle": {
-    "description": "Dated valuations feature description in Debug Settings"
-  },
 
-  "valuationSnapshotsEnabled": "Dated Valuations enabled",
-  "@valuationSnapshotsEnabled": {
-    "description": "Message when the dated valuations feature is enabled"
-  },
 
-  "valuationSnapshotsDisabled": "Dated Valuations disabled",
-  "@valuationSnapshotsDisabled": {
-    "description": "Message when the dated valuations feature is disabled"
-  },
 
   "reportsTabFeature": "Reports Tab",
   "@reportsTabFeature": {

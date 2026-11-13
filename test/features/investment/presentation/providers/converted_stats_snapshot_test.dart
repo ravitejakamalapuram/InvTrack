@@ -215,6 +215,7 @@ List<Override> _overrides({
   Stream<List<InvestmentEntity>>? activeStream,
   String Function(Ref ref)? baseCurrency,
 }) => [
+  valuationSnapshotsActiveProvider.overrideWithValue(false),
   isAuthenticatedProvider.overrideWith((ref) => true),
   allInvestmentsProvider.overrideWith(
     (ref) => activeStream ?? Stream.value(active),

@@ -52,7 +52,8 @@ void main() {
         if (valuations != null) ...[
           valuationRepositoryProvider.overrideWithValue(valuations),
           valuationSnapshotsActiveProvider.overrideWithValue(true),
-        ],
+        ] else
+          valuationSnapshotsActiveProvider.overrideWithValue(false),
         investmentRepositoryProvider.overrideWithValue(repo),
         goalRepositoryProvider.overrideWithValue(goals),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),

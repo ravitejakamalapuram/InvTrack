@@ -3,6 +3,7 @@
 // other details keeps it.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
@@ -43,6 +44,7 @@ void main() {
     repo = FakeInvestmentRepository();
     container = ProviderContainer(
       overrides: [
+        valuationSnapshotsActiveProvider.overrideWithValue(false),
         investmentRepositoryProvider.overrideWithValue(repo),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
         notificationServiceProvider.overrideWithValue(

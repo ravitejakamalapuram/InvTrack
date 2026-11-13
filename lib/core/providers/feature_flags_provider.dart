@@ -42,18 +42,6 @@ enum FeatureFlag {
   ///   tab and its background services are all hidden or stopped.
   incomeGuardian('income_guardian', 'Income Guardian'),
 
-  /// Dated valuations of open investments (#941).
-  /// - Snapshots in users/{uid}/valuations, mirrored into currentValue
-  /// - Opening baselines for investments without history
-  /// - On by default since the screens shipped (owner decision 2026-11-10);
-  ///   the flag is only a kill switch that reads and writes the single
-  ///   current value exactly as before
-  valuationSnapshots(
-    'valuation_snapshots',
-    'Dated Valuations',
-    defaultEnabled: true,
-  ),
-
   /// Reusable custom labels for investments of type Other (#936).
   /// - Optional "Custom type" field on the investment form
   /// - Saved labels come back as suggestions
@@ -268,15 +256,6 @@ final isApproximateRatesIndicatorEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.approximateRatesIndicator] ?? true,
-    ),
-  );
-});
-
-/// Convenience provider for checking if dated valuations are enabled
-final isValuationSnapshotsEnabledProvider = Provider<bool>((ref) {
-  return ref.watch(
-    featureFlagsProvider.select(
-      (flags) => flags[FeatureFlag.valuationSnapshots] ?? false,
     ),
   );
 });

@@ -147,6 +147,7 @@ ProviderContainer _container({
 }) {
   final container = ProviderContainer(
     overrides: [
+      valuationSnapshotsActiveProvider.overrideWithValue(false),
       activeGoalsProvider.overrideWith((ref) => Stream.value(goals)),
       for (final goal in goals)
         watchGoalByIdProvider(
