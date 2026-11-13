@@ -73,6 +73,11 @@ jobs:
             case "$IMPORT_FILE" in *..*) echo "bad path"; exit 1 ;; esac
             node scripts/content-posts/run.mjs import "$IMPORT_FILE"
           elif [ "$EVENT" = "schedule" ] && [ "$POSTING_ENABLED" = "true" ]; then
+            # Bring in any newly approved posts first. An import keeps the status of a post that already exists
+            # and never touches its delivery record, so running it every day is safe.
+            for f in content/posts/*.json; do
+              node scripts/content-posts/run.mjs import "$f"
+            done
             node scripts/content-posts/run.mjs post --once-per-day
           elif [ "$EVENT" = "workflow_dispatch" ] && [ "$POST_INPUT" = "true" ]; then
             node scripts/content-posts/run.mjs post
