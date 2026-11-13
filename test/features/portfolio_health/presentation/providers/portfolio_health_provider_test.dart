@@ -143,6 +143,7 @@ ProviderContainer _container({
 }) {
   final container = ProviderContainer(
     overrides: [
+      valuationSnapshotsActiveProvider.overrideWithValue(false),
       isAuthenticatedProvider.overrideWith((ref) => true),
       allInvestmentsProvider.overrideWith((ref) => Stream.value(investments)),
       archivedInvestmentsProvider.overrideWith((ref) => Stream.value(const [])),
@@ -242,6 +243,7 @@ void main() {
     final repository = _RecordingRepository();
     final container = ProviderContainer(
       overrides: [
+        valuationSnapshotsActiveProvider.overrideWithValue(false),
         authStateProvider.overrideWith((ref) => users.stream),
         healthScoreRepositoryProvider.overrideWithValue(repository),
       ],
