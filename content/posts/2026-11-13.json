@@ -1,0 +1,20 @@
+[
+  {
+    "id": "rule-of-72",
+    "title": "The rule of 72: how long to double",
+    "body": "Want a quick idea of how long money takes to double? Divide 72 by the yearly rate. At 8% a year, 72 ÷ 8 gives about 9 years. At 12%, about 6 years. It is a mental shortcut, not an exact answer, and it works best for moderate rates. It assumes the gain stays invested and earns on itself each year, which is called compounding.\n\nExample: you hold 2 lakh rupees growing at 9% a year with nothing withdrawn. 72 ÷ 9 is 8, so it becomes about 4 lakh in around 8 years.\n\nThe rule works against you too. If prices rise 6% a year, what costs 100 today costs about 200 in 12 years, since 72 ÷ 6 is 12. That is why a return only means something once you compare it with inflation.\n\nWhat to check: Is the rate you divide by a yearly rate, and is it after fees and tax?\n\nEducation, not investment advice.",
+    "approvedAt": "2026-11-13"
+  },
+  {
+    "id": "same-rate-different-payout",
+    "title": "Same rate, different payout",
+    "body": "Two deposits can show the same yearly rate and still pay different amounts. The difference is how often interest is added to your balance. When interest is added more often, each addition starts earning interest too, so the total grows a little faster.\n\nExample: you place 1 lakh rupees at 8% a year for one year. If interest is added once at the end, you earn 8,000 rupees. If it is added every quarter at 2% each time, you earn about 8,243 rupees. The extra 243 rupees comes only from interest earning interest. Over several years the gap grows.\n\nSome products pay interest out to you regularly instead of adding it back. Then nothing compounds, and each year you earn the stated rate on the original amount. Neither choice is better for everyone. It depends on whether you want regular income or growth.\n\nWhat to check: The compounding or payout frequency, and the effective yearly rate, not only the stated rate.\n\nEducation, not investment advice.",
+    "approvedAt": "2026-11-13"
+  },
+  {
+    "id": "know-your-exit-cost",
+    "title": "Know your exit cost",
+    "body": "Before you lock money in, ask what it costs to leave early. Many deposits, bonds and chit funds let you exit before the end date, but with a penalty, a lower interest rate or a fee. Some do not allow it at all.\n\nExample: you place 5 lakh rupees for 5 years at 7% a year, with interest added yearly. After 2 years you need the money. Suppose the product pays you 1 point less for the time you stayed, so 6% instead of 7%. At 7% you would have about 5,72,450 rupees. At 6% you get about 5,61,800 rupees. The early exit costs about 10,650 rupees, before any separate fee.\n\nRules differ by product and provider, so this is only an illustration. A good habit is to keep emergency money where you can reach it without a penalty, and lock in only what you will not need soon.\n\nWhat to check: The early exit rule in writing: the penalty, any fee, and how many days it takes to get your money.\n\nEducation, not investment advice.",
+    "approvedAt": "2026-11-13"
+  }
+]
