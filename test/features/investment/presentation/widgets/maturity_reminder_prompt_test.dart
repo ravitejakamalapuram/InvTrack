@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/maturity_reminder_prompt.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -29,9 +28,20 @@ void main() {
       expect(shouldAskMaturityReminder(prefs, null), isFalse);
     });
 
+    test(
+      'the old sign-in permission key does not suppress the prompt',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'notification_permissions_requested': true,
+        });
+        final prefs = await SharedPreferences.getInstance();
+        expect(shouldAskMaturityReminder(prefs, maturity), isTrue);
+      },
+    );
+
     test('does not ask twice', () async {
       SharedPreferences.setMockInitialValues({
-        'notification_permissions_requested': true,
+        'maturity_reminder_prompt_asked': true,
       });
       final prefs = await SharedPreferences.getInstance();
       expect(shouldAskMaturityReminder(prefs, maturity), isFalse);
@@ -49,17 +59,12 @@ void main() {
       prefs = await SharedPreferences.getInstance();
     });
 
-    Future<void> pump(
-      WidgetTester tester,
-      DateTime? maturityDate, {
-      bool flagOn = true,
-    }) async {
+    Future<void> pump(WidgetTester tester, DateTime? maturityDate) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
             notificationServiceProvider.overrideWithValue(service),
-            isMaturityReminderPromptEnabledProvider.overrideWithValue(flagOn),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -92,7 +97,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => service.requestPermissions()).called(1);
-      expect(prefs.getBool('notification_permissions_requested'), isTrue);
+      expect(prefs.getBool('maturity_reminder_prompt_asked'), isTrue);
     });
 
     testWidgets('Not now never calls the system and is not asked again', (
@@ -103,19 +108,13 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(() => service.requestPermissions());
-      expect(prefs.getBool('notification_permissions_requested'), isTrue);
+      expect(prefs.getBool('maturity_reminder_prompt_asked'), isTrue);
     });
 
     testWidgets('no maturity date: no dialog, no system request', (
       tester,
     ) async {
       await pump(tester, null);
-      expect(find.text('Get a reminder when this pays out?'), findsNothing);
-      verifyNever(() => service.requestPermissions());
-    });
-
-    testWidgets('flag off: no dialog, no system request', (tester) async {
-      await pump(tester, maturity, flagOn: false);
       expect(find.text('Get a reminder when this pays out?'), findsNothing);
       verifyNever(() => service.requestPermissions());
     });
@@ -128,7 +127,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(() => service.requestPermissions());
-      expect(prefs.getBool('notification_permissions_requested'), isNull);
+      expect(prefs.getBool('maturity_reminder_prompt_asked'), isNull);
     });
 
     testWidgets('a failing system request does not throw', (tester) async {
@@ -138,7 +137,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(prefs.getBool('notification_permissions_requested'), isTrue);
+      expect(prefs.getBool('maturity_reminder_prompt_asked'), isTrue);
     });
   });
 }

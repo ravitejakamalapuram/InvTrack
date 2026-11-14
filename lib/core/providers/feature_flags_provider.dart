@@ -49,15 +49,6 @@ enum FeatureFlag {
   ///   with the account while it is off
   customInvestmentTypes('custom_investment_types', 'Custom Investment Types'),
 
-  /// Notification permission asked after the first investment with a maturity
-  /// date instead of at sign-in (A45, #788).
-  /// - Off by default; flag off keeps the ask at sign-in. It ships by changing
-  ///   the default in a release PR
-  maturityReminderPrompt(
-    'maturity_reminder_prompt',
-    'Maturity Reminder Prompt',
-  ),
-
   /// Monthly recap screen and notification (reports plan, phase 1). Off
   /// until a release PR turns it on.
   monthlyRecap('monthly_recap', 'Monthly Recap'),
@@ -233,15 +224,6 @@ final isCustomInvestmentTypesEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.customInvestmentTypes] ?? false,
-    ),
-  );
-});
-
-/// Convenience provider for the maturity reminder prompt (A45)
-final isMaturityReminderPromptEnabledProvider = Provider<bool>((ref) {
-  return ref.watch(
-    featureFlagsProvider.select(
-      (flags) => flags[FeatureFlag.maturityReminderPrompt] ?? false,
     ),
   );
 });
