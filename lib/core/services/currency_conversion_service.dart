@@ -567,8 +567,11 @@ class CurrencyConversionService {
       if (currency == baseCurrency) continue;
 
       // Fetch rate (will cache automatically)
-      // Use unawaited to run in background
-      unawaited(getLiveRate(currency, baseCurrency));
+      // Runs in the background: a failure (offline, Firestore unavailable)
+      // must not surface as an uncaught async error. Callers fetch on demand.
+      unawaited(
+        getLiveRate(currency, baseCurrency).then<void>((_) {}, onError: (_) {}),
+      );
     }
   }
 
