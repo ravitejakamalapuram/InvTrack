@@ -332,21 +332,7 @@ class _NotificationSyncInitializerState
       final generation = _accountGeneration;
       final now = DateTime.now();
       final recap = _recapFacts(now);
-      if (recap == null) {
-        // With the flag off, put the legacy summary back in the shared slot
-        // so a queued recap never fires.
-        if (!_recapFlagOn()) {
-          _enqueue(() async {
-            if (generation != _accountGeneration) return;
-            try {
-              await notificationService.scheduleMonthlySummary();
-            } catch (e) {
-              LoggerService.warn('Error scheduling monthly summary', error: e);
-            }
-          });
-        }
-        return;
-      }
+      if (recap == null) return;
       _enqueue(() async {
         if (generation != _accountGeneration) return;
         try {
@@ -364,28 +350,17 @@ class _NotificationSyncInitializerState
     }
   }
 
-  /// This month's recap counts while the recap flag is on, or null. Only
+  /// This month's recap counts, or null while the investments are loading. Only
   /// the counts reach the notification; the amounts are computed on tap.
   /// A failure here never stops the other reminders from being rescheduled.
   MonthlyDigest? _recapFacts(DateTime now) {
     try {
-      if (!_recapFlagOn()) return null;
       final active = ref.read(activeInvestmentsProvider).value;
       if (active == null) return null;
       return _buildRecap(now, active);
     } catch (e) {
       LoggerService.warn('Monthly recap counts unavailable', error: e);
       return null;
-    }
-  }
-
-  bool _recapFlagOn({bool watch = false}) {
-    try {
-      return watch
-          ? ref.watch(isMonthlyRecapEnabledProvider)
-          : ref.read(isMonthlyRecapEnabledProvider);
-    } catch (_) {
-      return false;
     }
   }
 
@@ -476,20 +451,12 @@ class _NotificationSyncInitializerState
       },
     );
     ref.listen<bool>(
-      isMonthlyRecapEnabledProvider,
-      (previous, next) => _scheduleNotificationsDebounced(),
+      activeInvestmentBasicStatsMapProvider.select((s) => s.hasValue),
+      (previous, next) {
+        if (next && previous == false) _scheduleNotificationsDebounced();
+      },
       onError: (_, _) {},
     );
-    // Only while the recap is on, so the stats are not computed for nothing.
-    if (_recapFlagOn(watch: true)) {
-      ref.listen<bool>(
-        activeInvestmentBasicStatsMapProvider.select((s) => s.hasValue),
-        (previous, next) {
-          if (next && previous == false) _scheduleNotificationsDebounced();
-        },
-        onError: (_, _) {},
-      );
-    }
 
     // Render child immediately without waiting for notifications
     return widget.child;

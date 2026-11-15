@@ -70,7 +70,6 @@ void main() {
 
   Future<ProviderContainer> pumpInitializer(
     WidgetTester tester, {
-    bool recap = false,
     bool reports = true,
     String currency = 'INR',
   }) async {
@@ -80,14 +79,9 @@ void main() {
         overrides: [
           isReportsTabEnabledProvider.overrideWithValue(reports),
           sharedPreferencesProvider.overrideWithValue(prefs),
-          if (recap) ...[
-            isMonthlyRecapEnabledProvider.overrideWith(
-              (ref) => ref.watch(_recapFlag),
-            ),
-            activeInvestmentBasicStatsMapProvider.overrideWithValue(
-              const AsyncData({}),
-            ),
-          ],
+          activeInvestmentBasicStatsMapProvider.overrideWithValue(
+            const AsyncData({}),
+          ),
           currencyCodeProvider.overrideWith((ref) => ref.watch(_currency)),
           authStateProvider.overrideWith((ref) => auth.stream),
           notificationServiceProvider.overrideWithValue(service),
@@ -484,7 +478,7 @@ void main() {
     testWidgets('deleting the last investment refreshes the recap counts', (
       tester,
     ) async {
-      await pumpInitializer(tester, recap: true);
+      await pumpInitializer(tester);
       auth.add(user('uid-a'));
       investments.add([bond]);
       cashFlows.add(const []);
@@ -501,7 +495,7 @@ void main() {
     testWidgets('turning the monthly summary back on restores the recap', (
       tester,
     ) async {
-      final container = await pumpInitializer(tester, recap: true);
+      final container = await pumpInitializer(tester);
       auth.add(user('uid-a'));
       investments.add([bond]);
       cashFlows.add(const []);
@@ -516,22 +510,6 @@ void main() {
       await settle(tester);
 
       expect(recapSlot()?.payload, startsWith('monthly_recap'));
-    });
-
-    testWidgets('turning the recap off with no investments restores the '
-        'monthly summary', (tester) async {
-      final container = await pumpInitializer(tester, recap: true);
-      auth.add(user('uid-a'));
-      investments.add(const []);
-      cashFlows.add(const []);
-      await settle(tester);
-      expect(recapSlot()?.payload, startsWith('monthly_recap'));
-
-      container.read(_recapFlag.notifier).set(false);
-      await settle(tester);
-
-      expect(recapSlot(), isNotNull);
-      expect(recapSlot()?.payload, isNot(startsWith('monthly_recap')));
     });
   });
 
@@ -576,15 +554,6 @@ void main() {
       expect(service.privacyModeActive, isTrue);
     });
   });
-}
-
-final _recapFlag = NotifierProvider<_RecapFlag, bool>(_RecapFlag.new);
-
-class _RecapFlag extends Notifier<bool> {
-  @override
-  bool build() => true;
-
-  void set(bool value) => state = value;
 }
 
 String _currencyInitial = 'INR';

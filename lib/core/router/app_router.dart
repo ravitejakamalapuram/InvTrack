@@ -351,10 +351,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/recap/:month',
         name: AnalyticsScreens.monthlyRecap,
-        // Hidden while its flag is off: a recap notification tapped then
-        // lands on Overview, as does a malformed month.
+        // A malformed month lands on Overview.
         redirect: (context, state) {
-          if (!ref.read(isMonthlyRecapEnabledProvider)) return '/';
           try {
             DigestMonth.parse(state.pathParameters['month'] ?? '');
             return null;
