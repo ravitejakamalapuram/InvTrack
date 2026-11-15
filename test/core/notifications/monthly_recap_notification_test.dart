@@ -1,8 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:inv_tracker/core/notifications/notification_constants.dart';
 import 'package:inv_tracker/core/notifications/handlers/scheduled_notification_handler.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
+
+import '../../mocks/mock_notification_service.dart';
 
 void main() {
   group('monthly recap notification text', () {
@@ -137,5 +142,33 @@ void main() {
         isFalse,
       );
     });
+  });
+
+  test('opening the app on the 1st keeps last month\'s pending recap through '
+      'the routine reschedule', () async {
+    tz_data.initializeTimeZones();
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final plugin = FakeFlutterLocalNotificationsPlugin();
+    final service = NotificationService(
+      plugin,
+      prefs,
+      clock: () => DateTime(2026, 12, 1, 8),
+    );
+    await service.initialize();
+    await service.scheduleMonthlyRecap(
+      now: DateTime(2026, 11, 20),
+      maturingNextMonth: 1,
+      needingValue: 0,
+    );
+
+    // rescheduleAllNotifications does this first on every app start.
+    await service.scheduleMonthlySummary();
+
+    final slot = plugin.scheduledNotifications.where(
+      (n) => n.id == NotificationIds.monthlySummary,
+    );
+    expect(slot, hasLength(1));
+    expect(slot.single.payload, 'monthly_recap:2026-11');
   });
 }

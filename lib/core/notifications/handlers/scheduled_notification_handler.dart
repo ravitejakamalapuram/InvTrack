@@ -113,6 +113,14 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
   Future<void> scheduleMonthlySummary() async {
     await ensureInitialized();
     if (!monthlySummaryEnabled) return;
+    // On the 1st, last month's recap is still due: this slot is shared, so
+    // neither cancelling it nor replacing it with the plain summary is allowed.
+    if (shouldKeepDueRecap(
+      _clock(),
+      await _plugin.pendingNotificationRequests(),
+    )) {
+      return;
+    }
     if (await _reportsOff(NotificationIds.monthlySummary)) return;
 
     await _plugin.cancel(id: NotificationIds.monthlySummary);
