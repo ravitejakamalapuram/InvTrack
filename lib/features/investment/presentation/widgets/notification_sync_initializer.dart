@@ -16,7 +16,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/notifications/notification_settings_provider.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/digest/domain/monthly_digest.dart';
@@ -63,7 +62,6 @@ class _NotificationSyncInitializerState
   @override
   void initState() {
     super.initState();
-    _applyReportsRoute(_reportsRouteOn());
     // Notification text leaves out amounts while privacy mode is on.
     ref.listenManual<bool>(
       privacyModeProvider,
@@ -78,24 +76,6 @@ class _NotificationSyncInitializerState
       (previous, next) => _onAuthChanged(next),
       fireImmediately: true,
     );
-  }
-
-  bool _reportsRouteOn() {
-    try {
-      return ref.read(isReportsTabEnabledProvider);
-    } catch (e) {
-      return false;
-    }
-  }
-
-  void _applyReportsRoute(bool enabled) {
-    try {
-      final notificationService = ref.read(notificationServiceProvider);
-      notificationService.reportsRouteEnabled = enabled;
-      _enqueue(() => notificationService.applyReportsRoute(enabled));
-    } catch (e) {
-      LoggerService.debug('NotificationService not available for reports');
-    }
   }
 
   void _applyPrivacyMode(bool active) {
@@ -418,13 +398,6 @@ class _NotificationSyncInitializerState
     ) {
       if (next.hasValue) _scheduleNotificationsDebounced();
     });
-
-    // The monthly slot is shared with the recap, so a change also reschedules
-    // everything, which puts the right monthly notification back.
-    ref.listen<bool>(isReportsTabEnabledProvider, (previous, next) {
-      _applyReportsRoute(next);
-      _scheduleNotificationsDebounced();
-    }, onError: (_, _) {});
 
     // The India tax reminders depend on the base currency.
     ref.listen<String>(currencyCodeProvider, (previous, next) {

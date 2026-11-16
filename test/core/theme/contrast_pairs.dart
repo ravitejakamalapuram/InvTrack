@@ -151,12 +151,8 @@ const _sampleBannerTest =
     'test/features/overview/presentation/widgets/sample_data_banner_theme_contrast_test.dart';
 const _guestTileTest =
     'test/features/settings/presentation/widgets/saved_guest_backup_tile_test.dart';
-const _insightCardTest =
-    'test/features/reports/presentation/widgets/smart_insight_card_theme_contrast_test.dart';
 const _dataManagementTest =
     'test/features/settings/presentation/screens/data_management_theme_contrast_test.dart';
-const _reportsCountTest =
-    'test/features/reports/presentation/screens/reports_home_attention_contrast_test.dart';
 
 // PR 7: the tests that pump the widgets that paint a type's colours.
 const _typeCardTest =
@@ -486,12 +482,6 @@ List<ContrastPair> _build() {
       ('yoy-pill-success-light@tint10', 2.31, _overviewColoursTest, kMinText),
       ('copied-snackbar-label-light', 2.54, _copiedSnackbarTest, kMinText),
       (
-        'reports-attention-count-light@tint10',
-        2.79,
-        _reportsCountTest,
-        kMinText,
-      ),
-      (
         'confirm-dialog-destructive-light@dialog',
         3.45,
         _feedbackTest,
@@ -550,8 +540,6 @@ List<ContrastPair> _build() {
       ('quick-start-csv-icon-light@tint20', 2.09, _overviewEmptyTest, graphic),
       ('xirr-demo-highlight-light@tint5', 1.92, _overviewEmptyTest, kMinText),
       ('saved-guest-backup-icon-light@card', 2.15, _guestTileTest, graphic),
-      ('insight-warning-value-light@card', 2.15, _insightCardTest, kMinText),
-      ('insight-warning-icon-light@tint20', 1.85, _insightCardTest, graphic),
       (
         'settings-tile-warning-icon-light@tint15',
         1.91,

@@ -70,8 +70,8 @@
 ///   incomeType: 'Interest',
 /// );
 ///
-/// // Schedule weekly summary
-/// await notificationService.scheduleWeeklySummary();
+/// // Schedule the weekly check-in
+/// await notificationService.scheduleWeeklyCheckIn();
 /// ```
 ///
 /// ## Deep Linking
@@ -186,11 +186,7 @@ class NotificationService with NotificationPreferencesMixin {
 
   /// [clock] supplies "now" for reminder scheduling; tests inject a fixed
   /// time. Defaults to [DateTime.now].
-  NotificationService(
-    this._plugin,
-    this._prefs, {
-    DateTime Function()? clock,
-  }) {
+  NotificationService(this._plugin, this._prefs, {DateTime Function()? clock}) {
     NotificationIdSlots.bind(_prefs);
     // Initialize handlers with required dependencies
     _scheduledHandler = ScheduledNotificationHandler(
@@ -207,8 +203,6 @@ class NotificationService with NotificationPreferencesMixin {
       prefs: _prefs,
       ensureInitialized: _ensureInitialized,
       ensurePermissionsForShow: _ensurePermissionsForShow,
-      scheduleWeeklySummary: () => _scheduledHandler.scheduleWeeklySummary(),
-      scheduleMonthlySummary: () => _scheduledHandler.scheduleMonthlySummary(),
       clock: clock,
     );
 
@@ -366,24 +360,9 @@ class NotificationService with NotificationPreferencesMixin {
     }
   }
 
-  /// Whether the Reports route is on. The weekly, monthly and FY summaries
-  /// open a report, so they are scheduled only while it is. Off until the
-  /// app says otherwise.
-  set reportsRouteEnabled(bool enabled) =>
-      _scheduledHandler.reportsRouteEnabled = enabled;
-
   /// The signed-in user's base currency. The India tax reminders are scheduled
   /// only while it is INR; unset until the app says otherwise.
   set baseCurrency(String? code) => _scheduledHandler.baseCurrency = code;
-
-  /// Records whether Reports is on and schedules or cancels the weekly and
-  /// FY summaries to match. The monthly slot is shared with the recap, so
-  /// the caller reconciles it with the rest of the reminders.
-  Future<void> applyReportsRoute(bool enabled) async {
-    reportsRouteEnabled = enabled;
-    await scheduleWeeklySummary();
-    await scheduleFYSummary();
-  }
 
   /// Configure the local timezone from the device.
   /// This is required for scheduled notifications to work correctly.
@@ -585,24 +564,12 @@ class NotificationService with NotificationPreferencesMixin {
   // The base preference getters/setters are inherited from NotificationPreferencesMixin.
   // These overrides add scheduling/cancellation side effects when preferences change.
 
-  /// Override to schedule/cancel weekly summary when preference changes
-  @override
-  Future<void> setWeeklySummaryEnabled(bool enabled) async {
-    await super.setWeeklySummaryEnabled(enabled);
-    if (enabled) {
-      await scheduleWeeklySummary();
-    } else {
-      await _plugin.cancel(id: NotificationIds.weeklySummary);
-    }
-  }
-
-  /// Override to schedule/cancel monthly summary when preference changes
+  /// Turning the monthly notification off cancels it. Turning it back on is
+  /// handled by the notification sync, which knows the counts for the recap.
   @override
   Future<void> setMonthlySummaryEnabled(bool enabled) async {
     await super.setMonthlySummaryEnabled(enabled);
-    if (enabled) {
-      await scheduleMonthlySummary();
-    } else {
+    if (!enabled) {
       await _plugin.cancel(id: NotificationIds.monthlySummary);
     }
   }
@@ -626,17 +593,6 @@ class NotificationService with NotificationPreferencesMixin {
       await scheduleWeeklyCheckIn();
     } else {
       await _plugin.cancel(id: NotificationIds.weeklyCheckIn);
-    }
-  }
-
-  /// Override to schedule/cancel FY summary when preference changes
-  @override
-  Future<void> setFySummaryEnabled(bool enabled) async {
-    await super.setFySummaryEnabled(enabled);
-    if (enabled) {
-      await scheduleFYSummary();
-    } else {
-      await _plugin.cancel(id: NotificationIds.fySummary);
     }
   }
 
@@ -702,14 +658,6 @@ class NotificationService with NotificationPreferencesMixin {
 
   // --- Scheduled Notifications ---
 
-  /// Schedule weekly summary notification (every Sunday at 10 AM)
-  Future<void> scheduleWeeklySummary() =>
-      _scheduledHandler.scheduleWeeklySummary();
-
-  /// Schedule monthly income summary notification (last day of each month)
-  Future<void> scheduleMonthlySummary() =>
-      _scheduledHandler.scheduleMonthlySummary();
-
   /// Replace the monthly summary with the recap of [now]'s month.
   Future<void> scheduleMonthlyRecap({
     required DateTime now,
@@ -731,24 +679,6 @@ class NotificationService with NotificationPreferencesMixin {
   /// Schedule weekly check-in prompt for Sunday at 6 PM
   Future<void> scheduleWeeklyCheckIn() =>
       _scheduledHandler.scheduleWeeklyCheckIn();
-
-  /// Schedule FY summary notification for April 1st at 10 AM
-  Future<void> scheduleFYSummary() => _scheduledHandler.scheduleFYSummary();
-
-  /// Show immediate FY summary notification with custom data
-  Future<void> showFYSummary({
-    required int previousFY,
-    required double totalIncome,
-    required double totalTDS,
-    required String? topPerformer,
-    String currency = 'INR',
-  }) => _scheduledHandler.showFYSummary(
-    previousFY: previousFY,
-    totalIncome: totalIncome,
-    totalTDS: totalTDS,
-    topPerformer: topPerformer,
-    currency: currency,
-  );
 
   // --- Utility Methods ---
 
@@ -773,12 +703,11 @@ class NotificationService with NotificationPreferencesMixin {
   }
 
   /// Schedule the app-wide recurring reminders (tax deadlines, weekly
-  /// check-in, FY summary), as done at app start. Used to restore them after
+  /// check-in), as done at app start. Used to restore them after
   /// [cancelAll] when another account signs in. Each respects its preference.
   Future<void> scheduleAppWideReminders() async {
     await scheduleTaxReminders();
     await scheduleWeeklyCheckIn();
-    await scheduleFYSummary();
   }
 
   /// Format currency value for display, in the currency's own symbol and
@@ -1124,7 +1053,8 @@ class NotificationService with NotificationPreferencesMixin {
       await _plugin.zonedSchedule(
         id: NotificationIds.activationDay0,
         title: '🎉 Welcome to InvTrack!',
-        body: 'Start tracking your investments and discover your real returns (XIRR). Add your first investment now!',
+        body:
+            'Start tracking your investments and discover your real returns (XIRR). Add your first investment now!',
         scheduledDate: tz.TZDateTime.from(day0Time, tz.local),
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -1144,7 +1074,8 @@ class NotificationService with NotificationPreferencesMixin {
       await _plugin.zonedSchedule(
         id: NotificationIds.activationDay1,
         title: '📊 Add Your First Investment',
-        body: 'Take 30 seconds to add an FD, mutual fund, or any investment. See how your returns really stack up!',
+        body:
+            'Take 30 seconds to add an FD, mutual fund, or any investment. See how your returns really stack up!',
         scheduledDate: tz.TZDateTime.from(day1Time, tz.local),
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -1164,7 +1095,8 @@ class NotificationService with NotificationPreferencesMixin {
       await _plugin.zonedSchedule(
         id: NotificationIds.activationDay3,
         title: '📥 Import Your Investments',
-        body: 'Have a spreadsheet? Import your investments from CSV in seconds. No manual entry needed!',
+        body:
+            'Have a spreadsheet? Import your investments from CSV in seconds. No manual entry needed!',
         scheduledDate: tz.TZDateTime.from(day3Time, tz.local),
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -1184,7 +1116,8 @@ class NotificationService with NotificationPreferencesMixin {
       await _plugin.zonedSchedule(
         id: NotificationIds.activationDay7,
         title: '💡 Did You Know?',
-        body: 'InvTrack shows your real XIRR returns - often different from advertised rates. Start tracking to see the difference!',
+        body:
+            'InvTrack shows your real XIRR returns - often different from advertised rates. Start tracking to see the difference!',
         scheduledDate: tz.TZDateTime.from(day7Time, tz.local),
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -1209,7 +1142,8 @@ class NotificationService with NotificationPreferencesMixin {
       await _plugin.zonedSchedule(
         id: NotificationIds.activationDay14,
         title: '📈 Track Every Investment',
-        body: 'Track FD, P2P and bond returns in one place. Add your first investment to see your real returns.',
+        body:
+            'Track FD, P2P and bond returns in one place. Add your first investment to see your real returns.',
         scheduledDate: tz.TZDateTime.from(day14Time, tz.local),
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,

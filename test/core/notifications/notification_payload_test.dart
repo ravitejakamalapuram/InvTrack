@@ -41,19 +41,26 @@ void main() {
       expect(payload.params['daysToMaturity'], '1');
     });
 
-    test('should parse weekly_summary as dynamicReport', () {
-      final payload = NotificationPayload.parse('weekly_summary');
-
-      expect(payload.type, NotificationPayloadType.dynamicReport);
-      expect(payload.reportParams['reportType'], 'weekly_summary');
-      expect(payload.investmentId, isNull);
-    });
-
-    test('should parse monthly_summary as dynamicReport', () {
-      final payload = NotificationPayload.parse('monthly_summary');
-
-      expect(payload.type, NotificationPayloadType.dynamicReport);
-      expect(payload.reportParams['reportType'], 'monthly_summary');
+    // Reports are gone. A report notification scheduled by an older build
+    // opens Overview, never a report and never an investment named by its text.
+    test('old report payloads open Overview', () {
+      for (final old in [
+        'weekly_summary',
+        'monthly_summary',
+        'monthly_income',
+        'fy_summary',
+        'fy_report',
+        'performance:investment:inv-1:goal:g-1',
+        'goal_progress:g-1:50',
+        'maturity_calendar:investment:inv-1:days:7',
+        'action_required',
+        'portfolio_health',
+      ]) {
+        final payload = NotificationPayload.parse(old);
+        expect(payload.type, NotificationPayloadType.overview, reason: old);
+        expect(payload.investmentId, isNull, reason: old);
+        expect(payload.goalId, isNull, reason: old);
+      }
     });
 
     test('should parse test_notification as unknown', () {
@@ -82,14 +89,6 @@ void main() {
 
       expect(payload7, 'maturity_reminder:test-id:7');
       expect(payload1, 'maturity_reminder:test-id:1');
-    });
-
-    test('weeklySummary should return correct string', () {
-      expect(NotificationPayload.weeklySummary, 'weekly_summary');
-    });
-
-    test('monthlySummary should return correct string', () {
-      expect(NotificationPayload.monthlySummary, 'monthly_summary');
     });
   });
 
@@ -175,17 +174,6 @@ void main() {
       expect(parsed.params['source'], 'weekly_check_in');
     });
 
-    test('fySummary should create correct payload string', () {
-      expect(NotificationPayload.fySummary, 'fy_summary');
-    });
-
-    test('should parse fy_summary payload correctly', () {
-      final parsed = NotificationPayload.parse('fy_summary');
-
-      expect(parsed.type, NotificationPayloadType.dynamicReport);
-      expect(parsed.reportParams['reportType'], 'fy_summary');
-    });
-
     test('goalMilestone should create correct payload string', () {
       final payload = NotificationPayload.goalMilestone('goal-123', 50);
       expect(payload, 'goal_milestone:goal-123:50');
@@ -215,34 +203,6 @@ void main() {
       expect(parsed.type, NotificationPayloadType.goalDetail);
       expect(parsed.goalId, 'test-goal');
       expect(parsed.params['milestonePercent'], '25');
-    });
-
-    test('performanceReport should round-trip correctly', () {
-      final payloadString = NotificationPayload.performanceReport(
-        investmentId: 'inv-123',
-        goalId: 'goal-456',
-      );
-      final parsed = NotificationPayload.parse(payloadString);
-
-      expect(parsed.type, NotificationPayloadType.dynamicReport);
-      expect(parsed.reportParams['reportType'], 'performance');
-      expect(parsed.reportParams['investmentId'], 'inv-123');
-      expect(parsed.reportParams['goalId'], 'goal-456');
-      expect(parsed.reportParams['notificationContext'], 'true');
-    });
-
-    test('maturityCalendarReport should round-trip correctly', () {
-      final payloadString = NotificationPayload.maturityCalendarReport(
-        investmentId: 'inv-789',
-        daysAhead: 30,
-      );
-      final parsed = NotificationPayload.parse(payloadString);
-
-      expect(parsed.type, NotificationPayloadType.dynamicReport);
-      expect(parsed.reportParams['reportType'], 'maturity_calendar');
-      expect(parsed.reportParams['investmentId'], 'inv-789');
-      expect(parsed.reportParams['daysToMaturity'], '30');
-      expect(parsed.reportParams['notificationContext'], 'true');
     });
   });
 }

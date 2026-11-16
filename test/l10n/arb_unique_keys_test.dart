@@ -75,7 +75,6 @@ void main() {
           'investmentType',
           'portfolioHealth',
           'exportAsCsv',
-          'smartInsights',
         ])
           key: arb['@$key'],
       },
@@ -99,9 +98,6 @@ void main() {
               'Portfolio health: dashboard card title and report title',
         },
         'exportAsCsv': {'description': 'Export as CSV menu item title'},
-        'smartInsights': {
-          'description': 'Section title for automatically generated insights',
-        },
       }),
     );
   });

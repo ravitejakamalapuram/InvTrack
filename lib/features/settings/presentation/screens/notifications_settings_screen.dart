@@ -37,16 +37,6 @@ class NotificationsSettingsScreen extends ConsumerWidget {
             footer: l10n.periodicUpdatesAboutPortfolio,
             children: [
               SettingsToggleTile(
-                icon: Icons.calendar_today,
-                iconColor: Colors.blue,
-                title: l10n.weeklySummary,
-                subtitle: l10n.getSummaryEverySunday,
-                value: settings.weeklySummaryEnabled,
-                onChanged: (value) => ref
-                    .read(notificationSettingsProvider.notifier)
-                    .setSetting(NotificationSettingType.weeklySummary, value),
-              ),
-              SettingsToggleTile(
                 icon: Icons.summarize,
                 iconColor: Colors.teal,
                 title: l10n.monthlySummary,
@@ -55,16 +45,6 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 onChanged: (value) => ref
                     .read(notificationSettingsProvider.notifier)
                     .setSetting(NotificationSettingType.monthlySummary, value),
-              ),
-              SettingsToggleTile(
-                icon: Icons.event_note,
-                iconColor: Colors.indigo,
-                title: l10n.notificationToggleFySummary,
-                subtitle: l10n.notificationToggleFySummarySubtitle,
-                value: settings.fySummaryEnabled,
-                onChanged: (value) => ref
-                    .read(notificationSettingsProvider.notifier)
-                    .setSetting(NotificationSettingType.fySummary, value),
               ),
               SettingsToggleTile(
                 icon: Icons.fact_check,

@@ -15,7 +15,6 @@ import 'package:inv_tracker/features/investment/presentation/screens/investment_
 import 'package:inv_tracker/features/goals/presentation/screens/goals_screen.dart';
 import 'package:inv_tracker/features/goals/presentation/screens/create_goal_screen.dart';
 import 'package:inv_tracker/features/goals/presentation/screens/goal_details_screen.dart';
-import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_navigator.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
@@ -25,12 +24,6 @@ import 'package:inv_tracker/features/fire_number/presentation/screens/fire_setti
 import 'package:inv_tracker/features/portfolio_health/presentation/screens/portfolio_health_details_screen.dart';
 import 'package:inv_tracker/features/digest/domain/monthly_digest.dart';
 import 'package:inv_tracker/features/digest/presentation/screens/monthly_recap_screen.dart';
-import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
-import 'package:inv_tracker/features/reports/domain/entities/report_type.dart';
-import 'package:inv_tracker/features/reports/presentation/screens/dynamic_report_screen.dart';
-import 'package:inv_tracker/features/reports/presentation/screens/fy_report_screen.dart';
-import 'package:inv_tracker/features/reports/presentation/screens/reports_home_screen.dart';
-import 'package:inv_tracker/features/reports/presentation/screens/report_builder_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/settings_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
@@ -75,7 +68,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     refresh.refresh();
   });
   ref.listen(onboardingCompleteProvider, (_, _) => refresh.refresh());
-  ref.listen(isReportsTabEnabledProvider, (_, _) => refresh.refresh());
   ref.listen(isIncomeGuardianEnabledProvider, (_, _) => refresh.refresh());
 
   router = GoRouter(
@@ -94,7 +86,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       );
       final onboardingComplete = ref.read(onboardingCompleteProvider);
-      final isReportsEnabled = ref.read(isReportsTabEnabledProvider);
       final isIncomeGuardianEnabled = ref.read(isIncomeGuardianEnabledProvider);
       final isLocked = ref.read(securityProvider).isLocked;
       final isLockScreen = state.uri.toString() == '/lock';
@@ -131,16 +122,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (isLoggedIn && !isLocked && isLockScreen) {
-        return '/';
-      }
-
-      // Reports Feature Gate
-      // Redirect to Overview if user tries to access Reports when feature is disabled
-      final isReportsRoute = state.uri.path.startsWith('/reports');
-      if (isLoggedIn && !isReportsEnabled && isReportsRoute) {
-        LoggerService.debug(
-          'Reports feature disabled, redirecting to Overview',
-        );
         return '/';
       }
 
@@ -229,61 +210,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Tab 4: Reports
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/reports',
-                name: AnalyticsScreens.reports,
-                builder: (context, state) => const ReportsHomeScreen(),
-                routes: [
-                  // Dynamic report builder - handles both wizard and generated reports
-                  GoRoute(
-                    path: 'builder',
-                    name: AnalyticsScreens.reportBuilder,
-                    builder: (context, state) {
-                      final params = state.uri.queryParameters;
-
-                      // If no query params, show the wizard
-                      if (params.isEmpty) {
-                        return const ReportBuilderScreen();
-                      }
-
-                      // Otherwise, parse params and show the generated report
-                      try {
-                        final config = ReportConfiguration.fromQueryParams(
-                          params,
-                        );
-                        // #800: the tax-year report has its own screen.
-                        if (config.reportType == ReportType.fyReport) {
-                          // Query params arrive as strings.
-                          final fyYear = int.tryParse(
-                            '${config.parameters['fyYear']}',
-                          );
-                          if (fyYear != null) {
-                            return FyReportScreen(initialFyYear: fyYear);
-                          }
-                        }
-                        return DynamicReportScreen(configuration: config);
-                      } catch (e, stackTrace) {
-                        // Log parsing errors and show error screen
-                        LoggerService.error(
-                          'Failed to parse report configuration from query params',
-                          error: e,
-                          stackTrace: stackTrace,
-                        );
-                        // Return error state with fallback configuration
-                        return DynamicReportScreen(
-                          configuration: ReportConfiguration.weeklySummary(),
-                        );
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Tab 5: Settings
+          // Tab 4: Settings
           StatefulShellBranch(
             routes: [
               GoRoute(

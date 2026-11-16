@@ -7,7 +7,6 @@ import 'package:timezone/data/latest.dart' as tz_data;
 import '../../mocks/mock_notification_service.dart';
 
 void main() {
-  _reportSummaryGateTests();
   late FakeFlutterLocalNotificationsPlugin fakePlugin;
   late SharedPreferences prefs;
   late NotificationService service;
@@ -17,8 +16,7 @@ void main() {
     fakePlugin = FakeFlutterLocalNotificationsPlugin();
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
-    service = NotificationService(fakePlugin, prefs)
-      ..reportsRouteEnabled = true;
+    service = NotificationService(fakePlugin, prefs);
   });
 
   tearDown(() {
@@ -82,23 +80,13 @@ void main() {
       expect(service.weeklySummaryEnabled, isTrue);
     });
 
-    test(
-      'should persist weekly summary preference and schedule/cancel',
-      () async {
-        await service.setWeeklySummaryEnabled(true);
-        expect(service.weeklySummaryEnabled, isTrue);
-        expect(fakePlugin.scheduledNotifications.length, 1);
+    test('should persist weekly summary preference', () async {
+      await service.setWeeklySummaryEnabled(true);
+      expect(service.weeklySummaryEnabled, isTrue);
 
-        await service.setWeeklySummaryEnabled(false);
-        expect(service.weeklySummaryEnabled, isFalse);
-        expect(
-          fakePlugin.cancelledNotificationIds.contains(
-            NotificationIds.weeklySummary,
-          ),
-          isTrue,
-        );
-      },
-    );
+      await service.setWeeklySummaryEnabled(false);
+      expect(service.weeklySummaryEnabled, isFalse);
+    });
 
     test('income reminders should be enabled by default', () {
       expect(service.incomeRemindersEnabled, isTrue);
@@ -123,11 +111,10 @@ void main() {
     });
 
     test(
-      'should persist monthly summary preference and schedule/cancel',
+      'should persist monthly summary preference and cancel when turned off',
       () async {
         await service.setMonthlySummaryEnabled(true);
         expect(service.monthlySummaryEnabled, isTrue);
-        expect(fakePlugin.scheduledNotifications.isNotEmpty, isTrue);
 
         await service.setMonthlySummaryEnabled(false);
         expect(service.monthlySummaryEnabled, isFalse);
@@ -180,68 +167,6 @@ void main() {
         scheduledTime.isBefore(afterSchedule.add(const Duration(seconds: 6))),
         isTrue,
       );
-    });
-  });
-
-  group('NotificationService - Weekly Summary', () {
-    test('should schedule weekly summary for next Sunday', () async {
-      await service.scheduleWeeklySummary();
-
-      expect(fakePlugin.scheduledNotifications.length, 1);
-      final scheduled = fakePlugin.scheduledNotifications.first;
-      expect(scheduled.id, NotificationIds.weeklySummary);
-      expect(scheduled.title, '📊 Weekly Investment Summary');
-      // Verify it's scheduled for a Sunday (weekday == 7 in DateTime)
-      expect(scheduled.scheduledDate.weekday, DateTime.sunday);
-      // Note: The hour may appear different due to timezone conversion in TZDateTime
-    });
-
-    test('should not schedule weekly summary when disabled', () async {
-      await service.setWeeklySummaryEnabled(false);
-      fakePlugin.reset();
-
-      await service.scheduleWeeklySummary();
-
-      expect(fakePlugin.scheduledNotifications, isEmpty);
-    });
-
-    test('should cancel existing before scheduling new', () async {
-      await service.scheduleWeeklySummary();
-      await service.scheduleWeeklySummary();
-
-      expect(
-        fakePlugin.cancelledNotificationIds.contains(
-          NotificationIds.weeklySummary,
-        ),
-        isTrue,
-      );
-    });
-  });
-
-  group('NotificationService - Monthly Summary', () {
-    test('should schedule monthly summary for end of month', () async {
-      await service.scheduleMonthlySummary();
-
-      expect(fakePlugin.scheduledNotifications.length, 1);
-      final scheduled = fakePlugin.scheduledNotifications.first;
-      expect(scheduled.id, NotificationIds.monthlySummary);
-      expect(scheduled.title, '📈 Monthly Income Summary');
-      // Verify it's scheduled for end of month (day 28, 29, 30, or 31)
-      // The handler builds the date in the device zone; tz.local stays UTC in
-      // tests, so read the day in the process zone, not the tz location.
-      final localDay = DateTime.fromMillisecondsSinceEpoch(
-        scheduled.scheduledDate.millisecondsSinceEpoch,
-      ).day;
-      expect(localDay, greaterThanOrEqualTo(28));
-    });
-
-    test('should not schedule monthly summary when disabled', () async {
-      await service.setMonthlySummaryEnabled(false);
-      fakePlugin.reset();
-
-      await service.scheduleMonthlySummary();
-
-      expect(fakePlugin.scheduledNotifications, isEmpty);
     });
   });
 
@@ -493,8 +418,7 @@ void main() {
 
   group('NotificationService - Cancel All', () {
     test('should cancel all notifications', () async {
-      await service.scheduleWeeklySummary();
-      await service.scheduleMonthlySummary();
+      await service.scheduleWeeklyCheckIn();
 
       await service.cancelAll();
 
@@ -598,9 +522,8 @@ void main() {
         lastIncomeDates: const {},
       );
 
-      // Should have: weekly + monthly + maturity reminders for inv-1 + income reminder for inv-1
-      // Weekly: 1, Monthly: 1, Maturity (7d + 1d): 2, Income: 1 = 5 total
-      expect(fakePlugin.scheduledNotifications.length, greaterThanOrEqualTo(4));
+      // Maturity (7d + 1d): 2 and income: 1, for inv-1.
+      expect(fakePlugin.scheduledNotifications.length, greaterThanOrEqualTo(3));
     });
 
     test('should not schedule for closed investments', () async {
@@ -624,8 +547,8 @@ void main() {
         lastIncomeDates: const {},
       );
 
-      // Only weekly and monthly summaries, no investment-specific reminders
-      expect(fakePlugin.scheduledNotifications.length, 2);
+      // Nothing is scheduled for a closed investment.
+      expect(fakePlugin.scheduledNotifications, isEmpty);
     });
   });
 
@@ -794,7 +717,6 @@ void main() {
 
       expect(fakePlugin.shownNotifications, isEmpty);
     });
-
   });
 
   // Amounts in notifications use the currency's own symbol and number locale
@@ -920,32 +842,6 @@ void main() {
       await service.scheduleWeeklyCheckIn();
 
       expect(fakePlugin.scheduledNotifications.length, 0);
-    });
-  });
-
-  group('NotificationService - FY Summary', () {
-    test('should schedule FY summary for April 1st', () async {
-      await service.scheduleFYSummary();
-
-      expect(fakePlugin.scheduledNotifications.length, 1);
-      final scheduled = fakePlugin.scheduledNotifications.first;
-      expect(scheduled.id, NotificationIds.fySummary);
-      expect(scheduled.title, contains('FY Summary'));
-    });
-
-    test('should show immediate FY summary with data', () async {
-      await service.showFYSummary(
-        previousFY: 2023,
-        totalIncome: 150000,
-        totalTDS: 15000,
-        topPerformer: 'P2P Investment',
-      );
-
-      expect(fakePlugin.shownNotifications.length, 1);
-      final notification = fakePlugin.shownNotifications.first;
-      expect(notification.title, contains('FY2023-2024'));
-      expect(notification.body, contains('Income'));
-      expect(notification.body, contains('TDS'));
     });
   });
 
@@ -1173,19 +1069,6 @@ void main() {
       );
 
       expect(fakePlugin.shownNotifications.length, 1);
-    });
-
-    test('should not show FY summary when permissions denied', () async {
-      fakePlugin.permissionsGranted = false;
-
-      await service.showFYSummary(
-        previousFY: 2023,
-        totalIncome: 100000,
-        totalTDS: 10000,
-        topPerformer: 'Test Investment',
-      );
-
-      expect(fakePlugin.shownNotifications.length, 0);
     });
 
     test(
@@ -1564,7 +1447,7 @@ void main() {
         fakePlugin,
         prefs,
         clock: () => fakeNow,
-      )..reportsRouteEnabled = true;
+      );
     });
 
     InvestmentEntity investment({
@@ -1657,7 +1540,7 @@ void main() {
     test(
       'turning income reminders off cancels the pending income alarms only',
       () async {
-        await clockedService.scheduleWeeklySummary();
+        await clockedService.scheduleWeeklyCheckIn();
         await clockedService.scheduleIncomeReminder(
           investmentId: 'inv-a',
           investmentName: 'A',
@@ -1671,14 +1554,14 @@ void main() {
           lastIncomeDate: DateTime(2026, 8, 1),
         );
         expect(await pendingIds(), {
-          NotificationIds.weeklySummary,
+          NotificationIds.weeklyCheckIn,
           NotificationIds.incomeReminder('inv-a'),
           NotificationIds.incomeReminder('inv-b'),
         });
 
         await clockedService.setIncomeRemindersEnabled(false);
 
-        expect(await pendingIds(), {NotificationIds.weeklySummary});
+        expect(await pendingIds(), {NotificationIds.weeklyCheckIn});
       },
     );
 
@@ -1767,10 +1650,7 @@ void main() {
           ),
         ], lastIncomeDates: const {});
 
-        expect(await pendingIds(), {
-          NotificationIds.weeklySummary,
-          NotificationIds.monthlySummary,
-        });
+        expect(await pendingIds(), isEmpty);
       },
     );
 
@@ -1809,8 +1689,6 @@ void main() {
       ], lastIncomeDates: const {});
 
       expect(await pendingIds(), {
-        NotificationIds.weeklySummary,
-        NotificationIds.monthlySummary,
         NotificationIds.maturityReminder1Day('inv-gulf-fd'),
         NotificationIds.incomeReminder('inv-p2p'),
       });
@@ -1841,70 +1719,11 @@ void main() {
         investment(startDate: DateTime(2026, 1, 15)),
       ], lastIncomeDates: const {});
 
-      expect(await pendingIds(), {
-        NotificationIds.weeklySummary,
-        NotificationIds.monthlySummary,
-        NotificationIds.incomeReminder('inv-p2p'),
-      });
+      expect(await pendingIds(), {NotificationIds.incomeReminder('inv-p2p')});
       expect(
         scheduledAt(NotificationIds.incomeReminder('inv-p2p')),
         DateTime(2026, 10, 15, 9),
       );
-    });
-  });
-}
-
-void _reportSummaryGateTests() {
-  late FakeFlutterLocalNotificationsPlugin plugin;
-  late NotificationService service;
-
-  setUp(() async {
-    tz_data.initializeTimeZones();
-    plugin = FakeFlutterLocalNotificationsPlugin();
-    SharedPreferences.setMockInitialValues({});
-    service = NotificationService(
-      plugin,
-      await SharedPreferences.getInstance(),
-    );
-  });
-
-  group('A29: summaries that open Reports', () {
-    test('are not scheduled while the Reports route is disabled', () async {
-      service.reportsRouteEnabled = false;
-
-      await service.scheduleWeeklySummary();
-      await service.scheduleMonthlySummary();
-      await service.scheduleFYSummary();
-
-      expect(plugin.scheduledNotifications, isEmpty);
-      expect(
-        plugin.cancelledNotificationIds,
-        containsAll([
-          NotificationIds.weeklySummary,
-          NotificationIds.monthlySummary,
-          NotificationIds.fySummary,
-        ]),
-      );
-    });
-
-    test('are scheduled once the Reports route is enabled', () async {
-      service.reportsRouteEnabled = true;
-
-      await service.scheduleWeeklySummary();
-      await service.scheduleMonthlySummary();
-      await service.scheduleFYSummary();
-
-      expect(plugin.scheduledNotifications.map((n) => n.id), [
-        NotificationIds.weeklySummary,
-        NotificationIds.monthlySummary,
-        NotificationIds.fySummary,
-      ]);
-    });
-
-    test('are off by default, until the app says Reports is on', () async {
-      await service.scheduleWeeklySummary();
-
-      expect(plugin.scheduledNotifications, isEmpty);
     });
   });
 }

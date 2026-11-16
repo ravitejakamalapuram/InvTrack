@@ -20,13 +20,6 @@ enum FeatureFlag {
   /// - Auto-save to Firestore
   portfolioHealthScore('portfolio_health_score', 'Portfolio Health Score'),
 
-  /// Reports Tab (Developer Feature)
-  /// - Smart Insights with auto-generated investment alerts
-  /// - DIY Report Builder with custom configurations
-  /// - Weekly/Monthly summaries and analytics
-  /// - Off until the FY report is real (A60); most report cards are stubs
-  reportsTab('reports_tab', 'Reports Tab'),
-
   /// Future: Predictive Risk Alerts
   predictiveAlerts('predictive_alerts', 'Predictive Risk Alerts'),
 
@@ -170,15 +163,6 @@ final isAiAssistantEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.aiAssistant] ?? false,
-    ),
-  );
-});
-
-/// Convenience provider for checking if Reports Tab is enabled
-final isReportsTabEnabledProvider = Provider<bool>((ref) {
-  return ref.watch(
-    featureFlagsProvider.select(
-      (flags) => flags[FeatureFlag.reportsTab] ?? false,
     ),
   );
 });

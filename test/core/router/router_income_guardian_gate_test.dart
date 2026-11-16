@@ -28,7 +28,6 @@ void main() {
         securityProvider.overrideWith(_TestSecurityNotifier.new),
         onboardingCompleteProvider.overrideWith((ref) async => true),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
-        isReportsTabEnabledProvider.overrideWithValue(false),
         isIncomeGuardianEnabledProvider.overrideWithValue(enabled),
       ],
     );

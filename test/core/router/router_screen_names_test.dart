@@ -58,7 +58,6 @@ void main() {
         securityProvider.overrideWith(_TestSecurityNotifier.new),
         onboardingCompleteProvider.overrideWith((ref) async => false),
         analyticsServiceProvider.overrideWithValue(analytics),
-        isReportsTabEnabledProvider.overrideWithValue(false),
         isIncomeGuardianEnabledProvider.overrideWithValue(false),
       ],
     );
@@ -83,8 +82,6 @@ void main() {
       '/goals': 'goals',
       '/goals/create': 'goal_create',
       '/goals/:id': 'goal_detail',
-      '/reports': 'reports',
-      '/reports/builder': 'report_builder',
       '/settings': 'settings',
       '/auth/signin': 'sign_in',
       '/lock': 'lock',
@@ -96,6 +93,24 @@ void main() {
       '/income-calendar': 'income_calendar',
       '/recap/:month': 'monthly_recap',
     });
+  });
+
+  // The Reports tab was removed: the bar is Overview, Investments, Goals and
+  // Settings, and the tab index the nav bar uses is the branch index.
+  test('the four tabs are Overview, Investments, Goals and Settings', () {
+    final shells = <StatefulShellRoute>[];
+    _walk(
+      container.read(routerProvider).configuration.routes,
+      '/',
+      <String, String?>{},
+      shells,
+    );
+
+    final roots = [
+      for (final branch in shells.single.branches)
+        (branch.routes.single as GoRoute).path,
+    ];
+    expect(roots, ['/', '/investments', '/goals', '/settings']);
   });
 
   // go_router forwards the events of each tab's Navigator to the router's

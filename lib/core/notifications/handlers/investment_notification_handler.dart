@@ -16,14 +16,11 @@ import 'package:timezone/timezone.dart' as tz;
 /// - Maturity reminders
 /// - Investment milestones
 /// - Multi-device sync (reschedule all)
-/// - Summary notifications
 class InvestmentNotificationHandler with NotificationPreferencesMixin {
   final FlutterLocalNotificationsPlugin _plugin;
   final SharedPreferences _prefs;
   final Future<void> Function() ensureInitialized;
   final Future<bool> Function() ensurePermissionsForShow;
-  final Future<void> Function() scheduleWeeklySummary;
-  final Future<void> Function() scheduleMonthlySummary;
   final DateTime Function() _clock;
 
   InvestmentNotificationHandler({
@@ -31,8 +28,6 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     required SharedPreferences prefs,
     required this.ensureInitialized,
     required this.ensurePermissionsForShow,
-    required this.scheduleWeeklySummary,
-    required this.scheduleMonthlySummary,
     DateTime Function()? clock,
   }) : _plugin = plugin,
        _prefs = prefs,
@@ -487,13 +482,6 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       'Re-scheduling notifications',
       metadata: {'investmentCount': investments.length},
     );
-
-    try {
-      await scheduleWeeklySummary();
-      await scheduleMonthlySummary();
-    } catch (e) {
-      LoggerService.warn('Error scheduling summary notifications', error: e);
-    }
 
     final wantedIds = <int>{};
     // Open investments whose income alarm is not wanted (the payout mode pays

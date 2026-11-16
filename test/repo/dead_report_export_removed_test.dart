@@ -50,11 +50,9 @@ void main() {
     }
   });
 
-  test('the pdf package is used only by the reachable Tax-Year PDF service', () {
-    const allowed =
-        'lib/features/reports/data/services/fy_report_pdf_service.dart';
-
-    // Only import/export directives count, not comments or strings.
+  test('no code uses the pdf package any more', () {
+    // The Tax-Year PDF went with the Reports tab, so the package is gone from
+    // pubspec.yaml too. Only import/export directives count.
     final importers = Directory('lib')
         .listSync(recursive: true)
         .whereType<File>()
@@ -62,21 +60,7 @@ void main() {
         .where((f) => importsPdfPackage(f.readAsStringSync()))
         .map((f) => f.path)
         .toList();
-    expect(importers, [allowed]);
-
-    // Reachable: the report screen imports the button, which imports the
-    // service.
-    expect(
-      File(
-        'lib/features/reports/presentation/screens/dynamic_report_screen.dart',
-      ).readAsStringSync(),
-      contains('fy_pdf_export_button.dart'),
-    );
-    expect(
-      File(
-        'lib/features/reports/presentation/widgets/fy_pdf_export_button.dart',
-      ).readAsStringSync(),
-      contains('fy_report_pdf_service.dart'),
-    );
+    expect(importers, isEmpty);
+    expect(File('pubspec.yaml').readAsStringSync(), isNot(contains('pdf:')));
   });
 }

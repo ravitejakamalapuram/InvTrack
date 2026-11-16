@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/notifications/notification_settings_provider.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -70,14 +69,12 @@ void main() {
 
   Future<ProviderContainer> pumpInitializer(
     WidgetTester tester, {
-    bool reports = true,
     String currency = 'INR',
   }) async {
     _currencyInitial = currency;
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          isReportsTabEnabledProvider.overrideWithValue(reports),
           sharedPreferencesProvider.overrideWithValue(prefs),
           activeInvestmentBasicStatsMapProvider.overrideWithValue(
             const AsyncData({}),
@@ -167,29 +164,13 @@ void main() {
 
       final ids = fakePlugin.scheduledNotifications.map((n) => n.id);
       expect(ids, contains(NotificationIds.weeklyCheckIn));
-      expect(ids, contains(NotificationIds.fySummary));
-    });
-
-    // A29: the FY summary opens a report, so it waits for the Reports route.
-    testWidgets('keeps report summaries off while Reports is off', (
-      tester,
-    ) async {
-      await pumpInitializer(tester, reports: false);
-      auth.add(user('uid-a'));
-      await settle(tester);
-      auth.add(null);
-      await settle(tester);
-      auth.add(user('uid-b'));
-      await settle(tester);
-
-      final ids = fakePlugin.scheduledNotifications.map((n) => n.id);
-      expect(ids, contains(NotificationIds.weeklyCheckIn));
+      // The weekly and FY report summaries are gone with the Reports tab.
       expect(ids, isNot(contains(NotificationIds.fySummary)));
       expect(ids, isNot(contains(NotificationIds.weeklySummary)));
     });
   });
 
-  // A29 (#780) part 2: tax, check-in, FY and activation reminders are
+  // A29 (#780) part 2: tax, check-in and activation reminders are
   // scheduled after sign-in only, from this one place.
   group('NotificationSyncInitializer - scheduling after sign-in', () {
     testWidgets('signing in on a fresh install schedules the app-wide '

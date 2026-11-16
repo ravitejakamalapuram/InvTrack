@@ -138,8 +138,7 @@ const _bright = <String, int>{
       3,
   // The tint behind the closed-investment banner (its icon takes the text
   // colour).
-  'lib/features/investment/presentation/screens/add_transaction_screen.dart':
-      1,
+  'lib/features/investment/presentation/screens/add_transaction_screen.dart': 1,
   // A gradient behind a white icon.
   'lib/features/onboarding/presentation/screens/onboarding_screen.dart': 1,
   // The tile's tint source (its icon takes the text colour).
@@ -151,7 +150,6 @@ const _bright = <String, int>{
   'lib/features/portfolio_health/presentation/ui_extensions/score_tier_ui.dart':
       1,
   // The tint behind the insight icon.
-  'lib/features/reports/presentation/widgets/smart_insight_card.dart': 1,
   // The offline banner's amber fill; its icon and label take `onFill` of it.
   'lib/core/widgets/connectivity_listener.dart': 1,
   // The tint of the danger-zone tile and the Replace option, the amber

@@ -56,9 +56,6 @@ enum NotificationPayloadType {
   /// Navigate to goal detail screen
   goalDetail,
 
-  /// Navigate to dynamic report screen with filters
-  dynamicReport,
-
   /// Navigate to Income Guardian screen (expected cash flows)
   incomeGuardian,
 
@@ -79,16 +76,11 @@ class NotificationPayload {
   final String? goalId;
   final Map<String, String> params;
 
-  /// Report configuration parameters (for dynamicReport type)
-  /// Format: reportType, investmentId, goalId, startDate, endDate
-  final Map<String, String> reportParams;
-
   const NotificationPayload({
     required this.type,
     this.investmentId,
     this.goalId,
     this.params = const {},
-    this.reportParams = const {},
   });
 
   /// Parse a payload string into a structured payload
@@ -96,8 +88,6 @@ class NotificationPayload {
   /// Payload formats:
   /// - `income_reminder:investmentId` - Navigate to investment detail with add cash flow prompt
   /// - `maturity_reminder:investmentId:days` - Navigate to investment detail
-  /// - `weekly_summary` - Navigate to overview
-  /// - `monthly_summary` - Navigate to overview
   /// - `test_notification` - No navigation
   factory NotificationPayload.parse(String? payloadString) {
     if (payloadString == null || payloadString.isEmpty) {
@@ -131,34 +121,20 @@ class NotificationPayload {
           params: {if (parts.length > 1) 'month': parts[1]},
         );
 
+      // Report notifications from before the Reports tab was removed: opening
+      // one lands on Overview, because there is no report to show.
       case 'weekly_summary':
-        // New: Navigate to dynamic weekly summary report
-        return NotificationPayload(
-          type: NotificationPayloadType.dynamicReport,
-          reportParams: {
-            'reportType': 'weekly_summary',
-            'notificationContext': 'true',
-          },
-        );
-
       case 'monthly_summary':
-        // New: Navigate to dynamic monthly summary report
-        return NotificationPayload(
-          type: NotificationPayloadType.dynamicReport,
-          reportParams: {
-            'reportType': 'monthly_summary',
-            'notificationContext': 'true',
-          },
-        );
-
       case 'monthly_income':
-        // New: Navigate to dynamic monthly income report
-        return NotificationPayload(
-          type: NotificationPayloadType.dynamicReport,
-          reportParams: {
-            'reportType': 'monthly_income',
-            'notificationContext': 'true',
-          },
+      case 'fy_summary':
+      case 'fy_report':
+      case 'performance':
+      case 'goal_progress':
+      case 'maturity_calendar':
+      case 'action_required':
+      case 'portfolio_health':
+        return const NotificationPayload(
+          type: NotificationPayloadType.overview,
         );
 
       case 'milestone':
@@ -181,107 +157,6 @@ class NotificationPayload {
         return NotificationPayload(
           type: NotificationPayloadType.investmentList,
           params: {'flowType': 'income', 'source': 'weekly_check_in'},
-        );
-
-      case 'fy_summary':
-        // New: Navigate to dynamic FY summary report
-        return NotificationPayload(
-          type: NotificationPayloadType.dynamicReport,
-          reportParams: {
-            'reportType': 'fy_summary',
-            'notificationContext': 'true',
-          },
-        );
-
-      case 'fy_report':
-        // New: Navigate to dynamic FY report
-        return NotificationPayload(
-          type: NotificationPayloadType.dynamicReport,
-          reportParams: {
-            'reportType': 'fy_report',
-            'notificationContext': 'true',
-          },
-        );
-
-      case 'performance':
-        // New: Navigate to dynamic performance report
-        // Reconstruct colon-delimited params from pre-split parts
-        // e.g., ['investment', 'inv1', 'goal', 'g1'] → ['investment:inv1', 'goal:g1']
-        final remainingParts = parts.skip(1).toList();
-        final paramPairs = <String>[];
-        for (var i = 0; i < remainingParts.length; i += 2) {
-          if (i + 1 < remainingParts.length) {
-            paramPairs.add('${remainingParts[i]}:${remainingParts[i + 1]}');
-          }
-        }
-        final paramMap = _parseColonParams(paramPairs);
-        return NotificationPayload(
-          type: NotificationPayloadType.dynamicReport,
-          reportParams: {
-            'reportType': 'performance',
-            'notificationContext': 'true',
-            if (paramMap['investment'] != null)
-              'investmentId': paramMap['investment']!,
-            if (paramMap['goal'] != null)
-              'goalId': paramMap['goal']!,
-          },
-        );
-
-      case 'goal_progress':
-        // New: Navigate to dynamic goal progress report
-        return NotificationPayload(
-          type: NotificationPayloadType.dynamicReport,
-          goalId: parts.length > 1 ? parts[1] : null,
-          reportParams: {
-            'reportType': 'goal_progress',
-            'notificationContext': 'true',
-            if (parts.length > 1) 'goalId': parts[1],
-            if (parts.length > 2) 'milestonePercent': parts[2],
-          },
-        );
-
-      case 'maturity_calendar':
-        // New: Navigate to dynamic maturity calendar report
-        // Reconstruct colon-delimited params from pre-split parts
-        // e.g., ['investment', 'inv1', 'days', '7'] → ['investment:inv1', 'days:7']
-        final remainingParts = parts.skip(1).toList();
-        final paramPairs = <String>[];
-        for (var i = 0; i < remainingParts.length; i += 2) {
-          if (i + 1 < remainingParts.length) {
-            paramPairs.add('${remainingParts[i]}:${remainingParts[i + 1]}');
-          }
-        }
-        final paramMap = _parseColonParams(paramPairs);
-        return NotificationPayload(
-          type: NotificationPayloadType.dynamicReport,
-          reportParams: {
-            'reportType': 'maturity_calendar',
-            'notificationContext': 'true',
-            if (paramMap['investment'] != null)
-              'investmentId': paramMap['investment']!,
-            if (paramMap['days'] != null)
-              'daysToMaturity': paramMap['days']!,
-          },
-        );
-
-      case 'action_required':
-        // New: Navigate to dynamic action required report
-        return NotificationPayload(
-          type: NotificationPayloadType.dynamicReport,
-          reportParams: {
-            'reportType': 'action_required',
-            'notificationContext': 'true',
-          },
-        );
-
-      case 'portfolio_health':
-        // New: Navigate to dynamic portfolio health report
-        return NotificationPayload(
-          type: NotificationPayloadType.dynamicReport,
-          reportParams: {
-            'reportType': 'portfolio_health',
-            'notificationContext': 'true',
-          },
         );
 
       case 'goal_milestone':
@@ -366,20 +241,6 @@ class NotificationPayload {
     }
   }
 
-  /// Parse colon-separated key:value pairs into a map.
-  ///
-  /// Example: ['investment:inv123', 'days:7'] → {'investment': 'inv123', 'days': '7'}
-  static Map<String, String> _parseColonParams(List<String> parts) {
-    final result = <String, String>{};
-    for (final part in parts) {
-      final keyValue = part.split(':');
-      if (keyValue.length == 2) {
-        result[keyValue[0]] = keyValue[1];
-      }
-    }
-    return result;
-  }
-
   /// Create a payload string for income reminder
   static String incomeReminder(String investmentId) =>
       'income_reminder:$investmentId';
@@ -388,51 +249,8 @@ class NotificationPayload {
   static String maturityReminder(String investmentId, int daysToMaturity) =>
       'maturity_reminder:$investmentId:$daysToMaturity';
 
-  // ============ Report Notification Payloads ============
-
-  /// Create a payload string for weekly summary report
-  static String get weeklySummary => 'weekly_summary';
-
-  /// Create a payload string for monthly summary report
-  static String get monthlySummary => 'monthly_summary';
-
   /// Create a payload string for the monthly recap of [monthKey] (yyyy-MM)
   static String monthlyRecap(String monthKey) => 'monthly_recap:$monthKey';
-
-  /// Create a payload string for monthly income report
-  static String get monthlyIncome => 'monthly_income';
-
-  /// Create a payload string for FY summary report
-  static String get fySummary => 'fy_summary';
-
-  /// Create a payload string for performance report
-  static String performanceReport({String? investmentId, String? goalId}) {
-    final parts = ['performance'];
-    if (investmentId != null) parts.add('investment:$investmentId');
-    if (goalId != null) parts.add('goal:$goalId');
-    return parts.join(':');
-  }
-
-  /// Create a payload string for goal progress report
-  static String goalProgressReport(String goalId, {int? milestonePercent}) {
-    final parts = ['goal_progress', goalId];
-    if (milestonePercent != null) parts.add(milestonePercent.toString());
-    return parts.join(':');
-  }
-
-  /// Create a payload string for maturity calendar report
-  static String maturityCalendarReport({String? investmentId, int? daysAhead}) {
-    final parts = ['maturity_calendar'];
-    if (investmentId != null) parts.add('investment:$investmentId');
-    if (daysAhead != null) parts.add('days:$daysAhead');
-    return parts.join(':');
-  }
-
-  /// Create a payload string for action required report
-  static String get actionRequired => 'action_required';
-
-  /// Create a payload string for portfolio health report
-  static String get portfolioHealth => 'portfolio_health';
 
   // ============ Legacy/Phase 3 Notification Payloads ============
 
@@ -479,24 +297,21 @@ class NotificationPayload {
   static String incomeGuardianOverdue(
     String investmentId,
     String expectedCashFlowId,
-  ) =>
-      'income_guardian_overdue:$investmentId:$expectedCashFlowId';
+  ) => 'income_guardian_overdue:$investmentId:$expectedCashFlowId';
 
   /// Create a payload string for upcoming payment reminder
   static String incomeGuardianUpcoming(
     String investmentId,
     String expectedCashFlowId,
-  ) =>
-      'income_guardian_upcoming:$investmentId:$expectedCashFlowId';
+  ) => 'income_guardian_upcoming:$investmentId:$expectedCashFlowId';
 
   /// Create a payload string for payment received confirmation
   static String incomeGuardianReceived(
     String investmentId,
     String expectedCashFlowId,
-  ) =>
-      'income_guardian_received:$investmentId:$expectedCashFlowId';
+  ) => 'income_guardian_received:$investmentId:$expectedCashFlowId';
 
   @override
   String toString() =>
-      'NotificationPayload(type: $type, investmentId: $investmentId, goalId: $goalId, params: $params, reportParams: $reportParams)';
+      'NotificationPayload(type: $type, investmentId: $investmentId, goalId: $goalId, params: $params)';
 }

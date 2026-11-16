@@ -12,14 +12,12 @@ import '../../../../mocks/mock_notification_service.dart';
 
 void main() {
   const titles = [
-    'Weekly Summary',
     'Monthly Summary',
     'Income Reminders',
     'Maturity Reminders',
     'Investment Milestones',
     'Tax Reminders',
     'Weekly Check-In',
-    'Financial Year Summary',
     'Goal Milestones',
     'Goals At Risk',
     'Stale Goals',

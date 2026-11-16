@@ -17,18 +17,10 @@ class _TestSecurity extends SecurityNotifier {
   void setLocked(bool v) => state = state.copyWith(isLocked: v);
 }
 
-class _Flag extends Notifier<bool> {
-  @override
-  bool build() => false;
-  void set(bool v) => state = v;
-}
-
-final _reportsFlag = NotifierProvider<_Flag, bool>(_Flag.new);
-
 /// A27: one GoRouter for the whole session. Rebuilding it on a lock, auth,
-/// onboarding or flag change reset navigation to '/' and dropped open forms.
+/// or onboarding change reset navigation to '/' and dropped open forms.
 void main() {
-  testWidgets('same router across lock, flag and onboarding changes, and '
+  testWidgets('same router across lock and onboarding changes, and '
       'redirects follow the new state', (tester) async {
     final container = ProviderContainer(
       overrides: [
@@ -38,9 +30,6 @@ void main() {
         securityProvider.overrideWith(_TestSecurity.new),
         onboardingCompleteProvider.overrideWith((ref) async => true),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
-        isReportsTabEnabledProvider.overrideWith(
-          (ref) => ref.watch(_reportsFlag),
-        ),
         isIncomeGuardianEnabledProvider.overrideWithValue(false),
       ],
     );
@@ -82,11 +71,6 @@ void main() {
     expect(identical(container.read(routerProvider), router), isTrue);
     expect(await resolve('/lock'), '/');
 
-    container.read(_reportsFlag.notifier).set(true);
-    await tester.pump();
-    expect(identical(container.read(routerProvider), router), isTrue);
-    expect(await resolve('/reports'), '/reports');
-
     container.invalidate(onboardingCompleteProvider);
     await tester.pump();
     await tester.pump();
@@ -105,9 +89,6 @@ void main() {
         securityProvider.overrideWith(_TestSecurity.new),
         onboardingCompleteProvider.overrideWith((ref) async => true),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
-        isReportsTabEnabledProvider.overrideWith(
-          (ref) => ref.watch(_reportsFlag),
-        ),
         isIncomeGuardianEnabledProvider.overrideWithValue(false),
       ],
     );
