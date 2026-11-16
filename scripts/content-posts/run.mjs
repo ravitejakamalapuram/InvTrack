@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { importPosts, postNextToTelegram } from './lib.mjs';
-import { addPending, markImported, pullApprovedPosts } from './inbox.mjs';
+import { addPending, getStatus, markImported, pullApprovedPosts } from './inbox.mjs';
 import { formatPost } from '../telegram-tip/post-tip.mjs';
 
 // firebase-admin is installed under scripts/account-deletion (one lockfile for the repo's jobs).
@@ -44,7 +44,9 @@ async function main() {
     // Needs no database. Sends one harmless item so the owner can see it in Telegram and on the dashboard.
     const opts = { url: process.env.INBOX_URL, token: process.env.INBOX_TOKEN };
     if (!opts.url || !opts.token) throw new Error('inbox-test needs INBOX_URL and INBOX_TOKEN');
-    await addPending({ id: `inbox-test-${new Date().toISOString().slice(0, 10)}`, type: 'decision',
+    const id = `inbox-test-${new Date().toISOString().slice(0, 10)}`;
+    if (arg === 'check') { console.log(`Test item status: ${await getStatus(id, opts)}`); return; }
+    await addPending({ id, type: 'decision',
       title: 'Inbox test: tap Approve', summary: 'Checks that InvTrack can reach your inbox. Nothing happens when you tap.' }, opts);
     console.log('Test item sent to the inbox.');
     return;

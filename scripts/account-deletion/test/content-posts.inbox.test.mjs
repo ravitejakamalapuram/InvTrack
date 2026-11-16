@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addPending, pullApprovedPosts, markImported } from '../../content-posts/inbox.mjs';
+import { addPending, getStatus, pullApprovedPosts, markImported } from '../../content-posts/inbox.mjs';
 
 const item = (o = {}) => ({
   id: 'rule-of-72', type: 'telegram-post', status: 'approved', title: 'T', version: 3,
@@ -63,4 +63,11 @@ test('addPending adds a waiting item labelled as InvTrack', async () => {
 test('addPending needs an id and a title', async () => {
   await assert.rejects(addPending({ title: 'T' }, opts(fakeInbox([]))), /id and title/);
   await assert.rejects(addPending({ id: 'x' }, opts(fakeInbox([]))), /id and title/);
+});
+
+test('getStatus reads one item back and returns only its status', async () => {
+  const calls = [];
+  const f = async (url, init) => { calls.push(JSON.parse(init.body)); return { ok: true, json: async () => ({ ok: true, item: { id: 'x', status: 'approved', title: 'secret title' } }) }; };
+  assert.equal(await getStatus('x', opts(f)), 'approved');
+  assert.deepEqual(calls[0], { action: 'get', id: 'x', token: 'secret-tok' });
 });
