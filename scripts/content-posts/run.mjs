@@ -1,6 +1,7 @@
 // Command line for the shared content list.
 //
 //   node run.mjs import posts.json        add approved posts to Firestore (a JSON array: id, title, body, approvedAt)
+//   node run.mjs inbox-test               send one test item to the shared inbox (needs INBOX_URL and INBOX_TOKEN)
 //   node run.mjs import-inbox             add posts approved in the shared inbox (needs INBOX_URL and INBOX_TOKEN), skipping existing ones
 //   node run.mjs post [--dry-run]         send the next approved post to Telegram and record it
 //   node run.mjs import posts.json --create-only   same, but skip posts that already exist
@@ -13,7 +14,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { importPosts, postNextToTelegram } from './lib.mjs';
-import { markImported, pullApprovedPosts } from './inbox.mjs';
+import { addPending, markImported, pullApprovedPosts } from './inbox.mjs';
 import { formatPost } from '../telegram-tip/post-tip.mjs';
 
 // firebase-admin is installed under scripts/account-deletion (one lockfile for the repo's jobs).
@@ -39,6 +40,15 @@ export function startOfIndiaDay(now) {
 
 async function main() {
   const [cmd, arg] = process.argv.slice(2);
+  if (cmd === 'inbox-test') {
+    // Needs no database. Sends one harmless item so the owner can see it in Telegram and on the dashboard.
+    const opts = { url: process.env.INBOX_URL, token: process.env.INBOX_TOKEN };
+    if (!opts.url || !opts.token) throw new Error('inbox-test needs INBOX_URL and INBOX_TOKEN');
+    await addPending({ id: `inbox-test-${new Date().toISOString().slice(0, 10)}`, type: 'decision',
+      title: 'Inbox test: tap Approve', summary: 'Checks that InvTrack can reach your inbox. Nothing happens when you tap.' }, opts);
+    console.log('Test item sent to the inbox.');
+    return;
+  }
   const { applicationDefault, initializeApp } = require('firebase-admin/app');
   const { getFirestore } = require('firebase-admin/firestore');
   initializeApp({ credential: applicationDefault(), projectId: process.env.GCLOUD_PROJECT || 'invtracker-b19d1' });
