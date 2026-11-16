@@ -399,14 +399,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   }
 
   /// The text to send as the investment's custom type (#936): what is typed
-  /// in the field, null when it is blank or the type is not Other. While the
-  /// feature is off the field is hidden, and an edit sends back the label the
-  /// investment already has, so saving it never loses one.
+  /// in the field, null when it is blank or the type is not Other.
   String? _customTypeForSave() {
     if (_selectedType != InvestmentType.other) return null;
-    if (!ref.read(isCustomInvestmentTypesEnabledProvider)) {
-      return widget.investmentToEdit?.customTypeLabel;
-    }
     final typed = _customTypeController.text.trim();
     return typed.isEmpty ? null : typed;
   }
@@ -674,9 +669,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   Widget _buildFirstInvestmentForm(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final showCustomType =
-        _selectedType == InvestmentType.other &&
-        ref.watch(isCustomInvestmentTypesEnabledProvider);
+    final showCustomType = _selectedType == InvestmentType.other;
     // The date also dates the first cash flow, which exists only with an amount
     // that can be saved.
     final startDateHelper = !_amountTyped
@@ -798,10 +791,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     if (_firstInvestmentForm) return _buildFirstInvestmentForm(context);
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // The flag is read only while Other is selected.
-    final showCustomType =
-        _selectedType == InvestmentType.other &&
-        ref.watch(isCustomInvestmentTypesEnabledProvider);
+    final showCustomType = _selectedType == InvestmentType.other;
 
     return Scaffold(
       backgroundColor: isDark

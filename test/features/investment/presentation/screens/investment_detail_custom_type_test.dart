@@ -1,11 +1,8 @@
 // #936: the detail screen's type chip shows an Other investment's custom
-// label while the feature flag is on, and says Other for a legacy record or
-// with the flag off. Mutation guard: without the flag check the second test
-// fails.
+// label, and says Other for a legacy record.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
@@ -80,18 +77,13 @@ final _flows = [
   ),
 ];
 
-Future<void> _pump(
-  WidgetTester tester,
-  InvestmentEntity investment, {
-  required bool flag,
-}) async {
+Future<void> _pump(WidgetTester tester, InvestmentEntity investment) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
-        isCustomInvestmentTypesEnabledProvider.overrideWithValue(flag),
         privacyModeProvider.overrideWith(_PrivacyOff.new),
         currencyCodeProvider.overrideWithValue('INR'),
         currencyConversionServiceProvider.overrideWithValue(
@@ -115,36 +107,21 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('flag on: the chip shows the custom label', (tester) async {
-    await _pump(tester, _album(label: 'Stamps'), flag: true);
+  testWidgets('the chip shows the custom label', (tester) async {
+    await _pump(tester, _album(label: 'Stamps'));
 
     expect(find.text('Stamps'), findsOneWidget);
     expect(find.text('Other'), findsNothing);
   });
 
-  testWidgets('flag off: the chip says Other and the label is not shown', (
-    tester,
-  ) async {
-    await _pump(tester, _album(label: 'Stamps'), flag: false);
-
-    expect(find.text('Other'), findsOneWidget);
-    expect(find.text('Stamps'), findsNothing);
-  });
-
-  testWidgets('a legacy Other investment says Other with the flag on', (
-    tester,
-  ) async {
-    await _pump(tester, _album(), flag: true);
+  testWidgets('a legacy Other investment says Other', (tester) async {
+    await _pump(tester, _album());
 
     expect(find.text('Other'), findsOneWidget);
   });
 
   testWidgets('a built-in type never shows a label', (tester) async {
-    await _pump(
-      tester,
-      _album(label: 'Stamps', type: InvestmentType.bonds),
-      flag: true,
-    );
+    await _pump(tester, _album(label: 'Stamps', type: InvestmentType.bonds));
 
     expect(find.text('Bonds/Debentures'), findsOneWidget);
     expect(find.text('Stamps'), findsNothing);

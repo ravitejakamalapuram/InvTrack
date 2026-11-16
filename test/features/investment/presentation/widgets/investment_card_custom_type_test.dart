@@ -1,13 +1,11 @@
 // #936: an investment of type Other shows its custom label where the card
 // said "Other", in the visible chip and in the screen-reader label. An Other
-// investment with no label (every one saved before this) still shows "Other",
-// and nothing changes while the feature flag is off.
+// investment with no label (every one saved before this) still shows "Other".
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
@@ -34,11 +32,7 @@ InvestmentEntity _investment({
   customTypeLabel: label,
 );
 
-Future<void> _pump(
-  WidgetTester tester,
-  InvestmentEntity investment, {
-  required bool flag,
-}) async {
+Future<void> _pump(WidgetTester tester, InvestmentEntity investment) async {
   final stats = InvestmentStats(
     totalInvested: 10000,
     totalReturned: 0,
@@ -67,7 +61,6 @@ Future<void> _pump(
         ),
         currencyCodeProvider.overrideWith((ref) => 'INR'),
         privacyModeProvider.overrideWith(_PrivacyOff.new),
-        isCustomInvestmentTypesEnabledProvider.overrideWithValue(flag),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -93,7 +86,7 @@ void main() {
   testWidgets('a custom label replaces "Other" in the chip and the label', (
     tester,
   ) async {
-    await _pump(tester, _investment(label: 'Stamps'), flag: true);
+    await _pump(tester, _investment(label: 'Stamps'));
 
     expect(find.text('Stamps'), findsOneWidget);
     expect(find.text('Other'), findsNothing);
@@ -103,25 +96,16 @@ void main() {
 
   testWidgets('an Other investment saved before custom types still shows '
       '"Other"', (tester) async {
-    await _pump(tester, _investment(), flag: true);
+    await _pump(tester, _investment());
 
     expect(find.text('Other'), findsOneWidget);
     expect(_semanticLabel(tester), contains('Other'));
-  });
-
-  testWidgets('with the flag off the label is not shown', (tester) async {
-    await _pump(tester, _investment(label: 'Stamps'), flag: false);
-
-    expect(find.text('Other'), findsOneWidget);
-    expect(find.text('Stamps'), findsNothing);
-    expect(_semanticLabel(tester), isNot(contains('Stamps')));
   });
 
   testWidgets('a built-in type keeps its own name', (tester) async {
     await _pump(
       tester,
       _investment(type: InvestmentType.bonds, label: 'Stamps'),
-      flag: true,
     );
 
     expect(find.text('Bonds/Debentures'), findsOneWidget);

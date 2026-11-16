@@ -15,7 +15,6 @@ class HelpFaqScreen extends StatelessWidget {
   const HelpFaqScreen({
     super.key,
     required this.showDeveloperFaq,
-    this.showCustomTypesFaq = false,
     this.showIncomeGuardianFaq = false,
     this.showPortfolioHealthFaq = false,
   });
@@ -23,11 +22,6 @@ class HelpFaqScreen extends StatelessWidget {
   /// Whether to explain the developer tools. Callers pass
   /// developerToolsAvailableProvider, which is false in release builds.
   final bool showDeveloperFaq;
-
-  /// Whether to explain custom types for Other investments (#936). Callers
-  /// pass isCustomInvestmentTypesEnabledProvider, so the FAQ never describes
-  /// a feature the user cannot see.
-  final bool showCustomTypesFaq;
 
   /// Whether to explain Income Guardian (A105). Callers pass
   /// isIncomeGuardianEnabledProvider, so the FAQ never describes a feature
@@ -77,12 +71,11 @@ class HelpFaqScreen extends StatelessWidget {
               l10n.whatInvestmentTypesSupportedAnswer,
               isDark,
             ),
-            if (showCustomTypesFaq)
-              _buildFaqItem(
-                l10n.whatAreCustomTypes,
-                l10n.whatAreCustomTypesAnswer,
-                isDark,
-              ),
+            _buildFaqItem(
+              l10n.whatAreCustomTypes,
+              l10n.whatAreCustomTypesAnswer,
+              isDark,
+            ),
           ]),
           _buildSection(l10n.trackingReturns, [
             _buildFaqItem(

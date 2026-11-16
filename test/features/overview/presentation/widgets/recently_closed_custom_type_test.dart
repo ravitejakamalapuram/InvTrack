@@ -1,11 +1,10 @@
 // #936: the Recently Closed row on the overview shows an Other investment's
-// custom label under its name instead of "Other", while the feature flag is
-// on. The type breakdown on the same screen stays on the built-in type.
+// custom label under its name instead of "Other". The type breakdown on the
+// same screen stays on the built-in type.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
@@ -43,13 +42,12 @@ InvestmentWithStats _closed(
   ),
 );
 
-Future<void> _pump(WidgetTester tester, {required bool flag}) async {
+Future<void> _pump(WidgetTester tester) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         currencyCodeProvider.overrideWith((ref) => 'INR'),
         privacyModeProvider.overrideWith(_PrivacyOff.new),
-        isCustomInvestmentTypesEnabledProvider.overrideWithValue(flag),
         recentlyClosedInvestmentsProvider.overrideWithValue(
           AsyncValue.data([
             _closed('Stamp album', label: 'Stamps'),
@@ -79,21 +77,14 @@ Future<void> _pump(WidgetTester tester, {required bool flag}) async {
 }
 
 void main() {
-  testWidgets('flag on: the row shows the custom label, others unchanged', (
+  testWidgets('the row shows the custom label, others unchanged', (
     tester,
   ) async {
-    await _pump(tester, flag: true);
+    await _pump(tester);
 
     expect(find.text('Stamps'), findsOneWidget);
     // "Loose change" has no label: still Other; the stamp album is not.
     expect(find.text('Other'), findsOneWidget);
     expect(find.text('Bonds/Debentures'), findsOneWidget);
-  });
-
-  testWidgets('flag off: every Other row says Other', (tester) async {
-    await _pump(tester, flag: false);
-
-    expect(find.text('Stamps'), findsNothing);
-    expect(find.text('Other'), findsNWidgets(2));
   });
 }

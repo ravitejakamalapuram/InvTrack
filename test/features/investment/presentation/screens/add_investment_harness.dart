@@ -385,7 +385,6 @@ Future<FormHarness> pumpAddForm(
         currencyCodeProvider.overrideWithValue(baseCurrency),
         analyticsServiceProvider.overrideWithValue(analytics),
         isAuthenticatedProvider.overrideWithValue(true),
-        isCustomInvestmentTypesEnabledProvider.overrideWithValue(false),
         if (prefs != null)
           sharedPreferencesProvider.overrideWithValue(prefs)
         else
