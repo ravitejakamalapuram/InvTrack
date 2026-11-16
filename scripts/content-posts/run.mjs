@@ -1,6 +1,7 @@
 // Command line for the shared content list.
 //
 //   node run.mjs import posts.json        add approved posts to Firestore (a JSON array: id, title, body, approvedAt)
+//   node run.mjs import-inbox             add posts approved in the shared inbox (needs INBOX_URL and INBOX_TOKEN), skipping existing ones
 //   node run.mjs post [--dry-run]         send the next approved post to Telegram and record it
 //   node run.mjs import posts.json --create-only   same, but skip posts that already exist
 //                  [--once-per-day]     do nothing if a post already went out today (India time)
@@ -12,6 +13,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { importPosts, postNextToTelegram } from './lib.mjs';
+import { markImported, pullApprovedPosts } from './inbox.mjs';
 import { formatPost } from '../telegram-tip/post-tip.mjs';
 
 // firebase-admin is installed under scripts/account-deletion (one lockfile for the repo's jobs).
@@ -46,6 +48,13 @@ async function main() {
     const posts = JSON.parse(readFileSync(arg, 'utf8'));
     await importPosts(db, posts, { createOnly: process.argv.includes('--create-only') });
     console.log(`Imported ${posts.length} post(s).`);
+  } else if (cmd === 'import-inbox') {
+    const o = { url: process.env.INBOX_URL, token: process.env.INBOX_TOKEN };
+    if (!o.url || !o.token) throw new Error('INBOX_URL and INBOX_TOKEN must be set');
+    const posts = await pullApprovedPosts(o);
+    if (posts.length) await importPosts(db, posts.map(({ version, ...p }) => p), { createOnly: true });
+    for (const p of posts) await markImported(p.id, p.version, o);
+    console.log(`Imported ${posts.length} post(s) from the inbox.`);
   } else if (cmd === 'post') {
     const dryRun = process.argv.includes('--dry-run');
     const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -63,7 +72,7 @@ async function main() {
       console.log(`${dryRun ? 'Would post' : 'Posted'} ${r.postId}.`);
     }
   } else {
-    throw new Error('usage: run.mjs import <posts.json> | post [--dry-run]');
+    throw new Error('usage: run.mjs import <posts.json> | import-inbox | post [--dry-run]');
   }
 }
 
