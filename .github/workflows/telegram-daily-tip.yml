@@ -64,6 +64,8 @@ jobs:
           POSTING_ENABLED: ${{ vars.TELEGRAM_POSTING_ENABLED }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+          INBOX_URL: ${{ secrets.INBOX_URL }}
+          INBOX_TOKEN: ${{ secrets.INBOX_TOKEN }}
         run: |
           if [ -n "$IMPORT_FILE" ]; then
             case "$IMPORT_FILE" in
@@ -80,6 +82,10 @@ jobs:
             for f in content/posts/*.json; do
               node scripts/content-posts/run.mjs import "$f" --create-only || echo "::warning::import of $f failed"
             done
+            # Posts approved in the shared inbox. Skipped until the two inbox secrets exist; a failure only warns.
+            if [ -n "$INBOX_URL" ] && [ -n "$INBOX_TOKEN" ]; then
+              timeout 120 node scripts/content-posts/run.mjs import-inbox || echo "::warning::inbox import failed"
+            fi
             node scripts/content-posts/run.mjs post --once-per-day
           elif [ "$EVENT" = "workflow_dispatch" ] && [ "$POST_INPUT" = "true" ]; then
             node scripts/content-posts/run.mjs post
