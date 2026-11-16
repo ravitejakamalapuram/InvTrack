@@ -17,7 +17,6 @@ import 'package:inv_tracker/features/investment/domain/models/investment_templat
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/add_investment_keys.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

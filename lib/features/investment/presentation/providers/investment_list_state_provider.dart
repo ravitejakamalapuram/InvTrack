@@ -3,7 +3,6 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_enums.dart';
 
