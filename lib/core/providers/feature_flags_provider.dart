@@ -47,13 +47,7 @@ enum FeatureFlag {
   /// - Saved labels come back as suggestions
   /// - Off by default; saved labels are still exported, imported and deleted
   ///   with the account while it is off
-  customInvestmentTypes('custom_investment_types', 'Custom Investment Types'),
-
-  /// Quiet Overview banner telling guests their data lives only on this
-  /// device, with a Link Google button (A43, #786).
-  /// - Hidden for 14 days after a dismiss
-  /// - Off by default; it ships by changing the default in a release PR
-  guestLinkBanner('guest_link_banner', 'Guest Link Banner');
+  customInvestmentTypes('custom_investment_types', 'Custom Investment Types');
 
   const FeatureFlag(this.key, this.displayName);
 
@@ -205,15 +199,6 @@ final isIncomeGuardianEnabledProvider = Provider<bool>((ref) {
   );
 });
 
-/// Whether the guest link banner is enabled
-final isGuestLinkBannerEnabledProvider = Provider<bool>((ref) {
-  return ref.watch(
-    featureFlagsProvider.select(
-      (flags) => flags[FeatureFlag.guestLinkBanner] ?? false,
-    ),
-  );
-});
-
 /// Convenience provider for checking if reusable custom investment types are
 /// enabled (#936)
 final isCustomInvestmentTypesEnabledProvider = Provider<bool>((ref) {
@@ -223,4 +208,3 @@ final isCustomInvestmentTypesEnabledProvider = Provider<bool>((ref) {
     ),
   );
 });
-

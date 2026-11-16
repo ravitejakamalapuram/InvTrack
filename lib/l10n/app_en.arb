@@ -7673,16 +7673,6 @@
       "end": {"type": "String"}
     }
   },
-  "guestLinkFeature": "Guest Link Banner",
-  "@guestLinkFeature": {
-    "description": "Debug settings title of the guest link banner flag"
-  },
-
-  "guestLinkFeatureSubtitle": "Quiet Overview banner asking guests to link Google, hidden for 14 days after a dismiss",
-  "@guestLinkFeatureSubtitle": {
-    "description": "Debug settings subtitle of the guest link banner flag"
-  },
-
   "guestLinkBannerTitle": "Your data is only on this phone",
   "@guestLinkBannerTitle": {
     "description": "Title of the quiet Overview banner shown to guests"

@@ -4,7 +4,6 @@ library;
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
@@ -41,10 +40,9 @@ final guestLinkBannerDismissProvider =
       GuestLinkBannerDismissNotifier.new,
     );
 
-/// True for a guest, with the flag on, outside sample-data mode, and not
+/// True for a guest, outside sample-data mode, and not
 /// within 14 days of a dismiss.
 final guestLinkBannerVisibleProvider = Provider<bool>((ref) {
-  if (!ref.watch(isGuestLinkBannerEnabledProvider)) return false;
   if (!(ref.watch(authStateProvider).value?.isAnonymous ?? false)) {
     return false;
   }
