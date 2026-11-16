@@ -7471,10 +7471,6 @@
   "@writeRejectedMessage": {
     "description": "Snackbar shown when the server rejects a save that was already accepted on this device, for example a cash flow added offline (A26)"
   },
-  "monthlyRecapFeatureSubtitle": "Monthly recap screen and its notification, in place of the monthly summary",
-  "@monthlyRecapFeatureSubtitle": {
-    "description": "Debug settings subtitle of the monthly recap flag"
-  },
   "monthlyRecapTitle": "{month} Recap",
   "@monthlyRecapTitle": {
     "description": "Monthly recap app bar title, e.g. October Recap",
@@ -7677,11 +7673,6 @@
       "end": {"type": "String"}
     }
   },
-  "monthlyRecapFeature": "Monthly Recap",
-  "@monthlyRecapFeature": {
-    "description": "Debug settings title of the monthly recap flag"
-  },
-
   "guestLinkFeature": "Guest Link Banner",
   "@guestLinkFeature": {
     "description": "Debug settings title of the guest link banner flag"

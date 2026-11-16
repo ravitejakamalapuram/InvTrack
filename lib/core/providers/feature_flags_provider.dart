@@ -49,10 +49,6 @@ enum FeatureFlag {
   ///   with the account while it is off
   customInvestmentTypes('custom_investment_types', 'Custom Investment Types'),
 
-  /// Monthly recap screen and notification (reports plan, phase 1). Off
-  /// until a release PR turns it on.
-  monthlyRecap('monthly_recap', 'Monthly Recap'),
-
   /// Quiet Overview banner telling guests their data lives only on this
   /// device, with a Link Google button (A43, #786).
   /// - Hidden for 14 days after a dismiss
@@ -228,11 +224,3 @@ final isCustomInvestmentTypesEnabledProvider = Provider<bool>((ref) {
   );
 });
 
-/// Convenience provider for checking if the monthly recap is enabled
-final isMonthlyRecapEnabledProvider = Provider<bool>((ref) {
-  return ref.watch(
-    featureFlagsProvider.select(
-      (flags) => flags[FeatureFlag.monthlyRecap] ?? false,
-    ),
-  );
-});
