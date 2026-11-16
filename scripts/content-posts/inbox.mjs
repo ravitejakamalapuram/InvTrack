@@ -40,3 +40,9 @@ export function addPending({ id, type, title, summary, data = {} } = {}, opts) {
     data: { ...data, app: APP, icon: '📈' },
   }, opts);
 }
+
+/** The status of one item (for example "pending" or "approved"). */
+export async function getStatus(id, opts) {
+  const { item } = await call({ action: 'get', id }, opts);
+  return item?.status ?? 'missing';
+}
