@@ -44,3 +44,9 @@ test('an inbox error gives a short code, never the token', async () => {
     return true;
   });
 });
+
+test('every inbox request has a deadline', async () => {
+  let signal;
+  await pullApprovedPosts(opts(async (url, init) => { signal = init.signal; return { ok: true, json: async () => ({ ok: true, items: [] }) }; }));
+  assert.ok(signal instanceof AbortSignal);
+});

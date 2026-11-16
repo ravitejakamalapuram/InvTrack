@@ -6,8 +6,9 @@
 export const POST_TYPE = 'telegram-post';
 export const APP = 'InvTrack';
 
-async function call(body, { url, token, fetchFn = fetch }) {
-  const res = await fetchFn(url, { method: 'POST', redirect: 'follow', body: JSON.stringify({ ...body, token }) });
+// The deadline covers the reply body too, so a stalled inbox cannot eat the job's time for the daily post.
+async function call(body, { url, token, fetchFn = fetch, timeoutMs = 20000 }) {
+  const res = await fetchFn(url, { method: 'POST', redirect: 'follow', body: JSON.stringify({ ...body, token }), signal: AbortSignal.timeout(timeoutMs) });
   const json = await res.json();
   if (!json?.ok) throw Object.assign(new Error('inbox'), { code: `inbox-${json?.error?.code ?? 'bad-reply'}` });
   return json;

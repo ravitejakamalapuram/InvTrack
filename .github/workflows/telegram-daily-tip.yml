@@ -84,7 +84,7 @@ jobs:
             done
             # Posts approved in the shared inbox. Skipped until the two inbox secrets exist; a failure only warns.
             if [ -n "$INBOX_URL" ] && [ -n "$INBOX_TOKEN" ]; then
-              node scripts/content-posts/run.mjs import-inbox || echo "::warning::inbox import failed"
+              timeout 120 node scripts/content-posts/run.mjs import-inbox || echo "::warning::inbox import failed"
             fi
             node scripts/content-posts/run.mjs post --once-per-day
           elif [ "$EVENT" = "workflow_dispatch" ] && [ "$POST_INPUT" = "true" ]; then
