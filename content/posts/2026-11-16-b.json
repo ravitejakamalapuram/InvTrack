@@ -1,0 +1,20 @@
+[
+  {
+    "id": "simple-vs-compound",
+    "title": "Simple and compound interest are not the same",
+    "body": "With simple interest, you earn only on the amount you put in. With compound interest, the interest you earned is added to the amount, so next year you earn on a bigger base. Over a few years the gap is small. Over many years it becomes large.\n\nExample: you put in 1 lakh rupees at 8% a year for 5 years. With simple interest you earn 8,000 rupees every year, so 40,000 in total, and you end with 1,40,000 rupees. With interest added back each year, you end with about 1,46,900 rupees. The extra 6,900 rupees comes only from earning interest on earlier interest.\n\nThe same 8% can mean two different results. So when you compare two options, ask whether interest is paid out or added back, and how often.\n\nWhat to check: Is the quoted rate simple or compounded, and how often is interest added?\n\nEducation, not investment advice.",
+    "approvedAt": "2026-11-16"
+  },
+  {
+    "id": "up-then-down",
+    "title": "Up 10% and then down 10% is not break-even",
+    "body": "Percentages depend on the base they are applied to. A fall of 10% after a rise of 10% is taken from a bigger number, so you do not return to where you started.\n\nExample: you hold 1 lakh rupees. It rises 10%, so it becomes 1,10,000 rupees. Then it falls 10%. Ten percent of 1,10,000 is 11,000, so you end at 99,000 rupees. You are 1,000 rupees below where you began, even though the two moves look equal.\n\nThe reverse also matters. After a fall, the gain you need to get back is larger than the fall itself. A loss of 50% needs a gain of 100% to recover. Half of 1 lakh is 50,000, and it must double to reach 1 lakh again.\n\nWatch the base whenever you read a percentage change, and prefer the actual rupee amounts.\n\nWhat to check: Is this percentage change measured on the starting value or the latest value?\n\nEducation, not investment advice.",
+    "approvedAt": "2026-11-16"
+  },
+  {
+    "id": "monthly-vs-yearly-rate",
+    "title": "A monthly rate is not the same as a yearly rate",
+    "body": "Some lenders quote interest per month, for example 1.5% a month. Multiplying by 12 gives 18% a year. That 18% is the nominal yearly rate, and it is the real yearly rate only if interest is not added back. If interest is added to the amount each month, the effective yearly rate is higher.\n\nExample: you put in 1 lakh rupees at 1.5% a month. If the interest is paid out, after 12 months you earn 18,000 rupees, so you have 1,18,000. If the interest is added back each month, you have about 1,19,560 rupees. That is an effective yearly rate of about 19.6%, not 18%.\n\nNeither is wrong, but they are not the same number. Before you compare a monthly rate with a yearly one, convert both to an effective yearly rate in the same way.\n\nWhat to check: Is the rate quoted per month or per year, and is the interest added back or paid out?\n\nEducation, not investment advice.",
+    "approvedAt": "2026-11-16"
+  }
+]
