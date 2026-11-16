@@ -50,7 +50,7 @@ class InvestmentCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final typeColor = investment.type.color;
-    final typeName = investmentTypeName(ref, investment);
+    final typeName = investmentTypeName(investment);
     final isClosed = investment.status == InvestmentStatus.closed;
     final currencySymbol = ref.watch(currencySymbolProvider);
     final currencyFormat = ref.watch(currencyFormatProvider);

@@ -7176,22 +7176,6 @@
     "description": "Subtitle of the Income Guardian tile in Settings"
   },
 
-  "customInvestmentTypesFeature": "Custom Investment Types",
-  "@customInvestmentTypesFeature": {
-    "description": "Debug Settings: title of the toggle for reusable custom labels on Other investments (#936)"
-  },
-  "customInvestmentTypesFeatureSubtitle": "Reusable labels for investments of type Other",
-  "@customInvestmentTypesFeatureSubtitle": {
-    "description": "Debug Settings: subtitle of the custom investment types toggle (#936)"
-  },
-  "customInvestmentTypesFeatureEnabled": "Custom investment types enabled",
-  "@customInvestmentTypesFeatureEnabled": {
-    "description": "Debug Settings: snackbar after turning custom investment types on (#936)"
-  },
-  "customInvestmentTypesFeatureDisabled": "Custom investment types disabled",
-  "@customInvestmentTypesFeatureDisabled": {
-    "description": "Debug Settings: snackbar after turning custom investment types off (#936)"
-  },
   "customTypeFieldLabel": "Custom type (optional)",
   "@customTypeFieldLabel": {
     "description": "Label of the optional custom type field on the investment form, shown for type Other (#936)"

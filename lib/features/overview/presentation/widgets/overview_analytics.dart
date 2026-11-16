@@ -618,7 +618,7 @@ class RecentlyClosedCard extends ConsumerWidget {
                   item,
                   isDark,
                   isPrivacyMode,
-                  investmentTypeName(ref, item.investment),
+                  investmentTypeName(item.investment),
                 ),
               ),
             ],

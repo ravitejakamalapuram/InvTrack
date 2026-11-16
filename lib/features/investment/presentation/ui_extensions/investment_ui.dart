@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -11,13 +9,11 @@ import 'package:inv_tracker/features/investment/domain/entities/transaction_enti
 /// Follows InvTrack Enterprise Rules #1.1 (Architecture - Layer Boundaries).
 
 /// The name to show for [investment]'s type (#936): the custom label of an
-/// Other investment that has one while the feature flag is on, otherwise the
-/// built-in type's name. The flag is read only for an investment that has a
-/// label. Grouping, filtering and the type breakdown keep using the built-in
-/// type, so they do not call this.
-String investmentTypeName(WidgetRef ref, InvestmentEntity investment) =>
-    investment.hasCustomTypeLabel &&
-        ref.watch(isCustomInvestmentTypesEnabledProvider)
+/// Other investment that has one, otherwise the built-in type's name.
+/// Grouping, filtering and the type breakdown keep using the built-in type,
+/// so they do not call this.
+String investmentTypeName(InvestmentEntity investment) =>
+    investment.hasCustomTypeLabel
     ? investment.typeLabel
     : investment.type.displayName;
 

@@ -1,5 +1,5 @@
 // #936: the optional "Custom type" field of the investment form. It shows for
-// type Other only, behind the feature flag; saved types are suggested; saving
+// type Other only; saved types are suggested; saving
 // one is an explicit action; what the form sends the notifier is the text
 // typed, and blank text means today's behaviour.
 import 'package:flutter/material.dart';
@@ -10,7 +10,6 @@ import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/features/investment/domain/entities/metal.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
@@ -123,7 +122,6 @@ void main() {
 
   Future<void> pump(
     WidgetTester tester, {
-    bool flag = true,
     List<CustomInvestmentType> saved = const [],
     InvestmentEntity? edit,
   }) async {
@@ -158,7 +156,6 @@ void main() {
           currencyLocaleProvider.overrideWithValue('en_IN'),
           analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
           isAuthenticatedProvider.overrideWithValue(true),
-          isCustomInvestmentTypesEnabledProvider.overrideWithValue(flag),
           customInvestmentTypeRepositoryProvider.overrideWithValue(types),
           investmentNotifierProvider.overrideWith(
             () => _RecordingNotifier(adds, updates),
@@ -223,13 +220,6 @@ void main() {
       await selectType(tester, 'Bonds/Debentures');
       expect(find.byType(CustomTypeField), findsNothing);
       expect(find.text(_label), findsNothing);
-    });
-
-    testWidgets('behind the feature flag: off means no field', (tester) async {
-      await pump(tester, flag: false);
-      await selectType(tester, 'Other');
-      expect(find.text(_label), findsNothing);
-      expect(find.byType(CustomTypeField), findsNothing);
     });
   });
 
@@ -441,16 +431,6 @@ void main() {
       await submit(tester, 'Save Changes');
 
       expect(updates.single['customTypeLabel'], isNull);
-    });
-
-    testWidgets('flag off: an edit still sends the stored label, so it is '
-        'not lost', (tester) async {
-      await pump(tester, flag: false, edit: _stamps());
-      expect(find.text(_label), findsNothing);
-
-      await submit(tester, 'Save Changes');
-
-      expect(updates.single['customTypeLabel'], 'Stamps');
     });
   });
 
