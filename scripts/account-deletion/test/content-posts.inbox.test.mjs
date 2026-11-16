@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { pullApprovedPosts, markImported } from '../../content-posts/inbox.mjs';
+import { addPending, pullApprovedPosts, markImported } from '../../content-posts/inbox.mjs';
 
 const item = (o = {}) => ({
   id: 'rule-of-72', type: 'telegram-post', status: 'approved', title: 'T', version: 3,
@@ -49,4 +49,18 @@ test('every inbox request has a deadline', async () => {
   let signal;
   await pullApprovedPosts(opts(async (url, init) => { signal = init.signal; return { ok: true, json: async () => ({ ok: true, items: [] }) }; }));
   assert.ok(signal instanceof AbortSignal);
+});
+
+test('addPending adds a waiting item labelled as InvTrack', async () => {
+  const calls = [];
+  await addPending({ id: 'inbox-test', type: 'decision', title: 'Inbox test: tap Approve', summary: 'S', data: { body: 'B' } }, opts(fakeInbox([], calls)));
+  assert.deepEqual(calls[0], {
+    action: 'add', token: 'secret-tok', id: 'inbox-test', type: 'decision', status: 'pending',
+    title: 'Inbox test: tap Approve', summary: 'S', data: { body: 'B', app: 'InvTrack', icon: '📈' },
+  });
+});
+
+test('addPending needs an id and a title', async () => {
+  await assert.rejects(addPending({ title: 'T' }, opts(fakeInbox([]))), /id and title/);
+  await assert.rejects(addPending({ id: 'x' }, opts(fakeInbox([]))), /id and title/);
 });

@@ -30,3 +30,13 @@ export async function pullApprovedPosts(opts) {
 export function markImported(id, version, opts) {
   return call({ action: 'update', id, ifVersion: version, set: { status: 'scheduled' } }, opts);
 }
+
+/** Adds an item that waits for the owner's tap in Telegram or on the dashboard. Labelled as InvTrack. */
+export function addPending({ id, type, title, summary, data = {} } = {}, opts) {
+  if (!id || !title) return Promise.reject(new Error('addPending needs an id and title'));
+  return call({
+    action: 'add', id, type, status: 'pending', title,
+    ...(summary ? { summary } : {}),
+    data: { ...data, app: APP, icon: '📈' },
+  }, opts);
+}
