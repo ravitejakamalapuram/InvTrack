@@ -1,11 +1,9 @@
 // A43 (#786): a quiet Overview banner tells guests their data lives only on
-// this device and offers to link Google. Behind FeatureFlag.guestLinkBanner
-// (off by default); dismissing hides it for 14 days.
+// this device and offers to link Google; dismissing hides it for 14 days.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/domain/usecases/link_account_usecase.dart';
@@ -51,7 +49,6 @@ class _SampleOn extends SampleDataModeNotifier {
 Future<(ProviderContainer, FakeAnalyticsService)> _pump(
   WidgetTester tester, {
   UserEntity? user = _guest,
-  bool flagOn = true,
   Map<String, Object> prefs = const {},
   bool sample = false,
   _FakeLink? link,
@@ -65,7 +62,6 @@ Future<(ProviderContainer, FakeAnalyticsService)> _pump(
       sharedPreferencesProvider.overrideWithValue(sp),
       analyticsServiceProvider.overrideWithValue(analytics),
       authStateProvider.overrideWith((ref) => Stream.value(user)),
-      isGuestLinkBannerEnabledProvider.overrideWithValue(flagOn),
       googleSignInInitializedProvider.overrideWith((ref) async {}),
       if (clock != null) guestLinkBannerClockProvider.overrideWithValue(clock),
       if (link != null) linkAccountUseCaseProvider.overrideWithValue(link),
@@ -90,10 +86,6 @@ Future<(ProviderContainer, FakeAnalyticsService)> _pump(
 
 void main() {
   group('GuestLinkBanner', () {
-    test('the flag is off by default', () {
-      expect(FeatureFlag.guestLinkBanner.defaultEnabled, isFalse);
-    });
-
     testWidgets('a guest sees the banner and the impression is logged once', (
       tester,
     ) async {
@@ -110,11 +102,6 @@ void main() {
       final (_, analytics) = await _pump(tester, user: _google);
       expect(find.text('Link Google'), findsNothing);
       expect(analytics.loggedEvents, isEmpty);
-    });
-
-    testWidgets('flag off hides it', (tester) async {
-      await _pump(tester, flagOn: false);
-      expect(find.text('Link Google'), findsNothing);
     });
 
     testWidgets('sample data mode hides it', (tester) async {
