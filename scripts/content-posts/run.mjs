@@ -54,7 +54,7 @@ async function main() {
     if (!opts.url || !opts.token) throw new Error('inbox-test needs INBOX_URL and INBOX_TOKEN');
     const id = `inbox-test-${new Date().toISOString().slice(0, 10)}`;
     if (arg === 'check') {
-      console.log(`Test item status: ${await getStatus(id, opts)}`);
+      try { console.log(`Test item status: ${await getStatus(id, opts)}`); } catch (e) { console.log(`Test item status: unavailable (${e.code ?? 'error'})`); }
       const res = await fetch(opts.url, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'pipeline', token: opts.token }), signal: AbortSignal.timeout(30000) });
       const j = await res.json();
       if (!j.ok) { console.log(`pipeline error: ${j.error?.code}`); return; }
