@@ -21,13 +21,17 @@ export function pickTip(tips, dateIso) {
   return tips[((day % tips.length) + tips.length) % tips.length];
 }
 
+const DISCLAIMER = 'Education, not investment advice.';
+
 export function formatPost(tip) {
+  // Drafts often end with the disclaimer already; take it off so it is not printed twice.
+  const body = tip.body.replace(/\s*Education, not investment advice\.\s*$/i, '').trimEnd();
   return [
     `💡 ${tip.title}`,
     '',
-    tip.body,
+    body,
     '',
-    'Education, not investment advice.',
+    DISCLAIMER,
     '',
     `Track your FDs, bonds, gold, chits and more in InvTrack: ${PLAY_URL}`,
   ].join('\n');

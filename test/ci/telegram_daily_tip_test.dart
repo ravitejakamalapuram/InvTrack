@@ -82,4 +82,26 @@ void main() {
     expect(run, isNot(contains(r'${{')));
     expect(workflow, contains('persist-credentials: false'));
   });
+
+  test('a post that already ends with the disclaimer does not repeat it', () async {
+    final r = await Process.run('node', [
+      '-e',
+      "import('./scripts/telegram-tip/post-tip.mjs').then((m) => "
+          "console.log(m.formatPost({title: 'T', body: 'B\\n\\nEducation, not investment advice.'})))",
+    ]);
+    expect(r.exitCode, 0, reason: '${r.stderr}');
+    final out = r.stdout as String;
+    expect('Education, not investment advice.'.allMatches(out).length, 1);
+  });
+
+  test('a manual run can import the inbox first, and only posts if asked', () {
+    expect(workflow, contains('import_inbox:'));
+    final run = workflow.split('run: |').last;
+    expect(
+      run,
+      contains(r'[ "$EVENT" = "workflow_dispatch" ] && [ "$IMPORT_INBOX" = "true" ]'),
+    );
+    // The import-only run still writes, so it shares the live queue lock.
+    expect(workflow, contains('inputs.import_inbox'));
+  });
 }
