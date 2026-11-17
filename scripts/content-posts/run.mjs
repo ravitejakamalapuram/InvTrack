@@ -53,7 +53,18 @@ async function main() {
     const opts = { url: process.env.INBOX_URL, token: process.env.INBOX_TOKEN };
     if (!opts.url || !opts.token) throw new Error('inbox-test needs INBOX_URL and INBOX_TOKEN');
     const id = `inbox-test-${new Date().toISOString().slice(0, 10)}`;
-    if (arg === 'check') { console.log(`Test item status: ${await getStatus(id, opts)}`); return; }
+    if (arg === 'check') {
+      console.log(`Test item status: ${await getStatus(id, opts)}`);
+      const res = await fetch(opts.url, { method: 'POST', redirect: 'follow', body: JSON.stringify({ action: 'pipeline', token: opts.token }), signal: AbortSignal.timeout(30000) });
+      const j = await res.json();
+      if (!j.ok) { console.log(`pipeline error: ${j.error?.code}`); return; }
+      console.log(`pipeline channels: ${j.channels.length}`);
+      for (const c of j.channels) {
+        const st = ['ideas', 'toBuild', 'building', 'review', 'ready'].map((k) => `${k}=${c[k].count}[${[...new Set(c[k].items.map((i) => `${i.type}/${i.status}`))].join(',')}]`);
+        console.log(`channel "${c.app}": ${st.join(' ')} posted=${c.posted.count} publish=${c.publish ? 'yes' : 'no'}`);
+      }
+      return;
+    }
     await addPending({ id, type: 'decision',
       title: 'Inbox test: tap Approve', summary: 'Checks that InvTrack can reach your inbox. Nothing happens when you tap.' }, opts);
     console.log('Test item sent to the inbox.');
