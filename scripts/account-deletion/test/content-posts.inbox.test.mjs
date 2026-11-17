@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addPending, getStatus, pullApprovedPosts, markImported } from '../../content-posts/inbox.mjs';
+import { addPending, fillSummaries, getStatus, pullApprovedPosts, markImported } from '../../content-posts/inbox.mjs';
 
 const item = (o = {}) => ({
   id: 'rule-of-72', type: 'telegram-post', status: 'approved', title: 'T', version: 3,
@@ -70,4 +70,18 @@ test('getStatus reads one item back and returns only its status', async () => {
   const f = async (url, init) => { calls.push(JSON.parse(init.body)); return { ok: true, json: async () => ({ ok: true, item: { id: 'x', status: 'approved', title: 'secret title' } }) }; };
   assert.equal(await getStatus('x', opts(f)), 'approved');
   assert.deepEqual(calls[0], { action: 'get', id: 'x', token: 'secret-tok' });
+});
+
+test('fillSummaries copies the post text into summary for InvTrack posts that have none', async () => {
+  const calls = [];
+  const items = [
+    item({ id: 'a', version: 2, data: { app: 'InvTrack', body: 'AAA' } }),
+    item({ id: 'b', summary: 'already', data: { app: 'InvTrack', body: 'BBB' } }),
+    item({ id: 'c', data: { app: 'Studio', body: 'CCC' } }),
+  ];
+  const n = await fillSummaries(opts(fakeInbox(items, calls)));
+  assert.equal(n, 1);
+  assert.deepEqual(calls.filter((c) => c.action === 'update'), [{ action: 'update', id: 'a', ifVersion: 2, set: { summary: 'AAA' }, token: 'secret-tok' }]);
+  assert.equal(calls[0].type, 'telegram-post');
+  assert.equal('status' in calls[0], false);
 });
