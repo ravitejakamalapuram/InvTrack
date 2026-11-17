@@ -126,6 +126,24 @@ void main() {
         );
       },
     );
+
+    test(
+      'app-wide reminders cancel the removed weekly and FY summaries',
+      () async {
+        await service.scheduleAppWideReminders();
+        expect(
+          fakePlugin.cancelledNotificationIds,
+          containsAll([
+            NotificationIds.weeklySummary,
+            NotificationIds.fySummary,
+          ]),
+        );
+        expect(
+          fakePlugin.cancelledNotificationIds,
+          isNot(contains(NotificationIds.monthlySummary)),
+        );
+      },
+    );
   });
 
   group('NotificationService - Test Notifications', () {

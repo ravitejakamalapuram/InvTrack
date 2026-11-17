@@ -706,6 +706,10 @@ class NotificationService with NotificationPreferencesMixin {
   /// check-in), as done at app start. Used to restore them after
   /// [cancelAll] when another account signs in. Each respects its preference.
   Future<void> scheduleAppWideReminders() async {
+    // The weekly and financial-year summaries were removed with the Reports
+    // tab; an alarm an older version left behind would still fire.
+    await _plugin.cancel(id: NotificationIds.weeklySummary);
+    await _plugin.cancel(id: NotificationIds.fySummary);
     await scheduleTaxReminders();
     await scheduleWeeklyCheckIn();
   }
