@@ -23,6 +23,10 @@ on:
         description: 'Read back the inbox test item and print its status (needs inbox_test on)'
         type: boolean
         default: false
+      inbox_fill_summaries:
+        description: 'Copy the post text into the summary of inbox posts that lack one, so the inbox shows it'
+        type: boolean
+        default: false
       import_file:
         description: 'Add the approved posts in this file (content/posts/<name>.json) to the database instead of posting'
         type: string
@@ -70,6 +74,7 @@ jobs:
           POST_INPUT: ${{ inputs.post }}
           IMPORT_FILE: ${{ inputs.import_file }}
           INBOX_TEST: ${{ inputs.inbox_test }}
+          INBOX_FILL: ${{ inputs.inbox_fill_summaries }}
           INBOX_CHECK: ${{ inputs.inbox_check }}
           POSTING_ENABLED: ${{ vars.TELEGRAM_POSTING_ENABLED }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -77,7 +82,9 @@ jobs:
           INBOX_URL: ${{ secrets.INBOX_URL }}
           INBOX_TOKEN: ${{ secrets.INBOX_TOKEN }}
         run: |
-          if [ "$INBOX_TEST" = "true" ]; then
+          if [ "$INBOX_FILL" = "true" ]; then
+            timeout 60 node scripts/content-posts/run.mjs inbox-fill-summaries
+          elif [ "$INBOX_TEST" = "true" ]; then
             if [ "$INBOX_CHECK" = "true" ]; then
               timeout 60 node scripts/content-posts/run.mjs inbox-test check
             else
