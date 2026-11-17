@@ -3,8 +3,6 @@ import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
-import 'package:inv_tracker/features/income_projection/domain/entities/expected_cash_flow_entity.dart';
-import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
@@ -17,13 +15,8 @@ import '../../../investment/data/repositories/mock_investment_repository.dart';
 
 class _MockDocumentRepository extends Mock implements DocumentRepository {}
 
-class _MockExpectedCashFlowRepository extends Mock
-    implements ExpectedCashFlowRepository {}
-
 class _MockDocumentStorageService extends Mock
     implements DocumentStorageService {}
-
-class _FakeExpectedCashFlow extends Fake implements ExpectedCashFlowEntity {}
 
 class _PassThroughPerformanceService extends Fake
     implements PerformanceService {
@@ -91,7 +84,7 @@ void main() {
   });
 
   test('exportAsZipBytes counts the investments with details the ZIP cannot '
-      'carry and the expected cash flows it leaves out', () async {
+      'carry', () async {
     final investments = FakeInvestmentRepository();
     final fd = plain.copyWith(
       id: 'inv-fd',
@@ -121,21 +114,12 @@ void main() {
     when(
       () => documents.getDocumentsByInvestment(any()),
     ).thenAnswer((_) async => []);
-    final expected = _MockExpectedCashFlowRepository();
-    when(() => expected.getAllExpectedCashFlows()).thenAnswer(
-      (_) async => [
-        _FakeExpectedCashFlow(),
-        _FakeExpectedCashFlow(),
-        _FakeExpectedCashFlow(),
-      ],
-    );
 
     final export = await DataExportService(
       investmentRepository: investments,
       goalRepository: FakeGoalRepository(),
       documentRepository: documents,
       documentStorageService: DocumentStorageService(userId: 'u'),
-      expectedCashFlowRepository: expected,
       performanceService: _PassThroughPerformanceService(),
     ).exportAsZipBytes();
 
@@ -146,11 +130,10 @@ void main() {
       0,
       reason: 'investments.json carries every investment field',
     );
-    expect(export.expectedCashFlows, 3);
     expect(
       export.carriesEverything,
       isTrue,
-      reason: 'expected cash flows are derived data, not a loss (#768)',
+      reason: 'nothing in the account is left out of the ZIP',
     );
 
     // Decision on #768: expected cash flows and health scores are derived
@@ -164,45 +147,6 @@ void main() {
     expect(names, isNotEmpty);
     expect(names.where((n) => n.contains('expected')), isEmpty);
     expect(names.where((n) => n.contains('health')), isEmpty);
-  });
-
-  test('if expected cash flows cannot be counted, the export still works and '
-      'still carries everything', () async {
-    final investments = FakeInvestmentRepository();
-    await investments.createInvestment(plain);
-    await investments.addCashFlow(
-      CashFlowEntity(
-        id: 'cf-plain',
-        investmentId: plain.id,
-        type: CashFlowType.invest,
-        amount: 100000,
-        date: DateTime(2026, 4, 1),
-        createdAt: created,
-        currency: 'INR',
-      ),
-    );
-    final documents = _MockDocumentRepository();
-    when(
-      () => documents.getDocumentsByInvestment(any()),
-    ).thenAnswer((_) async => []);
-    final expected = _MockExpectedCashFlowRepository();
-    when(
-      () => expected.getAllExpectedCashFlows(),
-    ).thenThrow(Exception('Firestore unavailable'));
-
-    final export = await DataExportService(
-      investmentRepository: investments,
-      goalRepository: FakeGoalRepository(),
-      documentRepository: documents,
-      documentStorageService: DocumentStorageService(userId: 'u'),
-      expectedCashFlowRepository: expected,
-      performanceService: _PassThroughPerformanceService(),
-    ).exportAsZipBytes();
-
-    expect(export.investments, 1);
-    expect(export.investmentsWithDetailsNotInExport, 0);
-    expect(export.expectedCashFlows, isNull);
-    expect(export.carriesEverything, isTrue);
   });
 
   test('an investment with no cash flows is not in the ZIP, so the export '
@@ -228,15 +172,12 @@ void main() {
     when(
       () => documents.getDocumentsByInvestment(any()),
     ).thenAnswer((_) async => []);
-    final expected = _MockExpectedCashFlowRepository();
-    when(() => expected.getAllExpectedCashFlows()).thenAnswer((_) async => []);
 
     final export = await DataExportService(
       investmentRepository: investments,
       goalRepository: FakeGoalRepository(),
       documentRepository: documents,
       documentStorageService: _MockDocumentStorageService(),
-      expectedCashFlowRepository: expected,
       performanceService: _PassThroughPerformanceService(),
     ).exportAsZipBytes();
 
@@ -250,7 +191,6 @@ void main() {
     expect(export.investments, 3);
     expect(export.cashFlows, 1);
     expect(export.investmentsWithDetailsNotInExport, 0);
-    expect(export.expectedCashFlows, 0);
     expect(export.investmentsNotInExport, 2);
     expect(export.carriesEverything, isFalse);
   });

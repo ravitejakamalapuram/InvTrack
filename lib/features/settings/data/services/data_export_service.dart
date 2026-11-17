@@ -17,7 +17,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settings_repository.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/repositories/goal_repository.dart';
-import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
 import 'package:inv_tracker/features/investment/domain/entities/custom_investment_type_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/settings/data/services/backup_crypto.dart';
@@ -63,7 +62,6 @@ class ZipExport {
     required this.hasFireSettings,
     required this.investmentsWithDetailsNotInExport,
     required this.investmentsNotInExport,
-    required this.expectedCashFlows,
   });
 
   final Uint8List bytes;
@@ -89,13 +87,7 @@ class ZipExport {
   /// these at all (nor can an import attach their documents to them).
   final int investmentsNotInExport;
 
-  /// Expected cash flows, which the ZIP does not carry at all; null if they
-  /// could not be counted.
-  final int? expectedCashFlows;
-
   /// Whether an import of [bytes] can recreate everything counted here.
-  /// Expected cash flows do not count: they are derived data that the app
-  /// predicts again from the real cash flows (#768).
   bool get carriesEverything =>
       investmentsWithDetailsNotInExport == 0 && investmentsNotInExport == 0;
 
@@ -156,7 +148,6 @@ class DataExportService {
   final DocumentRepository _documentRepository;
   final DocumentStorageService _documentStorageService;
   final FireSettingsRepository? _fireSettingsRepository;
-  final ExpectedCashFlowRepository? _expectedCashFlowRepository;
   final ValuationRepository? _valuationRepository;
   final CustomInvestmentTypeRepository? _customInvestmentTypeRepository;
   final PerformanceService _performanceService;
@@ -167,7 +158,6 @@ class DataExportService {
     required DocumentRepository documentRepository,
     required DocumentStorageService documentStorageService,
     FireSettingsRepository? fireSettingsRepository,
-    ExpectedCashFlowRepository? expectedCashFlowRepository,
     ValuationRepository? valuationRepository,
     CustomInvestmentTypeRepository? customInvestmentTypeRepository,
     required PerformanceService performanceService,
@@ -176,7 +166,6 @@ class DataExportService {
        _documentRepository = documentRepository,
        _documentStorageService = documentStorageService,
        _fireSettingsRepository = fireSettingsRepository,
-       _expectedCashFlowRepository = expectedCashFlowRepository,
        _valuationRepository = valuationRepository,
        _customInvestmentTypeRepository = customInvestmentTypeRepository,
        _performanceService = performanceService;
@@ -435,23 +424,6 @@ class DataExportService {
       }
     }
 
-    // Not in the ZIP; counted so a caller can tell the user what an import
-    // of it leaves behind. A failed count must not fail the export itself;
-    // it is reported as unknown (null).
-    int? expectedCashFlows;
-    try {
-      expectedCashFlows =
-          (await _expectedCashFlowRepository?.getAllExpectedCashFlows())
-              ?.length ??
-          0;
-    } catch (e, st) {
-      LoggerService.error(
-        'Could not count expected cash flows for export',
-        error: e,
-        stackTrace: st,
-      );
-    }
-
     // 5. Encode to ZIP
     final zipData = await encodeZipOffUiThread(archive);
     return ZipExport(
@@ -465,7 +437,6 @@ class DataExportService {
           .where(investmentHasDetailsNotInExport)
           .length,
       investmentsNotInExport: investmentsWithoutCashFlows,
-      expectedCashFlows: expectedCashFlows,
     );
   }
 

@@ -8,7 +8,6 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
 import 'package:inv_tracker/core/providers/feature_flag_unlock_provider.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/widgets/currency_picker_sheet.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -19,7 +18,6 @@ import 'package:inv_tracker/features/security/presentation/providers/security_pr
 import 'package:inv_tracker/features/settings/data/providers/data_export_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/currency_switch_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
-import 'package:inv_tracker/features/income_projection/presentation/screens/income_guardian_settings_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/about_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/appearance_settings_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/data_management_screen.dart';
@@ -54,7 +52,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       securityProvider.select((s) => s.isBiometricEnabled),
     );
     final isDebugEnabled = ref.watch(debugModeProvider);
-    final isIncomeGuardianEnabled = ref.watch(isIncomeGuardianEnabledProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings, style: AppTypography.h3)),
@@ -115,27 +112,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ],
           ),
-
-          // Income Guardian: hidden until something generates expected
-          // cash flows (A42).
-          if (isIncomeGuardianEnabled)
-            SettingsSection(
-              title: l10n.incomeGuardianSettings,
-              children: [
-                SettingsNavTile(
-                  icon: Icons.security,
-                  iconColor: isDark
-                      ? AppColors.successDark
-                      : AppColors.successLight,
-                  title: l10n.incomeGuardianSettings,
-                  subtitle: l10n.incomeGuardianSettingsSubtitle,
-                  onTap: () => _navigateTo(
-                    context,
-                    const IncomeGuardianSettingsScreen(),
-                  ),
-                ),
-              ],
-            ),
 
           // Data & Account
           SettingsSection(

@@ -19,7 +19,6 @@ import 'package:inv_tracker/features/goals/presentation/screens/goals_screen.dar
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_carousel_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_card.dart';
-import 'package:inv_tracker/features/income_projection/presentation/widgets/expected_income_section.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_list_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/cash_flow_card_widget.dart';
@@ -696,31 +695,22 @@ Future<void> _checkOpenDetail(LayoutGuard g, Finder list) async {
     screen,
   );
 
-  // The other two segments use the same edge and the same foot.
-  for (final segment in const ['Upcoming', 'Docs']) {
-    await g.scrollToStart(screen);
-    final tab = find.descendant(
-      of: find.byType(InvestmentDetailSegmentControl),
-      matching: find.text(segment),
-    );
-    if (tab.evaluate().isEmpty) continue; // hidden with Income Guardian
-    await g.reveal(tab, screen);
-    await g.tester.tap(tab.first, warnIfMissed: false);
-    await g.pumpFrames(6);
-    final content = segment == 'Docs'
-        ? find.byType(DocumentListWidget)
-        : find.byType(ExpectedIncomeSection);
-    await g.reveal(content, screen);
-    g.expectStart('Detail $segment content', content);
-    if (segment == 'Docs') {
-      // The demo investments have no documents: this is the empty state.
-      g.expectFound('Detail Docs empty state', find.text('No documents yet'));
-    }
-    await g.scrollToEnd(screen);
-    if (segment == 'Docs') {
-      g.expectClearOfFab('Detail (docs)', content, screen);
-    }
-  }
+  // The Docs segment uses the same edge and the same foot.
+  await g.scrollToStart(screen);
+  final tab = find.descendant(
+    of: find.byType(InvestmentDetailSegmentControl),
+    matching: find.text('Docs'),
+  );
+  await g.reveal(tab, screen);
+  await g.tester.tap(tab.first, warnIfMissed: false);
+  await g.pumpFrames(6);
+  final content = find.byType(DocumentListWidget);
+  await g.reveal(content, screen);
+  g.expectStart('Detail Docs content', content);
+  // The demo investments have no documents: this is the empty state.
+  g.expectFound('Detail Docs empty state', find.text('No documents yet'));
+  await g.scrollToEnd(screen);
+  g.expectClearOfFab('Detail (docs)', content, screen);
 
   await _backFromDetail(g);
 }

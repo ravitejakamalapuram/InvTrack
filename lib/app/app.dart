@@ -19,7 +19,6 @@ import 'package:inv_tracker/features/settings/presentation/widgets/legacy_curren
 import 'package:inv_tracker/features/settings/presentation/widgets/usd_tag_repair_prompt.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/valuation_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/notification_sync_initializer.dart';
-import 'package:inv_tracker/features/income_projection/presentation/widgets/income_guardian_service_initializer.dart';
 import 'package:inv_tracker/features/security/presentation/widgets/privacy_protection_wrapper.dart';
 import 'package:inv_tracker/core/widgets/in_app_update_initializer.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -38,38 +37,35 @@ class InvTrackerApp extends ConsumerWidget {
     // Dated valuations left behind by an investment deleted offline (#964).
     ref.watch(orphanedValuationSweepProvider);
 
-    return IncomeGuardianServiceInitializer(
-      child: NotificationSyncInitializer(
-        child: _NotificationNavigationHandler(
-          child: CurrencyCacheInitializer(
-            child: LegacyCurrencyBackfillInitializer(
-              child: ProfileInitializer(
-                child: MaterialApp.router(
-                  onGenerateTitle: (context) =>
-                      AppLocalizations.of(context).appTitle,
-                  theme: AppTheme.lightTheme,
-                  darkTheme: AppTheme.darkTheme,
-                  themeMode: settings.themeMode,
-                  routerConfig: router,
-                  localizationsDelegates:
-                      AppLocalizations.localizationsDelegates,
-                  supportedLocales: AppLocalizations.supportedLocales,
-                  builder: (context, child) {
-                    return InAppUpdateInitializer(
-                      child: ConnectivityListener(
-                        child: DeletionRequestNotice(
-                          child: PrivacyProtectionWrapper(
-                            child: PendingGuestBackupNotice(
-                              child: UsdTagRepairInitializer(
-                                child: child ?? const SizedBox.shrink(),
-                              ),
+    return NotificationSyncInitializer(
+      child: _NotificationNavigationHandler(
+        child: CurrencyCacheInitializer(
+          child: LegacyCurrencyBackfillInitializer(
+            child: ProfileInitializer(
+              child: MaterialApp.router(
+                onGenerateTitle: (context) =>
+                    AppLocalizations.of(context).appTitle,
+                theme: AppTheme.lightTheme,
+                darkTheme: AppTheme.darkTheme,
+                themeMode: settings.themeMode,
+                routerConfig: router,
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                builder: (context, child) {
+                  return InAppUpdateInitializer(
+                    child: ConnectivityListener(
+                      child: DeletionRequestNotice(
+                        child: PrivacyProtectionWrapper(
+                          child: PendingGuestBackupNotice(
+                            child: UsdTagRepairInitializer(
+                              child: child ?? const SizedBox.shrink(),
                             ),
                           ),
                         ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           ),

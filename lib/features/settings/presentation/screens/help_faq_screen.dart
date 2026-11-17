@@ -15,18 +15,12 @@ class HelpFaqScreen extends StatelessWidget {
   const HelpFaqScreen({
     super.key,
     required this.showDeveloperFaq,
-    this.showIncomeGuardianFaq = false,
     this.showPortfolioHealthFaq = false,
   });
 
   /// Whether to explain the developer tools. Callers pass
   /// developerToolsAvailableProvider, which is false in release builds.
   final bool showDeveloperFaq;
-
-  /// Whether to explain Income Guardian (A105). Callers pass
-  /// isIncomeGuardianEnabledProvider, so the FAQ never describes a feature
-  /// the user cannot see.
-  final bool showIncomeGuardianFaq;
 
   /// Whether to say where the Portfolio Health Score is (#903). Callers pass
   /// isPortfolioHealthEnabledProvider, so the FAQ never points at a card the
@@ -163,39 +157,6 @@ class HelpFaqScreen extends StatelessWidget {
               isDark,
             ),
           ]),
-          if (showIncomeGuardianFaq)
-            _buildSection(l10n.incomeGuardianSection, [
-              _buildFaqItem(
-                l10n.whatIsIncomeGuardian,
-                l10n.whatIsIncomeGuardianAnswer,
-                isDark,
-              ),
-              _buildFaqItem(
-                l10n.howDoesIncomeProjectionWork,
-                l10n.howDoesIncomeProjectionWorkAnswer,
-                isDark,
-              ),
-              _buildFaqItem(
-                l10n.whatIsIncomeTrendAnalysis,
-                l10n.whatIsIncomeTrendAnalysisAnswer,
-                isDark,
-              ),
-              _buildFaqItem(
-                l10n.whatIsHHIScore,
-                l10n.whatIsHHIScoreAnswer,
-                isDark,
-              ),
-              _buildFaqItem(
-                l10n.whatIsPlatformReliability,
-                l10n.whatIsPlatformReliabilityAnswer,
-                isDark,
-              ),
-              _buildFaqItem(
-                l10n.howToAccessIncomeReports,
-                l10n.howToAccessIncomeReportsAnswer,
-                isDark,
-              ),
-            ]),
           if (showDeveloperFaq)
             _buildSection(l10n.advancedFeatures, [
               _buildFaqItem(

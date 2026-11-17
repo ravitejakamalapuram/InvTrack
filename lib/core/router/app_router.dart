@@ -5,7 +5,6 @@ import 'package:inv_tracker/core/analytics/analytics_route_observer.dart';
 import 'package:inv_tracker/core/analytics/analytics_screens.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/screens/sign_in_screen.dart';
 
@@ -28,7 +27,6 @@ import 'package:inv_tracker/features/settings/presentation/screens/settings_scre
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
 import 'package:inv_tracker/features/onboarding/presentation/screens/onboarding_screen.dart';
-import 'package:inv_tracker/features/income_projection/presentation/screens/income_calendar_screen.dart';
 
 // Root navigator key - used for showing dialogs from anywhere in the app
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -68,7 +66,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     refresh.refresh();
   });
   ref.listen(onboardingCompleteProvider, (_, _) => refresh.refresh());
-  ref.listen(isIncomeGuardianEnabledProvider, (_, _) => refresh.refresh());
 
   router = GoRouter(
     refreshListenable: refresh,
@@ -86,7 +83,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       );
       final onboardingComplete = ref.read(onboardingCompleteProvider);
-      final isIncomeGuardianEnabled = ref.read(isIncomeGuardianEnabledProvider);
       final isLocked = ref.read(securityProvider).isLocked;
       final isLockScreen = state.uri.toString() == '/lock';
 
@@ -122,13 +118,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (isLoggedIn && !isLocked && isLockScreen) {
-        return '/';
-      }
-
-      // Income Guardian is hidden while its flag is off (A42), including its
-      // calendar reached by a deep link or a stale navigation.
-      final isIncomeCalendarRoute = state.uri.path == '/income-calendar';
-      if (isLoggedIn && !isIncomeGuardianEnabled && isIncomeCalendarRoute) {
         return '/';
       }
 
@@ -267,12 +256,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/portfolio-health',
         name: AnalyticsScreens.portfolioHealth,
         builder: (context, state) => const PortfolioHealthDetailsScreen(),
-      ),
-      // Income Calendar route
-      GoRoute(
-        path: '/income-calendar',
-        name: AnalyticsScreens.incomeCalendar,
-        builder: (context, state) => const IncomeCalendarScreen(),
       ),
       // Monthly recap, opened from its notification
       GoRoute(

@@ -61,13 +61,6 @@ void main() {
     expect(offending, isEmpty);
   });
 
-  test('Income Guardian copy says it uses the schedule the user enters', () {
-    final l10n = AppLocalizationsEn();
-    expect(l10n.whatIsIncomeGuardianAnswer, contains('schedule you enter'));
-    expect(l10n.incomeGuardianFeatureSubtitle, contains('schedule'));
-    expect(l10n.dashboardIncomeGuardianSubtitle, contains('schedule'));
-  });
-
   test('the supported types answer leads with what InvTrack is built for', () {
     final answer = AppLocalizationsEn().whatInvestmentTypesSupportedAnswer;
     expect(answer, isNot(startsWith('InvTrack supports Stocks')));

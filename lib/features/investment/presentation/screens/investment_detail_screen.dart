@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_screens.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -19,8 +18,6 @@ import 'package:inv_tracker/features/investment/presentation/screens/add_investm
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/value_history_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/valuation_providers.dart';
-import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_providers.dart';
-import 'package:inv_tracker/features/income_projection/presentation/widgets/expected_income_section.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/add_document_sheet.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/archive_investment_confirm.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/cash_flow_card_widget.dart';
@@ -98,12 +95,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     final isClosed = widget.investment.status == InvestmentStatus.closed;
     final typeName = investmentTypeName(widget.investment);
     final isPrivacyMode = ref.watch(privacyModeProvider);
-    // The Upcoming (expected income) tab is hidden with Income Guardian, as
-    // nothing generates expected cash flows yet (A42).
-    final showExpectedIncome = ref.watch(isIncomeGuardianEnabledProvider);
-    final selectedSegment = !showExpectedIncome && _selectedSegment == 1
-        ? 0
-        : _selectedSegment;
+    final selectedSegment = _selectedSegment;
 
     final primaryColor = isClosed ? Colors.grey : widget.investment.type.color;
 
@@ -398,18 +390,6 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 isDark: isDark,
                 selectedSegment: selectedSegment,
                 transactionCount: cashFlowsAsync.value?.length ?? 0,
-                showExpectedIncome: showExpectedIncome,
-                expectedIncomeCount: showExpectedIncome
-                    ? ref
-                              .watch(
-                                expectedCashFlowsByInvestmentProvider(
-                                  widget.investment.id,
-                                ),
-                              )
-                              .value
-                              ?.length ??
-                          0
-                    : 0,
                 documentCount:
                     ref
                         .watch(
@@ -515,16 +495,6 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 child: _buildErrorState(isDark, err.toString()),
               ),
             ),
-          ] else if (selectedSegment == 1) ...[
-            // Expected Income Section
-            SliverToBoxAdapter(
-              child: ScreenEdge(
-                child: ExpectedIncomeSection(
-                  investmentId: widget.investment.id,
-                  isDark: isDark,
-                ),
-              ),
-            ),
           ] else ...[
             // Documents Section
             SliverToBoxAdapter(
@@ -548,9 +518,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               hasTransactions: cashFlowsAsync.value?.isNotEmpty ?? false,
               onTap: () => _navigateToAddTransaction(cashFlowsAsync),
             )
-          : selectedSegment == 2
-          ? DocumentFab(onTap: () => _showAddDocumentSheet(context, isDark))
-          : null, // No FAB for Expected Income tab
+          : DocumentFab(onTap: () => _showAddDocumentSheet(context, isDark)),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }

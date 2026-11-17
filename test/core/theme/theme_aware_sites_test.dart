@@ -57,7 +57,6 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 
 const _constants = [
   'neutral500Light',
@@ -125,13 +124,6 @@ const _bright = <String, int>{
   'lib/features/fire_number/presentation/widgets/fire_dashboard_card.dart': 1,
   // The tints behind the FIRE and Barista icons.
   'lib/features/fire_number/presentation/widgets/fire_stats_card.dart': 2,
-  // Hidden until the Income Guardian flag is on (A42): the status colour is
-  // text and tint at once there. Split before the flag is turned on.
-  'lib/features/income_projection/presentation/screens/income_guardian_settings_screen.dart':
-      1,
-  'lib/features/income_projection/presentation/widgets/expected_income_section.dart':
-      2,
-  'lib/features/income_projection/presentation/widgets/income_cell.dart': 2,
   // The tints of the maturity chip and the maturity row.
   'lib/features/investment/presentation/widgets/investment_card.dart': 3,
   'lib/features/investment/presentation/widgets/investment_detail_stats_section.dart':
@@ -1014,25 +1006,6 @@ final c = 'AppColors.warningLight';
       );
     },
   );
-
-  test('the hidden Income Guardian files are split before the flag ships', () {
-    // _bright counts reads; it cannot tell a fill from a text. These files
-    // paint the bright blue and amber as text too (2.77:1 and 2.15:1 in light),
-    // and are counted only because the feature is off. Turning the flag on
-    // needs their text on accentTextLight and warningTextLight and their
-    // entries out of _bright.
-    final hidden = [
-      for (final path in _bright.keys)
-        if (path.startsWith('lib/features/income_projection/')) path,
-    ];
-    expect(
-      FeatureFlag.incomeGuardian.defaultEnabled && hidden.isNotEmpty,
-      isFalse,
-      reason:
-          'Income Guardian is on by default but these files still read the '
-          'bright blue or amber for text: ${hidden.join(', ')}',
-    );
-  });
 
   test('every site that reads a light colour checks the theme', () {
     final failures = <String>[];

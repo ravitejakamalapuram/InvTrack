@@ -244,7 +244,6 @@ class GuestBackupMergeService {
             'investmentsWithDetailsNotInExport':
                 export.investmentsWithDetailsNotInExport,
             'investmentsNotInExport': export.investmentsNotInExport,
-            'expectedCashFlows': export.expectedCashFlows,
           },
         );
         // Every record the backup holds is now in the Google account.

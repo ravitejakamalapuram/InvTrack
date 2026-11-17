@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/goals/data/models/goal_model.dart';
-import 'package:inv_tracker/features/income_projection/data/repositories/firestore_expected_cash_flow_repository.dart';
 import 'package:inv_tracker/features/investment/data/repositories/firestore_investment_repository.dart';
 import 'package:inv_tracker/features/user_profile/data/models/user_profile_model.dart';
 
@@ -64,22 +63,6 @@ void main() {
 
         expect(goal.currency, 'INR');
         expect(goal.currencyAssumed, isTrue);
-      });
-
-      test('expected cash flow document', () {
-        final expected =
-            FirestoreExpectedCashFlowRepository.expectedCashFlowFromFirestore(
-              {
-                'investmentId': 'inv-1',
-                'expectedDate': created,
-                'expectedAmount': 3500,
-                'createdAt': created,
-              },
-              'ecf-1',
-              baseCurrency: 'INR',
-            );
-
-        expect(expected.currency, 'INR');
       });
 
       test('user profile document', () {

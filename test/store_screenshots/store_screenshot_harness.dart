@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -19,7 +18,6 @@ import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
 import 'package:inv_tracker/features/tips/presentation/providers/daily_tip_provider.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
-import 'package:inv_tracker/features/income_projection/presentation/providers/income_guardian_service_providers.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -220,9 +218,6 @@ bool _rendersAsTestFont(TextStyle style) {
 List<Override> _storeOverrides(StoreDemoData demo) => [
   fireSettingsRepositoryProvider.overrideWithValue(
     FakeFireSettingsRepository(initialSettings: demo.fireSettings),
-  ),
-  flutterLocalNotificationsPluginProvider.overrideWithValue(
-    FlutterLocalNotificationsPlugin(),
   ),
   firestoreProvider.overrideWithValue(_NoFirestore()),
   valuationSnapshotsActiveProvider.overrideWithValue(false),

@@ -18,17 +18,10 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
-import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
-import 'package:inv_tracker/core/utils/currency_utils.dart';
-import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
-import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/investment/data/repositories/firestore_investment_repository.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockFirestore extends Mock implements FirebaseFirestore {}
 
@@ -709,157 +702,6 @@ void main() {
         throwsA(isA<NetworkException>()),
       );
       expect(batches, isEmpty);
-    });
-  });
-
-  // #917 (review): the answer of the server decides whether the sweep is asked
-  // to run again, not the answer of the cache.
-  group('expected payments the server did not answer for', () {
-    late int hints;
-    late FirestoreInvestmentRepository hinting;
-
-    setUp(() {
-      hints = 0;
-      for (final investmentId in [id, otherId]) {
-        for (final collection in [
-          'cashflows',
-          'archivedCashflows',
-          'valuations',
-        ]) {
-          stubDocs(collection, investmentId, []);
-        }
-      }
-      hinting = FirestoreInvestmentRepository(
-        firestore: firestore,
-        userId: uid,
-        baseCurrency: () => 'INR',
-        onExpectedPaymentsUnverified: () async {
-          hints++;
-        },
-      );
-    });
-
-    test('deleteInvestment still deletes offline with an empty cache, and '
-        'asks for another sweep', () async {
-      await hinting.deleteInvestment(id);
-
-      expect(
-        deletedPerBatch.expand((d) => d),
-        contains(investmentDocs['investments/$id']),
-      );
-      expect(hints, 1);
-    });
-
-    test('deleteInvestment asks for another sweep when only the cache '
-        'answered, and still deletes what it holds', () async {
-      final cached = _MockDoc();
-      stubDocs('expectedCashFlows', id, [cached]);
-
-      await hinting.deleteInvestment(id);
-
-      expect(deletedPerBatch.expand((d) => d), contains(cached));
-      expect(hints, 1);
-    });
-
-    test('deleteInvestment does not ask when the server answered, even with '
-        'no payments', () async {
-      stubDocs('expectedCashFlows', id, [], serverRefs: []);
-
-      await hinting.deleteInvestment(id);
-
-      expect(hints, 0);
-    });
-
-    test('deleteInvestment does not ask when only the snapshots went '
-        'unanswered', () async {
-      stubDocs('valuations', id, []);
-      stubDocs('expectedCashFlows', id, [], serverRefs: []);
-
-      await hinting.deleteInvestment(id);
-
-      expect(hints, 0);
-    });
-
-    test('deleteInvestment neither deletes nor asks when payments cannot be '
-        'listed at all', () async {
-      stubUnreadable('expectedCashFlows', id);
-
-      await expectLater(
-        () => hinting.deleteInvestment(id),
-        throwsA(isA<NetworkException>()),
-      );
-      expect(batches, isEmpty);
-      expect(hints, 0);
-    });
-
-    test('deleteArchivedInvestment asks for another sweep', () async {
-      await hinting.deleteArchivedInvestment(id);
-
-      expect(
-        deletedPerBatch.expand((d) => d),
-        contains(investmentDocs['archivedInvestments/$id']),
-      );
-      expect(hints, 1);
-    });
-
-    test('bulkDelete asks once for the one investment the server did not '
-        'answer for', () async {
-      stubDocs('expectedCashFlows', id, [], serverRefs: []);
-
-      expect(await hinting.bulkDelete([id, otherId]), 2);
-
-      expect(hints, 1);
-    });
-
-    test('a failing request does not stop the delete', () async {
-      final failing = FirestoreInvestmentRepository(
-        firestore: firestore,
-        userId: uid,
-        baseCurrency: () => 'INR',
-        onExpectedPaymentsUnverified: () async => throw StateError('prefs'),
-      );
-
-      await failing.deleteInvestment(id);
-
-      expect(
-        deletedPerBatch.expand((d) => d),
-        contains(investmentDocs['investments/$id']),
-      );
-    });
-
-    test('the repository the app builds asks for a new sweep for the user, '
-        'and no one else', () async {
-      SharedPreferences.setMockInitialValues({
-        'expected_payments_orphan_sweep_requested_$uid': 1,
-        'expected_payments_orphan_sweep_completed_$uid': 1,
-        'expected_payments_orphan_sweep_requested_other-user': 1,
-        'expected_payments_orphan_sweep_completed_other-user': 1,
-      });
-      final prefs = await SharedPreferences.getInstance();
-      final container = ProviderContainer(
-        overrides: [
-          firestoreProvider.overrideWithValue(firestore),
-          authStateProvider.overrideWith(
-            (ref) =>
-                Stream.value(const UserEntity(id: uid, email: 'a@example.com')),
-          ),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          currencyCodeProvider.overrideWith((ref) => 'INR'),
-        ],
-      );
-      addTearDown(container.dispose);
-      // Listened to, as the app root does: an unlistened provider is paused.
-      container.listen(authStateProvider, (_, _) {});
-      await pumpEventQueue();
-
-      await container.read(investmentRepositoryProvider).deleteInvestment(id);
-
-      expect(prefs.getInt('expected_payments_orphan_sweep_requested_$uid'), 2);
-      expect(prefs.getInt('expected_payments_orphan_sweep_completed_$uid'), 1);
-      expect(
-        prefs.getInt('expected_payments_orphan_sweep_requested_other-user'),
-        1,
-      );
     });
   });
 }

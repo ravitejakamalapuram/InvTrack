@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
@@ -30,7 +29,6 @@ void main() {
         securityProvider.overrideWith(_TestSecurityNotifier.new),
         onboardingCompleteProvider.overrideWith((ref) async => true),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
-        isIncomeGuardianEnabledProvider.overrideWithValue(false),
       ],
     );
     addTearDown(container.dispose);

@@ -10,7 +10,6 @@ import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
-import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_list_screen.dart';
@@ -86,9 +85,6 @@ Future<void> _pump(
         archivedCashFlowsByInvestmentProvider(
           'inv-1',
         ).overrideWith((ref) => Stream.value(_flows)),
-        expectedCashFlowsByInvestmentProvider(
-          'inv-1',
-        ).overrideWith((ref) => Stream.value([])),
         documentsByInvestmentProvider(
           'inv-1',
         ).overrideWith((ref) => Stream.value([])),

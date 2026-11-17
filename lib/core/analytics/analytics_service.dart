@@ -179,12 +179,6 @@ class AnalyticsEvents {
   // Enhanced Fields usage
   static const String enhancedFieldsUsed = 'enhanced_fields_used';
 
-  // Income Guardian events
-  static const String incomeGuardianEnabled = 'income_guardian_enabled';
-  static const String incomeGuardianDisabled = 'income_guardian_disabled';
-  static const String incomeGuardianSettingChanged =
-      'income_guardian_setting_changed';
-
   // Multi-Currency events
   static const String currencySelected = 'currency_selected';
   static const String currencyConversionFailed = 'currency_conversion_failed';
@@ -1168,61 +1162,4 @@ String getScoreTier(double score) {
   if (score >= 40) return 'fair';
   if (score >= 20) return 'poor';
   return 'critical';
-}
-
-// ============ Income Guardian Analytics Extensions ============
-
-extension IncomeGuardianAnalytics on AnalyticsService {
-  /// Log Income Guardian feature enabled
-  ///
-  /// Tracks when users enable the Income Guardian monitoring feature.
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await analyticsService.logIncomeGuardianEnabled();
-  /// ```
-  Future<void> logIncomeGuardianEnabled() async {
-    await logEvent(name: AnalyticsEvents.incomeGuardianEnabled);
-  }
-
-  /// Log Income Guardian feature disabled
-  ///
-  /// Tracks when users disable the Income Guardian monitoring feature.
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await analyticsService.logIncomeGuardianDisabled();
-  /// ```
-  Future<void> logIncomeGuardianDisabled() async {
-    await logEvent(name: AnalyticsEvents.incomeGuardianDisabled);
-  }
-
-  /// Log Income Guardian setting changed
-  ///
-  /// Tracks when users adjust Income Guardian settings.
-  ///
-  /// ## Parameters
-  ///
-  /// - [settingName]: Name of the setting changed
-  /// - [newValue]: New value (as string for analytics)
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await analyticsService.logIncomeGuardianSettingChanged(
-  ///   settingName: 'upcoming_days_before',
-  ///   newValue: '3',
-  /// );
-  /// ```
-  Future<void> logIncomeGuardianSettingChanged({
-    required String settingName,
-    required String newValue,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.incomeGuardianSettingChanged,
-      parameters: {'setting_name': settingName, 'new_value': newValue},
-    );
-  }
 }

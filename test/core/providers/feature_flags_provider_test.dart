@@ -28,9 +28,8 @@ void main() {
     for (final overridesAllowed in [true, false]) {
       final build = overridesAllowed ? 'debug' : 'release';
 
-      test('$build: Income Guardian and Health Score stay hidden', () async {
+      test('$build: Health Score stays hidden', () async {
         final c = await _container(overridesAllowed: overridesAllowed);
-        expect(c.read(isIncomeGuardianEnabledProvider), isFalse);
         expect(c.read(isPortfolioHealthEnabledProvider), isFalse);
       });
     }
@@ -38,13 +37,11 @@ void main() {
 
   group('values stored on the device', () {
     const stored = <String, Object>{
-      'feature_flag_income_guardian': true,
       'feature_flag_portfolio_health_score': true,
     };
 
     test('release ignores them and uses the code defaults', () async {
       final c = await _container(overridesAllowed: false, stored: stored);
-      expect(c.read(isIncomeGuardianEnabledProvider), isFalse);
       expect(c.read(isPortfolioHealthEnabledProvider), isFalse);
     });
 
@@ -52,13 +49,12 @@ void main() {
       final c = await _container(overridesAllowed: false);
       await c
           .read(featureFlagsProvider.notifier)
-          .setEnabled(FeatureFlag.incomeGuardian, true);
-      expect(c.read(isIncomeGuardianEnabledProvider), isFalse);
+          .setEnabled(FeatureFlag.portfolioHealthScore, true);
+      expect(c.read(isPortfolioHealthEnabledProvider), isFalse);
     });
 
     test('debug builds still honour them (Debug Settings)', () async {
       final c = await _container(overridesAllowed: true, stored: stored);
-      expect(c.read(isIncomeGuardianEnabledProvider), isTrue);
       expect(c.read(isPortfolioHealthEnabledProvider), isTrue);
     });
   });

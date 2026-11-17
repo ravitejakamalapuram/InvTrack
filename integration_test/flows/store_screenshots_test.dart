@@ -20,14 +20,12 @@
 library;
 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import 'package:inv_tracker/core/widgets/privacy_toggle_button.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_dashboard_card.dart';
-import 'package:inv_tracker/features/income_projection/presentation/providers/income_guardian_service_providers.dart';
 import 'package:inv_tracker/firebase_options.dart';
 
 import '../mocks/fake_fire_settings_repository.dart';
@@ -46,7 +44,9 @@ void main() {
     // reads triggered by those providers fail gracefully in the background
     // (same as the shipped app when offline) since they're not overridden.
     try {
-      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
     } catch (_) {
       // Already initialized or unavailable - the app tolerates this.
     }
@@ -63,9 +63,6 @@ void main() {
       extraOverrides: [
         fireSettingsRepositoryProvider.overrideWithValue(
           FakeFireSettingsRepository(initialSettings: demo.fireSettings),
-        ),
-        flutterLocalNotificationsPluginProvider.overrideWithValue(
-          FlutterLocalNotificationsPlugin(),
         ),
       ],
     );

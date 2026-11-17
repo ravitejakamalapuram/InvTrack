@@ -15,7 +15,6 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
-import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -140,9 +139,6 @@ Future<void> _pump(
         archivedCashFlowsByInvestmentProvider(
           'inv-1',
         ).overrideWith((ref) => Stream.value(_flows)),
-        expectedCashFlowsByInvestmentProvider(
-          'inv-1',
-        ).overrideWith((ref) => Stream.value([])),
         documentsByInvestmentProvider(
           'inv-1',
         ).overrideWith((ref) => Stream.value([])),
