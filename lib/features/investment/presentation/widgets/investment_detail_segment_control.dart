@@ -3,19 +3,13 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
-/// Segmented control for switching between Transactions, Documents, and Expected Income tabs.
-///
-/// Segment indexes stay fixed (0 activity, 1 expected income, 2 documents)
-/// whether or not the expected income tab is shown.
+/// Segmented control for switching between the Activity and Documents tabs
+/// (0 activity, 1 documents).
 class InvestmentDetailSegmentControl extends StatelessWidget {
   final bool isDark;
   final int selectedSegment;
   final int transactionCount;
   final int documentCount;
-  final int expectedIncomeCount;
-
-  /// False while Income Guardian is hidden: the Upcoming tab is left out.
-  final bool showExpectedIncome;
   final ValueChanged<int> onSegmentChanged;
 
   const InvestmentDetailSegmentControl({
@@ -24,8 +18,6 @@ class InvestmentDetailSegmentControl extends StatelessWidget {
     required this.selectedSegment,
     required this.transactionCount,
     required this.documentCount,
-    required this.expectedIncomeCount,
-    required this.showExpectedIncome,
     required this.onSegmentChanged,
   });
 
@@ -53,32 +45,17 @@ class InvestmentDetailSegmentControl extends StatelessWidget {
               onTap: () => onSegmentChanged(0),
             ),
           ),
-          if (showExpectedIncome) ...[
-            const SizedBox(width: 4),
-            // Expected Income Tab
-            Expanded(
-              flex: 2,
-              child: _SegmentTab(
-                isDark: isDark,
-                isSelected: selectedSegment == 1,
-                icon: Icons.schedule_rounded,
-                label: l10n.segmentUpcoming,
-                count: expectedIncomeCount,
-                onTap: () => onSegmentChanged(1),
-              ),
-            ),
-          ],
           const SizedBox(width: 4),
           // Documents Tab
           Expanded(
             flex: 2,
             child: _SegmentTab(
               isDark: isDark,
-              isSelected: selectedSegment == 2,
+              isSelected: selectedSegment == 1,
               icon: Icons.folder_outlined,
               label: l10n.segmentDocs,
               count: documentCount,
-              onTap: () => onSegmentChanged(2),
+              onTap: () => onSegmentChanged(1),
             ),
           ),
         ],

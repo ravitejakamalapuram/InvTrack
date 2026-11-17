@@ -27,13 +27,7 @@ enum FeatureFlag {
   peerBenchmarking('peer_benchmarking', 'Peer Benchmarking'),
 
   /// Future: AI Assistant
-  aiAssistant('ai_assistant', 'AI Assistant'),
-
-  /// Income Guardian: expected-payment tracking and alerts.
-  /// - Off until something generates expected cash flows (founder decision,
-  ///   2026-10-02). While off, its Settings tile, the investment "Upcoming"
-  ///   tab and its background services are all hidden or stopped.
-  incomeGuardian('income_guardian', 'Income Guardian');
+  aiAssistant('ai_assistant', 'AI Assistant');
 
   const FeatureFlag(this.key, this.displayName);
 
@@ -163,15 +157,6 @@ final isAiAssistantEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.aiAssistant] ?? false,
-    ),
-  );
-});
-
-/// Convenience provider for checking if Income Guardian is enabled
-final isIncomeGuardianEnabledProvider = Provider<bool>((ref) {
-  return ref.watch(
-    featureFlagsProvider.select(
-      (flags) => flags[FeatureFlag.incomeGuardian] ?? false,
     ),
   );
 });

@@ -34,8 +34,6 @@ const mustUse = <String, List<String>>{
   'lib/features/overview/presentation/widgets/overview_quick_stats.dart': [
     'TileRow',
   ],
-  'lib/features/income_projection/presentation/screens/income_trend_report_screen.dart':
-      ['TileRow'],
 };
 
 final _spacer = RegExp(r'\bSpacer\s*\(');

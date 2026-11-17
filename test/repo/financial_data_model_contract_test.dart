@@ -35,7 +35,6 @@ void main() {
     for (final name in [
       'InvestmentEntity',
       'CashFlowEntity',
-      'ExpectedCashFlowEntity',
       'CurrentValueCalculator',
       'InvestmentValuation',
       'InvestmentValuationSnapshot',
@@ -48,13 +47,6 @@ void main() {
         reason: '$name is in the doc but not in lib/',
       );
     }
-    expect(
-      File(
-        'lib/features/income_projection/data/services/'
-        'income_guardian_sync_service.dart',
-      ).existsSync(),
-      isTrue,
-    );
   });
 
   test('CashFlowEntity still has no breakdown fields (doc says so)', () {

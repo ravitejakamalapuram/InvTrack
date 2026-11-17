@@ -21,7 +21,6 @@ class AnalyticsScreens {
   static const String fireSetup = 'fire_setup';
   static const String fireSettings = 'fire_settings';
   static const String portfolioHealth = 'portfolio_health';
-  static const String incomeCalendar = 'income_calendar';
   static const String monthlyRecap = 'monthly_recap';
 
   // Pages opened with Navigator.push on the way to a first investment. The

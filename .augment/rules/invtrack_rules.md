@@ -122,7 +122,6 @@ return SizedBox.shrink(); // Or alternative UI
 #### 1.4.4 Examples
 See existing implementations:
 - `FeatureFlag.portfolioHealthScore` - Dashboard health metrics
-- `FeatureFlag.incomeGuardian` - AI-powered income tracking
 
 **⚠️ VIOLATION = PR REJECTED**
 Any new feature without proper feature flag implementation will be rejected during code review.

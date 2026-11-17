@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
-import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -20,7 +19,6 @@ class FeatureFlagsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final featureFlags = ref.watch(featureFlagsProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SettingsSection(
       title: l10n.experimentalFeatures,
@@ -52,44 +50,6 @@ class FeatureFlagsSection extends ConsumerWidget {
                       newState
                           ? l10n.portfolioHealthScoreEnabled
                           : l10n.portfolioHealthScoreDisabled,
-                    ),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              }
-            } catch (e, stackTrace) {
-              if (context.mounted) {
-                ErrorHandler.handle(e, stackTrace, context: context);
-              }
-            }
-          },
-        ),
-
-        // Income Guardian feature flag
-        SettingsToggleTile(
-          icon: Icons.shield_outlined,
-          iconColor: isDark ? AppColors.successDark : AppColors.successLight,
-          title: l10n.incomeGuardianFeature,
-          subtitle: l10n.incomeGuardianFeatureSubtitle,
-          value: featureFlags[FeatureFlag.incomeGuardian] ?? false,
-          onChanged: (value) async {
-            try {
-              await ref
-                  .read(featureFlagsProvider.notifier)
-                  .toggle(FeatureFlag.incomeGuardian);
-
-              // Verify the toggle succeeded
-              final newState =
-                  ref.read(featureFlagsProvider)[FeatureFlag.incomeGuardian] ??
-                  false;
-
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      newState
-                          ? l10n.incomeGuardianFeatureEnabled
-                          : l10n.incomeGuardianFeatureDisabled,
                     ),
                     duration: const Duration(seconds: 2),
                   ),

@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/analytics/analytics_screens.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
@@ -22,7 +21,6 @@ import 'package:inv_tracker/core/widgets/stat_columns.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_dashboard_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_card.dart';
-import 'package:inv_tracker/features/income_projection/presentation/widgets/income_guardian_dashboard_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_enums.dart';
@@ -283,12 +281,6 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
         const PortfolioHealthDashboardCard(),
 
         SizedBox(height: AppSpacing.xl),
-
-        // Income Guardian Card (feature flag)
-        if (ref.watch(isIncomeGuardianEnabledProvider)) ...[
-          const IncomeGuardianDashboardCard(),
-          SizedBox(height: AppSpacing.xl),
-        ],
 
         // Goals Summary Card
         const GoalsDashboardCard(),

@@ -23,12 +23,6 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   /// The user's base currency, for documents with no `currency` field.
   final String Function() _baseCurrency;
 
-  /// Asked for when an investment is deleted while the server gave no answer
-  /// about its expected payments, so that the one-off orphan sweep runs again
-  /// at the next Income Guardian start (#917). Best effort: a failure here
-  /// never stops the delete.
-  final Future<void> Function()? _onExpectedPaymentsUnverified;
-
   /// Told when the server rejects a write that was already reported as saved
   /// (see [_executeLocalWrite]). Never given the record.
   final void Function(Object error)? _onWriteRejected;
@@ -47,12 +41,10 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     required FirebaseFirestore firestore,
     required String userId,
     required String Function() baseCurrency,
-    Future<void> Function()? onExpectedPaymentsUnverified,
     void Function(Object error)? onWriteRejected,
   }) : _firestore = firestore,
        _userId = userId,
        _baseCurrency = baseCurrency,
-       _onExpectedPaymentsUnverified = onExpectedPaymentsUnverified,
        _onWriteRejected = onWriteRejected;
 
   /// Execute a write operation with timeout
@@ -395,7 +387,6 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     final expected = await _refsForDeletion(
       _expectedCashFlowsRef,
       investmentId,
-      onUnanswered: _onExpectedPaymentsUnverified,
     );
     final documents = await _refsForDeletion(_documentsRef, investmentId);
     final goals = await _goalRefsLinkedTo(investmentId);
@@ -515,9 +506,8 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   /// the delete.
   Future<Set<DocumentReference>> _refsForDeletion(
     CollectionReference<Map<String, dynamic>> ref,
-    String investmentId, {
-    Future<void> Function()? onUnanswered,
-  }) async {
+    String investmentId,
+  ) async {
     final refs = <DocumentReference>{};
     var serverAnswered = false;
     try {
@@ -535,13 +525,6 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       refs.addAll(cached.docs.map((doc) => doc.reference));
     } catch (_) {
       if (!serverAnswered) rethrow;
-    }
-    if (!serverAnswered && onUnanswered != null) {
-      try {
-        await onUnanswered();
-      } catch (_) {
-        // Only a hint for a later sweep: the delete must still happen.
-      }
     }
     return refs;
   }
@@ -937,11 +920,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
         await _refsForDeletion(_valuationsRef, investmentId),
       );
       cashFlowDocsToDelete.addAll(
-        await _refsForDeletion(
-          _expectedCashFlowsRef,
-          investmentId,
-          onUnanswered: _onExpectedPaymentsUnverified,
-        ),
+        await _refsForDeletion(_expectedCashFlowsRef, investmentId),
       );
       cashFlowDocsToDelete.addAll(
         await _refsForDeletion(_documentsRef, investmentId),

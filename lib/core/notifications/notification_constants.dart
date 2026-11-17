@@ -24,9 +24,8 @@ class NotificationChannels {
   static const String weeklyCheckIn = 'weekly_check_in';
   static const String fySummary = 'fy_summary_v2';
   static const String general = 'general'; // For test notifications
-  static const String activation = 'activation_v2'; // New user activation nudges
-  static const String incomeGuardian =
-      'income_guardian'; // Income Guardian alerts
+  static const String activation =
+      'activation_v2'; // New user activation nudges
 }
 
 /// Notification group keys for Android grouping
@@ -100,19 +99,6 @@ class NotificationIds {
   static const int activationDay3 = 3002; // Import reminder
   static const int activationDay7 = 3003; // Tips & benefits
   static const int activationDay14 = 3004; // Social proof / last chance
-
-  /// Income Guardian notification IDs
-  /// Overdue payment notification ID (per investment)
-  static int incomeGuardianOverdue(String investmentId) =>
-      260000 + investmentId.hashCode.abs() % 10000;
-
-  /// Upcoming payment reminder notification ID (per investment)
-  static int incomeGuardianUpcoming(String investmentId) =>
-      270000 + investmentId.hashCode.abs() % 10000;
-
-  /// Payment received confirmation notification ID
-  static int incomeGuardianReceived(String expectedCashFlowId) =>
-      280000 + expectedCashFlowId.hashCode.abs() % 10000;
 }
 
 /// Hands out notification ID slots: the first time an (kind, key) pair is

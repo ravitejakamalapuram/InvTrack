@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/onboarding/presentation/screens/onboarding_screen.dart';
@@ -58,7 +57,6 @@ void main() {
         securityProvider.overrideWith(_TestSecurityNotifier.new),
         onboardingCompleteProvider.overrideWith((ref) async => false),
         analyticsServiceProvider.overrideWithValue(analytics),
-        isIncomeGuardianEnabledProvider.overrideWithValue(false),
       ],
     );
     addTearDown(container.dispose);
@@ -90,7 +88,6 @@ void main() {
       '/fire/setup': 'fire_setup',
       '/fire/settings': 'fire_settings',
       '/portfolio-health': 'portfolio_health',
-      '/income-calendar': 'income_calendar',
       '/recap/:month': 'monthly_recap',
     });
   });

@@ -1,16 +1,11 @@
-// A42: nothing generates expected cash flows yet, so the "Upcoming" tab on
-// every investment could only ever say "No Expected Payments". While Income
-// Guardian is hidden the tab is not shown and its Firestore query never runs.
+// An investment has two tabs, Activity and Docs.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
-import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_providers.dart';
-import 'package:inv_tracker/features/income_projection/presentation/widgets/expected_income_section.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/document_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/document_list_widget.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
@@ -80,14 +75,9 @@ final _flows = [
   ),
 ];
 
-Future<bool> _pump(
-  WidgetTester tester, {
-  required bool overridesAllowed,
-  Map<String, Object> stored = const {},
-}) async {
-  SharedPreferences.setMockInitialValues(stored);
+Future<void> _pump(WidgetTester tester) async {
+  SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
-  var expectedFlowsQueried = false;
   // The archived banner adds a line, which pushed the lazily built Docs list
   // past the default 800x600 view.
   tester.view.physicalSize = const Size(800, 1200);
@@ -98,7 +88,6 @@ Future<bool> _pump(
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
-        featureFlagOverridesAllowedProvider.overrideWithValue(overridesAllowed),
         privacyModeProvider.overrideWith(_PrivacyOff.new),
         currencyCodeProvider.overrideWithValue('INR'),
         currencyConversionServiceProvider.overrideWithValue(
@@ -107,10 +96,6 @@ Future<bool> _pump(
         archivedCashFlowsByInvestmentProvider(
           'fd-1',
         ).overrideWith((ref) => Stream.value(_flows)),
-        expectedCashFlowsByInvestmentProvider('fd-1').overrideWith((ref) {
-          expectedFlowsQueried = true;
-          return Stream.value([]);
-        }),
         documentsByInvestmentProvider(
           'fd-1',
         ).overrideWith((ref) => Stream.value([])),
@@ -123,31 +108,25 @@ Future<bool> _pump(
     ),
   );
   await tester.pumpAndSettle();
-  return expectedFlowsQueried;
 }
 
 void main() {
-  testWidgets('Income Guardian hidden: no Upcoming tab and no query', (
+  testWidgets('an investment has an Activity tab and a Docs tab only', (
     tester,
   ) async {
-    final queried = await _pump(tester, overridesAllowed: false);
+    await _pump(tester);
     final l10n = AppLocalizations.of(
       tester.element(find.byType(InvestmentDetailScreen)),
     );
 
     expect(find.text(l10n.segmentActivity), findsOneWidget);
     expect(find.text(l10n.segmentDocs), findsOneWidget);
-    expect(find.text(l10n.segmentUpcoming), findsNothing);
-    expect(find.bySemanticsLabel(l10n.segmentUpcoming), findsNothing);
     expect(find.bySemanticsLabel(l10n.segmentActivity), findsOneWidget);
     expect(find.bySemanticsLabel(l10n.segmentDocs), findsOneWidget);
-    expect(queried, isFalse);
   });
 
-  testWidgets('Docs still opens the documents list when Upcoming is hidden', (
-    tester,
-  ) async {
-    await _pump(tester, overridesAllowed: false);
+  testWidgets('Docs opens the documents list', (tester) async {
+    await _pump(tester);
     final l10n = AppLocalizations.of(
       tester.element(find.byType(InvestmentDetailScreen)),
     );
@@ -157,22 +136,5 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(DocumentListWidget), findsOneWidget);
-    expect(find.byType(ExpectedIncomeSection), findsNothing);
-  });
-
-  testWidgets('with the flag on (Debug Settings) the Upcoming tab is back', (
-    tester,
-  ) async {
-    final queried = await _pump(
-      tester,
-      overridesAllowed: true,
-      stored: {'feature_flag_income_guardian': true},
-    );
-    final l10n = AppLocalizations.of(
-      tester.element(find.byType(InvestmentDetailScreen)),
-    );
-
-    expect(find.text(l10n.segmentUpcoming), findsOneWidget);
-    expect(queried, isTrue);
   });
 }

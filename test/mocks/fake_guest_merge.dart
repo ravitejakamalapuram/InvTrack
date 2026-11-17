@@ -36,7 +36,6 @@ ZipExport guestExport() => ZipExport(
   hasFireSettings: false,
   investmentsWithDetailsNotInExport: 0,
   investmentsNotInExport: 0,
-  expectedCashFlows: 0,
 );
 
 /// In-memory stand-in for the app-private backup folder.

@@ -165,10 +165,6 @@ class NotificationNavigator {
         // Snooze is handled directly in notification service
         return false;
 
-      case NotificationPayloadType.incomeGuardian:
-        // Navigate to investment detail with expected cash flow highlighted
-        return _navigateToInvestmentDetail(payloadString, payload.investmentId);
-
       case NotificationPayloadType.monthlyRecap:
         return _navigateToMonthlyRecap(payloadString, payload.params['month']);
 

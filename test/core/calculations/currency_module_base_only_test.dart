@@ -3,12 +3,8 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:inv_tracker/core/calculations/calculation_engine.dart';
 import 'package:inv_tracker/core/calculations/modules/currency_module.dart';
-import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
-import 'package:inv_tracker/features/income_projection/data/services/income_trend_analyzer.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
 import '../../mocks/mock_currency_conversion_service.dart';
@@ -48,22 +44,6 @@ CashFlowEntity _flow(
   currency: currency,
 );
 
-InvestmentEntity _investment() => InvestmentEntity(
-  id: 'inv',
-  name: 'Fund',
-  type: InvestmentType.stocks,
-  status: InvestmentStatus.open,
-  startDate: DateTime(2026, 4, 1),
-  createdAt: DateTime(2026, 4, 1),
-  updatedAt: DateTime(2026, 4, 1),
-  currency: 'INR',
-);
-
-CalculationEngine _engine(CurrencyConversionService? service) =>
-    CalculationEngine()
-      ..registerModule(CurrencyConverterModule(service))
-      ..registerModule(FinancialCalculatorModule());
-
 void main() {
   test('batchConvertToBase drops the flow whose rate is missing', () async {
     final out = await CurrencyConverterModule(_OnlyUsdService())
@@ -88,40 +68,6 @@ void main() {
         baseCurrency: 'INR',
       );
       expect(out.map((c) => c.id), ['inr']);
-    },
-  );
-
-  test('income sources leave out a flow with no rate', () async {
-    final report = await IncomeTrendAnalyzer().generateReport(
-      investments: [_investment()],
-      cashFlows: [
-        _flow('usd', 100, 'USD', type: CashFlowType.income),
-        _flow('eur', 100, 'EUR', type: CashFlowType.income),
-      ],
-      expectedCashFlows: [],
-      engine: _engine(_OnlyUsdService()),
-      baseCurrency: 'INR',
-    );
-    expect(report.totalIncome, 8300);
-    expect(report.incomeSources.length, 1);
-    expect(report.incomeSources.single.totalIncome, 8300);
-  });
-
-  test(
-    'no insight calls income diversified when no source has a rate',
-    () async {
-      final report = await IncomeTrendAnalyzer().generateReport(
-        investments: [_investment()],
-        cashFlows: [_flow('eur', 100, 'EUR', type: CashFlowType.income)],
-        expectedCashFlows: [],
-        engine: _engine(_OnlyUsdService()),
-        baseCurrency: 'INR',
-      );
-      expect(report.incomeSources, isEmpty);
-      expect(
-        report.insights.any((i) => i.contains('diversification')),
-        isFalse,
-      );
     },
   );
 }

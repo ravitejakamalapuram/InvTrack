@@ -147,7 +147,6 @@ class _FakeExportService extends Fake implements DataExportService {
           hasFireSettings: false,
           investmentsWithDetailsNotInExport: 0,
           investmentsNotInExport: 0,
-          expectedCashFlows: 0,
         );
   }
 
@@ -567,7 +566,6 @@ void main() {
         hasFireSettings: true,
         investmentsWithDetailsNotInExport: 0,
         investmentsNotInExport: 0,
-        expectedCashFlows: 0,
       );
       authRepo.onSignInWithGoogle = () async {
         authRepo.emit(googleUser);
@@ -608,7 +606,6 @@ void main() {
       hasFireSettings: false,
       investmentsWithDetailsNotInExport: 1,
       investmentsNotInExport: 0,
-      expectedCashFlows: 0,
     ),
     // The backup holds investments only as cash flow rows, so the import
     // adds the other 2 of these 3 and the merge is still complete.
@@ -621,7 +618,6 @@ void main() {
       hasFireSettings: false,
       investmentsWithDetailsNotInExport: 0,
       investmentsNotInExport: 1,
-      expectedCashFlows: 0,
     ),
   };
 

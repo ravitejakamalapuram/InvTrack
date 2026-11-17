@@ -13,7 +13,6 @@ import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
-import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/document_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
@@ -76,9 +75,6 @@ void main() {
         allCashFlowsStreamProvider.overrideWith((ref) => Stream.value([])),
         for (final id in ids) ...[
           cashFlowsByInvestmentProvider(
-            id,
-          ).overrideWith((ref) => Stream.value([])),
-          expectedCashFlowsByInvestmentProvider(
             id,
           ).overrideWith((ref) => Stream.value([])),
           documentsByInvestmentProvider(

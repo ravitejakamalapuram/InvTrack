@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/onboarding/presentation/screens/onboarding_screen.dart';
@@ -30,7 +29,6 @@ void main() {
         securityProvider.overrideWith(_TestSecurity.new),
         onboardingCompleteProvider.overrideWith((ref) async => true),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
-        isIncomeGuardianEnabledProvider.overrideWithValue(false),
       ],
     );
     container.listen(routerProvider, (_, _) {});
@@ -89,7 +87,6 @@ void main() {
         securityProvider.overrideWith(_TestSecurity.new),
         onboardingCompleteProvider.overrideWith((ref) async => true),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
-        isIncomeGuardianEnabledProvider.overrideWithValue(false),
       ],
     );
     container.listen(authStateProvider, (_, _) {});

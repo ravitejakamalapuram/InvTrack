@@ -56,9 +56,6 @@ enum NotificationPayloadType {
   /// Navigate to goal detail screen
   goalDetail,
 
-  /// Navigate to Income Guardian screen (expected cash flows)
-  incomeGuardian,
-
   /// Navigate to the monthly recap of the month in params['month']
   monthlyRecap,
 
@@ -198,35 +195,13 @@ class NotificationPayload {
           params: {'source': 'activation', 'day': type.split('_').last},
         );
 
-      // Income Guardian notifications
+      // Income Guardian was removed; an alert scheduled by an older version
+      // opens Overview.
       case 'income_guardian_overdue':
-        return NotificationPayload(
-          type: NotificationPayloadType.incomeGuardian,
-          investmentId: parts.length > 1 ? parts[1] : null,
-          params: {
-            'expectedCashFlowId': parts.length > 2 ? parts[2] : '',
-            'status': 'overdue',
-          },
-        );
-
       case 'income_guardian_upcoming':
-        return NotificationPayload(
-          type: NotificationPayloadType.incomeGuardian,
-          investmentId: parts.length > 1 ? parts[1] : null,
-          params: {
-            'expectedCashFlowId': parts.length > 2 ? parts[2] : '',
-            'status': 'upcoming',
-          },
-        );
-
       case 'income_guardian_received':
-        return NotificationPayload(
-          type: NotificationPayloadType.incomeGuardian,
-          investmentId: parts.length > 1 ? parts[1] : null,
-          params: {
-            'expectedCashFlowId': parts.length > 2 ? parts[2] : '',
-            'status': 'received',
-          },
+        return const NotificationPayload(
+          type: NotificationPayloadType.overview,
         );
 
       default:
@@ -290,26 +265,6 @@ class NotificationPayload {
 
   /// Create a payload string for Day 14 activation (social proof)
   static String get activationDay14 => 'activation_day_14';
-
-  // ============ Income Guardian Payloads ============
-
-  /// Create a payload string for overdue payment notification
-  static String incomeGuardianOverdue(
-    String investmentId,
-    String expectedCashFlowId,
-  ) => 'income_guardian_overdue:$investmentId:$expectedCashFlowId';
-
-  /// Create a payload string for upcoming payment reminder
-  static String incomeGuardianUpcoming(
-    String investmentId,
-    String expectedCashFlowId,
-  ) => 'income_guardian_upcoming:$investmentId:$expectedCashFlowId';
-
-  /// Create a payload string for payment received confirmation
-  static String incomeGuardianReceived(
-    String investmentId,
-    String expectedCashFlowId,
-  ) => 'income_guardian_received:$investmentId:$expectedCashFlowId';
 
   @override
   String toString() =>
