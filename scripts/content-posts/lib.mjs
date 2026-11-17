@@ -120,7 +120,7 @@ export async function postNextToTelegram({ db, send, now = new Date(), dryRun = 
     }
     // postedAt is when the send finished, not when the run began, so the one-a-day check sees the right day.
     await recordPosted(ref, clock(), messageId);
-    return { postId: post.id };
+    return { postId: post.id, messageId: String(messageId) };
   }
   return { postId: null };
 }
