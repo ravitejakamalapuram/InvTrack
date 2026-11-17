@@ -24,8 +24,9 @@ export function pickTip(tips, dateIso) {
 const DISCLAIMER = 'Education, not investment advice.';
 
 export function formatPost(tip) {
-  // Drafts often end with the disclaimer already; take it off so it is not printed twice.
-  const body = tip.body.replace(/\s*Education, not investment advice\.\s*$/i, '').trimEnd();
+  // Drafts often end with the disclaimer already; take it off so it is not printed twice. Only a line of its
+  // own counts, so a sentence that merely contains the words is left alone.
+  const body = typeof tip.body === 'string' ? tip.body.replace(/(^|\n)[ \t]*Education, not investment advice\.\s*$/, '').trimEnd() : tip.body;
   return [
     `💡 ${tip.title}`,
     '',
