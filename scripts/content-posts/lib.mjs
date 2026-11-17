@@ -58,10 +58,17 @@ export async function postNextToTelegram({ db, send, now = new Date(), dryRun = 
   const posts = snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
     .filter((p) => {
-      // A hand-edited post without a valid approval date must not break the sort and block every later run.
-      if (typeof p.approvedAt?.toMillis === 'function') return true;
-      console.warn(`Skipping post ${p.id}: missing or invalid approvedAt.`);
-      return false;
+      // A hand-edited post without a valid approval date must not break the sort and block every later run,
+      // and one without text must not be claimed and then fail to send.
+      if (typeof p.approvedAt?.toMillis !== 'function') {
+        console.warn(`Skipping post ${p.id}: missing or invalid approvedAt.`);
+        return false;
+      }
+      if (typeof p.body !== 'string' || p.body.trim() === '') {
+        console.warn(`Skipping post ${p.id}: missing or invalid body.`);
+        return false;
+      }
+      return true;
     })
     .sort((a, b) => a.approvedAt.toMillis() - b.approvedAt.toMillis() || a.id.localeCompare(b.id));
 
