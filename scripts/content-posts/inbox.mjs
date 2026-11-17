@@ -46,3 +46,15 @@ export async function getStatus(id, opts) {
   const { item } = await call({ action: 'get', id }, opts);
   return item?.status ?? 'missing';
 }
+
+/** The inbox shows only `summary`. Copies the post text there for InvTrack posts that have none. Returns how many it fixed. */
+export async function fillSummaries(opts) {
+  const { items = [] } = await call({ action: 'list', type: POST_TYPE }, opts);
+  let n = 0;
+  for (const i of items) {
+    if (i.data?.app !== APP || i.summary?.trim() || !i.data?.body?.trim()) continue;
+    await call({ action: 'update', id: i.id, ifVersion: i.version, set: { summary: i.data.body } }, opts);
+    n += 1;
+  }
+  return n;
+}

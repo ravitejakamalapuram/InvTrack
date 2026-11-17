@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { importPosts, postNextToTelegram } from './lib.mjs';
-import { addPending, getStatus, markImported, pullApprovedPosts } from './inbox.mjs';
+import { addPending, fillSummaries, getStatus, markImported, pullApprovedPosts } from './inbox.mjs';
 import { formatPost } from '../telegram-tip/post-tip.mjs';
 
 // firebase-admin is installed under scripts/account-deletion (one lockfile for the repo's jobs).
@@ -40,6 +40,12 @@ export function startOfIndiaDay(now) {
 
 async function main() {
   const [cmd, arg] = process.argv.slice(2);
+  if (cmd === 'inbox-fill-summaries') {
+    const opts = { url: process.env.INBOX_URL, token: process.env.INBOX_TOKEN };
+    if (!opts.url || !opts.token) throw new Error('inbox-fill-summaries needs INBOX_URL and INBOX_TOKEN');
+    console.log(`Filled the summary of ${await fillSummaries(opts)} post(s).`);
+    return;
+  }
   if (cmd === 'inbox-test') {
     // Needs no database. Sends one harmless item so the owner can see it in Telegram and on the dashboard.
     const opts = { url: process.env.INBOX_URL, token: process.env.INBOX_TOKEN };
