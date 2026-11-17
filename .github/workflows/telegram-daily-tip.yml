@@ -23,6 +23,10 @@ on:
         description: 'Read back the inbox test item and print its status (needs inbox_test on)'
         type: boolean
         default: false
+      import_inbox:
+        description: 'Bring in the posts approved in the inbox first (tick "post" too to also send the next one)'
+        type: boolean
+        default: false
       inbox_fill_summaries:
         description: 'Copy the post text into the summary of inbox posts that lack one, so the inbox shows it'
         type: boolean
@@ -37,7 +41,7 @@ permissions: {}
 # One live post at a time, and never cancel one that is running (a cancel after the post is claimed would leave
 # it half done). Dry runs get their own group so they cannot replace a waiting live run.
 concurrency:
-  group: telegram-tip-${{ (github.event_name == 'schedule' || inputs.post || inputs.import_file != '') && 'live' || 'dry' }}
+  group: telegram-tip-${{ (github.event_name == 'schedule' || inputs.post || inputs.import_inbox || inputs.import_file != '') && 'live' || 'dry' }}
   cancel-in-progress: false
 
 jobs:
@@ -76,6 +80,7 @@ jobs:
           INBOX_TEST: ${{ inputs.inbox_test }}
           INBOX_FILL: ${{ inputs.inbox_fill_summaries }}
           INBOX_CHECK: ${{ inputs.inbox_check }}
+          IMPORT_INBOX: ${{ inputs.import_inbox }}
           POSTING_ENABLED: ${{ vars.TELEGRAM_POSTING_ENABLED }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
@@ -110,6 +115,11 @@ jobs:
               timeout 120 node scripts/content-posts/run.mjs import-inbox || echo "::warning::inbox import failed"
             fi
             node scripts/content-posts/run.mjs post --once-per-day
+          elif [ "$EVENT" = "workflow_dispatch" ] && [ "$IMPORT_INBOX" = "true" ]; then
+            timeout 120 node scripts/content-posts/run.mjs import-inbox
+            if [ "$POST_INPUT" = "true" ]; then
+              node scripts/content-posts/run.mjs post
+            fi
           elif [ "$EVENT" = "workflow_dispatch" ] && [ "$POST_INPUT" = "true" ]; then
             node scripts/content-posts/run.mjs post
           else

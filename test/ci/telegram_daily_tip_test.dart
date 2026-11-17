@@ -82,4 +82,41 @@ void main() {
     expect(run, isNot(contains(r'${{')));
     expect(workflow, contains('persist-credentials: false'));
   });
+
+  test('a post that already ends with the disclaimer does not repeat it', () async {
+    final r = await Process.run('node', [
+      '-e',
+      "import('./scripts/telegram-tip/post-tip.mjs').then((m) => "
+          "console.log(m.formatPost({title: 'T', body: 'B\\n\\nEducation, not investment advice.'})))",
+    ]);
+    expect(r.exitCode, 0, reason: '${r.stderr}');
+    final out = r.stdout as String;
+    expect('Education, not investment advice.'.allMatches(out).length, 1);
+  });
+
+  test('a sentence that contains the disclaimer words is kept whole', () async {
+    final r = await Process.run('node', [
+      '-e',
+      "import('./scripts/telegram-tip/post-tip.mjs').then((m) => "
+          "console.log(m.formatPost({title: 'T', body: 'This content is for education, not investment advice.'})))",
+    ]);
+    expect(r.exitCode, 0, reason: '${r.stderr}');
+    expect(r.stdout as String, contains('This content is for education, not investment advice.'));
+  });
+
+  test('a manual run can import the inbox first, and only posts if asked', () {
+    expect(workflow, contains('import_inbox:'));
+    final run = workflow.split('run: |').last;
+    expect(
+      run,
+      contains(r'[ "$EVENT" = "workflow_dispatch" ] && [ "$IMPORT_INBOX" = "true" ]'),
+    );
+    // The import-only run still writes, so it shares the live queue lock.
+    final group = RegExp(r'group: telegram-tip-.*').firstMatch(workflow)!.group(0)!;
+    expect(group, contains('inputs.import_inbox'));
+    // It imports first, and posts only when the post box is ticked as well.
+    final branch = run.split(r'"$IMPORT_INBOX" = "true" ]; then').last.split('elif').first;
+    expect(branch.indexOf('import-inbox'), lessThan(branch.indexOf('run.mjs post')));
+    expect(branch, contains(r'if [ "$POST_INPUT" = "true" ]; then'));
+  });
 }

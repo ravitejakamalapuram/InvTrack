@@ -21,13 +21,18 @@ export function pickTip(tips, dateIso) {
   return tips[((day % tips.length) + tips.length) % tips.length];
 }
 
+const DISCLAIMER = 'Education, not investment advice.';
+
 export function formatPost(tip) {
+  // Drafts often end with the disclaimer already; take it off so it is not printed twice. Only a line of its
+  // own counts, so a sentence that merely contains the words is left alone.
+  const body = typeof tip.body === 'string' ? tip.body.replace(/(^|\n)[ \t]*Education, not investment advice\.\s*$/, '').trimEnd() : tip.body;
   return [
     `💡 ${tip.title}`,
     '',
-    tip.body,
+    body,
     '',
-    'Education, not investment advice.',
+    DISCLAIMER,
     '',
     `Track your FDs, bonds, gold, chits and more in InvTrack: ${PLAY_URL}`,
   ].join('\n');
