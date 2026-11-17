@@ -58,3 +58,10 @@ export async function fillSummaries(opts) {
   }
   return n;
 }
+
+/** Tells the inbox a post went out, so its Pipeline shows it as Posted. Keeps the rest of the item's data. */
+export async function markPosted(id, { url, at }, opts) {
+  const { item } = await call({ action: 'get', id }, opts);
+  const data = { ...(item.data && typeof item.data === 'object' ? item.data : {}), posted: { telegram: url }, postedAt: at };
+  return call({ action: 'update', id, ifVersion: item.version, set: { status: 'posted', data } }, opts);
+}

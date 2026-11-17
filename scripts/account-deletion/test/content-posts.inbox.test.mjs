@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addPending, fillSummaries, getStatus, pullApprovedPosts, markImported } from '../../content-posts/inbox.mjs';
+import { addPending, markPosted, fillSummaries, getStatus, pullApprovedPosts, markImported } from '../../content-posts/inbox.mjs';
 
 const item = (o = {}) => ({
   id: 'rule-of-72', type: 'telegram-post', status: 'approved', title: 'T', version: 3,
@@ -84,4 +84,18 @@ test('fillSummaries copies the post text into summary for InvTrack posts that ha
   assert.deepEqual(calls.filter((c) => c.action === 'update'), [{ action: 'update', id: 'a', ifVersion: 2, set: { summary: 'AAA' }, token: 'secret-tok' }]);
   assert.equal(calls[0].type, 'telegram-post');
   assert.equal('status' in calls[0], false);
+});
+
+test('markPosted records where and when a post went out, keeping the rest of the item data', async () => {
+  const calls = [];
+  const f = async (url, init) => {
+    const b = JSON.parse(init.body); calls.push(b);
+    const out = b.action === 'get' ? { ok: true, item: { id: 'x', version: 4, status: 'scheduled', data: { app: 'InvTrack', icon: '📈', body: 'B' } } } : { ok: true, item: {} };
+    return { ok: true, json: async () => out };
+  };
+  await markPosted('x', { url: 'https://t.me/c/9', at: '2026-11-17T03:31:00.000Z' }, opts(f));
+  assert.deepEqual(calls[1], {
+    action: 'update', id: 'x', ifVersion: 4, token: 'secret-tok',
+    set: { status: 'posted', data: { app: 'InvTrack', icon: '📈', body: 'B', posted: { telegram: 'https://t.me/c/9' }, postedAt: '2026-11-17T03:31:00.000Z' } },
+  });
 });

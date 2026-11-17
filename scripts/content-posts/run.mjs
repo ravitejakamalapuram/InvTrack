@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { importPosts, postNextToTelegram } from './lib.mjs';
-import { addPending, fillSummaries, getStatus, markImported, pullApprovedPosts } from './inbox.mjs';
+import { addPending, markPosted, fillSummaries, getStatus, markImported, pullApprovedPosts } from './inbox.mjs';
 import { formatPost } from '../telegram-tip/post-tip.mjs';
 
 // firebase-admin is installed under scripts/account-deletion (one lockfile for the repo's jobs).
@@ -37,6 +37,8 @@ export function startOfIndiaDay(now) {
   const offset = 5.5 * 3600 * 1000;
   return new Date(Math.floor((now.getTime() + offset) / 86400000) * 86400000 - offset);
 }
+
+const TELEGRAM_CHANNEL_URL = 'https://t.me/invtrack_tips';
 
 async function main() {
   const [cmd, arg] = process.argv.slice(2);
@@ -88,6 +90,15 @@ async function main() {
       console.log('Nothing to post.');
     } else {
       console.log(`${dryRun ? 'Would post' : 'Posted'} ${r.postId}.`);
+      if (!dryRun && process.env.INBOX_URL && process.env.INBOX_TOKEN) {
+        // The post is out. Telling the inbox is for its Pipeline page only, so a failure here is a warning.
+        try {
+          await markPosted(r.postId, { url: `${TELEGRAM_CHANNEL_URL}/${r.messageId}`, at: new Date().toISOString() },
+            { url: process.env.INBOX_URL, token: process.env.INBOX_TOKEN });
+        } catch (e) {
+          console.log(`::warning::inbox not updated (${e.code ?? 'error'})`);
+        }
+      }
     }
   } else {
     throw new Error('usage: run.mjs import <posts.json> | import-inbox | post [--dry-run]');
