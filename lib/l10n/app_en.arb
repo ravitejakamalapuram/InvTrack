@@ -387,11 +387,6 @@
     "description": "Summaries section footer"
   },
 
-  "getSummaryEverySunday": "Get a summary every Sunday",
-  "@getSummaryEverySunday": {
-    "description": "Weekly summary subtitle"
-  },
-
   "monthlySummary": "Monthly Summary",
   "@monthlySummary": {
     "description": "Monthly summary toggle title"
@@ -3586,26 +3581,6 @@
 
 
 
-  "reportsTabFeature": "Reports Tab",
-  "@reportsTabFeature": {
-    "description": "Reports tab feature toggle title"
-  },
-
-  "reportsTabSubtitle": "Smart Insights and DIY Report Builder",
-  "@reportsTabSubtitle": {
-    "description": "Reports tab feature description"
-  },
-
-  "reportsTabEnabled": "Reports tab enabled - restart app to see changes",
-  "@reportsTabEnabled": {
-    "description": "Message when Reports tab is enabled"
-  },
-
-  "reportsTabDisabled": "Reports tab disabled - restart app to see changes",
-  "@reportsTabDisabled": {
-    "description": "Message when Reports tab is disabled"
-  },
-
   "incomeGuardianFeature": "Income Guardian",
   "@incomeGuardianFeature": {
     "description": "Income Guardian feature toggle title"
@@ -3778,16 +3753,6 @@
   "pleaseTryAgain": "Please try again",
   "@pleaseTryAgain": {
     "description": "Generic message to retry an operation"
-  },
-
-  "tryAgain": "Try Again",
-  "@tryAgain": {
-    "description": "Button text to retry an operation"
-  },
-
-  "failedToGenerateReport": "Failed to generate report",
-  "@failedToGenerateReport": {
-    "description": "Error message when report generation fails"
   },
 
   "crashlyticsTestingTitle": "Crashlytics Testing",
@@ -3975,49 +3940,14 @@
     "description": "Weekly summary: notification toggle title and report title"
   },
 
-  "thisWeek": "This Week",
-  "@thisWeek": {
-    "description": "Subtitle for weekly summary report"
-  },
-
   "monthlyIncome": "Monthly Income",
   "@monthlyIncome": {
     "description": "Monthly income report title"
   },
 
-  "thisMonth": "This Month",
-  "@thisMonth": {
-    "description": "Subtitle for monthly income report"
-  },
-
-  "fyReport": "FY Report",
-  "@fyReport": {
-    "description": "Financial Year report title"
-  },
-
   "performance": "Performance",
   "@performance": {
     "description": "Performance analysis report title"
-  },
-
-  "performanceReport": "Performance Report",
-  "@performanceReport": {
-    "description": "Full title for performance report"
-  },
-
-  "goalsReport": "Goals Report",
-  "@goalsReport": {
-    "description": "Full title for goals report"
-  },
-
-  "maturityCalendar": "Maturity Calendar",
-  "@maturityCalendar": {
-    "description": "Full title for maturity calendar"
-  },
-
-  "topPerformers": "Top Performers",
-  "@topPerformers": {
-    "description": "Subtitle for performance report"
   },
 
   "maturity": "Maturity",
@@ -4030,32 +3960,9 @@
     "description": "Subtitle for maturity calendar"
   },
 
-  "actionRequired": "Action Required",
-  "@actionRequired": {
-    "description": "Action required report title"
-  },
-
   "portfolioHealth": "Portfolio Health",
   "@portfolioHealth": {
     "description": "Portfolio health: dashboard card title and report title"
-  },
-
-  "quickReports": "Quick Reports",
-  "@quickReports": {
-    "description": "Quick reports section title on reports home screen"
-  },
-
-  "currentFY": "FY {year1}-{year2}",
-  "@currentFY": {
-    "description": "Current financial year label (e.g., FY 2023-24)",
-    "placeholders": {
-      "year1": {
-        "type": "String"
-      },
-      "year2": {
-        "type": "String"
-      }
-    }
   },
 
   "fyLabel": "FY {startYear}-{endYear}",
@@ -4126,11 +4033,6 @@
     "description": "Button/link text to view more details"
   },
 
-  "noItemsToDisplay": "No items to display",
-  "@noItemsToDisplay": {
-    "description": "Message shown when a list has no items to show"
-  },
-
   "loading": "Loading...",
   "@loading": {
     "description": "Loading indicator text"
@@ -4176,74 +4078,14 @@
     "description": "Filter chip label for showing overdue payments"
   },
 
-  "activeGoalsCount": "{count, plural, =0{No Active Goals} =1{1 Active Goal} other{{count} Active Goals}}",
-  "@activeGoalsCount": {
-    "description": "Active goals count for reports home screen",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-
-  "actionItemsCount": "{count, plural, =0{No Items} =1{1 Item} other{{count} Items}}",
-  "@actionItemsCount": {
-    "description": "Action items count for reports home screen",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-
-  "healthScore": "Score: {score}/100",
-  "@healthScore": {
-    "description": "Portfolio health score label",
-    "placeholders": {
-      "score": {
-        "type": "int"
-      }
-    }
-  },
-
   "dailyCashflowTrend": "Daily Cashflow Trend",
   "@dailyCashflowTrend": {
     "description": "Section title for daily cashflow trend chart in weekly summary"
   },
 
-  "historicalReports": "Historical Reports",
-  "@historicalReports": {
-    "description": "Historical reports section title"
-  },
-
   "noHistoricalReportsYet": "No historical reports yet",
   "@noHistoricalReportsYet": {
     "description": "Empty state message for historical reports"
-  },
-
-  "financialYearReports": "Financial Year Reports",
-  "@financialYearReports": {
-    "description": "Section title for FY reports in historical reports list"
-  },
-
-  "monthlyReports": "Monthly Reports",
-  "@monthlyReports": {
-    "description": "Section title for monthly reports in historical reports list"
-  },
-
-  "currentYear": "Current Year",
-  "@currentYear": {
-    "description": "Label for current financial year"
-  },
-
-  "currentMonth": "Current Month",
-  "@currentMonth": {
-    "description": "Label for current month"
-  },
-
-  "tapToView": "Tap to view",
-  "@tapToView": {
-    "description": "Hint text for tappable list items"
   },
 
   "january": "January",
@@ -4353,24 +4195,9 @@
     "description": "Loss making investments label"
   },
 
-  "totalActions": "Total Actions",
-  "@totalActions": {
-    "description": "Total actions label"
-  },
-
   "urgent": "Urgent",
   "@urgent": {
     "description": "Urgent actions label"
-  },
-
-  "overdueActions": "Overdue Actions",
-  "@overdueActions": {
-    "description": "Overdue actions label"
-  },
-
-  "criticalActions": "⚠️ Critical Actions",
-  "@criticalActions": {
-    "description": "Critical actions section title"
   },
 
   "highPriority": "🔴 High Priority",
@@ -4396,11 +4223,6 @@
   "totalInvested": "Total Invested",
   "@totalInvested": {
     "description": "Total invested label"
-  },
-
-  "totalReturns": "Total Returns",
-  "@totalReturns": {
-    "description": "Total returns label"
   },
 
   "weeklySummaryTitle": "Weekly Summary",
@@ -4458,11 +4280,6 @@
     "description": "Total income label"
   },
 
-  "totalFees": "Total Fees",
-  "@totalFees": {
-    "description": "Total fees label"
-  },
-
   "netCashflow": "Net Cashflow",
   "@netCashflow": {
     "description": "Net cashflow label"
@@ -4481,16 +4298,6 @@
   "topPerformer": "Top Performer",
   "@topPerformer": {
     "description": "Top performer label"
-  },
-
-  "newInvestments": "New Investments",
-  "@newInvestments": {
-    "description": "New investments label"
-  },
-
-  "upcomingMaturities": "Upcoming Maturities",
-  "@upcomingMaturities": {
-    "description": "Upcoming maturities label"
   },
 
   "incomeBreakdown": "Income Breakdown",
@@ -4879,11 +4686,6 @@
     }
   },
 
-  "monthlyBreakdown": "Monthly Breakdown",
-  "@monthlyBreakdown": {
-    "description": "Monthly breakdown section title"
-  },
-
   "capitalGainsSummary": "Capital Gains Summary",
   "@capitalGainsSummary": {
     "description": "Capital gains summary section title"
@@ -4987,11 +4789,6 @@
     "description": "Long-term gains label"
   },
 
-  "topPerformersByReturns": "Top Performers (by Returns)",
-  "@topPerformersByReturns": {
-    "description": "Top performers by returns section title"
-  },
-
   "topPerformersByXirr": "Top Performers (by XIRR)",
   "@topPerformersByXirr": {
     "description": "Top performers by XIRR section title"
@@ -5007,24 +4804,9 @@
     "description": "Top performers section title"
   },
 
-  "bottomPerformers": "Bottom Performers",
-  "@bottomPerformers": {
-    "description": "Bottom performers section title"
-  },
-
-  "recentMilestones": "Recent Milestones",
-  "@recentMilestones": {
-    "description": "Recent milestones section title"
-  },
-
   "onTrack": "On Track",
   "@onTrack": {
     "description": "On track goals label"
-  },
-
-  "atRisk": "At Risk",
-  "@atRisk": {
-    "description": "At risk goals label"
   },
 
   "achieved": "Achieved",
@@ -5050,11 +4832,6 @@
   "totalWithMaturity": "Total w/ Maturity",
   "@totalWithMaturity": {
     "description": "Total investments with maturity label"
-  },
-
-  "next30Days": "Next 30 Days",
-  "@next30Days": {
-    "description": "Next 30 days label"
   },
 
   "next90Days": "Next 90 Days",
@@ -5546,39 +5323,9 @@
     "description": "PDF report section header for diversification analysis"
   },
 
-  "noDataForReport": "No data available for this report",
-  "@noDataForReport": {
-    "description": "Empty state message when report has no data"
-  },
-
-  "startTrackingToSeeReports": "Start tracking investments to see reports",
-  "@startTrackingToSeeReports": {
-    "description": "Empty state hint for reports screen"
-  },
-
-  "addYourFirstInvestment": "Add Your First Investment",
-  "@addYourFirstInvestment": {
-    "description": "CTA button text to add first investment"
-  },
-
   "reportBuilder": "Report Builder",
   "@reportBuilder": {
     "description": "Title for DIY report builder"
-  },
-
-  "createCustomReport": "Create Custom Report",
-  "@createCustomReport": {
-    "description": "Button text to create custom report"
-  },
-
-  "createReport": "Create Report",
-  "@createReport": {
-    "description": "Short button text to create report"
-  },
-
-  "viewPastReports": "View Past Reports",
-  "@viewPastReports": {
-    "description": "Button to expand historical reports"
   },
 
   "investmentsDown": "{count} investments down >10%",
@@ -5614,11 +5361,6 @@
     }
   },
 
-  "netInvestedThisWeek": "Net invested this week",
-  "@netInvestedThisWeek": {
-    "description": "Label for weekly investment summary"
-  },
-
   "netInvestedThisMonth": "Net invested this month",
   "@netInvestedThisMonth": {
     "description": "Label for monthly investment summary"
@@ -5632,26 +5374,6 @@
   "returnsThisMonth": "Returns this month",
   "@returnsThisMonth": {
     "description": "Label for monthly returns"
-  },
-
-  "incomeReceived": "Income received",
-  "@incomeReceived": {
-    "description": "Label for income received"
-  },
-
-  "sourcesCount": "{count, plural, =1{1 source} other{{count} sources}}",
-  "@sourcesCount": {
-    "description": "Number of income sources (plural-aware)",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-
-  "ytdPerformance": "YTD Performance",
-  "@ytdPerformance": {
-    "description": "Year-to-date performance label"
   },
 
   "portfolioUpVsGoal": "Portfolio up {actual}% vs goal of {target}%",
@@ -5679,11 +5401,6 @@
 
   "investmentPerformance": "Investment Performance",
   "@investmentPerformance": {
-    "description": "Report template name"
-  },
-
-  "taxPlanning": "Tax Planning",
-  "@taxPlanning": {
     "description": "Report template name"
   },
 
@@ -5797,104 +5514,14 @@
     "description": "Title for FIRE progress card showing progress towards financial independence"
   },
 
-  "selectReportType": "Select Report Type",
-  "@selectReportType": {
-    "description": "Step title for selecting report type in builder"
-  },
-
-  "selectDateRange": "Select Date Range",
-  "@selectDateRange": {
-    "description": "Step title for selecting date range in builder"
-  },
-
-  "selectFilters": "Select Filters",
-  "@selectFilters": {
-    "description": "Step title for selecting filters in builder"
-  },
-
-  "chooseReportType": "Choose the type of report you want to generate",
-  "@chooseReportType": {
-    "description": "Instruction text for report type selection"
-  },
-
-  "weeklySummaryDesc": "View activity and cashflows for the selected week",
-  "@weeklySummaryDesc": {
-    "description": "Description of weekly summary report"
-  },
-
-  "monthlyIncomeDesc": "Track income from investments for the month",
-  "@monthlyIncomeDesc": {
-    "description": "Description of monthly income report"
-  },
-
-  "fyReportDesc": "Comprehensive financial year analysis",
-  "@fyReportDesc": {
-    "description": "Description of FY report"
-  },
-
-  "performanceReportDesc": "Analyze top and bottom performing investments",
-  "@performanceReportDesc": {
-    "description": "Description of performance report"
-  },
-
-  "goalsReportDesc": "Track progress towards your financial goals",
-  "@goalsReportDesc": {
-    "description": "Description of goals report"
-  },
-
-  "maturityCalendarDesc": "View upcoming investment maturities",
-  "@maturityCalendarDesc": {
-    "description": "Description of maturity calendar report"
-  },
-
-  "selectTimeframe": "Select the time period for your report",
-  "@selectTimeframe": {
-    "description": "Instruction text for date range selection"
-  },
-
-  "thisQuarter": "This Quarter",
-  "@thisQuarter": {
-    "description": "Date range filter option"
-  },
-
   "thisYear": "This Year",
   "@thisYear": {
-    "description": "Date range filter option"
-  },
-
-  "lastThreeMonths": "Last 3 Months",
-  "@lastThreeMonths": {
-    "description": "Date range filter option"
-  },
-
-  "lastSixMonths": "Last 6 Months",
-  "@lastSixMonths": {
     "description": "Date range filter option"
   },
 
   "lastYear": "Last Year",
   "@lastYear": {
     "description": "Date range filter option"
-  },
-
-  "allTime": "All Time",
-  "@allTime": {
-    "description": "Date range filter option"
-  },
-
-  "optionalFilters": "Apply optional filters to narrow down your report",
-  "@optionalFilters": {
-    "description": "Instruction text for filter selection"
-  },
-
-  "filterByInvestment": "Filter by Investment",
-  "@filterByInvestment": {
-    "description": "Label for investment filter dropdown"
-  },
-
-  "filterByGoal": "Filter by Goal",
-  "@filterByGoal": {
-    "description": "Label for goal filter dropdown"
   },
 
   "allInvestments": "All Investments",
@@ -5905,11 +5532,6 @@
   "allGoals": "All Goals",
   "@allGoals": {
     "description": "Dropdown option to show all goals"
-  },
-
-  "errorLoadingInvestments": "Error loading investments",
-  "@errorLoadingInvestments": {
-    "description": "Error message when investments fail to load"
   },
 
   "goalsLoadError": "Couldn''t load your goals",
@@ -5927,44 +5549,9 @@
     "description": "Shown with a Retry button on the goal details screen when the goal fails to load"
   },
 
-  "errorLoadingGoals": "Error loading goals",
-  "@errorLoadingGoals": {
-    "description": "Error message when goals fail to load"
-  },
-
-  "noFiltersNeeded": "No filters available for this report type",
-  "@noFiltersNeeded": {
-    "description": "Message when selected report type doesn't support filters"
-  },
-
-  "noFiltersNeededDesc": "This report does not require any additional filters. Proceed to generate the report.",
-  "@noFiltersNeededDesc": {
-    "description": "Description when no filters are needed"
-  },
-
-  "pleaseSelectReportType": "Please select a report type to continue",
-  "@pleaseSelectReportType": {
-    "description": "Validation message when no report type is selected"
-  },
-
-  "continueStep": "Continue",
-  "@continueStep": {
-    "description": "Button text to continue to next step in wizard"
-  },
-
   "back": "Back",
   "@back": {
     "description": "Button text to go back to previous step"
-  },
-
-  "smartInsights": "Smart Insights",
-  "@smartInsights": {
-    "description": "Section title for automatically generated insights"
-  },
-
-  "needsAttention": "Needs Attention",
-  "@needsAttention": {
-    "description": "Section title for items requiring user action"
   },
 
   "upcomingMaturityInsight": "Upcoming Maturity",
@@ -6056,10 +5643,6 @@
         "type": "String"
       }
     }
-  },
-  "decliningInValue": "Declining in value",
-  "@decliningInValue": {
-    "description": "Subtitle for declining investment insight"
   },
   "dataManagementExportSection": "Export",
   "@dataManagementExportSection": {
@@ -7783,16 +7366,6 @@
     "description": "Subtitle of the Settings > Notifications switch for the weekly check-in notification"
   },
 
-  "notificationToggleFySummary": "Financial Year Summary",
-  "@notificationToggleFySummary": {
-    "description": "Title of the Settings > Notifications switch for the financial year summary notification"
-  },
-
-  "notificationToggleFySummarySubtitle": "When a new financial year begins",
-  "@notificationToggleFySummarySubtitle": {
-    "description": "Subtitle of the Settings > Notifications switch for the financial year summary notification"
-  },
-
   "notificationToggleGoalAtRisk": "Goals At Risk",
   "@notificationToggleGoalAtRisk": {
     "description": "Title of the Settings > Notifications switch for the goal at-risk alert notification"
@@ -7819,336 +7392,6 @@
     "placeholders": {
       "count": {"type": "int"},
       "total": {"type": "int"}
-    }
-  },
-
-  "fyPdfTitle": "Tax-Year Report",
-  "@fyPdfTitle": {
-    "description": "Title on the exported tax-year PDF"
-  },
-
-  "fyPdfFinancialYear": "Financial year {label} ({start} to {end})",
-  "@fyPdfFinancialYear": {
-    "description": "Subtitle on the tax-year PDF",
-    "placeholders": {
-      "label": {
-        "type": "String"
-      },
-      "start": {
-        "type": "String"
-      },
-      "end": {
-        "type": "String"
-      }
-    }
-  },
-
-  "fyPdfGenerated": "Generated {date}",
-  "@fyPdfGenerated": {
-    "description": "Generation date line on the tax-year PDF",
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-
-  "fyPdfAmountsIn": "All amounts in {symbol} ({code})",
-  "@fyPdfAmountsIn": {
-    "description": "Base currency note on the tax-year PDF",
-    "placeholders": {
-      "symbol": {
-        "type": "String"
-      },
-      "code": {
-        "type": "String"
-      }
-    }
-  },
-
-  "fyPdfIncomeHeading": "Income for your return",
-  "@fyPdfIncomeHeading": {
-    "description": "Heading of the income table"
-  },
-
-  "fyPdfColType": "Type",
-  "@fyPdfColType": {
-    "description": "Income table column header"
-  },
-
-  "fyPdfColAmount": "Amount",
-  "@fyPdfColAmount": {
-    "description": "Income table column header"
-  },
-
-  "fyPdfInterestIncome": "Interest income",
-  "@fyPdfInterestIncome": {
-    "description": "Income table row"
-  },
-
-  "fyPdfDividendIncome": "Dividend income",
-  "@fyPdfDividendIncome": {
-    "description": "Income table row"
-  },
-
-  "fyPdfCapitalGains": "Capital gains",
-  "@fyPdfCapitalGains": {
-    "description": "Income table row"
-  },
-
-  "fyPdfCapitalGainsNotCalculated": "Not calculated (needs sale proceeds and cost)",
-  "@fyPdfCapitalGainsNotCalculated": {
-    "description": "Capital gains value when it cannot be computed"
-  },
-
-  "fyPdfCashFlowHeading": "Cash flow",
-  "@fyPdfCashFlowHeading": {
-    "description": "Heading of the cash flow tiles"
-  },
-
-  "fyPdfInvested": "Invested",
-  "@fyPdfInvested": {
-    "description": "Cash flow tile label"
-  },
-
-  "fyPdfReturned": "Returned",
-  "@fyPdfReturned": {
-    "description": "Cash flow tile label"
-  },
-
-  "fyPdfIncome": "Income",
-  "@fyPdfIncome": {
-    "description": "Cash flow tile label"
-  },
-
-  "fyPdfFees": "Fees",
-  "@fyPdfFees": {
-    "description": "Cash flow tile label"
-  },
-
-  "fyPdfNetCashFlow": "Net cash flow",
-  "@fyPdfNetCashFlow": {
-    "description": "Net cash flow label"
-  },
-
-  "fyPdfXirrForYear": "XIRR for the year",
-  "@fyPdfXirrForYear": {
-    "description": "XIRR label"
-  },
-
-  "fyPdfByMonth": "By month",
-  "@fyPdfByMonth": {
-    "description": "Heading of the monthly table"
-  },
-
-  "fyPdfColMonth": "Month",
-  "@fyPdfColMonth": {
-    "description": "Monthly table column header"
-  },
-
-  "fyPdfColInvested": "Invested",
-  "@fyPdfColInvested": {
-    "description": "Monthly table column header"
-  },
-
-  "fyPdfColIncomeReturns": "Income and returns",
-  "@fyPdfColIncomeReturns": {
-    "description": "Monthly table column header"
-  },
-
-  "fyPdfColNet": "Net",
-  "@fyPdfColNet": {
-    "description": "Monthly table column header"
-  },
-
-  "fyPdfDisclaimer": "This report summarises what you recorded in InvTrack. It is not tax advice. Check every figure with your tax professional before you file. Capital gains are not calculated in this report.",
-  "@fyPdfDisclaimer": {
-    "description": "Footer disclaimer"
-  },
-
-  "fyPdfExport": "Export PDF",
-  "@fyPdfExport": {
-    "description": "Button that exports the tax-year report as PDF"
-  },
-
-  "fyPdfExportFailed": "Could not create the PDF. Please try again.",
-  "@fyPdfExportFailed": {
-    "description": "Snackbar when PDF export fails"
-  },
-  "fyPdfPrivacyConfirmTitle": "Export with privacy mode on?",
-  "@fyPdfPrivacyConfirmTitle": {
-    "description": "Title of the dialog shown before exporting the FY PDF while privacy mode is on"
-  },
-  "fyPdfPrivacyConfirmBody": "This PDF will show your amounts even though privacy mode is on.",
-  "@fyPdfPrivacyConfirmBody": {
-    "description": "Body of the FY PDF export confirmation dialog when privacy mode is on"
-  },
-  "fyPdfPrivacyConfirmExport": "Export anyway",
-  "@fyPdfPrivacyConfirmExport": {
-    "description": "Confirm button of the FY PDF privacy-mode dialog"
-  },
-
-
-  "fyReportScreenTitle": "Tax-Year Report",
-  "@fyReportScreenTitle": {
-    "description": "Title of the tax-year (FY) report screen"
-  },
-
-  "fyReportPeriod": "{start} to {end}",
-  "@fyReportPeriod": {
-    "description": "Date range under the FY report title",
-    "placeholders": {
-      "start": {"type": "String"},
-      "end": {"type": "String"}
-    }
-  },
-
-  "fyReportYearChipsLabel": "Financial year",
-  "@fyReportYearChipsLabel": {
-    "description": "Accessibility label for the FY chips row"
-  },
-
-  "fyReportNetCashFlow": "Net cash flow this year",
-  "@fyReportNetCashFlow": {
-    "description": "Label above the hero net cash flow amount"
-  },
-
-  "fyReportXirrLabel": "XIRR for the year",
-  "@fyReportXirrLabel": {
-    "description": "Label of the XIRR chip on the FY hero card"
-  },
-
-  "fyReportXirrMissing": "Add a current value to calculate.",
-  "@fyReportXirrMissing": {
-    "description": "Hint shown when the FY XIRR is undefined"
-  },
-
-  "fyReportPortfolioValue": "Portfolio value",
-  "@fyReportPortfolioValue": {
-    "description": "Label of the portfolio value chip on the FY hero card"
-  },
-
-  "fyReportMoneyTitle": "Money in and out",
-  "@fyReportMoneyTitle": {
-    "description": "Section title for the four FY money tiles"
-  },
-
-  "fyReportInvested": "Invested",
-  "@fyReportInvested": {
-    "description": "FY tile label: money put in"
-  },
-
-  "fyReportReturned": "Returned",
-  "@fyReportReturned": {
-    "description": "FY tile label: money returned"
-  },
-
-  "fyReportIncomeReceived": "Income received",
-  "@fyReportIncomeReceived": {
-    "description": "FY tile label: interest and dividends received"
-  },
-
-  "fyReportFeesPaid": "Fees paid",
-  "@fyReportFeesPaid": {
-    "description": "FY tile label: fees paid"
-  },
-
-  "fyReportTaxTitle": "For your tax filing",
-  "@fyReportTaxTitle": {
-    "description": "Section title for the FY tax figures card"
-  },
-
-  "fyReportTaxSubtitle": "Totals by income type, ready to copy into your return.",
-  "@fyReportTaxSubtitle": {
-    "description": "Subtitle under the FY tax card title"
-  },
-
-  "fyReportInterestIncome": "Interest income",
-  "@fyReportInterestIncome": {
-    "description": "FY tax card row"
-  },
-
-  "fyReportDividendIncome": "Dividend income",
-  "@fyReportDividendIncome": {
-    "description": "FY tax card row"
-  },
-
-  "fyReportCapitalGains": "Capital gains",
-  "@fyReportCapitalGains": {
-    "description": "FY tax card row"
-  },
-
-  "fyReportNotCalculated": "Not calculated",
-  "@fyReportNotCalculated": {
-    "description": "Value shown for capital gains, which InvTrack does not calculate yet"
-  },
-
-  "fyReportCapitalGainsHint": "Needs a cost basis for each sale, which InvTrack does not track yet.",
-  "@fyReportCapitalGainsHint": {
-    "description": "Explains why capital gains are not calculated"
-  },
-
-  "fyReportMonthlyTitle": "Month by month",
-  "@fyReportMonthlyTitle": {
-    "description": "Section title for the FY monthly bars"
-  },
-
-  "fyReportMonthlyChart": "Monthly net cash flow, April to March",
-  "@fyReportMonthlyChart": {
-    "description": "Accessibility label of the FY monthly bar chart"
-  },
-
-  "fyReportBestMonth": "{month}: best, {amount}",
-  "@fyReportBestMonth": {
-    "description": "Caption naming the best month of the FY and its net cash flow",
-    "placeholders": {
-      "month": {"type": "String"},
-      "amount": {"type": "String"}
-    }
-  },
-
-  "fyReportXirrSuffix": "{xirr} XIRR",
-  "@fyReportXirrSuffix": {
-    "description": "Per-investment XIRR in the FY top performers list",
-    "placeholders": {
-      "xirr": {"type": "String"}
-    }
-  },
-
-  "fyReportDisclaimer": "This report is a summary of what you recorded. It is not tax advice. Check the figures with your tax professional before you file.",
-  "@fyReportDisclaimer": {
-    "description": "Not-tax-advice disclaimer at the bottom of the FY report"
-  },
-
-  "fyReportHideAmounts": "Hide amounts",
-  "@fyReportHideAmounts": {
-    "description": "Tooltip of the privacy toggle when amounts are visible"
-  },
-
-  "fyReportShowAmounts": "Show amounts",
-  "@fyReportShowAmounts": {
-    "description": "Tooltip of the privacy toggle when amounts are hidden"
-  },
-
-  "fyReportLoadError": "This report could not be loaded. Please try again.",
-  "@fyReportLoadError": {
-    "description": "Error text on the FY report screen"
-  },
-
-  "fyExportCsv": "Export CSV",
-  "@fyExportCsv": {
-    "description": "Button on the Tax-Year report that shares the report as a CSV file"
-  },
-
-  "fyExportCsvFailed": "Could not export the report. Please try again.",
-  "@fyExportCsvFailed": {
-    "description": "Error shown when the Tax-Year report CSV export fails"
-  },
-  "fyExportCsvSubject": "InvTrack FY {fyLabel} report",
-  "@fyExportCsvSubject": {
-    "description": "Subject line for the Tax-Year report CSV share",
-    "placeholders": {
-      "fyLabel": {"type": "String"}
     }
   },
 
@@ -8308,28 +7551,7 @@
   "holdingSummaryHidden": "Weight and price hidden",
   "@holdingSummaryHidden": {
     "description": "Screen reader label for a holding's weight and price while privacy mode hides amounts"
-  },
-
-
-  "fyReportNeedsValueTitle": "Needs a current value on {opening} and {closing}",
-  "@fyReportNeedsValueTitle": {
-    "description": "Heading of the list of holdings missing an opening or closing value on the FY report",
-    "placeholders": {
-      "opening": {"type": "String"},
-      "closing": {"type": "String"}
-    }
-  },
-
-  "fyReportAddValue": "Add value",
-  "@fyReportAddValue": {
-    "description": "Button that opens the add current value dialog for one holding on the FY report"
-  },
-
-  "fyReportAddValueFor": "Add a current value for {name}",
-  "@fyReportAddValueFor": {
-    "description": "Accessibility label of the Add value button",
-    "placeholders": {
-      "name": {"type": "String"}
-    }
   }
+
+
 }

@@ -8,7 +8,6 @@ import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/notifications/notification_navigator.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
-import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
@@ -92,7 +91,6 @@ void main() {
         securityProvider.overrideWith(_UnlockedSecurity.new),
         onboardingCompleteProvider.overrideWith((ref) async => true),
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
-        isReportsTabEnabledProvider.overrideWithValue(false),
         allInvestmentsProvider.overrideWith(
           (ref) => Stream.value([_closed, _open]),
         ),

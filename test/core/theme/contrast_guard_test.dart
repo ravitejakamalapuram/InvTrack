@@ -33,7 +33,7 @@ const _allowlistMax = 6;
 
 /// The size of the pair table. A fixing PR that retires a pair or drops a
 /// ground it cannot fix changes this literal, so the change is in the diff.
-const _pairCount = 262;
+const _pairCount = 259;
 
 /// Files that can never be the measurement of a widget pair: the helper's own
 /// test, this guard and the table. Each mentions pair ids or `contrastRatio`.
@@ -143,7 +143,6 @@ void main() {
         'overview-breakdown-danger-light@tint10',
         'yoy-pill-success-light@tint10',
         'copied-snackbar-label-light',
-        'reports-attention-count-light@tint10',
         'confirm-dialog-destructive-light@dialog',
         'overview-cash-in-bar-light@card',
         'overview-cash-out-bar-light@card',
@@ -166,8 +165,6 @@ void main() {
         'quick-start-csv-icon-light@tint20',
         'xirr-demo-highlight-light@tint5',
         'saved-guest-backup-icon-light@card',
-        'insight-warning-value-light@card',
-        'insight-warning-icon-light@tint20',
         'settings-tile-warning-icon-light@tint15',
         'import-option-warning-icon-light@tint15',
         'closed-chip-text-dark@grey20',

@@ -17,7 +17,7 @@ import 'package:inv_tracker/features/investment/domain/entities/investment_entit
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/presentation/utils/return_display.dart';
 import 'package:inv_tracker/features/investment/presentation/utils/xirr_viewed_logger.dart';
-import 'package:inv_tracker/features/reports/presentation/widgets/metric_with_tooltip.dart';
+import 'package:inv_tracker/core/widgets/metric_with_tooltip.dart';
 import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/holding_text.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';

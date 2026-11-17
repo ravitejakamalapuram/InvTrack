@@ -10,7 +10,6 @@ import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/features/income_projection/data/services/income_trend_analyzer.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
-import 'package:inv_tracker/features/reports/data/services/fy_report_service.dart';
 
 import '../../mocks/mock_currency_conversion_service.dart';
 
@@ -34,17 +33,20 @@ class _OnlyUsdService extends MockCurrencyConversionService {
   }) async => null;
 }
 
-CashFlowEntity _flow(String id, double amount, String currency,
-        {CashFlowType type = CashFlowType.invest}) =>
-    CashFlowEntity(
-      id: id,
-      investmentId: 'inv',
-      date: DateTime.now().subtract(const Duration(days: 2)),
-      type: type,
-      amount: amount,
-      createdAt: DateTime(2026, 4, 1),
-      currency: currency,
-    );
+CashFlowEntity _flow(
+  String id,
+  double amount,
+  String currency, {
+  CashFlowType type = CashFlowType.invest,
+}) => CashFlowEntity(
+  id: id,
+  investmentId: 'inv',
+  date: DateTime.now().subtract(const Duration(days: 2)),
+  type: type,
+  amount: amount,
+  createdAt: DateTime(2026, 4, 1),
+  currency: currency,
+);
 
 InvestmentEntity _investment() => InvestmentEntity(
   id: 'inv',
@@ -78,44 +80,16 @@ void main() {
     expect(out.firstWhere((c) => c.id == 'usd').amount, 8300);
   });
 
-  test('batchConvertToBase drops foreign flows when conversion is unavailable',
-      () async {
-    final out = await CurrencyConverterModule(null).batchConvertToBase(
-      cashFlows: [_flow('usd', 100, 'USD'), _flow('inr', 500, 'INR')],
-      baseCurrency: 'INR',
-    );
-    expect(out.map((c) => c.id), ['inr']);
-  });
-
-  test('FY report totals leave out a flow with no rate', () async {
-    final report = await FYReportService(_engine(_OnlyUsdService()))
-        .generateReport(
-          fyYear: 2026,
-          allCashFlows: [
-            CashFlowEntity(
-              id: 'usd',
-              investmentId: 'inv',
-              date: DateTime(2026, 5, 1),
-              type: CashFlowType.invest,
-              amount: 100,
-              createdAt: DateTime(2026, 5, 1),
-              currency: 'USD',
-            ),
-            CashFlowEntity(
-              id: 'eur',
-              investmentId: 'inv',
-              date: DateTime(2026, 5, 1),
-              type: CashFlowType.invest,
-              amount: 100,
-              createdAt: DateTime(2026, 5, 1),
-              currency: 'EUR',
-            ),
-          ],
-          allInvestments: [_investment()],
-          baseCurrency: 'INR',
-        );
-    expect(report.totalInvested, 8300);
-  });
+  test(
+    'batchConvertToBase drops foreign flows when conversion is unavailable',
+    () async {
+      final out = await CurrencyConverterModule(null).batchConvertToBase(
+        cashFlows: [_flow('usd', 100, 'USD'), _flow('inr', 500, 'INR')],
+        baseCurrency: 'INR',
+      );
+      expect(out.map((c) => c.id), ['inr']);
+    },
+  );
 
   test('income sources leave out a flow with no rate', () async {
     final report = await IncomeTrendAnalyzer().generateReport(
@@ -133,16 +107,21 @@ void main() {
     expect(report.incomeSources.single.totalIncome, 8300);
   });
 
-  test('no insight calls income diversified when no source has a rate',
-      () async {
-    final report = await IncomeTrendAnalyzer().generateReport(
-      investments: [_investment()],
-      cashFlows: [_flow('eur', 100, 'EUR', type: CashFlowType.income)],
-      expectedCashFlows: [],
-      engine: _engine(_OnlyUsdService()),
-      baseCurrency: 'INR',
-    );
-    expect(report.incomeSources, isEmpty);
-    expect(report.insights.any((i) => i.contains('diversification')), isFalse);
-  });
+  test(
+    'no insight calls income diversified when no source has a rate',
+    () async {
+      final report = await IncomeTrendAnalyzer().generateReport(
+        investments: [_investment()],
+        cashFlows: [_flow('eur', 100, 'EUR', type: CashFlowType.income)],
+        expectedCashFlows: [],
+        engine: _engine(_OnlyUsdService()),
+        baseCurrency: 'INR',
+      );
+      expect(report.incomeSources, isEmpty);
+      expect(
+        report.insights.any((i) => i.contains('diversification')),
+        isFalse,
+      );
+    },
+  );
 }

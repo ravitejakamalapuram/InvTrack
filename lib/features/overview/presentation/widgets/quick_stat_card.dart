@@ -7,7 +7,7 @@ import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
-import 'package:inv_tracker/features/reports/presentation/widgets/metric_with_tooltip.dart';
+import 'package:inv_tracker/core/widgets/metric_with_tooltip.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// A card displaying a quick stat with icon, label, value, and optional subtitle.

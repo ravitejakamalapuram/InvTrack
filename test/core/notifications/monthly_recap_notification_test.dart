@@ -162,8 +162,12 @@ void main() {
       needingValue: 0,
     );
 
-    // rescheduleAllNotifications does this first on every app start.
-    await service.scheduleMonthlySummary();
+    // The notification sync schedules the recap again on every app start.
+    await service.scheduleMonthlyRecap(
+      now: DateTime(2026, 12, 1, 8),
+      maturingNextMonth: 3,
+      needingValue: 2,
+    );
 
     final slot = plugin.scheduledNotifications.where(
       (n) => n.id == NotificationIds.monthlySummary,

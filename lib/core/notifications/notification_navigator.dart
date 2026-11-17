@@ -12,7 +12,6 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
@@ -21,8 +20,6 @@ import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
-import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
-import 'package:inv_tracker/features/reports/domain/entities/report_type.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -163,9 +160,6 @@ class NotificationNavigator {
 
       case NotificationPayloadType.goalDetail:
         return _navigateToGoalDetail(payload.goalId, payload.params);
-
-      case NotificationPayloadType.dynamicReport:
-        return _navigateToDynamicReport(payload.reportParams);
 
       case NotificationPayloadType.snooze:
         // Snooze is handled directly in notification service
@@ -415,160 +409,6 @@ class NotificationNavigator {
     return true;
   }
 
-  /// Navigate to a dynamic report based on notification parameters.
-  ///
-  /// Parses the report type from [reportParams] and creates the appropriate
-  /// [ReportConfiguration] to display in [DynamicReportScreen].
-  ///
-  /// Returns `true` if navigation was successful, `false` otherwise.
-  ///
-  /// Throws [ValidationException] if the report type is unknown or invalid.
-  Future<bool> _navigateToDynamicReport(Map<String, String> reportParams) async {
-    final context = rootNavigatorKey.currentContext;
-    if (context == null) {
-      LoggerService.warn('No context available for navigation');
-      return false;
-    }
-
-    // Parse report type from params
-    final reportTypeId = reportParams['reportType'];
-    if (reportTypeId == null) {
-      LoggerService.warn('Report type not specified in notification');
-      return false;
-    }
-
-    try {
-      // Map string report type to ReportType enum
-      final reportType = _mapReportType(reportTypeId);
-
-      // Create configuration from report params
-      final config = _buildReportConfiguration(reportType, reportParams);
-
-      // Convert configuration to query parameters
-      final queryParams = config.toQueryParams();
-
-      // Build the URI for the report
-      final uri = Uri(path: '/reports/builder', queryParameters: queryParams);
-
-      // Navigate using GoRouter
-      if (!context.mounted) return false;
-      context.push(uri.toString());
-
-      LoggerService.debug(
-        'Navigated to dynamic report',
-        metadata: {'reportType': reportTypeId, 'navigation': 'success'},
-      );
-      return true;
-    } catch (e, stack) {
-      // One record per failure. An unknown report type is a
-      // ValidationException, which LoggerService does not report.
-      LoggerService.warn(
-        'Failed to navigate to dynamic report',
-        error: e,
-        stackTrace: stack,
-        metadata: {'reportType': reportTypeId},
-      );
-      return false;
-    }
-  }
-
-  ReportType _mapReportType(String reportTypeId) {
-    switch (reportTypeId) {
-      case 'weekly_summary':
-        return ReportType.weeklySummary;
-      case 'monthly_summary':
-        // Map to monthlyIncome (not weeklySummary) for monthly activity summary
-        return ReportType.monthlyIncome;
-      case 'monthly_income':
-        return ReportType.monthlyIncome;
-      case 'fy_summary':
-        return ReportType.fyReport;
-      case 'fy_report':
-        return ReportType.fyReport;
-      case 'performance':
-        return ReportType.performance;
-      case 'goal_progress':
-        return ReportType.goalProgress;
-      case 'maturity_calendar':
-        return ReportType.maturityCalendar;
-      case 'action_required':
-        return ReportType.actionRequired;
-      case 'portfolio_health':
-        return ReportType.portfolioHealth;
-      default:
-        throw ValidationException(
-          userMessage: 'Unknown report type in notification',
-          technicalMessage: 'Unknown report type: $reportTypeId',
-        );
-    }
-  }
-
-  ReportConfiguration _buildReportConfiguration(
-    ReportType reportType,
-    Map<String, String> params,
-  ) {
-    // Create notification context if this is from a notification
-    final notificationContext = params['notificationContext'] == 'true'
-        ? NotificationContext(
-            notificationType: reportType.id,
-            timestamp: DateTime.now(),
-            additionalData: params,
-          )
-        : null;
-
-    switch (reportType) {
-      case ReportType.weeklySummary:
-        return ReportConfiguration.weeklySummary(
-          notificationContext: notificationContext,
-        );
-
-      case ReportType.monthlyIncome:
-        return ReportConfiguration.monthlyIncome(
-          notificationContext: notificationContext,
-        );
-
-      case ReportType.fyReport:
-        return ReportConfiguration.fyReport(
-          notificationContext: notificationContext,
-        );
-
-      case ReportType.performance:
-        return ReportConfiguration.performance(
-          notificationContext: notificationContext,
-        );
-
-      case ReportType.goalProgress:
-        final goalId = params['goalId'];
-        final milestonePercent = params['milestonePercent'];
-        return ReportConfiguration.goalProgress(
-          goalId: goalId,
-          milestonePercent: milestonePercent != null
-            ? int.tryParse(milestonePercent)
-            : null,
-          notificationContext: notificationContext,
-        );
-
-      case ReportType.maturityCalendar:
-        final investmentId = params['investmentId'];
-        final daysParam = params['daysToMaturity'] ?? params['daysAhead'];
-        return ReportConfiguration.maturityCalendar(
-          investmentId: investmentId,
-          daysToMaturity: daysParam != null ? int.tryParse(daysParam) : null,
-          notificationContext: notificationContext,
-        );
-
-      case ReportType.actionRequired:
-        return ReportConfiguration.actionRequired(
-          notificationContext: notificationContext,
-        );
-
-      case ReportType.portfolioHealth:
-        return ReportConfiguration.portfolioHealth(
-          notificationContext: notificationContext,
-        );
-    }
-  }
-
   Future<InvestmentEntity?> _findInvestment(String investmentId) async {
     try {
       // Wait for provider to finish loading (up to 10s for cold start)
@@ -579,14 +419,11 @@ class NotificationNavigator {
       if (investmentsAsync.isLoading) {
         // Cold start scenario - wait for data to load
         final completer = Completer<List<InvestmentEntity>?>();
-        final subscription = _ref.listen(
-          allInvestmentsProvider,
-          (_, next) {
-            if (!next.isLoading && !completer.isCompleted) {
-              completer.complete(next.value);
-            }
-          },
-        );
+        final subscription = _ref.listen(allInvestmentsProvider, (_, next) {
+          if (!next.isLoading && !completer.isCompleted) {
+            completer.complete(next.value);
+          }
+        });
 
         try {
           investments = await completer.future.timeout(

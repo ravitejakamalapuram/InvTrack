@@ -23,7 +23,6 @@ void main() {
       clock: () => DateTime(2026, 10, 2, 10),
     );
     await service.initialize();
-    service.reportsRouteEnabled = true;
   });
 
   void expectDefaultImportance(NotificationDetails? details) {
@@ -32,12 +31,14 @@ void main() {
     expect(android.priority, Priority.defaultPriority);
   }
 
-  test('weekly, monthly and FY summaries use default importance', () async {
-    await service.scheduleWeeklySummary();
-    await service.scheduleMonthlySummary();
-    await service.scheduleFYSummary();
+  test('the monthly recap uses default importance', () async {
+    await service.scheduleMonthlyRecap(
+      now: DateTime(2026, 10, 2),
+      maturingNextMonth: 1,
+      needingValue: 0,
+    );
 
-    expect(plugin.scheduledNotifications, hasLength(3));
+    expect(plugin.scheduledNotifications, hasLength(1));
     for (final n in plugin.scheduledNotifications) {
       expectDefaultImportance(n.notificationDetails);
     }

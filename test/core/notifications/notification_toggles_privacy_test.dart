@@ -193,20 +193,5 @@ void main() {
         expect(plugin.scheduledNotifications.first.body, contains('Value'));
       },
     );
-
-    test('FY summary', () async {
-      service.privacyModeActive = true;
-      await service.showFYSummary(
-        previousFY: 2025,
-        totalIncome: 654321,
-        totalTDS: 65432,
-        topPerformer: 'SBI FD',
-      );
-      final body = plugin.shownNotifications.single.body!;
-      expect(body, isNot(contains('Income:')));
-      expect(body, isNot(contains('TDS')));
-      expect(body, isNot(contains('6,54,321')));
-      expect(body, isNot(contains('654321')));
-    });
   });
 }

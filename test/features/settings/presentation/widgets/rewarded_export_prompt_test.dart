@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:inv_tracker/features/reports/presentation/widgets/rewarded_export_prompt.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/rewarded_export_prompt.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 Future<bool?> _open(

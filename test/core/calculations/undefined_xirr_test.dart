@@ -1,6 +1,6 @@
 // A71: an undefined XIRR (an open investment without a current value, too few
 // flows, or no solution) must stay undefined in the calculator, the list sort,
-// the weekly summary, the reports and the health score. It must never be
+// and the health score. It must never be
 // counted as a 0% return.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -13,10 +13,6 @@ import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_enums.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/services/portfolio_health_calculator.dart';
-import 'package:inv_tracker/features/reports/data/services/performance_report_service.dart';
-import 'package:inv_tracker/features/reports/data/services/report_cache_service.dart';
-import 'package:inv_tracker/features/reports/domain/entities/report_type.dart';
-import 'package:inv_tracker/features/reports/presentation/providers/weekly_summary_provider.dart';
 
 import '../../mocks/mock_currency_conversion_service.dart';
 
@@ -54,9 +50,6 @@ InvestmentEntity _investment(
 // actual/365: (96800 / 83800) ^ (365 / 730) − 1).
 // B: open, a single INVEST → undefined.
 // C: −1,00,000 on 2025-10-01, +90,000 on 2026-10-01 → XIRR −0.100000.
-const _xirrA = 0.0747703312412693;
-const _xirrC = -0.1;
-
 final _flowsA = [
   _flow('a1', 'A', CashFlowType.invest, 83800, DateTime(2024, 10, 1)),
   _flow('a2', 'A', CashFlowType.returnFlow, 96800, DateTime(2026, 10, 1)),
@@ -68,25 +61,6 @@ final _flowsC = [
   _flow('c1', 'C', CashFlowType.invest, 100000, DateTime(2025, 10, 1)),
   _flow('c2', 'C', CashFlowType.returnFlow, 90000, DateTime(2026, 10, 1)),
 ];
-
-class _NoCache implements ReportCacheService {
-  @override
-  T? get<T>(ReportType type, DateTime start, DateTime end) => null;
-  @override
-  void set<T>(ReportType type, DateTime start, DateTime end, T value) {}
-  @override
-  void clearType(ReportType type) {}
-  @override
-  void clearAll() {}
-  @override
-  void cleanupExpired() {}
-  @override
-  Map<String, dynamic> getStats() => {};
-  @override
-  void startPeriodicCleanup() {}
-  @override
-  void dispose() {}
-}
 
 /// A container whose streams hold investments A (closed), B (open) and C
 /// (open) with the flows above, all in the base currency INR.
@@ -115,7 +89,6 @@ ProviderContainer _container({List<Override> extraOverrides = const []}) {
       currencyConversionServiceProvider.overrideWith(
         (ref) => MockCurrencyConversionService(),
       ),
-      reportCacheServiceProvider.overrideWithValue(_NoCache()),
       ...extraOverrides,
     ],
   );
@@ -179,37 +152,6 @@ void main() {
     });
   });
 
-  group('Weekly summary', () {
-    test('an undefined XIRR never beats a negative one', () async {
-      final start = DateTime(2026, 9, 28);
-      final end = DateTime(2026, 10, 4, 23, 59, 59);
-      final container = _container(
-        extraOverrides: [
-          cashFlowsInDateRangeProvider((
-            start: start,
-            end: end,
-          )).overrideWith((ref) => Stream.value([_flowsA[1], _flowsC[1]])),
-        ],
-      );
-      addTearDown(container.dispose);
-      container.listen(
-        cashFlowsInDateRangeProvider((start: start, end: end)),
-        (_, _) {},
-      );
-      container.listen(activeInvestmentXirrResultMapProvider, (_, _) {});
-      await container.read(activeInvestmentXirrResultMapProvider.future);
-      final weekly = weeklySummaryProvider((
-        periodStart: start,
-        periodEnd: end,
-      ));
-      container.listen(weekly, (_, _) {});
-      final summary = await container.read(weekly.future);
-
-      expect(summary.topPerformer?.id, 'C');
-      expect(summary.topPerformerXirr, closeTo(_xirrC, 1e-6));
-    });
-  });
-
   group('Portfolio health returns component', () {
     // An open FD with no payout and no value has an unknown return, so the
     // portfolio's is unknown too: no score, rather than the closed holding
@@ -248,43 +190,6 @@ void main() {
       );
 
       expect(score, isNull);
-    });
-  });
-
-  group('Performance report', () {
-    test('average and median XIRR leave out undefined investments', () {
-      final report = PerformanceReportService().generateReport(
-        allInvestments: [
-          _investment('A', InvestmentStatus.closed),
-          _investment('B', InvestmentStatus.open),
-          // Closed: an open C with no value would await one (rule 4) and
-          // leave the report; this test is about undefined XIRRs.
-          _investment('C', InvestmentStatus.closed),
-        ],
-        allCashFlows: [..._flowsA, ..._flowsB, ..._flowsC],
-      );
-
-      const expected = (_xirrA + _xirrC) / 2; // −0.012615
-      expect(report.averageXIRR, closeTo(expected, 1e-6));
-      expect(report.medianXIRR, closeTo(expected, 1e-6));
-      expect(
-        [for (final p in report.topPerformers) p.investment.id],
-        ['A', 'C'],
-      );
-      expect(
-        [for (final p in report.bottomPerformers) p.investment.id],
-        ['C', 'A'],
-      );
-    });
-
-    test('average and median XIRR are undefined when no XIRR is', () {
-      final report = PerformanceReportService().generateReport(
-        allInvestments: [_investment('B', InvestmentStatus.open)],
-        allCashFlows: _flowsB,
-      );
-
-      expect(report.averageXIRR, isNull);
-      expect(report.medianXIRR, isNull);
     });
   });
 }

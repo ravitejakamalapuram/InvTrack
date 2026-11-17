@@ -37,140 +37,9 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
   @override
   SharedPreferences get prefs => _prefs;
 
-  /// The weekly, monthly and FY summaries open a report; with Reports off the
-  /// tap would land on Overview with nothing to show, so they are not
-  /// scheduled (and any pending one is cancelled).
-  bool reportsRouteEnabled = false;
-
   /// Base currency of the signed-in user; the India tax deadlines apply only
   /// to INR. Null until known, so nothing is scheduled before then.
   String? baseCurrency;
-
-  Future<bool> _reportsOff(int id) async {
-    if (reportsRouteEnabled) return false;
-    await _plugin.cancel(id: id);
-    return true;
-  }
-
-  // ============ Weekly & Monthly Summaries ============
-
-  /// Schedule weekly summary notification (every Sunday at 10 AM)
-  Future<void> scheduleWeeklySummary() async {
-    await ensureInitialized();
-    if (!weeklySummaryEnabled) return;
-    if (await _reportsOff(NotificationIds.weeklySummary)) return;
-
-    await _plugin.cancel(id: NotificationIds.weeklySummary);
-
-    const androidDetails = AndroidNotificationDetails(
-      NotificationChannels.weeklySummary,
-      'Weekly Summary',
-      channelDescription: 'Weekly investment activity summary',
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
-      playSound: true,
-      enableVibration: true,
-      visibility: NotificationVisibility.private,
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    final now = DateTime.now();
-    var scheduledDate = DateTime(now.year, now.month, now.day, 10, 0);
-
-    while (scheduledDate.weekday != DateTime.sunday ||
-        scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
-
-    await _plugin.zonedSchedule(
-      id: NotificationIds.weeklySummary,
-      title: '📊 Weekly Investment Summary',
-      body: 'Check your investment activity for this week',
-      scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
-      notificationDetails: details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-      payload: NotificationPayload.weeklySummary,
-    );
-
-    LoggerService.info(
-      'Weekly summary scheduled',
-      metadata: {'scheduledDate': scheduledDate.toString()},
-    );
-  }
-
-  /// Schedule monthly income summary (last day of each month at 6 PM)
-  Future<void> scheduleMonthlySummary() async {
-    await ensureInitialized();
-    if (!monthlySummaryEnabled) return;
-    // On the 1st, last month's recap is still due: this slot is shared, so
-    // neither cancelling it nor replacing it with the plain summary is allowed.
-    if (shouldKeepDueRecap(
-      _clock(),
-      await _plugin.pendingNotificationRequests(),
-    )) {
-      return;
-    }
-    if (await _reportsOff(NotificationIds.monthlySummary)) return;
-
-    await _plugin.cancel(id: NotificationIds.monthlySummary);
-
-    const androidDetails = AndroidNotificationDetails(
-      NotificationChannels.monthlySummary,
-      'Monthly Summary',
-      channelDescription: 'Monthly investment income summary',
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
-      playSound: true,
-      enableVibration: true,
-      visibility: NotificationVisibility.private,
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    final now = DateTime.now();
-    var lastDayOfMonth = DateTime(now.year, now.month + 1, 0, 18, 0);
-
-    if (lastDayOfMonth.isBefore(now) ||
-        (lastDayOfMonth.day == now.day && now.hour >= 18)) {
-      lastDayOfMonth = DateTime(now.year, now.month + 2, 0, 18, 0);
-    }
-
-    await _plugin.zonedSchedule(
-      id: NotificationIds.monthlySummary,
-      title: '📈 Monthly Income Summary',
-      body: 'Review your investment income for this month',
-      scheduledDate: tz.TZDateTime.from(lastDayOfMonth, tz.local),
-      notificationDetails: details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.dayOfMonthAndTime,
-      payload: NotificationPayload.monthlySummary,
-    );
-
-    LoggerService.info(
-      'Monthly summary scheduled',
-      metadata: {'scheduledDate': lastDayOfMonth.toString()},
-    );
-  }
 
   /// The title and body of the recap for [month]. Counts only, never an
   /// amount or a name (rules 7 and 8): [maturingNextMonth] is how many
@@ -418,9 +287,13 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     await _plugin.zonedSchedule(
       id: NotificationIds.weeklyCheckIn,
       title: '📊 Weekly Check-In',
-      body: 'Did you receive any investment income this week? Tap to log it now.',
+      body:
+          'Did you receive any investment income this week? Tap to log it now.',
       scheduledDate: tz.TZDateTime.from(nextSunday, tz.local),
-      notificationDetails: const NotificationDetails(android: androidDetails, iOS: iosDetails),
+      notificationDetails: const NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       payload: NotificationPayload.weeklyCheckIn,
@@ -430,106 +303,6 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       'Weekly check-in scheduled',
       metadata: {'scheduledDate': nextSunday.toString()},
     );
-  }
-
-  // ============ Financial Year Summary ============
-
-  /// Schedule FY summary notification for April 1st at 10 AM.
-  Future<void> scheduleFYSummary() async {
-    await ensureInitialized();
-    if (!fySummaryEnabled) return;
-    if (await _reportsOff(NotificationIds.fySummary)) return;
-
-    await _plugin.cancel(id: NotificationIds.fySummary);
-
-    final now = DateTime.now();
-    var nextApril1 = DateTime(now.year, 4, 1, 10, 0);
-
-    if (nextApril1.isBefore(now)) {
-      nextApril1 = DateTime(now.year + 1, 4, 1, 10, 0);
-    }
-
-    const androidDetails = AndroidNotificationDetails(
-      NotificationChannels.fySummary,
-      'FY Summary',
-      channelDescription: 'Annual financial year summary',
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
-      playSound: true,
-      visibility: NotificationVisibility.private,
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    await _plugin.zonedSchedule(
-      id: NotificationIds.fySummary,
-      title: '📅 FY Summary Ready',
-      body: 'Your financial year summary is ready!',
-      scheduledDate: tz.TZDateTime.from(nextApril1, tz.local),
-      notificationDetails: const NotificationDetails(android: androidDetails, iOS: iosDetails),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      payload: NotificationPayload.fySummary,
-    );
-
-    LoggerService.info(
-      'FY summary scheduled',
-      metadata: {'scheduledDate': nextApril1.toString()},
-    );
-  }
-
-  /// Show immediate FY summary notification with custom data.
-  Future<void> showFYSummary({
-    required int previousFY,
-    required double totalIncome,
-    required double totalTDS,
-    required String? topPerformer,
-    String currency = 'INR',
-  }) async {
-    await ensureInitialized();
-    if (!await ensurePermissionsForShow()) return;
-
-    final buffer = StringBuffer();
-    final nextFY = previousFY + 1;
-    if (privacyModeActive) {
-      buffer.write('FY$previousFY-$nextFY: Your summary is ready');
-    } else {
-      final formattedIncome = formatCurrency(totalIncome, currency);
-      buffer.write('FY$previousFY-$nextFY: Income: $formattedIncome');
-      if (totalTDS > 0) {
-        buffer.write(', TDS: ${formatCurrency(totalTDS, currency)}');
-      }
-    }
-    if (topPerformer != null) buffer.write('. Top: $topPerformer');
-
-    const androidDetails = AndroidNotificationDetails(
-      NotificationChannels.fySummary,
-      'FY Summary',
-      channelDescription: 'Annual financial year summary',
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
-      playSound: true,
-      visibility: NotificationVisibility.private,
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    await _plugin.show(
-      id: NotificationIds.fySummary,
-      title: '📊 FY$previousFY-$nextFY Summary',
-      body: buffer.toString(),
-      notificationDetails: const NotificationDetails(android: androidDetails, iOS: iosDetails),
-      payload: NotificationPayload.fySummary,
-    );
-
-    LoggerService.info('FY summary shown');
   }
 }
 

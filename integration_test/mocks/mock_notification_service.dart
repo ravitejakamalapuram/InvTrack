@@ -54,16 +54,6 @@ class FakeNotificationService implements NotificationService {
   }
 
   @override
-  Future<void> scheduleWeeklySummary() async {
-    _logScheduled('weekly_summary');
-  }
-
-  @override
-  Future<void> scheduleMonthlySummary() async {
-    _logScheduled('monthly_summary');
-  }
-
-  @override
   Future<void> rescheduleAllNotifications(
     List<InvestmentEntity> investments, {
     required Map<String, DateTime> lastIncomeDates,
