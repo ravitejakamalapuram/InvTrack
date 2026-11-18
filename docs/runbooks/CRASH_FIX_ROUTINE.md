@@ -16,4 +16,7 @@ One-time setup (owner): grant `release-bot@rk-release-platform.iam.gserviceaccou
 4. Otherwise fix it: failing test first, smallest change, `flutter analyze` and `flutter test --exclude-tags=golden`, branch `crash/<id8>-<slug>`, conventional title `fix(<area>): ...`, body starting `Closes #<issue>`.
 5. PR size rule: small and obvious fix: self-review once, squash-merge on green CI with no conflict. Money, data, notifications, sign-in, security or larger: comment `@coderabbitai review` and merge only after approval and green CI. Never deploy or touch Play.
 6. Cap at 3 fixes per run. Quote only the exception and top frames in PRs.
-7. Finish with one line: open crash issues, fixed, already fixed, skipped. Silent when there are none.
+7. Send the owner a crash report on Telegram, every run, even with zero crashes. Add one item to the inbox app (`$INBOX_URL`, `$INBOX_TOKEN`, both set in the FULL Access environment): build the JSON with `python3 json.dumps`, never print the token, and check the reply has `"ok":true`.
+   `{"action":"add","token":"<token>","type":"crash-report","title":"Daily crash report: N open, N fixed, N skipped","summary":"<text>","data":{"app":"InvTrack","icon":"🛠️"}}`
+   The summary is plain and short: the date, the counts, then per crash its title in plain words (not the stack frame), users hit, app version, status (fixed + PR link, already fixed + commit, or skipped + one-line reason) and the GitHub issue link. With none, write "No open crash issues." Never include user ids, names, amounts or stack traces. The bot sends it to the owner's private chat as a card to read and approve.
+8. Finish with one line: open crash issues, fixed, already fixed, skipped.
