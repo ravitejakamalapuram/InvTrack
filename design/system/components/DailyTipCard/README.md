@@ -11,3 +11,7 @@ Same shape as `GuestLinkBanner`: 12px radius, 8px vertical margin (the screen ow
 - Tips hold no amounts, names or user data, so Privacy mode does not change them.
 - Analytics: `daily_tip_shown` (once per process) and `daily_tip_dismissed`, each with a `tip_id` string (a content id, not user data).
 - Tips ship in `assets/tips/tips.json`, in English.
+
+## Bell (tips list)
+
+A bell in the Overview app bar (`notifications_outlined`, 48dp, tooltip "Tips") keeps the tips, so a tip dismissed on the card is not lost. A small dot (8px, Material `Badge`) shows until today's tip is opened from the bell or dismissed on the card; the tooltip then reads "Tips, new tip". Tapping opens a bottom sheet: title "Tips", then today's tip and up to six earlier ones, newest first (title `bodyMedium` 600, body `bodySmall`), and the disclaimer once at the end. The bell is hidden when there are no tips. No new analytics event.

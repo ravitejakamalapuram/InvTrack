@@ -25,6 +25,7 @@ import 'package:inv_tracker/features/investment/presentation/providers/providers
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_enums.dart';
 import 'package:inv_tracker/features/tips/presentation/widgets/daily_tip_card.dart';
+import 'package:inv_tracker/features/tips/presentation/widgets/tips_bell_button.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/widgets/portfolio_health_dashboard_card.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_analytics.dart';
@@ -163,6 +164,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 centerTitle: false,
+                actions: const [TipsBellButton()],
               ),
 
               // Shown while a deletion request exists, whatever the

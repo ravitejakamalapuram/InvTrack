@@ -79,6 +79,13 @@ class AccountDataDeletionService {
     'last_live_cache_refresh',
     'currency_live_cache_last_refresh',
     'in_app_update_last_prompt_ms',
+    // Daily tips: what was shown, read and dismissed (see tips feature).
+    'daily_tip_seen_ids',
+    'daily_tip_today_id',
+    'daily_tip_today_date',
+    'daily_tip_dismissed_date',
+    'daily_tip_read_date',
+    'daily_tip_history_ids',
   ];
 
   /// Full deletion: server data first (must be confirmed), then local files
