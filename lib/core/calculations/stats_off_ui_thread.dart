@@ -34,11 +34,10 @@ Future<InvestmentStats> calculateStatsOffUiThread(
   TerminalValues terminalValues = TerminalValues.none,
   int minFlowsForIsolate = kStatsIsolateMinFlows,
   Future<InvestmentStats> Function(
-        InvestmentStats Function(StatsArgs) task,
-        StatsArgs args,
-      )
-      runner =
-      _runInIsolate,
+    InvestmentStats Function(StatsArgs) task,
+    StatsArgs args,
+  )
+  runner = _runInIsolate,
 }) async {
   final args = StatsArgs(cashFlows, terminalValues);
   if (cashFlows.length + terminalValues.flows.length < minFlowsForIsolate) {

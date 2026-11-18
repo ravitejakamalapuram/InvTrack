@@ -657,9 +657,7 @@ class FireDashboardScreen extends ConsumerWidget {
                   child: Builder(
                     builder: (context) {
                       // Sanitize progress once and use for both ring and label
-                      final safeProgress = _safeToInt(
-                        nextMilestone.currentProgress,
-                      );
+                      final safeProgress = _safeToInt(nextMilestone.currentProgress);
                       final safeProgressValue = safeProgress / 100.0;
 
                       return Row(

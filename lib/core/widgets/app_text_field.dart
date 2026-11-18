@@ -195,7 +195,10 @@ class _AppTextFieldState extends State<AppTextField> {
                 }
               },
               child: ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                constraints: const BoxConstraints(
+                  minWidth: 44,
+                  minHeight: 44,
+                ),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(

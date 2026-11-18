@@ -33,9 +33,9 @@ class SeedDataNotifier extends Notifier<AsyncValue<SeedResult?>> {
     try {
       // Get user's base currency for dynamic goal creation (Rule 21.6)
       final baseCurrency = ref.read(currencyCodeProvider);
-      final result = await ref
-          .read(seedDataServiceProvider)
-          .seedDemoData(baseCurrency: baseCurrency);
+      final result = await ref.read(seedDataServiceProvider).seedDemoData(
+        baseCurrency: baseCurrency,
+      );
       state = AsyncValue.data(result);
       return result;
     } catch (e, st) {

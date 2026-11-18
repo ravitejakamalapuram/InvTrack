@@ -91,94 +91,90 @@ class GoalCarouselCard extends ConsumerWidget {
                   // Goal name and percentage/completed badge in row. The badge
                   // takes at most 60% of the line and shrinks to fit, so the
                   // name keeps the rest and nothing overflows at large text.
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final badgeMaxWidth = constraints.maxWidth * 0.6;
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              goal.name,
-                              style: AppTypography.bodyLarge.copyWith(
-                                color: isDark
-                                    ? Colors.white
-                                    : AppColors.neutral900Light,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.3,
+                  LayoutBuilder(builder: (context, constraints) {
+                  final badgeMaxWidth = constraints.maxWidth * 0.6;
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          goal.name,
+                          style: AppTypography.bodyLarge.copyWith(
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.neutral900Light,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.3,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      SizedBox(width: AppSpacing.xs),
+                      // Show "Completed" badge for achieved goals, percentage for others
+                      if (progress.status == GoalStatus.achieved)
+                        _BadgeCap(
+                          maxWidth: badgeMaxWidth,
+                          child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xs,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.successTintLight.withValues(
+                              alpha: 0.15,
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                '🎉',
+                                style: TextStyle(fontSize: 10),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              const SizedBox(width: 2),
+                              Text(
+                                l10n.goalCompleted,
+                                style: AppTypography.caption.copyWith(
+                                  color: isDark
+                                      ? AppColors.successDark
+                                      : AppColors.successLight,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ))
+                      else
+                        _BadgeCap(
+                          maxWidth: badgeMaxWidth,
+                          child: PrivacyMask(
+                          useTextMask: true,
+                          maskedText: '••%',
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xs,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: goal.color.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${progress.displayPercent}%',
+                              style: AppTypography.caption.copyWith(
+                                color: goal.color,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                              ),
                             ),
                           ),
-                          SizedBox(width: AppSpacing.xs),
-                          // Show "Completed" badge for achieved goals, percentage for others
-                          if (progress.status == GoalStatus.achieved)
-                            _BadgeCap(
-                              maxWidth: badgeMaxWidth,
-                              child: Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.xs,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.successTintLight.withValues(
-                                    alpha: 0.15,
-                                  ),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Text(
-                                      '🎉',
-                                      style: TextStyle(fontSize: 10),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Text(
-                                      l10n.goalCompleted,
-                                      style: AppTypography.caption.copyWith(
-                                        color: isDark
-                                            ? AppColors.successDark
-                                            : AppColors.successLight,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          else
-                            _BadgeCap(
-                              maxWidth: badgeMaxWidth,
-                              child: PrivacyMask(
-                                useTextMask: true,
-                                maskedText: '••%',
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.xs,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: goal.color.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    '${progress.displayPercent}%',
-                                    style: AppTypography.caption.copyWith(
-                                      color: goal.color,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      );
-                    },
-                  ),
+                        )),
+                    ],
+                  );
+                  }),
                   SizedBox(height: AppSpacing.xxs),
 
                   // Progress amount

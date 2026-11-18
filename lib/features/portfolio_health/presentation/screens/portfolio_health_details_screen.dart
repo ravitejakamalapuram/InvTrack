@@ -250,7 +250,13 @@ class _PortfolioHealthDetailsScreenState
                       color: color,
                     ),
                   ),
-                  Text('/ 100', style: TextStyle(fontSize: 16, color: color)),
+                  Text(
+                    '/ 100',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: color,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -470,7 +476,10 @@ class _PortfolioHealthDetailsScreenState
           Container(
             width: 32,
             height: 32,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: fill),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: fill,
+            ),
             child: Center(
               child: Text(
                 number.toString(),

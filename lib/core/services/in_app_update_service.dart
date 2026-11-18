@@ -17,43 +17,29 @@ class InAppUpdateService {
   Future<AppUpdateInfo?> checkForUpdate() async {
     try {
       final updateInfo = await InAppUpdate.checkForUpdate();
-
+      
       LoggerService.info(
         'Update check complete',
         metadata: {
-          'updateAvailable':
-              updateInfo.updateAvailability ==
-              UpdateAvailability.updateAvailable,
+          'updateAvailable': updateInfo.updateAvailability == UpdateAvailability.updateAvailable,
           'immediateAllowed': updateInfo.immediateUpdateAllowed,
           'flexibleAllowed': updateInfo.flexibleUpdateAllowed,
           'availableVersionCode': updateInfo.availableVersionCode,
           'updatePriority': updateInfo.updatePriority,
         },
       );
-
+      
       return updateInfo;
     } on PlatformException catch (e, st) {
       final ex = UpdateException.fromPlatformException(e, st);
       if (ex.shouldReport) {
-        LoggerService.error(
-          'Failed to check for update',
-          error: ex,
-          stackTrace: st,
-        );
+        LoggerService.error('Failed to check for update', error: ex, stackTrace: st);
       } else {
-        LoggerService.warn(
-          'Update check failed (environmental)',
-          error: ex,
-          stackTrace: st,
-        );
+        LoggerService.warn('Update check failed (environmental)', error: ex, stackTrace: st);
       }
       return null;
     } catch (e, st) {
-      LoggerService.error(
-        'Failed to check for update',
-        error: e,
-        stackTrace: st,
-      );
+      LoggerService.error('Failed to check for update', error: e, stackTrace: st);
       return null;
     }
   }
@@ -65,29 +51,21 @@ class InAppUpdateService {
   Future<AppUpdateResult> startImmediateUpdate() async {
     try {
       LoggerService.info('Starting immediate update');
-
+      
       final result = await InAppUpdate.performImmediateUpdate();
-
+      
       LoggerService.info(
         'Immediate update result',
         metadata: {'result': result.name},
       );
-
+      
       return result;
     } on PlatformException catch (e, st) {
       final ex = UpdateException.fromPlatformException(e, st);
       if (ex.shouldReport) {
-        LoggerService.error(
-          'Immediate update failed',
-          error: ex,
-          stackTrace: st,
-        );
+        LoggerService.error('Immediate update failed', error: ex, stackTrace: st);
       } else {
-        LoggerService.warn(
-          'Immediate update failed (environmental)',
-          error: ex,
-          stackTrace: st,
-        );
+        LoggerService.warn('Immediate update failed (environmental)', error: ex, stackTrace: st);
       }
       return AppUpdateResult.inAppUpdateFailed;
     } catch (e, st) {
@@ -103,29 +81,21 @@ class InAppUpdateService {
   Future<AppUpdateResult> startFlexibleUpdate() async {
     try {
       LoggerService.info('Starting flexible update');
-
+      
       final result = await InAppUpdate.startFlexibleUpdate();
-
+      
       LoggerService.info(
         'Flexible update started',
         metadata: {'result': result.name},
       );
-
+      
       return result;
     } on PlatformException catch (e, st) {
       final ex = UpdateException.fromPlatformException(e, st);
       if (ex.shouldReport) {
-        LoggerService.error(
-          'Flexible update failed',
-          error: ex,
-          stackTrace: st,
-        );
+        LoggerService.error('Flexible update failed', error: ex, stackTrace: st);
       } else {
-        LoggerService.warn(
-          'Flexible update failed (environmental)',
-          error: ex,
-          stackTrace: st,
-        );
+        LoggerService.warn('Flexible update failed (environmental)', error: ex, stackTrace: st);
       }
       return AppUpdateResult.inAppUpdateFailed;
     } catch (e, st) {
@@ -145,24 +115,12 @@ class InAppUpdateService {
     } on PlatformException catch (e, st) {
       final ex = UpdateException.fromPlatformException(e, st);
       if (ex.shouldReport) {
-        LoggerService.error(
-          'Failed to complete flexible update',
-          error: ex,
-          stackTrace: st,
-        );
+        LoggerService.error('Failed to complete flexible update', error: ex, stackTrace: st);
       } else {
-        LoggerService.warn(
-          'Failed to complete flexible update (environmental)',
-          error: ex,
-          stackTrace: st,
-        );
+        LoggerService.warn('Failed to complete flexible update (environmental)', error: ex, stackTrace: st);
       }
     } catch (e, st) {
-      LoggerService.error(
-        'Failed to complete flexible update',
-        error: e,
-        stackTrace: st,
-      );
+      LoggerService.error('Failed to complete flexible update', error: e, stackTrace: st);
     }
   }
 }

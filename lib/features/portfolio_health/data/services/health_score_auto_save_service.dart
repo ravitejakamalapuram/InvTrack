@@ -18,14 +18,18 @@ class HealthScoreAutoSaveService {
   bool _isSaving = false;
   Completer<void>? _pendingForceSaveCompleter;
 
-  HealthScoreAutoSaveService({required HealthScoreRepository repository})
-    : _repository = repository;
+  HealthScoreAutoSaveService({
+    required HealthScoreRepository repository,
+  }) : _repository = repository;
 
   /// Start auto-save timer (checks every 5 minutes)
   void start() {
     stop(); // Stop any existing timer
 
-    _timer = Timer.periodic(const Duration(minutes: 5), (_) => _checkAndSave());
+    _timer = Timer.periodic(
+      const Duration(minutes: 5),
+      (_) => _checkAndSave(),
+    );
 
     LoggerService.debug('HealthScoreAutoSaveService started');
   }
@@ -65,8 +69,7 @@ class HealthScoreAutoSaveService {
       final latest = await _repository.getLatestSnapshot();
 
       // Save if: no previous snapshot OR score changed >1 point OR >24h old
-      final shouldSave =
-          latest == null ||
+      final shouldSave = latest == null ||
           (current.overallScore - latest.overallScore).abs() > 1.0 ||
           DateTime.now().difference(latest.calculatedAt).inHours >= 24;
 
@@ -93,9 +96,7 @@ class HealthScoreAutoSaveService {
         final completer = _pendingForceSaveCompleter!;
         _pendingForceSaveCompleter = null;
         // Schedule another save and complete the pending forceSave future
-        forceSave()
-            .then(completer.complete)
-            .catchError(completer.completeError);
+        forceSave().then(completer.complete).catchError(completer.completeError);
       }
     }
   }

@@ -45,8 +45,7 @@ class InAppUpdateState {
       updateInfo?.updateAvailability == UpdateAvailability.updateAvailable;
 
   /// Check if immediate update is allowed
-  bool get immediateUpdateAllowed =>
-      updateInfo?.immediateUpdateAllowed ?? false;
+  bool get immediateUpdateAllowed => updateInfo?.immediateUpdateAllowed ?? false;
 
   /// Check if flexible update is allowed
   bool get flexibleUpdateAllowed => updateInfo?.flexibleUpdateAllowed ?? false;
@@ -58,8 +57,7 @@ class InAppUpdateState {
   /// True when the installed version is at least
   /// [kImmediateUpdateStalenessDays] behind. Unknown staleness is not stale.
   bool get isStale =>
-      (updateInfo?.clientVersionStalenessDays ?? 0) >=
-      kImmediateUpdateStalenessDays;
+      (updateInfo?.clientVersionStalenessDays ?? 0) >= kImmediateUpdateStalenessDays;
 
   /// Automatic prompt policy: blocking update for very stale installs,
   /// otherwise the flexible dialog, otherwise nothing.
@@ -80,18 +78,13 @@ class InAppUpdateState {
     Object? error = _sentinel,
   }) {
     return InAppUpdateState(
-      updateInfo: identical(updateInfo, _sentinel)
-          ? this.updateInfo
-          : updateInfo as AppUpdateInfo?,
-      isChecking: identical(isChecking, _sentinel)
-          ? this.isChecking
-          : isChecking as bool,
-      isDownloading: identical(isDownloading, _sentinel)
-          ? this.isDownloading
-          : isDownloading as bool,
-      isDownloaded: identical(isDownloaded, _sentinel)
-          ? this.isDownloaded
-          : isDownloaded as bool,
+      updateInfo:
+          identical(updateInfo, _sentinel) ? this.updateInfo : updateInfo as AppUpdateInfo?,
+      isChecking: identical(isChecking, _sentinel) ? this.isChecking : isChecking as bool,
+      isDownloading:
+          identical(isDownloading, _sentinel) ? this.isDownloading : isDownloading as bool,
+      isDownloaded:
+          identical(isDownloaded, _sentinel) ? this.isDownloaded : isDownloaded as bool,
       error: identical(error, _sentinel) ? this.error : error as String?,
     );
   }
@@ -125,31 +118,30 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
     if (_subscription != null) return;
 
     try {
-      _subscription = InAppUpdate.installUpdateListener.listen(
-        (status) {
-          LoggerService.info('Install status update received: ${status.name}');
-          if (status == InstallStatus.downloaded) {
-            state = state.copyWith(isDownloading: false, isDownloaded: true);
-          } else if (status == InstallStatus.downloading) {
-            state = state.copyWith(isDownloading: true, isDownloaded: false);
-          } else if (status == InstallStatus.failed ||
-              status == InstallStatus.canceled) {
-            state = state.copyWith(isDownloading: false, isDownloaded: false);
-          }
-        },
-        onError: (e, st) {
-          LoggerService.error(
-            'Error in install update listener',
-            error: e,
-            stackTrace: st,
+      _subscription = InAppUpdate.installUpdateListener.listen((status) {
+        LoggerService.info('Install status update received: ${status.name}');
+        if (status == InstallStatus.downloaded) {
+          state = state.copyWith(
+            isDownloading: false,
+            isDownloaded: true,
           );
-        },
-      );
+        } else if (status == InstallStatus.downloading) {
+          state = state.copyWith(
+            isDownloading: true,
+            isDownloaded: false,
+          );
+        } else if (status == InstallStatus.failed || status == InstallStatus.canceled) {
+          state = state.copyWith(
+            isDownloading: false,
+            isDownloaded: false,
+          );
+        }
+      }, onError: (e, st) {
+        LoggerService.error('Error in install update listener', error: e, stackTrace: st);
+      });
     } catch (e) {
       // InAppUpdate might throw on non-Android platforms, catch silently
-      LoggerService.debug(
-        'Failed to listen to install updates (likely non-Android platform)',
-      );
+      LoggerService.debug('Failed to listen to install updates (likely non-Android platform)');
     }
   }
 
@@ -197,11 +189,7 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
     } catch (e, st) {
       final exception = UpdateException.fromPlatformException(e, st);
       if (exception.shouldReport) {
-        LoggerService.error(
-          'Update check failed',
-          error: exception,
-          stackTrace: st,
-        );
+        LoggerService.error('Update check failed', error: exception, stackTrace: st);
       } else {
         LoggerService.info(
           'Update check failed (environmental)',
@@ -209,7 +197,7 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
         );
       }
       state = state.copyWith(
-        updateInfo: null, // Clear stale update info
+        updateInfo: null,  // Clear stale update info
         isChecking: false,
         isDownloaded: false,
         error: 'Failed to check for updates. Please try again later.',
@@ -230,33 +218,23 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
         // BUG FIX: Don't report user denial to Crashlytics as a warning
         // Fixes Crash ID: 330446834f8252710746c3a9fae30314
         LoggerService.info('User denied immediate update');
-        state = state.copyWith(
-          error: 'Update installation failed. Please try again.',
-        );
+        state = state.copyWith(error: 'Update installation failed. Please try again.');
       } else {
         LoggerService.warn('Immediate update result: ${result.name}');
-        state = state.copyWith(
-          error: 'Update installation failed. Please try again.',
-        );
+        state = state.copyWith(error: 'Update installation failed. Please try again.');
       }
       return result;
     } catch (e, st) {
       final exception = UpdateException.fromPlatformException(e, st);
       if (exception.shouldReport) {
-        LoggerService.error(
-          'Immediate update error',
-          error: exception,
-          stackTrace: st,
-        );
+        LoggerService.error('Immediate update error', error: exception, stackTrace: st);
       } else {
         LoggerService.info(
           'Immediate update error (environmental)',
           metadata: {'errorType': e.runtimeType.toString()},
         );
       }
-      state = state.copyWith(
-        error: 'Failed to start update. Please try again later.',
-      );
+      state = state.copyWith(error: 'Failed to start update. Please try again later.');
       return AppUpdateResult.inAppUpdateFailed;
     }
   }
@@ -295,11 +273,7 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
     } catch (e, st) {
       final exception = UpdateException.fromPlatformException(e, st);
       if (exception.shouldReport) {
-        LoggerService.error(
-          'Flexible update error',
-          error: exception,
-          stackTrace: st,
-        );
+        LoggerService.error('Flexible update error', error: exception, stackTrace: st);
       } else {
         LoggerService.info(
           'Flexible update error (environmental)',
@@ -321,20 +295,14 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
     } catch (e, st) {
       final exception = UpdateException.fromPlatformException(e, st);
       if (exception.shouldReport) {
-        LoggerService.error(
-          'Complete update error',
-          error: exception,
-          stackTrace: st,
-        );
+        LoggerService.error('Complete update error', error: exception, stackTrace: st);
       } else {
         LoggerService.info(
           'Complete update error (environmental)',
           metadata: {'errorType': e.runtimeType.toString()},
         );
       }
-      state = state.copyWith(
-        error: 'Failed to complete update. Please restart the app manually.',
-      );
+      state = state.copyWith(error: 'Failed to complete update. Please restart the app manually.');
     }
   }
 }
