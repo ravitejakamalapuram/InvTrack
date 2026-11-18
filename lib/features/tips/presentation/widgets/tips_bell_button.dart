@@ -59,10 +59,13 @@ class _TipsSheet extends StatelessWidget {
           AppSpacing.md,
         ),
         children: [
-          Text(
-            l10n.tipsBellLabel,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w600,
+          Semantics(
+            header: true,
+            child: Text(
+              l10n.tipsBellLabel,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           for (final tip in tips)
