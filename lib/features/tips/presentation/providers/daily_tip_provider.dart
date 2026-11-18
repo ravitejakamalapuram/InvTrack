@@ -15,6 +15,7 @@ const dailyTipSeenKey = 'daily_tip_seen_ids';
 const dailyTipTodayIdKey = 'daily_tip_today_id';
 const dailyTipTodayDateKey = 'daily_tip_today_date';
 const dailyTipDismissedDateKey = 'daily_tip_dismissed_date';
+const dailyTipReadDateKey = 'daily_tip_read_date';
 
 /// The tips bundled with the app.
 final tipsPoolProvider = FutureProvider<List<Tip>>((ref) async {
@@ -70,9 +71,47 @@ class DailyTipNotifier extends AsyncNotifier<Tip?> {
     await ref
         .read(sharedPreferencesProvider)
         .setString(dailyTipDismissedDateKey, today);
+    await ref.read(dailyTipUnreadProvider.notifier).markRead();
   }
 }
 
 final dailyTipProvider = AsyncNotifierProvider<DailyTipNotifier, Tip?>(
   DailyTipNotifier.new,
 );
+
+/// True until today's tip is opened from the bell or dismissed on the card.
+class DailyTipUnreadNotifier extends Notifier<bool> {
+  String get _today => _dayKey(ref.read(dailyTipClockProvider)());
+
+  @override
+  bool build() =>
+      ref.watch(sharedPreferencesProvider).getString(dailyTipReadDateKey) !=
+      _today;
+
+  Future<void> markRead() async {
+    if (!state) return;
+    state = false;
+    await ref
+        .read(sharedPreferencesProvider)
+        .setString(dailyTipReadDateKey, _today);
+  }
+}
+
+final dailyTipUnreadProvider = NotifierProvider<DailyTipUnreadNotifier, bool>(
+  DailyTipUnreadNotifier.new,
+);
+
+/// Today's tip first, then earlier ones, newest first, up to 7. Includes a tip
+/// dismissed from the card.
+final dailyTipHistoryProvider = FutureProvider<List<Tip>>((ref) async {
+  final pool = await ref.watch(tipsPoolProvider.future);
+  await ref.watch(dailyTipProvider.future);
+  final seen =
+      ref.read(sharedPreferencesProvider).getStringList(dailyTipSeenKey) ??
+      const <String>[];
+  final byId = {for (final t in pool) t.id: t};
+  return [
+    for (final id in seen.reversed)
+      if (byId[id] != null) byId[id]!,
+  ].take(7).toList();
+});

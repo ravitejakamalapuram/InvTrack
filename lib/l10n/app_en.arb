@@ -6718,6 +6718,16 @@
     "description": "Line under every daily tip saying it is not financial advice"
   },
 
+  "tipsBellLabel": "Tips",
+  "@tipsBellLabel": {
+    "description": "Tooltip of the bell icon in the Overview app bar and title of the sheet it opens, which lists the daily money tips"
+  },
+
+  "tipsBellLabelUnread": "Tips, new tip",
+  "@tipsBellLabelUnread": {
+    "description": "Tooltip and screen-reader label of the bell icon while today's tip has not been opened yet"
+  },
+
   "dailyTipDismiss": "Dismiss",
   "@dailyTipDismiss": {
     "description": "Accessibility label of the close button on the daily tip; hides it until tomorrow"
