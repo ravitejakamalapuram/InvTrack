@@ -133,6 +133,21 @@ void main() {
     expect(c.read(dailyTipUnreadProvider), isFalse);
   });
 
+  testWidgets('an upgrade seeds the history from the seen tips, even if '
+      'today\'s tip was already dismissed', (tester) async {
+    final c = await _pump(
+      tester,
+      prefs: {
+        dailyTipSeenKey: ['a', 'b'],
+        dailyTipTodayIdKey: 'b',
+        dailyTipTodayDateKey: '2026-11-18',
+        dailyTipDismissedDateKey: '2026-11-18',
+      },
+    );
+    expect(c.read(dailyTipHistoryProvider).value!.map((t) => t.id), ['b', 'a']);
+    expect(find.byIcon(Icons.notifications_outlined), findsOneWidget);
+  });
+
   testWidgets('no bell when there are no tips', (tester) async {
     await _pump(tester, pool: const []);
     expect(find.byIcon(Icons.notifications_outlined), findsNothing);

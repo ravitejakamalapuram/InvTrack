@@ -36,17 +36,34 @@ final dailyTipRandomProvider = Provider<Random>((ref) => Random());
 
 /// Recent tips, oldest first, kept apart from the no-repeat set because that
 /// set restarts once every tip has been seen.
-Future<void> _remember(SharedPreferences prefs, String id) {
-  final ids = [
-    ...(prefs.getStringList(dailyTipHistoryKey) ?? const <String>[]).where(
-      (e) => e != id,
-    ),
-    id,
-  ];
-  return prefs.setStringList(
-    dailyTipHistoryKey,
-    ids.length > 7 ? ids.sublist(ids.length - 7) : ids,
-  );
+Future<void> _remember(SharedPreferences prefs, String id) async {
+  try {
+    final ids = [
+      ...(prefs.getStringList(dailyTipHistoryKey) ?? const <String>[]).where(
+        (e) => e != id,
+      ),
+      id,
+    ];
+    await prefs.setStringList(
+      dailyTipHistoryKey,
+      ids.length > 7 ? ids.sublist(ids.length - 7) : ids,
+    );
+  } catch (_) {
+    // The bell's history is a nicety; it must never break the daily card.
+  }
+}
+
+/// Users who updated with tips already seen get a history from the seen list.
+Future<void> _seedHistory(SharedPreferences prefs) async {
+  if (prefs.getStringList(dailyTipHistoryKey) != null) return;
+  final seen = prefs.getStringList(dailyTipSeenKey);
+  if (seen == null || seen.isEmpty) return;
+  try {
+    await prefs.setStringList(
+      dailyTipHistoryKey,
+      seen.length > 7 ? seen.sublist(seen.length - 7) : seen,
+    );
+  } catch (_) {}
 }
 
 String _dayKey(DateTime d) =>
@@ -60,6 +77,7 @@ class DailyTipNotifier extends AsyncNotifier<Tip?> {
     final prefs = ref.read(sharedPreferencesProvider);
     final today = _dayKey(ref.read(dailyTipClockProvider)());
 
+    await _seedHistory(prefs);
     if (prefs.getString(dailyTipDismissedDateKey) == today) return null;
 
     final todayId = prefs.getString(dailyTipTodayIdKey);
