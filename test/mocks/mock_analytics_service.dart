@@ -117,6 +117,20 @@ class FakeAnalyticsService implements AnalyticsService {
       logEvent(name: AnalyticsEvents.guestLinkBannerDismissed);
 
   @override
+  Future<void> logTelegramInviteShown() =>
+      logEvent(name: AnalyticsEvents.telegramInviteShown);
+
+  @override
+  Future<void> logTelegramInviteTapped({required String source}) => logEvent(
+    name: AnalyticsEvents.telegramInviteTapped,
+    parameters: {'source': source},
+  );
+
+  @override
+  Future<void> logTelegramInviteDismissed() =>
+      logEvent(name: AnalyticsEvents.telegramInviteDismissed);
+
+  @override
   Future<void> logDailyTipShown({required String tipId}) => logEvent(
     name: AnalyticsEvents.dailyTipShown,
     parameters: {'tip_id': tipId},
