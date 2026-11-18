@@ -21,7 +21,13 @@ enum ScoreTier {
   final String message;
   final String emoji;
 
-  const ScoreTier(this.minScore, this.maxScore, this.label, this.message, this.emoji);
+  const ScoreTier(
+    this.minScore,
+    this.maxScore,
+    this.label,
+    this.message,
+    this.emoji,
+  );
 
   /// Get tier for a given score. A [PortfolioHealthScore]'s tier is that of
   /// its [PortfolioHealthScore.displayScore], so the number shown and the
@@ -60,8 +66,14 @@ class ComponentScore {
     required this.description,
     required this.suggestions,
     this.note,
-  })  : assert(score >= 0 && score <= 100, 'ComponentScore.score must be between 0 and 100'),
-        assert(weight >= 0 && weight <= 1, 'ComponentScore.weight must be between 0 and 1') {
+  }) : assert(
+         score >= 0 && score <= 100,
+         'ComponentScore.score must be between 0 and 100',
+       ),
+       assert(
+         weight >= 0 && weight <= 1,
+         'ComponentScore.weight must be between 0 and 1',
+       ) {
     // Runtime validation for isFinite (can't be in const assertion)
     if (!score.isFinite) {
       throw ArgumentError('ComponentScore.score must be finite');
@@ -119,13 +131,13 @@ class ComponentScore {
 
   @override
   int get hashCode => Object.hash(
-        name,
-        score,
-        weight,
-        description,
-        Object.hashAll(suggestions),
-        note,
-      );
+    name,
+    score,
+    weight,
+    description,
+    Object.hashAll(suggestions),
+    note,
+  );
 }
 
 /// Portfolio Health Score Entity
@@ -159,7 +171,10 @@ class PortfolioHealthScore {
     required this.goalAlignment,
     required this.actionReadiness,
     required this.calculatedAt,
-  })  : assert(overallScore >= 0 && overallScore <= 100, 'PortfolioHealthScore.overallScore must be between 0 and 100') {
+  }) : assert(
+         overallScore >= 0 && overallScore <= 100,
+         'PortfolioHealthScore.overallScore must be between 0 and 100',
+       ) {
     // Runtime validation for isFinite (can't be in const assertion)
     if (!overallScore.isFinite) {
       throw ArgumentError('PortfolioHealthScore.overallScore must be finite');
@@ -168,12 +183,12 @@ class PortfolioHealthScore {
 
   /// All component scores as a list
   List<ComponentScore> get components => [
-        returnsPerformance,
-        diversification,
-        liquidity,
-        goalAlignment,
-        actionReadiness,
-      ];
+    returnsPerformance,
+    diversification,
+    liquidity,
+    goalAlignment,
+    actionReadiness,
+  ];
 
   /// Get top 3 improvement suggestions across all components
   List<String> get topSuggestions => topSuggestionsWith((c) => c.suggestions);
@@ -244,12 +259,12 @@ class PortfolioHealthScore {
 
   @override
   int get hashCode => Object.hash(
-        overallScore,
-        returnsPerformance,
-        diversification,
-        liquidity,
-        goalAlignment,
-        actionReadiness,
-        calculatedAt,
-      );
+    overallScore,
+    returnsPerformance,
+    diversification,
+    liquidity,
+    goalAlignment,
+    actionReadiness,
+    calculatedAt,
+  );
 }

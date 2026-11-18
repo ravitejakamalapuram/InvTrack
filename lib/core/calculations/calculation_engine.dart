@@ -26,16 +26,20 @@ class CalculationEngine {
   T getModule<T extends CalculationModule>() {
     final module = _modules[T];
     if (module == null) {
-      throw StateError('Calculation module $T is not registered in the engine.');
+      throw StateError(
+        'Calculation module $T is not registered in the engine.',
+      );
     }
     return module as T;
   }
 
   /// Getter for the Financial calculation module.
-  FinancialCalculatorModule get financial => getModule<FinancialCalculatorModule>();
+  FinancialCalculatorModule get financial =>
+      getModule<FinancialCalculatorModule>();
 
   /// Getter for the Projection calculation module.
-  ProjectionCalculatorModule get projection => getModule<ProjectionCalculatorModule>();
+  ProjectionCalculatorModule get projection =>
+      getModule<ProjectionCalculatorModule>();
 
   /// Getter for the Currency conversion module.
   CurrencyConverterModule get currency => getModule<CurrencyConverterModule>();

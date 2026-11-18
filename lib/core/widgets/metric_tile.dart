@@ -189,17 +189,19 @@ class HeroMetric extends StatelessWidget {
               ...?trailing != null ? [trailing!] : null,
             ],
           ),
-          ...?subtitle != null ? [
-            const SizedBox(height: 8),
-            ExcludeSemantics(
-              child: Text(
-                subtitle!,
-                style: AppTypography.caption.copyWith(
-                  color: Colors.white.withValues(alpha: 0.7),
-                ),
-              ),
-            ),
-          ] : null,
+          ...?subtitle != null
+              ? [
+                  const SizedBox(height: 8),
+                  ExcludeSemantics(
+                    child: Text(
+                      subtitle!,
+                      style: AppTypography.caption.copyWith(
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ),
+                ]
+              : null,
         ],
       ),
     );

@@ -58,9 +58,7 @@ class HealthScoreSnapshotModel {
   }
 
   /// Convert from Firestore document
-  factory HealthScoreSnapshotModel.fromFirestore(
-    DocumentSnapshot doc,
-  ) {
+  factory HealthScoreSnapshotModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data();
 
     // Defensive null checks
@@ -69,7 +67,9 @@ class HealthScoreSnapshotModel {
     }
 
     if (data is! Map<String, dynamic>) {
-      throw FormatException('Invalid health score snapshot data type: ${data.runtimeType}');
+      throw FormatException(
+        'Invalid health score snapshot data type: ${data.runtimeType}',
+      );
     }
 
     // Helper to safely extract numeric fields
@@ -94,7 +94,9 @@ class HealthScoreSnapshotModel {
       throw const FormatException('Missing required field: calculatedAt');
     }
     if (calculatedAtValue is! Timestamp) {
-      throw FormatException('Invalid type for calculatedAt: ${calculatedAtValue.runtimeType}');
+      throw FormatException(
+        'Invalid type for calculatedAt: ${calculatedAtValue.runtimeType}',
+      );
     }
 
     return HealthScoreSnapshotModel(
@@ -159,7 +161,9 @@ class HealthScoreSnapshotModel {
       goalAlignmentScore: goalAlignmentScore ?? this.goalAlignmentScore,
       actionReadinessScore: actionReadinessScore ?? this.actionReadinessScore,
       calculatedAt: calculatedAt ?? this.calculatedAt,
-      metadata: metadata == _metadataSentinel ? this.metadata : metadata as Map<String, dynamic>?,
+      metadata: metadata == _metadataSentinel
+          ? this.metadata
+          : metadata as Map<String, dynamic>?,
     );
   }
 
@@ -179,13 +183,13 @@ class HealthScoreSnapshotModel {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        overallScore,
-        returnsScore,
-        diversificationScore,
-        liquidityScore,
-        goalAlignmentScore,
-        actionReadinessScore,
-        calculatedAt,
-      );
+    id,
+    overallScore,
+    returnsScore,
+    diversificationScore,
+    liquidityScore,
+    goalAlignmentScore,
+    actionReadinessScore,
+    calculatedAt,
+  );
 }

@@ -16,9 +16,7 @@ part 'portfolio_health_provider.g.dart';
 
 /// Provider for Health Score Repository
 @Riverpod(keepAlive: true)
-HealthScoreRepository healthScoreRepository(
-  Ref ref,
-) {
+HealthScoreRepository healthScoreRepository(Ref ref) {
   return HealthScoreRepository();
 }
 
@@ -28,9 +26,7 @@ HealthScoreRepository healthScoreRepository(
 /// is signed in when it saves, so a score held for one account must never
 /// outlive a switch to another.
 @Riverpod(keepAlive: true)
-HealthScoreAutoSaveService healthScoreAutoSaveService(
-  Ref ref,
-) {
+HealthScoreAutoSaveService healthScoreAutoSaveService(Ref ref) {
   ref.watch(authStateProvider.select((user) => user.value?.id));
   final repository = ref.watch(healthScoreRepositoryProvider);
   final service = HealthScoreAutoSaveService(repository: repository);
@@ -128,25 +124,19 @@ class PortfolioHealth extends _$PortfolioHealth {
 
 /// Provider for historical health score snapshots (last 12 weeks)
 @riverpod
-Stream<List<HealthScoreSnapshotModel>> historicalHealthScores(
-  Ref ref,
-) {
+Stream<List<HealthScoreSnapshotModel>> historicalHealthScores(Ref ref) {
   final repository = ref.watch(healthScoreRepositoryProvider);
   return repository.watchHistoricalSnapshots(weeks: 12);
 }
 
 /// Provider for chart data (simplified for trend visualization)
 @riverpod
-Stream<List<Map<String, dynamic>>> healthScoreChartData(
-  Ref ref,
-) {
+Stream<List<Map<String, dynamic>>> healthScoreChartData(Ref ref) {
   final snapshotsStream = ref.watch(historicalHealthScoresProvider);
 
   return snapshotsStream.when(
     data: (snapshots) {
-      return Stream.value(
-        snapshots.map((s) => s.toChartData()).toList(),
-      );
+      return Stream.value(snapshots.map((s) => s.toChartData()).toList());
     },
     loading: () => Stream.value([]),
     error: (error, stackTrace) => Stream.value([]),
@@ -155,18 +145,14 @@ Stream<List<Map<String, dynamic>>> healthScoreChartData(
 
 /// Provider for latest health score value (for quick access)
 @riverpod
-double? latestHealthScoreValue(
-  Ref ref,
-) {
+double? latestHealthScoreValue(Ref ref) {
   final scoreAsync = ref.watch(portfolioHealthProvider);
   return scoreAsync.whenOrNull(data: (score) => score?.overallScore);
 }
 
 /// Provider for latest health score tier (for color coding)
 @riverpod
-ScoreTier? latestHealthScoreTier(
-  Ref ref,
-) {
+ScoreTier? latestHealthScoreTier(Ref ref) {
   final scoreAsync = ref.watch(portfolioHealthProvider);
   return scoreAsync.whenOrNull(data: (score) => score?.tier);
 }

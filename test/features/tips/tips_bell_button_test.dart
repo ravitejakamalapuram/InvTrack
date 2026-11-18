@@ -100,12 +100,37 @@ void main() {
     final c = await _pump(
       tester,
       prefs: {
+        dailyTipHistoryKey: ['a', 'b'],
         dailyTipSeenKey: ['a', 'b'],
         dailyTipTodayIdKey: 'b',
         dailyTipTodayDateKey: '2026-11-18',
       },
     );
     expect(c.read(dailyTipHistoryProvider).value!.map((t) => t.id), ['b', 'a']);
+  });
+
+  testWidgets('history survives the no-repeat set restarting', (tester) async {
+    // All three seen: the next pick restarts the seen set with one id.
+    final c = await _pump(
+      tester,
+      prefs: {
+        dailyTipHistoryKey: ['a', 'b', 'c'],
+        dailyTipSeenKey: ['a', 'b', 'c'],
+        dailyTipTodayIdKey: 'c',
+        dailyTipTodayDateKey: '2026-11-17',
+      },
+    );
+    final ids = c.read(dailyTipHistoryProvider).value!.map((t) => t.id);
+    expect(ids, hasLength(3));
+    expect(ids.first, isNot('c')); // a new tip came first
+  });
+
+  testWidgets('a tip dismissed earlier today is already read', (tester) async {
+    final c = await _pump(
+      tester,
+      prefs: {dailyTipDismissedDateKey: '2026-11-18'},
+    );
+    expect(c.read(dailyTipUnreadProvider), isFalse);
   });
 
   testWidgets('no bell when there are no tips', (tester) async {

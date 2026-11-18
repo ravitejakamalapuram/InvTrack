@@ -10,12 +10,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/features/tips/domain/tip.dart';
 import 'package:inv_tracker/features/tips/domain/tip_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const dailyTipSeenKey = 'daily_tip_seen_ids';
 const dailyTipTodayIdKey = 'daily_tip_today_id';
 const dailyTipTodayDateKey = 'daily_tip_today_date';
 const dailyTipDismissedDateKey = 'daily_tip_dismissed_date';
 const dailyTipReadDateKey = 'daily_tip_read_date';
+const dailyTipHistoryKey = 'daily_tip_history_ids';
 
 /// The tips bundled with the app.
 final tipsPoolProvider = FutureProvider<List<Tip>>((ref) async {
@@ -31,6 +33,21 @@ final dailyTipClockProvider = Provider<DateTime Function()>(
   (ref) => DateTime.now,
 );
 final dailyTipRandomProvider = Provider<Random>((ref) => Random());
+
+/// Recent tips, oldest first, kept apart from the no-repeat set because that
+/// set restarts once every tip has been seen.
+Future<void> _remember(SharedPreferences prefs, String id) {
+  final ids = [
+    ...(prefs.getStringList(dailyTipHistoryKey) ?? const <String>[]).where(
+      (e) => e != id,
+    ),
+    id,
+  ];
+  return prefs.setStringList(
+    dailyTipHistoryKey,
+    ids.length > 7 ? ids.sublist(ids.length - 7) : ids,
+  );
+}
 
 String _dayKey(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
@@ -48,7 +65,10 @@ class DailyTipNotifier extends AsyncNotifier<Tip?> {
     final todayId = prefs.getString(dailyTipTodayIdKey);
     if (prefs.getString(dailyTipTodayDateKey) == today) {
       for (final t in pool) {
-        if (t.id == todayId) return t;
+        if (t.id == todayId) {
+          await _remember(prefs, t.id);
+          return t;
+        }
       }
     }
 
@@ -61,6 +81,7 @@ class DailyTipNotifier extends AsyncNotifier<Tip?> {
     await prefs.setStringList(dailyTipSeenKey, pick.seen.toList());
     await prefs.setString(dailyTipTodayIdKey, pick.tip.id);
     await prefs.setString(dailyTipTodayDateKey, today);
+    await _remember(prefs, pick.tip.id);
     return pick.tip;
   }
 
@@ -84,9 +105,12 @@ class DailyTipUnreadNotifier extends Notifier<bool> {
   String get _today => _dayKey(ref.read(dailyTipClockProvider)());
 
   @override
-  bool build() =>
-      ref.watch(sharedPreferencesProvider).getString(dailyTipReadDateKey) !=
-      _today;
+  bool build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    // A tip dismissed today (before the bell existed) counts as read.
+    return prefs.getString(dailyTipReadDateKey) != _today &&
+        prefs.getString(dailyTipDismissedDateKey) != _today;
+  }
 
   Future<void> markRead() async {
     if (!state) return;
@@ -106,12 +130,12 @@ final dailyTipUnreadProvider = NotifierProvider<DailyTipUnreadNotifier, bool>(
 final dailyTipHistoryProvider = FutureProvider<List<Tip>>((ref) async {
   final pool = await ref.watch(tipsPoolProvider.future);
   await ref.watch(dailyTipProvider.future);
-  final seen =
-      ref.read(sharedPreferencesProvider).getStringList(dailyTipSeenKey) ??
+  final ids =
+      ref.read(sharedPreferencesProvider).getStringList(dailyTipHistoryKey) ??
       const <String>[];
   final byId = {for (final t in pool) t.id: t};
   return [
-    for (final id in seen.reversed)
+    for (final id in ids.reversed)
       if (byId[id] != null) byId[id]!,
-  ].take(7).toList();
+  ];
 });

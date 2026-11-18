@@ -26,9 +26,10 @@ import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 ///
 /// This provider manages whether Crashlytics is enabled in debug builds.
 /// In release builds, Crashlytics is always enabled regardless of this setting.
-final crashlyticsDebugModeProvider = NotifierProvider<CrashlyticsDebugModeNotifier, bool>(
-  CrashlyticsDebugModeNotifier.new,
-);
+final crashlyticsDebugModeProvider =
+    NotifierProvider<CrashlyticsDebugModeNotifier, bool>(
+      CrashlyticsDebugModeNotifier.new,
+    );
 
 /// Notifier for managing Crashlytics debug mode state.
 ///
@@ -54,12 +55,16 @@ class CrashlyticsDebugModeNotifier extends Notifier<bool> {
     final prefs = ref.read(sharedPreferencesProvider);
 
     // Update Crashlytics collection state FIRST (atomic - only persist if this succeeds)
-    final shouldEnable = CrashlyticsService.userAllowsReports && (!kDebugMode || enabled);
-    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(shouldEnable);
+    final shouldEnable =
+        CrashlyticsService.userAllowsReports && (!kDebugMode || enabled);
+    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(
+      shouldEnable,
+    );
 
     // Only update state and prefs if Firebase call succeeded
     await prefs.setBool(prefKey, enabled);
-    CrashlyticsService.enableInDebugMode = enabled; // Keep static mirror in sync
+    CrashlyticsService.enableInDebugMode =
+        enabled; // Keep static mirror in sync
     state = enabled;
   }
 }
@@ -73,11 +78,14 @@ final crashlyticsServiceProvider = Provider<CrashlyticsService>((ref) {
 /// Crashlytics service that wraps Firebase Crashlytics
 class CrashlyticsService {
   final FirebaseCrashlytics? _injectedCrashlytics;
-  FirebaseCrashlytics get _crashlytics => _injectedCrashlytics ?? FirebaseCrashlytics.instance;
+  FirebaseCrashlytics get _crashlytics =>
+      _injectedCrashlytics ?? FirebaseCrashlytics.instance;
   final bool debugModeEnabled;
 
-  CrashlyticsService({required this.debugModeEnabled, FirebaseCrashlytics? crashlytics})
-      : _injectedCrashlytics = crashlytics;
+  CrashlyticsService({
+    required this.debugModeEnabled,
+    FirebaseCrashlytics? crashlytics,
+  }) : _injectedCrashlytics = crashlytics;
 
   // Track whether handlers have been installed to make installation idempotent
   static bool _handlersInstalled = false;
@@ -286,7 +294,8 @@ class CrashlyticsService {
   /// Returns true for network errors, timeouts, stream cancellations, etc.
   /// Returns false for logic errors, state errors, etc. (fatal)
   @visibleForTesting
-  bool isTransientError(dynamic error, [StackTrace? stack]) => _isTransientError(error, stack);
+  bool isTransientError(dynamic error, [StackTrace? stack]) =>
+      _isTransientError(error, stack);
 
   bool _isTransientError(dynamic error, StackTrace? stack) {
     // Check if error is an AppException (or subclass)

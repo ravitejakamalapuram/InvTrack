@@ -61,11 +61,14 @@ class GoalCard extends ConsumerWidget {
       padding: EdgeInsets.only(bottom: AppSpacing.sm),
       child: progressAsync.when(
         data: (progress) {
-          final hasSharedGoals = progress != null && progress.otherGoalsCount > 0;
+          final hasSharedGoals =
+              progress != null && progress.otherGoalsCount > 0;
           return GlassCard(
             semanticLabel: isSelectionMode
-                ? (l10n?.selectGoalSemanticLabel(goal.name) ?? 'Select ${goal.name}')
-                : (l10n?.viewGoalDetailsSemanticLabel(goal.name) ?? 'View details for ${goal.name}'),
+                ? (l10n?.selectGoalSemanticLabel(goal.name) ??
+                      'Select ${goal.name}')
+                : (l10n?.viewGoalDetailsSemanticLabel(goal.name) ??
+                      'View details for ${goal.name}'),
             onTap: handlers.onTap,
             onLongPress: handlers.onLongPress,
             padding: EdgeInsets.zero,
@@ -143,92 +146,97 @@ class GoalCard extends ConsumerWidget {
           );
         },
         loading: () => GlassCard(
-            semanticLabel: isSelectionMode
-                ? (l10n?.selectGoalSemanticLabel(goal.name) ?? 'Select ${goal.name}')
-                : (l10n?.viewGoalDetailsSemanticLabel(goal.name) ?? 'View details for ${goal.name}'),
-            onTap: handlers.onTap,
-            onLongPress: handlers.onLongPress,
-            padding: EdgeInsets.zero,
-            child: SizedBox(
-              height: 120,
-              child: Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: isDark ? Colors.white54 : AppColors.neutral400Light,
-                ),
+          semanticLabel: isSelectionMode
+              ? (l10n?.selectGoalSemanticLabel(goal.name) ??
+                    'Select ${goal.name}')
+              : (l10n?.viewGoalDetailsSemanticLabel(goal.name) ??
+                    'View details for ${goal.name}'),
+          onTap: handlers.onTap,
+          onLongPress: handlers.onLongPress,
+          padding: EdgeInsets.zero,
+          child: SizedBox(
+            height: 120,
+            child: Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: isDark ? Colors.white54 : AppColors.neutral400Light,
               ),
             ),
           ),
+        ),
         error: (error, _) => GlassCard(
-            semanticLabel: isSelectionMode
-                ? (l10n?.selectGoalSemanticLabel(goal.name) ?? 'Select ${goal.name}')
-                : (l10n?.viewGoalDetailsSemanticLabel(goal.name) ?? 'View details for ${goal.name}'),
-            onTap: handlers.onTap,
-            onLongPress: handlers.onLongPress,
-            padding: EdgeInsets.zero,
-            child: Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
-              child: Row(
-                children: [
-                  if (isSelectionMode) ...[
-                    Checkbox(
-                      value: isSelected,
-                      onChanged: onCheckboxChanged,
-                      activeColor: goal.color,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    SizedBox(width: AppSpacing.xs),
-                  ],
-                  _buildGoalIcon(goal),
-                  SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          goal.name,
-                          style: AppTypography.h4.copyWith(
-                            color: isDark
-                                ? Colors.white
-                                : AppColors.neutral900Light,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(height: AppSpacing.xxs),
-                        Semantics(
-                          liveRegion: true,
-                          child: Text(
-                            l10n?.goalProgressLoadError ??
-                                'Couldn\'t load progress',
-                            style: AppTypography.small.copyWith(
-                              color: isDark
-                                  ? AppColors.errorDark
-                                  : AppColors.errorLight,
-                            ),
-                          ),
-                        ),
-                      ],
+          semanticLabel: isSelectionMode
+              ? (l10n?.selectGoalSemanticLabel(goal.name) ??
+                    'Select ${goal.name}')
+              : (l10n?.viewGoalDetailsSemanticLabel(goal.name) ??
+                    'View details for ${goal.name}'),
+          onTap: handlers.onTap,
+          onLongPress: handlers.onLongPress,
+          padding: EdgeInsets.zero,
+          child: Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: [
+                if (isSelectionMode) ...[
+                  Checkbox(
+                    value: isSelected,
+                    onChanged: onCheckboxChanged,
+                    activeColor: goal.color,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                  if (l10n != null)
-                    TextButton(
-                      onPressed: () => reloadGoals(ref),
-                      child: Text(l10n.retry),
-                    ),
+                  SizedBox(width: AppSpacing.xs),
                 ],
-              ),
+                _buildGoalIcon(goal),
+                SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        goal.name,
+                        style: AppTypography.h4.copyWith(
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.neutral900Light,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: AppSpacing.xxs),
+                      Semantics(
+                        liveRegion: true,
+                        child: Text(
+                          l10n?.goalProgressLoadError ??
+                              'Couldn\'t load progress',
+                          style: AppTypography.small.copyWith(
+                            color: isDark
+                                ? AppColors.errorDark
+                                : AppColors.errorLight,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (l10n != null)
+                  TextButton(
+                    onPressed: () => reloadGoals(ref),
+                    child: Text(l10n.retry),
+                  ),
+              ],
             ),
           ),
+        ),
       ),
     );
   }
 
   /// Build interaction handlers for tap and long press
   /// Consolidates duplicate logic across data/loading/error states
-  ({VoidCallback? onTap, VoidCallback? onLongPress}) _buildInteractionHandlers() {
+  ({VoidCallback? onTap, VoidCallback? onLongPress})
+  _buildInteractionHandlers() {
     final tapHandler = isSelectionMode
         ? () => onCheckboxChanged?.call(!isSelected)
         : onTap;

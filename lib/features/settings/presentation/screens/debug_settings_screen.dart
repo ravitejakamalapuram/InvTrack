@@ -295,7 +295,8 @@ class DebugSettingsScreen extends ConsumerWidget {
                   child: CircularProgressIndicator(),
                 ),
               ),
-              error: (error, stack) => Text(l10n.errorOccurred(error.toString())),
+              error: (error, stack) =>
+                  Text(l10n.errorOccurred(error.toString())),
             ),
             actions: [
               TextButton(
@@ -326,7 +327,4 @@ class DebugSettingsScreen extends ConsumerWidget {
       ),
     );
   }
-
-
-
 }

@@ -147,7 +147,8 @@ class CrashlyticsSettingsSection extends ConsumerWidget {
 
         if (context.mounted) {
           final l10n = AppLocalizations.of(context);
-          final isActuallyEnabled = !kDebugMode || CrashlyticsService.enableInDebugMode;
+          final isActuallyEnabled =
+              !kDebugMode || CrashlyticsService.enableInDebugMode;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -168,10 +169,7 @@ class CrashlyticsSettingsSection extends ConsumerWidget {
   }
 
   /// Handle testing fatal crash
-  Future<void> _handleTestCrash(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
+  Future<void> _handleTestCrash(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final crashlyticsService = ref.read(crashlyticsServiceProvider);
@@ -243,10 +241,7 @@ class CrashlyticsSettingsSection extends ConsumerWidget {
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: iconColor.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: iconColor.withValues(alpha: 0.3), width: 1),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
