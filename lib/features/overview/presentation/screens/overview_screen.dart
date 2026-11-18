@@ -32,6 +32,7 @@ import 'package:inv_tracker/features/overview/presentation/widgets/overview_all_
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_empty_state.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_quick_stats.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/guest_link_banner.dart';
+import 'package:inv_tracker/features/overview/presentation/widgets/telegram_invite_card.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/sample_data_banner.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/deletion_request_banner.dart';
@@ -295,6 +296,9 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
         // One money-learning tip a day (below the money cards, so the hero
         // and the goal and FIRE cards keep the first screen)
         const DailyTipCard(),
+
+        // Once, from the 3rd investment: join the Telegram tips channel
+        const TelegramInviteCard(),
 
         SizedBox(height: AppSpacing.xl),
 

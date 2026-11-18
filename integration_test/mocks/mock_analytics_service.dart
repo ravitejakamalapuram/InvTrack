@@ -82,6 +82,18 @@ class FakeAnalyticsService implements AnalyticsService {
       _log('guest_link_banner_dismissed', {});
 
   @override
+  Future<void> logTelegramInviteShown() async =>
+      _log('telegram_invite_shown', {});
+
+  @override
+  Future<void> logTelegramInviteTapped({required String source}) async =>
+      _log('telegram_invite_tapped', {'source': source});
+
+  @override
+  Future<void> logTelegramInviteDismissed() async =>
+      _log('telegram_invite_dismissed', {});
+
+  @override
   Future<void> logDailyTipShown({required String tipId}) async =>
       _log('daily_tip_shown', {'tip_id': tipId});
 
