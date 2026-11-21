@@ -6703,6 +6703,31 @@
     "description": "Accessibility label of the close button on the guest link banner; hides it for 14 days"
   },
 
+  "telegramInviteTitle": "Join our Telegram tips",
+  "@telegramInviteTitle": {
+    "description": "Title of the Overview card and Settings row that invite people to the InvTrack tips channel on Telegram"
+  },
+
+  "telegramInviteMessage": "Short money tips, free. Leave any time.",
+  "@telegramInviteMessage": {
+    "description": "Body of the Telegram invite card on the Overview"
+  },
+
+  "telegramInviteAction": "Join",
+  "@telegramInviteAction": {
+    "description": "Button of the Telegram invite card; opens the channel in Telegram or the browser"
+  },
+
+  "telegramInviteDismiss": "Dismiss",
+  "@telegramInviteDismiss": {
+    "description": "Accessibility label of the close button on the Telegram invite card; hides it for good"
+  },
+
+  "telegramInviteOpenFailed": "Could not open Telegram. The channel is t.me/invtrack_tips",
+  "@telegramInviteOpenFailed": {
+    "description": "Snackbar shown when the Telegram channel link cannot be opened"
+  },
+
   "howToBackupDataDerivedNote": "A backup does not include expected cash flows or health scores. The app calculates them again from your restored data.",
   "@howToBackupDataDerivedNote": {
     "description": "Second FAQ paragraph under the backup answer: expected cash flows and health scores are derived data and are not in the backup"

@@ -124,6 +124,9 @@ class AnalyticsEvents {
   static const String guestLinkBannerShown = 'guest_link_banner_shown';
   static const String guestLinkBannerTapped = 'guest_link_banner_tapped';
   static const String guestLinkBannerDismissed = 'guest_link_banner_dismissed';
+  static const String telegramInviteShown = 'telegram_invite_shown';
+  static const String telegramInviteTapped = 'telegram_invite_tapped';
+  static const String telegramInviteDismissed = 'telegram_invite_dismissed';
   static const String dailyTipShown = 'daily_tip_shown';
   static const String dailyTipDismissed = 'daily_tip_dismissed';
 
@@ -564,6 +567,20 @@ class AnalyticsService {
   /// Log that the guest dismissed the banner.
   Future<void> logGuestLinkBannerDismissed() =>
       logEvent(name: AnalyticsEvents.guestLinkBannerDismissed);
+
+  /// Log that the Telegram invite card was shown (once per process).
+  Future<void> logTelegramInviteShown() =>
+      logEvent(name: AnalyticsEvents.telegramInviteShown);
+
+  /// Log a tap on a Telegram invite; [source] is `card` or `settings`.
+  Future<void> logTelegramInviteTapped({required String source}) => logEvent(
+    name: AnalyticsEvents.telegramInviteTapped,
+    parameters: {'source': source},
+  );
+
+  /// Log that the Telegram invite card was dismissed.
+  Future<void> logTelegramInviteDismissed() =>
+      logEvent(name: AnalyticsEvents.telegramInviteDismissed);
 
   /// Log that the Overview daily tip was shown (once per process). [tipId] is
   /// a content id from the bundled tips file, never user data.

@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/handlers/google_sign_in_handler.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/features/overview/presentation/providers/telegram_invite_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_export_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/currency_switch_provider.dart';
@@ -173,6 +174,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ],
             ),
+
+          SettingsSection(
+            children: [
+              SettingsNavTile(
+                icon: Icons.send_outlined,
+                title: l10n.telegramInviteTitle,
+                onTap: () =>
+                    openTelegramChannel(context, ref, source: 'settings'),
+              ),
+            ],
+          ),
 
           // Sign Out
           SettingsSection(
