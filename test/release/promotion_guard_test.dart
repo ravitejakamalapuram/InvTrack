@@ -7,7 +7,8 @@ import '../../scripts/promotion_guard.dart';
 /// The rule behind `.github/workflows/promote.yml`'s guard job: a new build
 /// reaches production at no more than 5%, and goes above 5% only after 48 h
 /// at a partial rollout that release-platform recorded when Play confirmed
-/// it, and a Crashlytics crash-free-users figure of at least 99.5%.
+/// it. The crash-free figure (at least 99.5%) is read from Play by
+/// release-platform's promote job; the guard only says when it is needed.
 void main() {
   final rolloutStart = DateTime.utc(2026, 10, 1, 10);
 
@@ -19,7 +20,6 @@ void main() {
     String toTrack = 'production',
     String userFraction = '',
     Duration soak = const Duration(hours: 48),
-    String crashFree = '99.5',
     List<RolloutRecord>? records,
     bool unreadableRecords = false,
     String ref = 'refs/heads/main',
@@ -33,7 +33,6 @@ void main() {
       runAttempt: runAttempt,
       rolloutRecords: unreadableRecords ? null : (records ?? [record()]),
       now: rolloutStart.add(soak),
-      crashFreeUsers: crashFree,
     );
   }
 
@@ -47,17 +46,13 @@ void main() {
         action: 'rollout',
         userFraction: '0.2',
         soak: const Duration(hours: 47),
-        crashFree: '99.9',
       );
       expect(reason, isNotNull);
       expect(reason, contains('48 h'));
     });
 
     test('48 h after the recorded start, rollout 0.2 is allowed', () {
-      expect(
-        check(action: 'rollout', userFraction: '0.2', crashFree: '99.9'),
-        isNull,
-      );
+      expect(check(action: 'rollout', userFraction: '0.2'), isNull);
     });
 
     test('no record (the Play step failed, even though a no-op auto-release '
@@ -66,7 +61,6 @@ void main() {
         action: 'rollout',
         userFraction: '0.2',
         soak: const Duration(hours: 72),
-        crashFree: '99.9',
         records: const [],
       );
       expect(reason, isNotNull);
@@ -160,36 +154,8 @@ void main() {
       expect(reason, contains('48 h'));
     });
 
-    test('is allowed at exactly 48 h with 99.5% crash-free users', () {
+    test('is allowed at exactly 48 h', () {
       expect(check(), isNull);
-    });
-
-    test('is blocked when crash-free users are 99.49%', () {
-      final reason = check(crashFree: '99.49');
-      expect(reason, isNotNull);
-      expect(reason, contains('99.5'));
-    });
-
-    test(
-      'is blocked when the crash-free figure is missing or not a number',
-      () {
-        expect(check(crashFree: ''), isNotNull);
-        expect(check(crashFree: 'n/a'), isNotNull);
-        expect(check(crashFree: '101'), isNotNull);
-      },
-    );
-
-    test('rollout to 1 or to an empty fraction counts as completing', () {
-      const early = Duration(hours: 5);
-      expect(
-        check(action: 'rollout', userFraction: '1', soak: early),
-        isNotNull,
-      );
-      expect(
-        check(action: 'rollout', userFraction: '', soak: early),
-        isNotNull,
-      );
-      expect(check(action: 'rollout', userFraction: '1'), isNull);
     });
 
     test('promote straight to production at 100% is blocked', () {
@@ -207,7 +173,6 @@ void main() {
             action: 'promote',
             userFraction: fraction,
             soak: const Duration(hours: 72),
-            crashFree: '99.9',
           ),
           isNotNull,
           reason: 'fraction "$fraction"',
@@ -218,18 +183,14 @@ void main() {
 
   group('ci-release-1 / integration-3: nothing goes above 5% without the '
       '48 h soak', () {
-    test('promote to production at 0.99 is blocked, with or without crash '
-        'data', () {
-      for (final crashFree in ['', '99.9']) {
-        final reason = check(
-          action: 'promote',
-          userFraction: '0.99',
-          soak: const Duration(hours: 1),
-          crashFree: crashFree,
-        );
-        expect(reason, isNotNull, reason: 'crash-free "$crashFree"');
-        expect(reason, contains('5%'));
-      }
+    test('promote to production at 0.99 is blocked', () {
+      final reason = check(
+        action: 'promote',
+        userFraction: '0.99',
+        soak: const Duration(hours: 1),
+      );
+      expect(reason, isNotNull);
+      expect(reason, contains('5%'));
     });
 
     test('promote to production above 5% is blocked even after 72 h', () {
@@ -239,7 +200,6 @@ void main() {
             action: 'promote',
             userFraction: fraction,
             soak: const Duration(hours: 72),
-            crashFree: '99.9',
           ),
           isNotNull,
           reason: 'fraction $fraction',
@@ -248,12 +208,8 @@ void main() {
     });
 
     test('rollout to 0.999 at 47 h 59 m is blocked and at 48 h is allowed', () {
-      String? at(Duration soak) => check(
-        action: 'rollout',
-        userFraction: '0.999',
-        soak: soak,
-        crashFree: '99.9',
-      );
+      String? at(Duration soak) =>
+          check(action: 'rollout', userFraction: '0.999', soak: soak);
       expect(at(const Duration(hours: 47, minutes: 59)), isNotNull);
       expect(at(const Duration(hours: 48)), isNull);
     });
@@ -262,67 +218,38 @@ void main() {
   group('partial production rollouts', () {
     test('promote to production at 5% needs no soak or crash data', () {
       expect(
-        check(
-          action: 'promote',
-          userFraction: '0.05',
-          soak: Duration.zero,
-          crashFree: '',
-        ),
+        check(action: 'promote', userFraction: '0.05', soak: Duration.zero),
         isNull,
       );
     });
 
     test('promote to production below 5% is allowed', () {
       expect(
-        check(
-          action: 'promote',
-          userFraction: '0.01',
-          soak: Duration.zero,
-          crashFree: '',
-        ),
+        check(action: 'promote', userFraction: '0.01', soak: Duration.zero),
         isNull,
       );
     });
 
     // Policy change in A63-F1: widening above 5% now needs the same 48 h
     // soak as 100%, so 20% at 6 h is refused.
-    test('widening 5% to 20% needs the 48 h soak and the crash-free gate', () {
+    test('widening 5% to 20% needs the 48 h soak', () {
       const early = Duration(hours: 6);
-      final reason = check(
-        action: 'rollout',
-        userFraction: '0.2',
-        soak: early,
-        crashFree: '99.9',
-      );
+      final reason = check(action: 'rollout', userFraction: '0.2', soak: early);
       expect(reason, isNotNull);
       expect(reason, contains('48 h'));
       expect(check(action: 'rollout', userFraction: '0.2'), isNull);
-      expect(
-        check(action: 'rollout', userFraction: '0.2', crashFree: '99.4'),
-        isNotNull,
-      );
     });
 
     test('resuming a halted rollout at 5% needs the crash-free gate but no '
         'soak', () {
       const early = Duration(hours: 1);
       expect(
-        check(
-          action: 'rollout',
-          userFraction: '0.05',
-          soak: early,
-          crashFree: '99.9',
-        ),
+        check(action: 'rollout', userFraction: '0.05', soak: early),
         isNull,
       );
       expect(
-        check(
-          action: 'rollout',
-          userFraction: '0.05',
-          soak: early,
-          crashFree: '',
-        ),
-        isNotNull,
+        crashFreeMinimum(action: 'rollout', toTrack: 'production'),
+        '99.5',
       );
     });
 
@@ -332,15 +259,6 @@ void main() {
       expect(check(action: 'rollout', userFraction: 'abc'), isNotNull);
       expect(check(action: 'rollout', userFraction: 'NaN'), isNotNull);
       expect(check(action: 'promote', userFraction: 'NaN'), isNotNull);
-    });
-
-    test('a crash-free figure of NaN or Infinity does not pass the gate', () {
-      expect(
-        check(action: 'rollout', userFraction: '0.2', crashFree: 'NaN'),
-        isNotNull,
-      );
-      expect(check(crashFree: 'NaN'), isNotNull);
-      expect(check(crashFree: 'Infinity'), isNotNull);
     });
   });
 
@@ -378,19 +296,32 @@ void main() {
     });
   });
 
+  group('#848: when the promote job must read crash-free users from Play', () {
+    test('every production rollout and complete needs at least 99.5%', () {
+      for (final action in ['rollout', 'complete']) {
+        expect(crashFreeMinimum(action: action, toTrack: 'production'), '99.5');
+        expect(
+          crashFreeMinimum(action: action, toTrack: ' Production '),
+          '99.5',
+        );
+      }
+    });
+
+    test('promote, halt and other tracks need no crash check', () {
+      expect(crashFreeMinimum(action: 'promote', toTrack: 'production'), '');
+      expect(crashFreeMinimum(action: 'halt', toTrack: 'production'), '');
+      expect(crashFreeMinimum(action: 'complete', toTrack: 'beta'), '');
+    });
+  });
+
   group('other actions and tracks', () {
     test('halt is never blocked', () {
-      expect(check(action: 'halt', soak: Duration.zero, crashFree: ''), isNull);
+      expect(check(action: 'halt', soak: Duration.zero), isNull);
     });
 
     test('tracks other than production are not gated', () {
       expect(
-        check(
-          action: 'promote',
-          toTrack: 'alpha',
-          soak: Duration.zero,
-          crashFree: '',
-        ),
+        check(action: 'promote', toTrack: 'alpha', soak: Duration.zero),
         isNull,
       );
     });

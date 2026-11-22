@@ -122,7 +122,15 @@ void main() {
       isTrue,
       reason: 'the promote job must need the guard job',
     );
-    expect(promote, contains('crash_free_users'));
+    // #848: nobody types the crash-free figure; release-platform reads it
+    // from Play with the minimum the guard outputs.
+    expect(promote, isNot(contains('inputs.crash_free_users')));
+    expect(
+      promote,
+      contains(
+        'min_crash_free_users: \${{ needs.guard.outputs.min_crash_free_users }}',
+      ),
+    );
   });
 
   test('a nightly workflow runs the golden tests', () {
@@ -147,7 +155,9 @@ void main() {
     final nightly = read('.github/workflows/nightly.yml');
     expect(
       nightly,
-      contains('ravitejakamalapuram/release-platform/.github/workflows/nightly.yml@v2'),
+      contains(
+        'ravitejakamalapuram/release-platform/.github/workflows/nightly.yml@v2',
+      ),
     );
     expect(nightly, contains('integration_script:'));
     expect(nightly, contains('-d emulator-5554'));
