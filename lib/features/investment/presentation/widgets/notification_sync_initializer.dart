@@ -415,18 +415,23 @@ class _NotificationSyncInitializerState
 
     // The monthly recap shares the monthly summary's slot. Turning the
     // summary back on, flipping the recap flag either way, or the stats
-    // arriving after the first schedule all reschedule, so the slot holds
-    // the right notification with current counts.
+    // arriving or changing after the first schedule (a slow currency
+    // conversion finishing) all reschedule, so the slot holds the right
+    // notification with current counts.
     ref.listen<bool>(
       notificationSettingsProvider.select((s) => s.monthlySummaryEnabled),
       (previous, next) {
         if (next) _scheduleNotificationsDebounced();
       },
     );
-    ref.listen<bool>(
-      activeInvestmentBasicStatsMapProvider.select((s) => s.hasValue),
+    // Fires only when the number needing a current value changes (null while
+    // the stats load), so other stats updates do not reschedule.
+    ref.listen<int?>(
+      activeInvestmentBasicStatsMapProvider.select(
+        (s) => s.value?.values.where((st) => st.needsCurrentValue).length,
+      ),
       (previous, next) {
-        if (next && previous == false) _scheduleNotificationsDebounced();
+        if (next != null) _scheduleNotificationsDebounced();
       },
       onError: (_, _) {},
     );
