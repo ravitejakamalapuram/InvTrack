@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/notifications/notification_settings_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
@@ -76,8 +77,8 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
-          activeInvestmentBasicStatsMapProvider.overrideWithValue(
-            const AsyncData({}),
+          activeInvestmentBasicStatsMapProvider.overrideWith(
+            (ref) => ref.watch(_stats),
           ),
           currencyCodeProvider.overrideWith((ref) => ref.watch(_currency)),
           authStateProvider.overrideWith((ref) => auth.stream),
@@ -473,6 +474,41 @@ void main() {
       expect(recapSlot()?.body, 'See what came in last month.');
     });
 
+    // #1217: stats that change after the first schedule (a slow currency
+    // conversion finishing) refresh the recap's "needs a current value" count.
+    testWidgets(
+      'stats that change after the first schedule refresh the count',
+      (tester) async {
+        final container = await pumpInitializer(tester);
+        auth.add(user('uid-a'));
+        investments.add([bond]);
+        cashFlows.add(const []);
+        await settle(tester);
+        expect(recapSlot()?.body, isNot(contains('current value')));
+
+        container
+            .read(_stats.notifier)
+            .set(
+              const AsyncData({
+                'inv-bond': InvestmentStats(
+                  totalInvested: 1000,
+                  totalReturned: 0,
+                  netCashFlow: -1000,
+                  absoluteReturn: 0,
+                  moic: 0,
+                  xirr: null,
+                  xirrMethod: XirrMethod.undefined,
+                  cashFlowCount: 1,
+                  missingValueCount: 1,
+                ),
+              }),
+            );
+        await settle(tester);
+
+        expect(recapSlot()?.body, contains('1 needs a current value.'));
+      },
+    );
+
     testWidgets('turning the monthly summary back on restores the recap', (
       tester,
     ) async {
@@ -546,4 +582,16 @@ class _Currency extends Notifier<String> {
   String build() => _currencyInitial;
 
   void set(String value) => state = value;
+}
+
+final _stats =
+    NotifierProvider<_Stats, AsyncValue<Map<String, InvestmentStats>>>(
+      _Stats.new,
+    );
+
+class _Stats extends Notifier<AsyncValue<Map<String, InvestmentStats>>> {
+  @override
+  AsyncValue<Map<String, InvestmentStats>> build() => const AsyncData({});
+
+  void set(AsyncValue<Map<String, InvestmentStats>> value) => state = value;
 }
