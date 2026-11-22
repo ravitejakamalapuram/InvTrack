@@ -185,7 +185,7 @@ void main() {
     );
 
     expect(find.textContaining('-₹'), findsNothing);
-    expect(find.textContaining('+₹30'), findsOneWidget);
+    expect(find.text('+₹30,180'), findsOneWidget);
     final label = tester.getSemantics(find.byType(GlassCard)).label;
     expect(label, contains('Gain'));
     expect(label, isNot(contains('Net position')));

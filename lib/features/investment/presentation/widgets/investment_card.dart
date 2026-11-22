@@ -368,9 +368,10 @@ double _valueColumnWidth(
     return math.max(amounts + AppSpacing.xxs + words, chip);
   }
 
-  final isPositive = stats.netCashFlow >= 0;
+  final cardFigure = stats.cardFigure;
+  final isPositive = cardFigure >= 0;
   final net = figure(
-    stats.netCashFlow.abs(),
+    cardFigure.abs(),
     _figureStyle(),
     prefix: isPositive ? '+' : '-',
   );
