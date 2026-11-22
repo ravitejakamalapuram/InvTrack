@@ -90,6 +90,15 @@ Tickets are GitHub issues labelled `review-2026-10` and titled `[Axx] …`. The 
 - Plan defaults that hold until the founder says otherwise: Premium is built from new features only, and nothing free today becomes paid (A58); the dormant ads SDK is removed (A34, A57); Income Guardian is hidden until something generates expected payouts (A42).
 - Account deletion builds on the existing pipeline: `deletionRequests` rules (APP-331), the processing job in `scripts/account-deletion` (APP-332) and in-app requests (APP-334). Extend that work; don't replace it.
 
+## Play store assets
+
+The Play listing is driven by the repo, so nothing is done by hand in Play Console.
+
+- Files live in `android/fastlane/metadata/android/en-US/`: `images/phoneScreenshots/play_01..05_*.png` (24-bit RGB, no alpha, 2 to 8 images, at most 2:1), `images/featureGraphic.png` (1024x500), `video.txt` (the unlisted YouTube link of the promo) and the title and description text files.
+- Screenshots come from `STORE_SCREENSHOTS_ALLOW_FONT_FALLBACK=1 STORE_SCREENSHOTS_DIR=android/fastlane/metadata/android/en-US/images/phoneScreenshots flutter test test/store_screenshots/store_screenshots_test.dart`, which uses the demo data in `integration_test/mocks/store_demo_data.dart`. No emulator is needed, but Noto Color Emoji must be installed in a searched font path, or point `STORE_SCREENSHOTS_EMOJI_FONT` at the font file.
+- Merge the change to `main`, then run InvTrack's `listing` workflow (Actions tab, `.github/workflows/listing.yml`, which calls release-platform's and forwards `dry_run`) with `dry_run: true` and read the workflow summary and the "Sync the Play listing" step log, which shows what would change. Run it with `dry_run: false` only after the owner says OK, because that updates the live store page. If the summary says the edit was committed but not sent for review (`COMMITTED_NOT_SENT_FOR_REVIEW`), the owner submits it from Play Console.
+- Browser steps (for example a YouTube upload): use the Claude in Chrome extension tools on the owner's Mac. Remote Control sessions on the Mac did not connect. A file picker cannot be driven, so ask the owner to pick the file once, then continue.
+
 ## Don't
 
 - Push to `main`, deploy to Firebase, or change production Play listings from a session. Merges and deploys are the founder's.

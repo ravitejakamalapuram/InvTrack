@@ -93,9 +93,10 @@ class StoreDemoData {
       );
     }
 
-    // Six closed, profitable positions (a completed "cash in, cash out"
-    // story) come first, then three open holdings that carry a current value
-    // (see "OPEN HOLDINGS" below).
+    // A mix that reads as a live portfolio: three closed, profitable
+    // positions (HDFC FD, Whitefield flat, Faircent) and six open holdings,
+    // each with a current value, so their cards show a gain (value now plus
+    // payouts minus cost) and the Overview's "Value now" is most of it.
 
     // 1. HDFC Bank FD - matured with full principal + interest returned
     final hdfcFd = addInvestment(
@@ -114,20 +115,15 @@ class StoreDemoData {
     }
     addCashFlow(hdfcFd.id, daysAgo(10), CashFlowType.returnFlow, 500000);
 
-    // 2. LenDenClub P2P - high yield, exited after a year. Its last activity
-    // (22 days ago) is more recent than the open holdings' below (24 and
-    // older), so the Investments list shows it fifth, as the top of the card
-    // under the first screen's four, ahead of any open card with a negative
-    // net cash flow.
+    // 2. LenDenClub P2P - high yield, still lending, interest every month
     final lendenClub = addInvestment(
       name: 'LenDenClub P2P',
       type: InvestmentType.p2pLending,
-      status: InvestmentStatus.closed,
+      status: InvestmentStatus.open,
       createdAt: daysAgo(400),
-      closedAt: daysAgo(22),
       incomeFrequency: IncomeFrequency.monthly,
-      notes:
-          'Auto-invest, 200+ borrowers. Withdrew after 12 months at 12% p.a.',
+      notes: 'Auto-invest, 200+ borrowers, 12% p.a. paid monthly.',
+      currentValue: 150000,
     );
     addCashFlow(lendenClub.id, daysAgo(400), CashFlowType.invest, 150000);
     for (int i = 12; i >= 1; i--) {
@@ -138,7 +134,6 @@ class StoreDemoData {
         1500,
       );
     }
-    addCashFlow(lendenClub.id, daysAgo(22), CashFlowType.returnFlow, 150000);
 
     // 3. Whitefield 2BHK - real estate, rented then sold at a gain
     final bangaloreFlat = addInvestment(
@@ -167,19 +162,19 @@ class StoreDemoData {
       1700000,
     );
 
-    // 4. Sovereign Gold Bonds - redeemed early as gold prices rallied
+    // 4. Sovereign Gold Bonds - held, up with the gold price
     final sgb = addInvestment(
       name: 'SGB 2024-25 Series I',
       type: InvestmentType.gold,
-      status: InvestmentStatus.closed,
+      status: InvestmentStatus.open,
       createdAt: daysAgo(365),
-      closedAt: daysAgo(15),
       incomeFrequency: IncomeFrequency.semiAnnual,
-      notes: 'Issue price ₹6,263/gm. Redeemed early after a gold price rally.',
+      notes:
+          'Issue price ₹6,263/gm, 20 gm. 2.5% p.a. interest plus gold price.',
+      currentValue: 158000,
     );
     addCashFlow(sgb.id, daysAgo(365), CashFlowType.invest, 125260);
     addCashFlow(sgb.id, daysAgo(180), CashFlowType.income, 1566);
-    addCashFlow(sgb.id, daysAgo(15), CashFlowType.returnFlow, 148000);
 
     // 5. Faircent P2P - closed with profit
     final faircent = addInvestment(
@@ -197,14 +192,14 @@ class StoreDemoData {
     }
     addCashFlow(faircent.id, daysAgo(45), CashFlowType.returnFlow, 100000);
 
-    // 6. UTI Nifty 50 Index Fund - SIP redeemed at a gain (mutual fund diversity)
+    // 6. UTI Nifty 50 Index Fund - SIP still running, up since it started
     final niftyFund = addInvestment(
       name: 'UTI Nifty 50 Index',
       type: InvestmentType.mutualFunds,
-      status: InvestmentStatus.closed,
+      status: InvestmentStatus.open,
       createdAt: daysAgo(540),
-      closedAt: daysAgo(5),
-      notes: 'SIP ₹15,000/month, direct plan. Redeemed after 18 months.',
+      notes: 'SIP ₹15,000/month, direct plan, running for 18 months.',
+      currentValue: 318000,
     );
     for (int i = 18; i >= 1; i--) {
       addCashFlow(
@@ -214,17 +209,13 @@ class StoreDemoData {
         15000,
       );
     }
-    addCashFlow(niftyFund.id, daysAgo(5), CashFlowType.returnFlow, 315000);
 
     // ============ OPEN HOLDINGS - what is held today ============
     // Since A11/A12 goals and FIRE count what is held today (open
     // investments at their dated current value), the closed positions above
-    // add nothing to them. These three are still open, each with a current
-    // value, so the goals and FIRE cards show progress. They are kept small
-    // and their last activity is older than the closed positions' above, so
-    // the Overview card (net cash flow, where money still invested counts as
-    // paid out) stays positive and the first Investments cards stay green:
-    // an open investment's card shows its net cash flow, which is negative.
+    // add nothing to them. Every open holding here, and the three above,
+    // carries a current value, so the goals and FIRE cards show progress
+    // and each open card shows a gain.
 
     // 7. Bajaj Finance FD - open, interest paid out every quarter
     final bajajFd = addInvestment(

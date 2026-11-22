@@ -225,6 +225,16 @@ class InvestmentStats {
   double get gain =>
       FinancialCalculator.roundMoney(netCashFlow + (currentValue ?? 0));
 
+  /// The figure an investment card leads with: [gain] when it holds a
+  /// current value and [gain] applies (no limited-history holding), else the
+  /// cash-only [netCashFlow]. An open holding's net cash flow alone is
+  /// negative while it is still invested, which reads as a loss.
+  double get cardFigure => showsGain ? gain : netCashFlow;
+
+  /// Whether [cardFigure] is [gain] rather than [netCashFlow].
+  bool get showsGain =>
+      currentValue != null && returnsKnown && limitedHistoryCount == 0;
+
   /// Whether part of [totalInvested] was money paid out earlier and put
   /// back in, which [moic] and [absoluteReturn] count once.
   bool get hasReinvestedPayouts => paidInCapital < totalInvested;

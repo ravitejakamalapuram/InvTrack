@@ -103,10 +103,8 @@ void main() {
       await expectSceneReady(tester, 'play_01_investments_list');
       // Open and closed positions both exist, and the first cards are loaded.
       // expectSceneReady has already checked that no negative amount is in
-      // the frame: open investments show a negative net cash flow, so they
-      // must stay below the first screen.
+      // the frame. Open holdings with a value show their gain.
       expect(find.text('Open'), findsOneWidget);
-      expect(find.text('UTI Nifty 50 Index'), findsOneWidget);
       expect(find.text('HDFC Bank FD'), findsOneWidget);
       await captureScene(tester, 'play_01_investments_list');
 

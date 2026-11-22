@@ -112,7 +112,7 @@ class InvestmentCard extends ConsumerWidget {
         // The card knows no current value, so the label never says one. What
         // it does say goes in receivedSegment below: what went in and came
         // back while the value is awaited (a net would read as a loss), the
-        // net position on every other card.
+        // gain on an open card with a value, the net position otherwise.
         currentValue: null,
         receivedSegment: isAwaitingValue
             ? l10n.investmentCardReceivedSemantics(
@@ -124,11 +124,13 @@ class InvestmentCard extends ConsumerWidget {
                         locale: currencyFormat.locale,
                       ),
               )
-            : l10n.investmentCardNetSemantics(
+            : (stats.showsGain
+                  ? l10n.investmentCardGainSemantics
+                  : l10n.investmentCardNetSemantics)(
                 isPrivacyMode
                     ? l10n.hiddenAmount
                     : AccessibilityUtils.formatCurrencyForScreenReader(
-                        stats.netCashFlow,
+                        stats.cardFigure,
                         currencySymbol,
                         locale: currencyFormat.locale,
                       ),
@@ -366,9 +368,10 @@ double _valueColumnWidth(
     return math.max(amounts + AppSpacing.xxs + words, chip);
   }
 
-  final isPositive = stats.netCashFlow >= 0;
+  final cardFigure = stats.cardFigure;
+  final isPositive = cardFigure >= 0;
   final net = figure(
-    stats.netCashFlow.abs(),
+    cardFigure.abs(),
     _figureStyle(),
     prefix: isPositive ? '+' : '-',
   );
@@ -695,7 +698,9 @@ class _InvestmentValueColumn extends StatelessWidget {
         }
 
         final l10n = AppLocalizations.of(context);
-        final isPositive = stats.netCashFlow >= 0;
+        // Gain for an open holding with a value, net cash flow otherwise.
+        final figure = stats.cardFigure;
+        final isPositive = figure >= 0;
         final plColor = isPositive
             ? (isDark ? AppColors.graphEmerald : AppColors.successLight)
             : (isDark ? AppColors.errorDark : AppColors.errorLight);
@@ -709,14 +714,12 @@ class _InvestmentValueColumn extends StatelessWidget {
             isPrivacyMode
                 ? MaskedAmountText(
                     text:
-                        '${isPositive ? '+' : '-'}${currencyFormat.formatCompact(stats.netCashFlow.abs())}',
+                        '${isPositive ? '+' : '-'}${currencyFormat.formatCompact(figure.abs())}',
                     style: valueStyle,
                   )
                 : CompactAmountText(
-                    amount: stats.netCashFlow.abs(),
-                    compactText: currencyFormat.formatCompact(
-                      stats.netCashFlow.abs(),
-                    ),
+                    amount: figure.abs(),
+                    compactText: currencyFormat.formatCompact(figure.abs()),
                     currencySymbol: currencyFormat.currencySymbol,
                     locale: currencyFormat.locale,
                     prefix: isPositive ? '+' : '-',
