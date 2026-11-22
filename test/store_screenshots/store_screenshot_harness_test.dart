@@ -243,8 +243,8 @@ void main() {
     testWidgets('a loss on the first screen of the list fails the scene', (
       tester,
     ) async {
-      // The review's probe: one open holding dated today sorts first and
-      // shows its net cash flow, which is negative while it is open.
+      // The review's probe: one open holding dated today sorts first and is
+      // worth less than it cost, so its card shows a negative gain.
       final today = DateTime.now();
       final day = DateTime(today.year, today.month, today.day);
       final probe = InvestmentEntity(
@@ -255,7 +255,7 @@ void main() {
         createdAt: day,
         updatedAt: day,
         currency: 'INR',
-        currentValue: 110000,
+        currentValue: 90000,
         currentValueDate: day,
       );
       final demo = StoreDemoData(
@@ -289,7 +289,7 @@ void main() {
           isA<TestFailure>().having(
             (e) => e.message,
             'message',
-            allOf(contains('negative amount'), contains('-₹1 L')),
+            allOf(contains('negative amount'), contains('-₹10')),
           ),
         );
       });

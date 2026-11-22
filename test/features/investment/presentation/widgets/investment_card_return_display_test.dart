@@ -33,13 +33,12 @@ Future<void> _pumpCard(
       overrides: [
         if (investment.isArchived) ...[
           // Archived cards read the converted archived stats, XIRR included.
-          multiCurrencyArchivedInvestmentStatsProvider(investment.id)
-              .overrideWith(
-                (ref) async => stats.copyWith(
-                  xirr: xirr.value,
-                  xirrMethod: xirr.method,
-                ),
-              ),
+          multiCurrencyArchivedInvestmentStatsProvider(
+            investment.id,
+          ).overrideWith(
+            (ref) async =>
+                stats.copyWith(xirr: xirr.value, xirrMethod: xirr.method),
+          ),
         ] else ...[
           investmentBasicStatsProvider(
             investment.id,
@@ -157,6 +156,63 @@ void main() {
 
     expect(find.text('Awaiting current value'), findsOneWidget);
     expect(find.textContaining('-99'), findsNothing);
+  });
+
+  testWidgets('open FD with a current value shows its gain, not a red net '
+      'outflow', (tester) async {
+    // Rs5L FD, three quarterly payouts of Rs10,060, still worth Rs5L today.
+    // Money in minus money out alone is -Rs4,69,820, which reads as a loss.
+    final stats = InvestmentStats(
+      totalInvested: 500000,
+      paidInCapital: 500000,
+      totalReturned: 30180,
+      netCashFlow: -469820,
+      absoluteReturn: 6.036,
+      moic: 1.06036,
+      xirr: 0.0812,
+      cashFlowCount: 4,
+      firstCashFlowDate: DateTime(2026, 1, 1),
+      lastCashFlowDate: DateTime(2026, 10, 1),
+      currentValue: 500000,
+      currentValueDate: DateTime(2026, 10, 10),
+    );
+
+    await _pumpCard(
+      tester,
+      investment: _investment(InvestmentStatus.open),
+      stats: stats,
+      xirr: const XirrResult.exact(0.0812),
+    );
+
+    expect(find.textContaining('-₹'), findsNothing);
+    expect(find.textContaining('+₹30'), findsOneWidget);
+    final label = tester.getSemantics(find.byType(GlassCard)).label;
+    expect(label, contains('Gain'));
+    expect(label, isNot(contains('Net position')));
+  });
+
+  testWidgets('closed investment still shows its net position', (tester) async {
+    final stats = InvestmentStats(
+      totalInvested: 100000,
+      totalReturned: 112000,
+      netCashFlow: 12000,
+      absoluteReturn: 12,
+      moic: 1.12,
+      xirr: 0.12,
+      cashFlowCount: 2,
+      firstCashFlowDate: DateTime(2025, 1, 1),
+      lastCashFlowDate: DateTime(2026, 1, 1),
+    );
+
+    await _pumpCard(
+      tester,
+      investment: _investment(InvestmentStatus.closed),
+      stats: stats,
+      xirr: const XirrResult.exact(0.12),
+    );
+
+    final label = tester.getSemantics(find.byType(GlassCard)).label;
+    expect(label, contains('Net position'));
   });
 
   testWidgets('3-day holding shows +2.0% in 3 days instead of an annual rate', (

@@ -1426,8 +1426,10 @@ void main() {
     });
   });
 
-  // Guard: every other state keeps its net figure and pill, and shows neither
-  // word.
+  // Guard: every other state keeps its figure and pill, and shows neither
+  // word. An open investment with a value leads with its gain (value now plus
+  // money received minus money put in), not its net cash flow: -Rs1 L on an
+  // FD earning 7.2% read as a loss.
   group('other states are unchanged', () {
     Future<void> expectUnchanged(
       WidgetTester tester,
@@ -1447,7 +1449,7 @@ void main() {
       await expectUnchanged(
         tester,
         _confirmedValue,
-        shows: ['-₹1 L', '+7.2% IRR', 'Total cost: '],
+        shows: ['+₹7,186', '+7.2% IRR', 'Total cost: '],
       );
     });
 
@@ -1455,7 +1457,7 @@ void main() {
       await expectUnchanged(
         tester,
         _estimate,
-        shows: ['-₹1 L', '+7.2% Expected XIRR', 'Total cost: '],
+        shows: ['+₹7,186', '+7.2% Expected XIRR', 'Total cost: '],
       );
     });
 
