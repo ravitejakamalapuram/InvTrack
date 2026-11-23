@@ -83,6 +83,9 @@ Future<void> _pump(
   required InvestmentEntity investment,
   required InvestmentStats stats,
   bool privacy = false,
+  VoidCallback? onMarkClosed,
+  VoidCallback? onRecordPayout,
+  DateTime? now,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -105,6 +108,9 @@ Future<void> _pump(
               isDark: false,
               currencyFormat: _inr,
               isPrivacyMode: privacy,
+              onMarkClosed: onMarkClosed,
+              onRecordPayout: onRecordPayout,
+              now: now,
             ),
           ),
         ),
@@ -675,6 +681,68 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Fully paid back? Mark it closed'), findsOneWidget);
+    });
+  });
+
+  group('matured but still open prompt (#1251)', () {
+    final today = DateTime(2026, 11, 23);
+    // Matured 12 Oct 2026 is 42 days before today.
+    Future<void> pumpMatured(
+      WidgetTester tester, {
+      InvestmentStatus status = InvestmentStatus.open,
+      bool isArchived = false,
+      DateTime? maturity,
+      VoidCallback? onMarkClosed,
+      VoidCallback? onRecordPayout,
+    }) => _pump(
+      tester,
+      investment: _investment(
+        status: status,
+        isArchived: isArchived,
+        maturityDate: maturity ?? DateTime(2026, 10, 12),
+      ),
+      stats: _investOnlyStats,
+      onMarkClosed: onMarkClosed ?? () {},
+      onRecordPayout: onRecordPayout ?? () {},
+      now: today,
+    );
+
+    testWidgets('open and 42 days past maturity: asks and offers two buttons', (
+      tester,
+    ) async {
+      var closed = 0;
+      var payouts = 0;
+      await pumpMatured(
+        tester,
+        onMarkClosed: () => closed++,
+        onRecordPayout: () => payouts++,
+      );
+      expect(find.textContaining('Still open?'), findsOneWidget);
+      await tester.tap(find.text('Mark it closed'));
+      await tester.tap(find.text('Record the payout'));
+      expect(closed, 1);
+      expect(payouts, 1);
+    });
+
+    testWidgets('8 days past shows it, 7 days past does not', (tester) async {
+      await pumpMatured(tester, maturity: DateTime(2026, 11, 15));
+      expect(find.textContaining('Still open?'), findsOneWidget);
+      await pumpMatured(tester, maturity: DateTime(2026, 11, 16));
+      expect(find.textContaining('Still open?'), findsNothing);
+    });
+
+    testWidgets('not shown for a closed or archived investment', (
+      tester,
+    ) async {
+      await pumpMatured(tester, status: InvestmentStatus.closed);
+      expect(find.textContaining('Still open?'), findsNothing);
+      await pumpMatured(tester, isArchived: true);
+      expect(find.textContaining('Still open?'), findsNothing);
+    });
+
+    testWidgets('not shown before maturity', (tester) async {
+      await pumpMatured(tester, maturity: DateTime(2027, 1, 5));
+      expect(find.textContaining('Still open?'), findsNothing);
     });
   });
 }

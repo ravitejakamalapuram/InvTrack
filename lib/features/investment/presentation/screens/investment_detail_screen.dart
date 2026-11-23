@@ -339,6 +339,10 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                     isDark: isDark,
                     currencyFormat: currencyFormat,
                     isPrivacyMode: isPrivacyMode,
+                    onMarkClosed: () =>
+                        _toggleInvestmentStatus(context, isDark),
+                    onRecordPayout: () =>
+                        _navigateToAddTransaction(cashFlowsAsync),
                     currentHolding: stats.currentValueIsEstimate
                         ? null
                         : ref

@@ -4042,6 +4042,21 @@
     }
   },
 
+  "maturedStillOpenPrompt": "Matured on {date}. Still open?",
+  "@maturedStillOpenPrompt": {
+    "description": "Line on the maturity card of an open investment that matured more than a week ago",
+    "placeholders": {
+      "date": {"type": "String", "example": "12 Oct 2026"}
+    }
+  },
+  "maturedMarkClosed": "Mark it closed",
+  "@maturedMarkClosed": {
+    "description": "Button on the matured-but-open line: closes the investment after a confirmation"
+  },
+  "maturedRecordPayout": "Record the payout",
+  "@maturedRecordPayout": {
+    "description": "Button on the matured-but-open line: opens the add cash flow screen"
+  },
   "returnPaidBackHint": "Fully paid back? Mark it closed",
   "@returnPaidBackHint": {
     "description": "Hint on the detail page of an open investment that has returned its cost and has no current value: if nothing is left to receive, close it so its returns become final. Plain text, no amount"
