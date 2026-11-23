@@ -312,6 +312,16 @@ void main() {
       expect(crashFreeMinimum(action: 'halt', toTrack: 'production'), '');
       expect(crashFreeMinimum(action: 'complete', toTrack: 'beta'), '');
     });
+
+    test('crash data counts only from when the soak began', () {
+      final out = soakOutputLines(record(codes: ['121', '122']));
+      expect(out, contains('soak_version_codes=121,122\n'));
+      expect(
+        out,
+        contains('crash_free_since=${rolloutStart.toIso8601String()}\n'),
+      );
+      expect(rolloutStart.isUtc, isTrue);
+    });
   });
 
   group('other actions and tracks', () {

@@ -136,6 +136,13 @@ String? _soakBlockReason({
 /// or '' when the action needs no crash check. Every production `rollout` and
 /// `complete` needs it (InvTrack #848); `promote` starts a new build at 5% or
 /// less without crash data, and `halt` is never blocked.
+/// The GITHUB_OUTPUT lines that tie the promote job's checks to the soaked
+/// release: which version codes Play must still hold, and when the soak began,
+/// so that crash data from before the soak does not count.
+String soakOutputLines(RolloutRecord latest) =>
+    'soak_version_codes=${latest.versionCodes.join(',')}\n'
+    'crash_free_since=${latest.startedAt.toUtc().toIso8601String()}\n';
+
 String crashFreeMinimum({required String action, required String toTrack}) {
   if (!_isProduction(toTrack)) return '';
   if (!const {'rollout', 'complete'}.contains(action)) return '';
@@ -264,7 +271,7 @@ void main() {
       )) {
     if (output != null && output.isNotEmpty) {
       File(output).writeAsStringSync(
-        'soak_version_codes=${latest.versionCodes.join(',')}\n',
+        soakOutputLines(latest),
         mode: FileMode.append,
       );
     }

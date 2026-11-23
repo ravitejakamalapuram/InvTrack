@@ -44,6 +44,7 @@ jobs:
     outputs:
       soak_version_codes: ${{ steps.guard.outputs.soak_version_codes }}
       min_crash_free_users: ${{ steps.guard.outputs.min_crash_free_users }}
+      crash_free_since: ${{ steps.guard.outputs.crash_free_since }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -79,3 +80,4 @@ jobs:
       user_fraction: ${{ inputs.user_fraction }}
       expect_in_progress_version_codes: ${{ needs.guard.outputs.soak_version_codes }}
       min_crash_free_users: ${{ needs.guard.outputs.min_crash_free_users }}
+      crash_free_since: ${{ needs.guard.outputs.crash_free_since }}
