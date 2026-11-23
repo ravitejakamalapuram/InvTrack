@@ -1,6 +1,6 @@
 // #1162: merging deletes the source investments one by one. A failed delete
-// must not strand the merged copy next to undeleted sources (every amount
-// would count twice).
+// must not lose the merged copy, which may hold the only complete data, and the user
+// is told which originals are left.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
@@ -80,17 +80,26 @@ void main() {
     ], 'Merged FD');
   }
 
-  test('when no source can be deleted, the merge is undone and the sources '
-      'stay whole', () async {
-    repo.failFor.addAll(['a', 'b']);
+  test(
+    'when no source can be deleted, the merged copy is kept (a failed '
+    'delete may have removed part of a source) and the failure names them',
+    () async {
+      repo.failFor.addAll(['a', 'b']);
 
-    await expectLater(merge(), throwsException);
+      await expectLater(
+        merge(),
+        throwsA(
+          isA<MergeSourcesNotRemovedException>().having(
+            (e) => e.remainingIds,
+            'remainingIds',
+            ['a', 'b'],
+          ),
+        ),
+      );
 
-    expect(
-      repo.investments.map((i) => i.id),
-      unorderedEquals(['a', 'b', 'c']),
-    );
-  });
+      expect(repo.investments.length, 4);
+    },
+  );
 
   test('when one source cannot be deleted, the rest are still removed and '
       'the failure names what is left', () async {
