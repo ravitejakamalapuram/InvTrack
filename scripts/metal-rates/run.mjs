@@ -13,6 +13,7 @@ import { buildUpdate, fetchRates } from './lib.mjs';
 const dryRun = process.argv.includes('--dry-run');
 const result = await fetchRates(fetch);
 for (const e of result.errors) console.log(`::warning::${e}`);
+const partial = result.errors.length > 0;
 
 const update = buildUpdate(result);
 if (!update) {
@@ -36,3 +37,7 @@ if (dryRun) {
   await getFirestore().doc('metalRates/latest').set(update, { merge: true });
   console.log('Wrote metalRates/latest.');
 }
+
+// A source that failed keeps its old value, so the run still wrote what it could; but it ends red, so a source that
+// is gone for good is noticed before the app quietly hides its rate after 3 days.
+if (partial) process.exit(1);

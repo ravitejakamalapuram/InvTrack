@@ -136,6 +136,34 @@ void main() {
     });
   });
 
+  group('future-dated rates', () {
+    test('a rate dated well in the future is refused', () {
+      expect(
+        MetalRateQuoter.quote(
+          rates: rates(
+            inrAt: now.add(const Duration(hours: 1)),
+            usdAt: now.add(const Duration(hours: 1)),
+          ),
+          metal: Metal.gold,
+          currency: 'INR',
+          now: now,
+          usdToCurrency: 92.75,
+        ),
+        isNull,
+      );
+    });
+
+    test('a few minutes of clock drift is allowed', () {
+      final q = MetalRateQuoter.quote(
+        rates: rates(inrAt: now.add(const Duration(minutes: 4))),
+        metal: Metal.gold,
+        currency: 'INR',
+        now: now,
+      );
+      expect(q?.kind, MetalRateKind.indiaSelling);
+    });
+  });
+
   group('bad input', () {
     test('blank currency gives no quote (never defaults to USD)', () {
       expect(

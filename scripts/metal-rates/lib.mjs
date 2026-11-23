@@ -18,12 +18,19 @@ const BOUNDS = {
   usd: { gold: [10, 1000], silver: [0.1, 50] },
 };
 
+// Rupees per gram over dollars per gram: today about 109 (gold) and 112 (silver).
+const CROSS_CHECK = [70, 150];
+
 const inRange = (n, [lo, hi]) => typeof n === 'number' && Number.isFinite(n) && n >= lo && n <= hi;
 
-/** The provider's time if it is readable and not in the future (beyond a minute of clock drift), else `now`. */
+/**
+ * The provider's own time. It must be readable and not in the future (beyond 5 minutes of clock drift): a feed with
+ * no usable time is refused, so a frozen feed cannot look fresh every day.
+ */
 function readTime(value, now) {
   const t = typeof value === 'string' ? new Date(value) : null;
-  if (!t || Number.isNaN(t.getTime()) || t.getTime() > now.getTime() + 60_000) return now;
+  if (!t || Number.isNaN(t.getTime())) throw new Error('no readable time');
+  if (t.getTime() > now.getTime() + 5 * 60_000) throw new Error('time is in the future');
   return t;
 }
 
@@ -33,7 +40,12 @@ async function getJson(fetchFn, url) {
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  try {
+    return await res.json();
+  } catch {
+    // A fixed reason: a piece of the reply must never reach the log.
+    throw new Error('reply is not JSON');
+  }
 }
 
 async function readIndia(fetchFn, now) {
@@ -64,6 +76,12 @@ async function readUsd(fetchFn, now) {
   return { ...out, updatedAt: oldest };
 }
 
+/** A short reason with no control characters, so nothing a server sent can start a workflow command. */
+function safeReason(e) {
+  const text = e instanceof Error ? e.message : 'failed';
+  return text.replace(/[^\x20-\x7e]/g, ' ').slice(0, 120);
+}
+
 /**
  * Fetches both sources. Never throws: a source that fails is left out and named in `errors`
  * (a short reason only, never a response body).
@@ -81,10 +99,23 @@ export async function fetchRates(fetchFn, now = new Date()) {
       try {
         result[key] = await read(fetchFn, now);
       } catch (e) {
-        errors.push(`${label}: ${e instanceof Error ? e.message : 'failed'}`);
+        errors.push(`${label}: ${safeReason(e)}`);
       }
     }),
   );
+  // The two sources must roughly agree: India sell price over the dollar price is about 109 for gold and about
+  // 112 for silver (the dollar rate, plus duty, GST and the local premium). Far outside that band one of them is
+  // wrong, and the India figure, which comes from the smaller source, is the one dropped.
+  if (result.inr && result.usd) {
+    for (const metal of ['gold', 'silver']) {
+      const ratio = result.inr[metal] / result.usd[metal];
+      if (!(ratio >= CROSS_CHECK[0] && ratio <= CROSS_CHECK[1])) {
+        delete result.inr;
+        errors.push(`India selling rate: disagrees with the international rate (${metal})`);
+        break;
+      }
+    }
+  }
   return result;
 }
 

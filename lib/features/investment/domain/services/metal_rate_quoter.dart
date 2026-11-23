@@ -76,8 +76,12 @@ class MetalRateQuoter {
 
   static bool _usable(double? v) => v != null && v.isFinite && v > 0;
 
+  /// Not older than [maxAge], and not dated in the future (a few minutes of
+  /// clock drift are allowed).
   static bool _fresh(DateTime? at, DateTime now) =>
-      at != null && now.difference(at) <= maxAge;
+      at != null &&
+      now.difference(at) <= maxAge &&
+      !at.isAfter(now.add(const Duration(minutes: 5)));
 
   /// Four places: enough for a per-gram price of any currency, and the value
   /// is rounded once, at the end, to the currency's own precision.

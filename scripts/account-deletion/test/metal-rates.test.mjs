@@ -98,13 +98,38 @@ describe('fetchRates', () => {
     assert.equal(r.usd, undefined);
   });
 
-  it('a time in the future or unreadable falls back to now', async () => {
+  it('a source with no usable time is refused, so a frozen feed cannot look fresh every day', async () => {
+    for (const bad of [null, 'soon', '2030-01-01T00:00:00Z']) {
+      const india = await fetchRates(fakeFetch({ ...good, 'oropocket.com': oro({ timestamp: bad }) }), NOW);
+      assert.equal(india.inr, undefined, `india with ${bad}`);
+      assert.ok(india.usd);
+      const usd = await fetchRates(fakeFetch({ ...good, '/XAU': goldApi(3610, bad) }), NOW);
+      assert.equal(usd.usd, undefined, `usd with ${bad}`);
+      assert.ok(usd.inr);
+    }
+  });
+
+  it('a few minutes of clock drift is allowed', async () => {
+    const r = await fetchRates(fakeFetch({ ...good, 'oropocket.com': oro({ timestamp: '2026-11-23T05:03:00Z' }) }), NOW);
+    assert.ok(r.inr);
+  });
+
+  it('a reply that is not JSON gives a fixed reason, never a piece of the reply', async () => {
+    const evil = async () => ({ ok: true, status: 200, json: async () => JSON.parse('::error::pwned\n<html>') });
+    const r = await fetchRates(evil, NOW);
+    assert.equal(r.inr, undefined);
+    assert.equal(r.usd, undefined);
+    for (const e of r.errors) assert.doesNotMatch(e, /pwned|html|::/);
+  });
+
+  it('drops the India rate when the two sources disagree wildly (one of them is wrong)', async () => {
     const r = await fetchRates(
-      fakeFetch({ ...good, 'oropocket.com': oro({ timestamp: '2030-01-01T00:00:00Z' }), '/XAU': goldApi(3610, 'soon'), '/XAG': goldApi(42, 'soon') }),
+      fakeFetch({ ...good, 'oropocket.com': oro({ gold: { sell: 5000, currency: 'INR', unit: 'gram' } }) }),
       NOW,
     );
-    assert.equal(r.inr.updatedAt.toISOString(), NOW.toISOString());
-    assert.equal(r.usd.updatedAt.toISOString(), NOW.toISOString());
+    assert.equal(r.inr, undefined);
+    assert.ok(r.usd);
+    assert.match(r.errors.join(' '), /disagree/i);
   });
 });
 
