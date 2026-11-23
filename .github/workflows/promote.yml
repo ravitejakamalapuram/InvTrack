@@ -29,7 +29,8 @@ jobs:
   # A63: `promote` to production starts at 5% or less, and no release goes above 5% without 48 h at a
   # partial rollout (scripts/promotion_guard.dart). #848: every production rollout and complete also
   # needs at least 99.5% crash-free users, which release-platform's promote job reads from Play before
-  # it changes anything; the guard only outputs that minimum. Halt is never blocked. A84: the 48 h clock starts at the rollout record release-platform's promote job writes
+  # it changes anything; the guard only outputs that minimum. Halt is never blocked.
+  # A84: the 48 h clock starts at the rollout record release-platform's promote job writes
   # (a `play-production` deployment) after it read the staged release back from Play. With no record,
   # going above 5% is refused. The guard passes the version codes it counted the soak for to the
   # promote job, which first checks that Play still holds exactly those in progress. Only a first
