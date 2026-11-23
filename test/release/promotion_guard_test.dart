@@ -240,8 +240,8 @@ void main() {
       expect(check(action: 'rollout', userFraction: '0.2'), isNull);
     });
 
-    test('resuming a halted rollout at 5% needs the crash-free gate but no '
-        'soak', () {
+    test('resuming a halted rollout at 5% needs neither the soak nor the '
+        'crash-free check', () {
       const early = Duration(hours: 1);
       expect(
         check(action: 'rollout', userFraction: '0.05', soak: early),
