@@ -140,13 +140,22 @@ String soakOutputLines(RolloutRecord latest) =>
 
 /// The minimum crash-free users (percent, as text) that release-platform's
 /// promote job must read from Play before this action changes the rollout,
-/// or '' when the action needs no crash check. Every production `rollout` and
-/// `complete` needs it (InvTrack #848); `promote` starts a new build at 5% or
-/// less without crash data, and `halt` is never blocked.
-String crashFreeMinimum({required String action, required String toTrack}) {
-  if (!_isProduction(toTrack)) return '';
-  if (!const {'rollout', 'complete'}.contains(action)) return '';
-  return '$minimumCrashFreeUsers';
+/// or '' when the action needs no crash check. Only an action that widens past
+/// 5% on production (a `rollout` above it, or `complete`) needs it (InvTrack
+/// #848): those are exactly the actions that need the soak, so the check always
+/// has a soak start to count from. `promote` and a rollout at 5% or less start
+/// or hold a build without crash data, and `halt` is never blocked.
+String crashFreeMinimum({
+  required String action,
+  required String toTrack,
+  required String userFraction,
+}) {
+  final widens = soakRequired(
+    action: action,
+    toTrack: toTrack,
+    userFraction: userFraction,
+  );
+  return widens ? '$minimumCrashFreeUsers' : '';
 }
 
 /// The most recently started rollout, or null when there is none.
@@ -249,7 +258,11 @@ void main() {
     exit(1);
   }
   final output = env['GITHUB_OUTPUT'];
-  final minimum = crashFreeMinimum(action: action, toTrack: toTrack);
+  final minimum = crashFreeMinimum(
+    action: action,
+    toTrack: toTrack,
+    userFraction: userFraction,
+  );
   if (output != null && output.isNotEmpty) {
     File(output).writeAsStringSync(
       'min_crash_free_users=$minimum\n',
@@ -270,10 +283,9 @@ void main() {
         userFraction: userFraction,
       )) {
     if (output != null && output.isNotEmpty) {
-      File(output).writeAsStringSync(
-        soakOutputLines(latest),
-        mode: FileMode.append,
-      );
+      File(
+        output,
+      ).writeAsStringSync(soakOutputLines(latest), mode: FileMode.append);
     }
     stdout.writeln(
       'Soak counted for version codes ${latest.versionCodes.join(', ')} '

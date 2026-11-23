@@ -247,9 +247,14 @@ void main() {
         check(action: 'rollout', userFraction: '0.05', soak: early),
         isNull,
       );
+      // At 5% or less nothing widens, so there is no soak and no crash check.
       expect(
-        crashFreeMinimum(action: 'rollout', toTrack: 'production'),
-        '99.5',
+        crashFreeMinimum(
+          action: 'rollout',
+          toTrack: 'production',
+          userFraction: '0.05',
+        ),
+        '',
       );
     });
 
@@ -297,20 +302,84 @@ void main() {
   });
 
   group('#848: when the promote job must read crash-free users from Play', () {
-    test('every production rollout and complete needs at least 99.5%', () {
+    test('widening above 5% and complete need at least 99.5%', () {
       for (final action in ['rollout', 'complete']) {
-        expect(crashFreeMinimum(action: action, toTrack: 'production'), '99.5');
-        expect(
-          crashFreeMinimum(action: action, toTrack: ' Production '),
-          '99.5',
-        );
+        for (final track in ['production', ' Production ']) {
+          expect(
+            crashFreeMinimum(
+              action: action,
+              toTrack: track,
+              userFraction: '0.2',
+            ),
+            '99.5',
+          );
+        }
+      }
+    });
+
+    test(
+      'a rollout at 5% or less, promote, halt and other tracks need none',
+      () {
+        for (final fraction in ['0.01', '0.05']) {
+          expect(
+            crashFreeMinimum(
+              action: 'rollout',
+              toTrack: 'production',
+              userFraction: fraction,
+            ),
+            '',
+          );
+        }
+      },
+    );
+
+    test('the minimum is asked for exactly when a soak is required', () {
+      for (final action in ['rollout', 'complete', 'promote', 'halt']) {
+        for (final fraction in ['0.05', '0.2', '1']) {
+          for (final track in ['production', 'beta']) {
+            expect(
+              crashFreeMinimum(
+                action: action,
+                toTrack: track,
+                userFraction: fraction,
+              ).isNotEmpty,
+              soakRequired(
+                action: action,
+                toTrack: track,
+                userFraction: fraction,
+              ),
+              reason: '$action $fraction $track',
+            );
+          }
+        }
       }
     });
 
     test('promote, halt and other tracks need no crash check', () {
-      expect(crashFreeMinimum(action: 'promote', toTrack: 'production'), '');
-      expect(crashFreeMinimum(action: 'halt', toTrack: 'production'), '');
-      expect(crashFreeMinimum(action: 'complete', toTrack: 'beta'), '');
+      expect(
+        crashFreeMinimum(
+          action: 'promote',
+          toTrack: 'production',
+          userFraction: '0.2',
+        ),
+        '',
+      );
+      expect(
+        crashFreeMinimum(
+          action: 'halt',
+          toTrack: 'production',
+          userFraction: '0.2',
+        ),
+        '',
+      );
+      expect(
+        crashFreeMinimum(
+          action: 'complete',
+          toTrack: 'beta',
+          userFraction: '0.2',
+        ),
+        '',
+      );
     });
 
     test('crash data counts only from when the soak began', () {
