@@ -197,6 +197,14 @@ service cloud.firestore {
       match /deliveries/{channel} { allow read, write: if false; }
     }
 
+    // Today's gold and silver rates, written once a day by the rates job (Admin SDK). Public market data, not
+    // user data, so account deletion and export do not cover it. A signed-in user (a guest counts) may read the
+    // one document by its id; nobody can list the collection, and no client can write.
+    match /metalRates/{doc} {
+      allow get: if request.auth != null;
+      allow list, write: if false;
+    }
+
     // Written only by the job (Admin SDK). Never readable from a client.
     match /deletionAudit/{entry} { allow read, write: if false; }
     match /deletionRuns/{run}   { allow read, write: if false; }

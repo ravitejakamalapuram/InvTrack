@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/widgets/screen_layout.dart';
 import 'package:inv_tracker/core/widgets/tonal_icon_action.dart';
 import 'package:inv_tracker/features/investment/domain/services/metal_holding.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/metal_held_line.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/metal_rate_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
@@ -415,9 +416,18 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               child: ScreenEdge(
                 top: 0,
                 bottom: AppSpacing.xs,
-                child: MetalHeldLine(
-                  grams: heldGrams(cashFlowsAsync.value ?? const [])!,
-                  metal: widget.investment.metal,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    MetalHeldLine(
+                      grams: heldGrams(cashFlowsAsync.value ?? const [])!,
+                      metal: widget.investment.metal,
+                    ),
+                    MetalRateCard(
+                      investment: widget.investment,
+                      grams: heldGrams(cashFlowsAsync.value ?? const [])!,
+                    ),
+                  ],
                 ),
               ),
             ),

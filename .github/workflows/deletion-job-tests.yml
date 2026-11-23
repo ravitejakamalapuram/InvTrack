@@ -8,6 +8,7 @@ on:
     paths:
       - 'scripts/account-deletion/**'
       - 'scripts/content-posts/**'
+      - 'scripts/metal-rates/**'
       - 'firestore.rules'
       - '.github/workflows/deletion-job-tests.yml'
       - '.github/workflows/account-deletion.yml'
@@ -16,6 +17,7 @@ on:
     paths:
       - 'scripts/account-deletion/**'
       - 'scripts/content-posts/**'
+      - 'scripts/metal-rates/**'
       - 'firestore.rules'
       - '.github/workflows/deletion-job-tests.yml'
       - '.github/workflows/account-deletion.yml'
