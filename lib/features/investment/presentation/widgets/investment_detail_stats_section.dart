@@ -38,6 +38,13 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
   /// Opens the value history; null while dated values are off.
   final VoidCallback? onViewValueHistory;
 
+  /// Closes the investment (the screen asks first). With [onRecordPayout], it
+  /// is offered when an open investment is more than a week past maturity.
+  final VoidCallback? onMarkClosed;
+
+  /// Opens the add cash flow screen, offered beside [onMarkClosed].
+  final VoidCallback? onRecordPayout;
+
   /// Weight x price behind the current value, when it was entered that way.
   final UnitHolding? currentHolding;
 
@@ -54,6 +61,8 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
     required this.isPrivacyMode,
     this.onUpdateCurrentValue,
     this.onViewValueHistory,
+    this.onMarkClosed,
+    this.onRecordPayout,
     this.currentHolding,
     this.now,
   });
@@ -204,6 +213,12 @@ class InvestmentDetailStatsSection extends ConsumerWidget {
           const SizedBox(height: 10),
           _MaturityCard(
             maturityDate: investment.maturityDate!,
+            onMarkClosed: investment.isOpen && !investment.isArchived
+                ? onMarkClosed
+                : null,
+            onRecordPayout: investment.isOpen && !investment.isArchived
+                ? onRecordPayout
+                : null,
             isDark: isDark,
             now: now,
           ),
@@ -688,9 +703,13 @@ class _MaturityCard extends StatelessWidget {
   final DateTime maturityDate;
   final bool isDark;
   final DateTime? now;
+  final VoidCallback? onMarkClosed;
+  final VoidCallback? onRecordPayout;
 
   const _MaturityCard({
     required this.maturityDate,
+    this.onMarkClosed,
+    this.onRecordPayout,
     required this.isDark,
     this.now,
   });
@@ -709,59 +728,102 @@ class _MaturityCard extends StatelessWidget {
     final (statusColor, statusTint, statusIcon, statusText) =
         _getMaturityStatus(daysUntilMaturity);
 
+    final l10n = AppLocalizations.of(context);
+    final askToClose =
+        daysUntilMaturity < -7 &&
+        onMarkClosed != null &&
+        onRecordPayout != null;
+
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: SpreadRow(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          SpreadRow(
             children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: statusTint.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(statusIcon, size: 18, color: statusColor),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Maturity Date',
+                        style: AppTypography.small.copyWith(
+                          color: isDark
+                              ? AppColors.neutral400Dark
+                              : AppColors.neutral500Light,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        AppDateUtils.formatShort(maturityDate),
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.neutral900Light,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: statusTint.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(statusIcon, size: 18, color: statusColor),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Maturity Date',
-                    style: AppTypography.small.copyWith(
-                      color: isDark
-                          ? AppColors.neutral400Dark
-                          : AppColors.neutral500Light,
-                    ),
+                child: Text(
+                  statusText,
+                  style: AppTypography.small.copyWith(
+                    color: statusColor,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    AppDateUtils.formatShort(maturityDate),
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: isDark ? Colors.white : AppColors.neutral900Light,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: statusTint.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              statusText,
+          if (askToClose) ...[
+            const SizedBox(height: 10),
+            Text(
+              l10n.maturedStillOpenPrompt(
+                AppDateUtils.formatShort(maturityDate),
+              ),
               style: AppTypography.small.copyWith(
-                color: statusColor,
-                fontWeight: FontWeight.w600,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
             ),
-          ),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 8,
+              children: [
+                TextButton(
+                  onPressed: onMarkClosed,
+                  child: Text(l10n.maturedMarkClosed),
+                ),
+                TextButton(
+                  onPressed: onRecordPayout,
+                  child: Text(l10n.maturedRecordPayout),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
