@@ -20,6 +20,12 @@ class _ExpandableTextState extends State<ExpandableText> {
   bool _expanded = false;
 
   @override
+  void didUpdateWidget(ExpandableText old) {
+    super.didUpdateWidget(old);
+    if (old.text != widget.text) _expanded = false;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);

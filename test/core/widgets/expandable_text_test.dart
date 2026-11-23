@@ -59,4 +59,14 @@ void main() {
     );
     h.dispose();
   });
+
+  testWidgets('new text starts collapsed again', (tester) async {
+    await tester.pumpWidget(_wrap(const ExpandableText(long)));
+    await tester.tap(find.text('Read more'));
+    await tester.pump();
+    expect(find.text('Show less'), findsOneWidget);
+
+    await tester.pumpWidget(_wrap(ExpandableText('$long next day')));
+    expect(find.text('Read more'), findsOneWidget);
+  });
 }
