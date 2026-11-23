@@ -4174,6 +4174,61 @@
       "weight": {"type": "String", "example": "12.5 g"}
     }
   },
+  "metalRateToday": "{metal} today: {price} per gram",
+  "@metalRateToday": {
+    "description": "Today's rate for one gram of a metal on a precious-metals investment's page, e.g. 'Gold today: ₹12,633.66 per gram'",
+    "placeholders": {
+      "metal": {"type": "String", "example": "Gold"},
+      "price": {"type": "String", "example": "₹12,633.66"}
+    }
+  },
+  "metalRateIndiaSelling": "Selling rate in India · {date}",
+  "@metalRateIndiaSelling": {
+    "description": "Small label under today's metal rate for rupee investments: what a seller receives in India, and the date of the rate",
+    "placeholders": {
+      "date": {"type": "String", "example": "23 Nov 2026"}
+    }
+  },
+  "metalRateInternational": "International rate · {date}",
+  "@metalRateInternational": {
+    "description": "Small label under today's metal rate for non-rupee investments: the international price converted to the investment's currency, and the date of the rate",
+    "placeholders": {
+      "date": {"type": "String", "example": "23 Nov 2026"}
+    }
+  },
+  "metalRateNotToday": "Not updated today",
+  "@metalRateNotToday": {
+    "description": "Small hint under today's metal rate when the stored rate is from an earlier day because the daily update did not run or failed"
+  },
+  "metalRateShopHigher": "Shop prices in India are usually higher.",
+  "@metalRateShopHigher": {
+    "description": "Small hint under the international metal rate on a rupee investment: Indian shop prices include duty and tax, so they are higher than this rate"
+  },
+  "metalRateUse": "Use as current value",
+  "@metalRateUse": {
+    "description": "Button under today's metal rate that sets the investment's current value to weight held times today's rate, after a confirmation"
+  },
+  "metalRateConfirmTitle": "Set current value?",
+  "@metalRateConfirmTitle": {
+    "description": "Title of the confirmation before today's metal rate is saved as the current value"
+  },
+  "metalRateConfirmBody": "{weight} × {price} per gram = {total}",
+  "@metalRateConfirmBody": {
+    "description": "Body of the confirmation: weight held times today's price per gram equals the new current value, e.g. '12.5 g × ₹12,633.66 per gram = ₹1,57,920.75'",
+    "placeholders": {
+      "weight": {"type": "String", "example": "12.5 g"},
+      "price": {"type": "String", "example": "₹12,633.66"},
+      "total": {"type": "String", "example": "₹1,57,920.75"}
+    }
+  },
+  "metalRateConfirmAction": "Set value",
+  "@metalRateConfirmAction": {
+    "description": "Confirm button that saves today's metal rate times the weight as the current value"
+  },
+  "metalRateApplied": "Current value updated",
+  "@metalRateApplied": {
+    "description": "Snackbar after the current value was set from today's metal rate"
+  },
   "metalChoiceLabel": "Metal",
   "@metalChoiceLabel": {
     "description": "Label above the Gold or Silver choice on the form of a precious-metals investment"

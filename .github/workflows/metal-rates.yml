@@ -1,0 +1,59 @@
+name: metal-rates
+
+# Once a day, reads today's gold and silver rates and stores them in Firestore (metalRates/latest) for the
+# rate shown on a metal investment's page. Two public sources, no API key: OroPocket (India selling rate in
+# rupees per gram) and gold-api.com (international rate in US dollars). A source that fails keeps its last good
+# value in the document; the app stops showing a rate after 3 days. Keyless Google login as content-posting-bot
+# (Cloud Datastore User only); no repository write rights. A manual run is a dry run unless "write" is ticked.
+on:
+  schedule:
+    - cron: '30 4 * * *' # 10:00 in India
+  workflow_dispatch:
+    inputs:
+      write:
+        description: 'Really write to Firestore (leave off for a dry run that only prints the rates)'
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: metal-rates
+  cancel-in-progress: false
+
+jobs:
+  rates:
+    name: rates
+    if: github.ref == 'refs/heads/main' && github.repository == 'ravitejakamalapuram/InvTrack'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write # keyless Google login (workload identity)
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/metal-rates
+            scripts/account-deletion
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Install dependencies (from the lockfile, production only, no install scripts)
+        run: npm --prefix scripts/account-deletion ci --omit=dev --ignore-scripts --no-audit --no-fund
+      - name: Authenticate to Google Cloud (keyless)
+        if: github.event_name == 'schedule' || inputs.write
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: projects/784857267556/locations/global/workloadIdentityPools/github/providers/github-oidc
+          service_account: content-posting-bot@invtracker-b19d1.iam.gserviceaccount.com
+      - name: Read and store today's rates
+        env:
+          WRITE: ${{ github.event_name == 'schedule' || inputs.write }}
+        run: |
+          if [ "$WRITE" = "true" ]; then
+            node scripts/metal-rates/run.mjs
+          else
+            node scripts/metal-rates/run.mjs --dry-run
+          fi
