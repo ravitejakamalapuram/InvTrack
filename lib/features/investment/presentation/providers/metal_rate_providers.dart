@@ -1,13 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
-import 'package:inv_tracker/features/investment/data/repositories/metal_rates_repository.dart';
+import 'package:inv_tracker/features/investment/data/repositories/firestore_metal_rates_repository.dart';
 import 'package:inv_tracker/features/investment/domain/entities/metal.dart';
 import 'package:inv_tracker/features/investment/domain/entities/metal_rates.dart';
+import 'package:inv_tracker/features/investment/domain/repositories/metal_rates_repository.dart';
 import 'package:inv_tracker/features/investment/domain/services/metal_rate_quoter.dart';
 
 final metalRatesRepositoryProvider = Provider<MetalRatesRepository>(
-  (ref) => MetalRatesRepository(ref.watch(firestoreProvider)),
+  (ref) => FirestoreMetalRatesRepository(ref.watch(firestoreProvider)),
 );
 
 /// Today's stored rates. Read once per screen visit, not streamed: they
@@ -39,11 +40,13 @@ final metalRateQuoteProvider = FutureProvider.autoDispose
         final service = ref.read(currencyConversionServiceProvider);
         if (service == null) return null;
         final usdTo = await service.getLiveRate('USD', code);
+        // The exchange-rate request can take a while: judge freshness at the
+        // time it finishes, not when it started.
         return MetalRateQuoter.quote(
           rates: rates,
           metal: key.metal,
           currency: code,
-          now: now,
+          now: DateTime.now().toUtc(),
           usdToCurrency: usdTo,
         );
       } catch (_) {

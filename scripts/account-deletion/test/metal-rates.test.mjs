@@ -75,18 +75,20 @@ describe('fetchRates', () => {
     assert.match(r.errors[0], /international/i);
   });
 
-  for (const [name, body] of [
-    ['a zero price', oro({ gold: { sell: 0 } })],
-    ['a missing silver price', oro({ silver: undefined })],
-    ['a text price', oro({ gold: { sell: 'lots' } })],
-    ['a price far outside the plausible range', oro({ gold: { sell: 1.5 } })],
-    ['a price in the wrong currency', oro({ gold: { sell: 12633.66, currency: 'USD' } })],
-    ['a price per kilogram', oro({ gold: { sell: 12633.66, currency: 'INR', unit: 'kg' } })],
+  const inr = { currency: 'INR', unit: 'gram' };
+  for (const [name, body, reason] of [
+    ['a zero price', oro({ gold: { sell: 0, ...inr } }), /out of range/],
+    ['a missing silver price', oro({ silver: undefined }), /not rupees per gram/],
+    ['a text price', oro({ gold: { sell: 'lots', ...inr } }), /out of range/],
+    ['a price far outside the plausible range', oro({ gold: { sell: 1.5, ...inr } }), /out of range/],
+    ['a price in the wrong currency', oro({ gold: { sell: 12633.66, currency: 'USD', unit: 'gram' } }), /not rupees per gram/],
+    ['a price per kilogram', oro({ gold: { sell: 12633.66, currency: 'INR', unit: 'kg' } }), /not rupees per gram/],
   ]) {
     it(`refuses ${name}`, async () => {
       const r = await fetchRates(fakeFetch({ ...good, 'oropocket.com': body }), NOW);
       assert.equal(r.inr, undefined);
       assert.equal(r.errors.length, 1);
+      assert.match(r.errors[0], reason, 'must fail on the intended check');
     });
   }
 

@@ -94,6 +94,7 @@ class MetalRateCard extends ConsumerWidget {
   ) async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    final notifier = ref.read(investmentNotifierProvider.notifier);
     final currency = investment.currency;
     final holding = UnitHolding(
       quantity: grams,
@@ -103,7 +104,9 @@ class MetalRateCard extends ConsumerWidget {
     final total = holding.valueOrNull(currency);
     if (total == null) return;
 
-    final weight = grams.toStringAsFixed(3).replaceFirst(RegExp(r'\.?0+$'), '');
+    final weight = NumberFormat.decimalPattern(
+      Localizations.localeOf(context).toString(),
+    ).format(grams);
     final body = l10n.metalRateConfirmBody(
       '$weight g',
       formatCurrencyForCode(quote.pricePerGram, currency),
@@ -128,20 +131,31 @@ class MetalRateCard extends ConsumerWidget {
         ],
       ),
     );
-    if (confirmed != true) return;
+    if (confirmed != true || !context.mounted) return;
 
     final now = DateTime.now();
+    // The dialog can stay open for a long time: a rate that expired meanwhile
+    // is not saved, and the card asks for a fresh one.
+    if (!MetalRateQuoter.isFresh(quote.asOf, now.toUtc())) {
+      ref.invalidate(
+        metalRateQuoteProvider((
+          metal: investment.metal ?? Metal.gold,
+          currency: investment.currency,
+        )),
+      );
+      return;
+    }
     try {
-      await ref
-          .read(investmentNotifierProvider.notifier)
-          .setCurrentValue(
-            id: investment.id,
-            value: total,
-            date: DateTime(now.year, now.month, now.day),
-            holding: holding,
-          );
+      await notifier.setCurrentValue(
+        id: investment.id,
+        value: total,
+        date: DateTime(now.year, now.month, now.day),
+        holding: holding,
+      );
+      if (!context.mounted) return;
       messenger.showSnackBar(SnackBar(content: Text(l10n.metalRateApplied)));
     } catch (_) {
+      if (!context.mounted) return;
       messenger.showSnackBar(
         SnackBar(content: Text(l10n.currentValueSaveFailed)),
       );

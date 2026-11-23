@@ -57,10 +57,19 @@ InvestmentEntity _inv({
   metal: metal,
 );
 
-MetalRateQuote _india = MetalRateQuote(
+/// A rate with a fixed date, for the tests that read the date on screen.
+MetalRateQuote _fixedIndia = MetalRateQuote(
   pricePerGram: 12633.66,
   kind: MetalRateKind.indiaSelling,
-  asOf: DateTime.utc(2026, 11, 23, 4),
+  asOf: DateTime(2026, 11, 23, 4),
+);
+
+/// A rate from an hour ago, so a test that saves is never "expired" or "in the
+/// future" whatever day or time zone it runs in.
+MetalRateQuote get _india => MetalRateQuote(
+  pricePerGram: 12633.66,
+  kind: MetalRateKind.indiaSelling,
+  asOf: DateTime.now().subtract(const Duration(hours: 1)),
 );
 
 Future<List<({String id, double value, DateTime date, UnitHolding? holding})>>
@@ -98,7 +107,7 @@ _pump(
 
 void main() {
   testWidgets('shows the India selling rate with its label', (tester) async {
-    await _pump(tester, investment: _inv(), quote: _india);
+    await _pump(tester, investment: _inv(), quote: _fixedIndia);
     expect(find.text('Gold today: ₹12,633.66 per gram'), findsOneWidget);
     expect(find.text('Selling rate in India · 23 Nov 2026'), findsOneWidget);
   });
@@ -110,7 +119,7 @@ void main() {
       quote: MetalRateQuote(
         pricePerGram: 1.35,
         kind: MetalRateKind.international,
-        asOf: DateTime.utc(2026, 11, 23, 4),
+        asOf: DateTime(2026, 11, 23, 4),
       ),
     );
     expect(find.text('Silver today: \$1.35 per gram'), findsOneWidget);
@@ -153,7 +162,7 @@ void main() {
         quote: MetalRateQuote(
           pricePerGram: 10768.28,
           kind: MetalRateKind.international,
-          asOf: DateTime.utc(2026, 11, 23, 4),
+          asOf: DateTime(2026, 11, 23, 4),
         ),
       );
       expect(find.text('International rate · 23 Nov 2026'), findsOneWidget);
@@ -171,7 +180,7 @@ void main() {
       quote: MetalRateQuote(
         pricePerGram: 116.1,
         kind: MetalRateKind.international,
-        asOf: DateTime.utc(2026, 11, 23, 4),
+        asOf: DateTime(2026, 11, 23, 4),
       ),
     );
     expect(find.text('Shop prices in India are usually higher.'), findsNothing);
@@ -235,6 +244,25 @@ void main() {
       expect(find.text('Current value updated'), findsOneWidget);
     },
   );
+
+  testWidgets('a rate that expired while the card was open is not saved', (
+    tester,
+  ) async {
+    final calls = await _pump(
+      tester,
+      investment: _inv(),
+      quote: MetalRateQuote(
+        pricePerGram: 12633.66,
+        kind: MetalRateKind.indiaSelling,
+        asOf: DateTime.now().subtract(const Duration(days: 4)),
+      ),
+    );
+    await tester.tap(find.text('Use as current value'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Set value'));
+    await tester.pumpAndSettle();
+    expect(calls, isEmpty);
+  });
 
   testWidgets('cancel saves nothing', (tester) async {
     final calls = await _pump(tester, investment: _inv(), quote: _india);

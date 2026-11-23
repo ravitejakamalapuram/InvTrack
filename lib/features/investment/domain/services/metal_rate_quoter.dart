@@ -76,8 +76,11 @@ class MetalRateQuoter {
 
   static bool _usable(double? v) => v != null && v.isFinite && v > 0;
 
-  /// Not older than [maxAge], and not dated in the future (a few minutes of
-  /// clock drift are allowed).
+  /// Whether a rate dated [at] can still be shown at [now]: not older than
+  /// [maxAge], and not dated in the future (a few minutes of clock drift are
+  /// allowed).
+  static bool isFresh(DateTime at, DateTime now) => _fresh(at, now);
+
   static bool _fresh(DateTime? at, DateTime now) =>
       at != null &&
       now.difference(at) <= maxAge &&
