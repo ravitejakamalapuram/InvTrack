@@ -45,6 +45,19 @@ final investmentNotifierProvider =
       InvestmentNotifier.new,
     );
 
+/// A merge wrote the merged investment but could not delete every source, so
+/// those sources still show next to it. Thrown after the merge is saved.
+class MergeSourcesNotRemovedException implements Exception {
+  const MergeSourcesNotRemovedException(this.remainingIds);
+
+  /// The sources that are still there.
+  final List<String> remainingIds;
+
+  @override
+  String toString() =>
+      'MergeSourcesNotRemovedException(${remainingIds.length} left)';
+}
+
 class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   /// Goal milestones (%) checked after a cash flow.
   static const _goalMilestones = [25.0, 50.0, 75.0, 100.0];
@@ -1115,17 +1128,54 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         rethrow;
       }
 
-      // Delete old investments
+      // Delete old investments. A failed delete must not stop the others, and
+      // must not leave the merged copy next to every source (all counted
+      // twice).
+      final notRemoved = <String>[];
+      Object? firstError;
+      StackTrace? firstStack;
       for (final id in investmentIds) {
-        // deleteInvestment also deletes the source's document records.
-        await repo.deleteInvestment(id);
+        try {
+          // deleteInvestment also deletes the source's document records.
+          await repo.deleteInvestment(id);
+        } catch (e, st) {
+          notRemoved.add(id);
+          firstError ??= e;
+          firstStack ??= st;
+          LoggerService.warn(
+            'Could not delete a merged source',
+            metadata: {'errorType': e.runtimeType.toString()},
+          );
+          continue;
+        }
         // Only a source that is really gone loses its reminders and files.
         await _deleteDocumentFiles([id]);
         await _cancelRemindersFor([id]);
       }
 
+      if (notRemoved.length == investmentIds.length) {
+        // Nothing was removed, so undoing the merge loses nothing.
+        try {
+          await repo.deleteInvestment(newInvestmentId);
+          await _deleteDocumentFiles([newInvestmentId]);
+        } catch (e) {
+          LoggerService.warn(
+            'Could not remove half-merged investment',
+            metadata: {'errorType': e.runtimeType.toString()},
+          );
+        }
+        Error.throwWithStackTrace(firstError!, firstStack!);
+      }
+
       _invalidateAll();
       state = const AsyncValue.data(null);
+      if (notRemoved.isNotEmpty) {
+        // Some sources are gone, so the merged copy is now the only home of
+        // their data and must stay. Say what is left to delete.
+        throw MergeSourcesNotRemovedException(notRemoved);
+      }
+    } on MergeSourcesNotRemovedException {
+      rethrow;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       rethrow;

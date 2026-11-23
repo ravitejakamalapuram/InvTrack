@@ -2360,6 +2360,16 @@
     }
   },
 
+  "mergeSourcesNotRemoved": "{count, plural, =1{Merged, but 1 original investment could not be deleted. Delete it yourself so it is not counted twice.} other{Merged, but {count} original investments could not be deleted. Delete them yourself so they are not counted twice.}}",
+  "@mergeSourcesNotRemoved": {
+    "description": "Shown after a merge when some of the original investments could not be deleted and still appear next to the merged one",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
   "investmentsMerged": "Investments merged into \"{name}\"",
   "@investmentsMerged": {
     "description": "Success message when investments are merged",
