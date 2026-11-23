@@ -26,6 +26,8 @@ After "Set value" a snackbar says "Current value updated". The value is saved as
 - A rupee investment shows the **India selling rate** (what a seller receives): "Selling rate in India · date".
 - Any other currency shows the **international rate**, converted with the app's live exchange rate: "International rate · date". Never a dollar price under another currency's symbol.
 - A rupee investment with no fresh India rate falls back to the international rate.
+- A rate that is not from today also shows "Not updated today" under its date, so an old price is never taken for today's.
+- A rupee investment on the international rate also shows "Shop prices in India are usually higher.", because the button would set a value below what Indian shops quote.
 - No fresh rate (older than 3 days, missing, or no exchange rate) shows nothing: no card, no button.
 
 ## Rules

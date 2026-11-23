@@ -4196,6 +4196,14 @@
       "date": {"type": "String", "example": "23 Nov 2026"}
     }
   },
+  "metalRateNotToday": "Not updated today",
+  "@metalRateNotToday": {
+    "description": "Small hint under today's metal rate when the stored rate is from an earlier day because the daily update did not run or failed"
+  },
+  "metalRateShopHigher": "Shop prices in India are usually higher.",
+  "@metalRateShopHigher": {
+    "description": "Small hint under the international metal rate on a rupee investment: Indian shop prices include duty and tax, so they are higher than this rate"
+  },
   "metalRateUse": "Use as current value",
   "@metalRateUse": {
     "description": "Button under today's metal rate that sets the investment's current value to weight held times today's rate, after a confirmation"

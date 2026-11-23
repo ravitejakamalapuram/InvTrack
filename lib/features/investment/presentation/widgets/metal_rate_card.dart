@@ -61,6 +61,11 @@ class MetalRateCard extends ConsumerWidget {
           style: AppTypography.bodyMedium,
         ),
         Text(source, style: AppTypography.caption),
+        if (!_isToday(quote.asOf))
+          Text(l10n.metalRateNotToday, style: AppTypography.caption),
+        if (quote.kind == MetalRateKind.international &&
+            investment.currency.trim().toUpperCase() == 'INR')
+          Text(l10n.metalRateShopHigher, style: AppTypography.caption),
         if (canUse)
           Align(
             alignment: AlignmentDirectional.centerStart,
@@ -71,6 +76,15 @@ class MetalRateCard extends ConsumerWidget {
           ),
       ],
     );
+  }
+
+  /// Whether [at] falls on today's date on this device.
+  static bool _isToday(DateTime at) {
+    final local = at.toLocal();
+    final now = DateTime.now();
+    return local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day;
   }
 
   Future<void> _confirmAndSave(

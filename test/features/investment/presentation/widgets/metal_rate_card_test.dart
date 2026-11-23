@@ -117,6 +117,66 @@ void main() {
     expect(find.text('International rate · 23 Nov 2026'), findsOneWidget);
   });
 
+  testWidgets('says so when the rate is not from today', (tester) async {
+    final old = DateTime.now().subtract(const Duration(days: 2));
+    await _pump(
+      tester,
+      investment: _inv(),
+      quote: MetalRateQuote(
+        pricePerGram: 12633.66,
+        kind: MetalRateKind.indiaSelling,
+        asOf: old,
+      ),
+    );
+    expect(find.text('Not updated today'), findsOneWidget);
+  });
+
+  testWidgets('says nothing extra when the rate is from today', (tester) async {
+    await _pump(
+      tester,
+      investment: _inv(),
+      quote: MetalRateQuote(
+        pricePerGram: 12633.66,
+        kind: MetalRateKind.indiaSelling,
+        asOf: DateTime.now(),
+      ),
+    );
+    expect(find.text('Not updated today'), findsNothing);
+  });
+
+  testWidgets(
+    'a rupee investment on the international rate is told shop prices are higher',
+    (tester) async {
+      await _pump(
+        tester,
+        investment: _inv(),
+        quote: MetalRateQuote(
+          pricePerGram: 10768.28,
+          kind: MetalRateKind.international,
+          asOf: DateTime.utc(2026, 11, 23, 4),
+        ),
+      );
+      expect(find.text('International rate · 23 Nov 2026'), findsOneWidget);
+      expect(
+        find.text('Shop prices in India are usually higher.'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('other currencies get no India note', (tester) async {
+    await _pump(
+      tester,
+      investment: _inv(currency: 'USD'),
+      quote: MetalRateQuote(
+        pricePerGram: 116.1,
+        kind: MetalRateKind.international,
+        asOf: DateTime.utc(2026, 11, 23, 4),
+      ),
+    );
+    expect(find.text('Shop prices in India are usually higher.'), findsNothing);
+  });
+
   testWidgets('shows nothing when there is no rate', (tester) async {
     await _pump(tester, investment: _inv(), quote: null);
     expect(find.textContaining('today'), findsNothing);
