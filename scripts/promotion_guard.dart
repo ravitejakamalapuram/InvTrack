@@ -2,9 +2,13 @@
 //
 // A new build reaches production at no more than 5% (the auto-release staged
 // fraction). It goes above 5%, up to and including 100%, only after it has
-// been at a partial production rollout for at least 48 hours and Crashlytics
-// shows at least 99.5% crash-free users. Any other production rollout change
-// (for example resuming a halted rollout at 5%) needs the crash-free figure.
+// been at a partial production rollout for at least 48 hours and has at
+// least 99.5% crash-free users. Any other production rollout change (for
+// example resuming a halted rollout at 5%) needs the crash-free figure too.
+// Nobody types that figure: this guard outputs the minimum, and
+// release-platform's promote job reads crash-free users for the in-progress
+// release from Play (Android vitals) and refuses below it, or with missing or
+// thin data, before it changes anything (#848).
 // The guard only allows a first attempt of a run dispatched from main, because
 // a re-run reuses the inputs and the guard result of the original run. Halting
 // is never blocked.
@@ -19,8 +23,7 @@
 // Run by the workflow as `dart run scripts/promotion_guard.dart` with these
 // environment variables: ACTION, TO_TRACK, USER_FRACTION, ROLLOUT_RECORDS
 // (JSON from `gh api repos/$GITHUB_REPOSITORY/deployments?environment=
-// play-production&per_page=100`) and CRASH_FREE_USERS (percent). GitHub
-// Actions sets GITHUB_REF, GITHUB_RUN_ATTEMPT and GITHUB_OUTPUT.
+// play-production&per_page=100`). GitHub Actions sets GITHUB_REF, GITHUB_RUN_ATTEMPT and GITHUB_OUTPUT.
 import 'dart:convert';
 import 'dart:io';
 
@@ -28,7 +31,7 @@ import 'dart:io';
 /// above [stagedRolloutFraction].
 const Duration minimumSoak = Duration(hours: 48);
 
-/// Minimum Crashlytics crash-free users, in percent, to change a production
+/// Minimum crash-free users (Play vitals), in percent, to change a production
 /// rollout.
 const double minimumCrashFreeUsers = 99.5;
 
@@ -65,7 +68,6 @@ String? promotionBlockReason({
   required String runAttempt,
   required List<RolloutRecord>? rolloutRecords,
   required DateTime now,
-  required String crashFreeUsers,
 }) {
   if (action == 'halt') return null;
   if (!const {'promote', 'rollout', 'complete'}.contains(action)) {
@@ -103,15 +105,6 @@ String? promotionBlockReason({
     if (reason != null) return reason;
   }
 
-  final crashFree = double.tryParse(crashFreeUsers.trim());
-  if (crashFree == null || !(crashFree >= 0 && crashFree <= 100)) {
-    return 'Enter Crashlytics crash-free users for this release as a '
-        'percentage (for example 99.7).';
-  }
-  if (crashFree < minimumCrashFreeUsers) {
-    return 'Crash-free users are $crashFree%. Widening the rollout needs at '
-        'least $minimumCrashFreeUsers%.';
-  }
   return null;
 }
 
@@ -136,6 +129,33 @@ String? _soakBlockReason({
         'h. It needs 48 h before going above 5%.';
   }
   return null;
+}
+
+/// The GITHUB_OUTPUT lines that tie the promote job's checks to the soaked
+/// release: which version codes Play must still hold, and when the soak began,
+/// so that crash data from before the soak does not count.
+String soakOutputLines(RolloutRecord latest) =>
+    'soak_version_codes=${latest.versionCodes.join(',')}\n'
+    'crash_free_since=${latest.startedAt.toUtc().toIso8601String()}\n';
+
+/// The minimum crash-free users (percent, as text) that release-platform's
+/// promote job must read from Play before this action changes the rollout,
+/// or '' when the action needs no crash check. Only an action that widens past
+/// 5% on production (a `rollout` above it, or `complete`) needs it (InvTrack
+/// #848): those are exactly the actions that need the soak, so the check always
+/// has a soak start to count from. `promote` and a rollout at 5% or less start
+/// or hold a build without crash data, and `halt` is never blocked.
+String crashFreeMinimum({
+  required String action,
+  required String toTrack,
+  required String userFraction,
+}) {
+  final widens = soakRequired(
+    action: action,
+    toTrack: toTrack,
+    userFraction: userFraction,
+  );
+  return widens ? '$minimumCrashFreeUsers' : '';
 }
 
 /// The most recently started rollout, or null when there is none.
@@ -232,11 +252,28 @@ void main() {
     runAttempt: env['GITHUB_RUN_ATTEMPT'] ?? '',
     rolloutRecords: records,
     now: DateTime.now().toUtc(),
-    crashFreeUsers: env['CRASH_FREE_USERS'] ?? '',
   );
   if (reason != null) {
     stderr.writeln('::error::$reason');
     exit(1);
+  }
+  final output = env['GITHUB_OUTPUT'];
+  final minimum = crashFreeMinimum(
+    action: action,
+    toTrack: toTrack,
+    userFraction: userFraction,
+  );
+  if (output != null && output.isNotEmpty) {
+    File(output).writeAsStringSync(
+      'min_crash_free_users=$minimum\n',
+      mode: FileMode.append,
+    );
+  }
+  if (minimum.isNotEmpty) {
+    stdout.writeln(
+      'The promote job reads crash-free users from Play and needs at least '
+      '$minimum%.',
+    );
   }
   final latest = records == null ? null : latestRolloutRecord(records);
   if (latest != null &&
@@ -245,12 +282,10 @@ void main() {
         toTrack: toTrack,
         userFraction: userFraction,
       )) {
-    final output = env['GITHUB_OUTPUT'];
     if (output != null && output.isNotEmpty) {
-      File(output).writeAsStringSync(
-        'soak_version_codes=${latest.versionCodes.join(',')}\n',
-        mode: FileMode.append,
-      );
+      File(
+        output,
+      ).writeAsStringSync(soakOutputLines(latest), mode: FileMode.append);
     }
     stdout.writeln(
       'Soak counted for version codes ${latest.versionCodes.join(', ')} '

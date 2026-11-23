@@ -22,17 +22,15 @@ on:
         description: 'Rollout fraction, e.g. 0.05 (empty = 100%). Promote to production allows at most 0.05'
         type: string
         default: '0.05'
-      crash_free_users:
-        description: 'Crashlytics crash-free users % for this release, e.g. 99.7 (needed to widen or complete a production rollout)'
-        type: string
-        default: ''
 
 permissions: {}
 
 jobs:
   # A63: `promote` to production starts at 5% or less, and no release goes above 5% without 48 h at a
-  # partial rollout and at least 99.5% crash-free users (scripts/promotion_guard.dart). Halt is never
-  # blocked. A84: the 48 h clock starts at the rollout record release-platform's promote job writes
+  # partial rollout (scripts/promotion_guard.dart). #848: every production widening above 5% (rollout or complete) also
+  # needs at least 99.5% crash-free users, which release-platform's promote job reads from Play before
+  # it changes anything; the guard only outputs that minimum. Halt is never blocked.
+  # A84: the 48 h clock starts at the rollout record release-platform's promote job writes
   # (a `play-production` deployment) after it read the staged release back from Play. With no record,
   # going above 5% is refused. The guard passes the version codes it counted the soak for to the
   # promote job, which first checks that Play still holds exactly those in progress. Only a first
@@ -46,19 +44,20 @@ jobs:
       deployments: read
     outputs:
       soak_version_codes: ${{ steps.guard.outputs.soak_version_codes }}
+      min_crash_free_users: ${{ steps.guard.outputs.min_crash_free_users }}
+      crash_free_since: ${{ steps.guard.outputs.crash_free_since }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
       - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
-      - name: Check rollout soak time and crash-free users
+      - name: Check rollout soak time
         id: guard
         env:
           GH_TOKEN: ${{ github.token }}
           ACTION: ${{ inputs.action }}
           TO_TRACK: ${{ inputs.to_track }}
           USER_FRACTION: ${{ inputs.user_fraction }}
-          CRASH_FREE_USERS: ${{ inputs.crash_free_users }}
         run: |
           ROLLOUT_RECORDS="$(gh api "repos/$GITHUB_REPOSITORY/deployments?environment=play-production&per_page=100" 2>/dev/null || true)"
           # Run outside the Flutter package so plain Dart does not try to resolve Flutter dependencies.
@@ -81,3 +80,5 @@ jobs:
       to_track: ${{ inputs.to_track }}
       user_fraction: ${{ inputs.user_fraction }}
       expect_in_progress_version_codes: ${{ needs.guard.outputs.soak_version_codes }}
+      min_crash_free_users: ${{ needs.guard.outputs.min_crash_free_users }}
+      crash_free_since: ${{ needs.guard.outputs.crash_free_since }}
