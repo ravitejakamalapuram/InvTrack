@@ -6787,6 +6787,16 @@
     "description": "Tooltip and screen-reader label of the bell icon while today's tip has not been opened yet"
   },
 
+  "expandableTextMore": "Read more",
+  "@expandableTextMore": {
+    "description": "Button under long text cut to a few lines; shows the whole text"
+  },
+
+  "expandableTextLess": "Show less",
+  "@expandableTextLess": {
+    "description": "Button under expanded long text; cuts it back to a few lines"
+  },
+
   "dailyTipDismiss": "Dismiss",
   "@dailyTipDismiss": {
     "description": "Accessibility label of the close button on the daily tip; hides it until tomorrow"

@@ -43,7 +43,10 @@ Future<ProviderContainer> _pump(
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(appBar: _Bar(), body: DailyTipCard()),
+        home: Scaffold(
+          appBar: _Bar(),
+          body: SingleChildScrollView(child: DailyTipCard()),
+        ),
       ),
     ),
   );
@@ -161,6 +164,67 @@ void main() {
     expect(
       c.read(sharedPreferencesProvider).getString(dailyTipReadDateKey),
       '2026-11-18',
+    );
+  });
+
+  testWidgets('long tips scroll in the sheet on a small screen with big text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320 * 2, 480 * 2);
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final longTips = [
+      for (var i = 0; i < 7; i++)
+        Tip(id: 't$i', title: 'Title $i', body: 'Body text ' * 40),
+    ];
+    await _pump(
+      tester,
+      pool: longTips,
+      prefs: {
+        dailyTipHistoryKey: [for (final t in longTips) t.id],
+        dailyTipSeenKey: [for (final t in longTips) t.id],
+        dailyTipTodayIdKey: 't6',
+        dailyTipTodayDateKey: '2026-11-18',
+      },
+    );
+    await tester.tap(find.byIcon(Icons.notifications_outlined));
+    await tester.pumpAndSettle();
+
+    // Inside the sheet: never taller than 90% of the screen, last tip
+    // reachable by scrolling, disclaimer pinned inside the viewport.
+    expect(tester.takeException(), isNull);
+    final sheet = find.byType(BottomSheet);
+    expect(tester.getSize(sheet).height, lessThanOrEqualTo(480 * 0.9 + 0.1));
+    final disclaimer = find.descendant(
+      of: sheet,
+      matching: find.text('Education, not investment advice.'),
+    );
+    expect(disclaimer, findsOneWidget);
+    expect(tester.getRect(disclaimer).bottom, lessThanOrEqualTo(480));
+    await tester.drag(
+      find.descendant(of: sheet, matching: find.byType(ListView)),
+      const Offset(0, -2000),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: sheet, matching: find.text('Title 0')),
+      findsOneWidget,
+    );
+    expect(tester.getRect(disclaimer).bottom, lessThanOrEqualTo(480));
+    expect(
+      find.descendant(of: sheet, matching: find.text('Read more')),
+      findsWidgets,
+    );
+
+    await tester.tap(
+      find.descendant(of: sheet, matching: find.text('Read more')).last,
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: sheet, matching: find.text('Show less')),
+      findsOneWidget,
     );
   });
 }
