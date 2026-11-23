@@ -163,4 +163,41 @@ void main() {
       '2026-11-18',
     );
   });
+
+  testWidgets('long tips scroll in the sheet on a small screen with big text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320 * 2, 480 * 2);
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    final longTips = [
+      for (var i = 0; i < 7; i++)
+        Tip(id: 't$i', title: 'Title $i', body: 'Body text ' * 40),
+    ];
+    await _pump(
+      tester,
+      pool: longTips,
+      prefs: {
+        dailyTipHistoryKey: [for (final t in longTips) t.id],
+        dailyTipSeenKey: [for (final t in longTips) t.id],
+        dailyTipTodayIdKey: 't6',
+        dailyTipTodayDateKey: '2026-11-18',
+      },
+    );
+    await tester.tap(find.byIcon(Icons.notifications_outlined));
+    await tester.pumpAndSettle();
+
+    // Never taller than the screen, last tip reachable by scrolling,
+    // disclaimer pinned and visible.
+    expect(tester.takeException(), isNull);
+    expect(find.text('Education, not investment advice.'), findsWidgets);
+    await tester.drag(find.byType(ListView).last, const Offset(0, -2000));
+    await tester.pumpAndSettle();
+    expect(find.text('Title 0'), findsOneWidget);
+    expect(find.text('Read more'), findsWidgets);
+
+    await tester.tap(find.text('Read more').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Show less'), findsOneWidget);
+  });
 }

@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
+import 'package:inv_tracker/core/widgets/expandable_text.dart';
 import 'package:inv_tracker/features/tips/domain/tip.dart';
 import 'package:inv_tracker/features/tips/presentation/providers/daily_tip_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -74,7 +75,7 @@ class DailyTipCard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(tip.body, style: theme.textTheme.bodySmall),
+                ExpandableText(tip.body),
                 const SizedBox(height: 6),
                 Opacity(
                   opacity: 0.7,
