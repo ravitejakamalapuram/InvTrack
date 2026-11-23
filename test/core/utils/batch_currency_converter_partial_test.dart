@@ -73,9 +73,22 @@ void main() {
       baseCurrency: 'INR',
     );
 
+    // No rate and no cached rate: the EUR flow is left out, never summed
+    // under the base-currency symbol (CLAUDE.md money rule 2).
+    expect(out.map((cf) => cf.id), unorderedEquals(['usd', 'inr']));
     _expectFlow(out, 'usd', 'INR', 8300);
-    _expectFlow(out, 'eur', 'EUR', 100);
     _expectFlow(out, 'inr', 'INR', 500);
+  });
+
+  test('useLastKnown with no cached rate flags the result approximate',
+      () async {
+    final out = await converter.batchConvertWithApproximation(
+      cashFlows: flows,
+      baseCurrency: 'INR',
+    );
+
+    expect(out.isApproximate, isTrue);
+    expect(out.cashFlows.map((cf) => cf.id), unorderedEquals(['usd', 'inr']));
   });
 
   test('useOriginal keeps the failed flow as it was', () async {
@@ -105,8 +118,8 @@ void main() {
       _OnlyUsdService(cacheThrows: true),
     ).batchConvert(cashFlows: flows, baseCurrency: 'INR');
 
+    expect(out.map((cf) => cf.id), unorderedEquals(['usd', 'inr']));
     _expectFlow(out, 'usd', 'INR', 8300);
-    _expectFlow(out, 'eur', 'EUR', 100);
   });
 
   test('skipTransaction drops only the flow whose rate failed', () async {

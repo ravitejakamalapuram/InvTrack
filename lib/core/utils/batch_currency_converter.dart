@@ -226,10 +226,9 @@ class BatchCurrencyConverter {
             isApproximate: lastKnownRate.isApproximate,
           );
         }
-        return (
-          cashFlow: cashFlow,
-          isApproximate: false,
-        ); // Fallback to original
+        // No rate at all: leave the flow out rather than sum its amount under
+        // the base-currency symbol, and say the totals are incomplete.
+        return (cashFlow: null, isApproximate: true);
 
       case ConversionFallbackStrategy.throwError:
         throw CurrencyConversionException(
@@ -237,7 +236,7 @@ class BatchCurrencyConverter {
         );
 
       case ConversionFallbackStrategy.skipTransaction:
-        return (cashFlow: null, isApproximate: false); // Skip this cash flow
+        return (cashFlow: null, isApproximate: true); // Left out
     }
   }
 
