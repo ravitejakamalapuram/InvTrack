@@ -45,6 +45,19 @@ final investmentNotifierProvider =
       InvestmentNotifier.new,
     );
 
+/// A merge wrote the merged investment but could not delete every source, so
+/// those sources still show next to it. Thrown after the merge is saved.
+class MergeSourcesNotRemovedException implements Exception {
+  const MergeSourcesNotRemovedException(this.remainingIds);
+
+  /// The sources that are still there.
+  final List<String> remainingIds;
+
+  @override
+  String toString() =>
+      'MergeSourcesNotRemovedException(${remainingIds.length} left)';
+}
+
 class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   /// Goal milestones (%) checked after a cash flow.
   static const _goalMilestones = [25.0, 50.0, 75.0, 100.0];
@@ -1115,10 +1128,22 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         rethrow;
       }
 
-      // Delete old investments
+      // Delete old investments. A failed delete must not stop the others, and
+      // must not leave the merged copy next to every source (all counted
+      // twice).
+      final notRemoved = <String>[];
       for (final id in investmentIds) {
-        // deleteInvestment also deletes the source's document records.
-        await repo.deleteInvestment(id);
+        try {
+          // deleteInvestment also deletes the source's document records.
+          await repo.deleteInvestment(id);
+        } catch (e) {
+          notRemoved.add(id);
+          LoggerService.warn(
+            'Could not delete a merged source',
+            metadata: {'errorType': e.runtimeType.toString()},
+          );
+          continue;
+        }
         // Only a source that is really gone loses its reminders and files.
         await _deleteDocumentFiles([id]);
         await _cancelRemindersFor([id]);
@@ -1126,6 +1151,14 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
       _invalidateAll();
       state = const AsyncValue.data(null);
+      if (notRemoved.isNotEmpty) {
+        // A failed delete may have removed some of a source's cash flows
+        // before failing (it commits in batches), so the merged copy may be
+        // the only complete one and must stay. Say what is left to delete.
+        throw MergeSourcesNotRemovedException(notRemoved);
+      }
+    } on MergeSourcesNotRemovedException {
+      rethrow;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       rethrow;

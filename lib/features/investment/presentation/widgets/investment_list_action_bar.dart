@@ -133,16 +133,21 @@ class InvestmentListActionBar extends ConsumerWidget {
 
     if (result != null && result.name.isNotEmpty && context.mounted) {
       final notifier = ref.read(investmentNotifierProvider.notifier);
-      await notifier.mergeInvestments(
-        listState.selectedIds.toList(),
-        result.name,
-        type: result.type,
-      );
+      var message = l10n.investmentsMerged(result.name);
+      try {
+        await notifier.mergeInvestments(
+          listState.selectedIds.toList(),
+          result.name,
+          type: result.type,
+        );
+      } on MergeSourcesNotRemovedException catch (e) {
+        message = l10n.mergeSourcesNotRemoved(e.remainingIds.length);
+      }
       ref.read(investmentListStateProvider.notifier).clearSelection();
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.investmentsMerged(result.name))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
       }
     }
   }
