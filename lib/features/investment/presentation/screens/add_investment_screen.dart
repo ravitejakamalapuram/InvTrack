@@ -583,6 +583,11 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       _amountController.text,
       currencyCode: _selectedCurrency,
     ).amount;
+    // The row's validator may have seen an older amount; never drop a weight.
+    if (amount == null && _weightForSave() != null) {
+      AppFeedback.showError(context, l10n.weightNeedsAmount);
+      return;
+    }
 
     setState(() => _isLoading = true);
     HapticFeedback.lightImpact();
