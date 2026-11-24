@@ -33,8 +33,10 @@ import 'package:inv_tracker/features/investment/presentation/widgets/maturity_re
 import 'package:inv_tracker/features/investment/presentation/widgets/add_investment_keys.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/amount_invested_field.dart';
 import 'package:inv_tracker/features/investment/domain/entities/metal.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/custom_type_field.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/metal_choice.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/weight_entry_row.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/first_investment_form_view.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/start_date_field.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/template_selector.dart';
@@ -116,6 +118,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   /// same id and replaces the first attempt instead of adding a second one.
   final String _investmentId = const Uuid().v4();
   final _amountController = TextEditingController();
+  // Weight of metal bought (Precious metals only), saved with the amount.
+  final _weightController = TextEditingController();
+  QuantityUnit _weightUnit = QuantityUnit.gram;
   final _amountFocusNode = FocusNode();
   bool _moreDetailsOpen = false;
 
@@ -360,6 +365,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     _expectedRateController.dispose();
     _tenureController.dispose();
     _amountController.dispose();
+    _weightController.dispose();
     _amountFocusNode.dispose();
     _nameFocusNode.dispose();
     _notesFocusNode.dispose();
@@ -409,6 +415,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   /// other type.
   Metal? _metalForSave() =>
       _selectedType == InvestmentType.gold ? _metal : null;
+
+  /// The weight typed, for Precious metals only: a weight left in the field
+  /// after the type changed is not sent.
+  double? _weightForSave() => _selectedType == InvestmentType.gold
+      ? double.tryParse(_weightController.text.trim())
+      : null;
 
   /// Tracks which of the optional fields a new investment was saved with. Only
   /// flags go out, never what was typed.
@@ -609,6 +621,10 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
             metal: _metalForSave(),
             id: _investmentId,
             initialAmount: amount,
+            initialQuantity: amount == null ? null : _weightForSave(),
+            initialQuantityUnit: amount == null || _weightForSave() == null
+                ? null
+                : _weightUnit,
             onWriteResult: (value) => confirmed = value,
           );
     } catch (e, st) {
@@ -734,6 +750,20 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         // The start date's helper depends on whether an amount is typed.
         onChanged: (_) => setState(() {}),
       ),
+      weight: _selectedType == InvestmentType.gold
+          ? WeightEntryRow(
+              controller: _weightController,
+              unit: _weightUnit,
+              onUnitChanged: (unit) => setState(() => _weightUnit = unit),
+              onChanged: (_) => setState(() {}),
+              currency: _selectedCurrency,
+              amount: InvestmentAmountInput.parse(
+                _amountController.text,
+                currencyCode: _selectedCurrency,
+              ).amount,
+              amountRequired: true,
+            )
+          : null,
       startDate: StartDateField(
         date: _startDate!,
         helper: startDateHelper,

@@ -70,7 +70,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   /// if [initialAmount] is given and is not a positive amount.
   ///
   /// With [initialAmount] the investment and its first cash flow, an INVEST of
-  /// that amount dated [startDate] (today when null), are saved in one atomic
+  /// that amount (and, if given, the weight [initialQuantity] in
+  /// [initialQuantityUnit]) dated [startDate] (today when null), are saved in one atomic
   /// write. A caller that may retry passes the same [id] each time, so the
   /// retry replaces the first write instead of adding a duplicate; [id] is
   /// minted when null. The flow's id is always derived from the investment's,
@@ -110,6 +111,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     Metal? metal,
     String? id,
     double? initialAmount,
+    // The weight bought, kept on the first flow with its unit. Needs an
+    // [initialAmount]: a weight alone has no flow to sit on.
+    double? initialQuantity,
+    QuantityUnit? initialQuantityUnit,
     void Function(bool confirmed)? onWriteResult,
   }) async {
     // Input validation
@@ -123,6 +128,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     // The first flow's amount and day, checked before anything is written.
     double? firstAmount;
     DateTime? firstDay;
+    _validateWeight(initialQuantity, initialQuantityUnit);
+    if (initialQuantity != null && initialAmount == null) {
+      throw ValidationException.invalidAmount(0);
+    }
     if (initialAmount != null) {
       _validateAmount(initialAmount);
       firstAmount = MoneyPrecision.round(
@@ -183,6 +192,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
               date: firstDay!,
               createdAt: DateTime.now(),
               currency: investment.currency,
+              quantity: initialQuantity,
+              quantityUnit: initialQuantityUnit,
             );
 
       // Track performance of investment creation
