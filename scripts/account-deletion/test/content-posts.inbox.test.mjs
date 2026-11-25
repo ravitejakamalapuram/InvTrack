@@ -99,3 +99,23 @@ test('markPosted records where and when a post went out, keeping the rest of the
     set: { status: 'posted', data: { app: 'InvTrack', icon: '📈', body: 'B', posted: { telegram: 'https://t.me/c/9' }, postedAt: '2026-11-17T03:31:00.000Z' } },
   });
 });
+
+test('markPosted adds the post as already posted when the inbox has never seen it', async () => {
+  const calls = [];
+  const f = async (url, init) => {
+    const b = JSON.parse(init.body); calls.push(b);
+    const out = b.action === 'get' ? { ok: false, error: { code: 'not_found', message: 'no item' } } : { ok: true, item: {} };
+    return { ok: true, json: async () => out };
+  };
+  await markPosted('file-post', { url: 'https://t.me/c/9', at: '2026-11-25T13:24:00.000Z', title: 'T', body: 'Body text' }, opts(f));
+  assert.deepEqual(calls[1], {
+    action: 'add', token: 'secret-tok', id: 'file-post', type: 'telegram-post', status: 'posted', title: 'T', summary: 'Body text',
+    data: { app: 'InvTrack', icon: '📈', body: 'Body text', posted: { telegram: 'https://t.me/c/9' }, postedAt: '2026-11-25T13:24:00.000Z' },
+  });
+});
+
+test('markPosted still fails on other inbox errors, and without a title there is nothing to add', async () => {
+  const f = (code) => async () => ({ ok: true, json: async () => ({ ok: false, error: { code, message: 'x' } }) });
+  await assert.rejects(markPosted('x', { url: 'https://t.me/c/9', at: 'now', title: 'T', body: 'B' }, opts(f('unauthorized'))), { code: 'inbox-unauthorized' });
+  await assert.rejects(markPosted('x', { url: 'https://t.me/c/9', at: 'now' }, opts(f('not_found'))), { code: 'inbox-not_found' });
+});
