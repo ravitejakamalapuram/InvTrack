@@ -104,7 +104,7 @@ async function main() {
       if (!dryRun && process.env.INBOX_URL && process.env.INBOX_TOKEN) {
         // The post is out. Telling the inbox is for its Pipeline page only, so a failure here is a warning.
         try {
-          await markPosted(r.postId, { url: `${TELEGRAM_CHANNEL_URL}/${r.messageId}`, at: new Date().toISOString() },
+          await markPosted(r.postId, { url: `${TELEGRAM_CHANNEL_URL}/${r.messageId}`, at: new Date().toISOString(), title: r.title, body: r.body },
             { url: process.env.INBOX_URL, token: process.env.INBOX_TOKEN });
         } catch (e) {
           console.log(`::warning::inbox not updated (${e.code ?? 'error'})`);

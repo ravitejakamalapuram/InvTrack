@@ -59,9 +59,21 @@ export async function fillSummaries(opts) {
   return n;
 }
 
-/** Tells the inbox a post went out, so its Pipeline shows it as Posted. Keeps the rest of the item's data. */
-export async function markPosted(id, { url, at }, opts) {
-  const { item } = await call({ action: 'get', id }, opts);
+/**
+ * Tells the inbox a post went out, so its Text posts page shows it as Posted. Keeps the rest of the item's data.
+ * Posts that came from content/posts files were never in the inbox: with a title and body they are added as already posted.
+ */
+export async function markPosted(id, { url, at, title, body }, opts) {
+  let item;
+  try {
+    ({ item } = await call({ action: 'get', id }, opts));
+  } catch (e) {
+    if (e.code !== 'inbox-not_found' || !title?.trim()) throw e;
+    return call({
+      action: 'add', id, type: POST_TYPE, status: 'posted', title, ...(body ? { summary: body } : {}),
+      data: { app: APP, icon: '📈', ...(body ? { body } : {}), posted: { telegram: url }, postedAt: at },
+    }, opts);
+  }
   const data = { ...(item.data && typeof item.data === 'object' ? item.data : {}), posted: { telegram: url }, postedAt: at };
   return call({ action: 'update', id, ifVersion: item.version, set: { status: 'posted', data } }, opts);
 }
