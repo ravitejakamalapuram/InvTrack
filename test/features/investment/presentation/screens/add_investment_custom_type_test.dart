@@ -7,6 +7,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/domain/entities/metal.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
@@ -54,6 +55,8 @@ class _RecordingNotifier extends InvestmentNotifier {
     Metal? metal,
     String? id,
     double? initialAmount,
+    double? initialQuantity,
+    QuantityUnit? initialQuantityUnit,
     void Function(bool confirmed)? onWriteResult,
   }) async {
     adds.add({'name': name, 'type': type, 'customTypeLabel': customTypeLabel});

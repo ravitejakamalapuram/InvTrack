@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/theme/app_theme.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/metal.dart';
+import 'package:inv_tracker/features/investment/domain/entities/unit_holding.dart';
 import 'package:inv_tracker/features/investment/domain/models/investment_template.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
@@ -43,6 +44,8 @@ class AddCall {
     required this.metal,
     required this.id,
     required this.initialAmount,
+    required this.initialQuantity,
+    required this.initialQuantityUnit,
     required this.reportsWriteResult,
   });
 
@@ -64,6 +67,8 @@ class AddCall {
   final Metal? metal;
   final String? id;
   final double? initialAmount;
+  final double? initialQuantity;
+  final QuantityUnit? initialQuantityUnit;
 
   /// The form passed an `onWriteResult` callback.
   final bool reportsWriteResult;
@@ -107,6 +112,8 @@ class RecordingInvestmentNotifier extends InvestmentNotifier {
     Metal? metal,
     String? id,
     double? initialAmount,
+    double? initialQuantity,
+    QuantityUnit? initialQuantityUnit,
     void Function(bool confirmed)? onWriteResult,
   }) async {
     adds.add(
@@ -129,6 +136,8 @@ class RecordingInvestmentNotifier extends InvestmentNotifier {
         metal: metal,
         id: id,
         initialAmount: initialAmount,
+        initialQuantity: initialQuantity,
+        initialQuantityUnit: initialQuantityUnit,
         reportsWriteResult: onWriteResult != null,
       ),
     );

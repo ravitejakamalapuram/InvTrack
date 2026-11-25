@@ -29,6 +29,7 @@ class FirstInvestmentFormView extends StatelessWidget {
     this.customType,
     required this.name,
     required this.amount,
+    this.weight,
     required this.startDate,
     required this.moreDetails,
     required this.submitLabel,
@@ -45,6 +46,9 @@ class FirstInvestmentFormView extends StatelessWidget {
   final Widget? customType;
   final Widget name;
   final Widget amount;
+
+  /// The optional weight of metal bought, under the amount (Precious metals).
+  final Widget? weight;
   final Widget startDate;
   final Widget moreDetails;
   final String submitLabel;
@@ -123,6 +127,7 @@ class FirstInvestmentFormView extends StatelessWidget {
                     gap,
                     amount,
                     gap,
+                    if (weight != null) ...[weight!, gap],
                     startDate,
                     gap,
                     moreDetails,
