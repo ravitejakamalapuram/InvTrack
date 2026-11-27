@@ -8,8 +8,12 @@ import { findInactiveGuests } from '../sweep.mjs';
 
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = new Date('2026-11-27T00:00:00Z');
-// Firebase returns these dates as UTC strings, to the second.
+// firebase-admin gives these dates as UTC strings, to the second (or null / 'Invalid Date', see the last group).
 const ago = (days) => new Date(NOW.getTime() - days * DAY).toUTCString();
+// `days` days and `seconds` seconds before NOW; a negative `seconds` is that much less than `days` days.
+const agoBy = (days, seconds) => new Date(NOW.getTime() - days * DAY - seconds * 1000).toUTCString();
+// In the future: a device clock set wrong can write a sign-in time ahead of the server's.
+const ahead = (days) => ago(-days);
 
 function user(uid, opts = {}) {
   const { providers = [] } = opts;
@@ -51,6 +55,15 @@ describe('findInactiveGuests: the day boundary', () => {
     assert.deepEqual(await sweep(guests), ['day181']);
   });
 
+  it('keeps a guest at exactly 180 days and one second short of it, and returns it one second past', async () => {
+    const guests = [
+      user('short', { created: agoBy(180, -1) }),
+      user('exact', { created: agoBy(180, 0) }),
+      user('past', { created: agoBy(180, 1) }),
+    ];
+    assert.deepEqual(await sweep(guests), ['past']);
+  });
+
   it('uses the number of days it is given', async () => {
     const guests = [user('day100', { created: ago(100) })];
     assert.deepEqual(await sweep(guests, 30), ['day100']);
@@ -88,6 +101,8 @@ describe('findInactiveGuests: dates that cannot be read', () => {
     ['undefined', undefined],
     ['an invalid string', 'not a date'],
     ['an empty string', ''],
+    // firebase-admin 13.10.0 gives this literal string for a lastRefreshTime it cannot parse.
+    ['the string "Invalid Date"', 'Invalid Date'],
   ];
   for (const [label, value] of unreadable) {
     it(`keeps a guest whose three dates are all ${label}`, async () => {
@@ -107,10 +122,47 @@ describe('findInactiveGuests: dates that cannot be read', () => {
   it('keeps a guest when one date is present but cannot be parsed, even if another is old', async () => {
     assert.deepEqual(await sweep([user('g', { created: ago(400), refreshed: 'not a date' })]), []);
     assert.deepEqual(await sweep([user('g', { created: 'not a date', signedIn: ago(400) })]), []);
+    assert.deepEqual(await sweep([user('g', { created: ago(400), refreshed: 'Invalid Date' })]), []);
+  });
+
+  it('keeps a guest when a date is an empty string, even if another is old', async () => {
+    assert.deepEqual(await sweep([user('g', { created: ago(400), refreshed: '' })]), []);
+    assert.deepEqual(await sweep([user('g', { created: ago(400), signedIn: '' })]), []);
+    assert.deepEqual(await sweep([user('g', { created: '', signedIn: ago(400) })]), []);
+  });
+
+  // A real account always has a creation time. firebase-admin turns an unparseable createdAt into null while
+  // lastLoginAt stays readable, so a missing creation time means the record is wrong, not that the guest is idle.
+  for (const [label, value] of [['null', null], ['undefined', undefined]]) {
+    it(`keeps a guest whose creation time is ${label}, even next to an old valid sign-in or refresh`, async () => {
+      assert.deepEqual(await sweep([user('g', { created: value, signedIn: ago(400) })]), []);
+      assert.deepEqual(await sweep([user('g', { created: value, refreshed: ago(400) })]), []);
+      assert.deepEqual(await sweep([user('g', { created: value, signedIn: ago(400), refreshed: ago(500) })]), []);
+    });
+  }
+
+  it('keeps a guest whose creation time is "Invalid Date", even next to an old valid sign-in', async () => {
+    assert.deepEqual(await sweep([user('g', { created: 'Invalid Date', signedIn: ago(400) })]), []);
   });
 
   it('does not treat a missing date as unreadable when another date is readable', async () => {
     assert.deepEqual(await sweep([user('g', { created: ago(200), signedIn: null, refreshed: undefined })]), ['g']);
+  });
+});
+
+describe('findInactiveGuests: dates in the future', () => {
+  it('keeps a guest whose newest date is ahead of now, however far ahead', async () => {
+    const guests = [
+      user('tomorrow', { created: ago(400), signedIn: ahead(1) }),
+      user('farAhead', { created: ago(400), signedIn: ahead(400) }),
+      user('createdAhead', { created: ahead(400) }),
+    ];
+    assert.deepEqual(await sweep(guests), []);
+  });
+
+  it('still returns an old guest next to one with a future date', async () => {
+    const guests = [user('ahead', { created: ahead(400) }), user('old', { created: ago(400) })];
+    assert.deepEqual(await sweep(guests), ['old']);
   });
 });
 
