@@ -87,7 +87,7 @@ Tickets are GitHub issues labelled `review-2026-10` and titled `[Axx] …`. The 
 - 2026-10-03: records saved without a currency are stamped once, after the user confirms which currency they are in (A03-F1).
 - 2026-10-10: an open investment that has returned its cost and has no current value keeps its figures, labelled “so far” (#954).
 - 2026-10-11: CodeRabbit is skipped for docs-only and test-only PRs, and under `lib/` is used only for risky PRs (see the review steps above).
-- Plan defaults that hold until the founder says otherwise: Premium is built from new features only, and nothing free today becomes paid (A58); the dormant ads SDK is removed (A34, A57); Income Guardian is hidden until something generates expected payouts (A42).
+- Plan defaults that hold until the founder says otherwise: Premium is built from new features only, and nothing free today becomes paid (A58); ads stay and are being built as consent-based ads (owner decision, 2026-11-27: A34 "remove the ads SDK" is dropped; see #1166); Income Guardian is hidden until something generates expected payouts (A42).
 - Account deletion builds on the existing pipeline: `deletionRequests` rules (APP-331), the processing job in `scripts/account-deletion` (APP-332) and in-app requests (APP-334). Extend that work; don't replace it.
 
 ## Play store assets
