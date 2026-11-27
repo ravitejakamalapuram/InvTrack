@@ -40,7 +40,7 @@ No uid leaves the `run` job: not as a job output, not in a step `env:`, not in t
 
 ## Tests
 
-CI only (`deletion-job-tests` workflow): `npm ci && npm run test:emulator`, which runs the rules tests, `test/job.test.mjs`, `test/ga4.test.mjs` and `test/workflow.test.mjs` against the Firestore + Auth emulators (`--test-concurrency=1`, the files share one emulator). `test/ga4.test.mjs` and `test/workflow.test.mjs` need no emulator: `node --test test/ga4.test.mjs`.
+CI only (`deletion-job-tests` workflow): `npm ci && npm run test:emulator`, which runs the rules tests, `test/job.test.mjs`, `test/sweep.test.mjs`, `test/ga4.test.mjs` and `test/workflow.test.mjs` against the Firestore + Auth emulators (`--test-concurrency=1`, the files share one emulator). `test/sweep.test.mjs` (the guest sweep: day boundary, which timestamp counts as activity, linked accounts never swept, paging), `test/ga4.test.mjs` and `test/workflow.test.mjs` need no emulator: `node --test test/sweep.test.mjs`.
 
 ## Credentials (keyless)
 
@@ -73,4 +73,4 @@ How the workflow behaves:
 
 ## Not included (follow-ups)
 
-- Purging `deletionAudit` entries after 12 months.
+- Nothing in the job itself. What is left is the founder's: setting the repo variable `ACCOUNT_DELETION_SWEEP_GUESTS_DAYS` (step 4 under "Turning it on"; the guest sweep is off until then), and the hosted privacy policy and delete page (`ravitejakamalapuram.github.io`), which do not yet state the 180-day guest period that the app's policy, FAQ and guest notice state.
