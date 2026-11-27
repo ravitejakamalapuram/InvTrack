@@ -73,4 +73,4 @@ How the workflow behaves:
 
 ## Not included (follow-ups)
 
-- Nothing in the job itself. What is left is the founder's: the repo variables and the first dry run under "Turning it on", and the hosted privacy policy and delete page (`ravitejakamalapuram.github.io`), which do not yet state the 180-day guest period that the app's policy, FAQ and guest notice state.
+- Nothing in the job itself. What is left is the founder's: setting the repo variable `ACCOUNT_DELETION_SWEEP_GUESTS_DAYS` (step 4 under "Turning it on"; the guest sweep is off until then), and the hosted privacy policy and delete page (`ravitejakamalapuram.github.io`), which do not yet state the 180-day guest period that the app's policy, FAQ and guest notice state.
