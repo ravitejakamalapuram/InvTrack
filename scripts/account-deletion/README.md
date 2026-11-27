@@ -6,7 +6,7 @@ Server-side deletion of InvTrack account data (Firestore `users/{uid}` tree + Fi
 
 1. **Load queue**: `deletionRequests/{uid}` older than 24 h (the withdrawal window). Younger requests are only reported. A request is written either by the app (`source: 'app'`, APP-334) or by the APP-333 web page after a Google sign-in (`source: 'web'`); both are the same document and either can withdraw it by deleting it.
 2. **Orphan sweep**: uids from `collection('users').listDocuments()` (the parent doc is never written, so `.get()` would be empty) that `auth.getUsers()` reports as not found.
-3. **Guest sweep** (off unless `SWEEP_INACTIVE_GUESTS=<days>`, workflow input `sweep_inactive_guests_days`): Auth users with no linked provider and no activity for that many days. On the schedule the number comes from the repo variable `ACCOUNT_DELETION_SWEEP_GUESTS_DAYS` (unset or 0 = off; the app's privacy policy, FAQ and guest notice say 180 days). A manual run uses its input.
+3. **Guest sweep** (off unless `SWEEP_INACTIVE_GUESTS=<days>`, workflow input `sweep_inactive_guests_days`): Auth users with no linked provider and no activity for that many days (activity is the newest of the last refresh, last sign-in and creation time; a guest whose dates cannot be read is kept, never swept). On the schedule the number comes from the repo variable `ACCOUNT_DELETION_SWEEP_GUESTS_DAYS` (unset or 0 = off; the app's privacy policy, FAQ and guest notice say 180 days). A manual run uses its input.
 4. **Cap**: more than `max_per_run` (25) candidates and no `force` -> nothing is deleted, `deletionRuns/{runId}` gets `refused: true`, exit 2.
 5. **Per uid**: `recursiveDelete(users/{uid})` -> `auth.deleteUser` -> Google Analytics deletion request (live mode only, see below) -> `verify.mjs` -> `deletionAudit/{runId}-{sha256(uid)[:16]}` (the run id, the hash and the Analytics outcome; no raw uid, no email) -> delete the request **last**. A crash, a failed verify or a failed Analytics request leaves the request for the next run.
 6. **Alert**: a request still pending after 3 days fails the run (the APP-333 web page, `https://ravitejakamalapuram.github.io/delete/invtrack.html`, promises 7 days).
@@ -40,7 +40,7 @@ No uid leaves the `run` job: not as a job output, not in a step `env:`, not in t
 
 ## Tests
 
-CI only (`deletion-job-tests` workflow): `npm ci && npm run test:emulator`, which runs the rules tests, `test/job.test.mjs`, `test/sweep.test.mjs`, `test/ga4.test.mjs` and `test/workflow.test.mjs` against the Firestore + Auth emulators (`--test-concurrency=1`, the files share one emulator). `test/sweep.test.mjs` (the guest sweep: day boundary, which timestamp counts as activity, linked accounts never swept, paging), `test/ga4.test.mjs` and `test/workflow.test.mjs` need no emulator: `node --test test/sweep.test.mjs`.
+CI only (`deletion-job-tests` workflow): `npm ci && npm run test:emulator`, which runs the rules tests, `test/job.test.mjs`, `test/sweep.test.mjs`, `test/ga4.test.mjs` and `test/workflow.test.mjs` against the Firestore + Auth emulators (`--test-concurrency=1`, the files share one emulator). `test/sweep.test.mjs` (the guest sweep: day boundary, which timestamp counts as activity, unreadable dates kept, linked accounts never swept, paging), `test/ga4.test.mjs` and `test/workflow.test.mjs` need no emulator: `node --test test/sweep.test.mjs`.
 
 ## Credentials (keyless)
 

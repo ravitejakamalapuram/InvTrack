@@ -37,7 +37,19 @@ export async function findOrphans(db, auth) {
   return orphans;
 }
 
-/** Anonymous accounts (no linked provider) with no activity for `days` days. */
+/**
+ * Newest of the account's activity times in ms, or null when they cannot be read: none is set (firebase-admin gives
+ * null for a time it cannot parse, and `new Date(null)` is 1970, which would look a half-century idle) or one is set
+ * but is not a date. Deleting is permanent, so the caller keeps the account on doubt.
+ */
+function lastActivityMs({ lastRefreshTime, lastSignInTime, creationTime }) {
+  const times = [lastRefreshTime, lastSignInTime, creationTime]
+    .filter((t) => t != null)
+    .map((t) => new Date(t).getTime());
+  return times.length === 0 || times.some(Number.isNaN) ? null : Math.max(...times);
+}
+
+/** Anonymous accounts (no linked provider) with no activity for `days` days. Unreadable dates keep the account. */
 export async function findInactiveGuests(auth, now, days) {
   const cutoff = now.getTime() - days * DAY_MS;
   const guests = [];
@@ -46,8 +58,8 @@ export async function findInactiveGuests(auth, now, days) {
     const page = await auth.listUsers(1000, pageToken);
     for (const u of page.users) {
       if (u.providerData.length > 0) continue;
-      const last = u.metadata.lastRefreshTime ?? u.metadata.lastSignInTime ?? u.metadata.creationTime;
-      if (new Date(last).getTime() < cutoff) guests.push(u.uid);
+      const last = lastActivityMs(u.metadata);
+      if (last !== null && last < cutoff) guests.push(u.uid);
     }
     pageToken = page.pageToken;
   } while (pageToken);
