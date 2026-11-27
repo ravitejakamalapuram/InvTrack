@@ -11,7 +11,10 @@ const NOW = new Date('2026-11-27T00:00:00Z');
 // Firebase returns these dates as UTC strings, to the second.
 const ago = (days) => new Date(NOW.getTime() - days * DAY).toUTCString();
 
-function user(uid, { providers = [], refreshed = null, signedIn = null, created = ago(1) } = {}) {
+function user(uid, opts = {}) {
+  const { providers = [], refreshed = null, signedIn = null } = opts;
+  // `in`, not a default value: a default would turn an explicit `created: undefined` into a readable date.
+  const created = 'created' in opts ? opts.created : ago(1);
   return {
     uid,
     providerData: providers.map((providerId) => ({ providerId })),
@@ -67,6 +70,9 @@ describe('findInactiveGuests: what counts as activity', () => {
 
   it('keeps an account whose dates cannot be read', async () => {
     assert.deepEqual(await sweep([user('g', { created: 'not a date' })]), []);
+    // No date at all: the field is missing, so `new Date(undefined)` is an invalid date.
+    // `null` is not tested here: firebase-admin sends null for a date it cannot parse, and `new Date(null)` is
+    // 1970, so the sweep would delete that guest. That is an open finding (PR body, #805), not pinned by a test.
     assert.deepEqual(await sweep([user('g', { created: undefined })]), []);
   });
 });
