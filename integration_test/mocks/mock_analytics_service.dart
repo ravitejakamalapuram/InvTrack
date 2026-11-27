@@ -288,41 +288,6 @@ class FakeAnalyticsService implements AnalyticsService {
     });
   }
 
-  // ============ Reports Analytics Events ============
-
-  @override
-  Future<void> logReportViewed({
-    required String reportType,
-    bool isHistorical = false,
-    String? period,
-  }) async => _log('report_viewed', {
-    'report_type': reportType,
-    'is_historical': isHistorical,
-    'period': period,
-  });
-
-  @override
-  Future<void> logReportExported({
-    required String reportType,
-    required String format,
-    int? recordCount,
-  }) async => _log('report_exported', {
-    'report_type': reportType,
-    'format': format,
-    'record_count': recordCount,
-  });
-
-  @override
-  Future<void> logHistoricalReportAccessed({
-    required String reportType,
-    required int periodsBack,
-    required String period,
-  }) async => _log('historical_report_accessed', {
-    'report_type': reportType,
-    'periods_back': periodsBack,
-    'period': period,
-  });
-
   // ============ Portfolio Health Score Events ============
 
   @override

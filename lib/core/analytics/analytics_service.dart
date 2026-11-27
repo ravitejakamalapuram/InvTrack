@@ -187,11 +187,6 @@ class AnalyticsEvents {
   static const String currencyConversionFailed = 'currency_conversion_failed';
   static const String exchangeRateCacheHit = 'exchange_rate_cache_hit';
 
-  // Reports feature events
-  static const String reportViewed = 'report_viewed';
-  static const String reportExported = 'report_exported';
-  static const String historicalReportAccessed = 'historical_report_accessed';
-
   // Portfolio Health Score events
   static const String portfolioHealthViewed = 'portfolio_health_viewed';
   static const String portfolioHealthDetailsOpened =
@@ -408,7 +403,7 @@ class AnalyticsService {
   /// - [investmentType]: Type of investment (e.g., "FD", "Stocks", "MF", "PPF")
   /// - [hasNotes]: Whether user added notes (indicates engagement)
   /// - [hasAmount]: Whether the user entered an amount while creating it
-  ///   (always false until Add Investment takes one, A40)
+  ///   (the first cash flow saved with the investment)
   ///
   /// Both flags are sent as 1 or 0, never as a bool.
   ///
@@ -895,119 +890,6 @@ class AnalyticsService {
     await logEvent(
       name: AnalyticsEvents.exchangeRateCacheHit,
       parameters: {'cache_type': cacheType, 'rate_type': rateType},
-    );
-  }
-
-  // ============ Reports Feature Events ============
-
-  /// Log report viewed
-  ///
-  /// Tracks which reports users are viewing to understand feature adoption
-  /// and identify most valuable reports.
-  ///
-  /// ## Parameters
-  ///
-  /// - [reportType]: Type of report (weekly, monthly, fy, performance, goals, maturity, actions, health)
-  /// - [isHistorical]: Whether viewing historical data (default: false)
-  /// - [period]: Period identifier for historical reports (e.g., "2023", "2024-03")
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// // Current report
-  /// await analyticsService.logReportViewed(
-  ///   reportType: 'weekly',
-  /// );
-  ///
-  /// // Historical report
-  /// await analyticsService.logReportViewed(
-  ///   reportType: 'fy',
-  ///   isHistorical: true,
-  ///   period: '2023',
-  /// );
-  /// ```
-  Future<void> logReportViewed({
-    required String reportType,
-    bool isHistorical = false,
-    String? period,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.reportViewed,
-      parameters: {
-        'report_type': reportType,
-        'is_historical': isHistorical ? 1 : 0,
-        ...?period != null ? {'period': period} : null,
-      },
-    );
-  }
-
-  /// Log report exported
-  ///
-  /// Tracks export usage to understand preferred export formats and
-  /// which reports users want to save externally.
-  ///
-  /// ## Parameters
-  ///
-  /// - [reportType]: Type of report being exported
-  /// - [format]: Export format ("pdf" or "csv")
-  /// - [recordCount]: Number of records in export (privacy-safe count)
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await analyticsService.logReportExported(
-  ///   reportType: 'monthly',
-  ///   format: 'pdf',
-  ///   recordCount: 15,
-  /// );
-  /// ```
-  Future<void> logReportExported({
-    required String reportType,
-    required String format,
-    int? recordCount,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.reportExported,
-      parameters: {
-        'report_type': reportType,
-        'format': format,
-        ...?recordCount != null ? {'record_count': recordCount} : null,
-      },
-    );
-  }
-
-  /// Log historical report accessed
-  ///
-  /// Tracks usage of historical reporting feature to understand
-  /// how often users reference past data.
-  ///
-  /// ## Parameters
-  ///
-  /// - [reportType]: Type of report (fy or monthly)
-  /// - [periodsBack]: How many periods back (e.g., 1 for last year, 2 for 2 years ago)
-  /// - [period]: Period identifier (e.g., "2023", "2024-03")
-  ///
-  /// ## Example
-  ///
-  /// ```dart
-  /// await analyticsService.logHistoricalReportAccessed(
-  ///   reportType: 'fy',
-  ///   periodsBack: 1,
-  ///   period: '2023',
-  /// );
-  /// ```
-  Future<void> logHistoricalReportAccessed({
-    required String reportType,
-    required int periodsBack,
-    required String period,
-  }) async {
-    await logEvent(
-      name: AnalyticsEvents.historicalReportAccessed,
-      parameters: {
-        'report_type': reportType,
-        'periods_back': periodsBack,
-        'period': period,
-      },
     );
   }
 
