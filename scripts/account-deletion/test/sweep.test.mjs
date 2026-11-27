@@ -92,9 +92,10 @@ describe('findInactiveGuests: what counts as activity', () => {
   });
 });
 
-// firebase-admin's parseDate returns null for a time it cannot parse, so a real record can reach the sweep with all
-// three dates null. `new Date(null)` is 1 January 1970, which is always older than the cutoff: reading it as a
-// date would delete a guest we know nothing about, for good. Doubt keeps the account.
+// firebase-admin 13.10.0 gives null for a creation or sign-in time it cannot parse (or that is absent), and the literal
+// string 'Invalid Date' for a refresh time it cannot parse, so a real record can reach the sweep with null or invalid
+// dates. `new Date(null)` is 1 January 1970, which is always older than the cutoff: reading it as a date would delete
+// a guest we know nothing about, for good. Doubt keeps the account.
 describe('findInactiveGuests: dates that cannot be read', () => {
   const unreadable = [
     ['null', null],

@@ -38,15 +38,19 @@ export async function findOrphans(db, auth) {
 }
 
 /**
- * Newest of the account's activity times in ms, or null when they cannot be read: none is set (firebase-admin gives
- * null for a time it cannot parse, and `new Date(null)` is 1970, which would look a half-century idle) or one is set
- * but is not a date. Deleting is permanent, so the caller keeps the account on doubt.
+ * Newest of the account's activity times in ms, or null when they cannot be read. firebase-admin 13.10.0 gives a UTC
+ * string, null (a time that is absent, or a creation or sign-in time it cannot parse) or the literal 'Invalid Date'
+ * (a refresh time it cannot parse). A null is dropped, never read as `new Date(null)`, which is 1970 and would look a
+ * half-century idle. The creation time is the exception: a real account always has one, so without it the record is
+ * wrong, not idle. A time that is set but is not a date also makes the activity unreadable. Deleting is permanent, so
+ * the caller keeps the account on doubt.
  */
 function lastActivityMs({ lastRefreshTime, lastSignInTime, creationTime }) {
+  if (creationTime == null) return null;
   const times = [lastRefreshTime, lastSignInTime, creationTime]
     .filter((t) => t != null)
     .map((t) => new Date(t).getTime());
-  return times.length === 0 || times.some(Number.isNaN) ? null : Math.max(...times);
+  return times.some(Number.isNaN) ? null : Math.max(...times);
 }
 
 /** Anonymous accounts (no linked provider) with no activity for `days` days. Unreadable dates keep the account. */
