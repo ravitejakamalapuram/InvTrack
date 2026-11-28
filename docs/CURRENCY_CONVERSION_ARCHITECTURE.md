@@ -81,7 +81,6 @@ enum ConversionFallbackStrategy {
 - `multiCurrencyGlobalStats` - All investments combined
 - `multiCurrencyOpenStats` - Open investments only
 - `multiCurrencyClosedStats` - Closed investments only
-- `multiCurrencyPortfolioValue` - Total portfolio value
 
 **Before (Sequential):**
 ```dart

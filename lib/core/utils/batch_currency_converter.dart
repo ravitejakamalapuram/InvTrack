@@ -246,6 +246,11 @@ class BatchCurrencyConverter {
   /// This is a convenience method that uses the same fallback strategy as [batchConvert].
   /// Use this for simple one-off conversions (e.g., converting goal target amounts).
   ///
+  /// Unlike [batchConvert], the default [ConversionFallbackStrategy.useLastKnown]
+  /// throws a [CurrencyConversionException] when there is no cached rate
+  /// either, rather than return [amount] unconverted. Only an explicit
+  /// [ConversionFallbackStrategy.useOriginal] does that.
+  ///
   /// For converting multiple cash flows, prefer [batchConvert] for better performance.
   Future<double> convert({
     required double amount,
@@ -272,12 +277,22 @@ class BatchCurrencyConverter {
           return amount;
 
         case ConversionFallbackStrategy.useLastKnown:
-          final rate = await _conversionService.getLastKnownRate(
-            from: from,
-            to: to,
-          );
+          double? rate;
+          try {
+            rate = await _conversionService.getLastKnownRate(
+              from: from,
+              to: to,
+            );
+          } catch (_) {
+            // A cache that cannot be read counts as no cached rate.
+          }
           if (rate != null) return amount * rate;
-          return amount; // Fall back to original if no cached rate
+          // The amount would stay in [from], to be shown or summed under the
+          // symbol of [to] (money rule 2): fail instead.
+          throw CurrencyConversionException(
+            'No exchange rate for $from → $to',
+            error,
+          );
 
         case ConversionFallbackStrategy.throwError:
           throw CurrencyConversionException('Failed to convert $from → $to');

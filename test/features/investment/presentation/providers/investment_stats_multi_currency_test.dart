@@ -84,7 +84,7 @@ void main() {
       // 1. InvestmentStats should accept base currency parameter
       // 2. Use CurrencyConversionService to convert each cash flow to base currency
       // 3. Then aggregate the converted amounts
-      // 4. Similar to how multiCurrencyInvestedAmount works in multi_currency_providers.dart
+      // 4. Similar to how multiCurrencyInvestmentStats works in multi_currency_providers.dart
     });
 
     test('verifies cash flows preserve original currency (Rule 21.2)', () {

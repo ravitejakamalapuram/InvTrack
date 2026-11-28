@@ -20,6 +20,10 @@ class CurrencyConverterModule implements CalculationModule {
   bool get isAvailable => _conversionService != null;
 
   /// Convert a single amount from one currency to another.
+  ///
+  /// Throws a [CurrencyConversionException] when the amount cannot be
+  /// converted (conversion unavailable, or no rate and no cached rate),
+  /// rather than return it in its own currency to be shown under [to].
   Future<double> convert({
     required double amount,
     required String from,
@@ -29,9 +33,12 @@ class CurrencyConverterModule implements CalculationModule {
         ConversionFallbackStrategy.useLastKnown,
   }) async {
     if (from == to) return amount;
-    if (_batchConverter == null) return amount;
+    final converter = _batchConverter;
+    if (converter == null) {
+      throw CurrencyConversionException('Currency conversion is unavailable');
+    }
 
-    return _batchConverter.convert(
+    return converter.convert(
       amount: amount,
       from: from,
       to: to,
