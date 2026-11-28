@@ -37,7 +37,23 @@ export async function findOrphans(db, auth) {
   return orphans;
 }
 
-/** Anonymous accounts (no linked provider) with no activity for `days` days. */
+/**
+ * Newest of the account's activity times in ms, or null when they cannot be read. firebase-admin 13.10.0 gives a UTC
+ * string, null (a time that is absent, or a creation or sign-in time it cannot parse) or the literal 'Invalid Date'
+ * (a refresh time it cannot parse). A null is dropped, never read as `new Date(null)`, which is 1970 and would look a
+ * half-century idle. The creation time is the exception: a real account always has one, so without it the record is
+ * wrong, not idle. A time that is set but is not a date also makes the activity unreadable. Deleting is permanent, so
+ * the caller keeps the account on doubt.
+ */
+function lastActivityMs({ lastRefreshTime, lastSignInTime, creationTime }) {
+  if (creationTime == null) return null;
+  const times = [lastRefreshTime, lastSignInTime, creationTime]
+    .filter((t) => t != null)
+    .map((t) => new Date(t).getTime());
+  return times.some(Number.isNaN) ? null : Math.max(...times);
+}
+
+/** Anonymous accounts (no linked provider) with no activity for `days` days. Unreadable dates keep the account. */
 export async function findInactiveGuests(auth, now, days) {
   const cutoff = now.getTime() - days * DAY_MS;
   const guests = [];
@@ -46,8 +62,8 @@ export async function findInactiveGuests(auth, now, days) {
     const page = await auth.listUsers(1000, pageToken);
     for (const u of page.users) {
       if (u.providerData.length > 0) continue;
-      const last = u.metadata.lastRefreshTime ?? u.metadata.lastSignInTime ?? u.metadata.creationTime;
-      if (new Date(last).getTime() < cutoff) guests.push(u.uid);
+      const last = lastActivityMs(u.metadata);
+      if (last !== null && last < cutoff) guests.push(u.uid);
     }
     pageToken = page.pageToken;
   } while (pageToken);
