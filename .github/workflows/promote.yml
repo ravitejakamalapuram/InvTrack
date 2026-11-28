@@ -82,3 +82,5 @@ jobs:
       expect_in_progress_version_codes: ${{ needs.guard.outputs.soak_version_codes }}
       min_crash_free_users: ${{ needs.guard.outputs.min_crash_free_users }}
       crash_free_since: ${{ needs.guard.outputs.crash_free_since }}
+      # Play withholds crash rates for a 5% slice of this app, so thin data passes (logged) unless crashes show.
+      allow_thin_crash_data: true

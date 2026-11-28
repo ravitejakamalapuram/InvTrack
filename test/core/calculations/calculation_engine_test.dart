@@ -279,9 +279,13 @@ void main() {
         final zero = await c.convert(amount: 100.0, from: 'GBP', to: 'INR', fallbackStrategy: ConversionFallbackStrategy.skipTransaction);
         expect(zero, 0.0);
 
-        // Strategy: useLastKnown should try to get the last known rate or return original
-        final lastKnown = await c.convert(amount: 100.0, from: 'GBP', to: 'INR', fallbackStrategy: ConversionFallbackStrategy.useLastKnown);
-        expect(lastKnown, 100.0); // No last known rate exists, returns original amount
+        // Strategy: useLastKnown uses the last known rate, and with none it
+        // throws: returning the original amount would leave 100 GBP to be
+        // shown or summed as 100 INR (money rule 2).
+        expect(
+          () => c.convert(amount: 100.0, from: 'GBP', to: 'INR', fallbackStrategy: ConversionFallbackStrategy.useLastKnown),
+          throwsA(isA<CurrencyConversionException>()),
+        );
       });
     });
 
